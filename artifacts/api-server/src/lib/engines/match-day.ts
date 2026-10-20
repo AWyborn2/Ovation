@@ -1,57 +1,22 @@
 import { and, eq, gt, lte } from "drizzle-orm";
-import { db, fixturesTable, type FixtureRow } from "@workspace/db";
+import { db, fixturesTable } from "@workspace/db";
 import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
+import {
+  formatFixtureDate,
+  formatFixtureTime,
+  matchDayDraftInput,
+} from "@workspace/scorecard/card-content";
+import { buildMatchDayContent } from "../card-content/match-day";
 
 /** How far ahead of the first ball a match-day card is drafted. */
 export const MATCH_DAY_LEAD_MS = 48 * 60 * 60 * 1000;
 
-/**
- * Pilot clubs are all in Western Australia and tenants carry no timezone yet,
- * so fixture times are formatted in Perth time (the server runs in UTC).
- */
-const CLUB_TIME_ZONE = "Australia/Perth";
-
 export type MatchDayResult = { drafted: number; refreshed: number; skipped: number };
 
-/** "SAT 12 OCT" — same shape the Studio's fixture prefill produces. */
-export function formatFixtureDate(d: Date): string {
-  return d
-    .toLocaleDateString("en-AU", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      timeZone: CLUB_TIME_ZONE,
-    })
-    .replace(/,/g, "")
-    .toUpperCase();
-}
-
-/** "12:30 PM". */
-export function formatFixtureTime(d: Date): string {
-  return d
-    .toLocaleTimeString("en-AU", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: CLUB_TIME_ZONE,
-    })
-    .toUpperCase();
-}
-
-export function fixtureToMatchDayInput(fixture: FixtureRow): Record<string, unknown> {
-  return {
-    kind: "matchDay",
-    roundLabel: (fixture.roundLabel ?? "").toUpperCase(),
-    oppositionName: fixture.opponentName,
-    oppositionLogoUrl: fixture.opponentLogoUrl ?? null,
-    homeAway: fixture.isHome ? "HOME" : "AWAY",
-    venue: fixture.venue ?? "",
-    date: formatFixtureDate(fixture.startAt),
-    startTime: formatFixtureTime(fixture.startAt),
-    grade: fixture.grade,
-  };
-}
+// Club-time date and time ("SAT 12 OCT", "12:30 PM"); shared with the content
+// pipeline so every card formats a fixture the same way.
+export { formatFixtureDate, formatFixtureTime };
 
 export const matchDayKey = (fixtureId: number) => `matchday:${fixtureId}`;
 
@@ -81,17 +46,18 @@ export async function generateMatchDayDrafts(
       ),
     );
 
-  for (const fixture of fixtures) {
-    if (!gates.gameDayGrade(fixture.grade, false)) {
-      result.skipped++;
-      continue;
-    }
+  const drafting = fixtures.filter((f) => gates.gameDayGrade(f.grade, false));
+  result.skipped = fixtures.length - drafting.length;
+  // The same content the Weekend Carousel shows for these fixtures (ADR-010).
+  const content = await buildMatchDayContent(tenantId, drafting);
+  for (const fixture of drafting) {
     const { action } = await upsertDraftByKey({
       tenantId,
       engine: "matchday",
       family: "matchday",
       sourceKey: matchDayKey(fixture.id),
-      cardInput: fixtureToMatchDayInput(fixture),
+      // Saved as it always was, so existing auto-queued drafts are never rewritten.
+      cardInput: matchDayDraftInput(content.get(fixture.id)!),
       appPath: "/fixtures",
       sourceImportedAt: now,
     });

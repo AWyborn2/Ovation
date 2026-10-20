@@ -485,7 +485,11 @@ router.post(
         return;
       }
       // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
-      if (carousel.packId === undefined && packId !== null) carousel.packId = packId;
+      // Set on the saved payload itself: a version 2 read returns a normalised copy.
+      if (carousel.packId === undefined && packId !== null) {
+        carousel.packId = packId;
+        (cardInput.weekendCarousel as Record<string, unknown>).packId = packId;
+      }
       packId = carouselPackId(carousel);
     }
     const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;

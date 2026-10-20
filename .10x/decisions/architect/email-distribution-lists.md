@@ -31,7 +31,7 @@ image.
 B fits the existing patterns: notifications are written first and email is a best-effort echo
 (KTD5), and the hourly `POST /api/internal/playhq/sweep` is already the scheduler.
 
-## Data model (migration `0052_email_lists.sql`, idempotent, tenant-scoped)
+## Data model (migration `0053_email_lists.sql`, idempotent, tenant-scoped)
 
 - `email_lists`: `id, tenant_id, kind ('team_sheet'|'social'), name, settings jsonb, active, created_at`.
   - team_sheet settings: `{ sendMode: 'on_publish'|'manual'|'scheduled'|'off', schedule?: { dow: 0-6, time: 'HH:MM' } (club local time), resendOnChange: boolean }`
@@ -129,7 +129,7 @@ once it has been logged is not.
 
 - The tables are as designed, plus `email_sends.payload` (the request origin is captured when the
   row is queued, so the sheet's logo resolves in background sends) and `claimed_at` (to detect stale
-  `sending` rows). Migration `0052_email_lists.sql`.
+  `sending` rows). Migration `0053_email_lists.sql`.
 - The admin API replaces a list whole with `PUT /admin/email-lists/{id}` (name, mode, grades,
   members), rather than having separate member endpoints. That is simpler for a list of 50 or
   fewer contacts.
@@ -161,7 +161,7 @@ once it has been logged is not.
   `payload.draftIds`, and a `NOT EXISTS … payload->'draftIds' @> id` check stops a draft being
   listed twice. Milestones means the `milestone` engine or the `achievements` family, while
   awaiting review or ready.
-- **Notification address.** Migration `0053_social_email_lists.sql` (data only) gives each club
+- **Notification address.** Migration `0054_social_email_lists.sql` (data only) gives each club
   with `social_settings.notification_email` a "Social media" list holding that address, with all
   three toggles on. `notifyDraftsReady` now queues `asset_ready` sends instead of emailing the
   address. `notifyClub` (published / failed / reconnect / posts due / cards rolled) bcc's the

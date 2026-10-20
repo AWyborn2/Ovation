@@ -350,7 +350,8 @@ const matchDay = design({
       f,
       "GAME DAY",
       col(
-        eyebrow(u, "{{date}} · {{roundLabel}}") +
+        // An unknown or switched-off round drops with its separator (ADR-010).
+        eyebrow(u, '{{date}}<span data-drop-if-field="roundLabel"> · {{roundLabel}}</span>') +
           meta(u, "GAME DAY", ";margin-top:1cqmin") +
           `<div data-match-day-heading="1">` +
           display(

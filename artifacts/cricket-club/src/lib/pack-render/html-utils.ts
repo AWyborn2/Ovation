@@ -455,6 +455,41 @@ export function substituteFields(html: string, values: Record<string, string>): 
   });
 }
 
+/**
+ * Optional text boxes (ADR-010): a `<div>` or `<span>` marked
+ * `data-drop-if-field="<key>"` is removed when that field's value is empty — a
+ * field the club switched off, or data the fixture lacks — so no empty box or
+ * dangling " · " is left. Several space-separated keys drop the box only when
+ * every one is empty. With a value, a div only loses the marker and a span
+ * is unwrapped, so the markup is exactly what it was without the marker.
+ * Called BEFORE field substitution.
+ */
+export function dropEmptyFieldBlocks(html: string, values: Record<string, string>): string {
+  const re = /<(div|span)([^>]*?)\sdata-drop-if-field="([\w. ]+)"([^>]*)>/;
+  let out = html;
+  let m = re.exec(out);
+  while (m) {
+    const [open, tag, before, keys, after] = m;
+    const keep = keys.split(" ").some((key) => !!(values[key] ?? "").trim());
+    if (tag === "div") {
+      out = keep
+        ? out.slice(0, m.index) + `<div${before}${after}>` + out.slice(m.index + open.length)
+        : out.slice(0, m.index) + out.slice(divBounds(out, m.index).end);
+    } else {
+      // Spans hold text only: the first closing tag ends the block.
+      const close = out.indexOf("</span>", m.index + open.length);
+      const inner = out.slice(m.index + open.length, close);
+      const plain = !before.trim() && !after.trim();
+      out =
+        out.slice(0, m.index) +
+        (keep ? (plain ? inner : `<span${before}${after}>${inner}</span>`) : "") +
+        out.slice(close + "</span>".length);
+    }
+    m = re.exec(out);
+  }
+  return out;
+}
+
 /** Drop team-list role parentheticals rendered empty (no role on that player). */
 export function cleanupEmptyRoles(html: string): string {
   return html.replace(/\s*<span[^>]*>\(\)<\/span>/g, "");

@@ -37,6 +37,7 @@ import {
   cleanupEmptyBadges,
   cleanupEmptyRoles,
   dropEmptyCapNumber,
+  dropEmptyFieldBlocks,
   dropEmptyImageBlocks,
   dropEmptyPresentedBy,
   dropEmptyShirtNumber,
@@ -313,6 +314,8 @@ export function renderPackCard(
   // card kind: the badge only exists on player-centric designs.
   if (!values["shirtNumber"]) html = dropEmptyShirtNumber(html);
   html = hideFields(html, adj);
+  // Optional text boxes whose field is switched off or empty drop out (ADR-010).
+  html = dropEmptyFieldBlocks(html, values);
   html = substituteFields(html, values);
   // Long club and team names shrink to fit, then wrap, instead of "…".
   html = fitNames(html);

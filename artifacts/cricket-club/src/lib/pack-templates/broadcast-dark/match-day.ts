@@ -18,7 +18,7 @@ import {
   type BdFormat,
 } from "./fragments";
 
-// A2 — Match Day. The handoff's "MATCH DAY" title with the round line, then
+// A2 — Match Day. The handoff's "MATCH DAY" title with the grade and round lines, then
 // the fixture: both sides with logos and home/away tags, ground/date/start,
 // and the club's note. Landscape sets the title beside the fixture.
 
@@ -39,14 +39,20 @@ function info(label: string, value: string): string {
 function build(fmt: BdFormat): string {
   const head =
     bdDisplay("MATCH<br>DAY", fmt === "landscape" ? 18 : 16, ";line-height:.84;margin-top:0") +
-    bdEyebrow("{{roundLabel}}", ACC, ";margin-top:2cqmin");
+    // Which team is playing: the competition label (a core content field, ADR-010).
+    `<div data-match-day-grade="1" style="font-family:${SK_COND};font-weight:800;font-size:4.4cqmin;line-height:1.05;text-transform:uppercase;margin-top:2cqmin;overflow-wrap:anywhere">{{grade}}</div>` +
+    // An unknown or switched-off round drops its line (ADR-010).
+    bdEyebrow("{{roundLabel}}", ACC, ";margin-top:2cqmin").replace(
+      "<div ",
+      '<div data-drop-if-field="roundLabel" ',
+    );
   const fixture =
     `<div style="border-top:.2cqmin solid ${LINE}">` +
     side("clubLogo", "{{clubName}}", "{{homeAway}}", true) +
     side("opposition.logo", "{{opposition.name}}", "{{oppositionHomeAway}}", false) +
     `</div>` +
     `<div style="display:flex;gap:5cqmin;margin-top:2.6cqmin">${info("GROUND", "{{venue}}")}${info("DATE", "{{date}}")}${info("START", "{{startTime}}")}</div>` +
-    `<div style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${ACC};background:rgba(255,255,255,.05);border-radius:0 1cqmin 1cqmin 0">` +
+    `<div data-drop-if-field="note.title note.body" style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${ACC};background:rgba(255,255,255,.05);border-radius:0 1cqmin 1cqmin 0">` +
     `<div style="font-family:${SK_MONO};font-weight:600;font-size:2cqmin;letter-spacing:.16em;color:${ACC}">{{note.title}}</div>` +
     `<div style="font-size:2.8cqmin;line-height:1.35;margin-top:.6cqmin;color:rgba(242,245,248,.85)">{{note.body}}</div>` +
     `</div>`;
@@ -64,6 +70,7 @@ export const matchDay: PackCardTemplate = {
   sponsorVariants: ["on", "off"],
   fields: [
     ...clubHeaderFields(),
+    textField("grade", "Grade / team", "A GRADE"),
     textField("roundLabel", "Round label", "THIS SATURDAY · ROUND 3"),
     textField("opposition.name", "Opposition name", "MARINERS"),
     logoField("opposition.logo", "Opposition logo", "Opponent logo"),

@@ -12,7 +12,8 @@
     "./club-leaderboard-input": "./src/club-leaderboard-input.ts",
     "./ladder-input": "./src/ladder-input.ts",
     "./selection-shape": "./src/selection-shape.ts",
-    "./card-names": "./src/card-names.ts"
+    "./card-names": "./src/card-names.ts",
+    "./card-content": "./src/card-content/index.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

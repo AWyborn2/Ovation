@@ -8339,7 +8339,15 @@ export const GetSocialSettingsResponse = zod.object({
   "pinned": zod.number().describe('Cards already scheduled to Meta'),
   "unscheduled": zod.number().describe('Cards with no free slot'),
   "restored": zod.number().describe('Cards handed back to auto-post when it was turned off')
-}).optional()
+}).optional(),
+  "cardContent": zod.object({
+  "matchDay": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -8461,6 +8469,8 @@ export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemDayMax = 
 
 export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsMax = 14;
+
+export const updateSocialSettingsBodyLivestreamUrlMax = 500;
 
 
 
@@ -8659,7 +8669,15 @@ export const UpdateSocialSettingsBody = zod.object({
   "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
 }).optional()
 }).optional()
-}).optional().describe('Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places the club\'s open cards; turning it off hands them back to auto-post.')
+}).optional().describe('Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places the club\'s open cards; turning it off hands them back to auto-post.'),
+  "cardContent": zod.object({
+  "matchDay": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
+  "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -8947,7 +8965,15 @@ export const UpdateSocialSettingsResponse = zod.object({
   "pinned": zod.number().describe('Cards already scheduled to Meta'),
   "unscheduled": zod.number().describe('Cards with no free slot'),
   "restored": zod.number().describe('Cards handed back to auto-post when it was turned off')
-}).optional()
+}).optional(),
+  "cardContent": zod.object({
+  "matchDay": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
 })
 
 
@@ -9212,6 +9238,34 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
 })).optional(),
   "timeZone": zod.string(),
   "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
+  "matchDayContent": zod.record(zod.string(), zod.object({
+  "kind": zod.enum(['matchDay']),
+  "page": zod.enum(['fixture']),
+  "fixtureId": zod.number(),
+  "junior": zod.boolean(),
+  "juniorTeamName": zod.string().nullable(),
+  "grade": zod.string(),
+  "roundLabel": zod.string(),
+  "opposition": zod.object({
+  "name": zod.string().describe('The club\'s short name, else the automatic one, else the raw name.'),
+  "rawName": zod.string(),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string()
+}),
+  "homeAway": zod.enum(['HOME', 'AWAY']),
+  "venue": zod.string(),
+  "startAt": zod.string(),
+  "day": zod.string().describe('Club-time day, YYYY-MM-DD.'),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "source": zod.object({
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullable(),
+  "opponentName": zod.string(),
+  "opponentLogoUrl": zod.string().nullable(),
+  "venue": zod.string().nullable()
+})
+}).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.')).optional().describe('Match Day sets: each fixture\'s slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.'),
   "fixtures": zod.array(zod.object({
   "id": zod.number(),
   "grade": zod.string(),

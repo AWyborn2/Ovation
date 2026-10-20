@@ -1,5 +1,46 @@
 # Handoff
 
+**From:** SDE (P2, content contract + Match Day builder)
+**To:** SDE sessions for P3–P6 (at most two at once), then P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P2 (T2.1–T2.6)** is on `wyborn21/carousel-p2-content-contract`. It adds migration 0052: `social_settings.card_content` jsonb (default `{"matchDay":{"preset":"standard","fields":{},"juniorConsolidateByDay":true}}`) and `social_settings.livestream_url`. Ash runs 0052 in Production SQL before republishing. The EM plan's numbers are shifted: P2's migration is 0052 because #393 took 0050 and P1 took 0051. The sponsors migration (P6) and `photo_usage` (P4) take the next free numbers at rebase.
+- **The contract: `@workspace/scorecard/card-content`** (pure):
+  - `types.ts` has `MatchDayTitleContent`, `MatchDayFixtureContent` and `MatchDaySponsorsContent`, all display-ready. A fixture keeps a `source` block with its raw values, and `day` (club-time YYYY-MM-DD) is there for P3 grouping.
+  - The field catalogue is `CONTENT_FIELDS` in `kind-templates/fields.ts`. Keys are `<slide>.<field>`, each core or optional, with its presets. Standard is the cards as they were; Full equals Standard until P5 adds fields with `presets: ["full"]` (or `STANDARD_UP` if they should be on by default).
+  - `resolveVisibleFields(kind, clubSettings, override)`: core is always on. An override preset starts again from that preset.
+  - `readCardContentSettings` / `readContentOverride` clean stored values and drop anything unknown.
+  - `matchDayFixtureContent(fixture, { names, junior, juniorTeamName, gradeLabel })` builds a fixture's content. A junior-looking grade is treated as junior (fail closed).
+  - `matchDayDraftInput(content)` is the sweep's legacy draft input. It is byte-identical to the old `fixtureToMatchDayInput`, so existing drafts never refresh.
+  - `contentInput(content, visible)` is the field projection a template binds. Hidden fields are blanked, and `namesResolved: true` tells `bindInput` not to shorten names or look up crests again.
+- **The builder:** `api-server/src/lib/card-content/match-day.ts` → `buildMatchDayContent(tenantId, fixtures, { junior })`. It loads `loadCardNames` once, best effort. The caller picks the fixtures.
+  - The sweep (`engines/match-day.ts`) and `GET /weekend-carousel/sources` both call it. The route returns `matchDayContent` keyed by fixture id; `content` stays for teamList and results.
+  - Junior fixtures come in through `juniorCarouselContent(...).junior` (gradeLabel and team name). They no longer have a legacy input.
+  - `match-day.db.test.ts` is the parity test: the sweep and the carousel produce identical content, the draft equals the legacy input, and an old draft stays unchanged.
+  - The client mapping in `weekend-carousel/model.ts` is gone. Match Day team slides carry `content`. `buildWeekendSlides(..., visible)` honours visibility for round, crest, team sponsor, photo, cover and presenting sponsor. A hidden photo or sponsor also drops its warning.
+- **Saved carousel v2:** `readQueuedCarousel` reads v1 unchanged.
+  - A v2 content slide stores `{ content, visibleFields, photoId, data, ... }` with no `input`. The reader derives `input` via `contentSlideInput`, which the preview uses too.
+  - Kinds not on the pipeline yet (teamList, results, matchSummary middle slides) keep `input` in v2.
+  - `contentOverride` is saved. A junior slide's flag must equal its content's, or the read fails.
+  - Retired pack ids: `RETIRED_PACK_IDS` in `pack-resolve.ts` (empty until P9) map to Club Kit in `readQueuedCarousel` and `resolvePackIdForKind` (`livePackId`).
+- **Layout contract:** `cricket-club/src/lib/pack-templates/content-layouts.ts` declares slots and `capacity[size][preset]` for Club Kit and Broadcast Dark. Capacity is 1 everywhere: P3 raises it for the multi-fixture junior layout. Other packs lay out as Club Kit.
+  - `content-layouts.test.ts` is the fit grid: 2 packs × 3 presets × 4 sizes × title/fixture/sponsors, with worst-case names. CI has no browser, so fit is checked against each `data-fit` capacity at MIN_FIT over two lines.
+  - `data-drop-if-field="key [key…]"` (`dropEmptyFieldBlocks`) removes an optional text box when its field is empty. A span is unwrapped when it has a value, so markup stays byte-identical. It is used for the round line (both packs and every cover) and Broadcast Dark's note.
+  - The fit grid found two Broadcast Dark gaps, both fixed: the Match Day card had no grade box (it now shows the grade), and the template's sample note ("BAR & KITCHEN OPEN") printed on every real card (`applyPackData` now blanks it). Broadcast Dark's own-look digests were regenerated.
+- **UI:**
+  - Social Studio → "What match day cards show" (`card-content-section.tsx`): presets plus per-field switches. The same `ContentFieldPicker` drives the Weekend Carousel's "What these cards show" panel, which is Match Day sets only and saves `contentOverride`.
+  - The junior same-day switch and the livestream input are not in the UI yet. Their stored values pass through untouched. P3 adds the switch; P5 adds the link input and its title slot (the PATCH route already validates https).
+
+## For the next phases
+
+- **P3:** use `content.day` and `readCardContentSettings(...).matchDay.juniorConsolidateByDay`. Raise `capacity` for the multi-fixture layout and extend the fit grid with a multi-fixture slide.
+- **P5:** add fields to `CONTENT_FIELDS` (`presets: ["full"]`), load each one in `buildMatchDayContent` only when visible, add a slot in both packs, and add a row to the grid's checks.
+- **P7:** move teamList and results to builders. Their v2 slides switch from `input` to `content`.
+
+## Previous handoff
+
 **From:** SDE (P1, names and crests)
 **To:** SDE session for P2 (content contract + Match Day builder)
 **Feature:** match-day-carousel-content
@@ -315,5 +356,5 @@ Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) prev
 **From:** Principal Architect → **To:** Staff Engineer / EM (20 Oct 2026)
 **Read:** `.10x/decisions/architect/email-distribution-lists.md` (requirements: `.10x/decisions/product-manager/email-distribution-lists.md`)
 Spike resolved: team-sheet PDF already server-side (`buildTeamSheet` + `renderHtmlToPdf`). Social PNG via `/__card-render` harness — needs `RENDER_HARNESS_URL` in prod.
-Build order: PR1 = transport (bcc + attachments), migration 0052 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
+Build order: PR1 = transport (bcc + attachments), migration 0053 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
 Confirm the team key the Selection Hub uses for a fixture. Senior fixtures only.

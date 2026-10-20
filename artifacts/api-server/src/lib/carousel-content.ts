@@ -31,6 +31,7 @@ import {
 } from "./engines/team-list";
 import { recoverPublishedSelectionIdentities } from "./selection-published-players";
 import { juniorCarouselContent } from "./junior-carousel-content";
+import type { JuniorFixtureMeta } from "./card-content/match-day";
 
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
 type Content = Record<string, Record<string, unknown>>;
@@ -66,19 +67,26 @@ export async function carouselContent(
   from: string,
   to: string,
   audience: "all" | "senior" | "junior" = "all",
-): Promise<{ fixtures: FixtureRow[]; content: Content; warnings: string[] }> {
+): Promise<{
+  fixtures: FixtureRow[];
+  content: Content;
+  warnings: string[];
+  /** Match Day: the junior fixtures among `fixtures` (their slides come from the content builder). */
+  junior?: Map<number, JuniorFixtureMeta>;
+}> {
   const content: Content = {};
   const warnings: string[] = [];
   const juniorSources =
     (type === "matchDay" || type === "teamList") && audience !== "senior"
       ? await juniorCarouselContent(tenantId, type, from, to)
-      : { fixtures: [], content: {}, warnings: [] };
+      : { fixtures: [], content: {}, warnings: [], junior: new Map<number, JuniorFixtureMeta>() };
   if (audience === "junior" && (type === "matchDay" || type === "teamList")) return juniorSources;
   if (type === "matchDay")
     return {
-      fixtures: [...fixtures, ...juniorSources!.fixtures],
-      content: juniorSources!.content,
-      warnings: juniorSources!.warnings,
+      fixtures: [...fixtures, ...juniorSources.fixtures],
+      content: juniorSources.content,
+      warnings: juniorSources.warnings,
+      junior: juniorSources.junior,
     };
   if (type === "teamList") {
     const lists = fixtures.length
@@ -140,9 +148,9 @@ export async function carouselContent(
       available.push(fixture);
     }
     return {
-      fixtures: [...available, ...juniorSources!.fixtures],
-      content: { ...content, ...juniorSources!.content },
-      warnings: [...warnings, ...juniorSources!.warnings],
+      fixtures: [...available, ...juniorSources.fixtures],
+      content: { ...content, ...juniorSources.content },
+      warnings: [...warnings, ...juniorSources.warnings],
     };
   }
 

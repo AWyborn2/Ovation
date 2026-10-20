@@ -454,6 +454,20 @@ export type PostingScheduleRow = {
   ageLimitDays?: number;
   kinds?: Partial<Record<string, PostingKindRow>>;
 };
+/**
+ * What content-built cards show, per card kind (ADR-010). Stored as saved;
+ * `readCardContentSettings` (@workspace/scorecard/card-content) fills gaps.
+ */
+export type CardContentRow = Partial<
+  Record<
+    string,
+    {
+      preset?: string;
+      fields?: Record<string, boolean>;
+      juniorConsolidateByDay?: boolean;
+    }
+  >
+>;
 
 // One row per tenant (unique on tenantId; PK stays a surrogate id). A tenant's
 // row is created on first access (see `ensureSettings` in social-cards.ts),
@@ -538,6 +552,17 @@ export const socialSettingsTable = pgTable(
     // The posting calendar (plan 2026-10-07-003): weekly slots per card kind,
     // a daily cap, a minimum gap and an age limit. Null = never saved (off).
     postingSchedule: jsonb("posting_schedule").$type<PostingScheduleRow>(),
+    // What the content-built cards show (ADR-010 P2), per card kind: a preset,
+    // per-field choices on top, and whether junior sets share a slide per day.
+    // Read through `readCardContentSettings` (@workspace/scorecard/card-content),
+    // which drops anything unknown. The default is Standard (the cards as they
+    // were), so a club that never saves sees no change.
+    cardContent: jsonb("card_content")
+      .$type<CardContentRow>()
+      .notNull()
+      .default({ matchDay: { preset: "standard", fields: {}, juniorConsolidateByDay: true } }),
+    // The club's livestream link, for match day title pages (shown from P5).
+    livestreamUrl: text("livestream_url"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

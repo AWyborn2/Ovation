@@ -18085,6 +18085,77 @@ components:
           $ref: "#/components/schemas/PostingSchedule"
         postingSwitchover:
           $ref: "#/components/schemas/PostingSwitchover"
+        cardContent:
+          $ref: "#/components/schemas/CardContentSettings"
+        livestreamUrl:
+          type: ["string", "null"]
+          description: "The club's livestream link (https), for match day title pages. Null = none."
+
+    CardContentKindSettings:
+      type: object
+      description: "What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day."
+      required: [preset, fields, juniorConsolidateByDay]
+      properties:
+        preset:
+          type: string
+          enum: [minimal, standard, full]
+        fields:
+          type: object
+          description: "Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it."
+          additionalProperties:
+            type: boolean
+        juniorConsolidateByDay:
+          type: boolean
+
+    CardContentSettings:
+      type: object
+      description: "Per content kind. Default: Standard (the cards as they were), junior consolidation on."
+      required: [matchDay]
+      properties:
+        matchDay:
+          $ref: "#/components/schemas/CardContentKindSettings"
+
+    ContentTeam:
+      type: object
+      required: [name, rawName, crestUrl, monogram]
+      properties:
+        name: { type: string, description: "The club's short name, else the automatic one, else the raw name." }
+        rawName: { type: string }
+        crestUrl: { type: ["string", "null"] }
+        monogram: { type: string }
+
+    MatchDayFixtureContentSource:
+      type: object
+      required: [grade, roundLabel, opponentName, opponentLogoUrl, venue]
+      properties:
+        grade: { type: string }
+        roundLabel: { type: ["string", "null"] }
+        opponentName: { type: string }
+        opponentLogoUrl: { type: ["string", "null"] }
+        venue: { type: ["string", "null"] }
+
+    MatchDayFixtureContent:
+      type: object
+      description: "One fixture's Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep."
+      required: [kind, page, fixtureId, junior, juniorTeamName, grade, roundLabel, opposition, homeAway, venue, startAt, day, date, startTime, source]
+      properties:
+        kind: { type: string, enum: [matchDay] }
+        page: { type: string, enum: [fixture] }
+        fixtureId: { type: integer }
+        junior: { type: boolean }
+        juniorTeamName: { type: ["string", "null"] }
+        grade: { type: string }
+        roundLabel: { type: string }
+        opposition:
+          $ref: "#/components/schemas/ContentTeam"
+        homeAway: { type: string, enum: [HOME, AWAY] }
+        venue: { type: string }
+        startAt: { type: string }
+        day: { type: string, description: "Club-time day, YYYY-MM-DD." }
+        date: { type: string }
+        startTime: { type: string }
+        source:
+          $ref: "#/components/schemas/MatchDayFixtureContentSource"
 
     PostingPlanRow:
       type: object
@@ -19205,6 +19276,14 @@ components:
           description: "The whole Posting Plan; saving it also updates the family switches and round-schedule modes."
         postingSchedule:
           $ref: "#/components/schemas/PostingScheduleUpdate"
+        cardContent:
+          allOf:
+            - $ref: "#/components/schemas/CardContentSettings"
+          description: "Replaces the stored choices; unknown kinds, presets and field keys are dropped."
+        livestreamUrl:
+          type: ["string", "null"]
+          maxLength: 500
+          description: "An https link, or empty / null to clear it."
 
     RoundSchedule:
       type: object
@@ -21923,6 +22002,11 @@ components:
           additionalProperties:
             type: object
             additionalProperties: true
+        matchDayContent:
+          type: object
+          description: "Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep."
+          additionalProperties:
+            $ref: "#/components/schemas/MatchDayFixtureContent"
         fixtures:
           type: array
           items: { $ref: "#/components/schemas/Fixture" }

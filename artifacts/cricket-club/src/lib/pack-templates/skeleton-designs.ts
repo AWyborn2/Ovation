@@ -131,9 +131,12 @@ export function matchDayFormats(look: PackLook, opts: MatchDayOpts): PackTemplat
   return kitFormats((fmt) => {
     const head =
       kNum("MATCH<br>DAY", fmt === "landscape" ? 18 : 16, ";line-height:.84;margin-top:0") +
-      kEyebrow("{{roundLabel}}", K.accText, ";margin-top:2cqmin");
+      kEyebrow("{{roundLabel}}", K.accText, ";margin-top:2cqmin").replace(
+        "<div ",
+        '<div data-drop-if-field="roundLabel" ',
+      );
     const note = opts.note
-      ? `<div style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${K.accSolid};background:${K.panel};border-radius:0 1cqmin 1cqmin 0">` +
+      ? `<div data-drop-if-field="note.title note.body" style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${K.accSolid};background:${K.panel};border-radius:0 1cqmin 1cqmin 0">` +
         `<div style="font-family:${SK_MONO};font-weight:600;font-size:2cqmin;letter-spacing:.16em;color:${K.accText}">{{note.title}}</div>` +
         `<div style="font-size:2.8cqmin;line-height:1.35;margin-top:.6cqmin;color:${K.sub}">{{note.body}}</div>` +
         `</div>`

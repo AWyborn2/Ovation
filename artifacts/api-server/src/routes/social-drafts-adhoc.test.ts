@@ -20,6 +20,12 @@ import {
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { randomUUID } from "node:crypto";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import {
+  matchDayFixtureContent,
+  matchDaySponsorsContent,
+  matchDayTitleContent,
+  presetFields,
+} from "@workspace/scorecard/card-content";
 import { PACKS } from "../lib/design-packs";
 import { renderDraftSlides, setStillRenderer } from "../lib/draft-render";
 import { logger } from "../lib/logger";
@@ -178,6 +184,83 @@ describe("POST /social-drafts (ad-hoc)", () => {
       expect(mismatched.status).toBe(400);
     },
   );
+  it("saves a version 2 carousel as sent and renders each slide from its content snapshot", async () => {
+    const opts = {
+      heading: "Round one",
+      from: "2026-10-09",
+      to: "2026-10-11",
+      roundLabels: ["1"],
+      fixtureCount: 1,
+    };
+    const minimal = [...presetFields("matchDay", "minimal")];
+    const fixture = matchDayFixtureContent({
+      id: 11,
+      grade: "A Grade",
+      roundLabel: "1",
+      opponentName: "Visitors Cricket Club",
+      opponentLogoUrl: "https://crest.test/v.png",
+      venue: "Oval",
+      startAt: new Date("2026-10-10T02:00:00Z"),
+      isHome: true,
+    });
+    const slide = (id: string, content: unknown) => ({
+      id,
+      label: id,
+      content,
+      visibleFields: minimal,
+      photoId: null,
+      data: {},
+      junior: false,
+      sponsorsOn: false,
+      warnings: [],
+    });
+    const composition = {
+      version: 2,
+      packId: "club-kit-v1",
+      setType: "matchDay",
+      submissionId: randomUUID(),
+      size: "square",
+      contentOverride: { preset: "minimal" },
+      slides: [
+        slide("title", matchDayTitleContent(opts)),
+        slide("fixture-11", fixture),
+        slide("sponsors", matchDaySponsorsContent({ ...opts, sponsors: [] })),
+      ],
+    };
+    const response = await as(0).post("/social-drafts", {
+      packId: "club-kit-v1",
+      caption: "Version 2",
+      cardInput: { kind: "matchDay", weekendCarousel: composition },
+    });
+    expect(response.status, JSON.stringify(response.body)).toBe(201);
+    // Stored exactly as approved: the content snapshot, not a derived input.
+    expect(response.body.cardInput.weekendCarousel).toEqual(composition);
+    const [row] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(eq(socialDraftsTable.id, response.body.id));
+    const inputs: Record<string, unknown>[] = [];
+    setStillRenderer(async (input) => {
+      inputs.push(input as Record<string, unknown>);
+      return { buffer: Buffer.from("png"), contentType: "image/png" };
+    });
+    try {
+      await renderDraftSlides(row, ["square"], null, logger);
+    } finally {
+      setStillRenderer(null);
+    }
+    expect(inputs).toHaveLength(3);
+    // Minimal: the round and crest are hidden on the posted card too.
+    expect(inputs[1]).toMatchObject({
+      kind: "matchDay",
+      oppositionName: "Visitors",
+      roundLabel: "",
+      oppositionLogoUrl: null,
+      carouselContent: true,
+      namesResolved: true,
+    });
+    expect(inputs[0]).toMatchObject({ carouselPage: { page: "title", title: "Round one" } });
+  });
   it("queues an entire match-day carousel once, keeps it private and renders every saved slide", async () => {
     const slides = ["title", "fixture-11", "sponsors"].map((id, index) => ({
       id,

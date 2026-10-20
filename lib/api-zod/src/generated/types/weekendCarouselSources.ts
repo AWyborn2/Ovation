@@ -8,12 +8,15 @@
 import type { ClubPhoto } from './clubPhoto';
 import type { Fixture } from './fixture';
 import type { WeekendCarouselSourcesContent } from './weekendCarouselSourcesContent';
+import type { WeekendCarouselSourcesMatchDayContent } from './weekendCarouselSourcesMatchDayContent';
 
 export interface WeekendCarouselSources {
   juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
   /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
+  /** Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep. */
+  matchDayContent?: WeekendCarouselSourcesMatchDayContent;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */

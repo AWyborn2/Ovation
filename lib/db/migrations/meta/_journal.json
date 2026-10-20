@@ -369,15 +369,22 @@
     {
       "idx": 52,
       "version": "7",
-      "when": 1792476618442,
-      "tag": "0052_email_lists",
+      "when": 1792474763002,
+      "tag": "0052_card_content_settings",
       "breakpoints": true
     },
     {
       "idx": 53,
       "version": "7",
-      "when": 1792476678442,
-      "tag": "0053_social_email_lists",
+      "when": 1792478707687,
+      "tag": "0053_email_lists",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792478767687,
+      "tag": "0054_social_email_lists",
       "breakpoints": true
     }
   ]

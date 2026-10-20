@@ -47,6 +47,7 @@ import { persistDueDrafts } from "../lib/effective-draft-state";
 import { loadConnection } from "../lib/publishing/connections";
 import { postingPlanWrite, resolvePostingPlan } from "../lib/posting-plan";
 import { tenantIsCentral } from "../lib/tenant";
+import { readCardContentSettings } from "@workspace/scorecard/card-content";
 import {
   listCardNames,
   loadCardNames,
@@ -107,6 +108,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       postingPlanSaved: settings.postingPlan != null,
       centralData: central,
       postingSchedule: resolvePostingSchedule(settings.postingSchedule),
+      cardContent: readCardContentSettings(settings.cardContent),
     },
     captionTemplates: captionTemplates.map((t) => ({
       engine: t.engine,
@@ -184,6 +186,16 @@ router.patch(
       return;
     }
     if (typeof email === "string") parsed.data.notificationEmail = email.trim() || null;
+    // The livestream link prints on cards: an https address, or nothing.
+    const livestream = parsed.data.livestreamUrl;
+    if (typeof livestream === "string") {
+      const url = livestream.trim();
+      if (url && !/^https:\/\/[^\s/$.?#][^\s]*$/i.test(url)) {
+        res.status(400).json({ error: "The livestream link must start with https://." });
+        return;
+      }
+      parsed.data.livestreamUrl = url || null;
+    }
     // Per-pack colour modes merge into the stored map, so toggling one pack's
     // tile never clobbers another's (two admins, two tiles, no lost write).
     let packColourModes: Record<string, "club" | "pack"> | undefined;
@@ -284,6 +296,7 @@ router.patch(
       roundSchedules: _schedules,
       postingPlan: _plan,
       postingSchedule: _posting,
+      cardContent: _content,
       ...patch
     } = parsed.data;
     const [row] = await db
@@ -295,6 +308,10 @@ router.patch(
         ...(roundSchedules ? { roundSchedules } : {}),
         ...planColumns,
         ...(postingSchedule ? { postingSchedule } : {}),
+        // Stored whole and cleaned: unknown kinds, presets and field keys are dropped.
+        ...(parsed.data.cardContent
+          ? { cardContent: readCardContentSettings(parsed.data.cardContent) }
+          : {}),
         updatedAt: new Date(),
       })
       .where(eq(socialSettingsTable.tenantId, tenantId))
@@ -316,6 +333,7 @@ router.patch(
       postingPlanSaved: row.postingPlan != null,
       centralData: central,
       postingSchedule: resolvedPosting,
+      cardContent: readCardContentSettings(row.cardContent),
       ...(postingSwitchover ? { postingSwitchover } : {}),
     });
   },

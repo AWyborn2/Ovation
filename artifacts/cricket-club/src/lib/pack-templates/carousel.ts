@@ -105,7 +105,10 @@ export function skeletonWeekendTemplate(
                 "{{roundLabel}}",
                 11,
                 `;max-width:100%;overflow-wrap:anywhere;flex-shrink:0;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`,
-              ).replace("<div ", '<div data-carousel-cover-label="1" data-fit="10" ') +
+              ).replace(
+                "<div ",
+                '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="10" ',
+              ) +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )

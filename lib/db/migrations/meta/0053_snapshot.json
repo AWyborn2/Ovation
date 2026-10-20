@@ -1,6 +1,6 @@
 {
-  "id": "019e3486-7a84-4556-b9fb-ced765c69940",
-  "prevId": "dcc09831-695d-47da-ba30-13bcb163c48e",
+  "id": "89efd7cc-e9d8-4235-a00e-67eccf913d31",
+  "prevId": "50f239a2-eaf4-4def-9b57-64de42d3b8d7",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5224,6 +5224,19 @@
         "posting_schedule": {
           "name": "posting_schedule",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "card_content": {
+          "name": "card_content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"matchDay\":{\"preset\":\"standard\",\"fields\":{},\"juniorConsolidateByDay\":true}}'::jsonb"
+        },
+        "livestream_url": {
+          "name": "livestream_url",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
