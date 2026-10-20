@@ -13,7 +13,6 @@
 
 ## Previous handoff
 
-
 **From:** Principal Architect
 **To:** Staff Engineer / Engineering Manager
 **Feature:** selection-side-size
@@ -29,7 +28,6 @@
 
 ## Previous handoff
 
-
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** selection-side-size
@@ -44,7 +42,6 @@
 - Sequence after selection-hub-decoupling PR1–PR3, which touch the same files.
 
 ## Previous handoff
-
 
 **From:** Principal Architect
 **To:** Staff Engineer / SDE

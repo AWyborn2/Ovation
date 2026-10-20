@@ -34,11 +34,11 @@ it applies to any tenant with such a grade.
 
 ## Approaches considered
 
-| Scope                    | Includes                                                                                                            | Cut                                    | Risk                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------- |
-| MVP                      | Per-grade size 12–14; hub slots 1–N; team sheet lists all N; no 12th label above 12                                 | Social card layout; availability text  | Low, but the card would cut off players |
-| **Recommended (chosen)** | MVP + Team List card fits up to 14 rows + availability "selected" text without "12th" + PlayHQ team-list import keeps all N | Interchange tracking on the scorecard | Medium: card layouts across packs       |
-| Full                     | + track who was interchanged per match, interchange stats                                                           | —                                      | High; the central data model has no interchange concept, so this is V2 |
+| Scope                    | Includes                                                                                                                    | Cut                                   | Risk                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------- |
+| MVP                      | Per-grade size 12–14; hub slots 1–N; team sheet lists all N; no 12th label above 12                                         | Social card layout; availability text | Low, but the card would cut off players                                |
+| **Recommended (chosen)** | MVP + Team List card fits up to 14 rows + availability "selected" text without "12th" + PlayHQ team-list import keeps all N | Interchange tracking on the scorecard | Medium: card layouts across packs                                      |
+| Full                     | + track who was interchanged per match, interchange stats                                                                   | —                                     | High; the central data model has no interchange concept, so this is V2 |
 
 "Don't build" was considered and rejected: the club can't produce a correct team sheet today.
 
