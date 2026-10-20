@@ -254,6 +254,14 @@ export function bindInput(
           set(values, `weekendSponsorName${i}`, s.name);
           if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
         });
+        // The sponsors page's optional blocks (P6); always bound, so an absent
+        // one is empty and its box drops (never a template sample).
+        const page = input.carouselPage;
+        values["sponsorThanks"] = page.thankYou ?? "";
+        values["sponsorCta"] = page.cta ?? "";
+        values["nextHomeMatch"] = page.nextHome?.match ?? "";
+        values["nextHomeWhen"] = page.nextHome?.when ?? "";
+        values["sponsorSocials"] = page.socials ?? "";
       }
       if (input.carouselDay) {
         // A junior day slide (ADR-010 P3): content-built, so names are final.

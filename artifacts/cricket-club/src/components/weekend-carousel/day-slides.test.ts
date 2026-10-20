@@ -75,6 +75,7 @@ function build(fixtures: Fixture[], grouping?: SlideGrouping, content = md(fixtu
     "Australia/Perth",
     undefined,
     undefined,
+    null,
     grouping,
   );
 }

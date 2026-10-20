@@ -29,7 +29,30 @@ export interface MatchDayTitleContent {
   fixtureCount: number;
 }
 
-/** Match Day sponsors slide: the club's sponsors without a team of their own. */
+/** A sponsor as the sponsors page prints it. */
+export interface ContentSponsor {
+  name: string;
+  logoUrl: string;
+  /** Larger on the page when `sponsors.tiers` is on. Absent (saved before P6) = standard. */
+  tier?: "major" | "standard";
+  /** Assigned to a team: shown only when `sponsors.teamSponsors` is on. Absent = false. */
+  teamSponsor?: boolean;
+}
+
+/** The club's next home game, as the sponsors page prints it. */
+export interface ContentNextHomeGame {
+  /** "A GRADE v ROCKINGHAM": the grade and short opposition name. */
+  match: string;
+  /** "SAT 17 OCT · 12:30 PM · LAKELANDS OVAL"; the ground is left out when unknown. */
+  when: string;
+}
+
+/**
+ * Match Day sponsors slide: the club's sponsors, and (P6) the page's optional
+ * blocks. Each optional value is held whatever the toggles say; the template
+ * input shows only the visible ones, so a per-carousel override needs no rebuild.
+ * Fields added in P6 are optional: carousels saved before it read unchanged.
+ */
 export interface MatchDaySponsorsContent {
   kind: "matchDay";
   page: "sponsors";
@@ -37,7 +60,15 @@ export interface MatchDaySponsorsContent {
   dateRange: string;
   roundLabel: string;
   fixtureCount: number;
-  sponsors: Array<{ name: string; logoUrl: string }>;
+  /** Club sponsors in sponsor order, then team sponsors. */
+  sponsors: ContentSponsor[];
+  /** "THANK YOU TO OUR SPONSORS". */
+  thankYou?: string;
+  /** "SUPPORT THE BUSINESSES THAT SUPPORT US", or the club's website. */
+  cta?: string;
+  nextHomeGame?: ContentNextHomeGame | null;
+  /** "@ourclub", "Our Cricket Club", "ourclub.com.au", in print order. */
+  socials?: string[];
 }
 
 /** The values a fixture came from, unshortened (the sweep's draft input keeps them). */

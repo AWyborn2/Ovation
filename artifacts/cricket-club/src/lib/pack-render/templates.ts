@@ -13,6 +13,7 @@ import type {
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { PackImageSlot } from "./types";
 import { weekendBookendTemplate } from "../pack-templates/club-kit/weekend-bookends";
+import { sponsorsPageLayout } from "../pack-templates/sponsors-page";
 import {
   CAROUSEL_CLUB_KIT,
   carouselContentTemplate,
@@ -161,9 +162,11 @@ function resolveTemplateBase(
     }
     if (input.kind === "matchDay" && input.carouselPage) {
       const c = input.carouselPage;
+      // The sponsors page's optional blocks (P6); the title page ignores them.
+      const { count, ...page } = sponsorsPageLayout(c);
       return look
-        ? skeletonWeekendTemplate(look, c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto)
-        : weekendBookendTemplate(c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto);
+        ? skeletonWeekendTemplate(look, c.page, count, c.title.length, c.hasCoverPhoto, page)
+        : weekendBookendTemplate(c.page, count, c.title.length, c.hasCoverPhoto, page);
     }
     if (input.kind === "matchSummary") {
       return look
