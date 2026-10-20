@@ -1,5 +1,5 @@
 {
-  "id": "ebc8cec0-fbb0-4d98-bc45-46348ba0706a",
+  "id": "d2079367-ddf8-4536-bfda-fa41b22966bb",
   "prevId": "89efd7cc-e9d8-4235-a00e-67eccf913d31",
   "version": "7",
   "dialect": "postgresql",
@@ -5240,12 +5240,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "sponsors_background_photo_id": {
-          "name": "sponsors_background_photo_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -5283,19 +5277,6 @@
             "id"
           ],
           "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "social_settings_sponsors_background_photo_id_club_photos_id_fk": {
-          "name": "social_settings_sponsors_background_photo_id_club_photos_id_fk",
-          "tableFrom": "social_settings",
-          "tableTo": "club_photos",
-          "columnsFrom": [
-            "sponsors_background_photo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -5381,13 +5362,6 @@
           "notNull": true,
           "default": 0
         },
-        "tier": {
-          "name": "tier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'standard'"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -5432,12 +5406,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "sponsors_tier_check": {
-          "name": "sponsors_tier_check",
-          "value": "\"tier\" IN ('major', 'standard')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.tracked_links": {
@@ -15220,6 +15189,129 @@
           "value": "\"email_sends\".\"status\" IN ('queued', 'sending', 'sent', 'failed', 'skipped')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.photo_usage": {
+      "name": "photo_usage",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "photo_id": {
+          "name": "photo_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "photo_usage_tenant_photo_used_idx": {
+          "name": "photo_usage_tenant_photo_used_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "photo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "used_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "photo_usage_tenant_id_tenants_id_fk": {
+          "name": "photo_usage_tenant_id_tenants_id_fk",
+          "tableFrom": "photo_usage",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "photo_usage_photo_id_club_photos_id_fk": {
+          "name": "photo_usage_photo_id_club_photos_id_fk",
+          "tableFrom": "photo_usage",
+          "tableTo": "club_photos",
+          "columnsFrom": [
+            "photo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "photo_usage_draft_id_social_drafts_id_fk": {
+          "name": "photo_usage_draft_id_social_drafts_id_fk",
+          "tableFrom": "photo_usage",
+          "tableTo": "social_drafts",
+          "columnsFrom": [
+            "draft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "photo_usage_tenant_photo_draft_unique": {
+          "name": "photo_usage_tenant_photo_draft_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "tenant_id",
+            "photo_id",
+            "draft_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

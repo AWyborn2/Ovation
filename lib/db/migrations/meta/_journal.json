@@ -383,8 +383,15 @@
     {
       "idx": 54,
       "version": "7",
-      "when": 1792481776910,
-      "tag": "0054_sponsors_page",
+      "when": 1792482920757,
+      "tag": "0054_photo_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792483889790,
+      "tag": "0055_sponsors_page",
       "breakpoints": true
     }
   ]

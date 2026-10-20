@@ -8769,6 +8769,24 @@ export interface Fixture {
   createdAt: string;
 }
 
+/**
+ * By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.
+ */
+export type WeekendCarouselPhotoPicksFixtures = {[key: string]: number | null};
+
+/**
+ * Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide's pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel's content override.
+ */
+export interface WeekendCarouselPhotoPicks {
+  /**
+     * A coverPhotos (or juniorStockPhotos) id.
+     * @nullable
+     */
+  cover: number | null;
+  /** By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id. */
+  fixtures: WeekendCarouselPhotoPicksFixtures;
+}
+
 export interface WeekendCarouselSources {
   juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
@@ -8781,6 +8799,7 @@ export interface WeekendCarouselSources {
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
   coverPhotos: ClubPhoto[];
+  photoPicks?: WeekendCarouselPhotoPicks;
   warnings: string[];
 }
 

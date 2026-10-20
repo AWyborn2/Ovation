@@ -887,6 +887,8 @@ export * from './votableRound';
 export * from './votableRoundPlayer';
 export * from './vsClubBatter';
 export * from './vsClubBowler';
+export * from './weekendCarouselPhotoPicks';
+export * from './weekendCarouselPhotoPicksFixtures';
 export * from './weekendCarouselSources';
 export * from './weekendCarouselSourcesContent';
 export * from './weekendCarouselSourcesMatchDayContent';

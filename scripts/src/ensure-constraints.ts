@@ -132,6 +132,13 @@ const CONSTRAINTS: ConstraintSpec[] = [
     name: "club_history_curated_rows_target_row_unique",
     columns: ["target", "row_id"],
   },
+  // Photo usage (migration 0054, ADR-010 P4): posting a draft twice records
+  // each of its photos once.
+  {
+    table: "photo_usage",
+    name: "photo_usage_tenant_photo_draft_unique",
+    columns: ["tenant_id", "photo_id", "draft_id"],
+  },
 ];
 
 /** CHECK constraints for the comment-only value sets (plan.md §5.4). */
@@ -284,7 +291,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "junior_match_display_settings_name_style_check",
     sql: `"name_style" IN ('full', 'first_initial', 'first')`,
   },
-  // Sponsors page (migration 0054, ADR-010 P6): a sponsor's tier.
+  // Sponsors page (migration 0055, ADR-010 P6): a sponsor's tier.
   {
     table: "sponsors",
     name: "sponsors_tier_check",
@@ -480,6 +487,11 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
   { name: "junior_match_rosters_match_idx", table: "junior_match_rosters", columns: ["match_id"] },
   { name: "player_images_player_idx", table: "player_images", columns: ["player_id"] },
   { name: "shirt_numbers_player_idx", table: "shirt_numbers", columns: ["player_id"] },
+  {
+    name: "photo_usage_tenant_photo_used_idx",
+    table: "photo_usage",
+    columns: ["tenant_id", "photo_id", "used_at"],
+  },
   ...[
     "admin_password_resets",
     "admins",
