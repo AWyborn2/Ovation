@@ -23,4 +23,8 @@ export interface TeamListPlayer {
   role?: TeamListPlayerRole;
   /** Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds). */
   debut?: boolean;
+  /** An overseas player, snapshotted when the side was finalised so a later change never rewrites a published side. Absent reads as false. */
+  overseas?: boolean;
+  /** The 12th player of a side of 12. Never set above 12, where every player is numbered 1–N. Absent reads as false. */
+  twelfth?: boolean;
 }

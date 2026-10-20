@@ -2980,6 +2980,7 @@ export const ListSquadMembersResponseItem = zod.object({
   "smsOptedOut": zod.boolean()
 }).describe('Which contact details a recipient slot has — never the values.'),
   "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "overseas": zod.boolean().optional().describe('An overseas player in the current season. Absent reads as false.'),
   "updatedAt": zod.string()
 })
 export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
@@ -3024,6 +3025,7 @@ export const ListSelectionRosterResponseItem = zod.object({
   "smsOptedOut": zod.boolean()
 }).describe('Which contact details a recipient slot has — never the values.'),
   "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "overseas": zod.boolean().optional().describe('An overseas player in the current season. Absent reads as false.'),
   "updatedAt": zod.string()
 })
 export const ListSelectionRosterResponse = zod.array(ListSelectionRosterResponseItem)
@@ -3072,6 +3074,7 @@ export const ActivateSquadMemberResponse = zod.object({
   "smsOptedOut": zod.boolean()
 }).describe('Which contact details a recipient slot has — never the values.'),
   "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "overseas": zod.boolean().optional().describe('An overseas player in the current season. Absent reads as false.'),
   "updatedAt": zod.string()
 })
 
@@ -3301,6 +3304,35 @@ export const RemoveSquadMemberParams = zod.object({
 
 
 /**
+ * Marks the member as an overseas player, or not, for one season. Each
+season stands alone: nothing carries over. Sides already finalised
+keep the flag they were published with. Not built yet: returns 501.
+
+ * @summary Set a squad member's facts for one season (admin)
+ */
+export const setSquadMemberSeasonPathSeasonMin = 2000;
+export const setSquadMemberSeasonPathSeasonMax = 2100;
+
+
+
+export const SetSquadMemberSeasonParams = zod.object({
+  "id": zod.coerce.number(),
+  "season": zod.coerce.number().min(setSquadMemberSeasonPathSeasonMin).max(setSquadMemberSeasonPathSeasonMax)
+})
+
+export const SetSquadMemberSeasonBody = zod.object({
+  "overseas": zod.boolean()
+})
+
+export const SetSquadMemberSeasonResponse = zod.object({
+  "memberId": zod.number(),
+  "season": zod.number().describe('Season start year (2026 = 2026\/27)'),
+  "overseas": zod.boolean(),
+  "setAt": zod.coerce.date().nullable()
+}).describe('A squad member\'s facts for one season. Nothing carries over between\nseasons, so each season starts unticked.\n')
+
+
+/**
  * Send, reminder, cut-off and finalise-by days and times in Perth, the
 club's switch (off by default — nothing is sent until it is on), the SMS
 switch and the selection rule. A club that has never saved settings gets
@@ -3324,6 +3356,12 @@ export const getAvailabilitySettingsResponseOneFinaliseDowMin = 0;
 export const getAvailabilitySettingsResponseOneFinaliseDowMax = 6;
 
 export const getAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneSideSizesMinOne = 12;
+export const getAvailabilitySettingsResponseOneSideSizesMaxOne = 14;
+
+export const getAvailabilitySettingsResponseOneOverseasCapsMinOne = 0;
+export const getAvailabilitySettingsResponseOneOverseasCapsMaxOne = 14;
+
 
 
 export const GetAvailabilitySettingsResponse = zod.object({
@@ -3337,7 +3375,9 @@ export const GetAvailabilitySettingsResponse = zod.object({
   "cutoffTime": zod.string().regex(getAvailabilitySettingsResponseOneCutoffTimeRegExp),
   "finaliseDow": zod.number().min(getAvailabilitySettingsResponseOneFinaliseDowMin).max(getAvailabilitySettingsResponseOneFinaliseDowMax),
   "finaliseTime": zod.string().regex(getAvailabilitySettingsResponseOneFinaliseTimeRegExp),
-  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "sideSizes": zod.record(zod.string(), zod.number().min(getAvailabilitySettingsResponseOneSideSizesMinOne).max(getAvailabilitySettingsResponseOneSideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "overseasCaps": zod.record(zod.string(), zod.number().min(getAvailabilitySettingsResponseOneOverseasCapsMinOne).max(getAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
   "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
@@ -3368,6 +3408,12 @@ export const updateAvailabilitySettingsBodyFinaliseDowMin = 0;
 export const updateAvailabilitySettingsBodyFinaliseDowMax = 6;
 
 export const updateAvailabilitySettingsBodyFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodySideSizesMinOne = 12;
+export const updateAvailabilitySettingsBodySideSizesMaxOne = 14;
+
+export const updateAvailabilitySettingsBodyOverseasCapsMinOne = 0;
+export const updateAvailabilitySettingsBodyOverseasCapsMaxOne = 14;
+
 
 
 export const UpdateAvailabilitySettingsBody = zod.object({
@@ -3381,7 +3427,9 @@ export const UpdateAvailabilitySettingsBody = zod.object({
   "cutoffTime": zod.string().regex(updateAvailabilitySettingsBodyCutoffTimeRegExp),
   "finaliseDow": zod.number().min(updateAvailabilitySettingsBodyFinaliseDowMin).max(updateAvailabilitySettingsBodyFinaliseDowMax),
   "finaliseTime": zod.string().regex(updateAvailabilitySettingsBodyFinaliseTimeRegExp),
-  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "sideSizes": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsBodySideSizesMinOne).max(updateAvailabilitySettingsBodySideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "overseasCaps": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsBodyOverseasCapsMinOne).max(updateAvailabilitySettingsBodyOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n')
 
 export const updateAvailabilitySettingsResponseOneSendDowMin = 0;
@@ -3400,6 +3448,12 @@ export const updateAvailabilitySettingsResponseOneFinaliseDowMin = 0;
 export const updateAvailabilitySettingsResponseOneFinaliseDowMax = 6;
 
 export const updateAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneSideSizesMinOne = 12;
+export const updateAvailabilitySettingsResponseOneSideSizesMaxOne = 14;
+
+export const updateAvailabilitySettingsResponseOneOverseasCapsMinOne = 0;
+export const updateAvailabilitySettingsResponseOneOverseasCapsMaxOne = 14;
+
 
 
 export const UpdateAvailabilitySettingsResponse = zod.object({
@@ -3413,7 +3467,9 @@ export const UpdateAvailabilitySettingsResponse = zod.object({
   "cutoffTime": zod.string().regex(updateAvailabilitySettingsResponseOneCutoffTimeRegExp),
   "finaliseDow": zod.number().min(updateAvailabilitySettingsResponseOneFinaliseDowMin).max(updateAvailabilitySettingsResponseOneFinaliseDowMax),
   "finaliseTime": zod.string().regex(updateAvailabilitySettingsResponseOneFinaliseTimeRegExp),
-  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "sideSizes": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsResponseOneSideSizesMinOne).max(updateAvailabilitySettingsResponseOneSideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "overseasCaps": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsResponseOneOverseasCapsMinOne).max(updateAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
   "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
@@ -3494,7 +3550,15 @@ export const GetSelectionBoardQueryParams = zod.object({
 
 
 export const getSelectionBoardResponseSelectionsItemSlotsMin = 12;
-export const getSelectionBoardResponseSelectionsItemSlotsMax = 12;
+export const getSelectionBoardResponseSelectionsItemSlotsMax = 14;
+
+export const getSelectionBoardResponseSelectionsItemSideSizeMin = 12;
+export const getSelectionBoardResponseSelectionsItemSideSizeMax = 14;
+
+export const getSelectionBoardResponseSelectionsItemOverseasCountMin = 0;
+
+export const getSelectionBoardResponseSelectionsItemOverseasCapMin = 0;
+export const getSelectionBoardResponseSelectionsItemOverseasCapMax = 14;
 
 
 
@@ -3564,8 +3628,15 @@ export const GetSelectionBoardResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(getSelectionBoardResponseSelectionsItemSlotsMin).max(getSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(getSelectionBoardResponseSelectionsItemSlotsMin).max(getSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(getSelectionBoardResponseSelectionsItemSideSizeMin).max(getSelectionBoardResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(getSelectionBoardResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(getSelectionBoardResponseSelectionsItemOverseasCapMin).max(getSelectionBoardResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3641,7 +3712,7 @@ of the first changed side's section.
  */
 
 export const saveSelectionBoardBodyChangesItemSlotsMin = 11;
-export const saveSelectionBoardBodyChangesItemSlotsMax = 12;
+export const saveSelectionBoardBodyChangesItemSlotsMax = 14;
 
 
 
@@ -3657,7 +3728,7 @@ export const SaveSelectionBoardBody = zod.object({
   "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere']),
   "participantId": zod.string().nullish().describe('The PlayHQ participant ID of the list row behind the gap, when the list carried one')
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]).optional()
-})).min(saveSelectionBoardBodyChangesItemSlotsMin).max(saveSelectionBoardBodyChangesItemSlotsMax).describe('The side\'s 12 slots in order: 1–11 are the XI, slot 12 the 12th\nplayer. 11 slots (an older client) are read as an empty 12th.\n'),
+})).min(saveSelectionBoardBodyChangesItemSlotsMin).max(saveSelectionBoardBodyChangesItemSlotsMax).describe('The side\'s slots in order: 1–11 are the XI, then 12 up to the\nside\'s size. Fewer slots (an older client) read as open slots.\n'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable()
 })).min(1)
@@ -3665,7 +3736,15 @@ export const SaveSelectionBoardBody = zod.object({
 
 
 export const saveSelectionBoardResponseSelectionsItemSlotsMin = 12;
-export const saveSelectionBoardResponseSelectionsItemSlotsMax = 12;
+export const saveSelectionBoardResponseSelectionsItemSlotsMax = 14;
+
+export const saveSelectionBoardResponseSelectionsItemSideSizeMin = 12;
+export const saveSelectionBoardResponseSelectionsItemSideSizeMax = 14;
+
+export const saveSelectionBoardResponseSelectionsItemOverseasCountMin = 0;
+
+export const saveSelectionBoardResponseSelectionsItemOverseasCapMin = 0;
+export const saveSelectionBoardResponseSelectionsItemOverseasCapMax = 14;
 
 
 
@@ -3735,8 +3814,15 @@ export const SaveSelectionBoardResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(saveSelectionBoardResponseSelectionsItemSlotsMin).max(saveSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(saveSelectionBoardResponseSelectionsItemSlotsMin).max(saveSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(saveSelectionBoardResponseSelectionsItemSideSizeMin).max(saveSelectionBoardResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(saveSelectionBoardResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(saveSelectionBoardResponseSelectionsItemOverseasCapMin).max(saveSelectionBoardResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3819,7 +3905,15 @@ export const FinaliseSelectionBody = zod.object({
 
 
 export const finaliseSelectionResponseSelectionSlotsMin = 12;
-export const finaliseSelectionResponseSelectionSlotsMax = 12;
+export const finaliseSelectionResponseSelectionSlotsMax = 14;
+
+export const finaliseSelectionResponseSelectionSideSizeMin = 12;
+export const finaliseSelectionResponseSelectionSideSizeMax = 14;
+
+export const finaliseSelectionResponseSelectionOverseasCountMin = 0;
+
+export const finaliseSelectionResponseSelectionOverseasCapMin = 0;
+export const finaliseSelectionResponseSelectionOverseasCapMax = 14;
 
 
 
@@ -3861,8 +3955,15 @@ export const FinaliseSelectionResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(finaliseSelectionResponseSelectionSlotsMin).max(finaliseSelectionResponseSelectionSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(finaliseSelectionResponseSelectionSlotsMin).max(finaliseSelectionResponseSelectionSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(finaliseSelectionResponseSelectionSideSizeMin).max(finaliseSelectionResponseSelectionSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(finaliseSelectionResponseSelectionOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(finaliseSelectionResponseSelectionOverseasCapMin).max(finaliseSelectionResponseSelectionOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3959,7 +4060,15 @@ export const SyncSelectionFromPlayhqBody = zod.object({
 
 
 export const syncSelectionFromPlayhqResponseSlotsMin = 12;
-export const syncSelectionFromPlayhqResponseSlotsMax = 12;
+export const syncSelectionFromPlayhqResponseSlotsMax = 14;
+
+export const syncSelectionFromPlayhqResponseSideSizeMin = 12;
+export const syncSelectionFromPlayhqResponseSideSizeMax = 14;
+
+export const syncSelectionFromPlayhqResponseOverseasCountMin = 0;
+
+export const syncSelectionFromPlayhqResponseOverseasCapMin = 0;
+export const syncSelectionFromPlayhqResponseOverseasCapMax = 14;
 
 
 
@@ -4000,8 +4109,15 @@ export const SyncSelectionFromPlayhqResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(syncSelectionFromPlayhqResponseSlotsMin).max(syncSelectionFromPlayhqResponseSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(syncSelectionFromPlayhqResponseSlotsMin).max(syncSelectionFromPlayhqResponseSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(syncSelectionFromPlayhqResponseSideSizeMin).max(syncSelectionFromPlayhqResponseSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(syncSelectionFromPlayhqResponseOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(syncSelectionFromPlayhqResponseOverseasCapMin).max(syncSelectionFromPlayhqResponseOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -4035,7 +4151,15 @@ export const ReopenSelectionParams = zod.object({
 
 
 export const reopenSelectionResponseSlotsMin = 12;
-export const reopenSelectionResponseSlotsMax = 12;
+export const reopenSelectionResponseSlotsMax = 14;
+
+export const reopenSelectionResponseSideSizeMin = 12;
+export const reopenSelectionResponseSideSizeMax = 14;
+
+export const reopenSelectionResponseOverseasCountMin = 0;
+
+export const reopenSelectionResponseOverseasCapMin = 0;
+export const reopenSelectionResponseOverseasCapMax = 14;
 
 
 
@@ -4076,8 +4200,15 @@ export const ReopenSelectionResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(reopenSelectionResponseSlotsMin).max(reopenSelectionResponseSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(reopenSelectionResponseSlotsMin).max(reopenSelectionResponseSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(reopenSelectionResponseSideSizeMin).max(reopenSelectionResponseSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(reopenSelectionResponseOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(reopenSelectionResponseOverseasCapMin).max(reopenSelectionResponseOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -4111,19 +4242,27 @@ export const MatchSelectionSlotParams = zod.object({
   "id": zod.coerce.number()
 })
 
-export const matchSelectionSlotBodySlotMax = 12;
+export const matchSelectionSlotBodySlotMax = 14;
 
 
 
 export const MatchSelectionSlotBody = zod.object({
-  "slot": zod.number().min(1).max(matchSelectionSlotBodySlotMax),
+  "slot": zod.number().min(1).max(matchSelectionSlotBodySlotMax).describe('1-based; at most the side\'s size'),
   "memberId": zod.number(),
   "version": zod.number().describe('The side\'s version the caller last saw')
 })
 
 
 export const matchSelectionSlotResponseSelectionsItemSlotsMin = 12;
-export const matchSelectionSlotResponseSelectionsItemSlotsMax = 12;
+export const matchSelectionSlotResponseSelectionsItemSlotsMax = 14;
+
+export const matchSelectionSlotResponseSelectionsItemSideSizeMin = 12;
+export const matchSelectionSlotResponseSelectionsItemSideSizeMax = 14;
+
+export const matchSelectionSlotResponseSelectionsItemOverseasCountMin = 0;
+
+export const matchSelectionSlotResponseSelectionsItemOverseasCapMin = 0;
+export const matchSelectionSlotResponseSelectionsItemOverseasCapMax = 14;
 
 
 
@@ -4193,8 +4332,15 @@ export const MatchSelectionSlotResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(matchSelectionSlotResponseSelectionsItemSlotsMin).max(matchSelectionSlotResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(matchSelectionSlotResponseSelectionsItemSlotsMin).max(matchSelectionSlotResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(matchSelectionSlotResponseSelectionsItemSideSizeMin).max(matchSelectionSlotResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(matchSelectionSlotResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(matchSelectionSlotResponseSelectionsItemOverseasCapMin).max(matchSelectionSlotResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -4294,7 +4440,15 @@ export const SetSelectionMemberStatusBody = zod.object({
 
 
 export const setSelectionMemberStatusResponseSelectionsItemSlotsMin = 12;
-export const setSelectionMemberStatusResponseSelectionsItemSlotsMax = 12;
+export const setSelectionMemberStatusResponseSelectionsItemSlotsMax = 14;
+
+export const setSelectionMemberStatusResponseSelectionsItemSideSizeMin = 12;
+export const setSelectionMemberStatusResponseSelectionsItemSideSizeMax = 14;
+
+export const setSelectionMemberStatusResponseSelectionsItemOverseasCountMin = 0;
+
+export const setSelectionMemberStatusResponseSelectionsItemOverseasCapMin = 0;
+export const setSelectionMemberStatusResponseSelectionsItemOverseasCapMax = 14;
 
 
 
@@ -4364,8 +4518,15 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "late": zod.boolean().describe('Answered after the cut-off'),
   "statusSource": zod.union([zod.enum(['member', 'admin']).describe('member = from the member\'s own link; admin = recorded in the Hub by an admin or captain'),zod.null()]).optional().describe('Who recorded the answer; null with no answer'),
   "statusSetBy": zod.string().nullish().describe('The admin or captain who recorded an answer given in person (statusSource admin)')
-}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})).min(setSelectionMemberStatusResponseSelectionsItemSlotsMin).max(setSelectionMemberStatusResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()]),
+  "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
+})).min(setSelectionMemberStatusResponseSelectionsItemSlotsMin).max(setSelectionMemberStatusResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
+  "sideSize": zod.number().min(setSelectionMemberStatusResponseSelectionsItemSideSizeMin).max(setSelectionMemberStatusResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "overseas": zod.object({
+  "count": zod.number().min(setSelectionMemberStatusResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
+  "cap": zod.number().min(setSelectionMemberStatusResponseSelectionsItemOverseasCapMin).max(setSelectionMemberStatusResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
+  "over": zod.boolean().describe('The side has more overseas players than the cap (a warning; never blocks)')
+}).optional().describe('Overseas players in a side against the grade\'s cap'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -8766,7 +8927,9 @@ export const GetFixtureTeamListResponse = zod.union([zod.object({
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
-  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).'),
+  "overseas": zod.boolean().optional().describe('An overseas player, snapshotted when the side was finalised so a later change never rewrites a published side. Absent reads as false.'),
+  "twelfth": zod.boolean().optional().describe('The 12th player of a side of 12. Never set above 12, where every player is numbered 1–N. Absent reads as false.')
 })),
   "isPublished": zod.boolean(),
   "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),
@@ -8793,7 +8956,9 @@ export const PutFixtureTeamListBody = zod.object({
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
-  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).'),
+  "overseas": zod.boolean().optional().describe('An overseas player, snapshotted when the side was finalised so a later change never rewrites a published side. Absent reads as false.'),
+  "twelfth": zod.boolean().optional().describe('The 12th player of a side of 12. Never set above 12, where every player is numbered 1–N. Absent reads as false.')
 })),
   "isPublished": zod.boolean().optional()
 })
@@ -8811,7 +8976,9 @@ export const PutFixtureTeamListResponse = zod.object({
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
-  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).'),
+  "overseas": zod.boolean().optional().describe('An overseas player, snapshotted when the side was finalised so a later change never rewrites a published side. Absent reads as false.'),
+  "twelfth": zod.boolean().optional().describe('The 12th player of a side of 12. Never set above 12, where every player is numbered 1–N. Absent reads as false.')
 })),
   "isPublished": zod.boolean(),
   "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),

@@ -73,7 +73,7 @@ Photo sources (for the queue's "why this photo" text): `auto:tag-player`,
   with 400 `rule_mode_retired`. OpenAPI documents this; run codegen.
 - Admin → Card photo rules UI: for those kinds, offer only "Automatic" (no rule) or "Fixed
   photo".
-- Migration `0049_retire_tag_kind_photo_rules.sql`, idempotent:
+- Migration `NNNN_retire_tag_kind_photo_rules.sql` (next free number; 0049 is taken by selection-side-size), idempotent:
   `DELETE FROM card_photo_rules WHERE card_kind IN ('teamList','matchSummary','matchDay') AND mode IN ('random','player');`
   Ash runs it in prod before republishing. The picker ignores such rows anyway, so the order
   is safe either way.
@@ -142,7 +142,7 @@ manual.
 ## Delivery units
 
 - **U1** picker policy, candidate lists, `rankedPerformerPlayerIds`, Team List rotation, tests (api-server only).
-- **U2** rule retirement: route validation, OpenAPI + codegen, admin rules UI, migration 0049.
+- **U2** rule retirement: route validation, OpenAPI + codegen, admin rules UI, retire-rules migration (next free number).
 - **U3** filtered picker: OpenAPI params + codegen, DTO field, share-modal filters, empty state.
 
 U1 first. U2 and U3 both touch `openapi.yaml`, so run them in sequence or coordinate in one PR.

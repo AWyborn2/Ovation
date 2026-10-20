@@ -3029,7 +3029,27 @@ export interface SquadMember {
   guardian2: SquadContactPresence;
   /** A player or guardian changed a contact from their link; stays up until an admin clears it. */
   contactChangeFlag: boolean;
+  /** An overseas player in the current season. Absent reads as false. */
+  overseas?: boolean;
   updatedAt: string;
+}
+
+export interface SquadMemberSeasonUpdate {
+  overseas: boolean;
+}
+
+/**
+ * A squad member's facts for one season. Nothing carries over between
+seasons, so each season starts unticked.
+
+ */
+export interface SquadMemberSeason {
+  memberId: number;
+  /** Season start year (2026 = 2026/27) */
+  season: number;
+  overseas: boolean;
+  /** @nullable */
+  setAt: string | null;
 }
 
 export interface SquadContact {
@@ -3230,6 +3250,22 @@ export const AvailabilitySelectionRule = {
 } as const;
 
 /**
+ * Players per side by app grade ("A Grade" → 14), 12–14. A grade with
+no key picks 12: the XI plus an optional 12th. Omit to keep the
+stored map.
+
+ */
+export type AvailabilitySettingsInputSideSizes = {[key: string]: number};
+
+/**
+ * Most overseas players per side by app grade, 0–14. A grade with no
+key has no cap. Over the cap the Hub warns and never blocks. Omit
+to keep the stored map.
+
+ */
+export type AvailabilitySettingsInputOverseasCaps = {[key: string]: number};
+
+/**
  * The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
 times are 24-hour "HH:MM". Finalise-by is shown to captains only.
 
@@ -3268,6 +3304,16 @@ export interface AvailabilitySettingsInput {
   /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
   finaliseTime: string;
   selectionRule: AvailabilitySelectionRule;
+  /** Players per side by app grade ("A Grade" → 14), 12–14. A grade with
+  no key picks 12: the XI plus an optional 12th. Omit to keep the
+  stored map.
+   */
+  sideSizes?: AvailabilitySettingsInputSideSizes;
+  /** Most overseas players per side by app grade, 0–14. A grade with no
+  key has no cap. Over the cap the Hub warns and never blocks. Omit
+  to keep the stored map.
+   */
+  overseasCaps?: AvailabilitySettingsInputOverseasCaps;
 }
 
 export type AvailabilitySmsProvider = typeof AvailabilitySmsProvider[keyof typeof AvailabilitySmsProvider];
@@ -3446,6 +3492,31 @@ export interface SelectionSlot {
   memberId: number | null;
   gap: SelectionGap | null;
   member: SelectionMember | null;
+  /** The slot's member is an overseas player this season. Live for a
+  draft; from the published snapshot once finalised. Absent reads as
+  false.
+   */
+  overseas?: boolean;
+}
+
+/**
+ * Overseas players in a side against the grade's cap
+ */
+export interface SelectionOverseas {
+  /**
+     * Overseas players in the side
+     * @minimum 0
+     */
+  count: number;
+  /**
+     * The grade's cap; null when the grade has none
+     * @minimum 0
+     * @maximum 14
+     * @nullable
+     */
+  cap: number | null;
+  /** The side has more overseas players than the cap (a warning; never blocks) */
+  over: boolean;
 }
 
 /**
@@ -3511,11 +3582,23 @@ export interface SelectionSide {
   state: SelectionSideState;
   version: number;
   /**
-     * The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+     * The side's slots in order, `sideSize` of them: 1–11 are the XI. At
+  12, slot 12 is the 12th player; above 12, slots 12 to N are
+  interchange players numbered 1–N.
+
      * @minItems 12
-     * @maxItems 12
+     * @maxItems 14
      */
   slots: SelectionSlot[];
+  /**
+     * Players in this side (12–14), fixed when the draft was created.
+  Absent reads as 12.
+
+     * @minimum 12
+     * @maximum 14
+     */
+  sideSize?: number;
+  overseas?: SelectionOverseas;
   /** @nullable */
   captainMemberId: number | null;
   /** @nullable */
@@ -3653,8 +3736,9 @@ export interface SelectionBoard {
 
 export interface SelectionMatchBody {
   /**
+     * 1-based; at most the side's size
      * @minimum 1
-     * @maximum 12
+     * @maximum 14
      */
   slot: number;
   memberId: number;
@@ -3693,11 +3777,11 @@ export interface SelectionChange {
   /** The version the caller last saw */
   version: number;
   /**
-     * The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
-  player. 11 slots (an older client) are read as an empty 12th.
+     * The side's slots in order: 1–11 are the XI, then 12 up to the
+  side's size. Fewer slots (an older client) read as open slots.
 
      * @minItems 11
-     * @maxItems 12
+     * @maxItems 14
      */
   slots: SelectionSlotInput[];
   /** @nullable */
@@ -9038,6 +9122,10 @@ export interface TeamListPlayer {
   role?: TeamListPlayerRole;
   /** Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds). */
   debut?: boolean;
+  /** An overseas player, snapshotted when the side was finalised so a later change never rewrites a published side. Absent reads as false. */
+  overseas?: boolean;
+  /** The 12th player of a side of 12. Never set above 12, where every player is numbered 1–N. Absent reads as false. */
+  twelfth?: boolean;
 }
 
 export interface TeamList {

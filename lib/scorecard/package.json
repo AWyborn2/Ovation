@@ -10,7 +10,8 @@
     "./kind-templates": "./src/kind-templates/index.ts",
     "./posting-plan": "./src/posting-plan.ts",
     "./club-leaderboard-input": "./src/club-leaderboard-input.ts",
-    "./ladder-input": "./src/ladder-input.ts"
+    "./ladder-input": "./src/ladder-input.ts",
+    "./selection-shape": "./src/selection-shape.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

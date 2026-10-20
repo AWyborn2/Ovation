@@ -86,6 +86,11 @@ export type TeamListPlayer = {
   // lineup, kept even when the row has no playerId, so a held shirt-number
   // register entry can still be shown on this fixture's team-list card.
   participantId?: string;
+  // Snapshotted by a Selection Hub finalise (ADR-009) so a published side never
+  // changes: an overseas player, and the 12th player of a side of 12 (never set
+  // above 12, where every player is numbered 1–N). Absent reads as false.
+  overseas?: boolean;
+  twelfth?: boolean;
 };
 
 /** Captain, vice-captain and wicket-keeper roles on a team list. */

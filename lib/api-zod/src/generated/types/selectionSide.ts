@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SelectionFixture } from './selectionFixture';
+import type { SelectionOverseas } from './selectionOverseas';
 import type { SelectionSideState } from './selectionSideState';
 import type { SelectionSlot } from './selectionSlot';
 import type { SelectionWarnings } from './selectionWarnings';
@@ -19,11 +20,23 @@ export interface SelectionSide {
   state: SelectionSideState;
   version: number;
   /**
-     * The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+     * The side's slots in order, `sideSize` of them: 1–11 are the XI. At
+  12, slot 12 is the 12th player; above 12, slots 12 to N are
+  interchange players numbered 1–N.
+
      * @minItems 12
-     * @maxItems 12
+     * @maxItems 14
      */
   slots: SelectionSlot[];
+  /**
+     * Players in this side (12–14), fixed when the draft was created.
+  Absent reads as 12.
+
+     * @minimum 12
+     * @maximum 14
+     */
+  sideSize?: number;
+  overseas?: SelectionOverseas;
   /** @nullable */
   captainMemberId: number | null;
   /** @nullable */

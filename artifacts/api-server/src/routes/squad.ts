@@ -559,4 +559,15 @@ router.delete(
   },
 );
 
+// A member's facts for one season (the overseas flag, ADR-009). The route is
+// in the spec ahead of its slice; until then it answers 501 and writes nothing.
+router.put(
+  "/squad/:id/seasons/:season",
+  requireAdmin,
+  adminWriteRateLimiter,
+  async (_req, res): Promise<void> => {
+    res.status(501).json({ error: "Overseas players aren't available yet." });
+  },
+);
+
 export default router;
