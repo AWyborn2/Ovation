@@ -315,6 +315,14 @@ describe("weekend carousel protected sources", () => {
     expect(res.body.photos.map((p: { id: number }) => p.id)).toContain(photoId);
     expect(res.body.photos.every((p: { grade: string }) => p.grade === "A Grade")).toBe(true);
     expect(res.body.coverPhotos.map((p: { id: number }) => p.id)).toEqual(coverIds);
+    // Automatic photos (ADR-010 P4) come only from the pools the admin is offered.
+    const offered = res.body.photos.map((p: { id: number }) => p.id);
+    expect(coverIds).toContain(res.body.photoPicks.cover);
+    expect(Object.keys(res.body.photoPicks.fixtures).map(Number).sort()).toEqual(
+      Object.keys(res.body.matchDayContent).map(Number).sort(),
+    );
+    for (const pick of Object.values(res.body.photoPicks.fixtures))
+      if (pick !== null) expect(offered).toContain(pick);
   });
   it("rejects invalid/reversed dates rather than normalising them", async () => {
     for (const [from, to] of [

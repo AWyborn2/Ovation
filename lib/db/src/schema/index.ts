@@ -52,3 +52,4 @@ export * from "./social_publishing";
 export * from "./availability";
 export * from "./shirt_numbers";
 export * from "./card_name_overrides";
+export * from "./photo_usage";
