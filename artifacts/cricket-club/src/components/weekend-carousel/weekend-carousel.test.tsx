@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type * as Model from "./model";
+import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 
 const fixtures = [
   {
@@ -97,13 +98,29 @@ const content = () =>
   activeType === "matchDay"
     ? {}
     : Object.fromEntries(fixtures.map((f) => [f.id, inputFor(activeType)]));
-const refetch = vi.fn(async () => ({
+/** Match Day slides come from the server's content builder (ADR-010). */
+const matchDayContent = (list: typeof fixtures) =>
+  activeType === "matchDay"
+    ? Object.fromEntries(
+        list.map((f) => [
+          f.id,
+          matchDayFixtureContent({
+            ...f,
+            opponentLogoUrl: null,
+            venue: null,
+            startAt: new Date(f.startAt),
+          }),
+        ]),
+      )
+    : undefined;
+const refetch = vi.fn(async (): Promise<{ data: Record<string, unknown>; isError: boolean }> => ({
   data: {
     fixtures,
     coverPhotos,
     photos: teamPhotos,
     juniorStockPhotos: stockPhotos,
     content: content(),
+    matchDayContent: matchDayContent(fixtures),
   },
   isError: false,
 }));
@@ -115,16 +132,18 @@ const settingsRefetch = vi.fn(async () => ({
 vi.mock("@workspace/api-client-react", () => ({
   useGetWeekendCarouselSources: (p: { from: string; setType: string }) => {
     activeType = p.setType;
+    const list =
+      p.from === "2025-11-07"
+        ? many
+          ? Array.from({ length: 19 }, (_, i) => ({ ...fixtures[0], id: i + 1 }))
+          : fixtures
+        : [];
     return {
       data: {
         timeZone: "Australia/Perth",
-        fixtures:
-          p.from === "2025-11-07"
-            ? many
-              ? Array.from({ length: 19 }, (_, i) => ({ ...fixtures[0], id: i + 1 }))
-              : fixtures
-            : [],
+        fixtures: list,
         content: content(),
+        matchDayContent: matchDayContent(list),
         photos: teamPhotos,
         coverPhotos,
         juniorStockPhotos: stockPhotos,
@@ -210,6 +229,63 @@ afterEach(() => {
 });
 
 describe("WeekendCarousel", () => {
+  it("changes what this carousel shows without touching the club's setting, and saves the change", async () => {
+    mount();
+    await generatePreview();
+    const panel = screen.getByTestId("weekend-content-panel");
+    expect(panel.textContent).toContain("Club setting (Standard)");
+    // Minimal for this carousel only: the round and crest switch off, core fields stay on.
+    fireEvent.click(screen.getByTestId("weekend-content-preset-minimal"));
+    expect(screen.getByTestId("weekend-content-field-fixture.round")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByTestId("weekend-content-field-fixture.venue")).toBeDisabled();
+    // Then the round back on, on top of Minimal.
+    fireEvent.click(screen.getByTestId("weekend-content-field-fixture.round"));
+    expect(screen.getByTestId("weekend-content-panel").textContent).toContain(
+      "Changed for this carousel",
+    );
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    const saved = queuedRequest().data.cardInput.weekendCarousel as unknown as {
+      contentOverride: unknown;
+      slides: Array<{ id: string; visibleFields: string[]; content: { roundLabel: string } }>;
+    };
+    expect(saved.contentOverride).toEqual({
+      preset: "minimal",
+      fields: { "fixture.round": true },
+    });
+    const fixtureSlide = saved.slides.find((sl) => sl.id === "fixture-1")!;
+    expect(fixtureSlide.visibleFields).toContain("fixture.round");
+    expect(fixtureSlide.visibleFields).not.toContain("fixture.oppositionCrest");
+    expect(fixtureSlide.visibleFields).not.toContain("fixture.photo");
+    // The content snapshot is whole; visibility decides what prints.
+    expect(fixtureSlide.content.roundLabel).toBe("ROUND 5");
+  });
+
+  it("a Match Day override does not follow the admin to another set type", async () => {
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByTestId("weekend-content-preset-minimal"));
+    fireEvent.click(screen.getByTestId("button-carousel-type-results"));
+    await generatePreview();
+    expect(screen.queryByTestId("weekend-content-panel")).toBeNull();
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(queuedRequest().data.cardInput.weekendCarousel).not.toHaveProperty("contentOverride");
+  });
+
+  it("goes back to the club setting", async () => {
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByTestId("weekend-content-preset-full"));
+    fireEvent.click(screen.getByTestId("weekend-content-reset"));
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(queuedRequest().data.cardInput.weekendCarousel).not.toHaveProperty("contentOverride");
+  });
+
   it.each(["matchDay", "teamList", "results", "matchSummary"])(
     "offers upload and saves a stock image on senior team cards and the cover for %s",
     async (type) => {
@@ -278,9 +354,12 @@ describe("WeekendCarousel", () => {
       expect(queuedRequest().data.cardInput.weekendCarousel.slides[0].data).toMatchObject({
         photoTransform: { zoom: 1.7 },
       });
+      // Version 2: the title saves its content snapshot (ADR-010), not a derived input.
+      expect(queuedRequest().data.cardInput.weekendCarousel).toMatchObject({ version: 2 });
       expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).toMatchObject({
-        input: { roundLabel: "ROUND 5" },
+        content: { page: "title", roundLabel: "ROUND 5" },
       });
+      expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).not.toHaveProperty("input");
       fireEvent.change(screen.getByTestId("select-carousel-pack"), {
         target: { value: "sunset-v1" },
       });
@@ -304,7 +383,7 @@ describe("WeekendCarousel", () => {
       expect(request.caption).toBe(`Edited ${type} caption`);
       expect(request.cardInput.weekendCarousel).toMatchObject({ setType: type, size: "landscape" });
       expect(request.cardInput.weekendCarousel.slides[0]).toMatchObject({
-        input: { roundLabel: "ROUND 5" },
+        content: { page: "title", roundLabel: "ROUND 5" },
       });
       expect(request.cardInput.weekendCarousel.slides.map((s) => s.id)).toEqual([
         "title",

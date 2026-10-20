@@ -5729,6 +5729,37 @@ export interface PostingSwitchover {
   restored: number;
 }
 
+export type CardContentKindSettingsPreset = typeof CardContentKindSettingsPreset[keyof typeof CardContentKindSettingsPreset];
+
+
+export const CardContentKindSettingsPreset = {
+  minimal: 'minimal',
+  standard: 'standard',
+  full: 'full',
+} as const;
+
+/**
+ * Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it.
+ */
+export type CardContentKindSettingsFields = {[key: string]: boolean};
+
+/**
+ * What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.
+ */
+export interface CardContentKindSettings {
+  preset: CardContentKindSettingsPreset;
+  /** Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it. */
+  fields: CardContentKindSettingsFields;
+  juniorConsolidateByDay: boolean;
+}
+
+/**
+ * Per content kind. Default: Standard (the cards as they were), junior consolidation on.
+ */
+export interface CardContentSettings {
+  matchDay: CardContentKindSettings;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -5782,6 +5813,77 @@ export interface SocialSettings {
   centralData?: boolean;
   postingSchedule?: PostingSchedule;
   postingSwitchover?: PostingSwitchover;
+  cardContent?: CardContentSettings;
+  /**
+     * The club's livestream link (https), for match day title pages. Null = none.
+     * @nullable
+     */
+  livestreamUrl?: string | null;
+}
+
+export interface ContentTeam {
+  /** The club's short name, else the automatic one, else the raw name. */
+  name: string;
+  rawName: string;
+  /** @nullable */
+  crestUrl: string | null;
+  monogram: string;
+}
+
+export interface MatchDayFixtureContentSource {
+  grade: string;
+  /** @nullable */
+  roundLabel: string | null;
+  opponentName: string;
+  /** @nullable */
+  opponentLogoUrl: string | null;
+  /** @nullable */
+  venue: string | null;
+}
+
+export type MatchDayFixtureContentKind = typeof MatchDayFixtureContentKind[keyof typeof MatchDayFixtureContentKind];
+
+
+export const MatchDayFixtureContentKind = {
+  matchDay: 'matchDay',
+} as const;
+
+export type MatchDayFixtureContentPage = typeof MatchDayFixtureContentPage[keyof typeof MatchDayFixtureContentPage];
+
+
+export const MatchDayFixtureContentPage = {
+  fixture: 'fixture',
+} as const;
+
+export type MatchDayFixtureContentHomeAway = typeof MatchDayFixtureContentHomeAway[keyof typeof MatchDayFixtureContentHomeAway];
+
+
+export const MatchDayFixtureContentHomeAway = {
+  HOME: 'HOME',
+  AWAY: 'AWAY',
+} as const;
+
+/**
+ * One fixture's Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.
+ */
+export interface MatchDayFixtureContent {
+  kind: MatchDayFixtureContentKind;
+  page: MatchDayFixtureContentPage;
+  fixtureId: number;
+  junior: boolean;
+  /** @nullable */
+  juniorTeamName: string | null;
+  grade: string;
+  roundLabel: string;
+  opposition: ContentTeam;
+  homeAway: MatchDayFixtureContentHomeAway;
+  venue: string;
+  startAt: string;
+  /** Club-time day, YYYY-MM-DD. */
+  day: string;
+  date: string;
+  startTime: string;
+  source: MatchDayFixtureContentSource;
 }
 
 export interface Notification {
@@ -6575,6 +6677,14 @@ export interface SocialSettingsUpdate {
   /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
   postingPlan?: PostingPlan;
   postingSchedule?: PostingScheduleUpdate;
+  /** Replaces the stored choices; unknown kinds, presets and field keys are dropped. */
+  cardContent?: CardContentSettings;
+  /**
+     * An https link, or empty / null to clear it.
+     * @maxLength 500
+     * @nullable
+     */
+  livestreamUrl?: string | null;
 }
 
 /**
@@ -8581,6 +8691,11 @@ export interface TrackedLink {
 export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};
 
 /**
+ * Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.
+ */
+export type WeekendCarouselSourcesMatchDayContent = {[key: string]: MatchDayFixtureContent};
+
+/**
  * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
@@ -8623,6 +8738,8 @@ export interface WeekendCarouselSources {
   timeZone: string;
   /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
+  /** Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep. */
+  matchDayContent?: WeekendCarouselSourcesMatchDayContent;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */

@@ -16,7 +16,7 @@ import { makeJuniorNaming, type JuniorNameFacts } from "./junior-names";
 import { shapePublicJuniorTeamList } from "./junior-fixtures";
 import { overlayNativeOpponents } from "./club-brand";
 import { teamListToCardInput } from "./engines/team-list";
-import { formatFixtureDate, formatFixtureTime } from "./engines/match-day";
+import type { JuniorFixtureMeta } from "./card-content/match-day";
 
 /** Separate namespace from native fixtures and both junior/senior scorecards. */
 export const juniorCarouselFixtureId = (id: number) => -(2_000_000_000 + id);
@@ -41,8 +41,11 @@ export async function juniorCarouselContent(
   const fixtures: FixtureRow[] = [];
   const content: Record<string, Record<string, unknown>> = {};
   const warnings: string[] = [];
+  // Match Day: how each junior fixture names its side; the content builder
+  // (card-content/match-day.ts) makes the slide, as it does for senior fixtures.
+  const junior = new Map<number, JuniorFixtureMeta>();
   if (!(await isJuniorSyncOn(tenantId, { requireActive: false })))
-    return { fixtures, content, warnings };
+    return { fixtures, content, warnings, junior };
 
   const end = new Date(`${to}T12:00:00Z`);
   end.setUTCDate(end.getUTCDate() + 1);
@@ -62,7 +65,7 @@ export async function juniorCarouselContent(
     warnings.push(
       `Excluded ${rows.length - eligible.length} junior bye, cancelled, abandoned or incomplete fixture(s).`,
     );
-  if (!eligible.length) return { fixtures, content, warnings };
+  if (!eligible.length) return { fixtures, content, warnings, junior };
 
   const lists =
     type === "teamList"
@@ -166,18 +169,7 @@ export async function juniorCarouselContent(
       awayTeamName: null,
     };
     if (type === "matchDay") {
-      content[fixture.id] = {
-        kind: "matchDay",
-        grade: teamGrade,
-        roundLabel: "",
-        oppositionName: fixture.opponentName,
-        oppositionLogoUrl: fixture.opponentLogoUrl,
-        venue: fixture.venue?.trim() || "Venue TBC",
-        date: formatFixtureDate(fixture.startAt),
-        startTime: formatFixtureTime(fixture.startAt),
-        junior: true,
-        juniorTeamName: row.teamName,
-      };
+      junior.set(fixture.id, { gradeLabel: teamGrade, juniorTeamName: row.teamName ?? null });
     } else {
       const numbers = numbered
         ? new Map(
@@ -224,5 +216,5 @@ export async function juniorCarouselContent(
     }
     fixtures.push(fixture);
   }
-  return { fixtures, content, warnings };
+  return { fixtures, content, warnings, junior };
 }

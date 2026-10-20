@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardContentSettings } from './cardContentSettings';
 import type { PackColourModes } from './packColourModes';
 import type { PostingPlan } from './postingPlan';
 import type { PostingScheduleUpdate } from './postingScheduleUpdate';
@@ -59,4 +60,12 @@ export interface SocialSettingsUpdate {
   /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
   postingPlan?: PostingPlan;
   postingSchedule?: PostingScheduleUpdate;
+  /** Replaces the stored choices; unknown kinds, presets and field keys are dropped. */
+  cardContent?: CardContentSettings;
+  /**
+     * An https link, or empty / null to clear it.
+     * @maxLength 500
+     * @nullable
+     */
+  livestreamUrl?: string | null;
 }

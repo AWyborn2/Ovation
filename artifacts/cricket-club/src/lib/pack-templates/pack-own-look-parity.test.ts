@@ -28,12 +28,15 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * to the brand-only scenario, so each pack's junior digest equals its brandOnly one.
  * Regenerated when ladder rows took the shared name-fit rule (ADR-010 P1: `data-fit`
  * + `data-fit-row` on the team cell), a markup-only change for names that fit.
+ * Broadcast Dark regenerated for the content contract (ADR-010 P2): its Match Day
+ * card shows the grade (a core field it had no box for), and the template's
+ * sample note no longer prints on a real card.
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "4e2d6ff6f31d60135d297ce76515b400eb339974cf09d0670682854f6e4bf5dd",
-  "broadcast-dark-v1/junior": "ddfff0d8b06b6d281f87fc91be790c9f2d0873ec36cc0de186383ab6876fb3b6",
-  "broadcast-dark-v1/brandOnly": "ddfff0d8b06b6d281f87fc91be790c9f2d0873ec36cc0de186383ab6876fb3b6",
-  "broadcast-dark-v1/brandless": "6acb7fc77cffaab82f3dd9f86408f6b8a254c43d2630e8d05316984bcfe93838",
+  "broadcast-dark-v1/themed": "eaca6db80cdbfcdc881a120e1bc14c7b61311b7781d10217b29cefa766091267",
+  "broadcast-dark-v1/junior": "a981d451b31ed1a813990e3bc51445643161a3e434dd0c30412090acbf900cad",
+  "broadcast-dark-v1/brandOnly": "a981d451b31ed1a813990e3bc51445643161a3e434dd0c30412090acbf900cad",
+  "broadcast-dark-v1/brandless": "9c5a659886837baa1f3176c9922b2d4f783839b74351fe3b8050ae42cae7212c",
   "gold-foil-v1/themed": "d729567915e69ca6933db969df51a400cbfef325d84aa1a94e6fbf31de8e7500",
   "gold-foil-v1/junior": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",
   "gold-foil-v1/brandOnly": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",

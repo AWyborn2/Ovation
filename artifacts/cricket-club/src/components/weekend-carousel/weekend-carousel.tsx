@@ -28,6 +28,13 @@ import {
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { listPackManifests } from "@/lib/pack-templates/registry";
+import { ContentFieldPicker } from "@/components/social-studio/content-field-picker";
+import {
+  CONTENT_PRESET_LABELS,
+  resolveVisibleFields,
+  type ContentOverride,
+  type ContentPreset,
+} from "@workspace/scorecard/card-content";
 import {
   CLUB_TIME_ZONE,
   eligibleCarouselPhotos,
@@ -449,6 +456,8 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
 
       <CoverPhotoPicker s={s} />
 
+      {s.setType === "matchDay" && <ContentOverridePanel s={s} />}
+
       {noSponsors && (
         <p
           className="flex items-center gap-2 rounded border px-3 py-2 text-sm text-muted-foreground"
@@ -635,3 +644,67 @@ function TeamEditor({
 }
 
 export default WeekendCarousel;
+
+/**
+ * This carousel's content (ADR-010): starts from the club's settings; a preset
+ * or a switch here changes this carousel only and is saved with it.
+ */
+function ContentOverridePanel({ s }: { s: WeekendCarouselState }) {
+  const override = s.contentOverride;
+  const changed = !!override.preset || Object.keys(override.fields ?? {}).length > 0;
+  const toggle = (key: string, on: boolean) => {
+    // A switch matching what this carousel would show anyway is no change.
+    const base = resolveVisibleFields(
+      "matchDay",
+      s.clubContent,
+      override.preset ? { preset: override.preset } : null,
+    );
+    const fields = { ...(override.fields ?? {}) };
+    if (base.has(key) === on) delete fields[key];
+    else fields[key] = on;
+    const next: ContentOverride = {
+      ...(override.preset ? { preset: override.preset } : {}),
+      ...(Object.keys(fields).length ? { fields } : {}),
+    };
+    s.setContentOverride(next);
+  };
+  return (
+    <details className="rounded-md border p-3" open={changed} data-testid="weekend-content-panel">
+      <summary className="cursor-pointer text-base">
+        What these cards show
+        <span className="ml-2 text-sm text-muted-foreground">
+          {changed
+            ? "Changed for this carousel"
+            : `Club setting (${CONTENT_PRESET_LABELS[s.clubContent.preset]})`}
+        </span>
+      </summary>
+      <div className="mt-3 space-y-3">
+        <ContentFieldPicker
+          kind="matchDay"
+          preset={override.preset ?? null}
+          visible={s.visibleFields}
+          idPrefix="weekend-content"
+          disabled={s.busy}
+          presetOptions={{
+            clubLabel: `Club setting (${CONTENT_PRESET_LABELS[s.clubContent.preset]})`,
+          }}
+          onPreset={(preset: ContentPreset | null) =>
+            s.setContentOverride(preset ? { preset } : {})
+          }
+          onToggle={toggle}
+        />
+        {changed && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={s.busy}
+            onClick={() => s.setContentOverride({})}
+            data-testid="weekend-content-reset"
+          >
+            Use the club setting
+          </Button>
+        )}
+      </div>
+    </details>
+  );
+}
