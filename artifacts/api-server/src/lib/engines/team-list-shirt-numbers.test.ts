@@ -40,7 +40,12 @@ describe("team-list drafts with season shirt numbers (DB)", () => {
   async function makeTenant(key: keyof typeof tenants, numbersOn: boolean) {
     const [t] = await db
       .insert(tenantsTable)
-      .values({ slug: `xi-shirts-${key}-${STAMP}`, centralClubId: randomInt(1000000, 1000000000), name: "XI", plan: "pro" })
+      .values({
+        slug: `xi-shirts-${key}-${STAMP}`,
+        centralClubId: randomInt(1000000, 1000000000),
+        name: "XI",
+        plan: "pro",
+      })
       .returning();
     tenants[key] = t.id;
     await db.insert(socialSettingsTable).values({
