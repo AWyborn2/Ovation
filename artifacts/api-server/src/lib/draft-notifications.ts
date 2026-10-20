@@ -98,7 +98,7 @@ export async function notifyCardsNeedApproval(
 /**
  * One in-app notice, echoed by email (best-effort, bcc'd) to the members of
  * the club's active social lists, which replaced the single
- * social_settings.notification_email address (migration 0054 copied it into a
+ * social_settings.notification_email address (migration 0055 copied it into a
  * "Social media" list; the column stays readable for one release). Shared by the Meta publishing notices (plan 2026-10-06-001):
  * posts published, posts that failed for good, and a connection that needs
  * reconnecting.

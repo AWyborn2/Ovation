@@ -161,7 +161,7 @@ once it has been logged is not.
   `payload.draftIds`, and a `NOT EXISTS … payload->'draftIds' @> id` check stops a draft being
   listed twice. Milestones means the `milestone` engine or the `achievements` family, while
   awaiting review or ready.
-- **Notification address.** Migration `0054_social_email_lists.sql` (data only) gives each club
+- **Notification address.** Migration `0055_social_email_lists.sql` (data only) gives each club
   with `social_settings.notification_email` a "Social media" list holding that address, with all
   three toggles on. `notifyDraftsReady` now queues `asset_ready` sends instead of emailing the
   address. `notifyClub` (published / failed / reconnect / posts due / cards rolled) bcc's the

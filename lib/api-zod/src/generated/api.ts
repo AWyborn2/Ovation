@@ -9313,6 +9313,10 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
+  "photoPicks": zod.object({
+  "cover": zod.number().nullable().describe('A coverPhotos (or juniorStockPhotos) id.'),
+  "fixtures": zod.record(zod.string(), zod.number().nullable()).describe('By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.')
+}).optional().describe('Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide\'s pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel\'s content override.'),
   "warnings": zod.array(zod.string())
 })
 

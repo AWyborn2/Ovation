@@ -22017,9 +22017,24 @@ components:
           type: array
           description: "Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules."
           items: { $ref: "#/components/schemas/ClubPhoto" }
+        photoPicks:
+          $ref: "#/components/schemas/WeekendCarouselPhotoPicks"
         warnings:
           type: array
           items: { type: string }
+    WeekendCarouselPhotoPicks:
+      type: object
+      description: "Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide's pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel's content override."
+      required: [cover, fixtures]
+      properties:
+        cover:
+          type: ["integer", "null"]
+          description: A coverPhotos (or juniorStockPhotos) id.
+        fixtures:
+          type: object
+          description: By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.
+          additionalProperties:
+            type: ["integer", "null"]
     Fixture:
       type: object
       required: [id, grade, opponentName, startAt, isHome, source, createdAt]

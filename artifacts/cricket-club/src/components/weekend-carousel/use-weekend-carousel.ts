@@ -36,8 +36,10 @@ import {
   carouselSourceContent,
   queuedSlide,
   teamIsJunior,
+  photoOverride,
   type CarouselAudience,
   type CoverPhoto,
+  type PhotoPicks,
   type TeamSlide,
   type WeekendSlide,
 } from "./model";
@@ -52,7 +54,15 @@ import {
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
 type Pick = { id: number; included: boolean };
-type Generated = { key: string; from: string; to: string; pickIds: number[]; teams: TeamSlide[] };
+type Generated = {
+  key: string;
+  from: string;
+  to: string;
+  pickIds: number[];
+  teams: TeamSlide[];
+  /** Match Day: the server's automatic cover photo, frozen at generate (ADR-010 P4). */
+  autoCoverId?: number | null;
+};
 
 /** Swap-move an item in a plain array (used for the pre-generation pick order). */
 function move<T>(arr: T[], from: number, to: number): T[] {
@@ -150,12 +160,12 @@ export function useWeekendCarousel(
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
   const [packId, setPackId] = useState(WEEKEND_PACK_ID);
-  const [cover, setCover] = useState<CoverPhoto>({
+  const [coverChoice, setCover] = useState<CoverPhoto>({
     photoId: null,
     transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
   });
-  const coverUnavailable =
-    cover.photoId !== null && !coverPhotos.some((p) => p.id === cover.photoId);
+  // Whether the admin chose the cover photo; until then a Match Day set shows the auto pick.
+  const [coverSwapped, setCoverSwapped] = useState(false);
 
   const inRange = rangeValid ? fixtures : [];
   const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
@@ -191,6 +201,17 @@ export function useWeekendCarousel(
   const [generated, setGenerated] = useState<Generated | null>(null);
   const stale = !!generated && (generated.key !== selectionKey || !!generationError);
 
+  const autoCoverId = generated?.autoCoverId;
+  const cover: CoverPhoto = useMemo(
+    () =>
+      coverSwapped || autoCoverId === undefined
+        ? coverChoice
+        : { ...coverChoice, photoId: autoCoverId },
+    [coverSwapped, autoCoverId, coverChoice],
+  );
+  const coverUnavailable =
+    cover.photoId !== null && !coverPhotos.some((p) => p.id === cover.photoId);
+
   const generate = async () => {
     if (
       busy ||
@@ -213,6 +234,15 @@ export function useWeekendCarousel(
         );
       }
       const freshById = new Map(fresh.data.fixtures.map((f) => [f.id, f]));
+      // Match Day starts on the server's automatic photos (ADR-010 P4).
+      const picks: PhotoPicks | null =
+        setType === "matchDay" ? (fresh.data.photoPicks ?? null) : null;
+      const freshCovers = eligibleCoverPhotos([
+        ...(fresh.data.coverPhotos ?? []),
+        ...(fresh.data.juniorStockPhotos ?? []),
+      ]);
+      const coverOk = (id: number | null | undefined) =>
+        id != null && freshCovers.some((p) => p.id === id);
       const freshContent = carouselSourceContent(fresh.data);
       const freshSelected = selected.map((f) => freshById.get(f.id));
       // Every slide comes from the server's content now, Match Day included.
@@ -239,7 +269,18 @@ export function useWeekendCarousel(
           freshContent,
           generated?.teams,
           preserveOrder,
+          picks,
         ),
+        // A regenerate keeps the cover it showed while that photo is still allowed.
+        ...(picks
+          ? {
+              autoCoverId: coverOk(generated?.autoCoverId)
+                ? generated!.autoCoverId
+                : coverOk(picks.cover)
+                  ? picks.cover
+                  : null,
+            }
+          : {}),
       });
     } catch (e) {
       setGenerationError(
@@ -370,7 +411,14 @@ export function useWeekendCarousel(
           visibleFields,
         );
       }
-      const override = readContentOverride("matchDay", contentOverride);
+      // Swapped photos ride in the content override (ADR-010 P4).
+      const override = readContentOverride("matchDay", {
+        ...contentOverride,
+        photos:
+          setType === "matchDay"
+            ? photoOverride(generated!.teams, { photoId: cover.photoId, autoPhotoId: autoCoverId })
+            : undefined,
+      });
       if (submission.current?.key !== queueKey) {
         submission.current = { key: queueKey, id: crypto.randomUUID() };
       }
@@ -431,6 +479,7 @@ export function useWeekendCarousel(
       setCaptionEdit(null);
       // A carousel's content override belongs to the Match Day set it was made on.
       setContentOverride({});
+      setCoverSwapped(false);
       setGenerated(null);
       setGenerationError(null);
       setQueueError(null);
@@ -446,7 +495,19 @@ export function useWeekendCarousel(
     coverPhotos,
     cover,
     coverUnavailable,
-    patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover((c) => ({ ...c, ...patch })),
+    autoCoverId,
+    coverSwapped: autoCoverId !== undefined && cover.photoId !== autoCoverId,
+    patchCover: (patch: Partial<CoverPhoto>) => {
+      if (busy) return;
+      if (patch.photoId !== undefined) setCoverSwapped(true);
+      setCover((c) => ({ ...c, photoId: cover.photoId, ...patch }));
+    },
+    /** Back to the automatic cover photo. */
+    resetCoverToAuto: () => {
+      if (busy) return;
+      setCoverSwapped(false);
+      setCover((c) => ({ ...c, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } }));
+    },
     bundle,
     sourceWarnings,
     sourceContent: content,
