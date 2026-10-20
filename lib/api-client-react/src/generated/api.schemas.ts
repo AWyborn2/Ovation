@@ -3693,7 +3693,9 @@ export interface SelectionEvent {
   actorKind: string;
   /** @nullable */
   actorName: string | null;
-  /** draft, update, finalise, reopen, withdraw, match or status_set */
+  /** draft, update, finalise, reopen, withdraw, match, status_set or
+  reshape (a draft following its grade's changed side size or format)
+   */
   action: string;
   detail: SelectionEventDetail;
   createdAt: string;

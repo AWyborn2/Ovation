@@ -3691,7 +3691,7 @@ export const GetSelectionBoardResponse = zod.object({
   "grade": zod.string(),
   "actorKind": zod.string().describe('admin, captain, player or system'),
   "actorName": zod.string().nullable(),
-  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match or status_set'),
+  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match, status_set or\nreshape (a draft following its grade\'s changed side size or format)\n'),
   "detail": zod.record(zod.string(), zod.unknown()),
   "createdAt": zod.coerce.date()
 })).describe('The latest changes to the section\'s sides, newest first'),
@@ -3885,7 +3885,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "grade": zod.string(),
   "actorKind": zod.string().describe('admin, captain, player or system'),
   "actorName": zod.string().nullable(),
-  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match or status_set'),
+  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match, status_set or\nreshape (a draft following its grade\'s changed side size or format)\n'),
   "detail": zod.record(zod.string(), zod.unknown()),
   "createdAt": zod.coerce.date()
 })).describe('The latest changes to the section\'s sides, newest first'),
@@ -4435,7 +4435,7 @@ export const MatchSelectionSlotResponse = zod.object({
   "grade": zod.string(),
   "actorKind": zod.string().describe('admin, captain, player or system'),
   "actorName": zod.string().nullable(),
-  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match or status_set'),
+  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match, status_set or\nreshape (a draft following its grade\'s changed side size or format)\n'),
   "detail": zod.record(zod.string(), zod.unknown()),
   "createdAt": zod.coerce.date()
 })).describe('The latest changes to the section\'s sides, newest first'),
@@ -4629,7 +4629,7 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "grade": zod.string(),
   "actorKind": zod.string().describe('admin, captain, player or system'),
   "actorName": zod.string().nullable(),
-  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match or status_set'),
+  "action": zod.string().describe('draft, update, finalise, reopen, withdraw, match, status_set or\nreshape (a draft following its grade\'s changed side size or format)\n'),
   "detail": zod.record(zod.string(), zod.unknown()),
   "createdAt": zod.coerce.date()
 })).describe('The latest changes to the section\'s sides, newest first'),
