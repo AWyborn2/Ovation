@@ -18,6 +18,7 @@ import {
   type ScheduleStep,
 } from "../lib/availability-schedule";
 import { smsProvider } from "../lib/integrations/sms";
+import { cleanSideSizes, loadSideGrades } from "../lib/side-sizes";
 
 /**
  * The club's weekly availability round: the schedule, the current round's
@@ -35,9 +36,14 @@ const DEFAULTS = {
   selectionRule: "captains_own_grade",
 } as const;
 
-/** The club's settings plus the platform's SMS provider (null = email only). */
-function serialize(row: AvailabilitySettingsRow | null) {
-  if (!row) return { ...DEFAULTS, updatedAt: null, smsProvider: smsProvider() };
+/**
+ * The club's settings plus the platform's SMS provider (null = email only) and
+ * the grades its sides go by, for the per-grade settings.
+ */
+function serialize(row: AvailabilitySettingsRow | null, grades: string[]) {
+  if (!row) {
+    return { ...DEFAULTS, sideSizes: {}, updatedAt: null, smsProvider: smsProvider(), grades };
+  }
   return {
     enabled: row.enabled,
     smsEnabled: row.smsEnabled,
@@ -50,13 +56,20 @@ function serialize(row: AvailabilitySettingsRow | null) {
     finaliseDow: row.finaliseDow,
     finaliseTime: row.finaliseTime,
     selectionRule: row.selectionRule,
+    sideSizes: row.sideSizes,
     updatedAt: row.updatedAt,
     smsProvider: smsProvider(),
+    grades,
   };
 }
 
 router.get("/availability/settings", requireAdmin, async (req, res): Promise<void> => {
-  res.json(serialize(await loadAvailabilitySettings(getTenantId(req))));
+  const tenantId = getTenantId(req);
+  const [row, grades] = await Promise.all([
+    loadAvailabilitySettings(tenantId),
+    loadSideGrades(tenantId),
+  ]);
+  res.json(serialize(row, grades));
 });
 
 router.put("/availability/settings", requireAdmin, async (req, res): Promise<void> => {
@@ -71,14 +84,21 @@ router.put("/availability/settings", requireAdmin, async (req, res): Promise<voi
     return;
   }
   const tenantId = getTenantId(req);
-  const values = { ...parsed.data, updatedAt: new Date() };
+  // Side sizes are optional: omitted, the stored map is kept.
+  const { sideSizes, ...rest } = parsed.data;
+  const sized = sideSizes ? cleanSideSizes(sideSizes) : null;
+  if (sized && "error" in sized) {
+    res.status(400).json({ error: sized.error });
+    return;
+  }
+  const values = { ...rest, ...(sized ? sized : {}), updatedAt: new Date() };
   const [row] = await db
     .insert(availabilitySettingsTable)
     .values({ tenantId, ...values })
     .onConflictDoUpdate({ target: availabilitySettingsTable.tenantId, set: values })
     .returning();
   req.log?.info({ tenantId, enabled: row.enabled }, "availability settings saved");
-  res.json(serialize(row));
+  res.json(serialize(row, await loadSideGrades(tenantId)));
 });
 
 router.get("/availability/rounds/current", requireAdmin, async (req, res): Promise<void> => {

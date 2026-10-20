@@ -136,6 +136,7 @@ export default function AdminAvailability() {
         week&rsquo;s round is going.
       </p>
       <SettingsCard />
+      <SidesByGradeCard />
       <RoundCard />
       <SquadCard />
     </div>
@@ -357,6 +358,160 @@ function SettingsCard() {
             <div className="flex items-center gap-3">
               <Button onClick={onSave} disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save schedule"}
+              </Button>
+              {saved && <span className="text-sm text-muted-foreground">Saved.</span>}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sides by grade
+// ---------------------------------------------------------------------------
+
+const SIDE_SIZES = [12, 13, 14] as const;
+
+/** "12 — XI + 12th" / "14 — numbered 1–14". */
+function sideSizeLabel(n: number): string {
+  return n === 12 ? "12 — XI + 12th" : `${n} — numbered 1–${n}`;
+}
+
+/**
+ * Players per side by grade (ADR-009). A grade left at 12 is the XI plus an
+ * optional 12th, as before; at 13 or 14 the extras are interchange players,
+ * numbered 1–N with no "12th". A size applies to drafts made after it's saved;
+ * existing sides keep theirs. A saved size whose grade no longer plays (a
+ * renamed grade) is listed so it can be removed.
+ */
+function SidesByGradeCard() {
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useGetAvailabilitySettings();
+  const save = useUpdateAvailabilitySettings();
+  const [sizes, setSizes] = useState<Record<string, number> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (data) setSizes({ ...(data.sideSizes ?? {}) });
+  }, [data]);
+
+  const grades = data?.grades ?? [];
+  const unmatched = Object.keys(sizes ?? {}).filter((g) => !grades.includes(g));
+
+  const setSize = (grade: string, n: number | null) => {
+    setSaved(false);
+    setSizes((s) => {
+      const next = { ...(s ?? {}) };
+      if (n == null || n === 12) delete next[grade];
+      else next[grade] = n;
+      return next;
+    });
+  };
+
+  const onSave = () => {
+    if (!data || !sizes) return;
+    setError(null);
+    setSaved(false);
+    save.mutate(
+      {
+        data: {
+          enabled: data.enabled,
+          smsEnabled: data.smsEnabled,
+          sendDow: data.sendDow,
+          sendTime: data.sendTime,
+          reminderDow: data.reminderDow,
+          reminderTime: data.reminderTime,
+          cutoffDow: data.cutoffDow,
+          cutoffTime: data.cutoffTime,
+          finaliseDow: data.finaliseDow,
+          finaliseTime: data.finaliseTime,
+          selectionRule: data.selectionRule,
+          sideSizes: sizes,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSaved(true);
+          queryClient.invalidateQueries({ queryKey: getGetAvailabilitySettingsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
+        },
+        onError: (e) => setError(errorMessage(e)),
+      },
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Sides by grade</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading || !sizes ? (
+          <ListSkeleton />
+        ) : (
+          <>
+            <p className="max-w-[75ch] text-xs text-muted-foreground">
+              How many players a grade picks. At 12 a side is the XI plus a 12th player. A grade
+              with interchange can pick up to 14: players are numbered 1 to 14 with no
+              &ldquo;12th&rdquo;, and any of them can be captain or keeper. A change applies to
+              sides drafted after you save; sides already drafted keep their size.
+            </p>
+            {grades.length === 0 && unmatched.length === 0 ? (
+              <EmptyState
+                title="No grades yet"
+                message="Grades appear here once the club has fixtures."
+              />
+            ) : (
+              <div className="divide-y rounded-md border" data-testid="side-sizes">
+                {grades.map((g) => (
+                  <div key={g} className="flex items-center justify-between gap-4 p-3">
+                    <Label htmlFor={`side-size-${g}`} className="font-medium">
+                      {g}
+                    </Label>
+                    <select
+                      id={`side-size-${g}`}
+                      aria-label={`${g} players per side`}
+                      className={`${selectClass} w-56`}
+                      value={sizes[g] ?? 12}
+                      onChange={(e) => setSize(g, Number(e.target.value))}
+                    >
+                      {SIDE_SIZES.map((n) => (
+                        <option key={n} value={n}>
+                          {sideSizeLabel(n)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+                {unmatched.map((g) => (
+                  <div
+                    key={g}
+                    className="flex items-center justify-between gap-4 p-3"
+                    data-testid="side-size-unmatched"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{g}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Set to {sizes[g]}, but no grade plays under this name now (renamed, or no
+                        fixtures this year). New sides of a renamed grade pick 12.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setSize(g, null)}>
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <ErrorBox message={error} testId="side-sizes-error" />
+            <div className="flex items-center gap-3">
+              <Button onClick={onSave} disabled={save.isPending}>
+                {save.isPending ? "Saving…" : "Save side sizes"}
               </Button>
               {saved && <span className="text-sm text-muted-foreground">Saved.</span>}
             </div>

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from "vitest";
 import request from "supertest";
 import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -71,6 +71,7 @@ type SideBody = {
   canFinalise: boolean;
   readOnlyReason: string | null;
   fixture: { grade: string };
+  sideSize?: number;
   slots: { memberId: number | null; gap: unknown; member: { id: number; status: string } | null }[];
   warnings: {
     filled: number;
@@ -79,6 +80,8 @@ type SideBody = {
     saidNo: number;
     noCaptain: boolean;
     noKeeper: boolean;
+    gradeSideSize?: number;
+    overSize?: number;
   };
 };
 
@@ -584,7 +587,7 @@ describe("Selection Hub API", () => {
       expect(list.players).toHaveLength(11);
       // A Grade's XI has an open slot: the XI is 1–10 and the 12th stays order 12.
       expect(list.players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]);
-      expect(list.players[10]).toEqual({ order: 12, displayName: "P28 Member" });
+      expect(list.players[10]).toEqual({ order: 12, displayName: "P28 Member", twelfth: true });
       expect(emailsTo(28)).toHaveLength(1);
       expect(emailsTo(28)[0].text).toMatch(/selected as 12th player for A Grade v Mandurah/);
       expect(emailsTo(1)[0].text).not.toMatch(/12th/);
@@ -599,6 +602,101 @@ describe("Selection Hub API", () => {
       });
       const after = await teamListOf(fixture.A);
       expect(after.players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 12]);
+    });
+  });
+
+  describe("a side above 12 (ADR-009)", () => {
+    const setSizes = (sideSizes: Record<string, number>) =>
+      db
+        .update(availabilitySettingsTable)
+        .set({ sideSizes })
+        .where(eq(availabilitySettingsTable.tenantId, tenantA));
+    /** A Grade as a side of 14 with m1..m14 (m1 captain, m2 keeper). */
+    const aOf14 = () =>
+      db
+        .update(selectionsTable)
+        .set({ sideSize: 14, slots: m.slice(1, 15).map((memberId) => ({ memberId })) })
+        .where(eq(selectionsTable.id, sel.A));
+
+    afterEach(async () => {
+      await setSizes({});
+    });
+
+    it("a new draft takes its grade's size, and a grade left unset stays 12", async () => {
+      await setSizes({ "A Grade": 14 });
+      await db.delete(selectionsTable).where(inArray(selectionsTable.id, [sel.A, sel.B]));
+      const sides = (await board(asAdmin)).selections;
+      const a = sides.find((s) => s.fixture.grade === "A Grade")!;
+      const b = sides.find((s) => s.fixture.grade === "B Grade")!;
+      expect(a.sideSize).toBe(14);
+      expect(a.slots).toHaveLength(14);
+      expect((await loadSel(a.id)).sideSize).toBe(14);
+      expect(b.sideSize).toBe(12);
+      expect(b.slots).toHaveLength(12);
+    });
+
+    it("saves 11 to 14 slots, any slot can hold a role, and more than the side's size → 400", async () => {
+      await setSizes({ "A Grade": 14 });
+      await aOf14();
+      const a = await changeFor(sel.A, (ids) => ids, { captain: m[13], keeper: m[14] });
+      expect(a.slots).toHaveLength(14);
+      const res = await put(asAdmin, [a]);
+      expect(res.status).toBe(200);
+      const side = (res.body.selections as SideBody[]).find((s) => s.id === sel.A)!;
+      expect(side.sideSize).toBe(14);
+      expect(side.warnings).toMatchObject({ filled: 11, open: 0, twelfth: false, overSize: 0 });
+      const row = await loadSel(sel.A);
+      expect(row.captainMemberId).toBe(m[13]);
+      expect(row.keeperMemberId).toBe(m[14]);
+
+      // A side of 12 still refuses a 13th slot; 15 is never a side.
+      const c13 = await changeFor(sel.C, (ids) => [...ids, m[28]]);
+      expect((await put(asAdmin, [c13])).status).toBe(400);
+      const a15 = await changeFor(sel.A, (ids) => [...ids, m[28]]);
+      expect((await put(asAdmin, [a15])).status).toBe(400);
+    });
+
+    it("an older client's 12-slot save keeps the slots it couldn't see", async () => {
+      await aOf14();
+      const old = await changeFor(sel.A, (ids) => [m[28], ...ids.slice(1, 12)]);
+      expect(old.slots).toHaveLength(12);
+      expect((await put(asAdmin, [old])).status).toBe(200);
+      const row = await loadSel(sel.A);
+      expect(row.slots.map((s) => s.memberId)).toEqual([m[28], ...m.slice(2, 15)]);
+    });
+
+    it("finalise numbers the side 1–14 with no 12th, and nobody is told they're 12th", async () => {
+      await aOf14();
+      const a = await changeFor(sel.A, (ids) => ids, { captain: m[13] });
+      expect((await put(asAdmin, [a])).status).toBe(200);
+      await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+        .send(await ver(sel.A))
+        .expect(200);
+      const list = await teamListOf(fixture.A);
+      expect(list.players.map((p) => p.order)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+      ]);
+      expect(list.players.some((p) => p.twelfth)).toBe(false);
+      expect(list.players[12]).toMatchObject({ order: 13, displayName: "P13 Member", role: "C" });
+      expect(email.some((e) => /12th/.test(e.text ?? ""))).toBe(false);
+      expect(sms.some((x) => x.body.includes("12th"))).toBe(false);
+
+      // A withdrawal renumbers the whole side 1–13.
+      await withdrawFromSelection(tenantA, m[2], roundId, { kind: "player", id: null, name: null });
+      const after = await teamListOf(fixture.A);
+      expect(after.players.map((p) => p.order)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+      ]);
+    });
+
+    it("lowering the grade's size keeps the draft and flags the players to move out", async () => {
+      await aOf14();
+      await setSizes({ "A Grade": 12 });
+      const a = (await board(asAdmin)).selections.find((s) => s.id === sel.A)!;
+      expect(a.sideSize).toBe(14);
+      expect(a.slots).toHaveLength(14);
+      expect(a.warnings).toMatchObject({ gradeSideSize: 12, overSize: 2 });
+      expect((await loadSel(sel.A)).slots.filter((s) => s.memberId != null)).toHaveLength(14);
     });
   });
 
