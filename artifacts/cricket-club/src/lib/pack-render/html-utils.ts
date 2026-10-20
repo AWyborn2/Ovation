@@ -190,6 +190,13 @@ export function substituteRow(
   });
 }
 
+/** A compressible list's markup at its designed size: the authored lengths, unscaled. */
+function uncompressed(html: string): string {
+  return html
+    .replace(/calc\((-?[\d.]+cqmin) \* var\(--xi-scale,1\)\)/g, "$1")
+    .replace(/repeat\(var\(--xi-rows,(\d+)\),auto\)/g, "repeat($1,auto)");
+}
+
 /** Expand every `<div data-repeat="key">…</div>` over the supplied rows. */
 export function expandRepeats(
   html: string,
@@ -235,11 +242,32 @@ export function expandRepeats(
 
     // Neutralise the `data-repeat` attribute so the container is not re-matched,
     // keep the opening/closing tags, and swap in the expanded rows.
-    const newOpenTag = openTag
+    let newOpenTag = openTag
       .replace(` data-repeat="${key}"`, "")
       .replace(/\sdata-repeat-max="\d+"/, "");
-    out = out.slice(0, idx) + newOpenTag + expanded + out.slice(b.contentEnd);
-    searchFrom = idx + newOpenTag.length + expanded.length;
+    let content = expanded;
+    // `data-repeat-compress="B"`: a list designed for B rows that may carry more
+    // (a side of 13 or 14, ADR-009). Its lengths are written
+    // `calc(<len> * var(--xi-scale,1))` and a two-column list's rows
+    // `repeat(var(--xi-rows,6),auto)`. Above B the container sets both (row
+    // height and type scale by B / n); at B or fewer the wrappers are unwrapped
+    // back to the authored lengths, so the markup is exactly what it was.
+    const compressMatch = /\sdata-repeat-compress="(\d+)"/.exec(newOpenTag);
+    if (compressMatch) {
+      newOpenTag = newOpenTag.replace(compressMatch[0], "");
+      const designed = Number(compressMatch[1]);
+      if (rows.length > designed) {
+        const vars = `--xi-scale:${+(designed / rows.length).toFixed(4)};--xi-rows:${Math.ceil(rows.length / 2)};`;
+        newOpenTag = newOpenTag.includes(' style="')
+          ? newOpenTag.replace(' style="', ` style="${vars}`)
+          : newOpenTag.replace(/>$/, ` style="${vars}">`);
+      } else {
+        newOpenTag = uncompressed(newOpenTag);
+        content = uncompressed(content);
+      }
+    }
+    out = out.slice(0, idx) + newOpenTag + content + out.slice(b.contentEnd);
+    searchFrom = idx + newOpenTag.length + content.length;
   }
   return out;
 }

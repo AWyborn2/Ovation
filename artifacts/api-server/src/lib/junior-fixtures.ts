@@ -137,6 +137,8 @@ export type JuniorPublicTeamListPlayer = {
   participantId: string | null;
   role: TeamListRole | null;
   shirtNumber: string | null;
+  /** An overseas player (ADR-009): a neutral "OS". Never set on a withheld player. */
+  overseas?: boolean;
 };
 
 const byOrder = <T extends { order: number }>(players: readonly T[]): T[] =>
@@ -169,6 +171,8 @@ export function shapePublicJuniorTeamList(
         participantId: line.participantId,
         role: p.role ?? null,
         shirtNumber: line.isPrivate ? null : (numbers?.get(p.participantId) ?? null),
+        // The overseas mark goes with the name: a withheld player has none.
+        ...(p.overseas && !line.isPrivate ? { overseas: true } : {}),
       };
     });
 }

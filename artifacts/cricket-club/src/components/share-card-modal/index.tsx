@@ -253,10 +253,19 @@ export function ShareCardModal({
       photoPlacement,
       renderTransform,
     ],
+    // Every render input except the size: a cached size is only reused while
+    // none of these changed (e.g. the settings bundle loading the hashtag, or
+    // the template list refetching, must not leave a stale preview).
     invalidateDeps: [
       includeSponsors,
       input,
+      sponsors,
+      presentingSponsorName,
+      clubUrl,
+      hashtag,
+      selectedTheme,
       selectedThemeId,
+      selectedTemplate,
       layoutId,
       layoutSig,
       sponsorSig,

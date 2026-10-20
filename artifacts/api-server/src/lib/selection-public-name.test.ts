@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   PRIVATE_PLAYER,
+  maskOverseas,
   namedPublicly,
   publicName,
   selectionPublishedPlayers,
@@ -103,5 +104,17 @@ describe("selectionPublishedPlayers with the public-name flag", () => {
     expect(players[0]).not.toHaveProperty("playerId");
     expect(players[0]).not.toHaveProperty("participantId");
     expect(players[1].playerId).toBe(43);
+  });
+});
+
+describe("maskOverseas (ADR-009)", () => {
+  it("keeps OS with a name and drops it from a Private Player", () => {
+    const out = maskOverseas([
+      { order: 1, displayName: "Casey Nguyen", overseas: true },
+      { order: 2, displayName: PRIVATE_PLAYER, overseas: true },
+      { order: 3, displayName: "Sam Local" },
+    ]);
+    expect(out.map((p) => p.overseas)).toEqual([true, undefined, undefined]);
+    expect(out[1]).not.toHaveProperty("overseas");
   });
 });

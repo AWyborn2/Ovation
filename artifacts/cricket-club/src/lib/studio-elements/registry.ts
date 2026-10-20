@@ -43,6 +43,8 @@ import {
   watermark,
   xiList,
   xiRow,
+  xiRowsPerColumn,
+  xiScaled,
   type Unit,
 } from "../pack-templates/club-kit/parts";
 
@@ -511,23 +513,34 @@ export const ELEMENTS: readonly ElementDef[] = [
       R(
         "rows",
         "Players",
-        ["no.", "name", "tag"],
+        ["no.", "name", "tag", "os"],
         "1 | Player One | \n2 | Player Two | (c)\n3 | Player Three | \n4 | Player Four | \n5 | Player Five | wk\n6 | Player Six | \n7 | Player Seven | \n8 | Player Eight | \n9 | Player Nine | \n10 | Player Ten | \n11 | Player Eleven | \n12 | Player Twelve | 12th",
       ),
     ],
     liveRows: {
       prop: "rows",
       repeat: "players",
-      cells: (r) => [r.number ?? "", r.surname ?? "", r.role ? `(${r.role})` : ""],
+      cells: (r) => [r.number ?? "", r.surname ?? "", r.role ? `(${r.role})` : "", r.os ?? ""],
     },
     defaultBox: (s) => box(s, { w: 48, h: 34 }, { x: 6, y: 44 }),
-    render: (u, p) =>
-      xiList(
-        u,
-        parseRows(p.rows, 12)
-          .map((r) => xiRow(u, { n: r[0] ?? "", name: r[1] ?? "", tag: r[2] ?? "" }))
+    render: (u, p) => {
+      // Up to a side of 14 (ADR-009): rows compress above 12, and nobody is
+      // "12th" once there are more than 12.
+      const rows = parseRows(p.rows, 14);
+      const xu = xiScaled(u, rows.length);
+      const tagOf = (tag: string) => (rows.length > 12 && /^12th$/i.test(tag) ? "" : tag);
+      return xiList(
+        xu,
+        rows
+          .map((r) =>
+            xiRow(xu, { n: r[0] ?? "", name: r[1] ?? "", tag: tagOf(r[2] ?? ""), os: r[3] ?? "" }),
+          )
           .join(""),
-      ),
+        "",
+        false,
+        xiRowsPerColumn(rows.length),
+      );
+    },
   },
   // ------------------------------------------------------------ collectables
   {

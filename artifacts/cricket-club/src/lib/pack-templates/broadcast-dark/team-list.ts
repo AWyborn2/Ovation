@@ -20,19 +20,30 @@ import {
 
 // The Broadcast Dark list is an ordered, single-column lineup. Shirt/order
 // numbering and captain / keeper markers remain independent bound fields.
+// Designed for 12 rows; a side of 13 or 14 (ADR-009) compresses: row height
+// and type scale by `--xi-scale` (12 / n), which the renderer sets above 12.
+
+/** A row length scaled by the list's compression (unset, so 1, at 12 or fewer). */
+const xs = (n: number | string) => `calc(${n}cqmin * var(--xi-scale,1))`;
+
+/** The neutral overseas mark after the role, set like it; dropped when the row has none. */
+const osMark = (size: number) =>
+  `<span data-badge="1" data-xi-os="1" style="font-family:${SK_COND};font-weight:700;font-size:${xs(size)};flex:none;white-space:nowrap;letter-spacing:.06em;color:${ACC}">{{row.os}}</span>`;
 
 const fullRow =
-  `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:1.2cqmin;padding:.55cqmin 0;border-bottom:.2cqmin solid ${LINE};min-width:0">` +
-  `<span style="font-family:${SK_COND};font-weight:800;font-size:var(--xi-number-size,2.9cqmin);width:4.2cqmin;flex:none;color:${ACC}">{{row.number}}</span>` +
-  `<span data-xi-name="1" style="flex:1 1 auto;font-weight:600;font-size:var(--xi-name-size,2.8cqmin);line-height:1.15;white-space:normal;overflow-wrap:anywhere;min-width:0">{{row.broadcastName}}</span>` +
-  `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:var(--xi-role-size,2.2cqmin);flex:none;white-space:nowrap;margin-left:.3cqmin;color:${ACC}">({{row.role}})</span>` +
+  `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:1.2cqmin;padding:${xs(".55")} 0;border-bottom:.2cqmin solid ${LINE};min-width:0">` +
+  `<span style="font-family:${SK_COND};font-weight:800;font-size:var(--xi-number-size,${xs(2.9)});width:4.2cqmin;flex:none;color:${ACC}">{{row.number}}</span>` +
+  `<span data-xi-name="1" style="flex:1 1 auto;font-weight:600;font-size:var(--xi-name-size,${xs(2.8)});line-height:1.15;white-space:normal;overflow-wrap:anywhere;min-width:0">{{row.broadcastName}}</span>` +
+  `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:var(--xi-role-size,${xs(2.2)});flex:none;white-space:nowrap;margin-left:.3cqmin;color:${ACC}">({{row.role}})</span>` +
+  osMark(2.2) +
   `</div>`;
 
 const landscapeRow =
-  `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:.9cqmin;padding:.34cqmin 0;border-bottom:.18cqmin solid ${LINE};min-width:0">` +
-  `<span style="font-family:${SK_COND};font-weight:800;font-size:var(--xi-number-size,2.35cqmin);width:4cqmin;flex:none;color:${ACC}">{{row.number}}</span>` +
-  `<span data-xi-name="1" style="flex:1 1 auto;font-weight:600;font-size:var(--xi-name-size,2.25cqmin);line-height:1.1;white-space:normal;overflow-wrap:anywhere;min-width:0">{{row.broadcastName}}</span>` +
-  `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:var(--xi-role-size,1.8cqmin);flex:none;white-space:nowrap;margin-left:.2cqmin;color:${ACC}">({{row.role}})</span>` +
+  `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:.9cqmin;padding:${xs(".34")} 0;border-bottom:.18cqmin solid ${LINE};min-width:0">` +
+  `<span style="font-family:${SK_COND};font-weight:800;font-size:var(--xi-number-size,${xs(2.35)});width:4cqmin;flex:none;color:${ACC}">{{row.number}}</span>` +
+  `<span data-xi-name="1" style="flex:1 1 auto;font-weight:600;font-size:var(--xi-name-size,${xs(2.25)});line-height:1.1;white-space:normal;overflow-wrap:anywhere;min-width:0">{{row.broadcastName}}</span>` +
+  `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:var(--xi-role-size,${xs(1.8)});flex:none;white-space:nowrap;margin-left:.2cqmin;color:${ACC}">({{row.role}})</span>` +
+  osMark(1.8) +
   `</div>`;
 
 function card(fmt: "full" | "landscape"): string {
@@ -56,7 +67,7 @@ function card(fmt: "full" | "landscape"): string {
           `;line-height:.92;width:100%;height:${headingHeight}cqmin;overflow-wrap:anywhere;margin-top:0`,
         ).replace("<div ", '<div data-team-grade="1" ') +
         `<div style="font-family:${SK_MONO};font-weight:500;font-size:${landscape ? "1.8" : "2.2"}cqmin;line-height:1.3;letter-spacing:.1em;color:${MUTED};margin-top:${landscape ? "1" : "1.4"}cqmin">{{venueDateTime}}</div>` +
-        `<div data-repeat="players" data-xi-fit="1" data-xi-layout="single-column" data-xi-min-ratio="0.5625" data-repeat-max="12" style="display:flex;flex-direction:column;gap:${landscape ? ".5" : ".8"}cqmin;width:100%;max-width:${maxColumn}cqmin;margin-top:${listTop}cqmin;min-width:0">${row}</div>`,
+        `<div data-repeat="players" data-xi-fit="1" data-xi-layout="single-column" data-xi-min-ratio="0.5625" data-repeat-max="14" data-repeat-compress="12" style="display:flex;flex-direction:column;gap:${xs(landscape ? ".5" : ".8")};width:100%;max-width:${maxColumn}cqmin;margin-top:${listTop}cqmin;min-width:0">${row}</div>`,
     ),
     footer: bdFooterLogos(),
   });
@@ -75,7 +86,7 @@ export const teamList: PackCardTemplate = {
     textField("broadcastRoundLabel", "Round label (explicit round only)", "ROUND 3"),
     textField("venueDateTime", "Venue / date / time", "RUSHTON PARK · SAT 8 NOV · 12:30 PM"),
     photoField("squadPhoto", "Squad photo", "Squad / team photo"),
-    repeatField("players", "Player rows", "Up to 12 players"),
+    repeatField("players", "Player rows", "Up to 14 players"),
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
@@ -84,11 +95,12 @@ export const teamList: PackCardTemplate = {
   repeats: [
     {
       key: "players",
-      maxRows: 12,
+      maxRows: 14,
       fields: [
         textField("number", "Order", "3"),
         textField("broadcastName", "Initial + surname", "R. MANUEL"),
         textField("role", "Role (C/WK)", "C"),
+        textField("os", "Overseas (OS)", ""),
       ],
     },
   ],

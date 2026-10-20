@@ -50,6 +50,7 @@ import {
   twoLineTitle,
   xiList,
   xiRow,
+  xiScaled,
 } from "./parts";
 
 /**
@@ -392,19 +393,22 @@ const teamList = design({
           `<div data-team-grade="1" style="font-family:${CK_COND};font-weight:900;font-size:12cqmin;line-height:.95;text-transform:uppercase;color:${C.pt};margin-top:1cqmin;width:100%;height:12cqmin;overflow-wrap:anywhere">{{gradeHeading}}</div>` +
           meta(u, "{{venueDateTime}}", ";margin-top:.8cqmin") +
           `<div style="width:100%;margin-top:1.6cqmin">` +
+          // Designed for 12 (6 a column); 13 or 14 compress (ADR-009).
           xiList(
-            u,
+            xiScaled(u),
             xiRow(
-              u,
+              xiScaled(u),
               {
                 n: "{{row.number}}",
                 name: "{{row.surname}}",
                 tag: `({{row.role}})`,
+                os: "{{row.os}}",
               },
               true,
             ),
-            ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
+            ' data-repeat="players" data-repeat-max="14" data-repeat-compress="12" data-xi-fit="1"',
             true,
+            "var(--xi-rows,6)",
           ) +
           `</div>`,
       ),
@@ -417,8 +421,11 @@ const teamList = design({
 /** A badge chip on a Starting XI row; `cleanupEmptyBadges` drops it when its value is empty. */
 const supportedByLabel = supportedBy(u, "PROUDLY SUPPORTED BY");
 
-const xiBadge = (text: string, bg: string, ink: string, size: number) =>
-  `<span data-badge="1" style="flex:none;font-family:${CK_COND};font-weight:800;font-size:${u(size)};line-height:1;letter-spacing:.06em;padding:${u(0.5)} ${u(0.9)};background:${bg};color:${ink}">${text}</span>`;
+const xiBadge = (text: string, bg: string, ink: string, size: number) => {
+  // Scales with the list's rows (`--xi-scale`, set only above 12).
+  const xu = xiScaled(u);
+  return `<span data-badge="1" style="flex:none;font-family:${CK_COND};font-weight:800;font-size:${xu(size)};line-height:1;letter-spacing:.06em;padding:${xu(0.5)} ${xu(0.9)};background:${bg};color:${ink}">${text}</span>`;
+};
 
 /**
  * Starting XI: the player photo down the left with the match under it, the
@@ -433,9 +440,10 @@ const startingXi = design({
   rowExtras: { players: [textField("debut", "Debut badge", "")] },
   build: (f) => {
     const tall = isTall(f);
-    // Row height and type from the room the format gives the list.
+    // Row height and type from the room the format gives the list, compressed
+    // for a side of 13 or 14 (`--xi-scale`, set by the renderer above 12).
     const k = { square: 1, portrait: 1.12, story: 1.3, landscape: 0.92 }[f];
-    const ku = (n: number) => u(+(n * k).toFixed(2));
+    const ku = (n: number) => xiScaled(u)(+(n * k).toFixed(2));
     const left = f === "landscape" ? "50%" : tall ? "44%" : "46%";
     const photo = treatedPhoto(
       "squadPhoto",
@@ -454,6 +462,11 @@ const startingXi = design({
       `<span data-fit="13" style="flex:1;min-width:0;font-family:${CK_COND};font-weight:800;font-size:calc(${ku(4.2)} * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;color:${C.chalk}">{{row.surname}}</span>` +
       xiBadge("{{row.role}}", C.p, C.onp, +(2.3 * k).toFixed(2)) +
       xiBadge("{{row.debut}}", C.chalk, C.base, +(2.3 * k).toFixed(2)) +
+      // The neutral overseas mark, a chip like the others; dropped when empty.
+      xiBadge("{{row.os}}", C.panel, C.chalk, +(2.3 * k).toFixed(2)).replace(
+        '<span data-badge="1"',
+        '<span data-badge="1" data-xi-os="1"',
+      ) +
       `</div>`;
     return (
       `<div data-pack-skeleton="1" style="position:absolute;inset:0;container-type:size;overflow:hidden;font-family:${CK_SANS};color:${C.chalk}">` +
@@ -485,7 +498,7 @@ const startingXi = design({
         ";line-height:.85",
       ) +
       `</div>` +
-      `<div data-repeat="players" data-repeat-max="12" style="flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:${ku(0.3)}">${row}</div>` +
+      `<div data-repeat="players" data-repeat-max="14" data-repeat-compress="12" style="flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:${ku(0.3)}">${row}</div>` +
       `<div style="flex:none;display:flex;justify-content:flex-end;align-items:flex-end;min-height:${u(7)}">${sponsorsOn(sponsor)}${sponsorsOff("")}</div>` +
       `</div>` +
       `</div>`

@@ -9428,6 +9428,8 @@ export interface JuniorPublicTeamListPlayer {
   role: JuniorTeamListRole | null;
   /** Junior shirt number for the fixture's season (null when withheld or none) */
   shirtNumber: string | null;
+  /** An overseas player (ADR-009), from the side's finalise snapshot: a neutral "OS", never a country. Never set on a withheld player. Absent reads as false. */
+  overseas?: boolean;
 }
 
 export interface JuniorFixtureDetail {

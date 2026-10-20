@@ -333,6 +333,8 @@ export function teamListPlayersToState(
         surname: surnameOf(p.displayName),
         role: p.role,
         ...(debut ? { debut: true } : {}),
+        // The published snapshot's overseas mark (ADR-009); a withheld player has none.
+        ...(p.overseas ? { overseas: true } : {}),
       };
     });
   return { players: rows };

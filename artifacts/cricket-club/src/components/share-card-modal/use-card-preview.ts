@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   renderShareCard,
   type CardSize,
@@ -7,6 +7,16 @@ import {
   type ShareCardInput,
 } from "@/lib/share-card";
 
+type PreviewUrls = Record<CardSize, string | null>;
+
+const NO_PREVIEWS: PreviewUrls = { square: null, portrait: null, story: null, landscape: null };
+
+function revokeAll(urls: PreviewUrls) {
+  Object.values(urls).forEach((url) => {
+    if (url) URL.revokeObjectURL(url);
+  });
+}
+
 // Owns the still-image preview: the per-size render-on-demand effect, the
 // preview-URL cache, cache invalidation when the card inputs change, and URL
 // cleanup on close. Animated cards preview live on a canvas instead, so the
@@ -14,9 +24,15 @@ import {
 //
 // `renderDeps` / `invalidateDeps` are the verbatim dependency lists from the
 // orchestrator (sponsors, theme, photo transform, etc.). They are passed in so
-// the orchestrator stays the single source of truth for what affects a render,
-// and so this hook re-renders / invalidates on exactly the same triggers as
-// before the extraction.
+// the orchestrator stays the single source of truth for what affects a render.
+//
+// The cache is tagged with a key that changes, during render, whenever an
+// invalidating input changes (or the modal opens or closes). The render effect
+// therefore sees the invalidation in the same commit it runs in. When the
+// invalidation lived in its own effect, a change in both lists (the default
+// layout resolving, the photo gallery loading, the debounced photo transform)
+// let the render effect hit the stale cached URL and bail, after which the
+// invalidate effect cleared it and nothing rendered again: a blank tile.
 export function useCardPreview({
   open,
   input,
@@ -36,62 +52,50 @@ export function useCardPreview({
   renderDeps: unknown[];
   invalidateDeps: unknown[];
 }) {
-  const [previewUrls, setPreviewUrls] = useState<Record<CardSize, string | null>>({
-    square: null,
-    portrait: null,
-    story: null,
-    landscape: null,
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cacheKey = useMemo(() => ({}), [open, ...invalidateDeps]);
+  const [cache, setCache] = useState<{ key: object; urls: PreviewUrls }>(() => ({
+    key: cacheKey,
+    urls: NO_PREVIEWS,
+  }));
   const [rendering, setRendering] = useState(false);
+  const previewUrls = cache.key === cacheKey ? cache.urls : NO_PREVIEWS;
 
-  // Render preview when size/sponsors/input changes.
+  // Release the previews of an invalidated cache (inputs changed, or closed).
   useEffect(() => {
+    if (cache.key === cacheKey) return;
+    revokeAll(cache.urls);
+    setCache({ key: cacheKey, urls: NO_PREVIEWS });
+  }, [cache, cacheKey]);
+
+  // Render the active size on demand when it is not cached for these inputs.
+  useEffect(() => {
+    if (!open || !input || animated || previewUrls[activeSize]) {
+      setRendering(false);
+      return;
+    }
     let cancelled = false;
-    const run = async () => {
-      if (!open || !input) return;
-      if (animated) return; // animated cards preview live on a canvas instead
-      if (previewUrls[activeSize]) return; // cache hit
-      setRendering(true);
-      try {
-        const blob = await renderShareCard(input, buildOpts(activeSize, renderTransform));
+    setRendering(true);
+    renderShareCard(input, buildOpts(activeSize, renderTransform))
+      .then((blob) => {
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
-        setPreviewUrls((prev) => ({ ...prev, [activeSize]: url }));
-      } catch (e) {
-        console.error("Card render failed", e);
-      } finally {
+        setCache((prev) => ({
+          key: cacheKey,
+          urls: { ...(prev.key === cacheKey ? prev.urls : NO_PREVIEWS), [activeSize]: url },
+        }));
+      })
+      .catch((e) => {
+        if (!cancelled) console.error("Card render failed", e);
+      })
+      .finally(() => {
         if (!cancelled) setRendering(false);
-      }
-    };
-    run();
+      });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, renderDeps);
-
-  // Invalidate cached previews when sponsors flip or the theme changes.
-  useEffect(() => {
-    setPreviewUrls((prev) => {
-      Object.values(prev).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-      return { square: null, portrait: null, story: null, landscape: null };
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, invalidateDeps);
-
-  // Cleanup URLs on close.
-  useEffect(() => {
-    if (!open) {
-      setPreviewUrls((prev) => {
-        Object.values(prev).forEach((url) => {
-          if (url) URL.revokeObjectURL(url);
-        });
-        return { square: null, portrait: null, story: null, landscape: null };
-      });
-    }
-  }, [open]);
+  }, [...renderDeps, cacheKey]);
 
   return { previewUrls, rendering };
 }

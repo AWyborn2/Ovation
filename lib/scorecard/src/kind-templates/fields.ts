@@ -951,6 +951,10 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
             label: "Role (C/WK)",
           },
           {
+            key: "os",
+            label: "Overseas (OS)",
+          },
+          {
             key: "surname",
             label: "Surname",
           },
