@@ -12,6 +12,8 @@ import {
   type ContentPreset,
 } from "@workspace/scorecard/card-content";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Save } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
@@ -33,9 +35,10 @@ export function choose(
 /**
  * What match day cards show (ADR-010): a preset (Minimal, Standard, Full) and
  * per-field switches on top. Every Weekend Carousel starts from these; a
- * carousel can change them for itself. The junior same-day switch (P3) and the
- * livestream link (P5) join this section when the cards use them; until then
- * their stored values pass through untouched.
+ * carousel can change them for itself. The junior same-day switch (P3) puts a
+ * junior carousel's games of one day on one slide (Match Day, Results and
+ * Match Summaries). The livestream link (P5) joins this section when the cards
+ * use it; until then its stored value passes through untouched.
  */
 export function CardContentSection() {
   const queryClient = useQueryClient();
@@ -107,6 +110,27 @@ export function CardContentSection() {
                 setDraft({ ...draft, ...choose(draft, { key, on }) });
               }}
             />
+            <div className="flex items-start justify-between gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <Label htmlFor="content-settings-junior-day">
+                  Junior games on the same day share a slide
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Junior match day, results and match summary carousels list each day&rsquo;s games
+                  together, as many as fit the card size. Senior games always have a slide each.
+                </p>
+              </div>
+              <Switch
+                id="content-settings-junior-day"
+                checked={draft.juniorConsolidateByDay}
+                disabled={update.isPending}
+                onCheckedChange={(on) => {
+                  setSavedOk(false);
+                  setDraft({ ...draft, juniorConsolidateByDay: on });
+                }}
+                data-testid="content-settings-junior-day"
+              />
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex items-center justify-end gap-3">
               {savedOk && !dirty && (

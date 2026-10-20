@@ -219,6 +219,105 @@ export function skeletonMatchDetailTemplate(
 }
 
 // ---------------------------------------------------------------------------
+// Junior day slides (ADR-010 P3): the junior matches of one day as compact
+// rows under the day's heading, in the pack's own look. Club Kit's are in
+// `club-kit/day-slides.ts`; the row counts per size are the layout contract's.
+// ---------------------------------------------------------------------------
+
+/**
+ * Characters a day row's name box holds at full size. Square, portrait and
+ * story share one markup, so this is the narrowest of them as measured in the
+ * browser at capacity (portrait), less a margin for fallback fonts.
+ */
+export const SKELETON_DAY_ROW_FIT = 38;
+
+function skeletonDayCard(
+  look: PackLook,
+  kind: "fixtures" | "results",
+  count: number,
+): PackCardTemplate {
+  const n = Math.max(1, count);
+  const rowKeys =
+    kind === "fixtures"
+      ? ["grade", "opposition", "meta", "time"]
+      : ["grade", "opposition", "result", "word", "clubScore", "oppScore"];
+  const build = (land: boolean): string => {
+    const cols = land && n > 3 ? 2 : 1;
+    const perCol = Math.ceil(n / cols);
+    // Landscape's body is short, so its rows set a little larger to fill it.
+    const k = (perCol <= 4 ? 1 : Math.max(0.7, 4 / perCol + 0.1)) * (land ? 1.2 : 1);
+    const s = (v: number) => `${+(v * k).toFixed(2)}cqmin`;
+    const crest = (i: number) =>
+      `<div data-drop-if-empty="day${i}.crest" style="flex:none;width:${s(8)};height:${s(8)};display:flex;align-items:center;justify-content:center;background:#fff;border-radius:${K.rowR};overflow:hidden">${slot(`day${i}.crest`, "logo", "rect")}</div>`;
+    const name = (i: number) =>
+      `<div data-fit="${SKELETON_DAY_ROW_FIT}" data-fit-row style="font-family:${SK_COND};font-weight:800;font-size:calc(${s(4.2)} * var(--fit,1));line-height:1.02;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${K.panelText}">v {{day${i}.opposition}}</div>`;
+    const small = (text: string, mono = false, extra = "") =>
+      `<div style="${extra}font-family:${mono ? SK_MONO : SK_COND};font-weight:${mono ? 600 : 700};font-size:${s(mono ? 2 : 2.4)};${mono ? "letter-spacing:.14em;" : ""}line-height:1.3;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${K.panelMuted}">${text}</div>`;
+    const row = (i: number) =>
+      `<div data-day-row="${i}" style="box-sizing:border-box;display:flex;align-items:center;gap:${s(2)};min-width:0;padding:${s(1.4)} ${s(2)};background:${K.panel};border:1px solid ${K.panelBorder};border-radius:${K.rowR}">` +
+      (kind === "fixtures"
+        ? `<div style="flex:none;min-width:${s(15)};font-family:${K_DISP};font-size:${s(4.6)};line-height:1;color:${K.panelAcc}">{{day${i}.time}}</div>` +
+          `<div style="flex:1;min-width:0">${small(`{{day${i}.grade}}`, true)}${name(i)}${small(`{{day${i}.meta}}`)}</div>`
+        : `<div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:${s(1.4)};min-width:0"><span style="flex:none;font-family:${SK_COND};font-weight:800;font-size:${s(2.8)};line-height:1;padding:${s(0.4)} ${s(1)};border-radius:${K.pillR};background:${K.acc};color:${K.accInk}">{{day${i}.word}}</span>${small(`{{day${i}.grade}}`, true, "min-width:0;")}</div>${name(i)}${small(`{{day${i}.result}}`)}</div>` +
+          `<div style="flex:none;text-align:right;line-height:1"><div style="font-family:${K_DISP};font-size:${s(4.6)};color:${K.panelAcc}">{{day${i}.clubScore}}</div>` +
+          `<div style="font-family:${SK_COND};font-weight:800;font-size:${s(3)};margin-top:${s(0.5)};color:${K.panelMuted}">{{day${i}.oppScore}}</div></div>`) +
+      crest(i) +
+      `</div>`;
+    const list =
+      `<div data-day-rows="${n}" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${s(1.4)};width:100%;margin-top:2.4cqmin">` +
+      Array.from({ length: n }, (_, i) => row(i)).join("") +
+      `</div>`;
+    return kitCard(look, {
+      chip: kitChip(kind === "fixtures" ? "MATCH DAY" : "RESULTS"),
+      // Landscape spans the card (two columns of rows); the others use the pack's column.
+      body: (land
+        ? (inner: string) =>
+            `<div style="display:flex;flex-direction:column;align-items:flex-start;width:100%;min-width:0">${inner}</div>`
+        : (inner: string) => kColumn(look, inner, true))(
+        kEyebrow(kind === "fixtures" ? "JUNIOR MATCH DAY" : "JUNIOR RESULTS") +
+          kCond("{{dayHeading}}", land ? 9 : 11, ";margin-top:1cqmin") +
+          list,
+      ),
+      footer: kFooterOn("proudly supported by"),
+      deco: {
+        word: kind === "fixtures" ? "GAME DAY" : "RESULTS",
+        script: kind === "fixtures" ? "Junior match day" : "Junior results",
+      },
+    });
+  };
+  const keys = Array.from({ length: n }, (_, i) => rowKeys.map((k) => `day${i}.${k}`)).flat();
+  return {
+    kind: kind === "fixtures" ? "matchDay" : "matchSummary",
+    designKey: kind === "fixtures" ? `junior-day-${n}` : `junior-results-day-${n}`,
+    name: kind === "fixtures" ? "Junior match day" : "Junior results day",
+    sponsorVariants: ["on"],
+    fields: [
+      ...clubHeaderFields(),
+      ...["clubHashtag", "sponsorPresentedBy", "dayHeading", ...keys].map((x) =>
+        textField(x, x, ""),
+      ),
+      ...Array.from({ length: n }, (_, i) => ({
+        key: `day${i}.crest`,
+        label: "Opposition logo",
+        type: "logo" as const,
+        sample: "",
+      })),
+    ] as PackCardTemplate["fields"],
+    formats: kitFormats((f) => build(f === "landscape")),
+  };
+}
+
+/** Match Day: a day's junior fixtures (the multi-fixture layout). */
+export function skeletonDayFixturesTemplate(look: PackLook, count: number): PackCardTemplate {
+  return skeletonDayCard(look, "fixtures", count);
+}
+
+/** Results / Match Summary: a day's junior results (the multi-result layout). */
+export function skeletonDayResultsTemplate(look: PackLook, count: number): PackCardTemplate {
+  return skeletonDayCard(look, "results", count);
+}
+
+// ---------------------------------------------------------------------------
 // Carousel content variant (input.carouselContent): a clone of the pack's
 // ordinary template with contained logos and, for matchDay, an optional photo.
 // ---------------------------------------------------------------------------

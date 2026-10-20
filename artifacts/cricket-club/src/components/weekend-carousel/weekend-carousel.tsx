@@ -38,6 +38,7 @@ import {
 import {
   CLUB_TIME_ZONE,
   eligibleCarouselPhotos,
+  slideForFixture,
   type TeamSlide,
   type CarouselAudience,
 } from "./model";
@@ -564,7 +565,10 @@ function TeamEditor({
   );
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);
-  const slide = s.slides.find((sl) => sl.id === `fixture-${team.fixture.id}`);
+  const slide = slideForFixture(s.slides, team.fixture.id);
+  // A junior day slide (P3) is shared: its first game shows it, the others say so.
+  const shared = slide?.fixtureIds && slide.fixtureIds.length > 1 ? slide : null;
+  const showsShared = !shared || shared.fixtureIds![0] === team.fixture.id;
 
   return (
     <li className="rounded-md border p-3" data-testid={`team-${team.fixture.id}`}>
@@ -584,61 +588,72 @@ function TeamEditor({
           onMove={(d) => s.moveTeamAt(index, d)}
         />
       </div>
-      <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
-        {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
-        <div className="min-w-0 space-y-4">
-          <div
-            className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1"
-            role="radiogroup"
-            aria-label={`Photo for ${label}`}
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={team.photoId == null}
-              disabled={lock}
-              onClick={() => s.patchTeam(index, { photoId: null })}
-              className={`flex h-16 w-16 flex-col items-center justify-center rounded border text-[10px] text-muted-foreground ${team.photoId == null ? "ring-2 ring-primary" : ""}`}
-              data-testid={`button-no-photo-${team.fixture.id}`}
+      {shared ? (
+        <div className="mt-3 space-y-3" data-testid={`team-day-slide-${team.fixture.id}`}>
+          <p className="text-xs text-muted-foreground">
+            {showsShared
+              ? `Shares one slide with the other junior games on this day (${shared.fixtureIds!.length} games). Junior day slides have no photo.`
+              : "On the junior day slide above, with the other games on this day."}
+          </p>
+          {showsShared && <SlidePreview slide={shared} size={s.size} packId={s.packId} />}
+        </div>
+      ) : (
+        <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
+          {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
+          <div className="min-w-0 space-y-4">
+            <div
+              className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1"
+              role="radiogroup"
+              aria-label={`Photo for ${label}`}
             >
-              <ImageOff className="h-4 w-4" aria-hidden /> No photo
-            </button>
-            {options.map((p) => (
               <button
-                key={p.id}
                 type="button"
                 role="radio"
-                aria-checked={team.photoId === p.id}
-                aria-label={`Photo ${p.id}`}
+                aria-checked={team.photoId == null}
                 disabled={lock}
-                onClick={() =>
-                  s.patchTeam(index, {
-                    photoId: p.id,
-                    transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
-                  })
-                }
-                className={`h-16 w-16 overflow-hidden rounded border ${team.photoId === p.id ? "ring-2 ring-primary" : ""}`}
-                data-testid={`button-photo-${team.fixture.id}-${p.id}`}
+                onClick={() => s.patchTeam(index, { photoId: null })}
+                className={`flex h-16 w-16 flex-col items-center justify-center rounded border text-[10px] text-muted-foreground ${team.photoId == null ? "ring-2 ring-primary" : ""}`}
+                data-testid={`button-no-photo-${team.fixture.id}`}
               >
-                <img src={p.thumbUrl || p.url} alt="" className="h-full w-full object-cover" />
+                <ImageOff className="h-4 w-4" aria-hidden /> No photo
               </button>
-            ))}
-            {options.length === 0 && (
-              <p className="self-center text-xs text-muted-foreground">
-                No {team.fixture.grade} photos in the library. This slide will use no photo.
-              </p>
+              {options.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={team.photoId === p.id}
+                  aria-label={`Photo ${p.id}`}
+                  disabled={lock}
+                  onClick={() =>
+                    s.patchTeam(index, {
+                      photoId: p.id,
+                      transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
+                    })
+                  }
+                  className={`h-16 w-16 overflow-hidden rounded border ${team.photoId === p.id ? "ring-2 ring-primary" : ""}`}
+                  data-testid={`button-photo-${team.fixture.id}-${p.id}`}
+                >
+                  <img src={p.thumbUrl || p.url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+              {options.length === 0 && (
+                <p className="self-center text-xs text-muted-foreground">
+                  No {team.fixture.grade} photos in the library. This slide will use no photo.
+                </p>
+              )}
+            </div>
+            {chosen && (
+              <PhotoPlacement
+                value={team.transform}
+                onChange={(transform) => s.patchTeam(index, { transform })}
+                disabled={lock}
+                label={team.fixture.grade}
+              />
             )}
           </div>
-          {chosen && (
-            <PhotoPlacement
-              value={team.transform}
-              onChange={(transform) => s.patchTeam(index, { transform })}
-              disabled={lock}
-              label={team.fixture.grade}
-            />
-          )}
         </div>
-      </div>
+      )}
     </li>
   );
 }

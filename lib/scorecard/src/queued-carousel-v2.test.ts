@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { carouselPackId, contentSlideInput, readQueuedCarousel } from "./queued-carousel";
 import {
+  dayResultRow,
+  matchDayDayContent,
   matchDayFixtureContent,
   matchDaySponsorsContent,
   matchDayTitleContent,
@@ -176,6 +178,91 @@ describe("queued carousel v2 (content snapshot)", () => {
     expect(contentSlideInput(slide as Parameters<typeof contentSlideInput>[0])).toEqual(
       readQueuedCarousel(v2())!.slides[1].input,
     );
+  });
+});
+
+describe("junior day slides (P3)", () => {
+  const juniorFixture = (id: number) => ({ ...fixture(true), fixtureId: id });
+  const daySlide = (over: Record<string, unknown> = {}) => ({
+    id: "day-2026-10-10-1",
+    label: "Juniors � SAT 10 OCT (2 games)",
+    content: matchDayDayContent([juniorFixture(1), juniorFixture(2)]),
+    visibleFields: visible(),
+    photoId: null,
+    data: {},
+    junior: true,
+    sponsorsOn: false,
+    warnings: [],
+    ...over,
+  });
+
+  it("reads a Match Day day slide and derives its rows", () => {
+    const payload = v2();
+    payload.weekendCarousel.slides[1] = daySlide();
+    const c = readQueuedCarousel(payload)!;
+    expect(c).not.toBeNull();
+    expect(c.slides[1].input).toMatchObject({
+      kind: "matchDay",
+      junior: true,
+      namesResolved: true,
+      carouselDay: { heading: "SAT 10 OCT" },
+    });
+    expect((c.slides[1].input.carouselDay as { fixtures: unknown[] }).fixtures).toHaveLength(2);
+  });
+
+  it("rejects a day slide flagged senior, or one holding a senior fixture", () => {
+    const flagged = v2();
+    flagged.weekendCarousel.slides[1] = daySlide({ junior: false });
+    expect(readQueuedCarousel(flagged)).toBeNull();
+    const mixed = v2();
+    mixed.weekendCarousel.slides[1] = daySlide({
+      content: {
+        ...matchDayDayContent([juniorFixture(1)]),
+        fixtures: [juniorFixture(1), fixture()],
+      },
+    });
+    expect(readQueuedCarousel(mixed)).toBeNull();
+  });
+
+  it("reads a Results day slide (frozen input) and rejects a senior one", () => {
+    const summary = {
+      kind: "matchSummary" as const,
+      matchTitle: "Under 13 � Round 4",
+      result: "Won by 22 runs",
+      resultWinner: "club" as const,
+      club: { name: "Halls Head", primaryColor: "", secondaryColor: "", textColor: "" },
+      opposition: { name: "Mandurah", primaryColor: "", secondaryColor: "", textColor: "" },
+      innings: [],
+      junior: true,
+    };
+    const resultsDay = (junior: boolean) => ({
+      id: "day-2026-10-10-1",
+      label: "Juniors � SAT 10 OCT (2 games)",
+      input: {
+        ...summary,
+        junior,
+        carouselDay: {
+          heading: "SAT 10 OCT",
+          results: [dayResultRow(summary), dayResultRow(summary)],
+        },
+      },
+      data: {},
+      junior,
+      sponsorsOn: false,
+      warnings: [],
+    });
+    const payload = v2({ setType: "results" });
+    payload.weekendCarousel.slides[1] = resultsDay(true);
+    expect(readQueuedCarousel(payload)!.slides[1].input.carouselDay).toBeDefined();
+    const senior = v2({ setType: "results" });
+    senior.weekendCarousel.slides[1] = resultsDay(false);
+    expect(readQueuedCarousel(senior)).toBeNull();
+    // A day slide needs at least two rows (one game keeps its own card).
+    const one = v2({ setType: "results" });
+    const lone = resultsDay(true);
+    lone.input.carouselDay.results = [dayResultRow(summary)];
+    one.weekendCarousel.slides[1] = lone;
+    expect(readQueuedCarousel(one)).toBeNull();
   });
 });
 
