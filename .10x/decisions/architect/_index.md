@@ -14,4 +14,5 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [team-of-the-week-engines](team-of-the-week-engines.md) — discovery only, next spec
 - [admin-menu-consolidation](admin-menu-consolidation.md) — category column on shirt_numbers, juniors overlap endpoint, Imports hub, Stats & Data group. Design complete 2026-10-19
+- [social-photo-tag-selection](social-photo-tag-selection.md) — kind photo policy in pickDraftPhoto (side/game/gradeTeam), retire random/player rules for those kinds (retire-rules migration, next free number), filtered library picker. Design complete 2026-10-20
 - [selection-side-size](selection-side-size.md) — per-grade side_sizes/overseas_caps maps on availability_settings, per-draft side_size, shared sideShape helper, squad_member_seasons, finalise snapshot; ADR-009 accepted 2026-10-20. Design complete
