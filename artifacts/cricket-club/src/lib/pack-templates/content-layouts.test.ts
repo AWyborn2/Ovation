@@ -104,11 +104,37 @@ const bundle = {
   settings: { sponsorsEnabled: true, clubHashtag: "#OURCLUB", livestreamUrl: LIVESTREAM },
   brand: { name: "Our Cricket Club", primaryColour: "#009900", backgroundColour: "#001122" },
   activeSponsors: [
-    { name: "Presenting Partner", logoUrl: "https://s.test/presenting.png", isPresenting: true },
-    { name: "Team Partner", logoUrl: "https://s.test/team.png", grades: [fixture.grade] },
-    { name: "Club Partner", logoUrl: "https://s.test/club.png" },
+    {
+      name: "Presenting Partner",
+      logoUrl: "https://s.test/presenting.png",
+      isPresenting: true,
+      tier: "major",
+    },
+    {
+      name: "Team Partner",
+      logoUrl: "https://s.test/team.png",
+      grades: [fixture.grade],
+      tier: "standard",
+    },
+    { name: "Club Partner", logoUrl: "https://s.test/club.png", tier: "standard" },
   ],
 } as unknown as SocialSettingsBundle;
+
+// The sponsors page's sources (P6), worst case: the longest next home game and socials.
+const backgroundPhoto: ClubPhoto = { ...coverPhoto, id: 7, url: "https://photos.test/bg.jpg" };
+const sponsorsPage = {
+  backgroundPhoto,
+  nextHomeGame: matchDayFixtureContent({
+    ...fixture,
+    id: 2,
+    isHome: true,
+    roundLabel: "Round 4",
+    opponentLogoUrl: null,
+    venue: fixture.venue ?? null,
+    startAt: new Date("2026-10-17T02:00:00Z"),
+  }),
+  socials: ["@ourcricketclubofficial", "Our Cricket Club Official", "ourcricketclub.com.au"],
+};
 
 function slidesFor(preset: ContentPreset) {
   const teams = createTeamSlides([fixture], [teamPhoto], content);
@@ -126,6 +152,7 @@ function slidesFor(preset: ContentPreset) {
       photos: [coverPhoto],
     },
     presetFields("matchDay", preset),
+    sponsorsPage,
   );
 }
 
@@ -247,6 +274,34 @@ describe.each(CONTENT_PACK_IDS)("fit grid: %s", (packId) => {
           }
           if (slide.id === "sponsors") {
             expect(html, where).toContain("https://s.test/club.png");
+            // P6 options: each block shows exactly when its field is on.
+            expect(html.includes("https://s.test/team.png"), where).toBe(
+              show("sponsors.teamSponsors"),
+            );
+            expect(html.includes('data-weekend-sponsor-grid="major"'), where).toBe(
+              show("sponsors.tiers"),
+            );
+            expect(text.includes("THANK YOU TO OUR SPONSORS"), where).toBe(
+              show("sponsors.thankYou"),
+            );
+            expect(text.includes("SUPPORT THE BUSINESSES THAT SUPPORT US"), where).toBe(
+              show("sponsors.thankYou"),
+            );
+            expect(text.includes("OUR SPONSORS"), where).toBe(true);
+            expect(text.includes("NEXT HOME GAME"), where).toBe(show("sponsors.nextHomeGame"));
+            expect(text.includes("SAT 17 OCT"), where).toBe(show("sponsors.nextHomeGame"));
+            expect(text.includes("@ourcricketclubofficial"), where).toBe(
+              show("sponsors.nextHomeGame"),
+            );
+            expect(html.includes(backgroundPhoto.url), where).toBe(show("sponsors.background"));
+            for (const box of doc.querySelectorAll("[data-fit]")) {
+              const value = (box.textContent ?? "").trim();
+              const capacity = Number(box.getAttribute("data-fit"));
+              expect(
+                fitsWithoutEllipsis(value, capacity),
+                `${where}: "${value}" in ${capacity}`,
+              ).toBe(true);
+            }
           }
         }
       },

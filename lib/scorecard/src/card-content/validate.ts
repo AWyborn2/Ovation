@@ -52,6 +52,27 @@ function withoutBadOptionalData(
   return out as unknown as CardContent;
 }
 
+const optional = (v: unknown, ok: (v: unknown) => boolean) => v === undefined || ok(v);
+
+/** The sponsors page; the blocks added in P6 are optional (older carousels lack them). */
+function sponsorsPage(v: Record<string, unknown>): boolean {
+  return (
+    Array.isArray(v.sponsors) &&
+    v.sponsors.every(
+      (s) =>
+        object(s) &&
+        str(s.name) &&
+        str(s.logoUrl) &&
+        optional(s.tier, (t) => t === "major" || t === "standard") &&
+        optional(s.teamSponsor, (t) => typeof t === "boolean"),
+    ) &&
+    optional(v.thankYou, str) &&
+    optional(v.cta, str) &&
+    optional(v.nextHomeGame, (g) => g === null || (object(g) && str(g.match) && str(g.when))) &&
+    optional(v.socials, (l) => Array.isArray(l) && l.every(str))
+  );
+}
+
 /** The content, when `raw` is well-formed Match Day content; else null. */
 export function readCardContent(raw: unknown): CardContent | null {
   if (!object(raw) || raw.kind !== "matchDay") return null;
@@ -59,11 +80,7 @@ export function readCardContent(raw: unknown): CardContent | null {
     case "title":
       return bookend(raw) ? withoutBadOptionalData(raw, ["livestream"]) : null;
     case "sponsors":
-      return bookend(raw) &&
-        Array.isArray(raw.sponsors) &&
-        raw.sponsors.every((s) => object(s) && str(s.name) && str(s.logoUrl))
-        ? (raw as unknown as CardContent)
-        : null;
+      return bookend(raw) && sponsorsPage(raw) ? (raw as unknown as CardContent) : null;
     case "fixture": {
       const s = raw.source;
       return Number.isSafeInteger(raw.fixtureId) &&

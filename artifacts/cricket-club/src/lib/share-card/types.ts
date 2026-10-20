@@ -285,7 +285,17 @@ export type ShareCardInput =
         title: string;
         fixtureCount: number;
         sponsors: { name: string; logoUrl: string }[];
+        /** Title: the cover photo. Sponsors page: its background photo (P6). */
         hasCoverPhoto?: boolean;
+        /** Sponsors page (P6): the first N sponsors are major and print larger. */
+        majorCount?: number;
+        /** Sponsors page (P6): the thank-you heading and the call to action. */
+        thankYou?: string;
+        cta?: string;
+        /** Sponsors page (P6): the club's next home game. */
+        nextHome?: { match: string; when: string };
+        /** Sponsors page (P6): "@ourclub · Our Cricket Club · ourclub.com.au". */
+        socials?: string;
         /** The title page's livestream link, shortened ("youtube.com/@club"); P5. */
         livestream?: string;
       };

@@ -5,10 +5,13 @@
  * binder the names are final, so it does not shorten them a second time.
  */
 
-import type { CardContent, MatchDayFixtureContent } from "./types";
+import type { CardContent, MatchDayFixtureContent, MatchDaySponsorsContent } from "./types";
 
 export interface ContentInputOptions {
-  /** The title slide has a cover photo (and `title.coverPhoto` is on). */
+  /**
+   * The slide has its photo: the title slide's cover (shown when
+   * `title.coverPhoto` is on) or the sponsors page's background (`sponsors.background`).
+   */
   hasCoverPhoto?: boolean;
 }
 
@@ -35,14 +38,41 @@ export function contentInput(
       page: content.page,
       title: content.heading,
       fixtureCount: content.fixtureCount,
-      sponsors: content.page === "sponsors" ? content.sponsors : [],
-      ...(content.page === "title" && opts.hasCoverPhoto && visible.has("title.coverPhoto")
+      ...(content.page === "sponsors" ? sponsorsPage(content, visible) : { sponsors: [] }),
+      ...(opts.hasCoverPhoto &&
+      visible.has(content.page === "title" ? "title.coverPhoto" : "sponsors.background")
         ? { hasCoverPhoto: true }
         : {}),
       ...(content.page === "title" && content.livestream && visible.has("title.livestream")
         ? { livestream: content.livestream.label }
         : {}),
     },
+  };
+}
+
+/**
+ * The sponsors page's template input (P6). With none of its optional fields
+ * on, it is exactly the page as it was: club sponsors in sponsor order. Each
+ * optional block is added only when its field is on and it has a value.
+ */
+function sponsorsPage(
+  c: MatchDaySponsorsContent,
+  visible: ReadonlySet<string>,
+): Record<string, unknown> {
+  const shown = c.sponsors.filter((s) => visible.has("sponsors.teamSponsors") || !s.teamSponsor);
+  const majors = visible.has("sponsors.tiers") ? shown.filter((s) => s.tier === "major") : [];
+  const ordered = majors.length ? [...majors, ...shown.filter((s) => s.tier !== "major")] : shown;
+  // The thank-you names the sponsors, so the no-sponsor page keeps its club thank-you.
+  const thanks = visible.has("sponsors.thankYou") && ordered.length > 0;
+  const extras = visible.has("sponsors.nextHomeGame");
+  const socials = extras ? (c.socials ?? []).filter(Boolean).join(" · ") : "";
+  return {
+    sponsors: ordered.map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
+    ...(majors.length ? { majorCount: majors.length } : {}),
+    ...(thanks && c.thankYou ? { thankYou: c.thankYou } : {}),
+    ...(thanks && c.cta ? { cta: c.cta } : {}),
+    ...(extras && c.nextHomeGame ? { nextHome: { ...c.nextHomeGame } } : {}),
+    ...(socials ? { socials } : {}),
   };
 }
 

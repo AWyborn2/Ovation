@@ -26,6 +26,13 @@ import {
 
 const CORE = CONTENT_FIELDS.matchDay.filter((f) => f.tier === "core").map((f) => f.key);
 const OPTIONAL = CONTENT_FIELDS.matchDay.filter((f) => f.tier === "optional").map((f) => f.key);
+const FULL_ONLY_KEYS = [
+  "sponsors.tiers",
+  "sponsors.teamSponsors",
+  "sponsors.thankYou",
+  "sponsors.nextHomeGame",
+  "sponsors.background",
+];
 
 describe("content field catalogue", () => {
   it("keys are unique, slide-prefixed, and core fields are in every preset", () => {
@@ -37,13 +44,21 @@ describe("content field catalogue", () => {
     }
   });
 
-  it("Minimal is core only; Standard is the cards as they were; Full adds the data fields", () => {
-    const FULL_ONLY = ["title.livestream", ...MATCH_DAY_DATA_FIELDS];
+  it("Minimal is core only; Standard is the cards as they were; Full adds the data and sponsors-page fields", () => {
+    const FULL_ONLY = ["title.livestream", ...MATCH_DAY_DATA_FIELDS, ...FULL_ONLY_KEYS];
     const STANDARD = OPTIONAL.filter((k) => !FULL_ONLY.includes(k));
     expect([...presetFields("matchDay", "minimal")].sort()).toEqual([...CORE].sort());
     expect([...presetFields("matchDay", "standard")].sort()).toEqual([...CORE, ...STANDARD].sort());
     expect([...presetFields("matchDay", "full")].sort()).toEqual([...CORE, ...OPTIONAL].sort());
     for (const k of FULL_ONLY) expect(OPTIONAL).toContain(k);
+  });
+
+  it("the sponsors page options (P6) are optional and Full only", () => {
+    for (const key of FULL_ONLY_KEYS) {
+      const f = CONTENT_FIELDS.matchDay.find((x) => x.key === key)!;
+      expect(f.tier, key).toBe("optional");
+      expect(f.presets, key).toEqual(["full"]);
+    }
   });
 });
 
