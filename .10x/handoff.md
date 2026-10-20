@@ -1,5 +1,19 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** match-day-carousel-content
+
+## Context
+
+- Requirements: `.10x/decisions/product-manager/match-day-carousel-content.md` (decided with Ash 20 Oct 2026).
+- Build one server-side content builder for Match Day slides (title, fixture, sponsors) used by both the sweep and the carousel UI; remove the client duplicate in `components/weekend-carousel/model.ts`.
+- Content settings: per-field toggles, Minimal/Standard/Full presets, club default plus per-carousel override.
+- Packs: Club Kit and Broadcast Dark on shared slots, plus one new pack; retire the other four with a read-time fallback.
+- Depends on social-tile-short-names (names and crests). Design the ADR so each layout declares what it can fit for every preset and size.
+
+## Previous handoff
+
 **From:** SDE (PR A)
 **To:** SDE sessions for PR B and PR C
 **Feature:** selection-side-size
