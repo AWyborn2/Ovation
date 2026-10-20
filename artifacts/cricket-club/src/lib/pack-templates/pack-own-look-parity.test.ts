@@ -26,28 +26,30 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * The junior scenario was regenerated when the forced junior brown panel was
  * retired (plan 2026-10-15-001 R18): a junior card now renders byte-identically
  * to the brand-only scenario, so each pack's junior digest equals its brandOnly one.
+ * Regenerated when ladder rows took the shared name-fit rule (ADR-010 P1: `data-fit`
+ * + `data-fit-row` on the team cell), a markup-only change for names that fit.
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "c73b441530f60944687a1ee7403941ada4d19c650373acbb697edad7c932abac",
-  "broadcast-dark-v1/junior": "8208e85f7fcc112cce39cea8ee5603fdaa9c35f04ca64ddd211b5b18eaa634df",
-  "broadcast-dark-v1/brandOnly": "8208e85f7fcc112cce39cea8ee5603fdaa9c35f04ca64ddd211b5b18eaa634df",
-  "broadcast-dark-v1/brandless": "cc99ca81db8928dc5311b70ac1b7164fe39ddc30e67c2d3a31deef18c3a1241f",
-  "gold-foil-v1/themed": "ec94f57dd02feea1f71bd6ba8d2947d9efc2ff7d0e88e665eb4cc9bb1729b0d1",
-  "gold-foil-v1/junior": "556d55f2fc647320b7e5f02f1e258dd2db426b4076716a93d19702adb75d38b8",
-  "gold-foil-v1/brandOnly": "556d55f2fc647320b7e5f02f1e258dd2db426b4076716a93d19702adb75d38b8",
-  "gold-foil-v1/brandless": "372c5c47024557e25e250530e4c77ea1bfdf04654a01704e138a9375d0337474",
-  "bold-type-v1/themed": "6ab83951d550c0f838dfe287eb7d289fe463e7f0d531b95ee388381b4623cad9",
-  "bold-type-v1/junior": "940b7c4764a1248af9920549c8b99762e38c01a813c70e536b0bdce5b90f8c28",
-  "bold-type-v1/brandOnly": "940b7c4764a1248af9920549c8b99762e38c01a813c70e536b0bdce5b90f8c28",
-  "bold-type-v1/brandless": "5f1d022300f07243c962117d14c1bd05fa9c47c50a0d1da609400149d60fcdb4",
-  "neon-night-v1/themed": "762254ed5cc69cf256b398ce37d27825902c27451f91cd1f63c0c76a7b330d15",
-  "neon-night-v1/junior": "a50c4d582de19f3d76453919c279c535f59c8067e6e2f3dfc2d0ade361e12aef",
-  "neon-night-v1/brandOnly": "a50c4d582de19f3d76453919c279c535f59c8067e6e2f3dfc2d0ade361e12aef",
-  "neon-night-v1/brandless": "f8211d197031d78414127abceb34c83810d0f7cd2272eb66d72d7e96bba9448a",
-  "sunset-v1/themed": "59357eddbf19b4c4e4b40bebb0bb1c3d749f63063874a5eee45b84bb2f34c873",
-  "sunset-v1/junior": "00339cb0037a0494b0c92ee3e1a864006596e95a5673e12f8b8f784ec738d8ee",
-  "sunset-v1/brandOnly": "00339cb0037a0494b0c92ee3e1a864006596e95a5673e12f8b8f784ec738d8ee",
-  "sunset-v1/brandless": "5f84a4328ee17559e94ab6ccdc1b4a69eb519b259c8dd423bd54ba054700d1bf",
+  "broadcast-dark-v1/themed": "4e2d6ff6f31d60135d297ce76515b400eb339974cf09d0670682854f6e4bf5dd",
+  "broadcast-dark-v1/junior": "ddfff0d8b06b6d281f87fc91be790c9f2d0873ec36cc0de186383ab6876fb3b6",
+  "broadcast-dark-v1/brandOnly": "ddfff0d8b06b6d281f87fc91be790c9f2d0873ec36cc0de186383ab6876fb3b6",
+  "broadcast-dark-v1/brandless": "6acb7fc77cffaab82f3dd9f86408f6b8a254c43d2630e8d05316984bcfe93838",
+  "gold-foil-v1/themed": "d729567915e69ca6933db969df51a400cbfef325d84aa1a94e6fbf31de8e7500",
+  "gold-foil-v1/junior": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",
+  "gold-foil-v1/brandOnly": "eeb1df8684ec71aaa7d27c69bf09904c98c30c04cb08d1ce5a6d5167a35a59ac",
+  "gold-foil-v1/brandless": "1870ac7b05e1a45917aeb25322fe4fa57b5b7c25e65bf2b46b01fe011421cefb",
+  "bold-type-v1/themed": "1bce6883ef18d0d891af8615e6875ebe22123d4056f5421f6e1918df0726889e",
+  "bold-type-v1/junior": "26eef58032da2ca5f59871395610d4d56a26e00965bba39e007353920e4261d6",
+  "bold-type-v1/brandOnly": "26eef58032da2ca5f59871395610d4d56a26e00965bba39e007353920e4261d6",
+  "bold-type-v1/brandless": "024966977e4a69d47e78cbb626e04dab69f7a15717bc026bf73862ef653f2a82",
+  "neon-night-v1/themed": "9be28001802d4c4ee4809bd82404fecbbd7a9e13d4cf27950b6d8319fe0c4294",
+  "neon-night-v1/junior": "53bf316cfb218f684c86eba6382918686df1770519de9a5ca8b361a6799cc4b5",
+  "neon-night-v1/brandOnly": "53bf316cfb218f684c86eba6382918686df1770519de9a5ca8b361a6799cc4b5",
+  "neon-night-v1/brandless": "5f89341b19d9593acda6321c6fa32f5983659c138a4cb02c67c1cdce74f2261a",
+  "sunset-v1/themed": "4bee02252e99283f8940ca4820ceacaafa2fcb748011038b8f2f30ba4ad7a672",
+  "sunset-v1/junior": "c641aa2cd2b0d4b2e1c1a95241e501f6f8e81c7da195336fb7f45547dfb38155",
+  "sunset-v1/brandOnly": "c641aa2cd2b0d4b2e1c1a95241e501f6f8e81c7da195336fb7f45547dfb38155",
+  "sunset-v1/brandless": "b021888acb2ace47a33b17e2adc80da8c472a255c2d9ef4f7d5394cefebf5166",
 };
 
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];

@@ -162,6 +162,7 @@ export function useSetEditor(id: number) {
       sponsors: slideSponsors(slide),
       presentingSponsorName: presentingSponsor,
       packColourModes: bundle?.settings.packColourModes,
+      names: bundle?.cardNames,
     });
 
   // Render one pack slide to a PNG blob via the server harness (parity with the

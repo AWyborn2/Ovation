@@ -5202,6 +5202,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/SocialSettings"
 
+  /social-settings/card-names:
+    get:
+      operationId: getCardNames
+      tags: [socialCards]
+      summary: The club's team and competition names for cards (automatic and club-set)
+      description: >-
+        Admin. The club itself, then every club it met this season or last, each
+        with its automatic short name, the club's own short name (all grades and
+        per grade) and crest; and every senior grade with its card label.
+        Tenant-scoped.
+      responses:
+        "200":
+          description: Names as cards print them
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardNamesListing"
+
+  /social-settings/card-names/teams:
+    put:
+      operationId: setCardTeamName
+      tags: [socialCards]
+      summary: Set or clear the club's short name for a team on cards
+      description: >-
+        Admin. Keyed on the central club id, for one app grade or (gradeKey
+        null) every grade. An empty or null shortName clears it, so cards fall
+        back to the automatic short name. Tenant-scoped; never written to the
+        central database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardTeamNameUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardNamesListing"
+
+  /social-settings/card-names/competitions:
+    put:
+      operationId: setCardCompetitionLabel
+      tags: [socialCards]
+      summary: Set or clear the club's card label for a grade
+      description: >-
+        Admin. An empty or null label clears it, so cards fall back to the
+        automatic label. Tenant-scoped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardCompetitionLabelUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardNamesListing"
+
   /social-connections/meta:
     get:
       operationId: getMetaConnection
@@ -20300,6 +20364,145 @@ components:
             Halls Head's official branding (logo + colours) from the clubs
             register — the default theme/logo for share cards. Null when
             unavailable; renderers fall back to their built-in official defaults.
+
+        cardNames:
+          $ref: "#/components/schemas/CardNames"
+
+    CardNames:
+      type: object
+      description: >-
+        The club's names for cards, keyed by the normalised raw name
+        (`cardNameKey` in @workspace/scorecard/card-names). Only club-set names
+        are listed; cards fall back to the automatic short name.
+      properties:
+        teams:
+          type: object
+          additionalProperties:
+            type: string
+          description: Raw team or club name key to the club's short name.
+        crests:
+          type: object
+          additionalProperties:
+            type: string
+          description: Raw team or club name key to a crest url, for inputs with none.
+        competitions:
+          type: object
+          additionalProperties:
+            type: string
+          description: Raw competition or grade key to the club's label.
+
+    CardNameSource:
+      type: string
+      enum: [override, auto, raw]
+
+    CardTeamName:
+      type: object
+      required:
+        [centralClubId, gradeKey, rawName, autoName, overrideName, name, source, crestUrl, monogram]
+      properties:
+        centralClubId:
+          type: integer
+        gradeKey:
+          type: ["string", "null"]
+          description: App grade ("A Grade"), or null for every grade.
+        rawName:
+          type: string
+        autoName:
+          type: string
+        overrideName:
+          type: ["string", "null"]
+        name:
+          type: string
+          description: What a card prints.
+        source:
+          $ref: "#/components/schemas/CardNameSource"
+        crestUrl:
+          type: ["string", "null"]
+        monogram:
+          type: string
+          description: Stands in for a missing crest.
+
+    CardTeamNameRow:
+      allOf:
+        - $ref: "#/components/schemas/CardTeamName"
+        - type: object
+          required: [isOwnClub, teamNames, grades]
+          properties:
+            isOwnClub:
+              type: boolean
+            teamNames:
+              type: array
+              items:
+                type: string
+              description: Team names this club fielded lately (PlayHQ's names for its sides).
+            grades:
+              type: array
+              items:
+                $ref: "#/components/schemas/CardTeamName"
+
+    CardCompetitionLabel:
+      type: object
+      required: [gradeKey, rawLabel, autoLabel, overrideLabel, label, source, rawLabels]
+      properties:
+        gradeKey:
+          type: string
+        rawLabel:
+          type: string
+        autoLabel:
+          type: string
+        overrideLabel:
+          type: ["string", "null"]
+        label:
+          type: string
+        source:
+          $ref: "#/components/schemas/CardNameSource"
+        rawLabels:
+          type: array
+          items:
+            type: string
+          description: The competition names this grade appears under (e.g. "A Grade Wyllie Cup").
+
+    CardNamesListing:
+      type: object
+      required: [available, teams, competitions]
+      properties:
+        available:
+          type: boolean
+          description: False when the club has no central club, so there is nothing to list.
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardTeamNameRow"
+        competitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardCompetitionLabel"
+
+    CardTeamNameUpdate:
+      type: object
+      required: [centralClubId, shortName]
+      properties:
+        centralClubId:
+          type: integer
+          minimum: 1
+        gradeKey:
+          type: ["string", "null"]
+          maxLength: 64
+        shortName:
+          type: ["string", "null"]
+          maxLength: 40
+
+    CardCompetitionLabelUpdate:
+      type: object
+      required: [gradeKey, label]
+      properties:
+        gradeKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        label:
+          type: ["string", "null"]
+          maxLength: 40
 
     CreateTrackedLinkBody:
       type: object

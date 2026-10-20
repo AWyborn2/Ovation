@@ -3,6 +3,8 @@
  * internal shapes shared by the bind and html stages.
  */
 
+import type { CardNames } from "@workspace/scorecard/card-names";
+
 // ---------------------------------------------------------------------------
 // Public token contract
 // ---------------------------------------------------------------------------
@@ -65,6 +67,12 @@ export type PackPhotoPlacement = "contained" | "fullBleed";
  * gallery previews and brand-less tenants are unaffected.
  */
 export interface PackCardData {
+  /**
+   * The club's short names, labels and crests for teams and competitions
+   * (ADR-010 P1). Every team name a card binds resolves through it, then the
+   * automatic short name. Absent → automatic names only.
+   */
+  names?: CardNames | null;
   /**
    * Tenant brand → top-left `clubLogo` slot + `clubName` header value, and the
    * DEFAULT pack token palette (see {@link brandDefaultTokens}). The colour

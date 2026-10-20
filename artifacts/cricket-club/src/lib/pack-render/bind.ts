@@ -14,7 +14,13 @@ import type {
   GradeResult,
 } from "../share-card";
 import type { BoundInput, PackCardData, PackRow } from "./types";
-import { cardTeamName } from "./name-fit";
+import {
+  cardTeamCrest,
+  resolveCardCompetition,
+  resolveCardTeamName,
+  teamMonogram,
+  type CardNames,
+} from "@workspace/scorecard/card-names";
 
 export function set(
   target: Record<string, string>,
@@ -47,25 +53,41 @@ export function inningsPerformers(i: MatchSummaryInnings): string {
   return [...bats, ...bowls].join(" · ");
 }
 
-export function bindInput(input: ShareCardInput, packId?: string | null): BoundInput {
+export function bindInput(
+  input: ShareCardInput,
+  packId?: string | null,
+  /** The club's short names and crests (ADR-010 P1); absent → automatic names. */
+  names?: CardNames | null,
+): BoundInput {
   const values: Record<string, string> = {};
   const images: Record<string, string> = {};
   const rows: Record<string, PackRow[]> = {};
+  // Every team name and competition label on a card resolves the same way:
+  // the club's own name, else the automatic short name, else the raw name.
+  const team = (name: string | null | undefined) => resolveCardTeamName(names, name);
+  const comp = (label: string | null | undefined) => resolveCardCompetition(names, label);
 
   switch (input.kind) {
     case "matchSummary": {
       set(values, "matchTitle", input.matchTitle);
       set(values, "result", input.result);
-      set(values, "club.name", cardTeamName(input.club.name));
-      set(values, "opposition.name", cardTeamName(input.opposition.name));
-      if (input.club.logoUrl) images["club.logo"] = input.club.logoUrl;
-      if (input.opposition.logoUrl) images["opposition.logo"] = input.opposition.logoUrl;
+      const clubName = team(input.club.name);
+      const oppName = team(input.opposition.name);
+      set(values, "club.name", clubName);
+      set(values, "opposition.name", oppName);
+      // A crest the input lacks comes from the club's names map (PlayHQ logos).
+      const clubLogo = input.club.logoUrl || cardTeamCrest(names, input.club.name);
+      const oppLogo = input.opposition.logoUrl || cardTeamCrest(names, input.opposition.name);
+      if (clubLogo) images["club.logo"] = clubLogo;
+      if (oppLogo) images["opposition.logo"] = oppLogo;
+      set(values, "club.monogram", teamMonogram(clubName));
+      set(values, "opposition.monogram", teamMonogram(oppName));
       // Score bars that lead with the club's logo (Club Kit) show the name only
       // when there's no logo to stand in for it.
-      set(values, "club.barName", input.club.logoUrl ? "" : input.club.name);
-      set(values, "opposition.barName", input.opposition.logoUrl ? "" : input.opposition.name);
-      set(values, "club.logoDisplay", input.club.logoUrl ? "flex" : "none");
-      set(values, "opposition.logoDisplay", input.opposition.logoUrl ? "flex" : "none");
+      set(values, "club.barName", clubLogo ? "" : clubName);
+      set(values, "opposition.barName", oppLogo ? "" : oppName);
+      set(values, "club.logoDisplay", clubLogo ? "flex" : "none");
+      set(values, "opposition.logoDisplay", oppLogo ? "flex" : "none");
       const clubInn = input.innings.find((i) => i.teamKey === "club");
       const oppInn = input.innings.find((i) => i.teamKey === "opposition");
       if (clubInn) {
@@ -117,7 +139,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
           [resultWord(input.resultWinner, input.result), round].filter(Boolean).join(" - "),
         );
       }
-      if (input.carouselDetail === true) bindInningsDetail(input, values);
+      if (input.carouselDetail === true) bindInningsDetail(input, values, team);
       break;
     }
     case "player": {
@@ -164,7 +186,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       set(values, "season", input.season);
       set(values, "playerName", input.playerName);
       set(values, "round", input.round);
-      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
+      set(values, "opponent", input.opponent && team(input.opponent));
       // Bound EXPLICITLY, empty string and all — never via set(), which returns
       // early on null and leaves the key absent. An absent key falls through to
       // the template's sample ("246" in every pack), so a debut card for a
@@ -180,7 +202,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       set(values, "grade", input.grade);
       set(values, "runs", input.runs);
       set(values, "balls", input.balls);
-      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
+      set(values, "opponent", input.opponent && team(input.opponent));
       set(values, "round", input.round);
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
@@ -191,7 +213,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       set(values, "wickets", input.wickets);
       set(values, "figures", input.figures);
       set(values, "overs", input.overs);
-      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
+      set(values, "opponent", input.opponent && team(input.opponent));
       set(values, "round", input.round);
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
@@ -206,7 +228,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       break;
     }
     case "matchDay": {
-      set(values, "grade", input.grade?.trim() || "GAME DAY");
+      set(values, "grade", comp(input.grade) || "GAME DAY");
       if (input.carouselPage) {
         set(values, "weekendTitle", input.carouselPage.title);
         set(values, "fixtureCount", input.carouselPage.fixtureCount);
@@ -218,7 +240,9 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       // Explicitly clear absent labels on historical frozen covers rather than
       // allowing sample data to supply a made-up round.
       values["roundLabel"] = input.roundLabel ?? "";
-      set(values, "opposition.name", cardTeamName(input.oppositionName));
+      const opposition = team(input.oppositionName);
+      set(values, "opposition.name", opposition);
+      set(values, "opposition.monogram", teamMonogram(opposition));
       set(values, "homeAway", input.homeAway);
       set(values, "oppositionHomeAway", input.homeAway === "HOME" ? "AWAY" : "HOME");
       set(values, "venue", input.venue);
@@ -226,11 +250,12 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       set(values, "startTime", input.startTime);
       set(values, "note.title", input.noteTitle);
       set(values, "note.body", input.noteBody);
-      if (input.oppositionLogoUrl) images["opposition.logo"] = input.oppositionLogoUrl;
+      const oppositionLogo = input.oppositionLogoUrl || cardTeamCrest(names, input.oppositionName);
+      if (oppositionLogo) images["opposition.logo"] = oppositionLogo;
       break;
     }
     case "teamList": {
-      values["gradeHeading"] = input.grade?.trim().toUpperCase() || "TEAM LIST";
+      values["gradeHeading"] = comp(input.grade).toUpperCase() || "TEAM LIST";
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);
@@ -242,7 +267,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       // The match in parts, for designs that set it out separately (Starting XI).
       // Bound even when absent, so a list without them never shows samples.
       values["roundLabel"] = input.roundLabel ?? "";
-      values["opponent"] = input.opponent ? cardTeamName(input.opponent) : "";
+      values["opponent"] = input.opponent ? team(input.opponent) : "";
       values["venue"] = input.venue ?? "";
       values["date"] = input.date ?? "";
       values["startTime"] = input.startTime ?? "";
@@ -292,14 +317,14 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       break;
     }
     case "ladder": {
-      set(values, "competitionName", input.competitionName);
-      set(values, "gradeLabel", input.gradeLabel);
+      set(values, "competitionName", input.competitionName && comp(input.competitionName));
+      set(values, "gradeLabel", input.gradeLabel && comp(input.gradeLabel));
       set(values, "asOfLabel", input.asOfLabel);
       rows["rows"] = (input.rows ?? []).map((r: LadderRow) => ({
         variant: r.isClub ? "club" : undefined,
         values: {
           pos: String(r.pos),
-          team: cardTeamName(r.team),
+          team: team(r.team),
           played: String(r.played),
           won: String(r.won),
           lost: String(r.lost),
@@ -309,7 +334,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       break;
     }
     case "bigMoment": {
-      set(values, "oppositionName", cardTeamName(input.oppositionName));
+      set(values, "oppositionName", team(input.oppositionName));
       set(values, "momentLabel", input.momentLabel);
       set(values, "playerName", input.playerName);
       set(values, "runs", input.runs);
@@ -378,7 +403,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       rows["fixtures"] = (input.fixtures ?? []).map((f) => ({
         values: {
           grade: f.grade,
-          opponent: cardTeamName(f.opponent),
+          opponent: team(f.opponent),
           venue: f.venue,
           startTime: f.startTime,
         },
@@ -428,7 +453,7 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
     case "resultsSummary": {
       set(values, "dateLabel", input.dateLabel);
       set(values, "roundLabel", input.roundLabel);
-      rows["results"] = (input.results ?? []).map((r) => resultRow(r));
+      rows["results"] = (input.results ?? []).map((r) => resultRow(r, team, comp));
       break;
     }
     case "teamOfWeek": {
@@ -464,18 +489,22 @@ const RESULT_VERB: Record<GradeResult["outcome"], string> = {
  * them, and the best two batters and bowlers under labels that only show when
  * there are players to list. A grade with no result shows its note instead.
  */
-function resultRow(r: GradeResult): PackRow {
+function resultRow(
+  r: GradeResult,
+  team: (name: string) => string,
+  comp: (label: string) => string,
+): PackRow {
   const noResult = r.outcome === "noResult";
   const bat = !noResult && !!(r.bat1Name || r.bat2Name);
   const bowl = !noResult && !!(r.bowl1Name || r.bowl2Name);
   return {
     variant: noResult ? "noResult" : r.outcome === "lost" ? "lost" : undefined,
     values: {
-      grade: r.grade ?? "",
-      clubName: cardTeamName(r.clubName ?? ""),
+      grade: comp(r.grade ?? ""),
+      clubName: team(r.clubName ?? ""),
       clubScore: noResult ? "" : (r.clubScore ?? ""),
       verb: RESULT_VERB[r.outcome] ?? "",
-      oppName: cardTeamName(r.oppName ?? ""),
+      oppName: team(r.oppName ?? ""),
       oppScore: noResult ? "" : (r.oppScore ?? ""),
       note: noResult ? (r.note?.trim() || "NO RESULT").toUpperCase() : "",
       batLabel: bat ? "BEST BATTERS" : "",
@@ -669,7 +698,7 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
 
   // A2 — club name + hashtags from the resolved brand / settings, replacing the
   // hard-coded "HALLS HEAD" / "#HALLSHEAD" sample defaults.
-  if (data.brand?.name) set(values, "clubName", cardTeamName(data.brand.name));
+  if (data.brand?.name) set(values, "clubName", resolveCardTeamName(data.names, data.brand.name));
   // S1: this runs only for a real (data-bearing) render, so the sample hashtag
   // must NEVER survive — overwrite unconditionally, using "" when the tenant has
   // no configured hashtag, so another club's "#HALLSHEAD" can't leak through.
@@ -762,12 +791,13 @@ export function resultWord(winner: "club" | "opposition" | "draw", result: strin
 function bindInningsDetail(
   input: Extract<ShareCardInput, { kind: "matchSummary" }>,
   values: Record<string, string>,
+  team: (name: string) => string,
 ): void {
   const multi = input.innings.length > 2;
   input.innings.forEach((inn, i) => {
-    const team = inn.teamKey === "club" ? input.club : input.opposition;
+    const side = inn.teamKey === "club" ? input.club : input.opposition;
     const p = `inn${i}.`;
-    values[`${p}team`] = cardTeamName(team.name);
+    values[`${p}team`] = team(side.name);
     const teamInnings = input.innings
       .slice(0, i + 1)
       .filter((x) => x.teamKey === inn.teamKey).length;

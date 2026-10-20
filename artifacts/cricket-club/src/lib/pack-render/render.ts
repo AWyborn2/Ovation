@@ -208,7 +208,7 @@ export function renderPackCard(
   if (packId === BLANK_PACK_ID) {
     // A blank canvas: the club's stage colour and the editor's layers only
     // (also the base every card kind template renders on, ADR-001).
-    const bound = bindInput(input, packId);
+    const bound = bindInput(input, packId, data?.names);
     const layers = renderFreeLayers(
       adj,
       size,
@@ -247,7 +247,7 @@ export function renderPackCard(
     return letterboxLandscape(square, tokens, packId, mode);
   }
 
-  const bound = bindInput(input, packId);
+  const bound = bindInput(input, packId, data?.names);
   // Overlay tenant data (logo, name, hashtags, sponsors, photo) onto the bound
   // input before defaults are merged, so tenant values win over the samples.
   if (data) applyPackData(bound, data, input.kind);
@@ -359,7 +359,7 @@ export function packFieldValues(
   // A blank canvas still binds the card's data, for live-stat layers.
   const template = resolveTemplate(input, packId === BLANK_PACK_ID ? null : packId);
   if (!template && packId !== BLANK_PACK_ID) return {};
-  const bound = bindInput(input, packId);
+  const bound = bindInput(input, packId, data?.names);
   if (data) applyPackData(bound, data, input.kind);
   // A kind the reference pack has no design for (a Club Kit-only kind) still
   // binds its own data on the blank base — with no sample defaults to fill in.

@@ -7426,12 +7426,123 @@ export interface CaptionTemplateInput {
   template: string;
 }
 
+/**
+ * Raw team or club name key to the club's short name.
+ */
+export type CardNamesTeams = {[key: string]: string};
+
+/**
+ * Raw team or club name key to a crest url, for inputs with none.
+ */
+export type CardNamesCrests = {[key: string]: string};
+
+/**
+ * Raw competition or grade key to the club's label.
+ */
+export type CardNamesCompetitions = {[key: string]: string};
+
+/**
+ * The club's names for cards, keyed by the normalised raw name (`cardNameKey` in @workspace/scorecard/card-names). Only club-set names are listed; cards fall back to the automatic short name.
+ */
+export interface CardNames {
+  /** Raw team or club name key to the club's short name. */
+  teams?: CardNamesTeams;
+  /** Raw team or club name key to a crest url, for inputs with none. */
+  crests?: CardNamesCrests;
+  /** Raw competition or grade key to the club's label. */
+  competitions?: CardNamesCompetitions;
+}
+
 export interface SocialSettingsBundle {
   settings: SocialSettings;
   captionTemplates: CaptionTemplate[];
   activeSponsors: Sponsor[];
   /** Halls Head's official branding (logo + colours) from the clubs register — the default theme/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults. */
   brand?: HallsHeadBrand | null;
+  cardNames?: CardNames;
+}
+
+export type CardNameSource = typeof CardNameSource[keyof typeof CardNameSource];
+
+
+export const CardNameSource = {
+  override: 'override',
+  auto: 'auto',
+  raw: 'raw',
+} as const;
+
+export interface CardTeamName {
+  centralClubId: number;
+  /**
+     * App grade ("A Grade"), or null for every grade.
+     * @nullable
+     */
+  gradeKey: string | null;
+  rawName: string;
+  autoName: string;
+  /** @nullable */
+  overrideName: string | null;
+  /** What a card prints. */
+  name: string;
+  source: CardNameSource;
+  /** @nullable */
+  crestUrl: string | null;
+  /** Stands in for a missing crest. */
+  monogram: string;
+}
+
+export type CardTeamNameRow = CardTeamName & {
+  isOwnClub: boolean;
+  /** Team names this club fielded lately (PlayHQ's names for its sides). */
+  teamNames: string[];
+  grades: CardTeamName[];
+};
+
+export interface CardCompetitionLabel {
+  gradeKey: string;
+  rawLabel: string;
+  autoLabel: string;
+  /** @nullable */
+  overrideLabel: string | null;
+  label: string;
+  source: CardNameSource;
+  /** The competition names this grade appears under (e.g. "A Grade Wyllie Cup"). */
+  rawLabels: string[];
+}
+
+export interface CardNamesListing {
+  /** False when the club has no central club, so there is nothing to list. */
+  available: boolean;
+  teams: CardTeamNameRow[];
+  competitions: CardCompetitionLabel[];
+}
+
+export interface CardTeamNameUpdate {
+  /** @minimum 1 */
+  centralClubId: number;
+  /**
+     * @maxLength 64
+     * @nullable
+     */
+  gradeKey?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  shortName: string | null;
+}
+
+export interface CardCompetitionLabelUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  gradeKey: string;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  label: string | null;
 }
 
 export interface CreateTrackedLinkBody {

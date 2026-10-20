@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CaptionTemplate } from './captionTemplate';
+import type { CardNames } from './cardNames';
 import type { HallsHeadBrand } from './hallsHeadBrand';
 import type { SocialSettings } from './socialSettings';
 import type { Sponsor } from './sponsor';
@@ -16,4 +17,5 @@ export interface SocialSettingsBundle {
   activeSponsors: Sponsor[];
   /** Halls Head's official branding (logo + colours) from the clubs register — the default theme/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults. */
   brand?: HallsHeadBrand | null;
+  cardNames?: CardNames;
 }

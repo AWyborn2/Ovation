@@ -54,6 +54,13 @@ import {
 } from "./parts";
 
 /**
+ * Characters a name box holds at full size, per card size, measured in the
+ * browser (ADR-010 P1 name fit). Square Club Kit cards set their lists in a
+ * narrow column beside the photo, so they hold far fewer.
+ */
+const nameFit = (f: string, square: number, other: number) => (f === "square" ? square : other);
+
+/**
  * Club Kit designs — one per kind (plus the Runs / Wickets / Catches /
  * Dismissals leader presets), each the handoff's body for that kind (§5) on
  * the Club Kit card (§2–§4).
@@ -361,12 +368,8 @@ const matchDay = design({
           `<div style="display:flex;align-items:center;gap:1.5cqmin;min-width:0">` +
           display(u, "v", 3.8, ";line-height:1.05;flex:none") +
           `<div data-drop-if-empty="opposition.logo" style="width:7cqmin;height:7cqmin;flex:none">${slot("opposition.logo", "logo")}</div>` +
-          display(
-            u,
-            "{{opposition.name}}",
-            3.8,
-            ";line-height:1.05;overflow-wrap:anywhere;min-width:0",
-          ) +
+          // The shared name fit: shrink, then two lines, then "…" (never mid-word).
+          `<div data-fit="${nameFit(f, 15, 30)}" style="flex:1;min-width:0;font-family:${CK_COND};font-weight:900;font-size:calc(${u(3.8)} * var(--fit,1));line-height:1.05;text-transform:uppercase;color:${C.chalk};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{opposition.name}}</div>` +
           `</div>` +
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
@@ -702,12 +705,12 @@ const weekendWrap = design({
     ),
 });
 
-function ladderRowHtml(club: boolean): string {
+function ladderRowHtml(club: boolean, fit: number): string {
   const cell = `flex:none;width:5.4cqmin;text-align:center;color:${club ? C.onp : C.chalk2}`;
   return (
     `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;gap:1cqmin;height:4.6cqmin;padding:0 1.6cqmin;margin-top:.6cqmin;font-family:${CK_SANS};font-weight:600;font-size:2.1cqmin;background:${club ? C.p : C.panel};color:${club ? C.onp : C.chalk}">` +
     `<span style="flex:none;width:4cqmin;font-family:${CK_COND};font-weight:900;font-size:2.8cqmin;color:${club ? C.onp : C.pt}">{{row.pos}}</span>` +
-    `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{row.team}}</span>` +
+    `<span data-fit="${fit}" data-fit-row style="flex:1;min-width:0;font-size:calc(2.1cqmin * var(--fit,1));line-height:1.02;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{row.team}}</span>` +
     `<span style="${cell}">{{row.played}}</span><span style="${cell}">{{row.won}}</span><span style="${cell}">{{row.lost}}</span>` +
     `<span style="flex:none;width:6cqmin;text-align:right;font-family:${CK_COND};font-weight:900;font-size:2.8cqmin">{{row.points}}</span>` +
     `</div>`
@@ -726,7 +729,7 @@ const ladder = design({
         eyebrow(u, "{{competitionName}} · {{asOfLabel}}") +
           display(u, "{{gradeLabel}} LADDER", 9, ";margin-top:1cqmin") +
           `<div style="width:100%;margin-top:1.4cqmin"><div style="display:flex;gap:1cqmin;padding:0 1.6cqmin;font-family:${CK_MONO};font-size:1.4cqmin;letter-spacing:.14em;color:${C.chalk2}"><span style="flex:none;width:4cqmin">#</span><span style="flex:1">TEAM</span><span style="flex:none;width:5.4cqmin;text-align:center">P</span><span style="flex:none;width:5.4cqmin;text-align:center">W</span><span style="flex:none;width:5.4cqmin;text-align:center">L</span><span style="flex:none;width:6cqmin;text-align:right">PTS</span></div>` +
-          `<div data-repeat="rows" data-repeat-max="${f === "landscape" ? 5 : f === "story" ? 10 : 8}">${ladderRowHtml(true)}${ladderRowHtml(false)}</div></div>`,
+          `<div data-repeat="rows" data-repeat-max="${f === "landscape" ? 5 : f === "story" ? 10 : 8}">${ladderRowHtml(true, nameFit(f, 10, 50))}${ladderRowHtml(false, nameFit(f, 10, 50))}</div></div>`,
       ),
       { hashtag: "clubHashtag", sponsors: "logos", off: true },
       "photo",
@@ -838,12 +841,17 @@ const roundFixtures = design({
         eyebrow(u, "{{date}} · {{roundLabel}}") +
           twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
           `<div data-repeat="fixtures" data-repeat-max="${f === "landscape" ? 4 : 5}" style="--rs:{{rowScale}};width:100%;margin-top:1.8cqmin">` +
-          gradeRow(r, {
-            grade: "{{row.grade}}",
-            opponent: "v {{row.opponent}}",
-            venue: "{{row.venue}}",
-            time: "{{row.startTime}}",
-          }) +
+          gradeRow(
+            r,
+            {
+              grade: "{{row.grade}}",
+              opponent: "v {{row.opponent}}",
+              venue: "{{row.venue}}",
+              time: "{{row.startTime}}",
+            },
+            "",
+            nameFit(f, 15, 40),
+          ) +
           `</div>`,
       ),
       NAME_FOOTER,
@@ -1071,10 +1079,10 @@ const sponsorCard = design({
 });
 
 /** One grade on a results summary: band, both scores, and the best players. */
-function resultBlock(variant: "lost" | "noResult" | null): string {
+function resultBlock(variant: "lost" | "noResult" | null, fit: number): string {
   const attr = variant ? ` data-repeat-variant="${variant}"` : "";
   const side = (name: string, score: string, lead: boolean) =>
-    `<div style="flex:1;min-width:0;text-align:center"><div style="font-family:${CK_COND};font-weight:800;font-size:${r(2.4)};line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk}">${name}</div>` +
+    `<div style="flex:1;min-width:0;text-align:center"><div data-fit="${fit}" data-fit-row style="font-family:${CK_COND};font-weight:800;font-size:calc(${r(2.4)} * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk}">${name}</div>` +
     `<div style="display:inline-block;font-family:${CK_COND};font-weight:900;font-size:${r(3)};line-height:1;margin-top:${r(0.4)};padding:${r(0.3)} ${r(1)};${lead ? `background:${C.p};color:${C.onp}` : `color:${C.chalk}`}">${score}</div></div>`;
   const people = (label: string, rows: [string, string][]) =>
     `<div style="flex:1;min-width:0"><div style="font-family:${CK_MONO};font-size:${r(1.1)};letter-spacing:.14em;color:${C.pt}">${label}</div>` +
@@ -1149,7 +1157,7 @@ const resultsSummary = design({
       col(
         eyebrow(u, "{{dateLabel}} · {{roundLabel}}") +
           twoLineTitle(u, "WEEKLY", "RESULTS", f === "portrait" ? 8 : 9) +
-          `<div data-repeat="results" data-repeat-max="${f === "landscape" ? 2 : 3}" style="--rs:{{rowScale}};width:100%;margin-top:1cqmin">${resultBlock(null)}${resultBlock("lost")}${resultBlock("noResult")}</div>`,
+          `<div data-repeat="results" data-repeat-max="${f === "landscape" ? 2 : 3}" style="--rs:{{rowScale}};width:100%;margin-top:1cqmin">${resultBlock(null, nameFit(f, 16, 32))}${resultBlock("lost", nameFit(f, 16, 32))}${resultBlock("noResult", nameFit(f, 16, 32))}</div>`,
       ),
       NAME_FOOTER,
       "photo",

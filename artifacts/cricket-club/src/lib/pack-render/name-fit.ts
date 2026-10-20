@@ -1,22 +1,19 @@
 /**
- * Fitting club and team names on a card. Names used to sit on one line and be
- * cut off with "…" ("WHITE KNIGHTS B…"). Now:
- *   1. `cardTeamName` drops "Cricket Club" / "CC" / "Inc": the card's header
- *      already says "Cricket Club", and it's the words that make a club.
- *   2. `fitNames` shrinks a marked name to fit its box, and as a last resort
- *      lets it wrap onto a second line rather than cutting it off.
+ * The one name-fit rule every pack shares (ADR-010 P1). Names used to sit on
+ * one line and be cut off with "…" ("WHITE KNIGHTS B…"). Now a name box marked
+ * `data-fit="<characters at full size>"`:
+ *   1. shrinks to fit its box, down to {@link MIN_FIT};
+ *   2. past that, wraps onto a second line (never more);
+ *   3. only a name too long for two lines at the minimum ends in "…".
+ * A box in a list row also carries `data-fit-row`: it wraps only at the
+ * minimum size, so two lines take about the height of the row's one line and
+ * a long name can't push the rows below it off the card.
+ *
+ * The names arrive already short: `resolveCardTeamName`
+ * (@workspace/scorecard/card-names) gives the club's own short name, else the
+ * automatic one ("White Knights Baldivis Cricket Club Inc" → "White Knights
+ * Baldivis"), before a name reaches its box.
  */
-
-const SUFFIX =
-  /\s+(?:cricket\s+club(?:\s+inc(?:orporated)?\.?)?|cricket\s+inc\.?|c\.?\s?c\.?|inc(?:orporated)?\.?)$/i;
-
-/** "White Knights Baldivis Cricket Club Inc" → "White Knights Baldivis". */
-export function cardTeamName(name: string | null | undefined): string {
-  const original = (name ?? "").trim();
-  let out = original;
-  for (let i = 0; i < 3 && SUFFIX.test(out); i++) out = out.replace(SUFFIX, "").trim();
-  return out || original;
-}
 
 /** The smallest a name is scaled before it wraps onto a second line. */
 export const MIN_FIT = 0.6;
@@ -71,7 +68,10 @@ export function fitNames(html: string): string {
     (all, tag: string, before: string, cap: string, after: string, text: string) => {
       const plain = text.replace(/&(?:#\d+|#x[0-9a-f]+|[a-z]+);/gi, "_").trim();
       // Hyphenated names ("ROCKINGHAM-MANDURAH") can break after the hyphen.
-      const { scale, lines } = fitFor(textLength(text), Number(cap), plain.split(/\s+|(?<=-)/));
+      const fit = fitFor(textLength(text), Number(cap), plain.split(/\s+|(?<=-)/));
+      // A list row keeps its height: a name wraps there only at the minimum size.
+      const row = /\sdata-fit-row\b/.test(` ${before} ${after}`);
+      const { scale, lines } = row && fit.lines === 2 ? { scale: MIN_FIT, lines: 2 as const } : fit;
       if (scale === 1 && lines === 1) return all;
       let attrs = `${before}${after}`;
       attrs = attrs.replace(/style="/, `style="--fit:${scale.toFixed(3)};`);

@@ -295,11 +295,13 @@ export function gradeRow(
   u: Unit,
   cells: { grade: string; opponent: string; venue: string; time: string },
   attrs = "",
+  /** Characters the opponent holds at full size before the shared name fit shrinks it. */
+  fit = 26,
 ): string {
   return (
     `<div${attrs} style="display:grid;grid-template-columns:${u(6)} 1fr auto;align-items:center;gap:${u(2)};padding:${u(1)} ${u(1.6)} ${u(1)} ${u(1)};margin-top:${u(0.8)};background:${C.panel}">` +
     `<div style="height:${u(6)};display:flex;align-items:center;justify-content:center;background:${C.p};color:${C.onp};font-family:${CK_COND};font-weight:900;font-size:${u(3.4)};line-height:1">${cells.grade}</div>` +
-    `<div style="min-width:0"><div style="font-family:${CK_COND};font-weight:800;font-size:${u(3.4)};line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk}">${cells.opponent}</div>` +
+    `<div style="min-width:0"><div data-fit="${fit}" data-fit-row style="font-family:${CK_COND};font-weight:800;font-size:calc(${u(3.4)} * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk}">${cells.opponent}</div>` +
     `<div style="font-family:${CK_SANS};font-size:${u(1.8)};line-height:1.3;margin-top:${u(0.4)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk2}">${cells.venue}</div></div>` +
     `<div style="font-family:${CK_COND};font-weight:800;font-size:${u(3.6)};line-height:1;white-space:nowrap;color:${C.pt}">${cells.time}</div>` +
     `</div>`

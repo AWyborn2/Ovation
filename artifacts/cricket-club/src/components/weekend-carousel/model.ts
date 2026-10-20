@@ -271,6 +271,7 @@ export function buildWeekendSlides(
     brand: bundle.brand,
     hashtag: tenantHashtag(bundle),
     packColourModes: bundle.settings.packColourModes,
+    names: bundle.cardNames,
   };
   // Carousel placements are explicit roles, not the generic match-day strip.
   // Keep API ordering when more than one sponsor is assigned to a grade.
