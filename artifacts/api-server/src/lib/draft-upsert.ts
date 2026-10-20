@@ -70,6 +70,8 @@ export type DraftUpsert = {
    * rule uses it; the automatic photo order is unchanged.
    */
   featuredPlayerId?: number | null;
+  /** The players a Team List or match result photo may show (see `PHOTO_POLICY`). */
+  candidatePlayerIds?: readonly number[];
   /**
    * A photo the engine picked itself — a junior player's own uploaded photo
    * (ADR-007). Used as is on insert and on every refresh (it counts as an
@@ -327,6 +329,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
       // A random photo rule is seeded by the event key, so a refresh keeps it.
       seed: input.sourceKey,
       featuredPlayerId: input.featuredPlayerId,
+      candidatePlayerIds: input.candidatePlayerIds,
       ...(input.photo !== undefined ? { photo: input.photo } : {}),
     });
 

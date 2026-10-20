@@ -20,20 +20,31 @@ export type PerformerLine = {
  * or bowled.
  */
 export function topPerformerPlayerId(lines: readonly PerformerLine[]): number | null {
-  const eligible = lines.filter(
-    (l) => l.playerId > 0 && !isFillInPlayerId(l.playerId) && (l.batted || l.bowled),
-  );
-  if (eligible.length === 0) return null;
+  const [top] = rankedPerformerPlayerIds(lines);
+  const line = lines.find((l) => l.playerId === top);
+  return line && (line.batted || line.bowled) ? top : null;
+}
+
+/**
+ * The club's players in a match, best performer first (the
+ * {@link topPerformerPlayerId} order), then those who neither batted nor
+ * bowled, by id: the candidates for a match result card's photo. Fill-ins and
+ * unresolved ids are left out.
+ */
+export function rankedPerformerPlayerIds(lines: readonly PerformerLine[]): number[] {
+  const club = lines.filter((l) => l.playerId > 0 && !isFillInPlayerId(l.playerId));
+  const eligible = club.filter((l) => l.batted || l.bowled);
   const runs = (l: PerformerLine) => (l.batted ? (l.runs ?? 0) : -1);
   const wickets = (l: PerformerLine) => (l.bowled ? (l.wickets ?? 0) : -1);
   const conceded = (l: PerformerLine) =>
     l.bowled ? (l.runsConceded ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
-  const [top] = [...eligible].sort(
+  const ranked = [...eligible].sort(
     (a, b) =>
       runs(b) - runs(a) ||
       wickets(b) - wickets(a) ||
       conceded(a) - conceded(b) ||
       a.playerId - b.playerId,
   );
-  return top.playerId;
+  const rest = club.filter((l) => !l.batted && !l.bowled).sort((a, b) => a.playerId - b.playerId);
+  return [...new Set([...ranked, ...rest].map((l) => l.playerId))];
 }
