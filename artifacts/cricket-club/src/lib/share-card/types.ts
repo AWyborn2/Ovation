@@ -299,6 +299,8 @@ export type ShareCardInput =
       noteBody?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
+      /** Built from card content (ADR-010): names and crest are final, bind them as given. */
+      namesResolved?: boolean;
     }
   | ({
       kind: "teamList";

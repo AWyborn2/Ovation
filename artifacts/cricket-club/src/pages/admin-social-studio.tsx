@@ -31,6 +31,7 @@ import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-sec
 import { KindTemplatesSection } from "@/components/social-studio/kind-templates-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { CardNamesSection } from "@/components/social-studio/card-names-section";
+import { CardContentSection } from "@/components/social-studio/card-content-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import { THUMB_SIZE, kindLabel, type CardKind } from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
@@ -313,6 +314,9 @@ export default function AdminSocialStudio() {
 
       {/* The names every card prints for each club and grade (ADR-010 P1). */}
       <CardNamesSection />
+
+      {/* How much each match day card says: presets and per-field switches (ADR-010 P2). */}
+      <CardContentSection />
 
       {/* Templates: new designs are made in the Studio editor (U18). Layer
           templates from the retired layout editor still render and can be

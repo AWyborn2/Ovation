@@ -64,8 +64,12 @@ export function bindInput(
   const rows: Record<string, PackRow[]> = {};
   // Every team name and competition label on a card resolves the same way:
   // the club's own name, else the automatic short name, else the raw name.
-  const team = (name: string | null | undefined) => resolveCardTeamName(names, name);
-  const comp = (label: string | null | undefined) => resolveCardCompetition(names, label);
+  // Content-built inputs (ADR-010) arrive with their names final: bind them as they are.
+  const resolved = (input as { namesResolved?: boolean }).namesResolved === true;
+  const team = (name: string | null | undefined) =>
+    resolved ? (name ?? "").trim() : resolveCardTeamName(names, name);
+  const comp = (label: string | null | undefined) =>
+    resolved ? (label ?? "").trim() : resolveCardCompetition(names, label);
 
   switch (input.kind) {
     case "matchSummary": {
@@ -250,7 +254,9 @@ export function bindInput(
       set(values, "startTime", input.startTime);
       set(values, "note.title", input.noteTitle);
       set(values, "note.body", input.noteBody);
-      const oppositionLogo = input.oppositionLogoUrl || cardTeamCrest(names, input.oppositionName);
+      // A content-built slide already chose its crest (or hid it): no map fallback.
+      const oppositionLogo =
+        input.oppositionLogoUrl || (resolved ? null : cardTeamCrest(names, input.oppositionName));
       if (oppositionLogo) images["opposition.logo"] = oppositionLogo;
       break;
     }
@@ -730,6 +736,14 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
   // An empty value makes {@link dropEmptyPresentedBy} drop the whole line so no
   // orphan "presented by" prose is left behind.
   values["sponsorPresentedBy"] = data.presentingSponsorName ?? "";
+
+  // S4: a match day card's note ("BAR & KITCHEN OPEN") is the admin's own
+  // words or nothing: the sample must never print on a real card. Empty, the
+  // note box drops out (`data-drop-if-field`).
+  if (kind === "matchDay") {
+    values["note.title"] ??= "";
+    values["note.body"] ??= "";
+  }
 
   // A4 — uploaded / selected photo overrides the input's own photoUrl.
   //

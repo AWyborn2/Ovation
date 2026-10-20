@@ -19,6 +19,26 @@ import {
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { readQueuedCarousel, CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
+
+/** The server's Match Day content for fixtures (what the sources route sends, ADR-010). */
+function md(fixtures: Fixture[], junior = false): Record<string, Record<string, unknown>> {
+  return Object.fromEntries(
+    fixtures.map((f) => [
+      f.id,
+      matchDayFixtureContent(
+        {
+          ...f,
+          roundLabel: f.roundLabel ?? null,
+          opponentLogoUrl: f.opponentLogoUrl ?? null,
+          venue: f.venue ?? null,
+          startAt: new Date(f.startAt),
+        },
+        junior ? { junior: true } : {},
+      ) as unknown as Record<string, unknown>,
+    ]),
+  );
+}
 
 describe("club stock images across all carousels", () => {
   it("offers stock to seniors and juniors without broadening ordinary grade-photo rules", () => {
@@ -28,7 +48,7 @@ describe("club stock images across all carousels", () => {
     expect(eligibleCarouselPhotos([stock, action, otherGrade], "A Grade")).toEqual([action, stock]);
     expect(eligibleCarouselPhotos([stock, action, otherGrade], "Year 5", true)).toEqual([stock]);
     // Stock is an explicit choice, not a new automatic photo fallback.
-    expect(createTeamSlides([fixture()], [stock])[0].photoId).toBeNull();
+    expect(createTeamSlides([fixture()], [stock], md([fixture()]))[0].photoId).toBeNull();
     expect(eligibleCoverPhotos([stock, { ...stock }])).toEqual([stock]);
   });
   it.each(["matchDay", "teamList", "results", "matchSummary"] as const)(
@@ -52,7 +72,7 @@ describe("club stock images across all carousels", () => {
               innings: [],
               carouselDetail: type === "matchSummary",
             };
-      const content = type === "matchDay" ? {} : { [f.id]: input };
+      const content = type === "matchDay" ? md([f]) : { [f.id]: input };
       const teams = createTeamSlides([f], [stock], content);
       teams[0].photoId = stock.id;
       teams[0].transform = { focalX: 0.3, focalY: 0.6, zoom: 1.4 };
@@ -108,7 +128,7 @@ describe("club stock images across all carousels", () => {
   it("retains explicit choices on regeneration and freezes a renderable review composition", () => {
     const f = fixture(8, { grade: "Year 5" });
     const stock = photo(30, { juniorStock: true, grade: null });
-    const content = { [f.id]: { kind: "matchDay", junior: true, grade: f.grade } };
+    const content = md([f], true);
     const teams = createTeamSlides([f], [stock], content);
     expect(teams[0].photoId).toBeNull();
     teams[0].photoId = stock.id;
@@ -290,6 +310,7 @@ describe("carousel cover round labels", () => {
     createTeamSlides(
       rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel })),
       [],
+      md(rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel }))),
     );
 
   it("normalises numeric rounds and round prefixes across selected grades", () => {
@@ -319,7 +340,8 @@ describe("carousel cover round labels", () => {
       },
       innings: [],
     });
-    const selected = teams("14", null);
+    // Results and team lists carry card inputs, not Match Day content.
+    const selected = teams("14", null).map(({ content: _content, ...t }) => t as TeamSlide);
     selected[0].input = summary("A Grade • Grand Final");
     selected[1].input = summary("Under 14 • Grand Final");
     expect(carouselRoundLabel(selected)).toBe("GRAND FINAL");
@@ -328,7 +350,7 @@ describe("carousel cover round labels", () => {
     selected[0].input = summary("Under 14");
     selected[0].fixture.roundLabel = null;
     expect(carouselRoundLabel(selected)).toBe("");
-    const list = teams(null);
+    const list = teams(null).map(({ content: _content, ...t }) => t as TeamSlide);
     list[0].input = {
       kind: "teamList",
       gradeRound: "A Grade",
@@ -355,8 +377,9 @@ describe("carousel cover round labels", () => {
     const frozen = JSON.parse(JSON.stringify(slides));
     selected[0].fixture.roundLabel = "6";
     expect(frozen[0].input.roundLabel).toBe("ROUND 5");
-    expect(slides[1].input).toMatchObject({ roundLabel: "R5" });
-    expect(slides[2].input).toMatchObject({ roundLabel: "5" });
+    // Each fixture slide prints its round from the content builder, normalised.
+    expect(slides[1].input).toMatchObject({ roundLabel: "ROUND 5" });
+    expect(slides[2].input).toMatchObject({ roundLabel: "ROUND 5" });
   });
   it("prefers source metadata over reformatted or conflicting display titles", () => {
     const selected = createTeamSlides(
@@ -430,6 +453,7 @@ describe("weekend sponsor placements", () => {
       createTeamSlides(
         [fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })],
         [],
+        md([fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })]),
       ),
       [],
       b,
@@ -538,7 +562,7 @@ describe("weekend cover and centred sponsor rows", () => {
     (size) => {
       for (const count of [4, 5]) {
         const slides = buildWeekendSlides(
-          createTeamSlides([fixture()], []),
+          createTeamSlides([fixture()], [], md([fixture()])),
           [],
           {
             ...bundle,
@@ -637,7 +661,7 @@ describe("strict photos and full ordered sets", () => {
   it.each(Object.keys(SIZES) as CardSize[])(
     "renders cover photo and preserves other slides in %s",
     (size) => {
-      const teams = createTeamSlides([fixture()], [photo()]);
+      const teams = createTeamSlides([fixture()], [photo()], md([fixture()]));
       const baseline = buildWeekendSlides(
         teams,
         [photo()],
@@ -719,7 +743,7 @@ describe("strict photos and full ordered sets", () => {
   it("picks once and carries the same photo and transform through repeated builds", () => {
     const random = vi.spyOn(Math, "random").mockReturnValue(0.9);
     const photos = [photo(1), photo(2)];
-    const teams = createTeamSlides([fixture()], photos);
+    const teams = createTeamSlides([fixture()], photos, md([fixture()]));
     teams[0].transform = { focalX: 0.2, focalY: 0.6, zoom: 2 };
     const one = buildWeekendSlides(
       teams,
@@ -744,7 +768,11 @@ describe("strict photos and full ordered sets", () => {
     random.mockRestore();
   });
   it("revalidates deleted/reclassified selections without fallback and flags missing details", () => {
-    const teams = createTeamSlides([fixture(1, { venue: null, opponentName: "" })], [photo()]);
+    const teams = createTeamSlides(
+      [fixture(1, { venue: null, opponentName: "" })],
+      [photo()],
+      md([fixture(1, { venue: null, opponentName: "" })]),
+    );
     const slides = buildWeekendSlides(
       teams,
       [photo(1, { grade: "B Grade" })],
@@ -755,12 +783,15 @@ describe("strict photos and full ordered sets", () => {
     );
     expect(slides[1].data.photoUrl).toBeNull();
     expect(slides[1].warnings).toHaveLength(4);
-    expect(slides[1].input).toMatchObject({ venue: "Venue TBC", oppositionName: "Opponent TBC" });
+    // A missing field is left empty (its box drops), never "TBC" (ADR-010); the warnings say so.
+    expect(slides[1].input).toMatchObject({ venue: "", oppositionName: "" });
+    expect(JSON.stringify(slides[1].input)).not.toMatch(/TBC/);
   });
   it("keeps duplicate-grade fixtures and all 14 slides, plus every eligible sponsor", () => {
     const teams = createTeamSlides(
       Array.from({ length: 12 }, (_, i) => fixture(i + 1)),
       [],
+      md(Array.from({ length: 12 }, (_, i) => fixture(i + 1))),
     );
     const slides = buildWeekendSlides(
       moveTeam(teams, 0, 11),
@@ -784,7 +815,11 @@ describe("strict photos and full ordered sets", () => {
     });
   });
   it("provides an explicit no-sponsors closing state and branded junior no-photo card", () => {
-    const teams = createTeamSlides([fixture(1, { grade: "U15" })], [photo(1, { grade: "U15" })]);
+    const teams = createTeamSlides(
+      [fixture(1, { grade: "U15" })],
+      [photo(1, { grade: "U15" })],
+      md([fixture(1, { grade: "U15" })]),
+    );
     const slides = buildWeekendSlides(
       teams,
       [],
@@ -801,7 +836,7 @@ describe("strict photos and full ordered sets", () => {
     "renders title, grade and ALL seven sponsors in %s with no sample leakage",
     (size) => {
       const slides = buildWeekendSlides(
-        createTeamSlides([fixture()], []),
+        createTeamSlides([fixture()], [], md([fixture()])),
         [],
         bundle,
         "<Club weekend>",

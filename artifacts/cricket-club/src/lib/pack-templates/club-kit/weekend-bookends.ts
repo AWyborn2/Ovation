@@ -85,7 +85,10 @@ export function weekendBookendTemplate(
                 "{{roundLabel}}",
                 tall ? 16 : 14,
                 `;max-width:100%;overflow-wrap:anywhere;flex-shrink:0;margin-top:4cqmin;font-size:calc(${cq(tall ? 16 : 14)} * var(--fit,1))`,
-              ).replace("<div ", '<div data-carousel-cover-label="1" data-fit="7" ') +
+              ).replace(
+                "<div ",
+                '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="7" ',
+              ) +
               display(cq, "SWIPE &gt;&gt;", tall ? 10 : 8, `;margin-top:2cqmin;color:${C.pt}`)
             : eyebrow(cq, "{{date}}") + display(cq, "OUR SPONSORS", tall ? 10 : 8) + sponsorGrid,
         footer: {

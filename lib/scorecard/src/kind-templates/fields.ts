@@ -751,6 +751,10 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         label: "Club tagline",
       },
       {
+        key: "grade",
+        label: "Grade / team",
+      },
+      {
         key: "roundLabel",
         label: "Round label",
       },
@@ -793,10 +797,6 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
       {
         key: "clubMonogram",
         label: "Club monogram (no crest)",
-      },
-      {
-        key: "grade",
-        label: "Grade / team",
       },
       {
         key: "sponsorPresentedBy",
@@ -1909,4 +1909,148 @@ export function kindTokenKeys(kind: string): Set<string> {
 /** Whether a kind offers a repeat with this key (for rows layers). */
 export function kindHasRepeat(kind: string, repeat: string): boolean {
   return (kindFields(kind)?.repeats ?? []).some((r) => r.key === repeat);
+}
+
+// ── Card content fields (ADR-010) ───────────────────────────────────────────
+//
+// What a club can switch on and off on the cards the content pipeline builds.
+// These are content fields, not template tokens: one content field can feed
+// several tokens ("fixture.opposition" → `opposition.name`, its monogram).
+// Core fields are always shown. Optional fields follow the club's preset, then
+// its own per-field choices, then a single carousel's override.
+
+/** How much a card shows: core fields only, today's cards, or everything. */
+export const CONTENT_PRESETS = ["minimal", "standard", "full"] as const;
+export type ContentPreset = (typeof CONTENT_PRESETS)[number];
+
+export const CONTENT_PRESET_LABELS: Record<ContentPreset, string> = {
+  minimal: "Minimal",
+  standard: "Standard",
+  full: "Full",
+};
+
+/** The card kinds built from content so far (more follow kind by kind, ADR-010). */
+export const CONTENT_KINDS = ["matchDay"] as const;
+export type ContentKind = (typeof CONTENT_KINDS)[number];
+
+/** The slides a content kind is made of. */
+export type ContentSlide = "title" | "fixture" | "sponsors";
+
+export type ContentFieldDef = {
+  /** `<slide>.<field>`, stable: saved settings and carousels key on it. */
+  key: string;
+  label: string;
+  slide: ContentSlide;
+  /** Core fields are always shown; optional ones follow the preset and toggles. */
+  tier: "core" | "optional";
+  /** The presets an optional field is on in. Core fields list every preset. */
+  presets: readonly ContentPreset[];
+};
+
+const ALL_PRESETS: readonly ContentPreset[] = CONTENT_PRESETS;
+const STANDARD_UP: readonly ContentPreset[] = ["standard", "full"];
+
+/**
+ * Standard is the cards as they were before presets existed, so a club that
+ * never opens the settings sees no change. Full adds the optional data fields
+ * as they land (ladder, last meeting, milestone watch, livestream: P5).
+ */
+export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
+  matchDay: [
+    { key: "title.heading", label: "Title", slide: "title", tier: "core", presets: ALL_PRESETS },
+    { key: "title.dates", label: "Dates", slide: "title", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "title.round",
+      label: "Round",
+      slide: "title",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "title.coverPhoto",
+      label: "Cover photo",
+      slide: "title",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "title.presentingSponsor",
+      label: "Presenting sponsor",
+      slide: "title",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    { key: "fixture.grade", label: "Grade", slide: "fixture", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "fixture.opposition",
+      label: "Opposition",
+      slide: "fixture",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    {
+      key: "fixture.homeAway",
+      label: "Home or away",
+      slide: "fixture",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    { key: "fixture.date", label: "Date", slide: "fixture", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "fixture.startTime",
+      label: "Start time",
+      slide: "fixture",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    { key: "fixture.venue", label: "Ground", slide: "fixture", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "fixture.round",
+      label: "Round",
+      slide: "fixture",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "fixture.oppositionCrest",
+      label: "Opposition crest",
+      slide: "fixture",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "fixture.teamSponsor",
+      label: "Team sponsor",
+      slide: "fixture",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "fixture.photo",
+      label: "Photo",
+      slide: "fixture",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "sponsors.logos",
+      label: "Sponsor logos",
+      slide: "sponsors",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+  ],
+};
+
+export function isContentKind(kind: unknown): kind is ContentKind {
+  return typeof kind === "string" && (CONTENT_KINDS as readonly string[]).includes(kind);
+}
+
+export function isContentPreset(preset: unknown): preset is ContentPreset {
+  return typeof preset === "string" && (CONTENT_PRESETS as readonly string[]).includes(preset);
+}
+
+/** A content kind's field catalogue (empty for a kind not on the content pipeline yet). */
+export function contentFields(kind: string): readonly ContentFieldDef[] {
+  return isContentKind(kind) ? CONTENT_FIELDS[kind] : [];
 }
