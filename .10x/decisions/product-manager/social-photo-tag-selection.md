@@ -30,8 +30,8 @@ is about, and to keep folder photos for team-level tiles.
 4. **No match → no auto photo.** Do not fall back to grade folders or to other players. The
    tile is left empty, and the admin chooses from **any photo in the library**, with filters.
 5. An admin's explicit choice wins: a `fixed` card photo rule and a manual pick in the
-   share dialog or queue still override (KTD6 unchanged). *(PM default, confirm with Ash
-   if needed.)*
+   share dialog or queue still override (KTD6 unchanged). _(PM default, confirm with Ash
+   if needed.)_
 
 6. **Retire `random` and `player` card photo rules** for teamList, matchSummary and Match Day
    (Ash, 2026-10-19). Only `fixed` rules remain for these kinds.

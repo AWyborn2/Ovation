@@ -91,7 +91,6 @@ Photo sources (for the queue's "why this photo" text): `auto:tag-player`,
 - The manual pick persists as today (`photoSource = "manual"`), and KTD6 holds: auto never
   overwrites it.
 
-
 ### Team List rotation (U1b, added 2026-10-20 with Ash: Team List only)
 
 Goal: the same tagged player and photo don't keep appearing on Team List slides.
