@@ -109,12 +109,15 @@ const nameOf = (state: BoardState, memberId: number) =>
 
 /**
  * The card's counts and warnings, recomputed from its slots and roles. `filled`
- * and `open` count the XI only: an empty 12th is not an open slot.
+ * and `open` count the XI only: an empty 12th (or interchange slot) is not an
+ * open slot. `overSize` counts the players to move out of a draft whose grade
+ * has since been made smaller (the grade's size comes from the server).
  */
 export function sideWarnings(side: SelectionSide): SelectionWarnings {
   const picked = side.slots.filter((s) => s.memberId != null);
   const inXi = side.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length;
   const status = (s: SelectionSlot) => s.member?.status ?? "none";
+  const gradeSideSize = side.warnings?.gradeSideSize ?? sideShape(side.sideSize).size;
   return {
     filled: inXi,
     open: XI_SIZE - inXi,
@@ -123,6 +126,8 @@ export function sideWarnings(side: SelectionSide): SelectionWarnings {
     saidNo: picked.filter((s) => status(s) === "no").length,
     noCaptain: side.captainMemberId == null,
     noKeeper: side.keeperMemberId == null,
+    gradeSideSize,
+    overSize: side.state === "final" ? 0 : Math.max(0, picked.length - gradeSideSize),
   };
 }
 
@@ -190,7 +195,7 @@ function resolve(
     return { ok: true, from, index: target.index };
   }
   if (from.kind === "side" && from.sideId === side.id) return refuse("noop");
-  // The first open slot in 1–12 order, so the XI fills before the 12th.
+  // The first open slot in 1–N order, so the XI fills before the 12th (or the interchange).
   const open = side.slots.findIndex((s) => s.memberId == null);
   if (open < 0) {
     return refuse(
@@ -356,7 +361,8 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     if (from.kind === "pool" || from.sideId !== target.sideId) warning = pickWarning(moving);
   }
 
-  // A role belongs to the XI: a captain or keeper who leaves it (or moves to 12th) loses it.
+  // A role belongs to a role slot (the XI at 12, any slot above): a captain or
+  // keeper who leaves the side (or moves to 12th) loses it.
   const touched = [...slotsOf.keys()];
   const selections = state.selections.map((side) => {
     const nextSlots = slotsOf.get(side.id);

@@ -570,19 +570,19 @@ describe("overseas players", () => {
   it("saves a grade's cap, blank meaning no cap, and checks the range", async () => {
     const calls = installFetch((url) =>
       url.includes("/availability/settings")
-        ? { body: { ...SETTINGS, overseasCaps: { "B Grade": 2 } } }
+        ? { body: { ...SETTINGS, grades: ["A Grade"], overseasCaps: { "B Grade": 2 } } }
         : undefined,
     );
     renderAt(<AdminAvailability />, "/admin/availability");
-    const a = (await screen.findByLabelText("A Grade")) as HTMLInputElement;
-    expect((screen.getByLabelText("B Grade") as HTMLInputElement).value).toBe("2");
+    const a = (await screen.findByLabelText("A Grade overseas limit")) as HTMLInputElement;
+    expect((screen.getByLabelText("B Grade overseas limit") as HTMLInputElement).value).toBe("2");
     fireEvent.change(a, { target: { value: "15" } });
     fireEvent.click(screen.getByRole("button", { name: "Save overseas limits" }));
     expect((await screen.findByTestId("overseas-caps-error")).textContent).toMatch(/0 to 14/);
     expect(calls.some((c) => c.method === "PUT")).toBe(false);
 
     fireEvent.change(a, { target: { value: "1" } });
-    fireEvent.change(screen.getByLabelText("B Grade"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("B Grade overseas limit"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Save overseas limits" }));
     await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
     const body = calls.find((c) => c.method === "PUT")!.body as Record<string, unknown>;

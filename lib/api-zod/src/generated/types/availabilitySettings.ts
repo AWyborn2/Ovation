@@ -20,4 +20,11 @@ export type AvailabilitySettings = AvailabilitySettingsInput & ({
   players answer and stop texts through their link.
    */
   smsProvider: AvailabilitySmsProvider | null;
+  /** The grade labels the club's sides go by (senior app grades and
+  junior teams with a fixture in the last year), in the club's
+  grade order: the keys the per-grade settings use. A
+  `sideSizes` key matching none of them is a renamed or retired
+  grade.
+   */
+  grades?: string[];
 });

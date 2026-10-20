@@ -13,7 +13,7 @@ import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { isUnder18OnDate, memberDisplayName, perthDate } from "./availability-grades";
-import { DEFAULT_SIDE_SIZE, normaliseSlots, sideShape } from "@workspace/scorecard/selection-shape";
+import { normaliseSlots, sideShape } from "@workspace/scorecard/selection-shape";
 
 export const PRIVATE_PLAYER = "Private Player";
 
@@ -46,7 +46,8 @@ type PublishedMember = Pick<
   "id" | "firstName" | "lastName" | "preferredName" | "isPrivate" | "linkedPlayerId"
 > &
   Partial<Pick<SquadMemberRow, "showNamePublicly" | "section" | "dateOfBirth">>;
-type PublishedSide = Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
+type PublishedSide = Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
+  Partial<Pick<SelectionRow, "sideSize">>;
 const nameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
 /**
@@ -141,6 +142,9 @@ export async function loadSelectionParticipantIds(
 
 /**
  * The same projection is used at publication and to verify legacy snapshots.
+ * Players are numbered 1–N in slot order. In a side of 12 the 12th player is
+ * order 12 with `twelfth` and no role; above 12 nobody is "the 12th" and any
+ * player can hold a role (ADR-009).
  * `overseasIds` (ADR-009) marks overseas players, snapshotted so a later squad
  * change never rewrites the list; a member not named publicly gets no marker,
  * like their name.
@@ -153,7 +157,7 @@ export function selectionPublishedPlayers(
 ): TeamListPlayer[] {
   const byId = new Map(members.map((m) => [m.id, m]));
   const players: TeamListPlayer[] = [];
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const shape = sideShape(side.sideSize);
   normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -172,6 +176,7 @@ export function selectionPublishedPlayers(
       ...(participantId ? { participantId } : {}),
       displayName,
       ...(role ? { role } : {}),
+      ...(twelfth ? { twelfth: true } : {}),
       ...(overseas ? { overseas: true } : {}),
     });
   });

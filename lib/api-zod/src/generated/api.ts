@@ -3382,7 +3382,8 @@ export const GetAvailabilitySettingsResponse = zod.object({
   "overseasCaps": zod.record(zod.string(), zod.number().min(getAvailabilitySettingsResponseOneOverseasCapsMinOne).max(getAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
-  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
+  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n'),
+  "grades": zod.array(zod.string()).optional().describe('The grade labels the club\'s sides go by (senior app grades and\njunior teams with a fixture in the last year), in the club\'s\ngrade order: the keys the per-grade settings use. A\n`sideSizes` key matching none of them is a renamed or retired\ngrade.\n')
 }))
 
 
@@ -3474,7 +3475,8 @@ export const UpdateAvailabilitySettingsResponse = zod.object({
   "overseasCaps": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsResponseOneOverseasCapsMinOne).max(updateAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
-  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
+  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n'),
+  "grades": zod.array(zod.string()).optional().describe('The grade labels the club\'s sides go by (senior app grades and\njunior teams with a fixture in the last year), in the club\'s\ngrade order: the keys the per-grade settings use. A\n`sideSizes` key matching none of them is a renamed or retired\ngrade.\n')
 }))
 
 
@@ -3561,6 +3563,11 @@ export const getSelectionBoardResponseSelectionsItemOverseasCountMin = 0;
 
 export const getSelectionBoardResponseSelectionsItemOverseasCapMin = 0;
 export const getSelectionBoardResponseSelectionsItemOverseasCapMax = 14;
+
+export const getSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMin = 12;
+export const getSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMax = 14;
+
+export const getSelectionBoardResponseSelectionsItemWarningsOverSizeMin = 0;
 
 
 
@@ -3654,7 +3661,9 @@ export const GetSelectionBoardResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(getSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMin).max(getSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(getSelectionBoardResponseSelectionsItemWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })),
   "pool": zod.array(zod.object({
@@ -3748,6 +3757,11 @@ export const saveSelectionBoardResponseSelectionsItemOverseasCountMin = 0;
 export const saveSelectionBoardResponseSelectionsItemOverseasCapMin = 0;
 export const saveSelectionBoardResponseSelectionsItemOverseasCapMax = 14;
 
+export const saveSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMin = 12;
+export const saveSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMax = 14;
+
+export const saveSelectionBoardResponseSelectionsItemWarningsOverSizeMin = 0;
+
 
 
 export const SaveSelectionBoardResponse = zod.object({
@@ -3840,7 +3854,9 @@ export const SaveSelectionBoardResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(saveSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMin).max(saveSelectionBoardResponseSelectionsItemWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(saveSelectionBoardResponseSelectionsItemWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })),
   "pool": zod.array(zod.object({
@@ -3917,6 +3933,11 @@ export const finaliseSelectionResponseSelectionOverseasCountMin = 0;
 export const finaliseSelectionResponseSelectionOverseasCapMin = 0;
 export const finaliseSelectionResponseSelectionOverseasCapMax = 14;
 
+export const finaliseSelectionResponseSelectionWarningsGradeSideSizeMin = 12;
+export const finaliseSelectionResponseSelectionWarningsGradeSideSizeMax = 14;
+
+export const finaliseSelectionResponseSelectionWarningsOverSizeMin = 0;
+
 
 
 export const FinaliseSelectionResponse = zod.object({
@@ -3981,7 +4002,9 @@ export const FinaliseSelectionResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(finaliseSelectionResponseSelectionWarningsGradeSideSizeMin).max(finaliseSelectionResponseSelectionWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(finaliseSelectionResponseSelectionWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 }),
   "messaged": zod.object({
@@ -4072,6 +4095,11 @@ export const syncSelectionFromPlayhqResponseOverseasCountMin = 0;
 export const syncSelectionFromPlayhqResponseOverseasCapMin = 0;
 export const syncSelectionFromPlayhqResponseOverseasCapMax = 14;
 
+export const syncSelectionFromPlayhqResponseWarningsGradeSideSizeMin = 12;
+export const syncSelectionFromPlayhqResponseWarningsGradeSideSizeMax = 14;
+
+export const syncSelectionFromPlayhqResponseWarningsOverSizeMin = 0;
+
 
 
 export const SyncSelectionFromPlayhqResponse = zod.object({
@@ -4135,7 +4163,9 @@ export const SyncSelectionFromPlayhqResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(syncSelectionFromPlayhqResponseWarningsGradeSideSizeMin).max(syncSelectionFromPlayhqResponseWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(syncSelectionFromPlayhqResponseWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })
 
@@ -4162,6 +4192,11 @@ export const reopenSelectionResponseOverseasCountMin = 0;
 
 export const reopenSelectionResponseOverseasCapMin = 0;
 export const reopenSelectionResponseOverseasCapMax = 14;
+
+export const reopenSelectionResponseWarningsGradeSideSizeMin = 12;
+export const reopenSelectionResponseWarningsGradeSideSizeMax = 14;
+
+export const reopenSelectionResponseWarningsOverSizeMin = 0;
 
 
 
@@ -4226,7 +4261,9 @@ export const ReopenSelectionResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(reopenSelectionResponseWarningsGradeSideSizeMin).max(reopenSelectionResponseWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(reopenSelectionResponseWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })
 
@@ -4265,6 +4302,11 @@ export const matchSelectionSlotResponseSelectionsItemOverseasCountMin = 0;
 
 export const matchSelectionSlotResponseSelectionsItemOverseasCapMin = 0;
 export const matchSelectionSlotResponseSelectionsItemOverseasCapMax = 14;
+
+export const matchSelectionSlotResponseSelectionsItemWarningsGradeSideSizeMin = 12;
+export const matchSelectionSlotResponseSelectionsItemWarningsGradeSideSizeMax = 14;
+
+export const matchSelectionSlotResponseSelectionsItemWarningsOverSizeMin = 0;
 
 
 
@@ -4358,7 +4400,9 @@ export const MatchSelectionSlotResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(matchSelectionSlotResponseSelectionsItemWarningsGradeSideSizeMin).max(matchSelectionSlotResponseSelectionsItemWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(matchSelectionSlotResponseSelectionsItemWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })),
   "pool": zod.array(zod.object({
@@ -4452,6 +4496,11 @@ export const setSelectionMemberStatusResponseSelectionsItemOverseasCountMin = 0;
 export const setSelectionMemberStatusResponseSelectionsItemOverseasCapMin = 0;
 export const setSelectionMemberStatusResponseSelectionsItemOverseasCapMax = 14;
 
+export const setSelectionMemberStatusResponseSelectionsItemWarningsGradeSideSizeMin = 12;
+export const setSelectionMemberStatusResponseSelectionsItemWarningsGradeSideSizeMax = 14;
+
+export const setSelectionMemberStatusResponseSelectionsItemWarningsOverSizeMin = 0;
+
 
 
 export const SetSelectionMemberStatusResponse = zod.object({
@@ -4544,7 +4593,9 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
-  "noKeeper": zod.boolean()
+  "noKeeper": zod.boolean(),
+  "gradeSideSize": zod.number().min(setSelectionMemberStatusResponseSelectionsItemWarningsGradeSideSizeMin).max(setSelectionMemberStatusResponseSelectionsItemWarningsGradeSideSizeMax).optional().describe('The grade\'s side size now (12–14). A draft keeps the size it was\ncreated with, so this differs from the side\'s `sideSize` after an\nadmin changes the grade. Absent reads as the side\'s own size.\n'),
+  "overSize": zod.number().min(setSelectionMemberStatusResponseSelectionsItemWarningsOverSizeMin).optional().describe('Players to move out before the side fits the grade\'s current size\n(`gradeSideSize` lowered after the draft was made). 0 or absent\nwhen it fits. Nothing is removed automatically.\n')
 })
 })),
   "pool": zod.array(zod.object({
