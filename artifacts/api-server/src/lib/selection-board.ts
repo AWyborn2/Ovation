@@ -74,6 +74,7 @@ import {
 import { isUnder18, messageMember, notifyStaff, type MessageBatch } from "./availability-messaging";
 import {
   DEFAULT_SIDE_SIZE,
+  MAX_SIDE_SIZE,
   XI_SIZE,
   normaliseSlots,
   roleMemberIds,
@@ -88,6 +89,7 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
+import { gradeSideSize } from "./side-sizes";
 import {
   namedPublicly,
   publicName,
@@ -104,12 +106,14 @@ import {
  *   summaries are built from explicitly listed non-contact columns, so no
  *   mobile or email can reach a captain.
  * - `saveBoard` applies whole-side changes in one transaction with the round's
- *   sides locked: rights, the final lock, versions, 12 slots and "no
+ *   sides locked: rights, the final lock, versions, the side's size and "no
  *   member twice in the round" (for the members the save places) are all
- *   checked before anything is written; a captain or keeper no longer in their
- *   XI (left the side, or moved to 12th) is cleared and logged.
- * - A side is the XI (slots 1–11) plus an optional 12th player (slot 12).
- *   Sides stored before the 12th read as 12 slots via `normaliseSlots`.
+ *   checked before anything is written; a captain or keeper no longer in a
+ *   role slot (left the side, or moved to 12th) is cleared and logged.
+ * - A side has `side_size` slots (12–14, fixed when drafted; ADR-009): the XI
+ *   (slots 1–11), then at 12 an optional 12th player, above 12 interchange
+ *   players numbered 1–N who can hold any role. Sides stored before the 12th
+ *   read as 12 slots via `normaliseSlots`.
  * - `finaliseSelection` publishes a side as the fixture's team list (source
  *   "selection"; a private member as "Private Player") and messages only the
  *   members the change affects; `reopenSelection` returns it to draft and
@@ -245,6 +249,8 @@ export type BoardSide = {
     gap: SelectionSlot["gap"] | null;
     member: BoardMember | null;
   }[];
+  /** Players in the side (12–14), fixed when it was drafted; `slots` has this many. */
+  sideSize: number;
   captainMemberId: number | null;
   keeperMemberId: number | null;
   finalisedAt: Date | null;
@@ -268,6 +274,10 @@ export type BoardSide = {
     saidNo: number;
     noCaptain: boolean;
     noKeeper: boolean;
+    /** The grade's side size now; differs from `sideSize` after an admin changes it. */
+    gradeSideSize: number;
+    /** Players to move out before an unfinalised side fits `gradeSideSize`; 0 when it fits. */
+    overSize: number;
   };
 };
 
@@ -738,6 +748,10 @@ export async function buildBoard(
     });
     const picked = slots.flatMap((s) => (s.member ? [s.member] : []));
     const inXi = slots.slice(0, XI_SIZE).filter((s) => s.member).length;
+    // A grade made smaller keeps its existing drafts' size: flag a draft with
+    // more players than the grade now allows, never remove anyone.
+    const gradeSize = gradeSideSize(settings?.sideSizes, f.grade);
+    const overSize = final ? 0 : Math.max(0, picked.length - gradeSize);
     return {
       id: sel.id,
       roundId: sel.roundId,
@@ -755,6 +769,7 @@ export async function buildBoard(
       state: sel.state,
       version: sel.version,
       slots,
+      sideSize: shape.size,
       captainMemberId: sel.captainMemberId,
       keeperMemberId: sel.keeperMemberId,
       finalisedAt: sel.finalisedAt,
@@ -779,6 +794,8 @@ export async function buildBoard(
         saidNo: picked.filter((m) => m.status === "no").length,
         noCaptain: sel.captainMemberId == null,
         noKeeper: sel.keeperMemberId == null,
+        gradeSideSize: gradeSize,
+        overSize,
       },
     };
   });
@@ -918,8 +935,8 @@ const memberIdsOf = (slots: readonly { memberId: number | null }[]) =>
  * Apply whole-side changes atomically. Throws `SelectionError` (and
  * writes nothing) for: a side not found (404); a side — or a member taken from
  * a side — the actor may not edit (403); a finalised side or a stale version
- * (409); not 12 (or a legacy 11) slots, a member twice in the round, an unknown member or a
- * newly placed inactive one (400). Returns the section of the first change.
+ * (409); fewer than 11 or more than the side's size slots, a member twice in the round, an
+ * unknown member or a newly placed inactive one (400). Returns the section of the first change.
  */
 export async function saveBoard(
   tenantId: number,
@@ -932,13 +949,12 @@ export async function saveBoard(
   if (new Set(ids).size !== ids.length) {
     throw new SelectionError(400, "Each side can appear only once in a save.");
   }
-  // 12 slots; an older client's 11 read as an empty 12th.
-  const changes = input.map((c) => {
-    if (c.slots.length !== DEFAULT_SIDE_SIZE && c.slots.length !== XI_SIZE) {
-      throw new SelectionError(400, `A side has exactly ${DEFAULT_SIDE_SIZE} slots.`);
+  // 11 to 14 slots here; each side's own size is checked once it's locked.
+  for (const c of input) {
+    if (c.slots.length < XI_SIZE || c.slots.length > MAX_SIDE_SIZE) {
+      throw new SelectionError(400, `A side has ${XI_SIZE} to ${MAX_SIDE_SIZE} slots.`);
     }
-    return { ...c, slots: normaliseSlots(c.slots) };
-  });
+  }
   const rule = await selectionRule(tenantId);
 
   return db.transaction(async (tx) => {
@@ -955,7 +971,7 @@ export async function saveBoard(
     }
 
     // Rights, the final lock and versions of the sides being changed.
-    for (const c of changes) {
+    for (const c of input) {
       const { selection, fixture } = sideOf.get(c.selectionId)!;
       const right = selectionRight(actor, rule, fixture.grade);
       if (!right.allowed) {
@@ -971,6 +987,24 @@ export async function saveBoard(
         );
       }
     }
+
+    // Each side's slots at its own size (ADR-009): 11 up to `side_size`. At 12 an
+    // older client's 11 read as an empty 12th; above 12, slots past what an older
+    // client posted (it saw 12) keep what the side holds, so nobody it couldn't
+    // see is dropped (the version check above makes that safe).
+    const changes = input.map((c) => {
+      const { selection, fixture } = sideOf.get(c.selectionId)!;
+      const size = sideShape(selection.sideSize).size;
+      if (c.slots.length > size) {
+        throw new SelectionError(400, `${fixture.grade} has ${size} slots.`);
+      }
+      const stored = normaliseSlots(selection.slots, size);
+      const slots =
+        size === DEFAULT_SIDE_SIZE
+          ? normaliseSlots(c.slots, size)
+          : [...c.slots, ...stored.slice(c.slots.length, size)];
+      return { ...c, slots, size };
+    });
 
     // Members: in this club; anyone newly placed in a side must be active.
     const involved = new Set<number>();
@@ -1028,8 +1062,9 @@ export async function saveBoard(
             : { memberId: null },
       );
       const inSide = new Set(memberIdsOf(slots));
-      const inXi = roleMemberIds(slots);
-      // A captain or keeper must be in their own XI (not the 12th); otherwise the role clears.
+      const inXi = roleMemberIds(slots, c.size);
+      // A captain or keeper must be in a role slot (the XI at 12, not the 12th;
+      // any slot above 12); otherwise the role clears.
       const rolesCleared: {
         role: "captain" | "keeper";
         memberId: number;
@@ -1072,7 +1107,7 @@ export async function saveBoard(
       const reordered =
         added.length === 0 &&
         removed.length === 0 &&
-        JSON.stringify(normaliseSlots(selection.slots).map((s) => s.memberId)) !==
+        JSON.stringify(normaliseSlots(selection.slots, c.size).map((s) => s.memberId)) !==
           JSON.stringify(slots.map((s) => s.memberId));
       const role = (from: number | null, to: number | null) =>
         from === to
@@ -1239,6 +1274,8 @@ export async function syncSideFromPlayhq(
     // of the round hold (juniors play up, seniors play Saturday and Sunday).
     const draft = buildDraftSlots({
       lastList: list,
+      // The side keeps the size it was drafted with.
+      size: selection.sideSize,
       members,
       prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
       // `members` is already the side's section, so a remembered match can't widen it.
@@ -1288,7 +1325,7 @@ async function publishJuniorSide(
   tx: Tx,
   tenantId: number,
   juniorFixtureId: number,
-  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">,
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId" | "sideSize">,
   members: readonly JuniorPublishMember[],
 ): Promise<{ players: JuniorTeamListPlayer[]; unlisted: string[] }> {
   const { participants, merges } = await loadJuniorIdentity(tx, tenantId);
@@ -1297,7 +1334,7 @@ async function publishJuniorSide(
   const players: JuniorTeamListPlayer[] = [];
   const unlisted: string[] = [];
   const used = new Set<string>();
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const shape = sideShape(side.sideSize);
   normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -1309,8 +1346,9 @@ async function publishJuniorSide(
     used.add(participantId);
     const twelfth = index === shape.twelfthIndex;
     const role = twelfth ? undefined : roleOf(m.id, side);
+    // 1–N in slot order; a side of 12's 12th player is order 12.
     players.push({
-      order: twelfth ? shape.size : players.filter((p) => p.order <= XI_SIZE).length + 1,
+      order: twelfth ? shape.size : players.length + 1,
       participantId,
       ...(role ? { role } : {}),
     });
@@ -1340,12 +1378,22 @@ async function publishJuniorSide(
   return { players, unlisted };
 }
 
+/**
+ * A published list renumbered after a player leaves it: 1–N in order. In a
+ * side of 12 the 12th player keeps order 12; above 12 there is no 12th.
+ */
+function renumberList<T extends { order: number }>(players: T[], sideSize: number | null): T[] {
+  const twelfth = sideShape(sideSize).twelfthLabel;
+  return players.map((p, i) => (twelfth && p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
+}
+
 /** Drop a withdrawn member from a junior side's published Hub list. */
 async function withdrawFromJuniorList(
   tx: Tx,
   tenantId: number,
   juniorFixtureId: number,
   member: JuniorPublishMember,
+  sideSize: number | null,
 ): Promise<void> {
   const [list] = await tx
     .select()
@@ -1361,9 +1409,10 @@ async function withdrawFromJuniorList(
   const { participants, merges } = await loadJuniorIdentity(tx, tenantId);
   const participantId = juniorMemberResolver(participants, merges)(member);
   if (!participantId) return;
-  const players = list.players
-    .filter((p) => p.participantId !== participantId)
-    .map((p, i) => (p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
+  const players = renumberList(
+    list.players.filter((p) => p.participantId !== participantId),
+    sideSize,
+  );
   if (players.length === list.players.length) return;
   await tx
     .update(juniorTeamListsTable)
@@ -1460,9 +1509,9 @@ export async function finaliseSelection(
       );
     }
 
-    const sideSlots = normaliseSlots(selection.slots);
+    const sideSlots = normaliseSlots(selection.slots, selection.sideSize);
     const picked = memberIdsOf(sideSlots);
-    const twelfthId = twelfthMemberId(sideSlots);
+    const twelfthId = twelfthMemberId(sideSlots, selection.sideSize);
     const members =
       picked.length > 0
         ? await tx
@@ -1527,7 +1576,14 @@ export async function finaliseSelection(
       action: "finalise",
       detail: {
         players: players.length,
-        open: XI_SIZE - players.filter((p) => p.order <= XI_SIZE).length,
+        // XI places not filled by a listed player; a side of 12's 12th doesn't count.
+        open:
+          XI_SIZE -
+          Math.min(
+            XI_SIZE,
+            players.filter((p) => !sideShape(selection.sideSize).twelfthLabel || p.order <= XI_SIZE)
+              .length,
+          ),
         twelfth: twelfthId != null && memberOf.has(twelfthId),
         captainMemberId: selection.captainMemberId,
         keeperMemberId: selection.keeperMemberId,
@@ -1717,7 +1773,7 @@ export async function withdrawFromSelection(
     const out: LockedSide[] = [];
     for (const side of sides) {
       const { selection, fixture } = side;
-      const slots: SelectionSlot[] = normaliseSlots(selection.slots).map((s) =>
+      const slots: SelectionSlot[] = normaliseSlots(selection.slots, selection.sideSize).map((s) =>
         s.memberId === memberId ? { memberId: null, gap: { name, reason: "withdrew" } } : s,
       );
       const rolesCleared: string[] = [];
@@ -1739,7 +1795,7 @@ export async function withdrawFromSelection(
 
       // Drop them from the published Hub list; a list PlayHQ has since replaced is left alone.
       if (fixture.kind === "junior") {
-        await withdrawFromJuniorList(tx, tenantId, fixture.id, member);
+        await withdrawFromJuniorList(tx, tenantId, fixture.id, member, selection.sideSize);
       }
       const [list] =
         fixture.kind === "senior"
@@ -1772,16 +1828,17 @@ export async function withdrawFromSelection(
               return (at.find(([p]) => p.role === role) ?? at[0])?.[1] ?? -1;
             })()
           : -1;
-        const players = list.players
-          .filter((p, i) =>
+        // The rest renumber; a side of 12's 12th player keeps order 12.
+        const players = renumberList(
+          list.players.filter((p, i) =>
             masked
               ? i !== privateAt
               : linked != null && p.playerId != null
                 ? p.playerId !== linked
                 : normaliseName(p.displayName) !== key,
-          )
-          // The XI renumbers; a 12th player keeps order 12.
-          .map((p, i) => (p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
+          ),
+          selection.sideSize,
+        );
         if (players.length !== list.players.length) {
           await tx
             .update(teamListsTable)

@@ -55,7 +55,7 @@ export class TeamSheetError extends Error {
 export type TeamSheetRole = "C" | "WK" | "C/WK";
 
 export type TeamSheetPlayer = {
-  /** 1–11, or 12 for the 12th player. */
+  /** 1–N in slot order; in a side of 12, 12 is the 12th player. */
   order: number;
   name: string;
   role: TeamSheetRole | null;
@@ -84,6 +84,8 @@ export type TeamSheet = {
   bowlingRulesSource: string | null;
   /** The competition's other team-sheet lines (senior, known rules only). */
   ruleNotes: string[];
+  /** Rows the sheet prints: the side's size (12–14; absent reads as 12). */
+  sideSize?: number;
   players: TeamSheetPlayer[];
   generatedAt: string;
 };
@@ -136,11 +138,13 @@ type SheetMember = Pick<
 >;
 
 /**
- * The sheet's rows, pure: the side's members in slot order (the 12th last),
- * roles never on the 12th, and limits only when `rules` apply to a senior sheet.
+ * The sheet's rows, pure: the side's members in slot order (in a side of 12
+ * the 12th last, never holding a role; above 12 numbered 1–N, any of them
+ * captain or keeper), and limits only when `rules` apply to a senior sheet.
  */
 export function teamSheetPlayers(input: {
-  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
+    Partial<Pick<SelectionRow, "sideSize">>;
   members: readonly SheetMember[];
   shirtNumberOf: (m: SheetMember) => string | null;
   juniorLimitOf: ((m: SheetMember) => JuniorBowlingLimit | null) | null;
@@ -148,7 +152,7 @@ export function teamSheetPlayers(input: {
   const byId = new Map(input.members.map((m) => [m.id, m]));
   const players: TeamSheetPlayer[] = [];
   let order = 0;
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const shape = sideShape(input.side.sideSize);
   normaliseSlots(input.side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -233,7 +237,7 @@ async function loadSide(tenantId: number, selectionId: number): Promise<Loaded> 
   if (row.selection.state !== "final") {
     throw new TeamSheetError(409, "Finalise the side to print its team sheet.");
   }
-  const ids = normaliseSlots(row.selection.slots).flatMap((s) =>
+  const ids = normaliseSlots(row.selection.slots, row.selection.sideSize).flatMap((s) =>
     s.memberId == null ? [] : [s.memberId],
   );
   const members =
@@ -475,6 +479,7 @@ export async function buildTeamSheet(
     competition: fixture.competitionName,
     bowlingRulesSource: rules?.source ?? null,
     ruleNotes: [...(rules?.sheetNotes ?? [])],
+    sideSize: sideShape(selection.sideSize).size,
     players: teamSheetPlayers({
       side: selection,
       members: loaded.members,
@@ -505,7 +510,12 @@ export function absoluteLogoUrl(url: string | null, origin: string | null): stri
 /** The sheet as a self-contained A4 HTML page (no script, one optional logo image). */
 export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): string {
   const senior = sheet.section === "senior";
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  // One row per place in the side: 12 with a shaded "12th" row, or up to 14
+  // numbered 1–N. Rows shrink above 12 so the table keeps its height and the
+  // sheet stays on one A4 page.
+  const shape = sideShape(sheet.sideSize);
+  const rowHeight =
+    shape.size > DEFAULT_SIDE_SIZE ? ((9.2 * DEFAULT_SIDE_SIZE) / shape.size).toFixed(1) : "9.2";
   const rows = Array.from({ length: shape.size }, (_, i) => {
     const order = i + 1;
     const p = sheet.players.find((x) => x.order === order);
@@ -560,7 +570,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   .players { margin-top: 4mm; }
   .players th { background: #1F3A5F; color: #fff; font-size: 8pt; padding: 1.5mm 1mm; border: 1px solid #9AA5AD; }
   .players th.group { font-size: 7.5pt; }
-  .players td { border: 1px solid #9AA5AD; height: 9.2mm; padding: 0 2mm; font-size: 11pt; }
+  .players td { border: 1px solid #9AA5AD; height: ${rowHeight}mm; padding: 0 2mm; font-size: 11pt; }
   .players td.c { text-align: center; padding: 0 1mm; }
   .players td.no { font-weight: bold; color: #5B6770; }
   .players td.small { font-size: 9pt; color: #1F2933; }

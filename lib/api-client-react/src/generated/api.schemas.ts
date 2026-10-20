@@ -3336,6 +3336,13 @@ export type AvailabilitySettings = AvailabilitySettingsInput & ({
   players answer and stop texts through their link.
    */
   smsProvider: AvailabilitySmsProvider | null;
+  /** The grade labels the club's sides go by (senior app grades and
+  junior teams with a fixture in the last year), in the club's
+  grade order: the keys the per-grade settings use. A
+  `sideSizes` key matching none of them is a renamed or retired
+  grade.
+   */
+  grades?: string[];
 });
 
 /**
@@ -3563,6 +3570,23 @@ export interface SelectionWarnings {
   saidNo: number;
   noCaptain: boolean;
   noKeeper: boolean;
+  /**
+     * The grade's side size now (12–14). A draft keeps the size it was
+  created with, so this differs from the side's `sideSize` after an
+  admin changes the grade. Absent reads as the side's own size.
+
+     * @minimum 12
+     * @maximum 14
+     */
+  gradeSideSize?: number;
+  /**
+     * Players to move out before the side fits the grade's current size
+  (`gradeSideSize` lowered after the draft was made). 0 or absent
+  when it fits. Nothing is removed automatically.
+
+     * @minimum 0
+     */
+  overSize?: number;
 }
 
 export type SelectionSideState = typeof SelectionSideState[keyof typeof SelectionSideState];

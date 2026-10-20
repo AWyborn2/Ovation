@@ -93,7 +93,7 @@ export async function matchSelectionSlot(
         `${fixture.grade} was changed by someone else. Reload to see the latest side.`,
       );
     }
-    const slots = normaliseSlots(selection.slots);
+    const slots = normaliseSlots(selection.slots, selection.sideSize);
     const index = input.slot - 1;
     const gap = slots[index]?.memberId == null ? slots[index]?.gap : undefined;
     if (!gap || gap.reason !== "not_on_register") {

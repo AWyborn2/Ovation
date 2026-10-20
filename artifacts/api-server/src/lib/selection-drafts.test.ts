@@ -484,3 +484,63 @@ describe("buildDraftSlots: Private Player rows (ADR-008 §4)", () => {
     });
   });
 });
+
+describe("side size (ADR-009)", () => {
+  const EXTRA = ["Leo Mann", "Max Nash", "Ned Ochs", "Oli Park"];
+  const SQUAD = [...MEMBERS, ...EXTRA.map((n, i) => member(12 + i, n))];
+  /** A PlayHQ list of 15 names, the 13th captain and the 14th keeper. */
+  const LIST15: TeamListPlayer[] = [...NAMES, ...EXTRA].map((n, i) => ({
+    order: i + 1,
+    displayName: i === 9 ? "J. Hale" : n,
+    ...(i === 9 ? { playerId: 410 } : {}),
+    ...(i === 12 ? { role: "C" as const } : i === 13 ? { role: "WK" as const } : {}),
+  }));
+
+  it("seeds up to the side's size, and above 12 a role past slot 11 carries", () => {
+    const draft = buildDraftSlots({ lastList: LIST15, members: SQUAD, size: 14 });
+    expect(draft.sideSize).toBe(14);
+    expect(draft.slots).toHaveLength(14);
+    expect(draft.slots.map((s) => s.memberId)).toEqual([...MEMBERS.map((m) => m.id), 12, 13, 14]);
+    expect(draft.captainMemberId).toBe(13);
+    expect(draft.keeperMemberId).toBe(14);
+  });
+
+  it("at 12 (unset) seeds 12 and the 12th holds no role", () => {
+    const draft = buildDraftSlots({ lastList: LIST15, members: SQUAD });
+    expect(draft.sideSize).toBe(12);
+    expect(draft.slots).toHaveLength(12);
+    expect(draft.slots[11].memberId).toBe(12);
+    expect(draft.captainMemberId).toBeNull();
+    expect(draft.keeperMemberId).toBeNull();
+  });
+
+  it("an empty list still gives the side its size", () => {
+    const draft = buildDraftSlots({ lastList: null, members: SQUAD, size: 13 });
+    expect(draft.slots).toHaveLength(13);
+    expect(draft.sideSize).toBe(13);
+  });
+
+  it("carries a side of 14 slot for slot, roles anywhere in it", () => {
+    const previous = {
+      slots: SQUAD.slice(0, 14).map((m) => ({ memberId: m.id }) as SelectionSlot),
+      captainMemberId: 13,
+      keeperMemberId: 14,
+    };
+    const draft = carryDraftSlots({ previous, members: SQUAD, size: 14 });
+    expect(draft.slots.map((s) => s.memberId)).toEqual(SQUAD.slice(0, 14).map((m) => m.id));
+    expect(draft.captainMemberId).toBe(13);
+    expect(draft.keeperMemberId).toBe(14);
+  });
+
+  it("a side of 14 carried into a grade now 12 takes the first 12; a role past the XI clears", () => {
+    const previous = {
+      slots: SQUAD.slice(0, 14).map((m) => ({ memberId: m.id }) as SelectionSlot),
+      captainMemberId: 13,
+      keeperMemberId: 2,
+    };
+    const draft = carryDraftSlots({ previous, members: SQUAD, size: 12 });
+    expect(draft.slots.map((s) => s.memberId)).toEqual(SQUAD.slice(0, 12).map((m) => m.id));
+    expect(draft.captainMemberId).toBeNull();
+    expect(draft.keeperMemberId).toBe(2);
+  });
+});

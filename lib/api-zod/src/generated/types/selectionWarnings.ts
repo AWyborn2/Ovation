@@ -19,4 +19,21 @@ export interface SelectionWarnings {
   saidNo: number;
   noCaptain: boolean;
   noKeeper: boolean;
+  /**
+     * The grade's side size now (12–14). A draft keeps the size it was
+  created with, so this differs from the side's `sideSize` after an
+  admin changes the grade. Absent reads as the side's own size.
+
+     * @minimum 12
+     * @maximum 14
+     */
+  gradeSideSize?: number;
+  /**
+     * Players to move out before the side fits the grade's current size
+  (`gradeSideSize` lowered after the draft was made). 0 or absent
+  when it fits. Nothing is removed automatically.
+
+     * @minimum 0
+     */
+  overSize?: number;
 }

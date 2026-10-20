@@ -536,3 +536,92 @@ describe("locate", () => {
     expect(locate(board(), 1)).toBeNull();
   });
 });
+
+describe("a side above 12 (ADR-009)", () => {
+  /** A Grade as a side of 14 holding `n` players, its grade's size now `gradeSize`. */
+  function side14(n: number, gradeSize = 14, opts: { captainMemberId?: number } = {}) {
+    const base = side(1, "A Grade", []);
+    const players = range(100, n, "A player");
+    const s: SelectionSide = {
+      ...base,
+      sideSize: 14,
+      captainMemberId: opts.captainMemberId ?? null,
+      slots: Array.from({ length: 14 }, (_, i) => {
+        const m = players[i] ?? null;
+        return { memberId: m?.id ?? null, member: m, gap: null };
+      }),
+      warnings: { ...base.warnings, gradeSideSize: gradeSize },
+    };
+    return { selections: [{ ...s, warnings: sideWarnings(s) }], pool: [member(900, "Pool Yes")] };
+  }
+
+  it("counts the XI only, with no 12th and no open slot for an empty extra", () => {
+    const s = side14(13);
+    expect(sideOf(s, 1).warnings).toMatchObject({
+      filled: 11,
+      open: 0,
+      twelfth: false,
+      overSize: 0,
+    });
+  });
+
+  it("a player past slot 11 can be captain or keeper", () => {
+    const r = applyMove(side14(13), { kind: "role", sideId: 1, role: "captain", memberId: 112 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(sideOf(r.state, 1).captainMemberId).toBe(112);
+  });
+
+  it("moving the captain to slot 14 keeps the role", () => {
+    const r = applyMove(side14(13, 14, { captainMemberId: 100 }), {
+      kind: "move",
+      memberId: 100,
+      target: { kind: "slot", sideId: 1, index: 13 },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(sideOf(r.state, 1).captainMemberId).toBe(100);
+    expect(r.log.join(" ")).not.toMatch(/12th/);
+  });
+
+  it("fills up to 14, then refuses a 15th with the side's size", () => {
+    const r = applyMove(side14(13), {
+      kind: "move",
+      memberId: 900,
+      target: { kind: "side", sideId: 1 },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(ids(sideOf(r.state, 1))[13]).toBe(900);
+    const full = applyMove(r.state, {
+      kind: "move",
+      memberId: 900,
+      target: { kind: "side", sideId: 1 },
+    });
+    expect(full.ok).toBe(false);
+    const more = applyMove(
+      { ...r.state, pool: [...r.state.pool, member(901, "Extra")] },
+      { kind: "move", memberId: 901, target: { kind: "side", sideId: 1 } },
+    );
+    expect(more).toMatchObject({ ok: false, reason: "full" });
+    if (!more.ok) expect(more.message).toContain("already has 14");
+  });
+
+  it("flags a draft over a grade made smaller, and moving players out clears it", () => {
+    const s = side14(14, 12);
+    expect(sideOf(s, 1).warnings).toMatchObject({ gradeSideSize: 12, overSize: 2 });
+    const r = applyMove(s, {
+      kind: "move",
+      memberId: 113,
+      target: { kind: "pool" },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(sideOf(r.state, 1).warnings.overSize).toBe(1);
+  });
+
+  it("saves every slot of the side", () => {
+    const s = side14(13);
+    expect(toChanges(s, [1])[0].slots).toHaveLength(14);
+  });
+});
