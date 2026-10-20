@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanSideSizes, gradeSideSize } from "./side-sizes";
+import { cleanAllPlayGrades, cleanSideSizes, gradeSideSize, gradeSideSpec } from "./side-sizes";
 
 /** Players per side by grade (ADR-009): the pure helpers. */
 
@@ -28,5 +28,31 @@ describe("cleanSideSizes", () => {
     expect(cleanSideSizes({ "A Grade": 11 })).toHaveProperty("error");
     expect(cleanSideSizes({ "A Grade": 12.5 })).toHaveProperty("error");
     expect(cleanSideSizes({ "  ": 13 })).toEqual({ error: "Each side size needs a grade." });
+  });
+});
+
+describe("gradeSideSpec", () => {
+  const settings = { sideSizes: { "A Grade": 14 }, allPlayGrades: [" C Grade", "A Grade"] };
+
+  it("marks a grade at 12 on the all-play list as all play", () => {
+    expect(gradeSideSpec(settings, "C Grade")).toEqual({ sideSize: 12, allPlay: true });
+  });
+
+  it("leaves other grades at 12 with a 12th", () => {
+    expect(gradeSideSpec(settings, "B Grade")).toEqual({ sideSize: 12, allPlay: false });
+    expect(gradeSideSpec({ sideSizes: null, allPlayGrades: null }, "B Grade")).toEqual({
+      sideSize: 12,
+      allPlay: false,
+    });
+  });
+
+  it("ignores the list above 12", () => {
+    expect(gradeSideSpec(settings, "A Grade")).toEqual({ sideSize: 14, allPlay: false });
+  });
+});
+
+describe("cleanAllPlayGrades", () => {
+  it("trims, and drops blanks and repeats", () => {
+    expect(cleanAllPlayGrades([" C Grade ", "C Grade", "", "Colts"])).toEqual(["C Grade", "Colts"]);
   });
 });

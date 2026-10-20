@@ -36,6 +36,11 @@ export interface SelectionSide {
      * @maximum 14
      */
   sideSize?: number;
+  /** A side of 12 where all 12 play: numbered 1–12 with no "12th", and
+  any slot can hold captain or keeper. Fixed when the draft was
+  created. Absent reads as false. Ignored above 12.
+   */
+  allPlay?: boolean;
   overseas?: SelectionOverseas;
   /** @nullable */
   captainMemberId: number | null;

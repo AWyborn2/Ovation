@@ -72,6 +72,7 @@ type SideBody = {
   readOnlyReason: string | null;
   fixture: { grade: string };
   sideSize?: number;
+  allPlay?: boolean;
   slots: { memberId: number | null; gap: unknown; member: { id: number; status: string } | null }[];
   warnings: {
     filled: number;
@@ -654,6 +655,47 @@ describe("Selection Hub API", () => {
       expect((await put(asAdmin, [c13])).status).toBe(400);
       const a15 = await changeFor(sel.A, (ids) => [...ids, m[28]]);
       expect((await put(asAdmin, [a15])).status).toBe(400);
+    });
+
+    it("a grade of 12 where all play: new drafts have no 12th, slot 12 holds a role, finalise numbers 1–12", async () => {
+      await db
+        .update(availabilitySettingsTable)
+        .set({ allPlayGrades: ["A Grade"] })
+        .where(eq(availabilitySettingsTable.tenantId, tenantA));
+      try {
+        await db.delete(selectionsTable).where(inArray(selectionsTable.id, [sel.A, sel.B]));
+        const sides = (await board(asAdmin)).selections;
+        const a = sides.find((s) => s.fixture.grade === "A Grade")!;
+        const b = sides.find((s) => s.fixture.grade === "B Grade")!;
+        expect(a.sideSize).toBe(12);
+        expect(a.allPlay).toBe(true);
+        expect((await loadSel(a.id)).allPlay).toBe(true);
+        expect(b.allPlay).toBe(false);
+
+        await db
+          .update(selectionsTable)
+          .set({ slots: m.slice(1, 13).map((memberId) => ({ memberId })) })
+          .where(eq(selectionsTable.id, a.id));
+        const change = await changeFor(a.id, (ids) => ids, { captain: m[1], keeper: m[12] });
+        const res = await put(asAdmin, [change]);
+        expect(res.status).toBe(200);
+        const saved = (res.body.selections as SideBody[]).find((s) => s.id === a.id)!;
+        expect(saved.warnings).toMatchObject({ twelfth: false });
+        expect((await loadSel(a.id)).keeperMemberId).toBe(m[12]);
+
+        await asAdmin(request(app).post(`/api/selection/${a.id}/finalise`))
+          .send(await ver(a.id))
+          .expect(200);
+        const list = await teamListOf(fixture.A);
+        expect(list.players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+        expect(list.players.some((p) => p.twelfth)).toBe(false);
+        expect(list.players[11]).toMatchObject({ order: 12, role: "WK" });
+      } finally {
+        await db
+          .update(availabilitySettingsTable)
+          .set({ allPlayGrades: [] })
+          .where(eq(availabilitySettingsTable.tenantId, tenantA));
+      }
     });
 
     it("an older client's 12-slot save keeps the slots it couldn't see", async () => {

@@ -117,11 +117,11 @@ export function sideWarnings(side: SelectionSide): SelectionWarnings {
   const picked = side.slots.filter((s) => s.memberId != null);
   const inXi = side.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length;
   const status = (s: SelectionSlot) => s.member?.status ?? "none";
-  const gradeSideSize = side.warnings?.gradeSideSize ?? sideShape(side.sideSize).size;
+  const gradeSideSize = side.warnings?.gradeSideSize ?? sideShape(side).size;
   return {
     filled: inXi,
     open: XI_SIZE - inXi,
-    twelfth: twelfthMemberId(side.slots, side.sideSize) != null,
+    twelfth: twelfthMemberId(side.slots, side) != null,
     unconfirmed: picked.filter((s) => status(s) === "maybe" || status(s) === "none").length,
     saidNo: picked.filter((s) => status(s) === "no").length,
     noCaptain: side.captainMemberId == null,
@@ -200,7 +200,7 @@ function resolve(
   if (open < 0) {
     return refuse(
       "full",
-      `${sideLabel(side)} already has ${sideShape(side.sideSize).size}. Drop onto a player to swap them out.`,
+      `${sideLabel(side)} already has ${sideShape(side).size}. Drop onto a player to swap them out.`,
     );
   }
   return { ok: true, from, index: open };
@@ -256,8 +256,8 @@ function applyRole(
   if (locked) return locked;
   const word = action.role === "captain" ? "captain" : "keeper";
   const field = action.role === "captain" ? "captainMemberId" : "keeperMemberId";
-  if (action.memberId != null && !roleMemberIds(side.slots, side.sideSize).has(action.memberId)) {
-    const twelfth = twelfthMemberId(side.slots, side.sideSize) === action.memberId;
+  if (action.memberId != null && !roleMemberIds(side.slots, side).has(action.memberId)) {
+    const twelfth = twelfthMemberId(side.slots, side) === action.memberId;
     return refuse(
       "not_in_side",
       twelfth
@@ -368,8 +368,8 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     const nextSlots = slotsOf.get(side.id);
     if (!nextSlots) return side;
     const next: SelectionSide = { ...side, slots: nextSlots };
-    const inXi = roleMemberIds(nextSlots, side.sideSize);
-    const twelfthId = twelfthMemberId(nextSlots, side.sideSize);
+    const inXi = roleMemberIds(nextSlots, side);
+    const twelfthId = twelfthMemberId(nextSlots, side);
     for (const [field, word] of [
       ["captainMemberId", "captain"],
       ["keeperMemberId", "keeper"],

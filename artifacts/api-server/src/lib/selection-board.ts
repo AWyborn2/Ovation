@@ -80,6 +80,7 @@ import {
   roleMemberIds,
   sideShape,
   twelfthMemberId,
+  type SideSpec,
 } from "@workspace/scorecard/selection-shape";
 import {
   buildDraftSlots,
@@ -260,6 +261,8 @@ export type BoardSide = {
   }[];
   /** Players in the side (12–14), fixed when it was drafted; `slots` has this many. */
   sideSize: number;
+  /** A side of 12 where all 12 play (no "12th"), fixed when it was drafted. */
+  allPlay: boolean;
   captainMemberId: number | null;
   keeperMemberId: number | null;
   finalisedAt: Date | null;
@@ -761,7 +764,7 @@ export async function buildBoard(
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
     const final = sel.state === "final";
-    const shape = sideShape(sel.sideSize);
+    const shape = sideShape(sel);
     const slots = normaliseSlots(sel.slots, shape.size).map((slot) => {
       const m = slot.memberId != null ? byId.get(slot.memberId) : undefined;
       const overseas =
@@ -800,6 +803,7 @@ export async function buildBoard(
       version: sel.version,
       slots,
       sideSize: shape.size,
+      allPlay: shape.size === 12 && !shape.twelfthLabel,
       captainMemberId: sel.captainMemberId,
       keeperMemberId: sel.keeperMemberId,
       finalisedAt: sel.finalisedAt,
@@ -1028,7 +1032,7 @@ export async function saveBoard(
     // see is dropped (the version check above makes that safe).
     const changes = input.map((c) => {
       const { selection, fixture } = sideOf.get(c.selectionId)!;
-      const size = sideShape(selection.sideSize).size;
+      const size = sideShape(selection).size;
       if (c.slots.length > size) {
         throw new SelectionError(400, `${fixture.grade} has ${size} slots.`);
       }
@@ -1096,7 +1100,7 @@ export async function saveBoard(
             : { memberId: null },
       );
       const inSide = new Set(memberIdsOf(slots));
-      const inXi = roleMemberIds(slots, c.size);
+      const inXi = roleMemberIds(slots, selection);
       // A captain or keeper must be in a role slot (the XI at 12, not the 12th;
       // any slot above 12); otherwise the role clears.
       const rolesCleared: {
@@ -1308,8 +1312,8 @@ export async function syncSideFromPlayhq(
     // of the round hold (juniors play up, seniors play Saturday and Sunday).
     const draft = buildDraftSlots({
       lastList: list,
-      // The side keeps the size it was drafted with.
-      size: selection.sideSize,
+      // The side keeps the size and format it was drafted with.
+      size: selection,
       members,
       prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
       // `members` is already the side's section, so a remembered match can't widen it.
@@ -1359,7 +1363,7 @@ async function publishJuniorSide(
   tx: Tx,
   tenantId: number,
   juniorFixtureId: number,
-  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId" | "sideSize">,
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId" | "sideSize" | "allPlay">,
   members: readonly JuniorPublishMember[],
   overseasIds: ReadonlySet<number> = new Set(),
 ): Promise<{ players: JuniorTeamListPlayer[]; unlisted: string[] }> {
@@ -1369,7 +1373,7 @@ async function publishJuniorSide(
   const players: JuniorTeamListPlayer[] = [];
   const unlisted: string[] = [];
   const used = new Set<string>();
-  const shape = sideShape(side.sideSize);
+  const shape = sideShape(side);
   normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -1419,8 +1423,8 @@ async function publishJuniorSide(
  * A published list renumbered after a player leaves it: 1–N in order. In a
  * side of 12 the 12th player keeps order 12; above 12 there is no 12th.
  */
-function renumberList<T extends { order: number }>(players: T[], sideSize: number | null): T[] {
-  const twelfth = sideShape(sideSize).twelfthLabel;
+function renumberList<T extends { order: number }>(players: T[], side: SideSpec): T[] {
+  const twelfth = sideShape(side).twelfthLabel;
   return players.map((p, i) => (twelfth && p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
 }
 
@@ -1430,7 +1434,7 @@ async function withdrawFromJuniorList(
   tenantId: number,
   juniorFixtureId: number,
   member: JuniorPublishMember,
-  sideSize: number | null,
+  side: SideSpec,
 ): Promise<void> {
   const [list] = await tx
     .select()
@@ -1448,7 +1452,7 @@ async function withdrawFromJuniorList(
   if (!participantId) return;
   const players = renumberList(
     list.players.filter((p) => p.participantId !== participantId),
-    sideSize,
+    side,
   );
   if (players.length === list.players.length) return;
   await tx
@@ -1548,7 +1552,7 @@ export async function finaliseSelection(
 
     const sideSlots = normaliseSlots(selection.slots, selection.sideSize);
     const picked = memberIdsOf(sideSlots);
-    const twelfthId = twelfthMemberId(sideSlots, selection.sideSize);
+    const twelfthId = twelfthMemberId(sideSlots, selection);
     // The overseas flags as they stand now, kept with the side and the published
     // list so a later squad change never rewrites a finalised side (ADR-009).
     const overseasIds = await loadOverseasMemberIds(
@@ -1645,8 +1649,7 @@ export async function finaliseSelection(
           XI_SIZE -
           Math.min(
             XI_SIZE,
-            players.filter((p) => !sideShape(selection.sideSize).twelfthLabel || p.order <= XI_SIZE)
-              .length,
+            players.filter((p) => !sideShape(selection).twelfthLabel || p.order <= XI_SIZE).length,
           ),
         twelfth: twelfthId != null && memberOf.has(twelfthId),
         ...(overseasIds.size > 0 ? { overseas: overseasIds.size } : {}),
@@ -1860,7 +1863,7 @@ export async function withdrawFromSelection(
 
       // Drop them from the published Hub list; a list PlayHQ has since replaced is left alone.
       if (fixture.kind === "junior") {
-        await withdrawFromJuniorList(tx, tenantId, fixture.id, member, selection.sideSize);
+        await withdrawFromJuniorList(tx, tenantId, fixture.id, member, selection);
       }
       const [list] =
         fixture.kind === "senior"
@@ -1902,7 +1905,7 @@ export async function withdrawFromSelection(
                 ? p.playerId !== linked
                 : normaliseName(p.displayName) !== key,
           ),
-          selection.sideSize,
+          selection,
         );
         if (players.length !== list.players.length) {
           await tx

@@ -386,17 +386,19 @@ function SettingsCard() {
 // Sides by grade
 // ---------------------------------------------------------------------------
 
-const SIDE_SIZES = [12, 13, 14] as const;
-
-/** "12 — XI + 12th" / "14 — numbered 1–14". */
-function sideSizeLabel(n: number): string {
-  return n === 12 ? "12 — XI + 12th" : `${n} — numbered 1–${n}`;
-}
+/** A grade's side: its size, and at 12 whether all 12 play ("12-all"). */
+const SIDE_OPTIONS = [
+  { value: "12", label: "12 — XI + 12th" },
+  { value: "12-all", label: "12 — numbered 1–12" },
+  { value: "13", label: "13 — numbered 1–13" },
+  { value: "14", label: "14 — numbered 1–14" },
+] as const;
 
 /**
  * Players per side by grade (ADR-009). A grade left at 12 is the XI plus an
- * optional 12th, as before; at 13 or 14 the extras are interchange players,
- * numbered 1–N with no "12th". A size applies to drafts made after it's saved;
+ * optional 12th, as before; "12 — numbered 1–12" is a side where all 12 play,
+ * and at 13 or 14 the extras are interchange players, numbered 1–N with no
+ * "12th". A size applies to drafts made after it's saved;
  * existing sides keep theirs. A saved size whose grade no longer plays (a
  * renamed grade) is listed so it can be removed.
  */
@@ -405,23 +407,40 @@ function SidesByGradeCard() {
   const { data, isLoading, isError, refetch } = useGetAvailabilitySettings();
   const save = useUpdateAvailabilitySettings();
   const [sizes, setSizes] = useState<Record<string, number> | null>(null);
+  const [allPlay, setAllPlay] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (data) setSizes({ ...(data.sideSizes ?? {}) });
+    if (data) {
+      setSizes({ ...(data.sideSizes ?? {}) });
+      setAllPlay([...(data.allPlayGrades ?? [])]);
+    }
   }, [data]);
 
   const grades = data?.grades ?? [];
-  const unmatched = Object.keys(sizes ?? {}).filter((g) => !grades.includes(g));
+  const unmatched = [...new Set([...Object.keys(sizes ?? {}), ...allPlay])].filter(
+    (g) => !grades.includes(g),
+  );
 
-  const setSize = (grade: string, n: number | null) => {
+  const optionOf = (grade: string): string => {
+    const n = sizes?.[grade] ?? 12;
+    return n === 12 && allPlay.includes(grade) ? "12-all" : String(n);
+  };
+
+  /** Set a grade's side from its option ("12-all" = 12, all play); null clears it. */
+  const setSide = (grade: string, option: string | null) => {
     setSaved(false);
+    const n = option == null ? 12 : Number.parseInt(option, 10);
     setSizes((s) => {
       const next = { ...(s ?? {}) };
-      if (n == null || n === 12) delete next[grade];
+      if (n === 12) delete next[grade];
       else next[grade] = n;
       return next;
+    });
+    setAllPlay((list) => {
+      const rest = list.filter((g) => g !== grade);
+      return option === "12-all" ? [...rest, grade] : rest;
     });
   };
 
@@ -444,6 +463,7 @@ function SidesByGradeCard() {
           finaliseTime: data.finaliseTime,
           selectionRule: data.selectionRule,
           sideSizes: sizes,
+          allPlayGrades: allPlay,
         },
       },
       {
@@ -470,10 +490,11 @@ function SidesByGradeCard() {
         ) : (
           <>
             <p className="max-w-[75ch] text-xs text-muted-foreground">
-              How many players a grade picks. At 12 a side is the XI plus a 12th player. A grade
-              with interchange can pick up to 14: players are numbered 1 to 14 with no
-              &ldquo;12th&rdquo;, and any of them can be captain or keeper. A change applies to
-              sides drafted after you save; sides already drafted keep their size.
+              How many players a grade picks. At 12 a side is the XI plus a 12th player, unless all
+              12 play: then they&rsquo;re numbered 1 to 12. A grade with interchange can pick up to
+              14. Numbered sides have no &ldquo;12th&rdquo;, and any player can be captain or
+              keeper. A change applies to sides drafted after you save; sides already drafted keep
+              their size.
             </p>
             {grades.length === 0 && unmatched.length === 0 ? (
               <EmptyState
@@ -491,12 +512,12 @@ function SidesByGradeCard() {
                       id={`side-size-${g}`}
                       aria-label={`${g} players per side`}
                       className={`${selectClass} w-56`}
-                      value={sizes[g] ?? 12}
-                      onChange={(e) => setSize(g, Number(e.target.value))}
+                      value={optionOf(g)}
+                      onChange={(e) => setSide(g, e.target.value)}
                     >
-                      {SIDE_SIZES.map((n) => (
-                        <option key={n} value={n}>
-                          {sideSizeLabel(n)}
+                      {SIDE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
                         </option>
                       ))}
                     </select>
@@ -511,11 +532,12 @@ function SidesByGradeCard() {
                     <div>
                       <p className="text-sm font-medium">{g}</p>
                       <p className="text-xs text-muted-foreground">
-                        Set to {sizes[g]}, but no grade plays under this name now (renamed, or no
-                        fixtures this year). New sides of a renamed grade pick 12.
+                        Set to {SIDE_OPTIONS.find((o) => o.value === optionOf(g))?.label}, but no
+                        grade plays under this name now (renamed, or no fixtures this year). New
+                        sides of a renamed grade pick 12.
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setSize(g, null)}>
+                    <Button variant="outline" size="sm" onClick={() => setSide(g, null)}>
                       Remove
                     </Button>
                   </div>

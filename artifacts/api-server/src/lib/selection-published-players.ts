@@ -60,7 +60,7 @@ type PublishedMember = Pick<
 > &
   Partial<Pick<SquadMemberRow, "showNamePublicly" | "section" | "dateOfBirth">>;
 type PublishedSide = Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
-  Partial<Pick<SelectionRow, "sideSize">>;
+  Partial<Pick<SelectionRow, "sideSize" | "allPlay">>;
 const nameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
 /**
@@ -170,7 +170,7 @@ export function selectionPublishedPlayers(
 ): TeamListPlayer[] {
   const byId = new Map(members.map((m) => [m.id, m]));
   const players: TeamListPlayer[] = [];
-  const shape = sideShape(side.sideSize);
+  const shape = sideShape(side);
   normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;

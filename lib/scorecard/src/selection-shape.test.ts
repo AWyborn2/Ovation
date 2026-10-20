@@ -7,6 +7,7 @@ import {
   resolveSideSize,
   roleMemberIds,
   sideShape,
+  twelfthMemberId,
 } from "./selection-shape";
 
 const filled = (n: number) => Array.from({ length: n }, (_, i) => ({ memberId: i + 1 }));
@@ -82,5 +83,32 @@ describe("roleMemberIds", () => {
 
   it("skips open slots", () => {
     expect([...roleMemberIds([{ memberId: null }, { memberId: 7 }])]).toEqual([7]);
+  });
+});
+
+describe("a side of 12 where all play", () => {
+  const spec = { sideSize: 12, allPlay: true };
+
+  it("has no 12th: numbered 1–12, every slot a role slot", () => {
+    expect(sideShape(spec)).toEqual({
+      size: 12,
+      xi: XI_SIZE,
+      extras: 1,
+      twelfthLabel: false,
+      twelfthIndex: null,
+      roleSlots: 12,
+    });
+    expect(roleMemberIds(filled(12), spec).size).toBe(12);
+    expect(twelfthMemberId(filled(12), spec)).toBeNull();
+  });
+
+  it("is a side of 12 with a 12th when allPlay is false or absent", () => {
+    expect(sideShape({ sideSize: 12, allPlay: false })).toEqual(sideShape(12));
+    expect(sideShape({ sideSize: null })).toEqual(sideShape(12));
+    expect(twelfthMemberId(filled(12), { sideSize: 12 })).toBe(12);
+  });
+
+  it("is ignored above 12", () => {
+    expect(sideShape({ sideSize: 14, allPlay: true })).toEqual(sideShape(14));
   });
 });
