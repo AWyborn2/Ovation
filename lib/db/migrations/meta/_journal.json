@@ -344,6 +344,13 @@
       "when": 1792400000001,
       "tag": "0048_panoramic_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792453779732,
+      "tag": "0049_selection_side_size",
+      "breakpoints": true
     }
   ]
 }

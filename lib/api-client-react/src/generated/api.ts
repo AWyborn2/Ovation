@@ -388,6 +388,8 @@ import type {
   SquadMember,
   SquadMemberDetail,
   SquadMemberInput,
+  SquadMemberSeason,
+  SquadMemberSeasonUpdate,
   SquadMemberUpdate,
   SquadPlayerSearchHit,
   SquadSeasonSeedResult,
@@ -8237,6 +8239,84 @@ export const useRemoveSquadMember = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRemoveSquadMemberMutationOptions(options));
+    }
+
+export const getSetSquadMemberSeasonUrl = (id: number,
+    season: number,) => {
+
+
+
+
+  return `/api/squad/${id}/seasons/${season}`
+}
+
+/**
+ * Marks the member as an overseas player, or not, for one season. Each
+season stands alone: nothing carries over. Sides already finalised
+keep the flag they were published with. Not built yet: returns 501.
+
+ * @summary Set a squad member's facts for one season (admin)
+ */
+export const setSquadMemberSeason = async (id: number,
+    season: number,
+    squadMemberSeasonUpdate: SquadMemberSeasonUpdate, options?: RequestInit): Promise<SquadMemberSeason> => {
+
+  return customFetch<SquadMemberSeason>(getSetSquadMemberSeasonUrl(id,season),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadMemberSeasonUpdate,)
+  }
+);}
+
+
+
+
+export const getSetSquadMemberSeasonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSquadMemberSeason>>, TError,{id: number;season: number;data: BodyType<SquadMemberSeasonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setSquadMemberSeason>>, TError,{id: number;season: number;data: BodyType<SquadMemberSeasonUpdate>}, TContext> => {
+
+const mutationKey = ['setSquadMemberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setSquadMemberSeason>>, {id: number;season: number;data: BodyType<SquadMemberSeasonUpdate>}> = (props) => {
+          const {id,season,data} = props ?? {};
+
+          return  setSquadMemberSeason(id,season,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetSquadMemberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof setSquadMemberSeason>>>
+    export type SetSquadMemberSeasonMutationBody = BodyType<SquadMemberSeasonUpdate>
+    export type SetSquadMemberSeasonMutationError = ErrorType<void>
+
+    /**
+ * @summary Set a squad member's facts for one season (admin)
+ */
+export const useSetSquadMemberSeason = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSquadMemberSeason>>, TError,{id: number;season: number;data: BodyType<SquadMemberSeasonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setSquadMemberSeason>>,
+        TError,
+        {id: number;season: number;data: BodyType<SquadMemberSeasonUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetSquadMemberSeasonMutationOptions(options));
     }
 
 export const getGetAvailabilitySettingsUrl = () => {

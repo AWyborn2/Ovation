@@ -28,6 +28,14 @@ import {
   type MemberIdentity,
   type ParticipantCrosswalk,
 } from "./availability-grades";
+import {
+  DEFAULT_SIDE_SIZE,
+  XI_SIZE,
+  normaliseSlots,
+  roleMemberIds,
+  sideShape,
+  twelfthMemberId,
+} from "@workspace/scorecard/selection-shape";
 import { loadParticipantCrosswalk } from "./participant-crosswalk";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
@@ -61,31 +69,6 @@ import { juniorMemberResolver } from "./shirt-number-squad";
  * no-op.
  */
 
-/** Every side has 12 slots: the XI in slots 1–11 and the 12th player in slot 12. */
-export const SIDE_SIZE = 12;
-
-/** The playing XI: slots 1–11. A side is complete with these; the 12th is optional. */
-export const XI_SIZE = 11;
-
-/** The 12th player's slot (zero-based). */
-export const TWELFTH_INDEX = XI_SIZE;
-
-/**
- * A stored or submitted side as 12 slots. Sides saved before the 12th player
- * have 11; they read as an empty 12th. Every reader and writer of
- * `selections.slots` goes through this, so the rest of the code sees 12.
- */
-export function normaliseSlots<T extends { memberId: number | null }>(slots: readonly T[]): T[] {
-  const out = [...slots];
-  while (out.length < SIDE_SIZE) out.push({ memberId: null } as T);
-  return out;
-}
-
-/** The members in the XI (slots 1–11), for captain and keeper. */
-export function xiMemberIds(slots: readonly { memberId: number | null }[]): Set<number> {
-  return new Set(slots.slice(0, XI_SIZE).flatMap((s) => (s.memberId != null ? [s.memberId] : [])));
-}
-
 /** Answers per member, keyed by Perth date (`YYYY-MM-DD`). */
 export type ResponsesByMember = ReadonlyMap<number, ReadonlyMap<string, AvailabilityStatus>>;
 
@@ -95,8 +78,8 @@ export type DraftSide = {
   keeperMemberId: number | null;
 };
 
-const emptySlots = (): SelectionSlot[] =>
-  Array.from({ length: SIDE_SIZE }, () => ({ memberId: null }));
+const emptySlots = (size = DEFAULT_SIDE_SIZE): SelectionSlot[] =>
+  Array.from({ length: size }, () => ({ memberId: null }));
 
 /** Members who can't play a game; the members a draft places are added. */
 type Placed = { has(id: number): boolean; add(id: number): void };
@@ -131,7 +114,8 @@ export function buildDraftSlots(input: {
 
   const match = buildMemberMatcher(members, input.prefer, input.participants);
   const placed = new Set<number>();
-  const entries = [...lastList].sort((a, b) => a.order - b.order).slice(0, SIDE_SIZE);
+  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const entries = [...lastList].sort((a, b) => a.order - b.order).slice(0, shape.size);
 
   entries.forEach((entry, i) => {
     const m = match(entry);
@@ -153,8 +137,8 @@ export function buildDraftSlots(input: {
     placed.add(m.id);
     elsewhere.add(m.id);
     slots[i] = { memberId: m.id };
-    // Captain and keeper come from the XI only; a 12th player holds no role.
-    if (i >= XI_SIZE) return;
+    // Captain and keeper come from the role slots only; a 12th player holds no role.
+    if (i >= shape.roleSlots) return;
     if (entry.role === "C" || entry.role === "C/WK") captainMemberId ??= m.id;
     if (entry.role === "WK" || entry.role === "C/WK") keeperMemberId ??= m.id;
   });
@@ -183,7 +167,7 @@ export function carryDraftSlots(input: {
   const slots = emptySlots();
   const placed = new Set<number>();
   normaliseSlots(input.previous.slots)
-    .slice(0, SIDE_SIZE)
+    .slice(0, DEFAULT_SIDE_SIZE)
     .forEach((slot, i) => {
       let memberId = slot.memberId;
       if (memberId == null) {
@@ -210,8 +194,8 @@ export function carryDraftSlots(input: {
       elsewhere.add(m.id);
       slots[i] = { memberId: m.id };
     });
-  const xi = xiMemberIds(slots);
-  const role = (id: number | null) => (id != null && xi.has(id) ? id : null);
+  const roleIds = roleMemberIds(slots);
+  const role = (id: number | null) => (id != null && roleIds.has(id) ? id : null);
   return {
     slots,
     captainMemberId: role(input.previous.captainMemberId),
@@ -596,7 +580,7 @@ async function insertDraft(
       detail: {
         seededFrom,
         filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
-        twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
+        twelfth: twelfthMemberId(draft.slots) != null,
       },
       createdAt: now,
     });

@@ -1,5 +1,66 @@
 # Handoff
 
+**From:** SDE (PR A)
+**To:** SDE sessions for PR B and PR C
+**Feature:** selection-side-size
+
+## Context
+
+- PR A is PR #385 (`claude/selection-side-size-pr-a-588cf8`): migration 0049, the OpenAPI fields with codegen, and `@workspace/scorecard/selection-shape` (`DEFAULT_SIDE_SIZE`, `MAX_SIDE_SIZE`, `XI_SIZE`, `sideShape`, `normaliseSlots`, `roleMemberIds`, `twelfthMemberId`). Every `SIDE_SIZE` / `TWELFTH_INDEX` use now goes through it, and every caller still passes the default (12).
+- What PR A left for later:
+  - The new response fields are optional in the spec and not sent yet: board `sideSize`, `overseas`, per-slot `overseas`, squad `overseas`, and `TeamListPlayer.overseas` / `twelfth`. Make them required once they're populated, and update the test fixtures that build `SelectionSide` / `AvailabilitySettings` literals.
+  - `PUT /availability/settings` parses `sideSizes` / `overseasCaps` but doesn't save them yet (TB.1 / TC.3).
+  - Save still accepts only 11 or 12 slots (`saveBoard`, TB.2).
+  - `PUT /squad/{id}/seasons/{season}` answers 501 (TC.1).
+- **PR B:** thread `selection.sideSize` / the grade's size into `sideShape(...)` at the call sites that pass `DEFAULT_SIDE_SIZE` today (`selection-drafts.ts`, `selection-board.ts`, `selection-published-players.ts`, `team-sheet.ts`). The client already reads `side.sideSize`.
+- **PR C:** `squad_member_seasons` exists. Add the route, the board counter and the snapshot.
+- Ash runs 0049 in Production SQL before the next republish (SQL in the #385 body).
+
+## Previous handoff
+
+**From:** Engineering Manager
+**To:** Senior Engineer / SDE
+**Feature:** selection-side-size
+
+## Context
+
+- Task list: `.10x/decisions/engineering-manager/selection-side-size.md`. Design: `.10x/decisions/architect/selection-side-size.md`. ADR-009 accepted 20 Oct 2026. Side size 12–14.
+- Start with PR A (TA.1–TA.3: migration 0049, OpenAPI + codegen, shared `selection-shape.ts` with no behaviour change). After it merges, PR B (side size) and PR C (overseas) run as parallel sessions in their own worktrees off `main`, coordinating `selection-board.ts` / `team-card.tsx` / `team-sheet.ts` edits over SendMessage. PR D (cards + public) follows both.
+- The hub-decoupling PRs (#376, #380, #381, #379) have all merged, so nothing blocks this.
+- Ash applies migration 0049 in production before the first republish.
+
+## Previous handoff
+
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** selection-side-size
+
+## Context
+
+- Design: `.10x/decisions/architect/selection-side-size.md`; ADR-009 (proposed). Requirements: `.10x/decisions/product-manager/selection-side-size.md`.
+- Migration 0049 (additive): `availability_settings.side_sizes` / `overseas_caps` jsonb maps, `selections.side_size`, new `squad_member_seasons`. Ash applies it in prod before republishing.
+- The shared `sideShape(size)` helper replaces the duplicated `SIDE_SIZE`/`TWELFTH_INDEX` in `selection-drafts.ts` and `apply-move.ts`. "12th" only when the size is 12.
+- Finalise snapshots `overseas`, the order and `twelfth` into `team_lists.players`. Over the cap = warn only.
+- Cards: every pack goes to `maxRows: 14` with auto-compress (Ash chose this), and the Studio `ck.xi-list` likewise.
+- Slices: PR A foundation, then PR B (size) and PR C (overseas) in parallel, then PR D (cards + public). Start after selection-hub-decoupling PR1–PR3 merge.
+
+## Previous handoff
+
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** selection-side-size
+
+## Context
+
+- Requirements: `.10x/decisions/product-manager/selection-side-size.md` (agreed with Ash 19 Oct 2026).
+- Per-grade side size 12 (default) to 14, set by an admin. Above 12: slots 1–N, any player can be captain or keeper, no "12th" label on the hub, team sheet, Team List card or availability message. A grade at 12 is unchanged.
+- Priority: (1) per-grade size + hub slots + team sheet (P0), (2) Team List card fits 14 rows across packs, availability text, PlayHQ import of more than 12 names (P1).
+- Design needs: where the size lives (grade/team config, migration applied by hand in prod), how to replace the shared `XI_SIZE`/`TWELFTH_INDEX` constants and `normaliseSlots`, and what happens when the size is lowered.
+- **Part 2, overseas players:** a per-season flag on the squad member (admin), an OS badge in the hub, on the team sheet, on the Team List card and on the public site, and a per-grade cap that warns without blocking finalise. See the doc.
+- Sequence after selection-hub-decoupling PR1–PR3, which touch the same files.
+
+## Previous handoff
+
 **From:** Principal Architect
 **To:** Staff Engineer / SDE
 **Feature:** admin-menu-consolidation

@@ -2618,6 +2618,48 @@ paths:
         "404":
           description: Not found
 
+  /squad/{id}/seasons/{season}:
+    put:
+      operationId: setSquadMemberSeason
+      tags: [squad]
+      summary: Set a squad member's facts for one season (admin)
+      description: |
+        Marks the member as an overseas player, or not, for one season. Each
+        season stands alone: nothing carries over. Sides already finalised
+        keep the flag they were published with. Not built yet: returns 501.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: season
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadMemberSeasonUpdate"
+      responses:
+        "200":
+          description: The member's facts for the season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMemberSeason"
+        "400":
+          description: Invalid body or season
+        "404":
+          description: Not found
+        "501":
+          description: Not built yet
+
   /availability/settings:
     get:
       operationId: getAvailabilitySettings
@@ -14382,8 +14424,36 @@ components:
         contactChangeFlag:
           type: boolean
           description: A player or guardian changed a contact from their link; stays up until an admin clears it.
+        overseas:
+          type: boolean
+          description: An overseas player in the current season. Absent reads as false.
         updatedAt:
           type: string
+
+    SquadMemberSeasonUpdate:
+      type: object
+      required: [overseas]
+      properties:
+        overseas:
+          type: boolean
+
+    SquadMemberSeason:
+      type: object
+      description: |
+        A squad member's facts for one season. Nothing carries over between
+        seasons, so each season starts unticked.
+      required: [memberId, season, overseas, setAt]
+      properties:
+        memberId:
+          type: integer
+        season:
+          type: integer
+          description: Season start year (2026 = 2026/27)
+        overseas:
+          type: boolean
+        setAt:
+          type: ["string", "null"]
+          format: date-time
 
     SquadContact:
       type: object
@@ -14699,6 +14769,26 @@ components:
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
         selectionRule:
           $ref: "#/components/schemas/AvailabilitySelectionRule"
+        sideSizes:
+          type: object
+          description: |
+            Players per side by app grade ("A Grade" → 14), 12–14. A grade with
+            no key picks 12: the XI plus an optional 12th. Omit to keep the
+            stored map.
+          additionalProperties:
+            type: integer
+            minimum: 12
+            maximum: 14
+        overseasCaps:
+          type: object
+          description: |
+            Most overseas players per side by app grade, 0–14. A grade with no
+            key has no cap. Over the cap the Hub warns and never blocks. Omit
+            to keep the stored map.
+          additionalProperties:
+            type: integer
+            minimum: 0
+            maximum: 14
 
     AvailabilitySettings:
       allOf:
@@ -14913,6 +15003,30 @@ components:
           oneOf:
             - $ref: "#/components/schemas/SelectionMember"
             - type: "null"
+        overseas:
+          type: boolean
+          description: |
+            The slot's member is an overseas player this season. Live for a
+            draft; from the published snapshot once finalised. Absent reads as
+            false.
+
+    SelectionOverseas:
+      type: object
+      description: Overseas players in a side against the grade's cap
+      required: [count, cap, over]
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          description: Overseas players in the side
+        cap:
+          type: ["integer", "null"]
+          minimum: 0
+          maximum: 14
+          description: The grade's cap; null when the grade has none
+        over:
+          type: boolean
+          description: The side has more overseas players than the cap (a warning; never blocks)
 
     SelectionFixture:
       type: object
@@ -15004,11 +15118,23 @@ components:
           type: integer
         slots:
           type: array
-          description: The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+          description: |
+            The side's slots in order, `sideSize` of them: 1–11 are the XI. At
+            12, slot 12 is the 12th player; above 12, slots 12 to N are
+            interchange players numbered 1–N.
           minItems: 12
-          maxItems: 12
+          maxItems: 14
           items:
             $ref: "#/components/schemas/SelectionSlot"
+        sideSize:
+          type: integer
+          minimum: 12
+          maximum: 14
+          description: |
+            Players in this side (12–14), fixed when the draft was created.
+            Absent reads as 12.
+        overseas:
+          $ref: "#/components/schemas/SelectionOverseas"
         captainMemberId:
           type: ["integer", "null"]
         keeperMemberId:
@@ -15217,7 +15343,8 @@ components:
         slot:
           type: integer
           minimum: 1
-          maximum: 12
+          maximum: 14
+          description: 1-based; at most the side's size
         memberId:
           type: integer
         version:
@@ -15261,10 +15388,10 @@ components:
         slots:
           type: array
           description: |
-            The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
-            player. 11 slots (an older client) are read as an empty 12th.
+            The side's slots in order: 1–11 are the XI, then 12 up to the
+            side's size. Fewer slots (an older client) read as open slots.
           minItems: 11
-          maxItems: 12
+          maxItems: 14
           items:
             $ref: "#/components/schemas/SelectionSlotInput"
         captainMemberId:
@@ -22136,6 +22263,16 @@ components:
             Debut badge override set by an admin. Omit for automatic: a
             register-linked player with no previous senior game for the club
             is a debutant (see TeamList.debutPlayerIds).
+        overseas:
+          type: boolean
+          description: >-
+            An overseas player, snapshotted when the side was finalised so a
+            later change never rewrites a published side. Absent reads as false.
+        twelfth:
+          type: boolean
+          description: >-
+            The 12th player of a side of 12. Never set above 12, where every
+            player is numbered 1–N. Absent reads as false.
 
     TeamList:
       type: object

@@ -4,7 +4,8 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { plural } from "@/lib/plural";
-import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel, type Location } from "./apply-move";
+import { XI_SIZE, sideShape } from "@workspace/scorecard/selection-shape";
+import { sideEditable, sideLabel, type Location } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
 import { TeamSheetButton } from "./team-sheet-button";
@@ -74,8 +75,9 @@ export function TeamCard({
   const edit = sideEditable(side);
   const w = side.warnings;
   const picked = side.slots.filter((s) => s.memberId != null && s.member);
+  const shape = sideShape(side.sideSize);
   // Captain and keeper come from the XI; the 12th holds no role.
-  const xi = side.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null && s.member);
+  const xi = side.slots.slice(0, shape.roleSlots).filter((s) => s.memberId != null && s.member);
   const nameOf = (id: number | null) =>
     id == null ? null : (side.slots.find((s) => s.memberId === id)?.member?.displayName ?? null);
   const f = side.fixture;
@@ -204,7 +206,7 @@ export function TeamCard({
             className="flex min-h-10 items-center gap-1.5 rounded-md px-0.5 py-px data-[drop-state=no]:bg-[var(--loss-bg)] data-[drop-state=ok]:bg-blue-500/10 data-[drop-state=no]:shadow-[inset_0_0_0_2px_var(--loss-fg)] data-[drop-state=ok]:shadow-[inset_0_0_0_2px_var(--color-blue-500)]"
           >
             <span className="w-7 flex-none text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-              {i === TWELFTH_INDEX ? "12th" : i + 1}
+              {i === shape.twelfthIndex ? "12th" : i + 1}
             </span>
             {slot.memberId != null && slot.member ? (
               <PlayerChip

@@ -8,8 +8,9 @@
 
 export interface SelectionMatchBody {
   /**
+     * 1-based; at most the side's size
      * @minimum 1
-     * @maximum 12
+     * @maximum 14
      */
   slot: number;
   memberId: number;

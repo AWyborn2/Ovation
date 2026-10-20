@@ -13,4 +13,9 @@ export interface SelectionSlot {
   memberId: number | null;
   gap: SelectionGap | null;
   member: SelectionMember | null;
+  /** The slot's member is an overseas player this season. Live for a
+  draft; from the published snapshot once finalised. Absent reads as
+  false.
+   */
+  overseas?: boolean;
 }

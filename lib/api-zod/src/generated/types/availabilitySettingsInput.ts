@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AvailabilitySelectionRule } from './availabilitySelectionRule';
+import type { AvailabilitySettingsInputOverseasCaps } from './availabilitySettingsInputOverseasCaps';
+import type { AvailabilitySettingsInputSideSizes } from './availabilitySettingsInputSideSizes';
 
 /**
  * The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
@@ -46,4 +48,14 @@ export interface AvailabilitySettingsInput {
   /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
   finaliseTime: string;
   selectionRule: AvailabilitySelectionRule;
+  /** Players per side by app grade ("A Grade" → 14), 12–14. A grade with
+  no key picks 12: the XI plus an optional 12th. Omit to keep the
+  stored map.
+   */
+  sideSizes?: AvailabilitySettingsInputSideSizes;
+  /** Most overseas players per side by app grade, 0–14. A grade with no
+  key has no cap. Over the cap the Hub warns and never blocks. Omit
+  to keep the stored map.
+   */
+  overseasCaps?: AvailabilitySettingsInputOverseasCaps;
 }

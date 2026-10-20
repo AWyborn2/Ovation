@@ -16,7 +16,8 @@ import {
 } from "./availability-schedule";
 import { forgetParticipant, rememberParticipant } from "./participant-crosswalk";
 import { SelectionError, assertRoundOpen, canRemind, selectionRight } from "./selection-board";
-import { gameWindow, normaliseSlots } from "./selection-drafts";
+import { normaliseSlots } from "@workspace/scorecard/selection-shape";
+import { gameWindow } from "./selection-drafts";
 import { loadSideFixtures, sideFixtureKey, sideSection } from "./selection-fixtures";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 

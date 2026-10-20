@@ -46,5 +46,7 @@ export interface SquadMember {
   guardian2: SquadContactPresence;
   /** A player or guardian changed a contact from their link; stays up until an admin clears it. */
   contactChangeFlag: boolean;
+  /** An overseas player in the current season. Absent reads as false. */
+  overseas?: boolean;
   updatedAt: string;
 }

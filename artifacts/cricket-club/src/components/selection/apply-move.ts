@@ -5,6 +5,12 @@ import type {
   SelectionSlot,
   SelectionWarnings,
 } from "@workspace/api-client-react";
+import {
+  XI_SIZE,
+  roleMemberIds,
+  sideShape,
+  twelfthMemberId,
+} from "@workspace/scorecard/selection-shape";
 
 /**
  * The Selection Hub's move rules. Pure: given the board and one action it
@@ -61,19 +67,6 @@ export type MoveResult = {
 
 export type Location = { kind: "side"; sideId: number; index: number } | { kind: "pool" };
 
-/** Every side has 12 slots: the XI in slots 1–11 and the 12th player in slot 12. */
-export const SIDE_SIZE = 12;
-
-/** The playing XI. A side is complete with 11; the 12th is optional. */
-export const XI_SIZE = 11;
-
-/** The 12th player's slot (zero-based). */
-export const TWELFTH_INDEX = XI_SIZE;
-
-/** Members of the XI (slots 1–11): only they can be captain or keeper. */
-const xiIds = (slots: readonly SelectionSlot[]) =>
-  new Set(slots.slice(0, XI_SIZE).flatMap((s) => (s.memberId != null ? [s.memberId] : [])));
-
 const refuse = (reason: RefusalReason, message = ""): Refusal => ({ ok: false, reason, message });
 
 export const sideLabel = (side: SelectionSide) => side.fixture.grade;
@@ -125,7 +118,7 @@ export function sideWarnings(side: SelectionSide): SelectionWarnings {
   return {
     filled: inXi,
     open: XI_SIZE - inXi,
-    twelfth: side.slots[TWELFTH_INDEX]?.memberId != null,
+    twelfth: twelfthMemberId(side.slots, side.sideSize) != null,
     unconfirmed: picked.filter((s) => status(s) === "maybe" || status(s) === "none").length,
     saidNo: picked.filter((s) => status(s) === "no").length,
     noCaptain: side.captainMemberId == null,
@@ -202,7 +195,7 @@ function resolve(
   if (open < 0) {
     return refuse(
       "full",
-      `${sideLabel(side)} already has ${SIDE_SIZE}. Drop onto a player to swap them out.`,
+      `${sideLabel(side)} already has ${sideShape(side.sideSize).size}. Drop onto a player to swap them out.`,
     );
   }
   return { ok: true, from, index: open };
@@ -249,8 +242,8 @@ function applyRole(
   if (locked) return locked;
   const word = action.role === "captain" ? "captain" : "keeper";
   const field = action.role === "captain" ? "captainMemberId" : "keeperMemberId";
-  if (action.memberId != null && !xiIds(side.slots).has(action.memberId)) {
-    const twelfth = side.slots[TWELFTH_INDEX]?.memberId === action.memberId;
+  if (action.memberId != null && !roleMemberIds(side.slots, side.sideSize).has(action.memberId)) {
+    const twelfth = twelfthMemberId(side.slots, side.sideSize) === action.memberId;
     return refuse(
       "not_in_side",
       twelfth
@@ -353,8 +346,8 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     const nextSlots = slotsOf.get(side.id);
     if (!nextSlots) return side;
     const next: SelectionSide = { ...side, slots: nextSlots };
-    const inXi = xiIds(nextSlots);
-    const twelfthId = nextSlots[TWELFTH_INDEX]?.memberId ?? null;
+    const inXi = roleMemberIds(nextSlots, side.sideSize);
+    const twelfthId = twelfthMemberId(nextSlots, side.sideSize);
     for (const [field, word] of [
       ["captainMemberId", "captain"],
       ["keeperMemberId", "keeper"],

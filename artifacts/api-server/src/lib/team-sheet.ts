@@ -21,7 +21,7 @@ import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { memberDisplayName } from "./availability-grades";
 import { loadSideFixture, sideSection, type SideFixture } from "./selection-fixtures";
 import { loadSelectionParticipantIds } from "./selection-published-players";
-import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
+import { DEFAULT_SIDE_SIZE, normaliseSlots, sideShape } from "@workspace/scorecard/selection-shape";
 import { buildTeamListShirtNumbers, shirtNumberOf } from "./engines/team-list";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { juniorMemberResolver } from "./shirt-number-squad";
@@ -148,14 +148,15 @@ export function teamSheetPlayers(input: {
   const byId = new Map(input.members.map((m) => [m.id, m]));
   const players: TeamSheetPlayer[] = [];
   let order = 0;
-  normaliseSlots(input.side.slots).forEach((slot, index) => {
+  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  normaliseSlots(input.side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
-    const twelfth = index === TWELFTH_INDEX;
+    const twelfth = index === shape.twelfthIndex;
     const c = !twelfth && input.side.captainMemberId === m.id;
     const wk = !twelfth && input.side.keeperMemberId === m.id;
     players.push({
-      order: twelfth ? SIDE_SIZE : ++order,
+      order: twelfth ? shape.size : ++order,
       name: memberDisplayName(m),
       role: c && wk ? "C/WK" : c ? "C" : wk ? "WK" : null,
       shirtNumber: input.shirtNumberOf(m),
@@ -504,10 +505,12 @@ export function absoluteLogoUrl(url: string | null, origin: string | null): stri
 /** The sheet as a self-contained A4 HTML page (no script, one optional logo image). */
 export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): string {
   const senior = sheet.section === "senior";
-  const rows = Array.from({ length: SIDE_SIZE }, (_, i) => {
+  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const rows = Array.from({ length: shape.size }, (_, i) => {
     const order = i + 1;
     const p = sheet.players.find((x) => x.order === order);
-    const label = order === SIDE_SIZE ? "12th" : String(order);
+    const twelfth = shape.twelfthLabel && order === shape.size;
+    const label = twelfth ? "12th" : String(order);
     const role = p?.role ? ` <b class="role">(${esc(p.role)})</b>` : "";
     const jap = senior
       ? `<td class="c small">${p?.junior ? `${esc(p.junior.band)}<br><span class="age">age ${esc(p.junior.age)}</span>` : ""}</td>
@@ -515,7 +518,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
          <td class="c small">${p?.junior ? esc(p.junior.maxSpell) : ""}</td>
          <td></td>`
       : "";
-    return `<tr class="${order === SIDE_SIZE ? "twelfth" : ""}">
+    return `<tr class="${twelfth ? "twelfth" : ""}">
       <td class="c no">${label}</td>
       <td class="c shirt">${esc(p?.shirtNumber)}</td>
       <td class="name">${esc(p?.name)}${role}</td>${jap}
