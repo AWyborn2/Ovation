@@ -34,74 +34,74 @@ P1 names ───────┼─> P2 content contract + Match Day ─┬─>
 
 ### P0 — Share to Socials preview fix (about 1 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T0.1 | `useCardPreview` renders every kind and size in the modal; regression test | 1 |
+| Task | Description                                                                | Est |
+| ---- | -------------------------------------------------------------------------- | --- |
+| T0.1 | `useCardPreview` renders every kind and size in the modal; regression test | 1   |
 
 ### P1 — names and crests (about 6 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T1.1 | Migration 0050 `team_name_overrides`, `competition_label_overrides` (tenant-scoped, idempotent); Drizzle; drift check | 1 |
-| T1.2 | Auto short name (deterministic, pure, in `@workspace/scorecard`): tests on real PCA + WA club, team and grade names | 1 |
-| T1.3 | `api-server/src/lib/card-content/names.ts`: `resolveTeamName` / `resolveCompetitionLabel` (override, then auto, then raw), crest from `central.clubs`, monogram fallback; tenant-isolation test | 1 |
-| T1.4 | OpenAPI + codegen: overrides CRUD; existing card inputs carry the resolved short names and crests (replace the `cardTeamName()` call sites in `bind.ts`) | 1 |
-| T1.5 | Admin UI: "Team and competition names" in Social Studio settings, pre-filled with the auto names and editable inline | 1.5 |
-| T1.6 | Shared name-fit rule (shrink, then wrap to 2 lines, then ellipsis) used by every pack | 0.5 |
+| Task | Description                                                                                                                                                                                     | Est |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| T1.1 | Migration 0050 `team_name_overrides`, `competition_label_overrides` (tenant-scoped, idempotent); Drizzle; drift check                                                                           | 1   |
+| T1.2 | Auto short name (deterministic, pure, in `@workspace/scorecard`): tests on real PCA + WA club, team and grade names                                                                             | 1   |
+| T1.3 | `api-server/src/lib/card-content/names.ts`: `resolveTeamName` / `resolveCompetitionLabel` (override, then auto, then raw), crest from `central.clubs`, monogram fallback; tenant-isolation test | 1   |
+| T1.4 | OpenAPI + codegen: overrides CRUD; existing card inputs carry the resolved short names and crests (replace the `cardTeamName()` call sites in `bind.ts`)                                        | 1   |
+| T1.5 | Admin UI: "Team and competition names" in Social Studio settings, pre-filled with the auto names and editable inline                                                                            | 1.5 |
+| T1.6 | Shared name-fit rule (shrink, then wrap to 2 lines, then ellipsis) used by every pack                                                                                                           | 0.5 |
 
 ### P2 — content contract + Match Day builder (about 8 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T2.1 | `@workspace/scorecard/card-content`: `CardContent` types (Match Day title, fixture, sponsors); field catalogue extended with core/optional and presets; `resolveVisibleFields` + unit tests | 1.5 |
-| T2.2 | Migration 0051: `social_settings.card_content jsonb` (default Standard, junior consolidation on), `livestream_url`; OpenAPI settings shape; codegen | 1 |
-| T2.3 | `buildMatchDayContent` (core fields only); the sweep `engines/match-day.ts` and `routes/weekend-carousel.ts` both use it; delete the mapping in `model.ts`; parity test showing the sweep and carousel output match | 2 |
-| T2.4 | Saved carousel v2 (content snapshot, `visibleFields`, `contentOverride`); v1 still read; retired pack ids fall back to Club Kit when read | 1 |
-| T2.5 | Club Kit and Broadcast Dark templates on the content contract, each declaring its capacity per size and preset | 1.5 |
-| T2.6 | Content settings UI (presets plus per-field toggles) and a per-carousel override panel in the Weekend Carousel | 1 |
+| Task | Description                                                                                                                                                                                                         | Est |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| T2.1 | `@workspace/scorecard/card-content`: `CardContent` types (Match Day title, fixture, sponsors); field catalogue extended with core/optional and presets; `resolveVisibleFields` + unit tests                         | 1.5 |
+| T2.2 | Migration 0051: `social_settings.card_content jsonb` (default Standard, junior consolidation on), `livestream_url`; OpenAPI settings shape; codegen                                                                 | 1   |
+| T2.3 | `buildMatchDayContent` (core fields only); the sweep `engines/match-day.ts` and `routes/weekend-carousel.ts` both use it; delete the mapping in `model.ts`; parity test showing the sweep and carousel output match | 2   |
+| T2.4 | Saved carousel v2 (content snapshot, `visibleFields`, `contentOverride`); v1 still read; retired pack ids fall back to Club Kit when read                                                                           | 1   |
+| T2.5 | Club Kit and Broadcast Dark templates on the content contract, each declaring its capacity per size and preset                                                                                                      | 1.5 |
+| T2.6 | Content settings UI (presets plus per-field toggles) and a per-carousel override panel in the Weekend Carousel                                                                                                      | 1   |
 
 ### P3 — junior same-day consolidation (about 4 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T3.1 | `groupSlides` in `card-sets.ts`: group by local date, split at capacity, Meta 10-slide warning; never mixes senior and junior | 1 |
-| T3.2 | Multi-fixture layout in Club Kit and Broadcast Dark for Match Day | 1.5 |
-| T3.3 | Results and match summary junior sets use the same grouping and a multi-result layout | 1.5 |
+| Task | Description                                                                                                                   | Est |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- | --- |
+| T3.1 | `groupSlides` in `card-sets.ts`: group by local date, split at capacity, Meta 10-slide warning; never mixes senior and junior | 1   |
+| T3.2 | Multi-fixture layout in Club Kit and Broadcast Dark for Match Day                                                             | 1.5 |
+| T3.3 | Results and match summary junior sets use the same grouping and a multi-result layout                                         | 1.5 |
 
 ### P4 — auto photos (about 2.5 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T4.1 | Migration 0053 `photo_usage`, written when a draft is published | 0.5 |
+| Task | Description                                                                                                                                                                           | Est |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| T4.1 | Migration 0053 `photo_usage`, written when a draft is published                                                                                                                       | 0.5 |
 | T4.2 | `pickPhoto`: picks the least recently used photo for the cover and each fixture, respecting the junior photo rules, with a brand background when none is found; the admin can swap it | 1.5 |
-| T4.3 | Weekend Carousel UI shows the auto pick with a "Swap" control | 0.5 |
+| T4.3 | Weekend Carousel UI shows the auto pick with a "Swap" control                                                                                                                         | 0.5 |
 
 ### P5 — optional data fields (about 5 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T5.0 | Check that `central.ladder` exists and how complete it is in Replit Postgres (dev and prod read); report back before T5.1 | 0.5 |
-| T5.1 | Ladder positions helper in `central-queries.ts` + consistency test | 1 |
-| T5.2 | Last meeting helper (`central.matches`) + test | 1 |
-| T5.3 | Milestone watch, reusing `milestone-crossings` (senior only, fill-ins excluded) | 1 |
-| T5.4 | Fields wired into the builder; each field hides itself when its data is missing or a read fails; the title page shows the livestream link | 1 |
-| T5.5 | Template slots for these fields in both packs, plus fit tests | 0.5 |
+| Task | Description                                                                                                                               | Est |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| T5.0 | Check that `central.ladder` exists and how complete it is in Replit Postgres (dev and prod read); report back before T5.1                 | 0.5 |
+| T5.1 | Ladder positions helper in `central-queries.ts` + consistency test                                                                        | 1   |
+| T5.2 | Last meeting helper (`central.matches`) + test                                                                                            | 1   |
+| T5.3 | Milestone watch, reusing `milestone-crossings` (senior only, fill-ins excluded)                                                           | 1   |
+| T5.4 | Fields wired into the builder; each field hides itself when its data is missing or a read fails; the title page shows the livestream link | 1   |
+| T5.5 | Template slots for these fields in both packs, plus fit tests                                                                             | 0.5 |
 
 ### P6 — sponsors page (about 3 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T6.1 | Migration 0052 `sponsors.tier`, `social_settings.sponsors_background_photo_id`; OpenAPI; sponsor admin tier picker | 1 |
+| Task | Description                                                                                                                                       | Est |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+| T6.1 | Migration 0052 `sponsors.tier`, `social_settings.sponsors_background_photo_id`; OpenAPI; sponsor admin tier picker                                | 1   |
 | T6.2 | Sponsors content: tiered grid, grade sponsors included, thank-you and CTA, next home game and social links, background image; each one toggleable | 1.5 |
-| T6.3 | Template slots in both packs + fit tests | 0.5 |
+| T6.3 | Template slots in both packs + fit tests                                                                                                          | 0.5 |
 
 ### P7 — remaining kinds on builders (about 5 hd)
 
-| Task | Description | Est |
-| --- | --- | --- |
-| T7.1 | `buildResultsContent` / `buildMatchSummaryContent` (carousel and single cards) | 2 |
-| T7.2 | `buildTeamListContent` | 1 |
-| T7.3 | Create a Card prefills from the same builders; check that the auto-queued and manually created versions of each kind match | 2 |
+| Task | Description                                                                                                                | Est |
+| ---- | -------------------------------------------------------------------------------------------------------------------------- | --- |
+| T7.1 | `buildResultsContent` / `buildMatchSummaryContent` (carousel and single cards)                                             | 2   |
+| T7.2 | `buildTeamListContent`                                                                                                     | 1   |
+| T7.3 | Create a Card prefills from the same builders; check that the auto-queued and manually created versions of each kind match | 2   |
 
 ### P8 — new pack (about 3 hd, after a design brief agreed with Ash)
 

@@ -34,6 +34,7 @@ Secondary: followers (consistent, readable, informative slides).
 ## Content model per slide type
 
 Title page
+
 - Core (always on): weekend title, date range, club logo.
 - Optional: round + fixture count; grades playing list; presenting sponsor; livestream /
   scores link.
@@ -41,6 +42,7 @@ Title page
   admin can swap; brand-colour background when the library is empty.
 
 Fixture slide (one per fixture)
+
 - Core: grade, our club v opposition (short names + crests), date, start time, venue,
   home/away, round.
 - Optional: ladder positions (`central.ladder`); last meeting result (`central.matches`);
@@ -48,6 +50,7 @@ Fixture slide (one per fixture)
   free-text note; auto-picked player photo from that grade (admin can swap).
 
 Sponsors page
+
 - Optional (each toggleable): tiered grid (major larger; needs a tier on sponsors); include
   grade-assigned sponsors as well; thank-you line + CTA; next home game / social links;
   admin-uploaded background image.

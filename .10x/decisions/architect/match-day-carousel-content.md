@@ -76,7 +76,7 @@ anyway, two call sites drift); C (declarative JSON layouts — a layout engine f
   unique(tenant_id, central_club_id, grade_key)); `competition_label_overrides`
   (tenant_id, grade_key, label). Tenant-scoped curated content; never written to `central`.
 - 0051 `social_settings.card_content jsonb` = `{ [kind]: { preset, fields: {key: bool},
-  juniorConsolidateByDay: bool } }` (default: standard preset, consolidate on for juniors);
+juniorConsolidateByDay: bool } }` (default: standard preset, consolidate on for juniors);
   `social_settings.livestream_url text`.
 - 0052 `sponsors.tier text` ('major'|'standard', default 'standard');
   `social_settings.sponsors_background_photo_id`.
@@ -91,15 +91,15 @@ what posts). v1 still read and rendered unchanged.
 
 ### Failure modes
 
-| Failure | Handling |
-| --- | --- |
-| Central read fails/slow for optional field | Field hidden, warning on draft; core content still builds |
-| Name override deleted/club renamed | Keyed on central club id; falls back to auto short name |
-| Preset doesn't fit at a size | CI grid (3 packs x 3 presets x 4 sizes x kinds) fails the build; runtime fit warning blocks automation (existing gate) |
-| Junior day group > capacity | Split into further slides for that day; >10 slides → existing Meta warning |
-| Retired pack id in saved draft | Read-time fallback to Club Kit |
-| Photo library empty | Brand background, no warning |
-| Juniors leakage | Junior content built only from junior sources; consolidated slides never mix senior and junior |
+| Failure                                    | Handling                                                                                                               |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Central read fails/slow for optional field | Field hidden, warning on draft; core content still builds                                                              |
+| Name override deleted/club renamed         | Keyed on central club id; falls back to auto short name                                                                |
+| Preset doesn't fit at a size               | CI grid (3 packs x 3 presets x 4 sizes x kinds) fails the build; runtime fit warning blocks automation (existing gate) |
+| Junior day group > capacity                | Split into further slides for that day; >10 slides → existing Meta warning                                             |
+| Retired pack id in saved draft             | Read-time fallback to Club Kit                                                                                         |
+| Photo library empty                        | Brand background, no warning                                                                                           |
+| Juniors leakage                            | Junior content built only from junior sources; consolidated slides never mix senior and junior                         |
 
 ### Delivery order
 
