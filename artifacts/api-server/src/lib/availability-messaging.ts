@@ -104,7 +104,10 @@ export type MessageContext = {
   fixture?: MessageFixture;
   /** The member's role in the side, for `selected`. */
   role?: TeamListRole | null;
-  /** For `selected`: picked as the side's 12th player (slot 12), who holds no role. */
+  /**
+   * For `selected`: picked as the side's 12th player (slot 12 of a side of 12),
+   * who holds no role. Never set above 12, where every player is numbered 1–N.
+   */
   twelfth?: boolean;
   /** For `contact_changed`: the slot that changed and its PREVIOUS contact. */
   previous?: { slot: RecipientSlot; mobile: string | null; email: string | null };

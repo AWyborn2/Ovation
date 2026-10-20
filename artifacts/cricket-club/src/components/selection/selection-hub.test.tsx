@@ -10,7 +10,7 @@ import type { SelectionBoard, SelectionMember, SelectionSide } from "@workspace/
 import SelectionHub from "@/pages/selection-hub";
 import { renderAt } from "@/test/render";
 import { moveOptions } from "./move-dialog";
-import { sideWarnings } from "./apply-move";
+import { applyMove, sideWarnings } from "./apply-move";
 
 afterEach(() => {
   cleanup();
@@ -762,5 +762,86 @@ describe("moving a player", () => {
     }
     expect(screen.getByTestId("hub-announcer").textContent).toBe("Move cancelled");
     expect(requests.some((r) => r.method === "PUT")).toBe(false);
+  });
+});
+
+describe("overseas players", () => {
+  /** A Grade with its first two players overseas against a cap of `cap`. */
+  function overseasBoard(cap: number | null): SelectionBoard {
+    const board = makeBoard();
+    const a = board.selections[0];
+    board.selections[0] = {
+      ...a,
+      slots: a.slots.map((s, i) => (i < 2 ? { ...s, overseas: true } : s)),
+      overseas: { count: 2, cap, over: cap != null && 2 > cap },
+    };
+    board.selections[1] = {
+      ...board.selections[1],
+      overseas: { count: 0, cap: null, over: false },
+    };
+    return board;
+  }
+
+  it("badges each overseas player and counts them against the cap, in words", async () => {
+    stubApi(overseasBoard(1));
+    renderHub();
+    const a = await screen.findByTestId("side-1");
+    expect(within(a).getAllByText("OS")).toHaveLength(2);
+    expect(within(a).getByRole("button", { name: /^A Grade 1, .*overseas player/ })).toBeTruthy();
+    expect(within(a).getByTestId("overseas-count").textContent).toBe("Overseas 2/1 (over limit)");
+  });
+
+  it("warns in the finalise Heads up when over the cap, and still finalises", async () => {
+    const requests = stubApi(overseasBoard(1));
+    renderHub();
+    const a = await screen.findByTestId("side-1");
+    fireEvent.click(within(a).getByRole("button", { name: "Finalise A Grade" }));
+    expect(within(a).getByText(/Finalise A Grade with 9 players\?/).textContent).toMatch(
+      /Heads up: .*overseas 2 \/ cap 1\./,
+    );
+    fireEvent.click(within(a).getByRole("button", { name: "Finalise and notify" }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.method === "POST" && r.url.includes("/finalise"))).toBe(true),
+    );
+  });
+
+  it("within the cap there is no warning", async () => {
+    stubApi(overseasBoard(2));
+    renderHub();
+    const a = await screen.findByTestId("side-1");
+    expect(within(a).getByTestId("overseas-count").textContent).toBe("Overseas 2/2");
+    fireEvent.click(within(a).getByRole("button", { name: "Finalise A Grade" }));
+    expect(within(a).getByText(/Finalise A Grade with 9 players\?/).textContent).not.toMatch(
+      /overseas/,
+    );
+  });
+
+  it("a grade with no cap and no overseas players shows no change", async () => {
+    stubApi(overseasBoard(null));
+    renderHub();
+    const b = await screen.findByTestId("side-2");
+    expect(within(b).queryByTestId("overseas-count")).toBeNull();
+    expect(within(b).queryByText("OS")).toBeNull();
+  });
+
+  it("the badge moves with the player and the count follows", () => {
+    const board = overseasBoard(1);
+    const state = { selections: board.selections, pool: board.pool };
+    const moved = applyMove(state, {
+      kind: "move",
+      memberId: 100,
+      target: { kind: "slot", sideId: 1, index: 10 },
+    });
+    if (!moved.ok) throw new Error(moved.message);
+    const a = moved.state.selections[0];
+    expect(a.slots[10]).toMatchObject({ memberId: 100, overseas: true });
+    expect(a.overseas).toEqual({ count: 2, cap: 1, over: true });
+    const out = applyMove(moved.state, {
+      kind: "move",
+      memberId: 100,
+      target: { kind: "pool" },
+    });
+    if (!out.ok) throw new Error(out.message);
+    expect(out.state.selections[0].overseas).toEqual({ count: 1, cap: 1, over: false });
   });
 });

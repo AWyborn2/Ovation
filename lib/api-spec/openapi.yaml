@@ -2626,7 +2626,7 @@ paths:
       description: |
         Marks the member as an overseas player, or not, for one season. Each
         season stands alone: nothing carries over. Sides already finalised
-        keep the flag they were published with. Not built yet: returns 501.
+        keep the flag they were published with.
       parameters:
         - name: id
           in: path
@@ -2657,8 +2657,6 @@ paths:
           description: Invalid body or season
         "404":
           description: Not found
-        "501":
-          description: Not built yet
 
   /availability/settings:
     get:
@@ -14550,6 +14548,9 @@ components:
           type: boolean
         contactChangedAt:
           type: ["string", "null"]
+        overseas:
+          type: boolean
+          description: An overseas player in the current season. Absent reads as false.
         updatedAt:
           type: string
 
@@ -14809,6 +14810,16 @@ components:
               oneOf:
                 - $ref: "#/components/schemas/AvailabilitySmsProvider"
                 - type: "null"
+            grades:
+              type: array
+              items:
+                type: string
+              description: |
+                The grade labels the club's sides go by (senior app grades and
+                junior teams with a fixture in the last year), in the club's
+                grade order: the keys the per-grade settings use. A
+                `sideSizes` key matching none of them is a renamed or retired
+                grade.
 
     AvailabilitySmsProvider:
       type: string
@@ -15078,6 +15089,21 @@ components:
           type: boolean
         noKeeper:
           type: boolean
+        gradeSideSize:
+          type: integer
+          minimum: 12
+          maximum: 14
+          description: |
+            The grade's side size now (12–14). A draft keeps the size it was
+            created with, so this differs from the side's `sideSize` after an
+            admin changes the grade. Absent reads as the side's own size.
+        overSize:
+          type: integer
+          minimum: 0
+          description: |
+            Players to move out before the side fits the grade's current size
+            (`gradeSideSize` lowered after the draft was made). 0 or absent
+            when it fits. Nothing is removed automatically.
 
     SelectionSide:
       type: object

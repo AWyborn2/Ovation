@@ -4,7 +4,7 @@ import type { DataSource } from "./tenant";
 import { loadMatchDetailForSource } from "./match-detail";
 import { draftKeys } from "./draft-upsert";
 import { draftPhotoGrade, photoRuleKinds, pickDraftPhoto } from "./draft-enrich";
-import { topPerformerPlayerId } from "./match-top-performer";
+import { rankedPerformerPlayerIds, topPerformerPlayerId } from "./match-top-performer";
 
 export type MatchCardPhoto = { url: string | null; source: string | null };
 
@@ -36,6 +36,7 @@ export async function matchCardPhoto(
         ? draftKeys.centralMatchSummary(matchId)
         : draftKeys.matchSummary(matchId, false),
     featuredPlayerId: topPerformerPlayerId(detail.lines),
+    candidatePlayerIds: rankedPerformerPlayerIds(detail.lines),
     photoTypes: preferredPhotoTypes(cardInput),
   });
   return { url: photo?.url ?? null, source: photo?.source ?? null };

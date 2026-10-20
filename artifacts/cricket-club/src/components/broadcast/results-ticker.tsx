@@ -19,7 +19,7 @@ export interface TickerItem {
  */
 export const TICKER_SECONDS_PER_ITEM = 10;
 
-function usePrefersReducedMotion(): boolean {
+export function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
     () =>
       typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches,

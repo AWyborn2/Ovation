@@ -66,8 +66,11 @@ export function PlayerChip({
   onOpen,
   onPointerDown,
   alsoIn,
+  overseas = false,
 }: {
   member: SelectionMember;
+  /** An overseas player this season (ADR-009): a neutral "OS" badge, never a country. */
+  overseas?: boolean;
   /** Sides a pool player is already in (shown as a badge). */
   alsoIn?: readonly string[];
   role?: ChipRole;
@@ -91,8 +94,8 @@ export function PlayerChip({
       data-member-id={member.id}
       data-testid={`chip-${member.id}`}
       aria-label={`${member.displayName}${statusText}${role ? `, ${roleTitle.toLowerCase()}` : ""}${
-        member.note ? `, note: ${member.note}` : ""
-      }. Open to move.`}
+        overseas ? ", overseas player" : ""
+      }${member.note ? `, note: ${member.note}` : ""}. Open to move.`}
       onClick={onOpen}
       onPointerDown={draggable ? onPointerDown : undefined}
       className={cn(
@@ -135,6 +138,15 @@ export function PlayerChip({
             className="rounded bg-primary px-1.5 py-0.5 text-[10.5px] font-semibold leading-none text-primary-foreground"
           >
             {role}
+          </span>
+        )}
+        {overseas && (
+          <span
+            title="Overseas player"
+            data-overseas
+            className="rounded border border-border px-1.5 py-0.5 text-[10.5px] font-semibold leading-none text-foreground"
+          >
+            OS
           </span>
         )}
         {alsoIn && alsoIn.length > 0 && (

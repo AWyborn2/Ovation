@@ -44,7 +44,7 @@ import {
   upsertDraftByKey,
   type DraftUpsertResult,
 } from "./draft-upsert";
-import { topPerformerPlayerId } from "./match-top-performer";
+import { rankedPerformerPlayerIds, topPerformerPlayerId } from "./match-top-performer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -272,13 +272,15 @@ async function upsertDraft(
     central?: { seenAt: Date };
     grade?: string | null;
     featuredPlayerId?: number | null;
+    /** The club's players in the match, best performer first, for the photo. */
+    candidatePlayerIds?: readonly number[];
     /** `false`: never auto-ready (a junior team not set to auto-post, KTD14). */
     autoReady?: boolean;
     /** A junior player's own photo, picked by the junior path (ADR-007); `null` = none. */
     photo?: { url: string; source: PhotoSource } | null;
   } = {},
 ): Promise<"drafted" | "skipped"> {
-  const { central, grade, featuredPlayerId, autoReady, photo } = opts;
+  const { central, grade, featuredPlayerId, candidatePlayerIds, autoReady, photo } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -296,6 +298,7 @@ async function upsertDraft(
       sourceImportedAt: central.seenAt,
       grade,
       featuredPlayerId,
+      candidatePlayerIds,
     });
     return draftOutcome(result);
   }
@@ -311,6 +314,7 @@ async function upsertDraft(
     sourceMatchIsJunior: junior,
     grade,
     featuredPlayerId,
+    candidatePlayerIds,
     ...(photo !== undefined ? { photo } : {}),
     ...(autoReady === false ? { autoReady: false } : {}),
     // Drafts from before source keys existed: find them by match and backfill.
@@ -394,6 +398,7 @@ export async function generateMatchSummaryDrafts(
             grade: detail.grade,
             // The club's top performer, for a "player" card photo rule.
             featuredPlayerId: topPerformerPlayerId(detail.lines),
+            candidatePlayerIds: rankedPerformerPlayerIds(detail.lines),
           },
         );
         if (outcome === "drafted") result.drafted++;
@@ -457,6 +462,7 @@ export async function generateCentralStumpsDrafts(
         sourceImportedAt: seenAt,
         grade: detail.grade,
         featuredPlayerId: topPerformerPlayerId(detail.lines),
+        candidatePlayerIds: rankedPerformerPlayerIds(detail.lines),
       });
       result.drafted++;
     } catch (err) {

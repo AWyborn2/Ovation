@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lt, lte, or, sql } from "drizzle-orm"
 import {
   db,
   availabilityAwayTable,
+  availabilitySettingsTable,
   availabilityResponsesTable,
   availabilityRoundsTable,
   fixturesTable,
@@ -40,6 +41,8 @@ import { loadParticipantCrosswalk } from "./participant-crosswalk";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
 import { juniorMemberResolver } from "./shirt-number-squad";
+import { gradeSideSize } from "./side-sizes";
+import { juniorSideLabel } from "./selection-fixtures";
 
 /**
  * Draft sides for a round.
@@ -76,10 +79,21 @@ export type DraftSide = {
   slots: SelectionSlot[];
   captainMemberId: number | null;
   keeperMemberId: number | null;
+  /** Players in the side (12–14), from the grade's size: `selections.side_size`. */
+  sideSize: number;
 };
 
 const emptySlots = (size = DEFAULT_SIDE_SIZE): SelectionSlot[] =>
   Array.from({ length: size }, () => ({ memberId: null }));
+
+/** The club's players per side by grade (`availability_settings.side_sizes`). */
+async function loadSideSizes(tenantId: number): Promise<Record<string, number>> {
+  const [row] = await db
+    .select({ sideSizes: availabilitySettingsTable.sideSizes })
+    .from(availabilitySettingsTable)
+    .where(eq(availabilitySettingsTable.tenantId, tenantId));
+  return row?.sideSizes ?? {};
+}
 
 /** Members who can't play a game; the members a draft places are added. */
 type Placed = { has(id: number): boolean; add(id: number): void };
@@ -104,17 +118,22 @@ export function buildDraftSlots(input: {
   prefer?: (m: MemberIdentity) => boolean;
   /** The club's remembered PlayHQ matches, tried first (see `buildMemberMatcher`). */
   participants?: ParticipantCrosswalk;
+  /** Players in the side (12–14; 12 when unset): the first that many listed are placed. */
+  size?: number | null;
 }): DraftSide {
   const { lastList, members } = input;
   const elsewhere = input.placed ?? new Set<number>();
-  const slots = emptySlots();
+  const shape = sideShape(input.size);
+  const slots = emptySlots(shape.size);
   let captainMemberId: number | null = null;
   let keeperMemberId: number | null = null;
-  if (!lastList || lastList.length === 0) return { slots, captainMemberId, keeperMemberId };
+  const sideSize = shape.size;
+  if (!lastList || lastList.length === 0) {
+    return { slots, captainMemberId, keeperMemberId, sideSize };
+  }
 
   const match = buildMemberMatcher(members, input.prefer, input.participants);
   const placed = new Set<number>();
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
   const entries = [...lastList].sort((a, b) => a.order - b.order).slice(0, shape.size);
 
   entries.forEach((entry, i) => {
@@ -137,13 +156,14 @@ export function buildDraftSlots(input: {
     placed.add(m.id);
     elsewhere.add(m.id);
     slots[i] = { memberId: m.id };
-    // Captain and keeper come from the role slots only; a 12th player holds no role.
+    // Captain and keeper come from the role slots only: a 12th player holds no
+    // role, but above 12 any slot can.
     if (i >= shape.roleSlots) return;
     if (entry.role === "C" || entry.role === "C/WK") captainMemberId ??= m.id;
     if (entry.role === "WK" || entry.role === "C/WK") keeperMemberId ??= m.id;
   });
 
-  return { slots, captainMemberId, keeperMemberId };
+  return { slots, captainMemberId, keeperMemberId, sideSize };
 }
 
 /**
@@ -153,7 +173,9 @@ export function buildDraftSlots(input: {
  * gap "picked in another side". A carried "not on register" gap (an unmatched
  * PlayHQ name) is kept as it was, unless the club has since remembered its
  * PlayHQ participant (`participants`), when that member takes the slot; other
- * open slots start empty. The captain and keeper carry while still in the XI.
+ * open slots start empty. The captain and keeper carry while still in a role
+ * slot (the XI at 12, any slot above). The new side has its own size: a
+ * previous side longer than it carries its first `size` slots.
  */
 export function carryDraftSlots(input: {
   previous: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
@@ -161,13 +183,16 @@ export function carryDraftSlots(input: {
   placed?: Placed;
   /** The club's remembered PlayHQ matches, for a carried "not on register" gap. */
   participants?: ParticipantCrosswalk;
+  /** Players in the new side (12–14; 12 when unset). */
+  size?: number | null;
 }): DraftSide {
   const elsewhere = input.placed ?? new Set<number>();
   const byId = new Map(input.members.map((m) => [m.id, m]));
-  const slots = emptySlots();
+  const sideSize = sideShape(input.size).size;
+  const slots = emptySlots(sideSize);
   const placed = new Set<number>();
-  normaliseSlots(input.previous.slots)
-    .slice(0, DEFAULT_SIDE_SIZE)
+  normaliseSlots(input.previous.slots, sideSize)
+    .slice(0, sideSize)
     .forEach((slot, i) => {
       let memberId = slot.memberId;
       if (memberId == null) {
@@ -194,12 +219,13 @@ export function carryDraftSlots(input: {
       elsewhere.add(m.id);
       slots[i] = { memberId: m.id };
     });
-  const roleIds = roleMemberIds(slots);
+  const roleIds = roleMemberIds(slots, sideSize);
   const role = (id: number | null) => (id != null && roleIds.has(id) ? id : null);
   return {
     slots,
     captainMemberId: role(input.previous.captainMemberId),
     keeperMemberId: role(input.previous.keeperMemberId),
+    sideSize,
   };
 }
 
@@ -480,6 +506,8 @@ export async function buildRoundDrafts(
   ]);
   const lastByGrade = new Map(lastLists.map((l) => [l.grade, l]));
   const priorByGrade = previousSides(priorRows, (r) => r.grade);
+  // Each new side is fixed at its grade's size now; a later change never reshapes it.
+  const sideSizes = await loadSideSizes(tenantId);
 
   const members = await db
     .select({
@@ -510,15 +538,17 @@ export async function buildRoundDrafts(
     }
     const seed = pickSeed(priorByGrade.get(f.grade), lastByGrade.get(f.grade), index);
     const placed = ledger.view(gameWindow(f.startAt, { format: f.matchFormat }));
+    const size = gradeSideSize(sideSizes, f.grade);
     const draft =
       seed?.kind === "selection"
-        ? carryDraftSlots({ previous: seed.side, members, placed, participants })
+        ? carryDraftSlots({ previous: seed.side, members, placed, participants, size })
         : buildDraftSlots({
             lastList: seed?.list.players ?? null,
             members,
             placed,
             prefer: (m) => seniorRecord.has(m.id),
             participants,
+            size,
           });
     const seededFrom: SeededFrom =
       seed?.kind === "selection"
@@ -558,6 +588,7 @@ async function insertDraft(
       tenantId,
       ...side,
       slots: draft.slots,
+      sideSize: draft.sideSize,
       captainMemberId: draft.captainMemberId,
       keeperMemberId: draft.keeperMemberId,
       state: "draft",
@@ -580,7 +611,8 @@ async function insertDraft(
       detail: {
         seededFrom,
         filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
-        twelfth: twelfthMemberId(draft.slots) != null,
+        twelfth: twelfthMemberId(draft.slots, draft.sideSize) != null,
+        ...(draft.sideSize !== DEFAULT_SIDE_SIZE ? { sideSize: draft.sideSize } : {}),
       },
       createdAt: now,
     });
@@ -772,6 +804,7 @@ async function draftJuniorSides(
   const asNames = await juniorListAsNames(db, tenantId, members);
   // Junior members only, so a remembered match to a senior record never lands here.
   const participants = await loadParticipantCrosswalk(db, tenantId);
+  const sideSizes = await loadSideSizes(tenantId);
 
   const teamIndex = new Map<string, number>();
   for (const f of fixtures) {
@@ -785,14 +818,17 @@ async function draftJuniorSides(
     // A fixture with no team name has nothing to carry from.
     const seed = team ? pickSeed(priorByTeam.get(team), lastByTeam.get(team), index) : null;
     const placed = ledger.view(gameWindow(f.startAt!, { junior: true }));
+    // A junior side's size is keyed by the label it goes by on the board.
+    const size = gradeSideSize(sideSizes, juniorSideLabel(f));
     const draft =
       seed?.kind === "selection"
-        ? carryDraftSlots({ previous: seed.side, members, placed, participants })
+        ? carryDraftSlots({ previous: seed.side, members, placed, participants, size })
         : buildDraftSlots({
             lastList: seed ? asNames(seed.list.players) : null,
             members,
             placed,
             participants,
+            size,
           });
     const seededFrom: SeededFrom =
       seed?.kind === "selection"

@@ -290,6 +290,9 @@ export async function generateTeamListDrafts(
       ),
       appPath: "/fixtures",
       playerId: featured,
+      // The photo: one of the selected side, rotating towards the players and
+      // photos least used on recent Team List posts (PHOTO_POLICY).
+      candidatePlayerIds: players.flatMap((p) => (p.playerId != null ? [p.playerId] : [])),
       sourceImportedAt: now,
     });
     if (action === "inserted") result.drafted++;

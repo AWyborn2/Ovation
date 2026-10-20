@@ -55,13 +55,15 @@ export class TeamSheetError extends Error {
 export type TeamSheetRole = "C" | "WK" | "C/WK";
 
 export type TeamSheetPlayer = {
-  /** 1–11, or 12 for the 12th player. */
+  /** 1–N in slot order; in a side of 12, 12 is the 12th player. */
   order: number;
   name: string;
   role: TeamSheetRole | null;
   shirtNumber: string | null;
   /** Senior sheet only: the player's limits when they are a Junior Aged Player. */
   junior: JuniorBowlingLimit | null;
+  /** An overseas player, from the side's finalise snapshot (ADR-009): "OS" after the name. */
+  overseas?: boolean;
 };
 
 export type TeamSheet = {
@@ -84,6 +86,8 @@ export type TeamSheet = {
   bowlingRulesSource: string | null;
   /** The competition's other team-sheet lines (senior, known rules only). */
   ruleNotes: string[];
+  /** Rows the sheet prints: the side's size (12–14; absent reads as 12). */
+  sideSize?: number;
   players: TeamSheetPlayer[];
   generatedAt: string;
 };
@@ -136,11 +140,14 @@ type SheetMember = Pick<
 >;
 
 /**
- * The sheet's rows, pure: the side's members in slot order (the 12th last),
- * roles never on the 12th, and limits only when `rules` apply to a senior sheet.
+ * The sheet's rows, pure: the side's members in slot order (in a side of 12
+ * the 12th last, never holding a role; above 12 numbered 1–N, any of them
+ * captain or keeper), and limits only when `rules` apply to a senior sheet.
+ * The overseas mark is the one finalise stored on the slot, never a live flag.
  */
 export function teamSheetPlayers(input: {
-  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
+    Partial<Pick<SelectionRow, "sideSize">>;
   members: readonly SheetMember[];
   shirtNumberOf: (m: SheetMember) => string | null;
   juniorLimitOf: ((m: SheetMember) => JuniorBowlingLimit | null) | null;
@@ -148,7 +155,7 @@ export function teamSheetPlayers(input: {
   const byId = new Map(input.members.map((m) => [m.id, m]));
   const players: TeamSheetPlayer[] = [];
   let order = 0;
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  const shape = sideShape(input.side.sideSize);
   normaliseSlots(input.side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -161,6 +168,7 @@ export function teamSheetPlayers(input: {
       role: c && wk ? "C/WK" : c ? "C" : wk ? "WK" : null,
       shirtNumber: input.shirtNumberOf(m),
       junior: input.juniorLimitOf ? input.juniorLimitOf(m) : null,
+      overseas: slot.overseas === true,
     });
   });
   return players;
@@ -233,7 +241,7 @@ async function loadSide(tenantId: number, selectionId: number): Promise<Loaded> 
   if (row.selection.state !== "final") {
     throw new TeamSheetError(409, "Finalise the side to print its team sheet.");
   }
-  const ids = normaliseSlots(row.selection.slots).flatMap((s) =>
+  const ids = normaliseSlots(row.selection.slots, row.selection.sideSize).flatMap((s) =>
     s.memberId == null ? [] : [s.memberId],
   );
   const members =
@@ -475,6 +483,7 @@ export async function buildTeamSheet(
     competition: fixture.competitionName,
     bowlingRulesSource: rules?.source ?? null,
     ruleNotes: [...(rules?.sheetNotes ?? [])],
+    sideSize: sideShape(selection.sideSize).size,
     players: teamSheetPlayers({
       side: selection,
       members: loaded.members,
@@ -505,13 +514,19 @@ export function absoluteLogoUrl(url: string | null, origin: string | null): stri
 /** The sheet as a self-contained A4 HTML page (no script, one optional logo image). */
 export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): string {
   const senior = sheet.section === "senior";
-  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  // One row per place in the side: 12 with a shaded "12th" row, or up to 14
+  // numbered 1–N. Rows shrink above 12 so the table keeps its height and the
+  // sheet stays on one A4 page.
+  const shape = sideShape(sheet.sideSize);
+  const rowHeight =
+    shape.size > DEFAULT_SIDE_SIZE ? ((9.2 * DEFAULT_SIDE_SIZE) / shape.size).toFixed(1) : "9.2";
   const rows = Array.from({ length: shape.size }, (_, i) => {
     const order = i + 1;
     const p = sheet.players.find((x) => x.order === order);
     const twelfth = shape.twelfthLabel && order === shape.size;
     const label = twelfth ? "12th" : String(order);
     const role = p?.role ? ` <b class="role">(${esc(p.role)})</b>` : "";
+    const overseas = p?.overseas ? ` <b class="os" title="Overseas player">OS</b>` : "";
     const jap = senior
       ? `<td class="c small">${p?.junior ? `${esc(p.junior.band)}<br><span class="age">age ${esc(p.junior.age)}</span>` : ""}</td>
          <td class="c small">${p?.junior ? esc(p.junior.maxOversPerDay) : ""}</td>
@@ -521,7 +536,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
     return `<tr class="${twelfth ? "twelfth" : ""}">
       <td class="c no">${label}</td>
       <td class="c shirt">${esc(p?.shirtNumber)}</td>
-      <td class="name">${esc(p?.name)}${role}</td>${jap}
+      <td class="name">${esc(p?.name)}${role}${overseas}</td>${jap}
     </tr>`;
   }).join("");
 
@@ -560,13 +575,14 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   .players { margin-top: 4mm; }
   .players th { background: #1F3A5F; color: #fff; font-size: 8pt; padding: 1.5mm 1mm; border: 1px solid #9AA5AD; }
   .players th.group { font-size: 7.5pt; }
-  .players td { border: 1px solid #9AA5AD; height: 9.2mm; padding: 0 2mm; font-size: 11pt; }
+  .players td { border: 1px solid #9AA5AD; height: ${rowHeight}mm; padding: 0 2mm; font-size: 11pt; }
   .players td.c { text-align: center; padding: 0 1mm; }
   .players td.no { font-weight: bold; color: #5B6770; }
   .players td.small { font-size: 9pt; color: #1F2933; }
   .players .age { font-size: 7pt; color: #5B6770; }
   .players tr.twelfth td { background: #EEF1F3; }
   .role { color: #1F3A5F; }
+  .os { font-size: 8pt; letter-spacing: 0.5px; border: 1px solid #1F3A5F; border-radius: 2px; padding: 0 1mm; color: #1F3A5F; }
   .key { margin: 2mm 0 0; font-size: 8pt; color: #5B6770; }
   .note { margin: 1mm 0 0; font-size: 8pt; color: #5B6770; }
   .notes { margin-top: 3mm; font-size: 8pt; color: #5B6770; font-style: italic; }
@@ -607,7 +623,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   }</tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<p class="key">(C) captain &nbsp; (WK) wicketkeeper${sheet.ruleNotes.map((n) => ` &nbsp; ${esc(n)}`).join("")}</p>
+<p class="key">(C) captain &nbsp; (WK) wicketkeeper${sheet.players.some((p) => p.overseas) ? " &nbsp; OS overseas player" : ""}${sheet.ruleNotes.map((n) => ` &nbsp; ${esc(n)}`).join("")}</p>
 ${rulesNote}
 <div class="notes">Notes:</div>
 <table class="sign"><tr><td><div>Captain's signature</div></td><td><div>Opposition captain / umpire</div></td></tr></table>

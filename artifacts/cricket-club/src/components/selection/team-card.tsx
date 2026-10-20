@@ -21,16 +21,48 @@ export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
   return null;
 }
 
-/** The finalise confirmation's "Heads up" list; an empty 12th is not an open slot. */
+/**
+ * The finalise confirmation's "Heads up" list; an empty 12th (or interchange
+ * slot) is not an open slot.
+ */
 export function finaliseHeadsUp(side: SelectionSide): string[] {
   const w = side.warnings;
   const bits: string[] = [];
   if (w.open) bits.push(`${plural(w.open, "open slot")}`);
+  if (w.overSize) bits.push(`${w.overSize} more than the grade's ${w.gradeSideSize}`);
   if (w.unconfirmed) bits.push(`${w.unconfirmed} not confirmed`);
   if (w.saidNo) bits.push(`${w.saidNo} said unavailable`);
   if (w.noCaptain) bits.push("no captain");
   if (w.noKeeper) bits.push("no keeper");
+  const os = side.overseas;
+  if (os?.over) bits.push(`overseas ${os.count} / cap ${os.cap}`);
   return bits;
+}
+
+/** The overseas counter: shown when the grade has a cap or the side has an overseas player. */
+function OverseasChip({ overseas }: { overseas: SelectionSide["overseas"] }) {
+  if (!overseas || (overseas.cap == null && overseas.count === 0)) return null;
+  const { count, cap, over } = overseas;
+  return (
+    <span
+      data-testid="overseas-count"
+      title={
+        cap == null
+          ? `${plural(count, "overseas player")}, no limit for this grade`
+          : `${plural(count, "overseas player")}, limit ${cap}${over ? ": over the limit" : ""}`
+      }
+      className={cn(
+        "rounded px-1.5 py-0.5",
+        over
+          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      Overseas {count}
+      {cap != null && `/${cap}`}
+      {over && " (over limit)"}
+    </span>
+  );
 }
 
 const selectClass =
@@ -38,8 +70,9 @@ const selectClass =
 
 /**
  * One grade's side: fixture, filled count,
- * Draft/Final state, warnings, captain and keeper pickers, the 12 slots (the
- * XI then the 12th player, each a drop zone), and the finalise / re-open footer.
+ * Draft/Final state, warnings, captain and keeper pickers, the side's slots
+ * (each a drop zone: the XI then the 12th player, or above 12 slots numbered
+ * 1–N with no "12th"), and the finalise / re-open footer.
  */
 export function TeamCard({
   side,
@@ -76,8 +109,12 @@ export function TeamCard({
   const w = side.warnings;
   const picked = side.slots.filter((s) => s.memberId != null && s.member);
   const shape = sideShape(side.sideSize);
-  // Captain and keeper come from the XI; the 12th holds no role.
+  // Captain and keeper come from the XI; the 12th holds no role. Above 12 any slot can.
   const xi = side.slots.slice(0, shape.roleSlots).filter((s) => s.memberId != null && s.member);
+  // Players past the XI in a side above 12, shown as "+k" by the count.
+  const extras = shape.twelfthLabel
+    ? 0
+    : side.slots.slice(XI_SIZE).filter((s) => s.memberId != null).length;
   const nameOf = (id: number | null) =>
     id == null ? null : (side.slots.find((s) => s.memberId === id)?.member?.displayName ?? null);
   const f = side.fixture;
@@ -102,7 +139,7 @@ export function TeamCard({
           </h2>
           <span className="font-mono text-[13px] tabular-nums text-muted-foreground">
             <b className="text-foreground">{w.filled}</b>/{XI_SIZE}
-            {w.twelfth && " +12th"}
+            {shape.twelfthLabel ? w.twelfth && " +12th" : extras > 0 && ` +${extras}`}
           </span>
           <span
             className={cn(
@@ -123,6 +160,7 @@ export function TeamCard({
             {f.isHome ? "Home" : "Away"}
             {f.venue ? ` · ${f.venue}` : ""}
           </span>
+          {!shape.twelfthLabel && <span>Side of {shape.size}</span>}
         </div>
 
         {edit ? (
@@ -165,8 +203,22 @@ export function TeamCard({
           </div>
         )}
 
-        {(w.open > 0 || w.unconfirmed > 0 || w.saidNo > 0 || w.noCaptain || w.noKeeper) && (
+        {(w.open > 0 ||
+          w.unconfirmed > 0 ||
+          w.saidNo > 0 ||
+          w.noCaptain ||
+          w.noKeeper ||
+          !!w.overSize ||
+          (side.overseas != null && (side.overseas.cap != null || side.overseas.count > 0))) && (
           <div className="flex flex-wrap gap-1.5 text-[11.5px] font-semibold">
+            {!!w.overSize && (
+              <span
+                className="rounded bg-[var(--loss-bg)] px-1.5 py-0.5 text-[var(--loss-fg)]"
+                data-testid={`${slug}-over-size`}
+              >
+                {label} is now {w.gradeSideSize}: move {plural(w.overSize, "player")} out
+              </span>
+            )}
             {w.open > 0 && (
               <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
                 {plural(w.open, "open slot")}
@@ -192,6 +244,7 @@ export function TeamCard({
                 No keeper
               </span>
             )}
+            <OverseasChip overseas={side.overseas} />
           </div>
         )}
       </div>
@@ -212,6 +265,7 @@ export function TeamCard({
               <PlayerChip
                 member={slot.member}
                 role={roleOf(side, slot.memberId)}
+                overseas={slot.overseas === true}
                 inSide={label}
                 draggable={edit && !busy}
                 dragging={draggingId === slot.memberId}
@@ -259,8 +313,16 @@ export function TeamCard({
         ) : confirming ? (
           <>
             <div className="rounded-md bg-muted px-2.5 py-2 text-[12.5px]" role="status">
-              Finalise {label} with {plural(w.filled, "player")}
-              {w.twelfth ? " and a 12th" : ""}?{" "}
+              {shape.twelfthLabel ? (
+                <>
+                  Finalise {label} with {plural(w.filled, "player")}
+                  {w.twelfth ? " and a 12th" : ""}?{" "}
+                </>
+              ) : (
+                <>
+                  Finalise {label} with {plural(picked.length, "player")}?{" "}
+                </>
+              )}
               {headsUp.length > 0 && <b>Heads up: {headsUp.join(", ")}. </b>}
               {availability
                 ? `Each player${junior ? "'s parent" : ""} gets an SMS and email with the match details, and the side is published as the team list.`

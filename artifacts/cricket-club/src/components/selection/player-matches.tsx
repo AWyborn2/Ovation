@@ -8,12 +8,13 @@ import {
 } from "@workspace/api-client-react";
 import { Link2, UserSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { sideShape } from "@workspace/scorecard/selection-shape";
 import { sideEditable, sideLabel } from "./apply-move";
 
 /** An open slot holding a list row the matcher couldn't place ("Private Player"). */
 export type UnmatchedSlot = {
   side: SelectionSide;
-  /** 1–12, as the match endpoint takes it. */
+  /** 1–N (the side's size), as the match endpoint takes it. */
   slot: number;
   name: string;
   /** The row's PlayHQ participant id: the match is remembered when it has one. */
@@ -71,8 +72,9 @@ function MatchRow({
   return (
     <li className="flex flex-col gap-1.5 rounded-md border border-border px-2.5 py-2">
       <div className="text-[12.5px]">
-        <b className="font-semibold">{label}</b>, slot {item.slot === 12 ? "12th" : item.slot}:
-        PlayHQ lists <b className="font-semibold">{item.name}</b>.{" "}
+        <b className="font-semibold">{label}</b>, slot{" "}
+        {item.slot - 1 === sideShape(item.side.sideSize).twelfthIndex ? "12th" : item.slot}: PlayHQ
+        lists <b className="font-semibold">{item.name}</b>.{" "}
         <span className="text-muted-foreground">
           {item.participantId
             ? "Remembered for later PlayHQ lists once matched."
