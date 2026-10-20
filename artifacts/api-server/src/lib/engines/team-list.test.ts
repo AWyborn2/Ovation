@@ -145,3 +145,15 @@ describe("teamListToCardInput with season shirt numbers", () => {
     ]);
   });
 });
+
+describe("teamListToCardInput overseas mark (ADR-009)", () => {
+  it("carries the snapshot's overseas mark, never on a Private Player", () => {
+    const input = teamListToCardInput(fixture, [
+      { order: 1, playerId: 11, displayName: "Alex Opener", overseas: true },
+      { order: 2, displayName: "Private Player", overseas: true },
+      { order: 3, playerId: 13, displayName: "Sam Local" },
+    ]);
+    const rows = input.players as { overseas?: boolean }[];
+    expect(rows.map((r) => r.overseas)).toEqual([true, undefined, undefined]);
+  });
+});

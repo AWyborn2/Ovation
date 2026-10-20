@@ -147,3 +147,19 @@ describe("juniorTeamListToCardInput", () => {
     }
   });
 });
+
+describe("juniorTeamListToCardInput overseas mark (ADR-009)", () => {
+  it("marks a named overseas player and never a withheld one", () => {
+    const input = juniorTeamListToCardInput(
+      fixture,
+      [
+        { order: 1, participantId: OLLIE, overseas: true },
+        { order: 2, participantId: PRIV, overseas: true },
+        { order: 3, participantId: SAM },
+      ],
+      namer("full"),
+    );
+    const rows = input.players as { overseas?: boolean }[];
+    expect(rows.map((r) => r.overseas)).toEqual([true, undefined, undefined]);
+  });
+});

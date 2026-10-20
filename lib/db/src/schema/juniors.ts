@@ -452,6 +452,11 @@ export type JuniorTeamListPlayer = {
   order: number;
   participantId: string;
   role?: TeamListRole;
+  /**
+   * An overseas player (ADR-009), snapshotted when a Selection Hub side is
+   * finalised. Public reads drop it with the name of a withheld player.
+   */
+  overseas?: boolean;
 };
 
 /** Who wrote a junior team list (KTD9); `selection` is a side finalised in the Selection Hub. */

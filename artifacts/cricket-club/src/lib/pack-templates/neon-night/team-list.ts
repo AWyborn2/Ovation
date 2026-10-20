@@ -20,7 +20,7 @@ export const teamList: PackCardTemplate = {
     textField("competitionLine", "Competition line", "PREMIER T20 · ROUND 3 · vs MARINERS"),
     textField("venueDateTime", "Venue / date / time", "RUSHTON PARK · SAT 8 NOV · 12:30 PM"),
     photoField("squadPhoto", "Squad photo", "Squad / team photo"),
-    repeatField("players", "Player rows", "Up to 12 players"),
+    repeatField("players", "Player rows", "Up to 14 players"),
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
@@ -29,11 +29,12 @@ export const teamList: PackCardTemplate = {
   repeats: [
     {
       key: "players",
-      maxRows: 12,
+      maxRows: 14,
       fields: [
         textField("number", "Order", "3"),
         textField("surname", "Surname", "MANUEL"),
         textField("role", "Role (C/WK)", "C"),
+        textField("os", "Overseas (OS)", ""),
       ],
     },
   ],

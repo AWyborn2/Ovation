@@ -214,6 +214,17 @@ export function JuniorsFixtureDetail() {
                     {p.role}
                   </span>
                 )}
+                {/* A neutral "OS" (ADR-009), never a country; withheld players have none. */}
+                {p.overseas && (
+                  <span
+                    title="Overseas player"
+                    aria-label="Overseas player"
+                    data-overseas
+                    className="rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold leading-none text-foreground"
+                  >
+                    OS
+                  </span>
+                )}
               </li>
             ))}
           </ol>
