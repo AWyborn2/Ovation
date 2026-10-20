@@ -7,6 +7,7 @@
  */
 import type { EmailListKind } from './emailListKind';
 import type { EmailListMember } from './emailListMember';
+import type { EmailListSchedule } from './emailListSchedule';
 import type { EmailListSendMode } from './emailListSendMode';
 
 export interface EmailList {
@@ -14,6 +15,15 @@ export interface EmailList {
   kind: EmailListKind;
   name: string;
   sendMode: EmailListSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule: EmailListSchedule | null;
+  resendOnChange: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone: boolean;
   active: boolean;
   gradeKeys: string[];
   members: EmailListMember[];

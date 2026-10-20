@@ -4090,6 +4090,10 @@ export const EmailTeamSheetResponse = zod.object({
 /**
  * @summary The club's email lists with their members, grades and settings (admin)
  */
+export const listEmailListsResponseScheduleOneDowMin = 0;
+export const listEmailListsResponseScheduleOneDowMax = 6;
+
+export const listEmailListsResponseScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const listEmailListsResponseMembersItemNameMax = 80;
 
 export const listEmailListsResponseMembersItemEmailMax = 254;
@@ -4098,9 +4102,17 @@ export const listEmailListsResponseMembersItemEmailMax = 254;
 
 export const ListEmailListsResponseItem = zod.object({
   "id": zod.number(),
-  "kind": zod.enum(['team_sheet']),
+  "kind": zod.enum(['team_sheet', 'social']),
   "name": zod.string(),
-  "sendMode": zod.enum(['on_publish', 'manual', 'off']),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
+  "schedule": zod.object({
+  "dow": zod.number().min(listEmailListsResponseScheduleOneDowMin).max(listEmailListsResponseScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(listEmailListsResponseScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullable().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean(),
+  "assetReady": zod.boolean().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean(),
   "gradeKeys": zod.array(zod.string()),
   "members": zod.array(zod.object({
@@ -4117,6 +4129,10 @@ export const ListEmailListsResponse = zod.array(ListEmailListsResponseItem)
  */
 export const createEmailListBodyNameMax = 80;
 
+export const createEmailListBodyScheduleOneDowMin = 0;
+export const createEmailListBodyScheduleOneDowMax = 6;
+
+export const createEmailListBodyScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const createEmailListBodyGradeKeysItemMax = 60;
 
 export const createEmailListBodyGradeKeysMax = 30;
@@ -4130,11 +4146,19 @@ export const createEmailListBodyMembersMax = 50;
 
 
 export const CreateEmailListBody = zod.object({
-  "kind": zod.enum(['team_sheet']),
+  "kind": zod.enum(['team_sheet', 'social']),
   "name": zod.string().min(1).max(createEmailListBodyNameMax),
-  "sendMode": zod.enum(['on_publish', 'manual', 'off']).describe('on_publish emails a side when it is finalised; manual only from the Email button; off never'),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
+  "schedule": zod.object({
+  "dow": zod.number().min(createEmailListBodyScheduleOneDowMin).max(createEmailListBodyScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(createEmailListBodyScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullish().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean().optional().describe('Team-sheet lists; re-send when a side is re-finalised (default on)'),
+  "assetReady": zod.boolean().optional().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean().optional(),
-  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Senior grades the list covers, e.g. \"A Grade\"'),
+  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Senior grades a team-sheet list covers, e.g. \"A Grade\" (empty for social lists)'),
   "members": zod.array(zod.object({
   "name": zod.string().max(createEmailListBodyMembersItemNameMax),
   "email": zod.string().email().max(createEmailListBodyMembersItemEmailMax)
@@ -4151,6 +4175,10 @@ export const UpdateEmailListParams = zod.object({
 
 export const updateEmailListBodyNameMax = 80;
 
+export const updateEmailListBodyScheduleOneDowMin = 0;
+export const updateEmailListBodyScheduleOneDowMax = 6;
+
+export const updateEmailListBodyScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const updateEmailListBodyGradeKeysItemMax = 60;
 
 export const updateEmailListBodyGradeKeysMax = 30;
@@ -4164,17 +4192,29 @@ export const updateEmailListBodyMembersMax = 50;
 
 
 export const UpdateEmailListBody = zod.object({
-  "kind": zod.enum(['team_sheet']),
+  "kind": zod.enum(['team_sheet', 'social']),
   "name": zod.string().min(1).max(updateEmailListBodyNameMax),
-  "sendMode": zod.enum(['on_publish', 'manual', 'off']).describe('on_publish emails a side when it is finalised; manual only from the Email button; off never'),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
+  "schedule": zod.object({
+  "dow": zod.number().min(updateEmailListBodyScheduleOneDowMin).max(updateEmailListBodyScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(updateEmailListBodyScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullish().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean().optional().describe('Team-sheet lists; re-send when a side is re-finalised (default on)'),
+  "assetReady": zod.boolean().optional().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean().optional(),
-  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Senior grades the list covers, e.g. \"A Grade\"'),
+  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Senior grades a team-sheet list covers, e.g. \"A Grade\" (empty for social lists)'),
   "members": zod.array(zod.object({
   "name": zod.string().max(updateEmailListBodyMembersItemNameMax),
   "email": zod.string().email().max(updateEmailListBodyMembersItemEmailMax)
 })).max(updateEmailListBodyMembersMax)
 })
 
+export const updateEmailListResponseScheduleOneDowMin = 0;
+export const updateEmailListResponseScheduleOneDowMax = 6;
+
+export const updateEmailListResponseScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const updateEmailListResponseMembersItemNameMax = 80;
 
 export const updateEmailListResponseMembersItemEmailMax = 254;
@@ -4183,9 +4223,17 @@ export const updateEmailListResponseMembersItemEmailMax = 254;
 
 export const UpdateEmailListResponse = zod.object({
   "id": zod.number(),
-  "kind": zod.enum(['team_sheet']),
+  "kind": zod.enum(['team_sheet', 'social']),
   "name": zod.string(),
-  "sendMode": zod.enum(['on_publish', 'manual', 'off']),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
+  "schedule": zod.object({
+  "dow": zod.number().min(updateEmailListResponseScheduleOneDowMin).max(updateEmailListResponseScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(updateEmailListResponseScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullable().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean(),
+  "assetReady": zod.boolean().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean(),
   "gradeKeys": zod.array(zod.string()),
   "members": zod.array(zod.object({

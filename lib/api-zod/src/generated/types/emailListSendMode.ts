@@ -12,5 +12,6 @@ export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListS
 export const EmailListSendMode = {
   on_publish: 'on_publish',
   manual: 'manual',
+  scheduled: 'scheduled',
   off: 'off',
 } as const;

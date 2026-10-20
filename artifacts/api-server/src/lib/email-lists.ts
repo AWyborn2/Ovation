@@ -4,9 +4,11 @@ import {
   emailListMembersTable,
   emailListTeamsTable,
   emailListsTable,
+  type EmailListKind,
+  type EmailListSettings,
   type TeamSheetSendMode,
 } from "@workspace/db";
-import { sendModeOf } from "./email-outbox";
+import { resendOnChangeOf, sendModeOf } from "./team-sheet-email";
 
 /**
  * The club's email distribution lists (admin CRUD). A save replaces the list's
@@ -14,10 +16,19 @@ import { sendModeOf } from "./email-outbox";
  * de-duplicated case-insensitively; every query is tenant-scoped.
  */
 
+type Schedule = { dow: number; time: string };
+
 export type EmailListInput = {
-  kind: "team_sheet";
+  kind: EmailListKind;
   name: string;
-  sendMode: TeamSheetSendMode;
+  /** team_sheet lists (default on_publish). */
+  sendMode?: TeamSheetSendMode;
+  schedule?: Schedule | null;
+  resendOnChange?: boolean;
+  /** social lists. */
+  assetReady?: boolean;
+  reviewNeeded?: boolean;
+  milestone?: boolean;
   active?: boolean;
   gradeKeys: string[];
   members: { name: string; email: string }[];
@@ -25,14 +36,47 @@ export type EmailListInput = {
 
 export type EmailListView = {
   id: number;
-  kind: "team_sheet";
+  kind: EmailListKind;
   name: string;
   sendMode: TeamSheetSendMode;
+  schedule: Schedule | null;
+  resendOnChange: boolean;
+  assetReady: boolean;
+  reviewNeeded: boolean;
+  milestone: boolean;
   active: boolean;
   gradeKeys: string[];
   members: { name: string; email: string }[];
   createdAt: Date;
 };
+
+/**
+ * The settings saved for a list: team-sheet lists keep their send mode,
+ * schedule and resend switch; social lists their three toggles (and no grades).
+ */
+export function settingsFor(input: EmailListInput): EmailListSettings {
+  if (input.kind === "social") {
+    return {
+      assetReady: input.assetReady ?? false,
+      reviewNeeded: input.reviewNeeded ?? false,
+      milestone: input.milestone ?? false,
+    };
+  }
+  const sendMode = input.sendMode ?? "on_publish";
+  return {
+    sendMode,
+    schedule: sendMode === "scheduled" ? (input.schedule ?? null) : null,
+    resendOnChange: input.resendOnChange ?? true,
+  };
+}
+
+export class EmailListInputError extends Error {}
+
+/** A scheduled list needs its day and time. */
+export function checkListInput(input: EmailListInput): void {
+  if (input.kind === "team_sheet" && input.sendMode === "scheduled" && !input.schedule)
+    throw new EmailListInputError("Choose a day and time for a scheduled list.");
+}
 
 /** Trimmed members, first spelling of each address kept. */
 export function cleanMembers(members: EmailListInput["members"]) {
@@ -87,9 +131,14 @@ export async function listEmailLists(tenantId: number, ids?: number[]): Promise<
   ]);
   return lists.map((l) => ({
     id: l.id,
-    kind: "team_sheet",
+    kind: l.kind,
     name: l.name,
-    sendMode: sendModeOf(l.settings),
+    sendMode: l.kind === "social" ? "off" : sendModeOf(l.settings),
+    schedule: l.kind === "social" ? null : (l.settings.schedule ?? null),
+    resendOnChange: resendOnChangeOf(l.settings),
+    assetReady: l.settings.assetReady === true,
+    reviewNeeded: l.settings.reviewNeeded === true,
+    milestone: l.settings.milestone === true,
     active: l.active,
     gradeKeys: teams.filter((t) => t.listId === l.id).map((t) => t.gradeKey),
     members: members
@@ -105,11 +154,12 @@ export async function saveEmailList(
   id: number | null,
   input: EmailListInput,
 ): Promise<EmailListView | null> {
+  checkListInput(input);
   const savedId = await db.transaction(async (tx) => {
     const values = {
       kind: input.kind,
       name: input.name.trim(),
-      settings: { sendMode: input.sendMode },
+      settings: settingsFor(input),
       active: input.active ?? true,
     };
     let listId: number;
@@ -136,7 +186,8 @@ export async function saveEmailList(
         .insert(emailListMembersTable)
         .values(members.map((m) => ({ tenantId, listId, ...m })));
     }
-    const grades = cleanGrades(input.gradeKeys);
+    // Social lists cover no grades.
+    const grades = input.kind === "social" ? [] : cleanGrades(input.gradeKeys);
     if (grades.length > 0) {
       await tx
         .insert(emailListTeamsTable)

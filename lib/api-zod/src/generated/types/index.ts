@@ -276,6 +276,7 @@ export * from './emailListInputKind';
 export * from './emailListInputSendMode';
 export * from './emailListKind';
 export * from './emailListMember';
+export * from './emailListSchedule';
 export * from './emailListSendMode';
 export * from './emailSend';
 export * from './emailSendStatus';

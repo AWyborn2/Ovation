@@ -1,13 +1,15 @@
-import { eq } from "drizzle-orm";
-import { db, notificationsTable, socialSettingsTable, type NotificationRow } from "@workspace/db";
+import { db, notificationsTable, type NotificationRow } from "@workspace/db";
+import { env } from "../config";
 import { sendEmail } from "./integrations/email";
+import { enqueueAssetReady, kickOutbox, socialListAddresses } from "./email-outbox";
 
 type Logger = { warn: (obj: unknown, msg?: string) => void };
 
 /**
  * One notification per batch of drafts that became ready (KTD5): the in-app
- * row is authoritative and written first; the email to the club's
- * notification address is a best-effort echo that never blocks.
+ * row is authoritative and written first. Email goes through the club's social
+ * lists (email-distribution-lists PR2): each card is queued as an "asset ready"
+ * send for every list with that toggle on, and never blocks.
  */
 export async function notifyDraftsReady(
   tenantId: number,
@@ -25,19 +27,15 @@ export async function notifyDraftsReady(
     .values({ tenantId, kind: "drafts_ready", title, body, link, payload: { draftIds } })
     .returning();
 
-  const [settings] = await db
-    .select({ email: socialSettingsTable.notificationEmail })
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  if (settings?.email) {
-    const result = await sendEmail({
-      to: settings.email,
-      subject: title,
-      text: `${body}\n\n${link}`,
+  try {
+    const queued = await enqueueAssetReady(db, {
+      tenantId,
+      draftIds,
+      origin: env.RENDER_HARNESS_ORIGIN() ?? null,
     });
-    if (!result.sent && result.reason === "failed") {
-      logger.warn({ tenantId, error: result.error }, "draft-ready email failed");
-    }
+    if (queued > 0) kickOutbox(tenantId, logger);
+  } catch (err) {
+    logger.warn({ tenantId, err }, "draft-ready emails not queued");
   }
   return row;
 }
@@ -98,8 +96,10 @@ export async function notifyCardsNeedApproval(
 }
 
 /**
- * One in-app notice, echoed by email to the club's notification address
- * (best-effort). Shared by the Meta publishing notices (plan 2026-10-06-001):
+ * One in-app notice, echoed by email (best-effort, bcc'd) to the members of
+ * the club's active social lists, which replaced the single
+ * social_settings.notification_email address (migration 0053 copied it into a
+ * "Social media" list; the column stays readable for one release). Shared by the Meta publishing notices (plan 2026-10-06-001):
  * posts published, posts that failed for good, and a connection that needs
  * reconnecting.
  */
@@ -118,13 +118,12 @@ export async function notifyClub(
     .insert(notificationsTable)
     .values({ tenantId, ...notice, payload: notice.payload ?? {} })
     .returning();
-  const [settings] = await db
-    .select({ email: socialSettingsTable.notificationEmail })
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  if (settings?.email) {
+  const recipients = await socialListAddresses(tenantId);
+  const from = env.EMAIL_FROM();
+  if (recipients.length > 0 && from) {
     const result = await sendEmail({
-      to: settings.email,
+      to: from,
+      bcc: recipients,
       subject: notice.title,
       text: `${notice.body}\n\n${notice.link}`,
     });

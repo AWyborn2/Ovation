@@ -11,4 +11,5 @@ export type EmailListInputKind = typeof EmailListInputKind[keyof typeof EmailLis
 
 export const EmailListInputKind = {
   team_sheet: 'team_sheet',
+  social: 'social',
 } as const;

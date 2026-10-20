@@ -8,6 +8,7 @@
 import type { EmailListInputKind } from './emailListInputKind';
 import type { EmailListInputSendMode } from './emailListInputSendMode';
 import type { EmailListMember } from './emailListMember';
+import type { EmailListSchedule } from './emailListSchedule';
 
 export interface EmailListInput {
   kind: EmailListInputKind;
@@ -16,11 +17,21 @@ export interface EmailListInput {
      * @maxLength 80
      */
   name: string;
-  /** on_publish emails a side when it is finalised; manual only from the Email button; off never */
-  sendMode: EmailListInputSendMode;
+  /** Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never */
+  sendMode?: EmailListInputSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule?: EmailListSchedule | null;
+  /** Team-sheet lists; re-send when a side is re-finalised (default on) */
+  resendOnChange?: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady?: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded?: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone?: boolean;
   active?: boolean;
   /**
-     * Senior grades the list covers, e.g. "A Grade"
+     * Senior grades a team-sheet list covers, e.g. "A Grade" (empty for social lists)
      * @maxItems 30
      */
   gradeKeys: string[];

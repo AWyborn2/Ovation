@@ -141,3 +141,42 @@ once it has been logged is not.
   bcc'd.
 - The admin page is at Selection Hub → Email lists (`/admin/selection/email-lists`). "Email team
   sheet" sits under "Print team sheet" on finalised senior sides.
+
+## As built: PR2 (20 Oct 2026)
+
+- **Social lists.** `kind: social` lists carry three toggles in `settings`: `assetReady`,
+  `reviewNeeded`, `milestone`. They cover no grades (a save drops any). Junior cards are never
+  queued or sent (`source_match_is_junior`, or `card_input.junior`).
+- **Card ready (`asset_ready`).** This is queued by the approve route
+  (`POST /social-drafts/{id}/approve`) and by `notifyDraftsReady` (auto-post promotion), with key
+  `sa:{draftId}:asset_ready:l{listId}`, so one card goes to a list once. The drain renders the
+  card's PNGs at the club's first enabled size through `renderDraftSlides` (the `/__card-render`
+  harness, the same path as layout checks) and attaches them, with the caption in the body. If
+  rendering fails (for example, no harness is configured), the email is still sent, with a
+  queue link instead, and `last_error` records why while the row stays `sent`.
+- **Batches (`review_needed`, `milestone`).** At the end of the hourly
+  `/internal/playhq/sweep`, before the drain, `enqueueSocialDigests` queues at most one email of
+  each kind per list. It lists the senior drafts made in the last 21 days (and since the list was
+  created) that no earlier batch of that kind listed for the list. The draft ids are stored in
+  `payload.draftIds`, and a `NOT EXISTS … payload->'draftIds' @> id` check stops a draft being
+  listed twice. Milestones means the `milestone` engine or the `achievements` family, while
+  awaiting review or ready.
+- **Notification address.** Migration `0053_social_email_lists.sql` (data only) gives each club
+  with `social_settings.notification_email` a "Social media" list holding that address, with all
+  three toggles on. `notifyDraftsReady` now queues `asset_ready` sends instead of emailing the
+  address. `notifyClub` (published / failed / reconnect / posts due / cards rolled) bcc's the
+  members of the club's active social lists. The column stays readable. The PlayHQ watchdog and
+  availability messaging still read it directly (not moved in this PR).
+- **Scheduled team sheets.** `sendMode: scheduled` with `schedule: { dow, time }` is in
+  Australia/Perth time, a fixed UTC+8 offset. Each hourly sweep runs `enqueueScheduledTeamSheets`.
+  A list is due when its latest weekly slot fell within the last hour (`scheduleDueAt`). It then
+  gets, for each covered senior grade, the earliest finalised side whose fixture starts between 12
+  hours ago and 8 days ahead. The key is the on-publish key `ts:{selectionId}:v{version}:l{listId}`,
+  so a version already sent to the list is never repeated. Finalising never sends to a scheduled
+  list.
+- **`resendOnChange`** (default on): when it is off, a list that has already been sent (or
+  queued) any version of a side skips later versions, both on finalise and on a schedule.
+  Manual "Email team sheet" sends ignore it.
+- The admin page creates both kinds of list. It shows the toggles for social lists, and for
+  team-sheet lists a day and time picker (Perth time) and the resend switch. The send log now
+  shows `last_error` on sent rows too, which is where the link-fallback note appears.

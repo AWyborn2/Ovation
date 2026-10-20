@@ -11,7 +11,12 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireAdminOrCaptain } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
-import { deleteEmailList, listEmailLists, saveEmailList } from "../lib/email-lists";
+import {
+  EmailListInputError,
+  deleteEmailList,
+  listEmailLists,
+  saveEmailList,
+} from "../lib/email-lists";
 import {
   EmailOutboxError,
   enqueueTeamSheetManual,
@@ -31,6 +36,10 @@ import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 const router: IRouter = Router();
 
 function refuse(res: Response, err: unknown): boolean {
+  if (err instanceof EmailListInputError) {
+    res.status(400).json({ error: err.message });
+    return true;
+  }
   if (err instanceof EmailOutboxError || err instanceof TeamSheetError) {
     res.status(err.status).json({ error: err.message });
     return true;
@@ -48,7 +57,11 @@ router.post("/admin/email-lists", requireAdmin, async (req, res): Promise<void> 
     res.status(400).json({ error: "Check the list's name, grades and email addresses." });
     return;
   }
-  res.status(201).json(await saveEmailList(getTenantId(req), null, body.data));
+  try {
+    res.status(201).json(await saveEmailList(getTenantId(req), null, body.data));
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
+  }
 });
 
 router.put("/admin/email-lists/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -58,12 +71,16 @@ router.put("/admin/email-lists/:id", requireAdmin, async (req, res): Promise<voi
     res.status(400).json({ error: "Check the list's name, grades and email addresses." });
     return;
   }
-  const saved = await saveEmailList(getTenantId(req), params.data.id, body.data);
-  if (!saved) {
-    res.status(404).json({ error: "List not found" });
-    return;
+  try {
+    const saved = await saveEmailList(getTenantId(req), params.data.id, body.data);
+    if (!saved) {
+      res.status(404).json({ error: "List not found" });
+      return;
+    }
+    res.json(saved);
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
   }
-  res.json(saved);
 });
 
 router.delete("/admin/email-lists/:id", requireAdmin, async (req, res): Promise<void> => {

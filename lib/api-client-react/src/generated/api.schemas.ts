@@ -3869,15 +3869,33 @@ export interface EmailListMember {
   email: string;
 }
 
+/**
+ * When a scheduled team-sheet list is emailed (Australia/Perth)
+ */
+export interface EmailListSchedule {
+  /**
+     * Day of week, 0 = Sunday
+     * @minimum 0
+     * @maximum 6
+     */
+  dow: number;
+  /**
+     * Local time, HH:MM
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  time: string;
+}
+
 export type EmailListInputKind = typeof EmailListInputKind[keyof typeof EmailListInputKind];
 
 
 export const EmailListInputKind = {
   team_sheet: 'team_sheet',
+  social: 'social',
 } as const;
 
 /**
- * on_publish emails a side when it is finalised; manual only from the Email button; off never
+ * Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never
  */
 export type EmailListInputSendMode = typeof EmailListInputSendMode[keyof typeof EmailListInputSendMode];
 
@@ -3885,6 +3903,7 @@ export type EmailListInputSendMode = typeof EmailListInputSendMode[keyof typeof 
 export const EmailListInputSendMode = {
   on_publish: 'on_publish',
   manual: 'manual',
+  scheduled: 'scheduled',
   off: 'off',
 } as const;
 
@@ -3895,11 +3914,21 @@ export interface EmailListInput {
      * @maxLength 80
      */
   name: string;
-  /** on_publish emails a side when it is finalised; manual only from the Email button; off never */
-  sendMode: EmailListInputSendMode;
+  /** Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never */
+  sendMode?: EmailListInputSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule?: EmailListSchedule | null;
+  /** Team-sheet lists; re-send when a side is re-finalised (default on) */
+  resendOnChange?: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady?: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded?: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone?: boolean;
   active?: boolean;
   /**
-     * Senior grades the list covers, e.g. "A Grade"
+     * Senior grades a team-sheet list covers, e.g. "A Grade" (empty for social lists)
      * @maxItems 30
      */
   gradeKeys: string[];
@@ -3912,6 +3941,7 @@ export type EmailListKind = typeof EmailListKind[keyof typeof EmailListKind];
 
 export const EmailListKind = {
   team_sheet: 'team_sheet',
+  social: 'social',
 } as const;
 
 export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListSendMode];
@@ -3920,6 +3950,7 @@ export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListS
 export const EmailListSendMode = {
   on_publish: 'on_publish',
   manual: 'manual',
+  scheduled: 'scheduled',
   off: 'off',
 } as const;
 
@@ -3928,6 +3959,15 @@ export interface EmailList {
   kind: EmailListKind;
   name: string;
   sendMode: EmailListSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule: EmailListSchedule | null;
+  resendOnChange: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone: boolean;
   active: boolean;
   gradeKeys: string[];
   members: EmailListMember[];

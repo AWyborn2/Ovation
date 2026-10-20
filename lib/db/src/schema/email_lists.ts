@@ -22,10 +22,20 @@ import { tenantIdColumn } from "./_tenant";
  * reach the send log.
  */
 export type EmailListKind = "team_sheet" | "social";
-export type TeamSheetSendMode = "on_publish" | "manual" | "off";
+export type TeamSheetSendMode = "on_publish" | "manual" | "scheduled" | "off";
 export type EmailListSettings = {
   /** team_sheet lists: when a finalised side is emailed. */
   sendMode?: TeamSheetSendMode;
+  /** team_sheet lists in scheduled mode: day of week (0 = Sunday) and HH:MM, Australia/Perth. */
+  schedule?: { dow: number; time: string } | null;
+  /** team_sheet lists: re-send when a side is re-finalised (absent = on). */
+  resendOnChange?: boolean;
+  /** social lists: email each card as it becomes ready to post. */
+  assetReady?: boolean;
+  /** social lists: one email per sweep listing new cards awaiting review. */
+  reviewNeeded?: boolean;
+  /** social lists: one email per sweep listing new milestone / achievement cards. */
+  milestone?: boolean;
 };
 
 export const emailListsTable = pgTable(
