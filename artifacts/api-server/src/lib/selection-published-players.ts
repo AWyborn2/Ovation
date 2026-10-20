@@ -226,7 +226,7 @@ export async function recoverPublishedSelectionIdentities(
   const refused = {
     ...unchanged,
     warning:
-      "Some playing numbers could not be verified against the finalised selection. Check and re-finalise this side in Selection Hub.",
+      "Some player identities could not be verified against the finalised selection. Playing numbers may still use unique exact-name matches. Check and re-finalise this side in Selection Hub.",
   };
   // A single statement gives a consistent selection/member snapshot even while
   // another admin reopens the side. Only these non-contact columns are read (the

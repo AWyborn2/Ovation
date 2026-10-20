@@ -1,9 +1,10 @@
-import { and, eq, gt, isNotNull, lte } from "drizzle-orm";
+import { and, eq, gt, lte } from "drizzle-orm";
 import {
   db,
   fixturesTable,
   teamListsTable,
   shirtNumbersTable,
+  squadMembersTable,
   type FixtureRow,
   type TeamListPlayer,
 } from "@workspace/db";
@@ -52,18 +53,27 @@ function firstInitialOf(displayName: string): string | undefined {
  * for linked entries, and by (lowercased) PlayHQ participant id for any entry
  * that carries one, HELD entries included. That second map is the R16
  * exception: a held player selected on a team list may show their number on
- * that fixture's card (and nowhere else). Only numbered entries are kept.
+ * that fixture's card (and nowhere else). Unique exact full names may supply
+ * presentation-only numbers when neither identity resolves. Unnumbered entries
+ * still participate in ambiguity checks and prevent borrowing another number.
  */
 export type TeamListShirtNumbers = {
   byPlayerId: ReadonlyMap<number, string>;
   byParticipantId: ReadonlyMap<string, string>;
+  /** Presentation-only fallback; never a player/participant identity link. */
+  byExactName?: ReadonlyMap<string, string>;
+  registeredPlayerIds?: ReadonlySet<number>;
+  registeredParticipantIds?: ReadonlySet<string>;
 };
 
 type ShirtNumberEntryLike = {
   playerId: number | null;
   participantId: string | null;
   number: string | null;
+  name?: string;
 };
+
+const fullNameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
 /** The lookup maps for a season's register entries (pure). */
 export function buildTeamListShirtNumbers(
@@ -71,13 +81,39 @@ export function buildTeamListShirtNumbers(
 ): TeamListShirtNumbers {
   const byPlayerId = new Map<number, string>();
   const byParticipantId = new Map<string, string>();
+  const byExactName = new Map<string, string>();
+  const registeredPlayerIds = new Set<number>();
+  const registeredParticipantIds = new Set<string>();
+  const nameCounts = new Map<string, number>();
+  // Count unnumbered entries too: a same-named person without a number must
+  // not borrow the numbered person's entry.
   for (const e of entries) {
+    const key = fullNameKey(e.name ?? "");
+    if (key) nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+  }
+  for (const e of entries) {
+    const participant = normaliseParticipantId(e.participantId);
+    if (e.playerId != null) registeredPlayerIds.add(e.playerId);
+    if (participant !== null) registeredParticipantIds.add(participant);
     if (!e.number) continue;
     if (e.playerId != null) byPlayerId.set(e.playerId, e.number);
-    const participant = normaliseParticipantId(e.participantId);
     if (participant !== null) byParticipantId.set(participant, e.number);
+    const key = fullNameKey(e.name ?? "");
+    if (
+      key.includes(" ") &&
+      key !== fullNameKey(PRIVATE_PLAYER) &&
+      nameCounts.get(key) === 1 &&
+      (e.playerId == null || e.playerId < 90000)
+    )
+      byExactName.set(key, e.number);
   }
-  return { byPlayerId, byParticipantId };
+  return {
+    byPlayerId,
+    byParticipantId,
+    byExactName,
+    registeredPlayerIds,
+    registeredParticipantIds,
+  };
 }
 
 /** A selected player's number: their linked entry first, else a participant match. */
@@ -122,22 +158,52 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
       pending = enabled.then(async (on) => {
         if (!on) return null;
         try {
-          const rows = await db
-            .select({
-              playerId: shirtNumbersTable.playerId,
-              participantId: shirtNumbersTable.participantId,
-              number: shirtNumbersTable.number,
-            })
-            .from(shirtNumbersTable)
-            .where(
-              and(
-                eq(shirtNumbersTable.tenantId, tenantId),
-                eq(shirtNumbersTable.season, season),
-                eq(shirtNumbersTable.category, category),
-                isNotNull(shirtNumbersTable.number),
+          const [rows, roster] = await Promise.all([
+            db
+              .select({
+                playerId: shirtNumbersTable.playerId,
+                participantId: shirtNumbersTable.participantId,
+                number: shirtNumbersTable.number,
+                name: shirtNumbersTable.name,
+              })
+              .from(shirtNumbersTable)
+              .where(
+                and(
+                  eq(shirtNumbersTable.tenantId, tenantId),
+                  eq(shirtNumbersTable.season, season),
+                  eq(shirtNumbersTable.category, category),
+                ),
               ),
-            );
-          return buildTeamListShirtNumbers(rows);
+            db
+              .select({
+                firstName: squadMembersTable.firstName,
+                lastName: squadMembersTable.lastName,
+                preferredName: squadMembersTable.preferredName,
+                isPrivate: squadMembersTable.isPrivate,
+                section: squadMembersTable.section,
+                linkedPlayerId: squadMembersTable.linkedPlayerId,
+              })
+              .from(squadMembersTable)
+              .where(eq(squadMembersTable.tenantId, tenantId)),
+          ]);
+          const numbers = buildTeamListShirtNumbers(rows);
+          const byExactName = new Map(numbers.byExactName);
+          const owners = new Map<string, number>();
+          const blocked = new Set<string>();
+          for (const m of roster) {
+            const keys = new Set([
+              fullNameKey(`${m.firstName} ${m.lastName}`),
+              fullNameKey(`${m.preferredName || m.firstName} ${m.lastName}`),
+            ]);
+            for (const key of keys) {
+              owners.set(key, (owners.get(key) ?? 0) + 1);
+              if (m.isPrivate || m.section !== "senior" || (m.linkedPlayerId ?? 0) >= 90000)
+                blocked.add(key);
+            }
+          }
+          for (const [key, count] of owners)
+            if (count > 1 || blocked.has(key)) byExactName.delete(key);
+          return { ...numbers, byExactName };
         } catch (err) {
           logger.warn({ err, tenantId, season }, "team-list shirt-number lookup failed");
           return null;
@@ -172,6 +238,11 @@ export function teamListToCardInput(
   autoDebuts: ReadonlySet<number> = new Set(),
   numbers?: TeamListShirtNumbers | null,
 ): Record<string, unknown> {
+  const nameCounts = new Map<string, number>();
+  for (const p of players) {
+    const key = fullNameKey(p.displayName);
+    nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+  }
   const round = (fixture.roundLabel ?? "").toUpperCase();
   const venueDateTime = [
     fixture.venue ?? "",
@@ -200,7 +271,18 @@ export function teamListToCardInput(
           // The snapshot's overseas mark (ADR-009), never on a "Private Player".
           ...(p.overseas && p.displayName !== PRIVATE_PLAYER ? { overseas: true } : {}),
         };
-        const shirtNumber = numbers ? shirtNumberOf(p, numbers) : null;
+        let shirtNumber = numbers ? shirtNumberOf(p, numbers) : null;
+        if (!shirtNumber && numbers) {
+          const participant = normaliseParticipantId(p.participantId);
+          const hasRegisterIdentity =
+            (p.playerId != null && numbers.registeredPlayerIds?.has(p.playerId)) ||
+            (participant != null && numbers.registeredParticipantIds?.has(participant));
+          const key = fullNameKey(p.displayName);
+          // Number display only, not identity recovery. Never override an
+          // explicitly unnumbered identity or guess between duplicate names.
+          if (!hasRegisterIdentity && nameCounts.get(key) === 1)
+            shirtNumber = numbers.byExactName?.get(key) ?? null;
+        }
         return shirtNumber ? { ...row, shirtNumber } : row;
       }),
     grade: fixture.grade,

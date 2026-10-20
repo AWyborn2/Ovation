@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { randomUUID, randomInt } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   db,
   tenantsTable,
@@ -204,6 +204,51 @@ afterAll(async () => {
 });
 
 describe("Held numbers from Selection Hub to Team List carousel", () => {
+  it("shows lineup-imported numbers for missing/stale identities without rewriting published lists or registers", async () => {
+    const names = ["Imported Existing", "Imported New"];
+    const added = await db.insert(shirtNumbersTable).values([
+      ...names.map((name, i) => ({
+        tenantId: tenant, season: 2034, name, playerId: -19501 - i,
+        participantId: randomUUID(), number: i === 0 ? "36" : "88", source: "lineup" as const,
+      })),
+      // These matches are outside the fixture's club, season or register.
+      { tenantId: other, season: 2034, name: names[0], number: "99", source: "lineup" as const },
+      { tenantId: tenant, season: 2033, name: names[0], number: "98", source: "lineup" as const },
+      { tenantId: tenant, season: 2034, category: "female" as const, name: names[0], number: "97", source: "lineup" as const },
+    ]).returning();
+    try {
+      for (const source of ["selection", "playhq", "admin"] as const) {
+        await db.update(teamListsTable).set({
+          source,
+          players: [
+            { order: 1, playerId: 116, displayName: names[0], role: "C" },
+            { order: 2, displayName: names[1] },
+          ],
+        }).where(eq(teamListsTable.fixtureId, fixtureId));
+        const before = await list();
+        const body = await sources();
+        expect(body.content[fixtureId].players).toMatchObject([
+          { order: 1, shirtNumber: "36", role: "C" },
+          { order: 2, shirtNumber: "88" },
+        ]);
+        expect(await list()).toEqual(before);
+      }
+      const current = await db.select().from(shirtNumbersTable).where(
+        inArray(shirtNumbersTable.id, added.map(r => r.id)),
+      );
+      expect(current.sort((a, b) => a.id - b.id)).toEqual(added.sort((a, b) => a.id - b.id));
+      const [duplicate] = await db.insert(shirtNumbersTable).values({
+        tenantId: tenant, season: 2034, name: names[1], number: null, source: "admin",
+      }).returning();
+      added.push(duplicate);
+      const ambiguous = (await sources()).content[fixtureId];
+      expect(ambiguous.players[0].shirtNumber).toBe("36");
+      expect(ambiguous.players[1]).not.toHaveProperty("shirtNumber");
+    } finally {
+      await db.delete(shirtNumbersTable).where(inArray(shirtNumbersTable.id, added.map(r => r.id)));
+    }
+  });
+
   it("publishes participant identities for all six Held cases and the twelfth, without leaking private/fill-in IDs", async () => {
     for (const i of [0, 1, 2, 3, 4, 9]) {
       expect(original[i].participantId).toBe(profiles[i]);
@@ -243,14 +288,16 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
     expect(body.content[fixtureId].players[0].shirtNumber).toBe("77");
   });
 
-  it("never uses reopened drafts, even if their player names match the publication", async () => {
+  it("never recovers identities from reopened drafts, but can display unique-name numbers", async () => {
     await legacy();
     await db
       .update(selectionsTable)
       .set({ state: "draft" })
       .where(eq(selectionsTable.id, selectionId));
     const body = await sources();
-    expect(body.content[fixtureId].players[0]).not.toHaveProperty("shirtNumber");
+    expect(body.content[fixtureId].players[0].shirtNumber).toBe("77");
+    expect((await recoverPublishedSelectionIdentities(tenant, await list(), startAt))
+      .players[0]).not.toHaveProperty("participantId");
     expect(body.content[fixtureId].players[5].shirtNumber).toBe("88");
     expect(body.warnings.join(" ")).toContain("could not be verified");
     expect(body.content[fixtureId].players.map((p: { order: number }) => p.order)).toEqual([
@@ -259,7 +306,7 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
   });
 
   it.each(["displayName", "order", "role", "playerId", "participantId"] as const)(
-    "refuses a legacy source with a conflicting %s",
+    "refuses identity recovery with a conflicting %s while allowing display-only numbers",
     async (field) => {
       await legacy();
       const saved = await list();
@@ -279,8 +326,10 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
         .where(eq(teamListsTable.fixtureId, fixtureId));
       const body = await sources();
       expect(
-        body.content[fixtureId].players.find((p: { order: number }) => p.order === 1),
-      ).not.toHaveProperty("shirtNumber");
+        body.content[fixtureId].players.find((p: { order: number }) => p.order === 1).shirtNumber,
+      ).toBe("77");
+      expect((await recoverPublishedSelectionIdentities(tenant, await list(), startAt))
+        .players[0]).not.toHaveProperty("participantId");
       expect(body.warnings.join(" ")).toContain("could not be verified");
     },
   );
@@ -342,7 +391,7 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       const verified = await loadSelectionParticipantIds(db, tenant, startAt);
       expect(verified.has(memberIds[0])).toBe(false);
       const body = await sources();
-      expect(body.content[fixtureId].players[0]).not.toHaveProperty("shirtNumber");
+      expect(body.content[fixtureId].players[0].shirtNumber).toBe("77");
       expect(body.warnings.join(" ")).toContain("could not be verified");
       const [member] = await db
         .select()
@@ -400,7 +449,7 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       const verified = await loadSelectionParticipantIds(db, tenant, startAt);
       expect(verified.has(memberIds[0])).toBe(false);
       const body = await sources();
-      expect(body.content[fixtureId].players[0]).not.toHaveProperty("shirtNumber");
+      expect(body.content[fixtureId].players[0].shirtNumber).toBe("77");
       expect(body.content[fixtureId].players[1].shirtNumber).toBe("18");
     } finally {
       await db
