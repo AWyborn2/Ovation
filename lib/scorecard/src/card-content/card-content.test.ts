@@ -211,6 +211,11 @@ describe("matchDayFixtureContent", () => {
     }
   });
 
+  it("a junior-looking grade in the senior fixtures is treated as junior (fail closed)", () => {
+    expect(matchDayFixtureContent(fixture({ grade: "Under 16" })).junior).toBe(true);
+    expect(matchDayFixtureContent(fixture({ grade: "Colts" })).junior).toBe(false);
+  });
+
   it("a junior fixture carries its junior flags and grade label", () => {
     const c = matchDayFixtureContent(fixture(), {
       junior: true,

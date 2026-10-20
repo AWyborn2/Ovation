@@ -166,8 +166,15 @@ describe("carousel templates across packs", () => {
           const label = new DOMParser()
             .parseFromString(html, "text/html")
             .querySelector('[data-carousel-cover-label="1"]');
+          // No round (unknown, or switched off): the label box drops out (ADR-010).
+          if (!roundLabel) {
+            expect(label).toBeNull();
+            expect(html).not.toContain("data-drop-if-field");
+            expect(text).toContain("SWIPE");
+            continue;
+          }
           expect(label).not.toBeNull();
-          expect(label?.textContent).toBe(roundLabel ?? "");
+          expect(label?.textContent).toBe(roundLabel);
           expect(label?.getAttribute("style")).toContain("max-width:100%");
           expect(label?.getAttribute("style")).toContain("overflow-wrap:anywhere");
           expect(text).toContain("SWIPE");

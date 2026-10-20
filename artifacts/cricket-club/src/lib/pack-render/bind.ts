@@ -737,6 +737,14 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
   // orphan "presented by" prose is left behind.
   values["sponsorPresentedBy"] = data.presentingSponsorName ?? "";
 
+  // S4: a match day card's note ("BAR & KITCHEN OPEN") is the admin's own
+  // words or nothing: the sample must never print on a real card. Empty, the
+  // note box drops out (`data-drop-if-field`).
+  if (kind === "matchDay") {
+    values["note.title"] ??= "";
+    values["note.body"] ??= "";
+  }
+
   // A4 — uploaded / selected photo overrides the input's own photoUrl.
   //
   // This used to also fill match-result's `potm.photo` (A5). That slot is gone:

@@ -751,6 +751,10 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         label: "Club tagline",
       },
       {
+        key: "grade",
+        label: "Grade / team",
+      },
+      {
         key: "roundLabel",
         label: "Round label",
       },
@@ -793,10 +797,6 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
       {
         key: "clubMonogram",
         label: "Club monogram (no crest)",
-      },
-      {
-        key: "grade",
-        label: "Grade / team",
       },
       {
         key: "sponsorPresentedBy",
