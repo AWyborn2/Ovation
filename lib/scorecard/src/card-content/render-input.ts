@@ -59,6 +59,9 @@ export function contentInput(
       visible.has(content.page === "title" ? "title.coverPhoto" : "sponsors.background")
         ? { hasCoverPhoto: true }
         : {}),
+      ...(content.page === "title" && content.livestream && visible.has("title.livestream")
+        ? { livestream: content.livestream.label }
+        : {}),
     },
   };
 }
@@ -105,6 +108,16 @@ function fixtureInput(
     startTime: c.startTime,
     junior: c.junior,
     ...(c.junior && c.juniorTeamName ? { juniorTeamName: c.juniorTeamName } : {}),
+    // Optional data (P5): shown only when visible AND loaded; never on a junior slide.
+    ...(!c.junior && c.ladder && visible.has("fixture.ladder")
+      ? { ladderClub: c.ladder.club, ladderOpposition: c.ladder.opposition ?? "" }
+      : {}),
+    ...(!c.junior && c.lastMeeting && visible.has("fixture.lastMeeting")
+      ? { lastMeeting: c.lastMeeting.line }
+      : {}),
+    ...(!c.junior && c.milestoneWatch && visible.has("fixture.milestoneWatch")
+      ? { milestoneWatch: c.milestoneWatch.line }
+      : {}),
     namesResolved: true,
   };
 }

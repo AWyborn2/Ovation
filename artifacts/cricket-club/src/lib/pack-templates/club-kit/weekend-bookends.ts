@@ -1,7 +1,7 @@
 import type { PackCardTemplate } from "../types";
 import { clubHeaderFields, textField } from "../shared";
 import { ckCard, ckFormats } from "./card";
-import { C, cq, display, eyebrow, meta } from "./parts";
+import { C, CK_COND, CK_SANS, cq, display, eyebrow, meta } from "./parts";
 import {
   FLAT_SPONSORS_PAGE,
   SPONSORS_PAGE_TEXT_FIELDS,
@@ -58,6 +58,7 @@ export function weekendBookendTemplate(
         "weekendTitle",
         "date",
         "roundLabel",
+        "livestream",
         ...(page === "sponsors" ? SPONSORS_PAGE_TEXT_FIELDS : []),
       ].map((k) => textField(k, k, "")),
     ],
@@ -155,6 +156,11 @@ export function weekendBookendTemplate(
                 "<div ",
                 '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="7" ',
               ) +
+              // The club's livestream link (P5): "WATCH LIVE" and the short address.
+              `<div data-drop-if-field="livestream" data-livestream="1" style="display:flex;align-items:center;gap:1.4cqmin;max-width:100%;min-width:0;margin-top:3cqmin">` +
+              `<span style="flex:none;padding:.6cqmin 1.4cqmin;background:${C.p};color:${C.onp};font-family:${CK_COND};font-weight:800;font-size:${cq(2.6)};letter-spacing:.06em">WATCH LIVE</span>` +
+              `<span style="min-width:0;font-family:${CK_SANS};font-weight:500;font-size:${cq(2.2)};color:${C.chalk2};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{livestream}}</span>` +
+              `</div>` +
               display(cq, "SWIPE &gt;&gt;", tall ? 10 : 8, `;margin-top:2cqmin;color:${C.pt}`)
             : eyebrow(cq, "{{date}}") + heading + sponsorGrid + below,
         footer: {

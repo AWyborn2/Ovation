@@ -286,3 +286,60 @@ where parent_club_id is not null or active_to is not null
 order by club_id;
 select to_regclass('central.v_club_combined') as club_combined_view;
 ```
+
+## P5 delivery check (20 Oct 2026)
+
+The P5 session could not reach the Replit dev database either: the only connection string on this
+machine is still the retired Supabase one, and assistant sessions have no Replit credentials. So
+the T5.0 assumptions are still unconfirmed against live rows. P5 is built to **hide a field**
+whenever an assumption fails, never to print something wrong, and the code was tested against a
+local Postgres built the way CI builds it (migrations, `push-central`, the CI central fixture)
+plus seeded `playhq.*` and `central.*` rows.
+
+What the code relies on, and what happens if it is wrong:
+
+| Assumption                                                                                           | Used by                   | If wrong                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `playhq.ladders` holds the current season with `rank`, `played`, `fetched_at`                        | ladder positions          | No row, no rank, or fetched more than 8 days ago → hidden                                                                  |
+| A PlayHQ fixture (`public.fixtures.playhq_match_id`) has its `playhq.matches` row with both team ids | ladder, opposition lookup | Hidden (manual fixtures have no PlayHQ match, so they never show a ladder)                                                 |
+| `central.matches.match_date` reads as a date (ISO, "12 Jan 2024" or day-first)                       | last meeting              | Any candidate meeting with an unreadable date hides the field (it might be the latest)                                     |
+| Final statuses are spelled as the projector writes them; old PCA rows may have other or no status    | last meeting              | Excluded by pattern: in progress, abandoned, cancelled, forfeit(ed), postponed, scheduled, upcoming. Anything else counts. |
+| `central.clubs.parent_club_id` links renamed or merged clubs                                         | last meeting (lineage)    | No links → each club is its own family (the T5.0 behaviour)                                                                |
+| `central.matches.playhq_match_id` is text and `playhq.matches.id` is a uuid                          | opposition lookup         | The join now casts, so it works whichever type the column has                                                              |
+
+**Bug fixed on the way.** `centralClubIdForPlayhqOrg` (`central/vs-club.ts`) could not run on a real
+Postgres: it joined text to uuid without a cast, and its `GROUP BY` repeated a parameterised
+`CASE` that Postgres would not match to the select list. Its unit test mocks the database, so this
+never surfaced. `opponent-club.ts` also calls it, so production opponent links that depend on it
+may have been falling through. P5 fixes both (cast to text, group by position).
+
+**Read-only SQL for Ash** (dev SQL runner first, then Production), in addition to queries 0–8 above:
+
+```sql
+-- 9. Which statuses do central matches carry, and how many rows per status have a winner?
+select coalesce(status, '(null)') as status, count(*) as n,
+       count(*) filter (where winner_club_id is not null) as with_winner
+from central.matches group by 1 order by n desc;
+
+-- 10. Do upcoming PlayHQ fixtures carry a match row with both team ids? (Halls Head)
+select f.id, f.grade, f.start_at, m.grade_id is not null as has_grade,
+       m.home_team_id is not null and m.away_team_id is not null as has_teams
+from public.fixtures f
+left join playhq.matches m on m.id::text = f.playhq_match_id
+where f.tenant_id = 1 and f.start_at > now() order by f.start_at limit 20;
+
+-- 11. Ladder freshness per grade this season (Halls Head): fetched_at should be within 8 days.
+select g.name, l.ladder_name, max(l.fetched_at) as fetched, now() - max(l.fetched_at) as age
+from playhq.ladders l join playhq.grades g on g.id = l.grade_id
+join public.tenants t on t.playhq_org_id = l.org_id
+where t.central_club_id = 1 and coalesce(g.is_junior, false) = false
+group by 1, 2 order by 1, 2;
+
+-- 12. The opposition lookup now works (was failing before P5): expect a club id per org.
+select o.org_id, (
+  select case when pm.home_org_id = o.org_id then cm.home_club_id else cm.away_club_id end
+  from playhq.matches pm join central.matches cm on cm.playhq_match_id = pm.id::text
+  where pm.home_org_id = o.org_id or pm.away_org_id = o.org_id
+  group by 1 order by count(*) desc limit 1) as central_club_id
+from (select distinct away_org_id as org_id from playhq.matches where away_org_id is not null limit 10) o;
+```

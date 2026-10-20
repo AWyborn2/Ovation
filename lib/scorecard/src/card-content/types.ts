@@ -27,6 +27,46 @@ export interface MatchDayTitleContent {
   /** "ROUND 5", "MIXED ROUNDS", or "" when unknown. */
   roundLabel: string;
   fixtureCount: number;
+  /** The club's livestream or scores link (P5); absent when the club has none. */
+  livestream?: ContentLivestream;
+}
+
+/** A link the title page prints: "Watch live" and the address, shortened. */
+export interface ContentLivestream {
+  /** The https address as the club saved it. */
+  url: string;
+  /** "youtube.com/@ourclub": no scheme, no "www.", no trailing slash. */
+  label: string;
+}
+
+/** Both teams' season ladder positions (P5), as the card prints them. */
+export interface ContentLadder {
+  /** "3RD". */
+  club: string;
+  /** "5TH", or null when the opposition has no place on the same table. */
+  opposition: string | null;
+  /** Teams on the table. */
+  teams: number;
+  /** The table's name when the grade publishes several ("One Day"); else null. */
+  tableName: string | null;
+}
+
+/** The last time the two clubs met in this grade (P5), from the club's side. */
+export interface ContentLastMeeting {
+  outcome: "won" | "lost" | "tied" | "noResult";
+  /** "Won by 24 runs · 2025/26". */
+  line: string;
+  /** YYYY-MM-DD. */
+  date: string;
+  season: string | null;
+}
+
+/** A player in this fixture's side within reach of a club milestone (P5, senior only). */
+export interface ContentMilestoneWatch {
+  /** "J. Smith". */
+  playerName: string;
+  /** "J. Smith needs 12 for 1,000 club runs". */
+  line: string;
 }
 
 /** A sponsor as the sponsors page prints it. */
@@ -106,6 +146,14 @@ export interface MatchDayFixtureContent {
   /** "12:30 PM". */
   startTime: string;
   source: MatchDayFixtureSource;
+  /**
+   * Optional data (P5). Each is loaded only when its field is visible and is
+   * absent when the data is missing or the read failed, so the field hides
+   * (never "TBC"). Never set on a junior fixture.
+   */
+  ladder?: ContentLadder;
+  lastMeeting?: ContentLastMeeting;
+  milestoneWatch?: ContentMilestoneWatch;
 }
 
 /**

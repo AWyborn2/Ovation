@@ -5529,6 +5529,7 @@ paths:
         - { name: audience, in: query, schema: { type: string, enum: [all, senior, junior], default: all }, description: "Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards." }
         - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
         - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
+        - { name: fields, in: query, schema: { type: string }, description: "Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide." }
       responses:
         "200":
           description: Sources, with cancelled fixtures and ineligible photos excluded
@@ -18180,6 +18181,31 @@ components:
         startTime: { type: string }
         source:
           $ref: "#/components/schemas/MatchDayFixtureContentSource"
+        ladder:
+          type: object
+          description: "Both teams' season ladder positions (P5), when asked for and loaded."
+          required: [club, opposition, teams, tableName]
+          properties:
+            club: { type: string, description: '"3RD".' }
+            opposition: { type: ["string", "null"] }
+            teams: { type: integer }
+            tableName: { type: ["string", "null"] }
+        lastMeeting:
+          type: object
+          description: "The clubs' last finished senior meeting in this grade, from the club's side (P5)."
+          required: [outcome, line, date, season]
+          properties:
+            outcome: { type: string, enum: [won, lost, tied, noResult] }
+            line: { type: string, description: '"Won by 24 runs · 2025/26".' }
+            date: { type: string }
+            season: { type: ["string", "null"] }
+        milestoneWatch:
+          type: object
+          description: "A player in the published side within reach of a club milestone (P5, senior only)."
+          required: [playerName, line]
+          properties:
+            playerName: { type: string }
+            line: { type: string }
 
     PostingPlanRow:
       type: object

@@ -428,6 +428,8 @@ export function buildWeekendSlides(
     roundLabels: teams.map(teamRoundLabel),
     fixtureCount: teams.length,
     timeZone,
+    // The title page's livestream link (P5); shown when "title.livestream" is on.
+    livestreamUrl: bundle.settings.livestreamUrl ?? null,
   };
   const coverPhoto =
     cover && show("title.coverPhoto")

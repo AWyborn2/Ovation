@@ -341,6 +341,18 @@ function leadersDesign(
   });
 }
 
+/** A Match Day panel's optional one-line note, dropped when `key` is empty (P5). */
+function ckDataLine(key: string, label: string, value: string, dot = false): string {
+  return (
+    `<div data-drop-if-field="${key}" data-content-line="${key}" style="display:flex;align-items:center;gap:1cqmin;margin-top:.8cqmin;min-width:0;font-family:${CK_SANS};font-size:${u(2.2)};line-height:1.3;color:${C.chalk}">` +
+    (dot
+      ? `<span style="flex:none;width:${u(1.2)};height:${u(1.2)};border-radius:50%;background:${C.p}"></span>`
+      : `<span style="flex:none;font-family:${CK_MONO};font-weight:600;font-size:${u(1.6)};letter-spacing:.18em;color:${C.pt}">${label}</span>`) +
+    `<span style="flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${value}</span>` +
+    `</div>`
+  );
+}
+
 const matchDay = design({
   kind: "matchDay",
   designKey: "match-day",
@@ -373,6 +385,14 @@ const matchDay = design({
           `<div data-fit="${nameFit(f, 15, 30)}" style="flex:1;min-width:0;font-family:${CK_COND};font-weight:900;font-size:calc(${u(3.8)} * var(--fit,1));line-height:1.05;text-transform:uppercase;color:${C.chalk};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{opposition.name}}</div>` +
           `</div>` +
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
+          // Optional data (ADR-010 P5), one line each; empty lines drop out.
+          ckDataLine(
+            "ladder.club",
+            "LADDER",
+            '{{ladder.club}}<span data-drop-if-field="ladder.opposition"> v {{ladder.opposition}}</span>',
+          ) +
+          ckDataLine("lastMeeting", "LAST MET", "{{lastMeeting}}") +
+          ckDataLine("milestoneWatch", "", "{{milestoneWatch}}", true) +
           `</div>`,
       ),
       { ...LOGO_FOOTER, largeLogos: true },

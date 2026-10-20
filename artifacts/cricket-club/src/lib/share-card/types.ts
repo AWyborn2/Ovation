@@ -303,6 +303,8 @@ export type ShareCardInput =
         nextHome?: { match: string; when: string };
         /** Sponsors page (P6): "@ourclub · Our Cricket Club · ourclub.com.au". */
         socials?: string;
+        /** The title page's livestream link, shortened ("youtube.com/@club"); P5. */
+        livestream?: string;
       };
       /**
        * On-demand carousel, junior day slide (ADR-010 P3): the junior fixtures of
@@ -323,6 +325,11 @@ export type ShareCardInput =
       junior?: boolean;
       /** Built from card content (ADR-010): names and crest are final, bind them as given. */
       namesResolved?: boolean;
+      /** Optional data (ADR-010 P5), present only when the field is on and loaded. */
+      ladderClub?: string;
+      ladderOpposition?: string;
+      lastMeeting?: string;
+      milestoneWatch?: string;
     }
   | ({
       kind: "teamList";

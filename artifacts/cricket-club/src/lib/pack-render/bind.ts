@@ -263,6 +263,13 @@ export function bindInput(
         values["nextHomeWhen"] = page.nextHome?.when ?? "";
         values["sponsorSocials"] = page.socials ?? "";
       }
+      // Optional data (ADR-010 P5): bound as given or empty, so a box with
+      // nothing to say drops out and a sample never prints.
+      values["livestream"] = input.carouselPage?.livestream ?? "";
+      values["ladder.club"] = input.ladderClub ?? "";
+      values["ladder.opposition"] = input.ladderClub ? (input.ladderOpposition ?? "") : "";
+      values["lastMeeting"] = input.lastMeeting ?? "";
+      values["milestoneWatch"] = input.milestoneWatch ?? "";
       if (input.carouselDay) {
         // A junior day slide (ADR-010 P3): content-built, so names are final.
         set(values, "dayHeading", input.carouselDay.heading);

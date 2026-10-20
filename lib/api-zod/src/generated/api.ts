@@ -9228,7 +9228,8 @@ export const GetWeekendCarouselSourcesQueryParams = zod.object({
   "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
   "audience": zod.enum(['all', 'senior', 'junior']).default(getWeekendCarouselSourcesQueryAudienceDefault).describe('Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.'),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
-  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
+  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp),
+  "fields": zod.coerce.string().optional().describe('Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.')
 })
 
 export const GetWeekendCarouselSourcesResponse = zod.object({
@@ -9276,7 +9277,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "opponentName": zod.string(),
   "opponentLogoUrl": zod.string().nullable(),
   "venue": zod.string().nullable()
-})
+}),
+  "ladder": zod.object({
+  "club": zod.string().describe('\"3RD\".'),
+  "opposition": zod.string().nullable(),
+  "teams": zod.number(),
+  "tableName": zod.string().nullable()
+}).optional().describe('Both teams\' season ladder positions (P5), when asked for and loaded.'),
+  "lastMeeting": zod.object({
+  "outcome": zod.enum(['won', 'lost', 'tied', 'noResult']),
+  "line": zod.string().describe('\"Won by 24 runs · 2025\/26\".'),
+  "date": zod.string(),
+  "season": zod.string().nullable()
+}).optional().describe('The clubs\' last finished senior meeting in this grade, from the club\'s side (P5).'),
+  "milestoneWatch": zod.object({
+  "playerName": zod.string(),
+  "line": zod.string()
+}).optional().describe('A player in the published side within reach of a club milestone (P5, senior only).')
 }).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.')).optional().describe('Match Day sets: each fixture\'s slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.'),
   "sponsorsPage": zod.object({
   "backgroundPhoto": zod.union([zod.object({
@@ -9321,7 +9338,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "opponentName": zod.string(),
   "opponentLogoUrl": zod.string().nullable(),
   "venue": zod.string().nullable()
-})
+}),
+  "ladder": zod.object({
+  "club": zod.string().describe('\"3RD\".'),
+  "opposition": zod.string().nullable(),
+  "teams": zod.number(),
+  "tableName": zod.string().nullable()
+}).optional().describe('Both teams\' season ladder positions (P5), when asked for and loaded.'),
+  "lastMeeting": zod.object({
+  "outcome": zod.enum(['won', 'lost', 'tied', 'noResult']),
+  "line": zod.string().describe('\"Won by 24 runs · 2025\/26\".'),
+  "date": zod.string(),
+  "season": zod.string().nullable()
+}).optional().describe('The clubs\' last finished senior meeting in this grade, from the club\'s side (P5).'),
+  "milestoneWatch": zod.object({
+  "playerName": zod.string(),
+  "line": zod.string()
+}).optional().describe('A player in the published side within reach of a club milestone (P5, senior only).')
 }).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.'),zod.null()]).describe('The club\'s next senior home fixture from the set\'s first day, built like a fixture slide. Null for junior sets or when there is none.'),
   "socials": zod.array(zod.string()).describe('The club\'s social handles and website, in print order (Instagram, Facebook, website).')
 }).optional().describe('Match Day sets: what the sponsors page\'s optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty.'),
