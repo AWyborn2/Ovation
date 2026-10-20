@@ -34,6 +34,15 @@ vitest lives in `artifacts/api-server` (config `vitest.config.ts`, scripts
   the composite libs are built first. Run root `pnpm run typecheck` (it does
   `tsc --build` on libs first) when those errors appear.
 
+DB-backed tests must not assume a serially generated player ID is below the
+fill-in cutoff. Use unique negative fixture IDs when exercising real-player paths.
+
+**Why:** The development player sequence has exceeded the cutoff, so an otherwise
+valid test player can silently disappear from team cards as a fill-in.
+
+**How to apply:** Keep synthetic real-player IDs below the cutoff and delete only
+the rows owned by that test. This does not change production identity rules.
+
 ## Interrupted browser audits
 
 Run DB-backed carousel image audits serially and give them enough time to finish cleanup; a random tenant slug alone does not make concurrent runs isolated.

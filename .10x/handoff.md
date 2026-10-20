@@ -6,8 +6,8 @@
 
 ## Context
 
-- **P1 (T1.1–T1.6)** is on `wyborn21/carousel-p1-team-names`. It adds migration 0050, which Ash runs in Production SQL before republishing.
-- **Data (0050):**
+- **P1 (T1.1–T1.6)** is on `wyborn21/carousel-p1-team-names`. It adds migration 0051 (renumbered from 0050, which #393 took for `selection_all_play`), which Ash runs in Production SQL before republishing.
+- **Data (0051):**
   - `team_name_overrides (tenant_id, central_club_id, grade_key null, short_name)` is UNIQUE NULLS NOT DISTINCT. A NULL grade means every grade.
   - `competition_label_overrides (tenant_id, grade_key, label)`.
   - Both are tenant-curated and never written to central. The Drizzle schema is `lib/db/src/schema/card_name_overrides.ts`.

@@ -108,7 +108,7 @@ export function TeamCard({
   const edit = sideEditable(side);
   const w = side.warnings;
   const picked = side.slots.filter((s) => s.memberId != null && s.member);
-  const shape = sideShape(side.sideSize);
+  const shape = sideShape(side);
   // Captain and keeper come from the XI; the 12th holds no role. Above 12 any slot can.
   const xi = side.slots.slice(0, shape.roleSlots).filter((s) => s.memberId != null && s.member);
   // Players past the XI in a side above 12, shown as "+k" by the count.

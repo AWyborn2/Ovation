@@ -2,7 +2,7 @@ import { pgTable, serial, integer, text, timestamp, index, unique } from "drizzl
 import { tenantIdColumn } from "./_tenant";
 
 /**
- * Club-set short names for teams on social cards (ADR-010, migration 0050). A
+ * Club-set short names for teams on social cards (ADR-010, migration 0051). A
  * square card has no room for "White Knights Baldivis Cricket Club Inc" or the
  * PlayHQ team name "SJ Blues Senior A Wo", so an admin sets "White Knights" or
  * "SJ Blues" once and every card uses it.

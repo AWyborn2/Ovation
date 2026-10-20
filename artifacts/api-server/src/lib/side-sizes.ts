@@ -27,6 +27,38 @@ export function gradeSideSize(
   return resolveSideSize(map[key] ?? map[grade]);
 }
 
+/** A club's side settings by grade: sizes, and the grades whose side of 12 all play. */
+export type SideSettings = {
+  sideSizes: Readonly<Record<string, number>> | null | undefined;
+  allPlayGrades: readonly string[] | null | undefined;
+};
+
+/** Whether `grade`'s side of 12 all play (numbered 1–12, no "12th"). Only read at 12. */
+export function gradeAllPlay(
+  allPlayGrades: readonly string[] | null | undefined,
+  grade: string,
+): boolean {
+  const key = grade.trim();
+  return (allPlayGrades ?? []).some((g) => g.trim() === key);
+}
+
+/** The size and format a new draft of `grade` gets. */
+export function gradeSideSpec(
+  settings: SideSettings,
+  grade: string,
+): { sideSize: number; allPlay: boolean } {
+  const sideSize = gradeSideSize(settings.sideSizes, grade);
+  return {
+    sideSize,
+    allPlay: sideSize === DEFAULT_SIDE_SIZE && gradeAllPlay(settings.allPlayGrades, grade),
+  };
+}
+
+/** A submitted all-play list, cleaned for storage: trimmed, blanks and repeats dropped. */
+export function cleanAllPlayGrades(raw: readonly string[]): string[] {
+  return [...new Set(raw.map((g) => g.trim()).filter(Boolean))];
+}
+
 /**
  * A submitted map, cleaned for storage: keys trimmed, a blank key refused, a
  * size of 12 dropped (12 is what a missing key means). Returns the error to

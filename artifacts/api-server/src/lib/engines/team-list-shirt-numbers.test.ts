@@ -7,7 +7,7 @@
  * generateTeamListDrafts against a real database (needs DATABASE_URL; CI).
  */
 import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
 import {
@@ -24,6 +24,7 @@ import {
   shirtNumberSettingsTable,
 } from "@workspace/db";
 import { generateTeamListDrafts, teamListKey } from "./team-list";
+import { purgeTestTenants } from "../tenant-purge.test-helpers";
 
 const STAMP = Date.now();
 // Early September 2026 in Perth: the fixture (three days later) is season 2026, not 2025.
@@ -36,10 +37,10 @@ describe("team-list drafts with season shirt numbers (DB)", () => {
   const tenants: Record<"on" | "off" | "other", number> = { on: 0, off: 0, other: 0 };
   let linked: number;
 
-  async function makeTenant(key: keyof typeof tenants, clubId: number, numbersOn: boolean) {
+  async function makeTenant(key: keyof typeof tenants, numbersOn: boolean) {
     const [t] = await db
       .insert(tenantsTable)
-      .values({ slug: `xi-shirts-${key}-${STAMP}`, centralClubId: clubId, name: "XI", plan: "pro" })
+      .values({ slug: `xi-shirts-${key}-${STAMP}`, centralClubId: randomInt(1000000, 1000000000), name: "XI", plan: "pro" })
       .returning();
     tenants[key] = t.id;
     await db.insert(socialSettingsTable).values({
@@ -98,12 +99,12 @@ describe("team-list drafts with season shirt numbers (DB)", () => {
   };
 
   beforeAll(async () => {
-    await makeTenant("on", 9951, true);
-    await makeTenant("off", 9952, false);
-    await makeTenant("other", 9953, true);
+    await makeTenant("on", true);
+    await makeTenant("off", false);
+    await makeTenant("other", true);
     const [p] = await db
       .insert(playersTable)
-      .values({ surname: `Linked${STAMP}`, givenName: "Lee" })
+      .values({ id: randomInt(-2000000000, -1000000), surname: `Linked${STAMP}`, givenName: "Lee" })
       .returning();
     linked = p.id;
     await db.insert(shirtNumbersTable).values([
@@ -144,7 +145,7 @@ describe("team-list drafts with season shirt numbers (DB)", () => {
     await db.delete(captionTemplatesTable).where(inArray(captionTemplatesTable.tenantId, ids));
     await db.delete(socialSettingsTable).where(inArray(socialSettingsTable.tenantId, ids));
     await db.delete(playersTable).where(eq(playersTable.id, linked));
-    await db.delete(tenantsTable).where(inArray(tenantsTable.id, ids));
+    await purgeTestTenants(ids);
   });
 
   it("feature on: numbers by shirt, the fixture season's numbers, a held player's by participant", async () => {

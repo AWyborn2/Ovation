@@ -355,8 +355,15 @@
     {
       "idx": 50,
       "version": "7",
-      "when": 1792461224284,
-      "tag": "0050_card_name_overrides",
+      "when": 1792465777968,
+      "tag": "0050_selection_all_play",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1792467199632,
+      "tag": "0051_card_name_overrides",
       "breakpoints": true
     }
   ]

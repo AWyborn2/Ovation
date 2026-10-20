@@ -4,6 +4,7 @@
  * integration test (needs DATABASE_URL).
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { purgeTestTenants } from "../tenant-purge.test-helpers";
 import request from "supertest";
 import { and, eq, like } from "drizzle-orm";
 import app from "../../app";
@@ -154,7 +155,7 @@ afterAll(async () => {
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
-  await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
+  await purgeTestTenants([tenantId]);
 });
 
 const draftsLike = (prefix: string) =>

@@ -20,3 +20,9 @@ For older name-only publications, identity recovery must use a matching finalise
 **Why:** Reopening a side intentionally leaves the published team unchanged. Resolving from editable draft membership can attach another person's number to an approved name.
 
 **How to apply:** Verify the complete published lineup, including order, roles and existing identities, before adding missing identities for generation. Warn when verification fails. Never rewrite saved carousel snapshots from current selections or registers.
+
+Team social slides may display a number using a unique exact full-name match when ID lookups do not resolve. This is presentation only, not permission to recover or change player identities.
+
+**Why:** The user explicitly approved this exception after team-list-imported register entries acquired different player IDs from published Selection Hub lists.
+
+**How to apply:** Prefer verified IDs. Scope names to the fixture's club, season and senior register; ignore case and repeated whitespace only. Refuse duplicate register names (including unnumbered rows), duplicate team/roster names, private placeholders and known private/junior/fill-in members. Never override an explicitly unnumbered register identity. Do not rewrite publications, profiles or saved carousel snapshots.

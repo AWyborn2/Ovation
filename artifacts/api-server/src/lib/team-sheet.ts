@@ -88,6 +88,8 @@ export type TeamSheet = {
   ruleNotes: string[];
   /** Rows the sheet prints: the side's size (12–14; absent reads as 12). */
   sideSize?: number;
+  /** A side of 12 where all 12 play: rows numbered 1–12, no "12th" row. */
+  allPlay?: boolean;
   players: TeamSheetPlayer[];
   generatedAt: string;
 };
@@ -147,7 +149,7 @@ type SheetMember = Pick<
  */
 export function teamSheetPlayers(input: {
   side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
-    Partial<Pick<SelectionRow, "sideSize">>;
+    Partial<Pick<SelectionRow, "sideSize" | "allPlay">>;
   members: readonly SheetMember[];
   shirtNumberOf: (m: SheetMember) => string | null;
   juniorLimitOf: ((m: SheetMember) => JuniorBowlingLimit | null) | null;
@@ -155,7 +157,7 @@ export function teamSheetPlayers(input: {
   const byId = new Map(input.members.map((m) => [m.id, m]));
   const players: TeamSheetPlayer[] = [];
   let order = 0;
-  const shape = sideShape(input.side.sideSize);
+  const shape = sideShape(input.side);
   normaliseSlots(input.side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
@@ -483,7 +485,8 @@ export async function buildTeamSheet(
     competition: fixture.competitionName,
     bowlingRulesSource: rules?.source ?? null,
     ruleNotes: [...(rules?.sheetNotes ?? [])],
-    sideSize: sideShape(selection.sideSize).size,
+    sideSize: sideShape(selection).size,
+    ...(selection.allPlay ? { allPlay: true } : {}),
     players: teamSheetPlayers({
       side: selection,
       members: loaded.members,
@@ -517,7 +520,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   // One row per place in the side: 12 with a shaded "12th" row, or up to 14
   // numbered 1–N. Rows shrink above 12 so the table keeps its height and the
   // sheet stays on one A4 page.
-  const shape = sideShape(sheet.sideSize);
+  const shape = sideShape(sheet);
   const rowHeight =
     shape.size > DEFAULT_SIDE_SIZE ? ((9.2 * DEFAULT_SIDE_SIZE) / shape.size).toFixed(1) : "9.2";
   const rows = Array.from({ length: shape.size }, (_, i) => {

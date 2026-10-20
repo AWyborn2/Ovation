@@ -36,12 +36,14 @@ import {
   roleMemberIds,
   sideShape,
   twelfthMemberId,
+  type SideShape,
+  type SideSpec,
 } from "@workspace/scorecard/selection-shape";
 import { loadParticipantCrosswalk } from "./participant-crosswalk";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
 import { juniorMemberResolver } from "./shirt-number-squad";
-import { gradeSideSize } from "./side-sizes";
+import { gradeSideSpec, type SideSettings } from "./side-sizes";
 import { juniorSideLabel } from "./selection-fixtures";
 
 /**
@@ -81,18 +83,30 @@ export type DraftSide = {
   keeperMemberId: number | null;
   /** Players in the side (12–14), from the grade's size: `selections.side_size`. */
   sideSize: number;
+  /** A side of 12 where all 12 play (no "12th"): `selections.all_play`. */
+  allPlay: boolean;
 };
+
+/** A side of 12 with no 12th: all 12 play. */
+const isAllPlay = (shape: SideShape) => shape.size === DEFAULT_SIDE_SIZE && !shape.twelfthLabel;
 
 const emptySlots = (size = DEFAULT_SIDE_SIZE): SelectionSlot[] =>
   Array.from({ length: size }, () => ({ memberId: null }));
 
-/** The club's players per side by grade (`availability_settings.side_sizes`). */
-async function loadSideSizes(tenantId: number): Promise<Record<string, number>> {
+/**
+ * The club's side settings by grade: players per side
+ * (`availability_settings.side_sizes`) and the grades whose side of 12 all
+ * play (`all_play_grades`).
+ */
+async function loadSideSizes(tenantId: number): Promise<SideSettings> {
   const [row] = await db
-    .select({ sideSizes: availabilitySettingsTable.sideSizes })
+    .select({
+      sideSizes: availabilitySettingsTable.sideSizes,
+      allPlayGrades: availabilitySettingsTable.allPlayGrades,
+    })
     .from(availabilitySettingsTable)
     .where(eq(availabilitySettingsTable.tenantId, tenantId));
-  return row?.sideSizes ?? {};
+  return { sideSizes: row?.sideSizes ?? {}, allPlayGrades: row?.allPlayGrades ?? [] };
 }
 
 /** Members who can't play a game; the members a draft places are added. */
@@ -118,8 +132,8 @@ export function buildDraftSlots(input: {
   prefer?: (m: MemberIdentity) => boolean;
   /** The club's remembered PlayHQ matches, tried first (see `buildMemberMatcher`). */
   participants?: ParticipantCrosswalk;
-  /** Players in the side (12–14; 12 when unset): the first that many listed are placed. */
-  size?: number | null;
+  /** The side's size and format (12 with a 12th when unset): the first `size` listed are placed. */
+  size?: SideSpec;
 }): DraftSide {
   const { lastList, members } = input;
   const elsewhere = input.placed ?? new Set<number>();
@@ -128,8 +142,9 @@ export function buildDraftSlots(input: {
   let captainMemberId: number | null = null;
   let keeperMemberId: number | null = null;
   const sideSize = shape.size;
+  const allPlay = isAllPlay(shape);
   if (!lastList || lastList.length === 0) {
-    return { slots, captainMemberId, keeperMemberId, sideSize };
+    return { slots, captainMemberId, keeperMemberId, sideSize, allPlay };
   }
 
   const match = buildMemberMatcher(members, input.prefer, input.participants);
@@ -163,7 +178,7 @@ export function buildDraftSlots(input: {
     if (entry.role === "WK" || entry.role === "C/WK") keeperMemberId ??= m.id;
   });
 
-  return { slots, captainMemberId, keeperMemberId, sideSize };
+  return { slots, captainMemberId, keeperMemberId, sideSize, allPlay };
 }
 
 /**
@@ -183,12 +198,13 @@ export function carryDraftSlots(input: {
   placed?: Placed;
   /** The club's remembered PlayHQ matches, for a carried "not on register" gap. */
   participants?: ParticipantCrosswalk;
-  /** Players in the new side (12–14; 12 when unset). */
-  size?: number | null;
+  /** The new side's size and format (12 with a 12th when unset). */
+  size?: SideSpec;
 }): DraftSide {
   const elsewhere = input.placed ?? new Set<number>();
   const byId = new Map(input.members.map((m) => [m.id, m]));
-  const sideSize = sideShape(input.size).size;
+  const shape = sideShape(input.size);
+  const sideSize = shape.size;
   const slots = emptySlots(sideSize);
   const placed = new Set<number>();
   normaliseSlots(input.previous.slots, sideSize)
@@ -219,13 +235,14 @@ export function carryDraftSlots(input: {
       elsewhere.add(m.id);
       slots[i] = { memberId: m.id };
     });
-  const roleIds = roleMemberIds(slots, sideSize);
+  const roleIds = roleMemberIds(slots, input.size);
   const role = (id: number | null) => (id != null && roleIds.has(id) ? id : null);
   return {
     slots,
     captainMemberId: role(input.previous.captainMemberId),
     keeperMemberId: role(input.previous.keeperMemberId),
     sideSize,
+    allPlay: isAllPlay(shape),
   };
 }
 
@@ -538,7 +555,7 @@ export async function buildRoundDrafts(
     }
     const seed = pickSeed(priorByGrade.get(f.grade), lastByGrade.get(f.grade), index);
     const placed = ledger.view(gameWindow(f.startAt, { format: f.matchFormat }));
-    const size = gradeSideSize(sideSizes, f.grade);
+    const size = gradeSideSpec(sideSizes, f.grade);
     const draft =
       seed?.kind === "selection"
         ? carryDraftSlots({ previous: seed.side, members, placed, participants, size })
@@ -589,6 +606,7 @@ async function insertDraft(
       ...side,
       slots: draft.slots,
       sideSize: draft.sideSize,
+      allPlay: draft.allPlay,
       captainMemberId: draft.captainMemberId,
       keeperMemberId: draft.keeperMemberId,
       state: "draft",
@@ -611,8 +629,9 @@ async function insertDraft(
       detail: {
         seededFrom,
         filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
-        twelfth: twelfthMemberId(draft.slots, draft.sideSize) != null,
+        twelfth: twelfthMemberId(draft.slots, draft) != null,
         ...(draft.sideSize !== DEFAULT_SIDE_SIZE ? { sideSize: draft.sideSize } : {}),
+        ...(draft.allPlay ? { allPlay: true } : {}),
       },
       createdAt: now,
     });
@@ -819,7 +838,7 @@ async function draftJuniorSides(
     const seed = team ? pickSeed(priorByTeam.get(team), lastByTeam.get(team), index) : null;
     const placed = ledger.view(gameWindow(f.startAt!, { junior: true }));
     // A junior side's size is keyed by the label it goes by on the board.
-    const size = gradeSideSize(sideSizes, juniorSideLabel(f));
+    const size = gradeSideSpec(sideSizes, juniorSideLabel(f));
     const draft =
       seed?.kind === "selection"
         ? carryDraftSlots({ previous: seed.side, members, placed, participants, size })
