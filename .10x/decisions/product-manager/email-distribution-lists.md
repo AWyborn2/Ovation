@@ -1,6 +1,6 @@
 # Email distribution lists (team sheets + social assets)
 
-Status: RECOMMENDED 2026-10-20, awaiting Ash's sign-off. P1.
+Status: APPROVED by Ash 2026-10-20. P0/P1.
 
 ## Problem
 

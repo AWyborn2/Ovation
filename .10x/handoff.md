@@ -315,5 +315,5 @@ Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) prev
 **From:** Product Manager → **To:** Principal Architect (20 Oct 2026)
 **Read:** `.10x/decisions/product-manager/email-distribution-lists.md`
 Priority: P0 = transport upgrade (multi-recipient + attachments), team-sheet lists with on_publish/manual/off, server-side team-sheet PDF, send log. P1 = social list toggles (absorb `social_settings.notificationEmail`), scheduled mode, UPDATED re-send.
-Spike first: server-side team-sheet PDF rendering. Awaiting Ash's sign-off on scope.
+Spike first: server-side team-sheet PDF rendering. Scope approved by Ash 20 Oct 2026.
 
