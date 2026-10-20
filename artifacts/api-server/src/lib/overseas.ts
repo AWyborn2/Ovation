@@ -1,5 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { db, squadMemberSeasonsTable } from "@workspace/db";
+import { squadMemberSeasonsTable } from "@workspace/db";
+import type { db } from "@workspace/db";
 import { MAX_SIDE_SIZE } from "@workspace/scorecard/selection-shape";
 
 /**
