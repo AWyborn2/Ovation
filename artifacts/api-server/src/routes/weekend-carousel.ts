@@ -16,6 +16,7 @@ import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { carouselContent } from "../lib/carousel-content";
 import { loadClubGradeOrder } from "../lib/club-grade-order";
 import { sortByGradeOrder } from "@workspace/scorecard";
+import { buildMatchDayContent } from "../lib/card-content/match-day";
 
 const router: IRouter = Router();
 
@@ -97,10 +98,20 @@ router.get(
       (f) => f.grade,
       await loadClubGradeOrder(tenantId),
     );
+    // Match Day slides come from the same builder as the 48-hour sweep (ADR-010).
+    const matchDayContent =
+      setType === "matchDay"
+        ? await buildMatchDayContent(tenantId, fixtures, {
+            junior: sources.junior,
+            onNamesError: (err) => req.log.warn({ err, tenantId }, "card names: read failed"),
+          })
+        : null;
+    const isJunior = (id: number) =>
+      sources.content[id]?.junior === true || matchDayContent?.get(id)?.junior === true;
     const grades = [
       ...new Set(
         fixtures
-          .filter((f) => sources.content[f.id]?.junior !== true)
+          .filter((f) => !isJunior(f.id))
           .map((f) => f.grade)
           .filter((g) => !isJuniorGradeLabel(g)),
       ),
@@ -164,6 +175,7 @@ router.get(
         // Keep the structured roundLabel beside each card input, independent of
         // its display title. The opaque source payload also accepts legacy inputs.
         content: sources.content,
+        ...(matchDayContent ? { matchDayContent: Object.fromEntries(matchDayContent) } : {}),
         warnings: [
           ...(eligibleFixtures.length < rows.length
             ? [

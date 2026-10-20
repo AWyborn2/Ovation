@@ -17,6 +17,7 @@ import {
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "./auth";
 import { juniorCarouselContent, juniorCarouselFixtureId } from "./junior-carousel-content";
+import { buildMatchDayContent } from "./card-content/match-day";
 import { GetWeekendCarouselSourcesResponse } from "@workspace/api-zod";
 import { validJuniorStockSelection } from "./junior-stock-photos";
 import type { QueuedCarousel } from "@workspace/scorecard/queued-carousel";
@@ -233,16 +234,22 @@ describe("junior match-day and team-list carousel sources", () => {
     const result = await juniorCarouselContent(tenant, "matchDay", query.from, query.to);
     expect(result.fixtures).toHaveLength(2);
     expect(result.fixtures.every((f) => f.tenantId === tenant && f.id < -2_000_000_000)).toBe(true);
-    const input = result.content[juniorCarouselFixtureId(fixtureId)];
-    expect(input).toMatchObject({
+    // Junior Match Day slides come from the content builder, like senior ones.
+    expect(result.content).toEqual({});
+    const id = juniorCarouselFixtureId(fixtureId);
+    expect(result.junior.get(id)).toEqual({ gradeLabel: "Year 5 — Gold", juniorTeamName: "Gold" });
+    const content = (await buildMatchDayContent(tenant, result.fixtures, result)).get(id)!;
+    expect(content).toMatchObject({
       kind: "matchDay",
+      page: "fixture",
       junior: true,
+      juniorTeamName: "Gold",
       grade: "Year 5 — Gold",
-      oppositionName: "Carousel Test Opponent",
+      opposition: { rawName: "Carousel Test Opponent" },
       venue: "Junior Oval",
     });
-    expect(input.date).toBeTruthy();
-    expect(input.startTime).toBeTruthy();
+    expect(content.date).toBeTruthy();
+    expect(content.startTime).toBeTruthy();
     expect(result.fixtures[0].isHome).toBe(false);
     expect(result.warnings.join(" ")).toContain("Excluded 2");
   });
@@ -286,7 +293,11 @@ describe("junior match-day and team-list carousel sources", () => {
       expect(response.status, JSON.stringify(response.body)).toBe(200);
       const body = GetWeekendCarouselSourcesResponse.parse(response.body);
       expect(body.fixtures.length).toBe(setType === "matchDay" ? 2 : 1);
-      expect(body.fixtures.every((f) => body.content?.[f.id]?.junior === true)).toBe(true);
+      const junior = (id: number) =>
+        setType === "matchDay"
+          ? body.matchDayContent?.[id]?.junior === true
+          : body.content?.[id]?.junior === true;
+      expect(body.fixtures.every((f) => junior(f.id))).toBe(true);
       expect(body.photos).toEqual([]);
     },
   );

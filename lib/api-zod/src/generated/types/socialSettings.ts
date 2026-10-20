@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardContentSettings } from './cardContentSettings';
 import type { PackColourModes } from './packColourModes';
 import type { PostingPlan } from './postingPlan';
 import type { PostingSchedule } from './postingSchedule';
@@ -66,4 +67,10 @@ export interface SocialSettings {
   centralData?: boolean;
   postingSchedule?: PostingSchedule;
   postingSwitchover?: PostingSwitchover;
+  cardContent?: CardContentSettings;
+  /**
+     * The club's livestream link (https), for match day title pages. Null = none.
+     * @nullable
+     */
+  livestreamUrl?: string | null;
 }

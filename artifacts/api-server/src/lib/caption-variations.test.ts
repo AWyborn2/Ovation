@@ -14,7 +14,7 @@ import { CAPTION_VARIATIONS } from "./social-cards-helpers";
 
 const ctx = { clubUrl: "club.example", hashtag: "#GoClub", appLink: "club.example/fixtures" };
 
-// Shaped like the engines' card inputs (fixtureToMatchDayInput, teamListToCardInput, round-sets).
+// Shaped like the engines' card inputs (matchDayDraftInput, teamListToCardInput, round-sets).
 const inputs: Record<string, { kind: string } & Record<string, unknown>> = {
   matchday: {
     kind: "matchDay",

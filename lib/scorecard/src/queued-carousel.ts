@@ -1,5 +1,17 @@
 /** Frozen, admin-authored carousel payload shared by queue previews and publishing.
- * No browser types: this module is also used by the API server. */
+ * No browser types: this module is also used by the API server.
+ *
+ * Version 2 (ADR-010 P2) saves Match Day slides as their content snapshot
+ * (`content` + `visibleFields`): what was approved is what posts. Each slide's
+ * render input is derived from that content when the carousel is read, so
+ * every reader (queue preview, publish render, junior photo check) still sees
+ * `slide.input`. Version 1 payloads are read and rendered unchanged. */
+import { contentInput } from "./card-content/render-input";
+import { readCardContent } from "./card-content/validate";
+import { readContentOverride, type ContentOverride } from "./card-content/settings";
+import type { CardContent } from "./card-content/types";
+import { RETIRED_PACK_IDS, livePackId } from "./pack-resolve";
+
 export type CarouselSize = "square" | "portrait" | "story" | "landscape";
 /** Built-in identities only; never uploaded backgrounds or layer templates. */
 export const CAROUSEL_PACK_IDS = [
@@ -31,27 +43,112 @@ export const CAROUSEL_LABELS: Record<CarouselSetType, string> = {
 export interface QueuedCarouselSlide {
   id: string;
   label: string;
+  /** The render input. Version 2 content slides derive it from `content` when read. */
   input: Record<string, unknown>;
   data: Record<string, unknown>;
   junior: boolean;
   sponsorsOn: boolean;
   warnings: string[];
+  /** Version 2: the content this slide was built from (Match Day slides). */
+  content?: CardContent;
+  /** Version 2: the content fields this slide shows. */
+  visibleFields?: string[];
+  /** Version 2: the photo chosen for the slide (a junior stock image's id authorises it). */
+  photoId?: number | null;
 }
 export interface QueuedCarousel {
-  version: 1;
+  version: 1 | 2;
   packId?: string;
   setType?: CarouselSetType;
   submissionId: string;
   size: CarouselSize;
+  /** Version 2: this carousel's change to the club's content choices. */
+  contentOverride?: ContentOverride;
   slides: QueuedCarouselSlide[];
 }
 const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** Invalid persisted payloads must never fall through to a single-card export. */
-export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
+/**
+ * A content slide's render input: the content's fields (hidden ones blanked)
+ * plus the slide's render flags. The Weekend Carousel previews with this and
+ * the saved carousel renders with it, so preview and post match.
+ */
+export function contentSlideInput(slide: {
+  content: CardContent;
+  visibleFields: readonly string[];
+  photoId?: number | null;
+  data: Record<string, unknown>;
+  junior: boolean;
+}): Record<string, unknown> {
+  const { content, data } = slide;
+  const visible = new Set(slide.visibleFields);
+  const hasPhoto = !!data.photoUrl;
+  const input = contentInput(content, visible, { hasCoverPhoto: hasPhoto });
+  if (content.page !== "fixture") return input;
+  return {
+    ...input,
+    carouselContent: true,
+    // A junior slide shows a photo only behind the club's own stock image (ADR-007).
+    ...(slide.junior && hasPhoto && slide.photoId != null
+      ? { juniorPhotoAllowed: true, juniorStockPhotoId: slide.photoId }
+      : {}),
+  };
+}
+
+/** A version 2 slide made whole: content slides get their derived input; null when invalid. */
+function readSlideV2(s: unknown): Record<string, unknown> | null {
+  if (!object(s)) return null;
+  if (s.content === undefined) {
+    // Kinds not on the content pipeline yet keep their frozen input (P7 moves them).
+    return s.visibleFields === undefined && object(s.input) ? s : null;
+  }
+  const content = readCardContent(s.content);
+  if (
+    !content ||
+    s.input !== undefined ||
+    !Array.isArray(s.visibleFields) ||
+    !s.visibleFields.every((f) => typeof f === "string") ||
+    (s.photoId != null && (!Number.isSafeInteger(s.photoId) || Number(s.photoId) <= 0)) ||
+    !object(s.data) ||
+    typeof s.junior !== "boolean" ||
+    // Juniors isolation: a slide's junior flag is its content's.
+    (content.page === "fixture" && content.junior !== s.junior)
+  )
+    return null;
+  return {
+    ...s,
+    input: contentSlideInput({
+      content,
+      visibleFields: s.visibleFields as string[],
+      photoId: s.photoId as number | null | undefined,
+      data: s.data,
+      junior: s.junior,
+    }),
+  };
+}
+
+/**
+ * Invalid persisted payloads must never fall through to a single-card export.
+ * A retired pack id (`RETIRED_PACK_IDS`) reads as Club Kit.
+ */
+export function readQueuedCarousel(
+  input: unknown,
+  retiredPackIds: readonly string[] = RETIRED_PACK_IDS,
+): QueuedCarousel | null {
   if (!object(input) || !object(input.weekendCarousel)) return null;
-  const c = input.weekendCarousel;
+  let c = input.weekendCarousel;
+  if (typeof c.packId === "string" && retiredPackIds.includes(c.packId))
+    c = { ...c, packId: livePackId(c.packId, retiredPackIds) };
+  if (c.version === 2) {
+    if (!Array.isArray(c.slides) || (c.contentOverride !== undefined && !object(c.contentOverride)))
+      return null;
+    const slides = c.slides.map(readSlideV2);
+    if (slides.some((s) => s === null)) return null;
+    const override = readContentOverride("matchDay", c.contentOverride);
+    const { contentOverride: _dropped, ...rest } = c;
+    c = { ...rest, ...(override ? { contentOverride: override } : {}), slides };
+  }
   if (c.packId !== undefined && !isCarouselPackId(c.packId)) return null;
   if (c.setType !== undefined && !Object.hasOwn(CAROUSEL_LABELS, String(c.setType))) return null;
   const kind =
@@ -61,7 +158,7 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
         ? "matchSummary"
         : "matchDay";
   if (
-    c.version !== 1 ||
+    (c.version !== 1 && c.version !== 2) ||
     typeof c.submissionId !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(c.submissionId) ||
     !["square", "portrait", "story", "landscape"].includes(String(c.size)) ||
