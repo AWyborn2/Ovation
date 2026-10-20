@@ -54,3 +54,4 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 - Next spec: Record / Team of the week / Premiership engines (decisions/architect/team-of-the-week-engines.md).
 
 - 2026-10-19 PM: scoped social-tile-short-names (preview fix P0 first).
+- 2026-10-20 DBA: match-day-carousel-content T5.0 done (decisions/dba/match-day-carousel-content.md). `central.ladder` is all-time with no season and no refresh path, so T5.1 reads the season ladder from `playhq.ladders` via `playhqGradeLadderUncached`; T5.2 (last meeting) is feasible from `central.matches`. Live Replit DB not reachable from the session: Ash runs the read-only SQL in that file (dev, then prod) to confirm.
