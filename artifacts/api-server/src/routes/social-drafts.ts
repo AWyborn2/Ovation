@@ -59,6 +59,8 @@ import {
 } from "../lib/publishing/publications";
 import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
+import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
+import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { notePhotoUsage } from "../lib/card-content/photos";
 
 const router: IRouter = Router();
@@ -251,6 +253,17 @@ router.post(
       .set({ status: "ready", trackedSlug: slug, reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
+    // Social email lists with "card ready" on get the card (one send per draft per list).
+    try {
+      const queued = await enqueueAssetReady(db, {
+        tenantId,
+        draftIds: [id],
+        origin: harnessOriginFromHeaders(req.headers),
+      });
+      if (queued > 0) kickOutbox(tenantId, req.log);
+    } catch (err) {
+      req.log?.warn({ err, tenantId, draftId: id }, "card-ready email not queued");
+    }
     res.json(presentDraft(updated));
   },
 );

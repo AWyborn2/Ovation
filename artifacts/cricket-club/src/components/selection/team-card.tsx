@@ -300,7 +300,7 @@ export function TeamCard({
               {availability && ` ${plural(picked.length, "player")} notified by SMS and email.`}
             </div>
             <TeamSheetButton selectionId={side.id} label={label} />
-            {!junior && <EmailTeamSheetButton selectionId={side.id} />}
+            <EmailTeamSheetButton selectionId={side.id} />
             {side.canFinalise && (
               <Button variant="ghost" className="w-full" disabled={busy} onClick={onReopen}>
                 Re-open for changes

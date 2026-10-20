@@ -22,10 +22,27 @@ import { tenantIdColumn } from "./_tenant";
  * reach the send log.
  */
 export type EmailListKind = "team_sheet" | "social";
-export type TeamSheetSendMode = "on_publish" | "manual" | "off";
+/**
+ * Which side of the club a team-sheet list serves, fixed at creation (decision
+ * of 20 Oct 2026): a junior list covers junior teams only and a senior list
+ * senior grades only, so junior contacts and children's names never share a
+ * list with senior ones. Social lists are always "senior" (club-level).
+ */
+export type EmailListSection = "senior" | "junior";
+export type TeamSheetSendMode = "on_publish" | "manual" | "scheduled" | "off";
 export type EmailListSettings = {
   /** team_sheet lists: when a finalised side is emailed. */
   sendMode?: TeamSheetSendMode;
+  /** team_sheet lists in scheduled mode: day of week (0 = Sunday) and HH:MM, Australia/Perth. */
+  schedule?: { dow: number; time: string } | null;
+  /** team_sheet lists: re-send when a side is re-finalised (absent = on). */
+  resendOnChange?: boolean;
+  /** social lists: email each card as it becomes ready to post. */
+  assetReady?: boolean;
+  /** social lists: one email per sweep listing new cards awaiting review. */
+  reviewNeeded?: boolean;
+  /** social lists: one email per sweep listing new milestone / achievement cards. */
+  milestone?: boolean;
 };
 
 export const emailListsTable = pgTable(
@@ -34,6 +51,7 @@ export const emailListsTable = pgTable(
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
     kind: text("kind").$type<EmailListKind>().notNull(),
+    section: text("section").$type<EmailListSection>().notNull().default("senior"),
     name: text("name").notNull(),
     settings: jsonb("settings").$type<EmailListSettings>().notNull().default({}),
     active: boolean("active").notNull().default(true),
@@ -41,6 +59,7 @@ export const emailListsTable = pgTable(
   },
   (t) => ({
     kindCheck: check("email_lists_kind_check", sql`${t.kind} IN ('team_sheet', 'social')`),
+    sectionCheck: check("email_lists_section_check", sql`${t.section} IN ('senior', 'junior')`),
     idxTenant: index("email_lists_tenant_idx").on(t.tenantId),
   }),
 );

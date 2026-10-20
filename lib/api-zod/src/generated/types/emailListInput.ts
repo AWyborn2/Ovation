@@ -6,21 +6,35 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EmailListInputKind } from './emailListInputKind';
+import type { EmailListInputSection } from './emailListInputSection';
 import type { EmailListInputSendMode } from './emailListInputSendMode';
 import type { EmailListMember } from './emailListMember';
+import type { EmailListSchedule } from './emailListSchedule';
 
 export interface EmailListInput {
   kind: EmailListInputKind;
+  /** Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists. */
+  section?: EmailListInputSection;
   /**
      * @minLength 1
      * @maxLength 80
      */
   name: string;
-  /** on_publish emails a side when it is finalised; manual only from the Email button; off never */
-  sendMode: EmailListInputSendMode;
+  /** Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never */
+  sendMode?: EmailListInputSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule?: EmailListSchedule | null;
+  /** Team-sheet lists; re-send when a side is re-finalised (default on) */
+  resendOnChange?: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady?: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded?: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone?: boolean;
   active?: boolean;
   /**
-     * Senior grades the list covers, e.g. "A Grade"
+     * Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
      * @maxItems 30
      */
   gradeKeys: string[];

@@ -393,6 +393,13 @@
       "when": 1792483889790,
       "tag": "0055_sponsors_page",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792483949790,
+      "tag": "0056_social_email_lists",
+      "breakpoints": true
     }
   ]
 }

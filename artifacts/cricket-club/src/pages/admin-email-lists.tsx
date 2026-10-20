@@ -8,6 +8,7 @@ import {
   useListEmailLists,
   useListEmailSends,
   useListGrades,
+  useListJuniorFixtures,
   useResendEmailSend,
   useUpdateEmailList,
   type EmailList,
@@ -25,21 +26,29 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import {
+  DAY_NAMES,
+  KIND_LABELS,
+  SECTION_LABELS,
   SEND_MODE_LABELS,
   SEND_STATUS_LABELS,
+  SOCIAL_TOGGLES,
   draftFrom,
   draftProblem,
   emptyDraft,
+  juniorTeamLabel,
+  listSummary,
   toInput,
   type EmailListDraft,
 } from "@/lib/email-lists";
 import { cn } from "@/lib/utils";
 
 /**
- * Email lists (email-distribution-lists PR1): each list names the team
+ * Email lists (email-distribution-lists): a team-sheet list names the team
  * contacts a senior grade's team sheet is emailed to, and when — on finalise,
- * only by hand, or never. The send log below shows every email and lets an
- * admin send one again. Addresses stay in this admin page.
+ * weekly at a set time, only by hand, or never. A social list gets Social
+ * Studio's cards: each card as it's ready (image attached), and batches of
+ * cards to review and milestone cards. The send log below shows every email
+ * and lets an admin send one again. Addresses stay in this admin page.
  */
 export default function AdminEmailLists() {
   const qc = useQueryClient();
@@ -49,6 +58,7 @@ export default function AdminEmailLists() {
     query: { queryKey: getListEmailSendsQueryKey(), refetchInterval: 15_000 },
   });
   const gradesQ = useListGrades();
+  const juniorQ = useListJuniorFixtures();
   const createM = useCreateEmailList();
   const updateM = useUpdateEmailList();
   const deleteM = useDeleteEmailList();
@@ -57,13 +67,20 @@ export default function AdminEmailLists() {
   const [error, setError] = useState<string | null>(null);
   const saving = createM.isPending || updateM.isPending || deleteM.isPending;
 
+  // A senior list picks senior grades; a junior list picks the club's junior teams.
+  const junior = draft?.section === "junior";
   const grades = useMemo(() => {
+    if (junior) {
+      const names = new Set((juniorQ.data ?? []).map((f) => juniorTeamLabel(f)));
+      for (const g of draft?.gradeKeys ?? []) names.add(g);
+      return [...names].sort((a, b) => a.localeCompare(b));
+    }
     const names = (gradesQ.data ?? [])
       .map((g) => g.grade)
       .filter((g) => g !== "CLUB TOTAL" && !isJuniorGradeLabel(g));
     for (const g of draft?.gradeKeys ?? []) if (!names.includes(g)) names.push(g);
     return sortGradesBySeniority(new Set(names));
-  }, [gradesQ.data, draft?.gradeKeys]);
+  }, [junior, juniorQ.data, gradesQ.data, draft?.gradeKeys]);
 
   const refresh = () =>
     Promise.all([
@@ -147,16 +164,21 @@ export default function AdminEmailLists() {
         <div>
           <h2 className="text-xl font-semibold">Email lists</h2>
           <p className="text-sm text-muted-foreground">
-            Team contacts who get each grade's printable team sheet by email, so nobody has to
-            export and forward it.
+            Team contacts who get each grade's printable team sheet, and the people who post the
+            club's social media cards, by email.
           </p>
         </div>
-        <Button onClick={() => open(emptyDraft())}>
-          <Plus className="mr-1 h-4 w-4" /> New list
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => open(emptyDraft("team_sheet"))}>
+            <Plus className="mr-1 h-4 w-4" /> Team-sheet list
+          </Button>
+          <Button variant="outline" onClick={() => open(emptyDraft("social"))}>
+            <Plus className="mr-1 h-4 w-4" /> Social list
+          </Button>
+        </div>
       </div>
 
-      <SettingsCard title="Team sheet lists">
+      <SettingsCard title="Lists">
         {listsQ.isLoading ? (
           <ListSkeleton />
         ) : listsQ.isError ? (
@@ -165,7 +187,7 @@ export default function AdminEmailLists() {
           <EmptyState
             icon={<Mail className="h-6 w-6" aria-hidden />}
             title="No email lists yet"
-            message="Create one, pick its grades and add the team's contacts."
+            message="Create a team-sheet list for a grade's contacts, or a social list for the people who post the club's cards."
           />
         ) : (
           <ul className="divide-y divide-border">
@@ -182,13 +204,15 @@ export default function AdminEmailLists() {
                       <span className="ml-2 text-xs text-muted-foreground">(paused)</span>
                     )}
                     <span className="block text-sm text-muted-foreground">
-                      {l.gradeKeys.length > 0 ? l.gradeKeys.join(", ") : "No grades yet"} ·{" "}
+                      {KIND_LABELS[l.kind]}
+                      {l.kind === "team_sheet" ? ` (${SECTION_LABELS[l.section]})` : ""} ·{" "}
+                      {l.kind === "team_sheet"
+                        ? `${l.gradeKeys.length > 0 ? l.gradeKeys.join(", ") : "No grades yet"} · `
+                        : ""}
                       {l.members.length} {l.members.length === 1 ? "contact" : "contacts"}
                     </span>
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    {SEND_MODE_LABELS[l.sendMode]}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{listSummary(l)}</span>
                 </button>
               </li>
             ))}
@@ -214,7 +238,7 @@ export default function AdminEmailLists() {
                     · {new Date(s.sentAt ?? s.queuedAt).toLocaleString()}
                     {s.status === "sent" ? ` · ${s.recipientCount} recipients` : ""}
                   </span>
-                  {s.lastError && s.status !== "sent" && (
+                  {s.lastError && (
                     <span className="block text-xs text-muted-foreground">{s.lastError}</span>
                   )}
                 </span>
@@ -250,7 +274,11 @@ export default function AdminEmailLists() {
       <EditDrawer
         open={draft != null}
         onOpenChange={(o) => !o && setDraft(null)}
-        title={draft?.id == null ? "New email list" : "Edit email list"}
+        title={
+          draft?.id == null
+            ? `New ${draft?.kind === "social" ? "social" : "team-sheet"} list`
+            : "Edit email list"
+        }
         onSave={save}
         onDelete={draft?.id != null ? remove : undefined}
         saving={saving}
@@ -264,25 +292,120 @@ export default function AdminEmailLists() {
                 id="email-list-name"
                 value={draft.name}
                 maxLength={80}
-                placeholder="A Grade contacts"
+                placeholder={draft.kind === "social" ? "Social media" : "A Grade contacts"}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
             </div>
 
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">When to email the team sheet</legend>
-              {(Object.keys(SEND_MODE_LABELS) as EmailListDraft["sendMode"][]).map((mode) => (
-                <label key={mode} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="email-list-mode"
-                    checked={draft.sendMode === mode}
-                    onChange={() => setDraft({ ...draft, sendMode: mode })}
+            {draft.kind === "team_sheet" && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-sm font-medium">Senior or junior</legend>
+                {draft.id == null ? (
+                  (["senior", "junior"] as const).map((section) => (
+                    <label key={section} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="email-list-section"
+                        checked={draft.section === section}
+                        onChange={() => setDraft({ ...draft, section, gradeKeys: [] })}
+                      />
+                      {section === "senior"
+                        ? "Senior: covers senior grades"
+                        : "Junior: covers junior teams"}
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm">{SECTION_LABELS[draft.section]}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Fixed once the list is saved, so junior contacts and players never share a list
+                  with senior ones.
+                </p>
+              </fieldset>
+            )}
+
+            {draft.kind === "team_sheet" ? (
+              <>
+                <fieldset className="space-y-1.5">
+                  <legend className="text-sm font-medium">When to email the team sheet</legend>
+                  {(Object.keys(SEND_MODE_LABELS) as EmailListDraft["sendMode"][]).map((mode) => (
+                    <label key={mode} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="email-list-mode"
+                        checked={draft.sendMode === mode}
+                        onChange={() => setDraft({ ...draft, sendMode: mode })}
+                      />
+                      {SEND_MODE_LABELS[mode]}
+                    </label>
+                  ))}
+                </fieldset>
+
+                {draft.sendMode === "scheduled" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email-list-dow">Send each week on</Label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        id="email-list-dow"
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        value={draft.scheduleDow}
+                        onChange={(e) =>
+                          setDraft({ ...draft, scheduleDow: Number(e.target.value) })
+                        }
+                      >
+                        {DAY_NAMES.map((day, i) => (
+                          <option key={day} value={i}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        aria-label="Time"
+                        type="time"
+                        className="w-32"
+                        value={draft.scheduleTime}
+                        onChange={(e) => setDraft({ ...draft, scheduleTime: e.target.value })}
+                      />
+                      <span className="text-xs text-muted-foreground">Perth time</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Sends the coming round's finalised side for each grade, within the hour.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="email-list-resend"
+                    checked={draft.resendOnChange}
+                    onCheckedChange={(v) => setDraft({ ...draft, resendOnChange: v })}
                   />
-                  {SEND_MODE_LABELS[mode]}
-                </label>
-              ))}
-            </fieldset>
+                  <Label htmlFor="email-list-resend">
+                    Email the side again (marked UPDATED) when it's re-finalised
+                  </Label>
+                </div>
+              </>
+            ) : (
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Emails this list gets</legend>
+                {SOCIAL_TOGGLES.map((t) => (
+                  <div key={t.key} className="flex items-start gap-2">
+                    <Switch
+                      id={`email-list-${t.key}`}
+                      checked={draft[t.key]}
+                      onCheckedChange={(v) => setDraft({ ...draft, [t.key]: v })}
+                    />
+                    <Label htmlFor={`email-list-${t.key}`} className="leading-tight">
+                      {t.label}
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {t.hint}
+                      </span>
+                    </Label>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Junior cards are never emailed.</p>
+              </fieldset>
+            )}
 
             <div className="flex items-center gap-2">
               <Switch
@@ -293,27 +416,36 @@ export default function AdminEmailLists() {
               <Label htmlFor="email-list-active">List is active</Label>
             </div>
 
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium">Grades</legend>
-              <div className="flex flex-wrap gap-2">
-                {grades.map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    aria-pressed={draft.gradeKeys.includes(g)}
-                    onClick={() => toggleGrade(g)}
-                    className={cn(
-                      "rounded-full border px-3 py-1 text-sm",
-                      draft.gradeKeys.includes(g)
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border",
-                    )}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+            {draft.kind === "team_sheet" && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-sm font-medium">
+                  {junior ? "Junior teams" : "Grades"}
+                </legend>
+                {junior && grades.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No junior teams yet. They appear once junior fixtures sync from PlayHQ.
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {grades.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      aria-pressed={draft.gradeKeys.includes(g)}
+                      onClick={() => toggleGrade(g)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-sm",
+                        draft.gradeKeys.includes(g)
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border",
+                      )}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
 
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">Contacts</legend>

@@ -11,7 +11,7 @@ import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest
 import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
 import { runWatchdog } from "../lib/playhq-health";
 import { sweepTenants } from "../lib/draft-sweep";
-import { drainOutbox } from "../lib/email-outbox";
+import { drainOutbox, enqueueScheduledTeamSheets, enqueueSocialDigests } from "../lib/email-outbox";
 import { runPostingSlotsForAll } from "../lib/posting-slots";
 import { env } from "../config";
 
@@ -88,7 +88,17 @@ router.post("/watchdog", requireSyncSecret, async (req, res): Promise<void> => {
 router.post("/sweep", requireSyncSecret, async (req, res): Promise<void> => {
   try {
     const results = (await sweepTenants(null, "scheduled", req.log)) ?? [];
-    // Retry list emails that failed or were never drained (email-distribution-lists).
+    // List emails (email-distribution-lists): scheduled team sheets whose slot fell in the
+    // last hour, one review / milestone batch per social list, then send everything queued
+    // and retry what failed.
+    const now = new Date();
+    try {
+      const scheduled = await enqueueScheduledTeamSheets(now);
+      const digests = await enqueueSocialDigests(now);
+      if (scheduled + digests > 0) req.log.info({ scheduled, digests }, "list emails queued");
+    } catch (err) {
+      req.log.warn({ err }, "list emails not queued");
+    }
     try {
       const emails = await drainOutbox({ limit: 100, logger: req.log });
       if (emails.sent + emails.failed + emails.skipped > 0)

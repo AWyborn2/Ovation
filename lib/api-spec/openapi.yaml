@@ -15730,21 +15730,57 @@ components:
           format: email
           maxLength: 254
 
+    EmailListSchedule:
+      type: object
+      required: [dow, time]
+      description: When a scheduled team-sheet list is emailed (Australia/Perth)
+      properties:
+        dow:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Day of week, 0 = Sunday
+        time:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Local time, HH:MM
+
     EmailListInput:
       type: object
-      required: [kind, name, sendMode, gradeKeys, members]
+      required: [kind, name, gradeKeys, members]
       properties:
         kind:
           type: string
-          enum: [team_sheet]
+          enum: [team_sheet, social]
+        section:
+          type: string
+          enum: [senior, junior]
+          description: Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.
         name:
           type: string
           minLength: 1
           maxLength: 80
         sendMode:
           type: string
-          enum: [on_publish, manual, "off"]
-          description: on_publish emails a side when it is finalised; manual only from the Email button; off never
+          enum: [on_publish, manual, scheduled, "off"]
+          description: Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never
+        schedule:
+          allOf:
+            - $ref: "#/components/schemas/EmailListSchedule"
+          nullable: true
+          description: Scheduled team-sheet lists; null otherwise
+        resendOnChange:
+          type: boolean
+          description: Team-sheet lists; re-send when a side is re-finalised (default on)
+        assetReady:
+          type: boolean
+          description: Social lists; email each card as it becomes ready to post
+        reviewNeeded:
+          type: boolean
+          description: Social lists; one email per sweep listing new cards awaiting review
+        milestone:
+          type: boolean
+          description: Social lists; one email per sweep listing new milestone and achievement cards
         active:
           type: boolean
         gradeKeys:
@@ -15754,7 +15790,7 @@ components:
             type: string
             minLength: 1
             maxLength: 60
-          description: Senior grades the list covers, e.g. "A Grade"
+          description: Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
         members:
           type: array
           maxItems: 50
@@ -15763,18 +15799,53 @@ components:
 
     EmailList:
       type: object
-      required: [id, kind, name, sendMode, active, gradeKeys, members, createdAt]
+      required:
+        [
+          id,
+          kind,
+          section,
+          name,
+          sendMode,
+          schedule,
+          resendOnChange,
+          assetReady,
+          reviewNeeded,
+          milestone,
+          active,
+          gradeKeys,
+          members,
+          createdAt,
+        ]
       properties:
         id:
           type: integer
         kind:
           type: string
-          enum: [team_sheet]
+          enum: [team_sheet, social]
+        section:
+          type: string
+          enum: [senior, junior]
         name:
           type: string
         sendMode:
           type: string
-          enum: [on_publish, manual, "off"]
+          enum: [on_publish, manual, scheduled, "off"]
+        schedule:
+          allOf:
+            - $ref: "#/components/schemas/EmailListSchedule"
+          nullable: true
+          description: Scheduled team-sheet lists; null otherwise
+        resendOnChange:
+          type: boolean
+        assetReady:
+          type: boolean
+          description: Social lists; email each card as it becomes ready to post
+        reviewNeeded:
+          type: boolean
+          description: Social lists; one email per sweep listing new cards awaiting review
+        milestone:
+          type: boolean
+          description: Social lists; one email per sweep listing new milestone and achievement cards
         active:
           type: boolean
         gradeKeys:

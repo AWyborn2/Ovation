@@ -93,6 +93,17 @@ signup form.
   Architect should spike it first.
 - **Duplicate sends** when a list is re-published several times. Use an idempotency key of team
   list + version.
-- **Juniors isolation**: junior team lists, if added later, use their own junior-scoped lists.
+- **Juniors isolation**: junior team sheets are emailed through separate junior lists (decision
+  below), never through a senior list.
 - **Data governance**: club-internal email of its own team sheets and cards is not
   commercialisation (consistent with the 6 Oct 2026 Meta decision).
+
+## Decision: separate junior lists (Ash, 20 Oct 2026)
+
+Junior team sheets can be emailed too. In Ash's words: "Separate junior lists". "A list is either
+Senior or Junior. Junior lists pick junior teams (e.g. Year 7 Gold) and never cover a senior
+grade, so junior contacts and children's names never share a list with senior ones. Same send
+modes, Email button and send log."
+
+This lifts the earlier "senior sides only" constraint for team-sheet lists. Social lists stay
+club-level, and junior cards are still never emailed.

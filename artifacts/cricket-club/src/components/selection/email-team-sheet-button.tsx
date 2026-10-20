@@ -12,8 +12,9 @@ function errorText(e: unknown): string {
 }
 
 /**
- * "Email team sheet" on a finalised senior side: queues the printable sheet
- * for the club's email lists covering the grade (email-distribution-lists).
+ * "Email team sheet" on a finalised side: queues the printable sheet for the
+ * club's email lists of the side's section covering its grade (senior) or
+ * team (junior) (email-distribution-lists).
  * Sending happens in the background; Admin → Email lists has the send log.
  */
 export function EmailTeamSheetButton({ selectionId }: { selectionId: number }) {

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { sendModeOf, teamSheetEmail, teamSheetKey } from "./team-sheet-email";
+import {
+  resendOnChangeOf,
+  scheduleDueAt,
+  sendModeOf,
+  teamSheetEmail,
+  teamSheetKey,
+} from "./team-sheet-email";
 import type { TeamSheet } from "./team-sheet";
 
 /** The team-sheet list email's subject, body and keys (email-distribution-lists). */
@@ -58,5 +64,43 @@ describe("keys and modes", () => {
   it("defaults a list without a mode to on publish", () => {
     expect(sendModeOf({})).toBe("on_publish");
     expect(sendModeOf({ sendMode: "off" })).toBe("off");
+  });
+});
+
+describe("resend on change", () => {
+  it("is on unless switched off", () => {
+    expect(resendOnChangeOf({})).toBe(true);
+    expect(resendOnChangeOf({ resendOnChange: true })).toBe(true);
+    expect(resendOnChangeOf({ resendOnChange: false })).toBe(false);
+  });
+});
+
+describe("scheduled sends (Australia/Perth, UTC+8)", () => {
+  // Thursday 18:00 in Perth is Thursday 10:00 UTC (5 Oct 2034 is a Thursday).
+  const thu6pm = { dow: 4, time: "18:00" };
+  const at = (iso: string) => scheduleDueAt(thu6pm, new Date(iso));
+
+  it("is due for the hour after the slot", () => {
+    expect(at("2034-10-05T10:00:00Z")?.toISOString()).toBe("2034-10-05T10:00:00.000Z");
+    expect(at("2034-10-05T10:59:00Z")?.toISOString()).toBe("2034-10-05T10:00:00.000Z");
+  });
+
+  it("is not due before the slot or an hour after it", () => {
+    expect(at("2034-10-05T09:59:00Z")).toBeNull();
+    expect(at("2034-10-05T11:00:00Z")).toBeNull();
+    expect(at("2034-10-06T10:30:00Z")).toBeNull();
+  });
+
+  it("handles a slot just after Perth midnight (the day before in UTC)", () => {
+    const fri0030 = { dow: 5, time: "00:30" };
+    expect(scheduleDueAt(fri0030, new Date("2034-10-05T16:45:00Z"))?.toISOString()).toBe(
+      "2034-10-05T16:30:00.000Z",
+    );
+  });
+
+  it("ignores a missing or malformed schedule", () => {
+    expect(scheduleDueAt(null, new Date())).toBeNull();
+    expect(scheduleDueAt({ dow: 9, time: "18:00" }, new Date())).toBeNull();
+    expect(scheduleDueAt({ dow: 1, time: "6pm" }, new Date())).toBeNull();
   });
 });

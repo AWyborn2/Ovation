@@ -11,11 +11,18 @@ import {
   squadMembersTable,
   availabilityRoundsTable,
   emailSendsTable,
+  socialDraftsTable,
+  juniorFixturesTable,
 } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { finaliseSelection, reopenSelection } from "../lib/selection-board";
-import { drainOutbox } from "../lib/email-outbox";
+import {
+  drainOutbox,
+  enqueueScheduledTeamSheets,
+  enqueueSocialDigests,
+  setCardPngRenderer,
+} from "../lib/email-outbox";
 import { setEmailTransport, type EmailMessage } from "../lib/integrations/email";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 import type * as AvailabilityMessaging from "../lib/availability-messaging";
@@ -28,6 +35,9 @@ import type * as Renderer from "../lib/card-video-renderer";
  * the "on publish" lists covering the grade (not manual or off ones, and never
  * twice for one version); the drain sends one bcc'd email per list with the PDF
  * attached and logs the count, never an address; "Email team sheet" sends again.
+ * PR2: social lists (card ready with the PNG attached or a queue-link fallback,
+ * review and milestone batches, never a junior card), scheduled team-sheet
+ * lists and the resendOnChange switch.
  * Real-DB integration test (CI's api-tests job provides DATABASE_URL).
  */
 
@@ -275,5 +285,327 @@ describe("email lists", () => {
     await as(other, otherCookie)
       .post(`/api/admin/email-sends/${log.body[0].id}/resend`)
       .expect(404);
+  });
+});
+
+describe("team-sheet extras (PR2)", () => {
+  const sendsOf = async (listId: number) =>
+    (await sendsFor()).filter((r) => r.listId === listId && r.kind === "team_sheet");
+  const refinalise = async () => {
+    await reopenSelection(tenant, actor, selectionId, now);
+    const [side] = await db
+      .select()
+      .from(selectionsTable)
+      .where(eq(selectionsTable.id, selectionId));
+    await finaliseSelection(tenant, actor, selectionId, side.version, { now });
+  };
+
+  it("a list with resendOnChange off gets the first version only", async () => {
+    const created = await as(tenant, cookie)
+      .post("/api/admin/email-lists", list({ name: "No resends", resendOnChange: false }))
+      .expect(201);
+    expect(created.body.resendOnChange).toBe(false);
+    await refinalise();
+    expect(await sendsOf(created.body.id)).toHaveLength(1);
+    await refinalise();
+    expect(await sendsOf(created.body.id)).toHaveLength(1);
+    await drainOutbox({ tenantId: tenant });
+  });
+
+  it("a scheduled list needs a day and time", async () => {
+    await as(tenant, cookie)
+      .post("/api/admin/email-lists", list({ sendMode: "scheduled" }))
+      .expect(400);
+    await as(tenant, cookie)
+      .post(
+        "/api/admin/email-lists",
+        list({ sendMode: "scheduled", schedule: { dow: 4, time: "6pm" } }),
+      )
+      .expect(400);
+  });
+
+  it("a scheduled list gets the coming round's side in the hour after its slot, once", async () => {
+    // Thursday 18:00 Perth = Thursday 10:00 UTC; the A Grade fixture is on Saturday 7 Oct.
+    const created = await as(tenant, cookie)
+      .post(
+        "/api/admin/email-lists",
+        list({ name: "Thursday", sendMode: "scheduled", schedule: { dow: 4, time: "18:00" } }),
+      )
+      .expect(201);
+    expect(created.body.schedule).toEqual({ dow: 4, time: "18:00" });
+    const at = (iso: string) => enqueueScheduledTeamSheets(new Date(iso), { tenantId: tenant });
+    expect(await at("2034-10-05T09:30:00Z")).toBe(0);
+    // Finalising never sends to a scheduled list.
+    await refinalise();
+    expect(await sendsOf(created.body.id)).toHaveLength(0);
+    expect(await at("2034-10-05T10:20:00Z")).toBe(1);
+    expect(await at("2034-10-05T10:40:00Z")).toBe(0);
+    const [row] = await sendsOf(created.body.id);
+    expect(row.subjectId).toBe(selectionId);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.some((m) => m.subject.includes("A Grade"))).toBe(true);
+  });
+});
+
+describe("social lists (PR2)", () => {
+  let socialListId: number;
+  const socialSends = async () =>
+    (await sendsFor()).filter((r) => r.listId === socialListId).sort((a, b) => a.id - b.id);
+  const addDraft = async (
+    key: string,
+    over: Partial<typeof socialDraftsTable.$inferInsert> = {},
+  ): Promise<number> => {
+    const [d] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId: tenant,
+        engine: "milestone",
+        status: "awaiting_review",
+        cardInput: { kind: "milestone" },
+        caption: `${key} caption\nline two`,
+        ...over,
+      })
+      .returning();
+    return d.id;
+  };
+
+  afterAll(() => setCardPngRenderer(null));
+
+  it("saves toggles and no grades", async () => {
+    const res = await as(tenant, cookie)
+      .post("/api/admin/email-lists", {
+        kind: "social",
+        name: "Social media",
+        gradeKeys: ["A Grade"],
+        members: [{ name: "Studio", email: "studio@example.com" }],
+        assetReady: true,
+        reviewNeeded: true,
+        milestone: false,
+      })
+      .expect(201);
+    expect(res.body).toMatchObject({
+      kind: "social",
+      gradeKeys: [],
+      assetReady: true,
+      reviewNeeded: true,
+      milestone: false,
+    });
+    socialListId = res.body.id;
+  });
+
+  it("marking a card ready emails it with the PNG and caption, once", async () => {
+    setCardPngRenderer(async () => [Buffer.from("png-bytes")]);
+    const id = await addDraft("ready");
+    await as(tenant, cookie).post(`/api/social-drafts/${id}/approve`).expect(200);
+    await as(tenant, cookie).post(`/api/social-drafts/${id}/approve`).expect(200);
+    const rows = await socialSends();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      kind: "asset_ready",
+      subjectId: id,
+      idempotencyKey: `sa:${id}:asset_ready:l${socialListId}`,
+    });
+    await drainOutbox({ tenantId: tenant });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].bcc).toEqual(["studio@example.com"]);
+    expect(sent[0].text).toContain("ready caption\nline two");
+    expect(sent[0].attachments?.[0]).toMatchObject({
+      filename: `card-${id}.png`,
+      contentType: "image/png",
+    });
+    const [row] = await socialSends();
+    expect(row).toMatchObject({ status: "sent", lastError: null, recipientCount: 1 });
+    expect(JSON.stringify(row)).not.toContain("@example.com");
+  });
+
+  it("a card that fails to render is sent with a queue link, noted in the log", async () => {
+    setCardPngRenderer(async () => {
+      throw new Error("harness unreachable");
+    });
+    const id = await addDraft("norender");
+    await as(tenant, cookie).post(`/api/social-drafts/${id}/approve`).expect(200);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].attachments ?? []).toEqual([]);
+    expect(sent[0].text).toContain(`/admin/social/queue?ids=${id}`);
+    const row = (await socialSends()).find((r) => r.subjectId === id);
+    expect(row?.status).toBe("sent");
+    expect(row?.lastError).toContain("harness unreachable");
+  });
+
+  it("junior cards never reach a list", async () => {
+    const id = await addDraft("junior", { sourceMatchIsJunior: true });
+    await as(tenant, cookie).post(`/api/social-drafts/${id}/approve`).expect(200);
+    expect((await socialSends()).filter((r) => r.subjectId === id)).toEqual([]);
+  });
+
+  it("one review batch per sweep lists the new senior cards; milestones stay off", async () => {
+    const a = await addDraft("review-a");
+    const b = await addDraft("review-b");
+    const junior = await addDraft("review-j", { cardInput: { kind: "milestone", junior: true } });
+    expect(await enqueueSocialDigests(new Date(), { tenantId: tenant })).toBe(1);
+    expect(await enqueueSocialDigests(new Date(), { tenantId: tenant })).toBe(0);
+    const batch = (await socialSends()).filter((r) => r.kind === "review_needed");
+    expect(batch).toHaveLength(1);
+    expect(batch[0].payload.draftIds).toEqual([a, b]);
+    expect(batch[0].payload.draftIds).not.toContain(junior);
+    expect((await socialSends()).filter((r) => r.kind === "milestone")).toEqual([]);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toContain("2 cards to review");
+    expect(sent[0].text).toContain("review-a caption");
+    expect(sent[0].text).not.toContain("review-j");
+    // Another club sees none of it.
+    expect((await as(other, otherCookie).get("/api/admin/email-lists").expect(200)).body).toEqual(
+      [],
+    );
+  });
+});
+
+describe("junior team-sheet lists (PR2, decision of 20 Oct 2026)", () => {
+  let juniorSide: number, juniorList: number, seniorSameName: number, juniorOnSenior: number;
+  const listSends = async (listId: number) =>
+    (await sendsFor()).filter((r) => r.listId === listId && r.kind === "team_sheet");
+
+  beforeAll(async () => {
+    const kids = await db
+      .insert(squadMembersTable)
+      .values(
+        Array.from({ length: 11 }, (_, i) => ({
+          tenantId: tenant,
+          firstName: "Kid",
+          lastName: `Junior${i}`,
+          section: "junior" as const,
+        })),
+      )
+      .returning();
+    const [round] = await db
+      .select()
+      .from(availabilityRoundsTable)
+      .where(eq(availabilityRoundsTable.tenantId, tenant));
+    const [fixture] = await db
+      .insert(juniorFixturesTable)
+      .values({
+        tenantId: tenant,
+        playhqMatchId: `email-jr-${stamp}`,
+        seasonStartYear: 2034,
+        ageGroup: "Year 7",
+        teamName: "Year 7 Gold",
+        opponentName: "Rivals Year 7",
+        startAt: new Date("2034-10-07T01:00:00Z"),
+        isHome: true,
+      })
+      .returning();
+    const [side] = await db
+      .insert(selectionsTable)
+      .values({
+        tenantId: tenant,
+        roundId: round.id,
+        juniorFixtureId: fixture.id,
+        slots: [...kids.map((m) => ({ memberId: m.id })), { memberId: null }],
+        captainMemberId: kids[0].id,
+        keeperMemberId: kids[1].id,
+      })
+      .returning();
+    juniorSide = side.id;
+  });
+
+  it("a junior list is fixed as junior and covers junior teams", async () => {
+    const jr = await as(tenant, cookie)
+      .post(
+        "/api/admin/email-lists",
+        list({
+          name: "Year 7 Gold parents",
+          section: "junior",
+          gradeKeys: ["Year 7 Gold"],
+          members: [{ name: "Parent", email: "parent@example.com" }],
+        }),
+      )
+      .expect(201);
+    expect(jr.body).toMatchObject({ section: "junior", gradeKeys: ["Year 7 Gold"] });
+    juniorList = jr.body.id;
+    // An update can't move a list to the other section.
+    const moved = await as(tenant, cookie)
+      .put(`/api/admin/email-lists/${juniorList}`, {
+        ...list({ name: "Year 7 Gold parents", gradeKeys: ["Year 7 Gold"] }),
+        section: "senior",
+        members: [{ name: "Parent", email: "parent@example.com" }],
+      })
+      .expect(200);
+    expect(moved.body.section).toBe("junior");
+
+    // A senior list whose key reads the same as the junior team, and a junior list on a senior grade.
+    seniorSameName = (
+      await as(tenant, cookie)
+        .post(
+          "/api/admin/email-lists",
+          list({
+            name: "Senior same name",
+            gradeKeys: ["Year 7 Gold"],
+            members: [{ name: "S", email: "senior-same@example.com" }],
+          }),
+        )
+        .expect(201)
+    ).body.id;
+    juniorOnSenior = (
+      await as(tenant, cookie)
+        .post(
+          "/api/admin/email-lists",
+          list({
+            name: "Junior on A Grade",
+            section: "junior",
+            gradeKeys: ["A Grade"],
+            members: [{ name: "J", email: "junior-a@example.com" }],
+          }),
+        )
+        .expect(201)
+    ).body.id;
+  });
+
+  it("a junior side finalises to its junior list only", async () => {
+    await finaliseSelection(tenant, actor, juniorSide, 1, { now });
+    expect(await listSends(juniorList)).toHaveLength(1);
+    expect(await listSends(seniorSameName)).toHaveLength(0);
+    await drainOutbox({ tenantId: tenant });
+    const toParent = sent.filter((m) => m.bcc?.includes("parent@example.com"));
+    expect(toParent).toHaveLength(1);
+    expect(toParent[0].attachments?.[0]).toMatchObject({ contentType: "application/pdf" });
+    expect(sent.some((m) => m.bcc?.includes("senior-same@example.com"))).toBe(false);
+  });
+
+  it("a junior list never gets a senior sheet", async () => {
+    await reopenSelection(tenant, actor, selectionId, now);
+    const [side] = await db
+      .select()
+      .from(selectionsTable)
+      .where(eq(selectionsTable.id, selectionId));
+    await finaliseSelection(tenant, actor, selectionId, side.version, { now });
+    expect(await listSends(juniorOnSenior)).toHaveLength(0);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.some((m) => m.bcc?.includes("junior-a@example.com"))).toBe(false);
+  });
+
+  it("Email team sheet works for a junior side, to junior lists only", async () => {
+    const res = await as(tenant, cookie).post(`/api/selection/${juniorSide}/email`).expect(200);
+    expect(res.body).toEqual({ queued: 1 });
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.map((m) => m.bcc)).toEqual([["parent@example.com"]]);
+  });
+
+  it("a send whose list and sheet sections differ is skipped, not sent", async () => {
+    // Force a mismatched row (as if a list were edited by hand): the drain refuses it.
+    await db.insert(emailSendsTable).values({
+      tenantId: tenant,
+      listId: seniorSameName,
+      kind: "team_sheet",
+      subjectType: "selection",
+      subjectId: juniorSide,
+      idempotencyKey: `mismatch-${stamp}`,
+      payload: {},
+    });
+    await drainOutbox({ tenantId: tenant });
+    expect(sent).toEqual([]);
+    const [row] = (await sendsFor()).filter((r) => r.idempotencyKey === `mismatch-${stamp}`);
+    expect(row.status).toBe("skipped");
   });
 });
