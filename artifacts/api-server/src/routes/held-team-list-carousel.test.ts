@@ -206,25 +206,43 @@ afterAll(async () => {
 describe("Held numbers from Selection Hub to Team List carousel", () => {
   it("shows lineup-imported numbers for missing/stale identities without rewriting published lists or registers", async () => {
     const names = ["Imported Existing", "Imported New"];
-    const added = await db.insert(shirtNumbersTable).values([
-      ...names.map((name, i) => ({
-        tenantId: tenant, season: 2034, name, playerId: -19501 - i,
-        participantId: randomUUID(), number: i === 0 ? "36" : "88", source: "lineup" as const,
-      })),
-      // These matches are outside the fixture's club, season or register.
-      { tenantId: other, season: 2034, name: names[0], number: "99", source: "lineup" as const },
-      { tenantId: tenant, season: 2033, name: names[0], number: "98", source: "lineup" as const },
-      { tenantId: tenant, season: 2034, category: "female" as const, name: names[0], number: "97", source: "lineup" as const },
-    ]).returning();
+    const added = await db
+      .insert(shirtNumbersTable)
+      .values([
+        ...names.map((name, i) => ({
+          tenantId: tenant,
+          season: 2034,
+          name,
+          playerId: -19501 - i,
+          participantId: randomUUID(),
+          number: i === 0 ? "36" : "88",
+          source: "lineup" as const,
+        })),
+        // These matches are outside the fixture's club, season or register.
+        { tenantId: other, season: 2034, name: names[0], number: "99", source: "lineup" as const },
+        { tenantId: tenant, season: 2033, name: names[0], number: "98", source: "lineup" as const },
+        {
+          tenantId: tenant,
+          season: 2034,
+          category: "female" as const,
+          name: names[0],
+          number: "97",
+          source: "lineup" as const,
+        },
+      ])
+      .returning();
     try {
       for (const source of ["selection", "playhq", "admin"] as const) {
-        await db.update(teamListsTable).set({
-          source,
-          players: [
-            { order: 1, playerId: 116, displayName: names[0], role: "C" },
-            { order: 2, displayName: names[1] },
-          ],
-        }).where(eq(teamListsTable.fixtureId, fixtureId));
+        await db
+          .update(teamListsTable)
+          .set({
+            source,
+            players: [
+              { order: 1, playerId: 116, displayName: names[0], role: "C" },
+              { order: 2, displayName: names[1] },
+            ],
+          })
+          .where(eq(teamListsTable.fixtureId, fixtureId));
         const before = await list();
         const body = await sources();
         expect(body.content[fixtureId].players).toMatchObject([
@@ -233,19 +251,37 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
         ]);
         expect(await list()).toEqual(before);
       }
-      const current = await db.select().from(shirtNumbersTable).where(
-        inArray(shirtNumbersTable.id, added.map(r => r.id)),
-      );
+      const current = await db
+        .select()
+        .from(shirtNumbersTable)
+        .where(
+          inArray(
+            shirtNumbersTable.id,
+            added.map((r) => r.id),
+          ),
+        );
       expect(current.sort((a, b) => a.id - b.id)).toEqual(added.sort((a, b) => a.id - b.id));
-      const [duplicate] = await db.insert(shirtNumbersTable).values({
-        tenantId: tenant, season: 2034, name: names[1], number: null, source: "admin",
-      }).returning();
+      const [duplicate] = await db
+        .insert(shirtNumbersTable)
+        .values({
+          tenantId: tenant,
+          season: 2034,
+          name: names[1],
+          number: null,
+          source: "admin",
+        })
+        .returning();
       added.push(duplicate);
       const ambiguous = (await sources()).content[fixtureId];
       expect(ambiguous.players[0].shirtNumber).toBe("36");
       expect(ambiguous.players[1]).not.toHaveProperty("shirtNumber");
     } finally {
-      await db.delete(shirtNumbersTable).where(inArray(shirtNumbersTable.id, added.map(r => r.id)));
+      await db.delete(shirtNumbersTable).where(
+        inArray(
+          shirtNumbersTable.id,
+          added.map((r) => r.id),
+        ),
+      );
     }
   });
 
@@ -296,8 +332,9 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       .where(eq(selectionsTable.id, selectionId));
     const body = await sources();
     expect(body.content[fixtureId].players[0].shirtNumber).toBe("77");
-    expect((await recoverPublishedSelectionIdentities(tenant, await list(), startAt))
-      .players[0]).not.toHaveProperty("participantId");
+    expect(
+      (await recoverPublishedSelectionIdentities(tenant, await list(), startAt)).players[0],
+    ).not.toHaveProperty("participantId");
     expect(body.content[fixtureId].players[5].shirtNumber).toBe("88");
     expect(body.warnings.join(" ")).toContain("could not be verified");
     expect(body.content[fixtureId].players.map((p: { order: number }) => p.order)).toEqual([
@@ -328,8 +365,9 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       expect(
         body.content[fixtureId].players.find((p: { order: number }) => p.order === 1).shirtNumber,
       ).toBe("77");
-      expect((await recoverPublishedSelectionIdentities(tenant, await list(), startAt))
-        .players[0]).not.toHaveProperty("participantId");
+      expect(
+        (await recoverPublishedSelectionIdentities(tenant, await list(), startAt)).players[0],
+      ).not.toHaveProperty("participantId");
       expect(body.warnings.join(" ")).toContain("could not be verified");
     },
   );
