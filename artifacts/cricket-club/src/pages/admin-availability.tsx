@@ -16,6 +16,7 @@ import {
   getGetSquadMemberQueryKey,
   useUpdateSquadMember,
   useRemoveSquadMember,
+  useSetSquadMemberSeason,
 } from "@workspace/api-client-react";
 import type {
   AvailabilitySelectionRule,
@@ -50,6 +51,7 @@ import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
 import { AddActivePlayer } from "@/components/add-active-player";
 import { SquadPlayerPicker, type LinkedPlayer } from "@/components/squad-player-picker";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 /**
  * Admin → Availability: the
@@ -114,6 +116,18 @@ function memberName(m: Pick<SquadMember, "firstName" | "lastName" | "preferredNa
   return `${m.preferredName?.trim() || m.firstName} ${m.lastName}`.trim();
 }
 
+/** The current season's start year in Perth (July to June; 2026 = 2026/27), as the API reads it. */
+function currentSeason(now: Date = new Date()): number {
+  const perth = new Date(now.getTime() + 8 * 3_600_000);
+  const year = perth.getUTCFullYear();
+  return perth.getUTCMonth() >= 6 ? year : year - 1;
+}
+
+/** "2026/27" for 2026. */
+function seasonLabel(start: number): string {
+  return `${start}/${String((start + 1) % 100).padStart(2, "0")}`;
+}
+
 function ErrorBox({ message, testId }: { message: string | null; testId?: string }) {
   if (!message) return null;
   return (
@@ -136,6 +150,7 @@ export default function AdminAvailability() {
         week&rsquo;s round is going.
       </p>
       <SettingsCard />
+      <OverseasCapsCard />
       <RoundCard />
       <SquadCard />
     </div>
@@ -368,6 +383,125 @@ function SettingsCard() {
 }
 
 // ---------------------------------------------------------------------------
+// Overseas caps (ADR-009)
+// ---------------------------------------------------------------------------
+
+/**
+ * The most overseas players a side may have, per grade, 0–14; blank is no cap.
+ * Over the cap the Selection Hub warns and still lets the side be finalised.
+ * Saved with the rest of the settings (the schedule as it stands is sent too).
+ */
+function OverseasCapsCard() {
+  const queryClient = useQueryClient();
+  const { data, isLoading, isError, refetch } = useGetAvailabilitySettings();
+  const save = useUpdateAvailabilitySettings();
+  const [caps, setCaps] = useState<Record<string, string> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const stored = data?.overseasCaps;
+  const include = useMemo(() => Object.keys(stored ?? {}), [stored]);
+  const { grades } = useGradeOptions({ include });
+
+  useEffect(() => {
+    if (!data) return;
+    setCaps(
+      Object.fromEntries(Object.entries(data.overseasCaps ?? {}).map(([g, v]) => [g, String(v)])),
+    );
+  }, [data]);
+
+  const onSave = () => {
+    if (!data || !caps) return;
+    setError(null);
+    setSaved(false);
+    const out: Record<string, number> = {};
+    for (const [grade, raw] of Object.entries(caps)) {
+      const v = raw.trim();
+      if (!v) continue;
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < 0 || n > 14) {
+        setError(`The overseas limit for ${grade} must be a whole number from 0 to 14, or blank.`);
+        return;
+      }
+      out[grade] = n;
+    }
+    save.mutate(
+      {
+        data: {
+          enabled: data.enabled,
+          smsEnabled: data.smsEnabled,
+          sendDow: data.sendDow,
+          sendTime: data.sendTime,
+          reminderDow: data.reminderDow,
+          reminderTime: data.reminderTime,
+          cutoffDow: data.cutoffDow,
+          cutoffTime: data.cutoffTime,
+          finaliseDow: data.finaliseDow,
+          finaliseTime: data.finaliseTime,
+          selectionRule: data.selectionRule,
+          overseasCaps: out,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSaved(true);
+          queryClient.invalidateQueries({ queryKey: getGetAvailabilitySettingsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
+        },
+        onError: (e) => setError(errorMessage(e)),
+      },
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Overseas players</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="max-w-[75ch] text-sm text-muted-foreground">
+          Mark overseas players for the season in the squad list below. Set the most a side may have
+          for each grade, or leave it blank for no limit. Over the limit the Selection Hub warns,
+          and the side can still be finalised.
+        </p>
+        {isError ? (
+          <QueryError onRetry={() => refetch()} />
+        ) : isLoading || !caps ? (
+          <ListSkeleton />
+        ) : (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {grades.map((g, i) => (
+                <div key={g} className="flex items-center justify-between gap-3">
+                  <Label htmlFor={`overseas-cap-${i}`}>{g}</Label>
+                  <Input
+                    id={`overseas-cap-${i}`}
+                    inputMode="numeric"
+                    placeholder="No limit"
+                    className="w-28"
+                    value={caps[g] ?? ""}
+                    onChange={(e) => {
+                      setSaved(false);
+                      setCaps({ ...caps, [g]: e.target.value });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <ErrorBox message={error} testId="overseas-caps-error" />
+            <div className="flex items-center gap-3">
+              <Button onClick={onSave} disabled={save.isPending}>
+                {save.isPending ? "Saving…" : "Save overseas limits"}
+              </Button>
+              {saved && <span className="text-sm text-muted-foreground">Saved.</span>}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // This round
 // ---------------------------------------------------------------------------
 
@@ -587,6 +721,8 @@ function SquadCard() {
   const { data: members, isLoading, isError, refetch } = useListSquadMembers();
   const seedSquad = useSeedSquadFromSeason();
   const updateMember = useUpdateSquadMember();
+  const setSeason = useSetSquadMemberSeason();
+  const season = currentSeason();
   const [seeded, setSeeded] = useState<SquadSeasonSeedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -619,6 +755,21 @@ function SquadCard() {
     updateMember.mutate(
       { id: m.id, data: { active } },
       { onSuccess: invalidate, onError: (e) => setError(errorMessage(e)) },
+    );
+  };
+
+  // The overseas flag is per season and saved straight away (ADR-009).
+  const onToggleOverseas = (m: SquadMember, overseas: boolean) => {
+    setError(null);
+    setSeason.mutate(
+      { id: m.id, season, data: { overseas } },
+      {
+        onSuccess: () => {
+          invalidate();
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
+        },
+        onError: (e) => setError(errorMessage(e)),
+      },
     );
   };
 
@@ -721,6 +872,7 @@ function SquadCard() {
                   <th className="p-2">Section</th>
                   <th className="p-2">Grade</th>
                   <th className="p-2">Active</th>
+                  <th className="p-2">Overseas ({seasonLabel(season)})</th>
                   <th className="p-2">Contact details</th>
                   <th className="p-2">Club player</th>
                   <th className="p-2" />
@@ -743,6 +895,15 @@ function SquadCard() {
                         aria-label={`${memberName(m)} active`}
                         disabled={updateMember.isPending}
                         onCheckedChange={(v) => onToggleActive(m, v)}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <Switch
+                        checked={m.overseas ?? false}
+                        aria-label={`${memberName(m)} overseas in ${seasonLabel(season)}`}
+                        disabled={setSeason.isPending}
+                        onCheckedChange={(v) => onToggleOverseas(m, v)}
+                        data-testid={`squad-overseas-${m.id}`}
                       />
                     </td>
                     <td className="space-y-1 p-2">
@@ -798,6 +959,8 @@ type DrawerForm = {
   linked: LinkedPlayer | null;
   clearContactFlag: boolean;
   showNamePublicly: boolean;
+  /** An overseas player this season (saved with the member). */
+  overseas: boolean;
 } & Record<ContactSlot, ContactForm>;
 
 const SLOTS: { key: ContactSlot; label: string }[] = [
@@ -818,6 +981,7 @@ function toForm(d: SquadMemberDetail): DrawerForm {
     linked: d.linkedPlayerId != null ? { id: d.linkedPlayerId, name: d.linkedPlayerName } : null,
     clearContactFlag: false,
     showNamePublicly: d.showNamePublicly ?? false,
+    overseas: d.overseas ?? false,
     account: slot("account"),
     guardian1: slot("guardian1"),
     guardian2: slot("guardian2"),
@@ -837,8 +1001,11 @@ function MemberDrawer({
   const { data, isLoading, isError, refetch } = useGetSquadMember(id, {
     query: { queryKey: getGetSquadMemberQueryKey(id), gcTime: 0 },
   });
+  const queryClient = useQueryClient();
   const update = useUpdateSquadMember();
   const remove = useRemoveSquadMember();
+  const setSeason = useSetSquadMemberSeason();
+  const season = currentSeason();
   const [form, setForm] = useState<DrawerForm | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -849,9 +1016,18 @@ function MemberDrawer({
   const setContact = (key: ContactSlot, patch: Partial<ContactForm>) =>
     setForm((f) => (f ? { ...f, [key]: { ...f[key], ...patch } } : f));
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!form) return;
     setError(null);
+    if (form.overseas !== (data?.overseas ?? false)) {
+      try {
+        await setSeason.mutateAsync({ id, season, data: { overseas: form.overseas } });
+        queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
+      } catch (e) {
+        setError(errorMessage(e));
+        return;
+      }
+    }
     // Only the contact fields that were edited go up; the rest are left alone.
     const original = data ? toForm(data) : null;
     const contact = (key: ContactSlot) => {
@@ -981,6 +1157,22 @@ function MemberDrawer({
                   Under 18: requests go to their parents or guardians.
                 </p>
               )}
+              <div className="space-y-1.5 rounded-md border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="member-overseas">Overseas ({seasonLabel(season)})</Label>
+                  <Switch
+                    id="member-overseas"
+                    checked={form.overseas}
+                    onCheckedChange={(on) => setForm({ ...form, overseas: on })}
+                    data-testid="member-overseas"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Counts against the grade&rsquo;s overseas limit and shows &ldquo;OS&rdquo; in the
+                  Selection Hub and on the team sheet. Each season starts unticked. Sides already
+                  finalised keep the mark they had.
+                </p>
+              </div>
               {data.isPrivate && form.section === "senior" && !data.under18 && (
                 <div className="space-y-1.5 rounded-md border p-3">
                   <div className="flex items-center justify-between gap-3">
@@ -1053,8 +1245,11 @@ function MemberDrawer({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={onSave} disabled={!form || update.isPending || remove.isPending}>
-              {update.isPending ? "Saving…" : "Save"}
+            <Button
+              onClick={onSave}
+              disabled={!form || update.isPending || remove.isPending || setSeason.isPending}
+            >
+              {update.isPending || setSeason.isPending ? "Saving…" : "Save"}
             </Button>
           </div>
         </SheetFooter>

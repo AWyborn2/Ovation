@@ -18,6 +18,7 @@ import {
   type ScheduleStep,
 } from "../lib/availability-schedule";
 import { smsProvider } from "../lib/integrations/sms";
+import { cleanOverseasCaps } from "../lib/overseas";
 
 /**
  * The club's weekly availability round: the schedule, the current round's
@@ -33,6 +34,7 @@ const DEFAULTS = {
   smsEnabled: true,
   ...DEFAULT_SCHEDULE,
   selectionRule: "captains_own_grade",
+  overseasCaps: {},
 } as const;
 
 /** The club's settings plus the platform's SMS provider (null = email only). */
@@ -50,6 +52,7 @@ function serialize(row: AvailabilitySettingsRow | null) {
     finaliseDow: row.finaliseDow,
     finaliseTime: row.finaliseTime,
     selectionRule: row.selectionRule,
+    overseasCaps: row.overseasCaps ?? {},
     updatedAt: row.updatedAt,
     smsProvider: smsProvider(),
   };
@@ -70,8 +73,20 @@ router.put("/availability/settings", requireAdmin, async (req, res): Promise<voi
     res.status(400).json({ error: problem });
     return;
   }
+  // Overseas caps per grade (ADR-009): omitted keeps the stored map; a grade
+  // left out of a sent map has no cap.
+  const { overseasCaps, ...rest } = parsed.data;
+  const caps = overseasCaps === undefined ? undefined : cleanOverseasCaps(overseasCaps);
+  if (caps && "error" in caps) {
+    res.status(400).json({ error: caps.error });
+    return;
+  }
   const tenantId = getTenantId(req);
-  const values = { ...parsed.data, updatedAt: new Date() };
+  const values = {
+    ...rest,
+    ...(caps ? { overseasCaps: caps.caps } : {}),
+    updatedAt: new Date(),
+  };
   const [row] = await db
     .insert(availabilitySettingsTable)
     .values({ tenantId, ...values })

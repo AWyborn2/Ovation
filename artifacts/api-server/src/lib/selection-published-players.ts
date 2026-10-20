@@ -139,11 +139,17 @@ export async function loadSelectionParticipantIds(
   return result;
 }
 
-/** The same projection is used at publication and to verify legacy snapshots. */
+/**
+ * The same projection is used at publication and to verify legacy snapshots.
+ * `overseasIds` (ADR-009) marks overseas players, snapshotted so a later squad
+ * change never rewrites the list; a member not named publicly gets no marker,
+ * like their name.
+ */
 export function selectionPublishedPlayers(
   side: PublishedSide,
   members: readonly PublishedMember[],
   participantIds: ReadonlyMap<number, string> = new Map(),
+  overseasIds: ReadonlySet<number> = new Set(),
 ): TeamListPlayer[] {
   const byId = new Map(members.map((m) => [m.id, m]));
   const players: TeamListPlayer[] = [];
@@ -158,12 +164,15 @@ export function selectionPublishedPlayers(
     const eligible =
       !m.isPrivate && (m.linkedPlayerId == null || m.linkedPlayerId < FILL_IN_THRESHOLD);
     const participantId = eligible ? participantIds.get(m.id) : null;
+    const displayName = publicName(m);
+    const overseas = overseasIds.has(m.id) && displayName !== PRIVATE_PLAYER;
     players.push({
       order: twelfth ? shape.size : players.length + 1,
       ...(eligible && m.linkedPlayerId != null ? { playerId: m.linkedPlayerId } : {}),
       ...(participantId ? { participantId } : {}),
-      displayName: publicName(m),
+      displayName,
       ...(role ? { role } : {}),
+      ...(overseas ? { overseas: true } : {}),
     });
   });
   return players;

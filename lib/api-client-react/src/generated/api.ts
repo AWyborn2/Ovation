@@ -8253,7 +8253,7 @@ export const getSetSquadMemberSeasonUrl = (id: number,
 /**
  * Marks the member as an overseas player, or not, for one season. Each
 season stands alone: nothing carries over. Sides already finalised
-keep the flag they were published with. Not built yet: returns 501.
+keep the flag they were published with.
 
  * @summary Set a squad member's facts for one season (admin)
  */

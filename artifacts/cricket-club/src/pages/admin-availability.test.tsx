@@ -536,3 +536,57 @@ describe("admin availability", () => {
     }
   });
 });
+
+describe("overseas players", () => {
+  it("toggles a member's overseas flag for the current season from the squad list", async () => {
+    const calls = installFetch(() => undefined);
+    renderAt(<AdminAvailability />, "/admin/availability");
+    const row = await screen.findByTestId("squad-row-7");
+    fireEvent.click(within(row).getByTestId("squad-overseas-7"));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PUT" && /\/seasons\//.test(c.url))?.body).toEqual({
+        overseas: true,
+      }),
+    );
+    const put = calls.find((c) => c.method === "PUT" && /\/seasons\//.test(c.url))!;
+    expect(put.url).toMatch(/\/api\/squad\/7\/seasons\/20\d\d$/);
+  });
+
+  it("sets the drawer's overseas flag on save", async () => {
+    const calls = installFetch(() => undefined);
+    renderAt(<AdminAvailability />, "/admin/availability");
+    fireEvent.click(
+      within(await screen.findByTestId("squad-row-7")).getByRole("button", { name: "Edit" }),
+    );
+    const d = within(await screen.findByRole("dialog"));
+    fireEvent.click(await d.findByTestId("member-overseas"));
+    fireEvent.click(d.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PATCH")).toBe(true));
+    expect(calls.find((c) => c.method === "PUT" && /\/seasons\//.test(c.url))?.body).toEqual({
+      overseas: true,
+    });
+  });
+
+  it("saves a grade's cap, blank meaning no cap, and checks the range", async () => {
+    const calls = installFetch((url) =>
+      url.includes("/availability/settings")
+        ? { body: { ...SETTINGS, overseasCaps: { "B Grade": 2 } } }
+        : undefined,
+    );
+    renderAt(<AdminAvailability />, "/admin/availability");
+    const a = (await screen.findByLabelText("A Grade")) as HTMLInputElement;
+    expect((screen.getByLabelText("B Grade") as HTMLInputElement).value).toBe("2");
+    fireEvent.change(a, { target: { value: "15" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save overseas limits" }));
+    expect((await screen.findByTestId("overseas-caps-error")).textContent).toMatch(/0 to 14/);
+    expect(calls.some((c) => c.method === "PUT")).toBe(false);
+
+    fireEvent.change(a, { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("B Grade"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save overseas limits" }));
+    await waitFor(() => expect(calls.some((c) => c.method === "PUT")).toBe(true));
+    const body = calls.find((c) => c.method === "PUT")!.body as Record<string, unknown>;
+    expect(body.overseasCaps).toEqual({ "A Grade": 1 });
+    expect(body.selectionRule).toBe("captains_own_grade");
+  });
+});

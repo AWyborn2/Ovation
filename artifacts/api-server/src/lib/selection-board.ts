@@ -88,6 +88,13 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import {
+  loadOverseasMemberIds,
+  overseasCapFor,
+  overseasCount,
+  type OverseasCount,
+} from "./overseas";
 import {
   namedPublicly,
   publicName,
@@ -244,6 +251,8 @@ export type BoardSide = {
     memberId: number | null;
     gap: SelectionSlot["gap"] | null;
     member: BoardMember | null;
+    /** An overseas player this season: live for a draft, the snapshot once final. Set only when true. */
+    overseas?: true;
   }[];
   captainMemberId: number | null;
   keeperMemberId: number | null;
@@ -257,6 +266,8 @@ export type BoardSide = {
    */
   playhqPlayers: number | null;
   readOnlyReason: string | null;
+  /** Overseas players in the side against the grade's cap (a warning; never blocks). */
+  overseas: OverseasCount;
   warnings: {
     /** Players in the XI (slots 1–11). */
     filled: number;
@@ -723,6 +734,19 @@ export async function buildBoard(
     tenantId,
     sectionSides.map((s) => s.fixture),
   );
+  // Live overseas flags for the drafts, by season (a finalised side reads its snapshot).
+  const draftSeasons = new Set(
+    sectionSides
+      .filter((s) => s.selection.state !== "final")
+      .map((s) => seasonStartYearFor(s.fixture.startAt)),
+  );
+  const overseasBySeason = new Map(
+    await Promise.all(
+      [...draftSeasons].map(
+        async (season) => [season, await loadOverseasMemberIds(db, tenantId, season)] as const,
+      ),
+    ),
+  );
   const selections: BoardSide[] = sectionSides.map(({ selection: sel, fixture: f }) => {
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
@@ -730,10 +754,16 @@ export async function buildBoard(
     const shape = sideShape(sel.sideSize);
     const slots = normaliseSlots(sel.slots, shape.size).map((slot) => {
       const m = slot.memberId != null ? byId.get(slot.memberId) : undefined;
+      const overseas =
+        m != null &&
+        (final
+          ? slot.overseas === true
+          : (overseasBySeason.get(seasonStartYearFor(f.startAt))?.has(m.id) ?? false));
       return {
         memberId: slot.memberId,
         gap: slot.memberId == null ? (slot.gap ?? null) : null,
         member: m ? summary(m, date) : null,
+        ...(overseas ? { overseas: true as const } : {}),
       };
     });
     const picked = slots.flatMap((s) => (s.member ? [s.member] : []));
@@ -769,6 +799,10 @@ export async function buildBoard(
             ? "This side is finalised. Re-open it to make changes."
             : null,
       playhqPlayers: playhqCounts.get(`${f.kind}:${f.id}`) ?? null,
+      overseas: overseasCount(
+        slots.filter((s) => s.overseas).length,
+        overseasCapFor(settings?.overseasCaps, f.grade),
+      ),
       warnings: {
         filled: inXi,
         open: XI_SIZE - inXi,
@@ -1463,6 +1497,25 @@ export async function finaliseSelection(
     const sideSlots = normaliseSlots(selection.slots);
     const picked = memberIdsOf(sideSlots);
     const twelfthId = twelfthMemberId(sideSlots);
+    // The overseas flags as they stand now, kept with the side and the published
+    // list so a later squad change never rewrites a finalised side (ADR-009).
+    const overseasIds = await loadOverseasMemberIds(
+      tx,
+      tenantId,
+      seasonStartYearFor(fixture.startAt),
+      picked,
+    );
+    // Rewritten only when a mark changes, so a side with none is stored as it was.
+    const snapshotChanged = sideSlots.some(
+      (slot) =>
+        (slot.overseas === true) !== (slot.memberId != null && overseasIds.has(slot.memberId)),
+    );
+    const finalSlots = sideSlots.map((slot): SelectionSlot => {
+      const out: SelectionSlot = { ...slot };
+      delete out.overseas;
+      if (slot.memberId != null && overseasIds.has(slot.memberId)) out.overseas = true;
+      return out;
+    });
     const members =
       picked.length > 0
         ? await tx
@@ -1484,7 +1537,7 @@ export async function finaliseSelection(
         sideSection(fixture) === "senior"
           ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt)
           : new Map<number, string>();
-      const list = selectionPublishedPlayers(selection, members, participantIds);
+      const list = selectionPublishedPlayers(selection, members, participantIds, overseasIds);
       players = list;
       await tx
         .insert(teamListsTable)
@@ -1511,6 +1564,7 @@ export async function finaliseSelection(
       .update(selectionsTable)
       .set({
         state: "final",
+        ...(snapshotChanged ? { slots: finalSlots } : {}),
         finalisedAt: now,
         finalisedBy: actor.name,
         version: selection.version + 1,
@@ -1529,6 +1583,7 @@ export async function finaliseSelection(
         players: players.length,
         open: XI_SIZE - players.filter((p) => p.order <= XI_SIZE).length,
         twelfth: twelfthId != null && memberOf.has(twelfthId),
+        ...(overseasIds.size > 0 ? { overseas: overseasIds.size } : {}),
         captainMemberId: selection.captainMemberId,
         keeperMemberId: selection.keeperMemberId,
         notified: { selected: toSelect, deselected: toDeselect },

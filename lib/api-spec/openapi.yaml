@@ -2626,7 +2626,7 @@ paths:
       description: |
         Marks the member as an overseas player, or not, for one season. Each
         season stands alone: nothing carries over. Sides already finalised
-        keep the flag they were published with. Not built yet: returns 501.
+        keep the flag they were published with.
       parameters:
         - name: id
           in: path
@@ -2657,8 +2657,6 @@ paths:
           description: Invalid body or season
         "404":
           description: Not found
-        "501":
-          description: Not built yet
 
   /availability/settings:
     get:
@@ -14550,6 +14548,9 @@ components:
           type: boolean
         contactChangedAt:
           type: ["string", "null"]
+        overseas:
+          type: boolean
+          description: An overseas player in the current season. Absent reads as false.
         updatedAt:
           type: string
 
