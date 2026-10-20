@@ -1,5 +1,23 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Engineering Manager / Staff Engineer
+**Feature:** match-day-carousel-content
+
+## Context
+
+- Design: `.10x/decisions/architect/match-day-carousel-content.md` (ADR-010 proposed). Requirements: `.10x/decisions/product-manager/match-day-carousel-content.md`; also covers `social-tile-short-names`.
+- Scope set by Ash: the same content pipeline for every card path (auto-queued, Create a Card, all four carousel set types). Junior match-day and results carousels can put same-day matches on one slide.
+- Components:
+  - `@workspace/scorecard/card-content`: the field catalogue, presets, `resolveVisibleFields` and `groupSlides`
+  - `api-server/src/lib/card-content/`: the name resolver, the builders and `pickPhoto`
+  - a layout contract in which packs declare what they can fit
+  - saved carousel v2
+- Migrations 0050–0053 (name overrides, the `card_content` jsonb and livestream link, sponsor tier and background, `photo_usage`). Ash runs each one by hand.
+- Delivery order has 8 steps, listed in the design file. Check that `central.ladder` exists before step 5.
+
+## Previous handoff
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** match-day-carousel-content
