@@ -1,5 +1,20 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Architect / Engineering Manager
+**Feature:** selection-hub-redesign
+
+## Context
+
+- Decision: `.10x/decisions/product-manager/selection-hub-redesign.md`. Design: `docs/design/selection-hub-redesign/README.md` (hi-fi spec, §1–9) and `Selection Hub Prototype.dc.html`.
+- Full handoff scope in one release (may split into 2 PRs: layout+pool+focus, then popovers+strip+toasts). Client-only: no API, no migration. Reuse `use-pointer-drag`, `apply-move.ts`, `TeamCard`, `PlayerPool`, Radix Popover and the existing toaster. Theme tokens only.
+- Sequencing: lands before selection-hub-decoupling PR1–PR3, which then build on the new layout.
+- Priority: P0 sidebar pool, Focus/Board + chip bar, fill popover. P1 Add-to popover, chip attention dots, compact strip. P2 toasts. P3 mobile bottom sheet (out).
+
+## Handoff History
+
+### Previous (match-day-carousel-content)
+
 **From:** SDE (P2, content contract + Match Day builder)
 **To:** SDE sessions for P3–P6 (at most two at once), then P7
 **Feature:** match-day-carousel-content
