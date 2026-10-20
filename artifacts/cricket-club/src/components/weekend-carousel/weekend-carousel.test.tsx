@@ -264,6 +264,18 @@ describe("WeekendCarousel", () => {
     expect(fixtureSlide.content.roundLabel).toBe("ROUND 5");
   });
 
+  it("a Match Day override does not follow the admin to another set type", async () => {
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByTestId("weekend-content-preset-minimal"));
+    fireEvent.click(screen.getByTestId("button-carousel-type-results"));
+    await generatePreview();
+    expect(screen.queryByTestId("weekend-content-panel")).toBeNull();
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(queuedRequest().data.cardInput.weekendCarousel).not.toHaveProperty("contentOverride");
+  });
+
   it("goes back to the club setting", async () => {
     mount();
     await generatePreview();

@@ -429,6 +429,8 @@ export function useWeekendCarousel(
       setTo(range.to);
       setTitle(CAROUSEL_LABELS[type]);
       setCaptionEdit(null);
+      // A carousel's content override belongs to the Match Day set it was made on.
+      setContentOverride({});
       setGenerated(null);
       setGenerationError(null);
       setQueueError(null);
