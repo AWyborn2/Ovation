@@ -11,6 +11,7 @@ import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest
 import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
 import { runWatchdog } from "../lib/playhq-health";
 import { sweepTenants } from "../lib/draft-sweep";
+import { drainOutbox } from "../lib/email-outbox";
 import { runPostingSlotsForAll } from "../lib/posting-slots";
 import { env } from "../config";
 
@@ -80,13 +81,22 @@ router.post("/watchdog", requireSyncSecret, async (req, res): Promise<void> => {
 /**
  * `POST /api/internal/playhq/sweep` — the scheduled drafting sweep for every active club:
  * result, achievement and round-up cards from central matches, debut caps, match-day
- * timing and auto-post promotion. The runner calls it each hour after its ingests, so new
+ * timing and auto-post promotion, then a drain of the email outbox. The runner calls it each hour after its ingests, so new
  * results are already in central when it runs. Same as `POST /internal/draft-sweep` with
  * scope `scheduled`, behind the sync secret, so the hourly runner needs no second secret.
  */
 router.post("/sweep", requireSyncSecret, async (req, res): Promise<void> => {
   try {
-    res.json({ results: (await sweepTenants(null, "scheduled", req.log)) ?? [] });
+    const results = (await sweepTenants(null, "scheduled", req.log)) ?? [];
+    // Retry list emails that failed or were never drained (email-distribution-lists).
+    try {
+      const emails = await drainOutbox({ limit: 100, logger: req.log });
+      if (emails.sent + emails.failed + emails.skipped > 0)
+        req.log.info(emails, "email outbox drained");
+    } catch (err) {
+      req.log.warn({ err }, "email outbox drain failed");
+    }
+    res.json({ results });
   } catch (err) {
     req.log.error({ err }, "playhq scheduled sweep failed");
     res.status(500).json({ error: "sweep failed" });

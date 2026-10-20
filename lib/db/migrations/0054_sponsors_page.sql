@@ -1,4 +1,4 @@
--- Sponsors page options (ADR-010 P6; .10x/decisions/architect/match-day-carousel-content.md).
+-- Sponsors page options (ADR-010 P6, migration 0054; .10x/decisions/architect/match-day-carousel-content.md).
 -- Additive only; the defaults leave every club exactly as today:
 --   sponsors.tier                               'major' | 'standard' (default 'standard'); major
 --                                               sponsors show larger on the tiered sponsors page

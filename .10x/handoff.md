@@ -1,5 +1,26 @@
 # Handoff
 
+**From:** SDE (P6, sponsors page options)
+**To:** SDE sessions for P3–P5 and P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P6 (T6.1–T6.3)** is on `wyborn21/carousel-p6-sponsors-page`. Migration **0054** (renumbered from 0053, which #399 took): `sponsors.tier` text ('major' | 'standard', default 'standard', CHECK `sponsors_tier_check`, listed in `ensure-constraints`) and `social_settings.sponsors_background_photo_id` (FK to `club_photos`, ON DELETE SET NULL). Ash runs it in Production SQL before republishing.
+- **Fields:** five optional `sponsors.*` keys in `CONTENT_FIELDS` (`tiers`, `teamSponsors`, `thankYou`, `nextHomeGame`, `background`), all `presets: ["full"]` (a `FULL_ONLY` constant), so Standard is the page as it was.
+- **Content:** `MatchDaySponsorsContent` now holds every active sponsor (club sponsors first, then team sponsors, each with `tier` and `teamSponsor`), `thankYou`, `cta`, `nextHomeGame` (`{ match, when }`) and `socials`. The new keys are optional, so P2-era carousels read unchanged. `contentInput` projects by visible fields: team sponsors only with `sponsors.teamSponsors`, majors first plus `majorCount` with `sponsors.tiers`, and so on. With none on, the template input is byte-identical to P2. No sponsors means no thank-you heading, so the club thank-you fallback stays.
+- **Server:** `api-server/src/lib/card-content/sponsors-page.ts` → `loadSponsorsPageSources` (background photo with the cover-photo privacy rule, next senior home game from the set's first day via `buildMatchDayContent`, socials from the Meta connection and `clubUrl`). `GET /weekend-carousel/sources` returns it as `sponsorsPage` for Match Day sets; junior-only sets get no next home game.
+- **Client:** `buildWeekendSlides(..., visible, sponsorsPage)` builds the sponsors content; the background rides on the slide's `photoId` and `data.photoUrl`, like the cover.
+- **Layout:** `pack-templates/sponsors-page.ts` holds the shared grid. Flat pages keep each pack's own column rule (byte-identical); with any option on, `fitGrid` picks the columns that give the largest tiles in the height the blocks leave (`sponsorGridHeight`, per-pack budgets `CK_BUDGET` / `SK_BUDGET`). Major tiles are 1.6×. `content-layouts.test.ts` checks each block shows exactly when its field is on; `sponsors-page.test.ts` renders 16 sponsors (3 major, every block on) in both packs at every size and asserts tile sizes.
+- **UI:** a "Major sponsor" switch per sponsor in the sponsor library; "Sponsors page background" picker (club-wide photos, saves at once) under Social Studio → What match day cards show. The five toggles appear in the existing field picker under "Sponsors".
+
+## For the next phases
+
+- **P5:** the sponsors toggles already use `FULL_ONLY`; reuse it rather than adding a second constant. The catalogue test lists the Full-only keys (`FULL_ONLY_KEYS` in `card-content.test.ts`); add yours there.
+- **P4:** `buildWeekendSlides` gained a trailing `sponsorsPage` argument; the sponsors slide's `photoId` is the background photo, so `photo_usage` can record it like the cover if you want it counted.
+
+## Previous handoff
+
 **From:** SDE (P2, content contract + Match Day builder)
 **To:** SDE sessions for P3–P6 (at most two at once), then P7
 **Feature:** match-day-carousel-content
@@ -350,3 +371,11 @@ Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: 
 ## Handoff 2026-10-19 (PM -> Architect)
 
 Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) preview-render bug in share-card-modal/use-card-preview (own PR); 2) tenant name-override table + auto short-name; 3) crest slot in renderer; 4) square layout fit.
+
+## Current Handoff
+
+**From:** Principal Architect → **To:** Staff Engineer / EM (20 Oct 2026)
+**Read:** `.10x/decisions/architect/email-distribution-lists.md` (requirements: `.10x/decisions/product-manager/email-distribution-lists.md`)
+Spike resolved: team-sheet PDF already server-side (`buildTeamSheet` + `renderHtmlToPdf`). Social PNG via `/__card-render` harness — needs `RENDER_HARNESS_URL` in prod.
+Build order: PR1 = transport (bcc + attachments), migration 0053 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
+Confirm the team key the Selection Hub uses for a fixture. Senior fixtures only.

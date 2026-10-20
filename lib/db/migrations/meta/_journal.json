@@ -376,8 +376,15 @@
     {
       "idx": 53,
       "version": "7",
-      "when": 1792479318048,
-      "tag": "0053_sponsors_page",
+      "when": 1792478707687,
+      "tag": "0053_email_lists",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792481776910,
+      "tag": "0054_sponsors_page",
       "breakpoints": true
     }
   ]

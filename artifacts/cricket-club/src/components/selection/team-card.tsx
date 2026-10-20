@@ -9,6 +9,7 @@ import { sideEditable, sideLabel, type Location } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
 import { TeamSheetButton } from "./team-sheet-button";
+import { EmailTeamSheetButton } from "./email-team-sheet-button";
 import { useAvailability } from "./availability-context";
 
 export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
@@ -299,6 +300,7 @@ export function TeamCard({
               {availability && ` ${plural(picked.length, "player")} notified by SMS and email.`}
             </div>
             <TeamSheetButton selectionId={side.id} label={label} />
+            {!junior && <EmailTeamSheetButton selectionId={side.id} />}
             {side.canFinalise && (
               <Button variant="ghost" className="w-full" disabled={busy} onClick={onReopen}>
                 Re-open for changes

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
+import type {
+  ClubPhoto,
+  Fixture,
+  SocialSettingsBundle,
+  WeekendSponsorsPageSources,
+} from "@workspace/api-client-react";
 import {
   buildWeekendSlides,
   carouselRoundLabel,
@@ -534,7 +539,7 @@ describe("weekend sponsor placements", () => {
       })),
     } as unknown as SocialSettingsBundle;
     const background = photo(40, { grade: null, url: "/bg.jpg" });
-    const sources = {
+    const sources: WeekendSponsorsPageSources = {
       backgroundPhoto: background,
       nextHomeGame: matchDayFixtureContent({
         id: 9,
@@ -557,7 +562,7 @@ describe("weekend sponsor placements", () => {
     const closing = (
       visible: ReadonlySet<string>,
       b = tiered,
-      src: typeof sources | null = sources,
+      src: WeekendSponsorsPageSources | null = sources,
     ) =>
       buildWeekendSlides(
         teams(),

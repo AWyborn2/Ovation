@@ -1,5 +1,5 @@
 /**
- * Sponsors page options (ADR-010 P6, migration 0053): a sponsor's tier, the
+ * Sponsors page options (ADR-010 P6, migration 0054): a sponsor's tier, the
  * club's sponsors page background photo, and what the Weekend Carousel's
  * sources give the page (background, next senior home game, socials). Every
  * read and write is tenant-scoped: one club can neither pick another club's
