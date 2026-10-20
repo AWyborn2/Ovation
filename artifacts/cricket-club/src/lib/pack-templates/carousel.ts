@@ -109,6 +109,11 @@ export function skeletonWeekendTemplate(
                 "<div ",
                 '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="10" ',
               ) +
+              // The club's livestream link (P5): "WATCH LIVE" and the short address.
+              `<div data-drop-if-field="livestream" data-livestream="1" style="display:flex;align-items:center;gap:1.4cqmin;max-width:100%;min-width:0;margin-top:3cqmin">` +
+              `<span style="flex:none;padding:.6cqmin 1.4cqmin;border-radius:.6cqmin;background:${K.acc};color:${K.accInk};font-family:${SK_COND};font-weight:800;font-size:2.6cqmin;letter-spacing:.08em">WATCH LIVE</span>` +
+              `<span style="min-width:0;font-family:${SK_MONO};font-weight:600;font-size:2.2cqmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{livestream}}</span>` +
+              `</div>` +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )
@@ -130,9 +135,14 @@ export function skeletonWeekendTemplate(
   };
   const fields = [
     ...clubHeaderFields(),
-    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) =>
-      textField(k, k, ""),
-    ),
+    ...[
+      "clubHashtag",
+      "sponsorPresentedBy",
+      "weekendTitle",
+      "date",
+      "roundLabel",
+      "livestream",
+    ].map((k) => textField(k, k, "")),
     ...(photoKey ? [photoField("photo", "Cover photo", "Club photo")] : []),
     ...sponsorKeys.map((k) => ({
       key: k,

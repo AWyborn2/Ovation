@@ -13,6 +13,8 @@ import {
 } from "@workspace/scorecard/card-content";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2, Save } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ContentFieldPicker } from "./content-field-picker";
@@ -33,9 +35,10 @@ export function choose(
 /**
  * What match day cards show (ADR-010): a preset (Minimal, Standard, Full) and
  * per-field switches on top. Every Weekend Carousel starts from these; a
- * carousel can change them for itself. The junior same-day switch (P3) and the
- * livestream link (P5) join this section when the cards use them; until then
- * their stored values pass through untouched.
+ * carousel can change them for itself. The club's livestream link (P5) is set
+ * here too: the title page prints it when "Livestream link" is on. The junior
+ * same-day switch (P3) joins this section when the cards use it; until then
+ * its stored value passes through untouched.
  */
 export function CardContentSection() {
   const queryClient = useQueryClient();
@@ -46,9 +49,12 @@ export function CardContentSection() {
     [saved?.cardContent],
   );
   const [draft, setDraft] = useState<ContentKindSettings>(savedContent);
+  const savedLink = saved?.livestreamUrl ?? "";
+  const [link, setLink] = useState(savedLink);
   const [error, setError] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(false);
   useEffect(() => setDraft(savedContent), [savedContent]);
+  useEffect(() => setLink(savedLink), [savedLink]);
 
   const update = useUpdateSocialSettings({
     mutation: {
@@ -62,13 +68,21 @@ export function CardContentSection() {
   });
 
   const visible = resolveVisibleFields("matchDay", draft);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(savedContent);
+  const contentDirty = JSON.stringify(draft) !== JSON.stringify(savedContent);
+  const linkDirty = link.trim() !== savedLink;
+  const dirty = contentDirty || linkDirty;
+  // The server takes an https address or nothing.
+  const linkInvalid = !!link.trim() && !/^https:\/\/\S+$/i.test(link.trim());
 
   const save = () => {
+    if (linkInvalid) return;
     setError(null);
     setSavedOk(false);
     update.mutate({
-      data: { cardContent: { matchDay: draft } },
+      data: {
+        ...(contentDirty ? { cardContent: { matchDay: draft } } : {}),
+        ...(linkDirty ? { livestreamUrl: link.trim() || null } : {}),
+      },
     });
   };
 
@@ -107,6 +121,33 @@ export function CardContentSection() {
                 setDraft({ ...draft, ...choose(draft, { key, on }) });
               }}
             />
+            <div className="space-y-1.5">
+              <Label htmlFor="content-settings-livestream">Livestream or scores link</Label>
+              <Input
+                id="content-settings-livestream"
+                data-testid="content-settings-livestream"
+                type="url"
+                inputMode="url"
+                placeholder="https://"
+                maxLength={500}
+                value={link}
+                disabled={update.isPending}
+                aria-invalid={linkInvalid || undefined}
+                aria-describedby="content-settings-livestream-help"
+                onChange={(e) => {
+                  setSavedOk(false);
+                  setLink(e.target.value);
+                }}
+              />
+              <p
+                id="content-settings-livestream-help"
+                className={`text-xs ${linkInvalid ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {linkInvalid
+                  ? "Use a link that starts with https://."
+                  : "Shown on the title page when Livestream link is on. Leave it empty to show nothing."}
+              </p>
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex items-center justify-end gap-3">
               {savedOk && !dirty && (
@@ -116,7 +157,7 @@ export function CardContentSection() {
               )}
               <Button
                 onClick={save}
-                disabled={!dirty || update.isPending}
+                disabled={!dirty || linkInvalid || update.isPending}
                 data-testid="content-settings-save"
               >
                 {update.isPending ? (

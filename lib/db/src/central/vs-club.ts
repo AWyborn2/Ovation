@@ -380,9 +380,12 @@ export async function centralClubIdForPlayhqOrg(orgId: string): Promise<number |
     const [row] = await centralDb
       .select({ clubId: clubCol, n: sql<number>`count(*)::int` })
       .from(pm)
-      .innerJoin(cm, eq(cm.playhqMatchId, pm.id))
+      // `playhq_match_id` is text, `playhq.matches.id` a uuid: compare as text.
+      .innerJoin(cm, sql`${cm.playhqMatchId} = ${pm.id}::text`)
       .where(or(eq(pm.homeOrgId, orgId), eq(pm.awayOrgId, orgId)))
-      .groupBy(clubCol)
+      // By position: the CASE binds `orgId` as a fresh parameter each time it is
+      // written, and Postgres won't match `$1` in the select list to `$4` here.
+      .groupBy(sql`1`)
       .orderBy(desc(sql`count(*)`))
       .limit(1);
     return row?.clubId == null ? null : Number(row.clubId);

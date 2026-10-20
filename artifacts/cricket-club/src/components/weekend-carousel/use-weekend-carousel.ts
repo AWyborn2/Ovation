@@ -43,6 +43,7 @@ import {
 } from "./model";
 import { carouselCaption } from "./caption";
 import {
+  MATCH_DAY_DATA_FIELDS,
   readCardContentSettings,
   readContentOverride,
   resolveVisibleFields,
@@ -97,18 +98,32 @@ export function useWeekendCarousel(
   const [to, setTo] = useState(initial.to);
   const rangeValid = !!from && !!to && from <= to;
 
+  const settingsQ = useGetSocialSettings({
+    query: { queryKey: getGetSocialSettingsQueryKey() },
+  });
+  const bundle = settingsQ.data as SocialSettingsBundle | undefined;
+  // What the slides show: the club's content choices, then this carousel's override.
+  const clubContent = readCardContentSettings(bundle?.settings.cardContent).matchDay;
+  const [contentOverride, setContentOverride] = useState<ContentOverride>({});
+  const visibleFields = useMemo(
+    () => resolveVisibleFields("matchDay", clubContent, contentOverride),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(clubContent), contentOverride],
+  );
+  // The optional data fields shown (P5): the server loads only these.
+  const dataFields =
+    setType === "matchDay"
+      ? MATCH_DAY_DATA_FIELDS.filter((f) => visibleFields.has(f)).join(",")
+      : "";
   // Server scopes tenant/grade/categories, live cancellation status and the
   // date range (including already-started games) — no client re-filtering.
-  const params = { from, to, setType, audience };
+  const params = { from, to, setType, audience, ...(dataFields ? { fields: dataFields } : {}) };
   const sourcesQ = useGetWeekendCarouselSources(params, {
     query: { queryKey: getGetWeekendCarouselSourcesQueryKey(params), enabled: rangeValid },
   });
   const sources = sourcesQ.data as WeekendCarouselSources | undefined;
   // Match Day content (ADR-010) and other kinds' card inputs, per fixture id.
   const content = useMemo(() => carouselSourceContent(sources), [sources]);
-  const settingsQ = useGetSocialSettings({
-    query: { queryKey: getGetSocialSettingsQueryKey() },
-  });
   const createDraft = useCreateSocialDraft();
   const qc = useQueryClient();
   const submission = useRef<{ key: string; id: string } | null>(null);
@@ -135,15 +150,6 @@ export function useWeekendCarousel(
   );
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
-  const bundle = settingsQ.data as SocialSettingsBundle | undefined;
-  // What the slides show: the club's content choices, then this carousel's override.
-  const clubContent = readCardContentSettings(bundle?.settings.cardContent).matchDay;
-  const [contentOverride, setContentOverride] = useState<ContentOverride>({});
-  const visibleFields = useMemo(
-    () => resolveVisibleFields("matchDay", clubContent, contentOverride),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(clubContent), contentOverride],
-  );
 
   const [title, setTitle] = useState(CAROUSEL_LABELS[initialType]);
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);

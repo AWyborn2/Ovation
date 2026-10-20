@@ -5760,6 +5760,49 @@ export const MatchDayFixtureContentHomeAway = {
 } as const;
 
 /**
+ * Both teams' season ladder positions (P5), when asked for and loaded.
+ */
+export type MatchDayFixtureContentLadder = {
+  /** "3RD". */
+  club: string;
+  /** @nullable */
+  opposition: string | null;
+  teams: number;
+  /** @nullable */
+  tableName: string | null;
+};
+
+export type MatchDayFixtureContentLastMeetingOutcome = typeof MatchDayFixtureContentLastMeetingOutcome[keyof typeof MatchDayFixtureContentLastMeetingOutcome];
+
+
+export const MatchDayFixtureContentLastMeetingOutcome = {
+  won: 'won',
+  lost: 'lost',
+  tied: 'tied',
+  noResult: 'noResult',
+} as const;
+
+/**
+ * The clubs' last finished senior meeting in this grade, from the club's side (P5).
+ */
+export type MatchDayFixtureContentLastMeeting = {
+  outcome: MatchDayFixtureContentLastMeetingOutcome;
+  /** "Won by 24 runs · 2025/26". */
+  line: string;
+  date: string;
+  /** @nullable */
+  season: string | null;
+};
+
+/**
+ * A player in the published side within reach of a club milestone (P5, senior only).
+ */
+export type MatchDayFixtureContentMilestoneWatch = {
+  playerName: string;
+  line: string;
+};
+
+/**
  * One fixture's Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.
  */
 export interface MatchDayFixtureContent {
@@ -5780,6 +5823,12 @@ export interface MatchDayFixtureContent {
   date: string;
   startTime: string;
   source: MatchDayFixtureContentSource;
+  /** Both teams' season ladder positions (P5), when asked for and loaded. */
+  ladder?: MatchDayFixtureContentLadder;
+  /** The clubs' last finished senior meeting in this grade, from the club's side (P5). */
+  lastMeeting?: MatchDayFixtureContentLastMeeting;
+  /** A player in the published side within reach of a club milestone (P5, senior only). */
+  milestoneWatch?: MatchDayFixtureContentMilestoneWatch;
 }
 
 export interface Notification {
@@ -10810,6 +10859,10 @@ from: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 to: string;
+/**
+ * Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.
+ */
+fields?: string;
 };
 
 export type GetWeekendCarouselSourcesSetType = typeof GetWeekendCarouselSourcesSetType[keyof typeof GetWeekendCarouselSourcesSetType];

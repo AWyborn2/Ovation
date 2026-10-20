@@ -16,6 +16,10 @@ import {
 } from "../card-names";
 import { isJuniorGradeLabel } from "../junior-grade";
 import type {
+  ContentLadder,
+  ContentLastMeeting,
+  ContentLivestream,
+  ContentMilestoneWatch,
   MatchDayFixtureContent,
   MatchDaySponsorsContent,
   MatchDayTitleContent,
@@ -169,11 +173,14 @@ export interface MatchDayBookendOptions {
   roundLabels: ReadonlyArray<string | null | undefined>;
   fixtureCount: number;
   timeZone?: string;
+  /** The club's livestream link (`social_settings.livestream_url`); the title page only. */
+  livestreamUrl?: string | null;
 }
 
 const heading = (h: string) => h.trim() || "This weekend";
 
 export function matchDayTitleContent(opts: MatchDayBookendOptions): MatchDayTitleContent {
+  const livestream = livestreamContent(opts.livestreamUrl);
   return {
     kind: "matchDay",
     page: "title",
@@ -181,15 +188,128 @@ export function matchDayTitleContent(opts: MatchDayBookendOptions): MatchDayTitl
     dateRange: dateRangeLabel(opts.from, opts.to, opts.timeZone),
     roundLabel: combinedRoundLabel(opts.roundLabels),
     fixtureCount: opts.fixtureCount,
+    ...(livestream ? { livestream } : {}),
   };
 }
 
 export function matchDaySponsorsContent(
   opts: MatchDayBookendOptions & { sponsors: Array<{ name: string; logoUrl: string }> },
 ): MatchDaySponsorsContent {
+  // The livestream link belongs to the title page.
+  const { livestream: _livestream, ...bookend } = matchDayTitleContent(opts);
   return {
-    ...matchDayTitleContent(opts),
+    ...bookend,
     page: "sponsors",
     sponsors: opts.sponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Optional data (P5), display-ready. The server builder loads the data (only
+// for visible fields) and these turn it into what the card prints. Each
+// returns null for data it can't print, so the field hides (never "TBC").
+// ---------------------------------------------------------------------------
+
+/** 1 → "1ST", 22 → "22ND", 13 → "13TH". */
+export function ordinal(n: number): string {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "TH" : (["ST", "ND", "RD"][(n % 10) - 1] ?? "TH");
+  return `${n}${suffix}`;
+}
+
+/** The club's link as the title page prints it, or null when it isn't an https address. */
+export function livestreamContent(url: string | null | undefined): ContentLivestream | null {
+  const raw = (url ?? "").trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" || !parsed.hostname) return null;
+  const label = `${parsed.hostname.replace(/^www\./i, "")}${parsed.pathname}`
+    .replace(/\/+$/, "")
+    .toLowerCase();
+  return { url: raw, label };
+}
+
+/** Both teams' places, from the ladder read; null without a club rank. */
+export function ladderContent(
+  positions: {
+    teams: number;
+    tableName: string | null;
+    club: { rank: number };
+    opposition: { rank: number } | null;
+  } | null,
+): ContentLadder | null {
+  const rank = (r: number | undefined) =>
+    r != null && Number.isSafeInteger(r) && r > 0 ? r : null;
+  const club = rank(positions?.club.rank);
+  if (!positions || club === null) return null;
+  const opposition = rank(positions.opposition?.rank);
+  return {
+    club: ordinal(club),
+    opposition: opposition === null ? null : ordinal(opposition),
+    teams: positions.teams,
+    tableName: positions.tableName,
+  };
+}
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** "Won by 24 runs · 2025/26", from the last-meeting read; null when there was none. */
+export function lastMeetingContent(
+  meeting: {
+    outcome: ContentLastMeeting["outcome"];
+    margin: string | null;
+    date: string;
+    season: string | null;
+  } | null,
+): ContentLastMeeting | null {
+  if (!meeting) return null;
+  const result =
+    meeting.outcome === "won" || meeting.outcome === "lost"
+      ? `${capitalise(meeting.outcome)}${meeting.margin ? ` by ${meeting.margin}` : ""}`
+      : meeting.outcome === "tied"
+        ? "Tied"
+        : "No result";
+  const season = (meeting.season ?? "").match(/\d{4}\/\d{2,4}|\d{4}/)?.[0] ?? "";
+  return {
+    outcome: meeting.outcome,
+    line: season ? `${result} · ${season}` : result,
+    date: meeting.date,
+    season: meeting.season,
+  };
+}
+
+/** "Jack Smith" → "J. Smith"; one word stays as it is. */
+export function shortPlayerName(displayName: string): string {
+  const words = displayName.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return words[0] ?? "";
+  return `${words[0]!.charAt(0).toUpperCase()}. ${words.slice(1).join(" ")}`;
+}
+
+/** One milestone within reach, as the milestone watch reads it. */
+export interface MilestoneWithinReach {
+  playerName: string;
+  stat: "games" | "runs" | "wickets";
+  /** The tier: 100 games, 1,000 runs. */
+  tier: number;
+  /** How many more: always 1 for games (this match is the milestone). */
+  gap: number;
+}
+
+/** "J. Smith needs 12 for 1,000 club runs" / "J. Smith's 100th club game". */
+export function milestoneWatchContent(
+  m: MilestoneWithinReach | null,
+): ContentMilestoneWatch | null {
+  if (!m) return null;
+  const name = shortPlayerName(m.playerName);
+  if (!name || m.gap < 1) return null;
+  const tier = m.tier.toLocaleString("en-AU");
+  const line =
+    m.stat === "games"
+      ? `${name}'s ${ordinal(m.tier).toLowerCase()} club game`
+      : `${name} needs ${m.gap} for ${tier} club ${m.stat}`;
+  return { playerName: name, line };
 }

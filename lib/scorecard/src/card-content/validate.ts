@@ -25,12 +25,39 @@ function bookend(v: Record<string, unknown>): boolean {
   );
 }
 
+/** Optional data (P5) checks: a malformed value is dropped, so its field hides. */
+const OPTIONAL_DATA: Record<string, (v: unknown) => boolean> = {
+  livestream: (v) => object(v) && str(v.url) && /^https:\/\//i.test(v.url) && str(v.label),
+  ladder: (v) =>
+    object(v) &&
+    str(v.club) &&
+    strOrNull(v.opposition) &&
+    Number.isSafeInteger(v.teams) &&
+    strOrNull(v.tableName),
+  lastMeeting: (v) =>
+    object(v) &&
+    ["won", "lost", "tied", "noResult"].includes(v.outcome as string) &&
+    str(v.line) &&
+    str(v.date) &&
+    strOrNull(v.season),
+  milestoneWatch: (v) => object(v) && str(v.playerName) && str(v.line),
+};
+
+function withoutBadOptionalData(
+  raw: Record<string, unknown>,
+  keys: readonly string[],
+): CardContent {
+  const out = { ...raw };
+  for (const k of keys) if (k in out && !OPTIONAL_DATA[k]!(out[k])) delete out[k];
+  return out as unknown as CardContent;
+}
+
 /** The content, when `raw` is well-formed Match Day content; else null. */
 export function readCardContent(raw: unknown): CardContent | null {
   if (!object(raw) || raw.kind !== "matchDay") return null;
   switch (raw.page) {
     case "title":
-      return bookend(raw) ? (raw as unknown as CardContent) : null;
+      return bookend(raw) ? withoutBadOptionalData(raw, ["livestream"]) : null;
     case "sponsors":
       return bookend(raw) &&
         Array.isArray(raw.sponsors) &&
@@ -57,7 +84,7 @@ export function readCardContent(raw: unknown): CardContent | null {
         str(s.opponentName) &&
         strOrNull(s.opponentLogoUrl) &&
         strOrNull(s.venue)
-        ? (raw as unknown as CardContent)
+        ? withoutBadOptionalData(raw, ["ladder", "lastMeeting", "milestoneWatch"])
         : null;
     }
     default:

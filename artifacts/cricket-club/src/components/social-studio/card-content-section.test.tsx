@@ -81,4 +81,35 @@ describe("CardContentSection", () => {
       },
     });
   });
+
+  it("saves the livestream link on its own, and only an https one", async () => {
+    const writes = setup();
+    const input = await screen.findByTestId("content-settings-livestream");
+    fireEvent.change(input, { target: { value: "http://example.com/live" } });
+    expect(screen.getByText("Use a link that starts with https://.")).toBeInTheDocument();
+    expect(screen.getByTestId("content-settings-save")).toBeDisabled();
+    fireEvent.change(input, { target: { value: " https://youtube.com/@ourclub " } });
+    fireEvent.click(screen.getByTestId("content-settings-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({ livestreamUrl: "https://youtube.com/@ourclub" });
+  });
+
+  it("offers the data fields, on in Full only", async () => {
+    setup();
+    for (const key of [
+      "title.livestream",
+      "fixture.ladder",
+      "fixture.lastMeeting",
+      "fixture.milestoneWatch",
+    ])
+      expect(await screen.findByTestId(`content-settings-field-${key}`)).toHaveAttribute(
+        "aria-checked",
+        "false",
+      );
+    fireEvent.click(screen.getByTestId("content-settings-preset-full"));
+    expect(screen.getByTestId("content-settings-field-fixture.ladder")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
 });

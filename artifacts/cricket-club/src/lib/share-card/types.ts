@@ -286,6 +286,8 @@ export type ShareCardInput =
         fixtureCount: number;
         sponsors: { name: string; logoUrl: string }[];
         hasCoverPhoto?: boolean;
+        /** The title page's livestream link, shortened ("youtube.com/@club"); P5. */
+        livestream?: string;
       };
       roundLabel: string;
       oppositionName: string;
@@ -301,6 +303,11 @@ export type ShareCardInput =
       junior?: boolean;
       /** Built from card content (ADR-010): names and crest are final, bind them as given. */
       namesResolved?: boolean;
+      /** Optional data (ADR-010 P5), present only when the field is on and loaded. */
+      ladderClub?: string;
+      ladderOpposition?: string;
+      lastMeeting?: string;
+      milestoneWatch?: string;
     }
   | ({
       kind: "teamList";

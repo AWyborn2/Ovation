@@ -433,3 +433,173 @@ export async function playhqGradeIdsForCentralMatches(
   for (const r of rows) if (r.gradeId) out.set(r.matchId, r.gradeId);
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Match Day optional data (ADR-010 P5): one upcoming fixture's two sides and
+// both teams' season ladder positions. The season ladder is PlayHQ's
+// (`playhq.ladders`), never `central.ladder`: that table is all-time, has no
+// season or position and nothing refreshes it (DBA T5.0). Every read returns
+// null rather than a guess, so the card field hides itself.
+// ---------------------------------------------------------------------------
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** One PlayHQ match seen from the club (`orgId`): its grade and both teams. */
+export interface PlayhqFixtureSides {
+  playhqMatchId: string;
+  gradeId: string | null;
+  startAt: Date | null;
+  clubTeamId: string;
+  opponentTeamId: string | null;
+  opponentOrgId: string | null;
+}
+
+/**
+ * The club's side and the opposition's in one PlayHQ match. Null when the
+ * match isn't loaded or the club (`orgId`) plays on neither side, so another
+ * club's match can never be read as this club's.
+ */
+export async function playhqFixtureSides(
+  playhqMatchId: string,
+  orgId: string,
+): Promise<PlayhqFixtureSides | null> {
+  if (!UUID.test(playhqMatchId) || !UUID.test(orgId)) return null;
+  const m = playhqMatchesTable;
+  const [row] = await centralDb
+    .select({
+      id: m.id,
+      gradeId: m.gradeId,
+      startAt: m.startAt,
+      homeTeamId: m.homeTeamId,
+      homeOrgId: m.homeOrgId,
+      awayTeamId: m.awayTeamId,
+      awayOrgId: m.awayOrgId,
+    })
+    .from(m)
+    .where(eq(m.id, playhqMatchId));
+  if (!row) return null;
+  const org = orgId.toLowerCase();
+  const home = row.homeOrgId?.toLowerCase() === org;
+  const away = row.awayOrgId?.toLowerCase() === org;
+  // Both sides the club's (an internal match) or neither: no opposition to read.
+  if (home === away) return null;
+  const clubTeamId = home ? row.homeTeamId : row.awayTeamId;
+  if (!clubTeamId) return null;
+  return {
+    playhqMatchId: row.id,
+    gradeId: row.gradeId,
+    startAt: row.startAt,
+    clubTeamId,
+    opponentTeamId: (home ? row.awayTeamId : row.homeTeamId) ?? null,
+    opponentOrgId: (home ? row.awayOrgId : row.homeOrgId) ?? null,
+  };
+}
+
+/** One team's place on a season ladder. */
+export interface LadderSpot {
+  rank: number;
+  points: number | null;
+  played: number | null;
+}
+
+/** Both teams' places on the ladder table they share, for one fixture. */
+export interface FixtureLadderPositions {
+  gradeId: string;
+  /** The table's name when the grade publishes several (One Day / Two Day); else null. */
+  tableName: string | null;
+  /** Teams on the table. */
+  teams: number;
+  club: LadderSpot;
+  /** Null when the opposition isn't on the same table or has no rank yet. */
+  opposition: LadderSpot | null;
+  fetchedAt: Date | null;
+}
+
+/** A ladder older than this (by `playhq.ladders.fetched_at`) is a round behind at least. */
+export const LADDER_MAX_AGE_MS = 8 * 24 * 60 * 60 * 1000;
+
+/**
+ * The table a fixture's two teams share. Pure. The one table holding both
+ * teams; failing that, the only table holding the club's team (the opposition
+ * then has no place); otherwise null — several candidate tables are
+ * ambiguous, and a guess could print the wrong competition's standings.
+ */
+export function pickFixtureLadderTable(
+  ladders: PlayhqLadder["ladders"],
+  clubTeamId: string,
+  opponentTeamId: string | null,
+): PlayhqLadder["ladders"][number] | null {
+  const has = (t: PlayhqLadder["ladders"][number], id: string | null) =>
+    !!id && t.teams.some((x) => x.teamId.toLowerCase() === id.toLowerCase());
+  const withClub = ladders.filter((t) => has(t, clubTeamId));
+  const withBoth = withClub.filter((t) => has(t, opponentTeamId));
+  if (withBoth.length === 1) return withBoth[0]!;
+  if (withBoth.length === 0 && withClub.length === 1) return withClub[0]!;
+  return null;
+}
+
+/**
+ * Both teams' season ladder positions for one upcoming fixture, read fresh.
+ * Null — the field hides — when the match isn't loaded or isn't the club's,
+ * the grade is junior (`playhqGradeLadderUncached` returns null for juniors),
+ * no table holds the club's team, the club's team has no rank, the ladder was
+ * fetched more than {@link LADDER_MAX_AGE_MS} ago, or it hasn't caught up with
+ * the club's completed matches in the grade before this fixture (the Posting
+ * Plan's KTD7 gate: a scrape taken before PlayHQ recalculated shows last
+ * week's standings).
+ */
+export async function fixtureLadderPositions(opts: {
+  orgId: string;
+  playhqMatchId: string;
+  now?: Date;
+}): Promise<FixtureLadderPositions | null> {
+  const now = opts.now ?? new Date();
+  const sides = await playhqFixtureSides(opts.playhqMatchId, opts.orgId);
+  if (!sides?.gradeId) return null;
+  const ladder = await playhqGradeLadderUncached(sides.gradeId, opts.orgId);
+  if (!ladder) return null;
+  const table = pickFixtureLadderTable(ladder.ladders, sides.clubTeamId, sides.opponentTeamId);
+  if (!table) return null;
+  const find = (id: string | null) =>
+    id ? table.teams.find((t) => t.teamId.toLowerCase() === id.toLowerCase()) : undefined;
+  const club = find(sides.clubTeamId);
+  if (!club || club.rank == null) return null;
+
+  const l = playhqLaddersTable;
+  const [fetched] = await centralDb
+    .select({ at: sql<Date | string | null>`max(${l.fetchedAt})` })
+    .from(l)
+    .where(and(eq(l.gradeId, sides.gradeId), eq(l.ladderName, table.name)));
+  const fetchedAt = fetched?.at == null ? null : new Date(fetched.at);
+  if (!fetchedAt || now.getTime() - fetchedAt.getTime() > LADDER_MAX_AGE_MS) return null;
+
+  // The club team's completed matches in this grade before the fixture.
+  const m = playhqMatchesTable;
+  const [done] = await centralDb
+    .select({ n: sql<number>`count(*)::int` })
+    .from(m)
+    .where(
+      and(
+        eq(m.gradeId, sides.gradeId),
+        or(eq(m.homeTeamId, sides.clubTeamId), eq(m.awayTeamId, sides.clubTeamId)),
+        sql`upper(coalesce(${m.status}, '')) = 'COMPLETED'`,
+        sides.startAt ? sql`${m.startAt} < ${sides.startAt}` : sql`${m.startAt} < ${now}`,
+      ),
+    );
+  if ((club.played ?? 0) < Number(done?.n ?? 0)) return null;
+
+  const spot = (t: PlayhqLadderTeam): LadderSpot => ({
+    rank: t.rank!,
+    points: t.points,
+    played: t.played,
+  });
+  const opp = find(sides.opponentTeamId);
+  return {
+    gradeId: sides.gradeId,
+    tableName: ladder.ladders.length > 1 ? table.name : null,
+    teams: table.teams.length,
+    club: spot(club),
+    opposition: opp && opp.rank != null ? spot(opp) : null,
+    fetchedAt,
+  };
+}

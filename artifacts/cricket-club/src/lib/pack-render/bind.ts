@@ -241,6 +241,13 @@ export function bindInput(
           if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
         });
       }
+      // Optional data (ADR-010 P5): bound as given or empty, so a box with
+      // nothing to say drops out and a sample never prints.
+      values["livestream"] = input.carouselPage?.livestream ?? "";
+      values["ladder.club"] = input.ladderClub ?? "";
+      values["ladder.opposition"] = input.ladderClub ? (input.ladderOpposition ?? "") : "";
+      values["lastMeeting"] = input.lastMeeting ?? "";
+      values["milestoneWatch"] = input.milestoneWatch ?? "";
       // Explicitly clear absent labels on historical frozen covers rather than
       // allowing sample data to supply a made-up round.
       values["roundLabel"] = input.roundLabel ?? "";

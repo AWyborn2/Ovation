@@ -14,7 +14,10 @@ import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-cl
 import {
   CONTENT_FIELDS,
   CONTENT_PRESETS,
+  ladderContent,
+  lastMeetingContent,
   matchDayFixtureContent,
+  milestoneWatchContent,
   presetFields,
   type ContentPreset,
 } from "@workspace/scorecard/card-content";
@@ -42,15 +45,40 @@ const fixture: Fixture = {
   source: "manual",
   createdAt: "",
 };
-const content = {
-  [fixture.id]: matchDayFixtureContent({
-    ...fixture,
-    roundLabel: fixture.roundLabel ?? null,
-    opponentLogoUrl: fixture.opponentLogoUrl ?? null,
-    venue: fixture.venue ?? null,
-    startAt: new Date(fixture.startAt),
-  }) as unknown as Record<string, unknown>,
+// Worst-case optional data (P5): double-digit places, a long margin, a long name.
+const OPTIONAL_DATA = {
+  ladder: ladderContent({
+    teams: 14,
+    tableName: null,
+    club: { rank: 12 },
+    opposition: { rank: 13 },
+  })!,
+  lastMeeting: lastMeetingContent({
+    outcome: "won",
+    margin: "10 wickets (DLS method)",
+    date: "2026-02-07",
+    season: "2025/26",
+  })!,
+  milestoneWatch: milestoneWatchContent({
+    playerName: "Alexander Featherstonehaugh-Smith",
+    stat: "wickets",
+    tier: 100,
+    gap: 3,
+  })!,
 };
+const content = {
+  [fixture.id]: {
+    ...matchDayFixtureContent({
+      ...fixture,
+      roundLabel: fixture.roundLabel ?? null,
+      opponentLogoUrl: fixture.opponentLogoUrl ?? null,
+      venue: fixture.venue ?? null,
+      startAt: new Date(fixture.startAt),
+    }),
+    ...OPTIONAL_DATA,
+  } as unknown as Record<string, unknown>,
+};
+const LIVESTREAM = "https://www.youtube.com/@RockinghamMandurahDistrictsCricketClub/live";
 const teamPhoto: ClubPhoto = {
   id: 5,
   grade: fixture.grade,
@@ -73,7 +101,7 @@ const coverPhoto: ClubPhoto = {
   url: "https://photos.test/cover.jpg",
 };
 const bundle = {
-  settings: { sponsorsEnabled: true, clubHashtag: "#OURCLUB" },
+  settings: { sponsorsEnabled: true, clubHashtag: "#OURCLUB", livestreamUrl: LIVESTREAM },
   brand: { name: "Our Cricket Club", primaryColour: "#009900", backgroundColour: "#001122" },
   activeSponsors: [
     { name: "Presenting Partner", logoUrl: "https://s.test/presenting.png", isPresenting: true },
@@ -166,6 +194,16 @@ describe.each(CONTENT_PACK_IDS)("fit grid: %s", (packId) => {
               text.includes("Presenting Partner") || html.includes("https://s.test/presenting.png"),
               where,
             ).toBe(show("title.presentingSponsor"));
+            // The livestream link: shortened, one line (it ellipses rather than wraps).
+            const live = doc.querySelector("[data-livestream]");
+            expect(!!live, where).toBe(show("title.livestream"));
+            if (live) {
+              expect(live.textContent, where).toContain("WATCH LIVE");
+              expect(live.textContent, where).toContain(
+                "youtube.com/@rockinghammandurahdistrictscricketclub/live",
+              );
+              expect(live.innerHTML, where).toMatch(/white-space:nowrap/);
+            }
           }
           if (slide.id === "fixture-1") {
             const upper = text.toUpperCase();
@@ -183,6 +221,17 @@ describe.each(CONTENT_PACK_IDS)("fit grid: %s", (packId) => {
               show("fixture.teamSponsor"),
             );
             expect(html.includes(teamPhoto.url), where).toBe(show("fixture.photo"));
+            // Optional data (P5): shown exactly when its field is on; one line each.
+            expect(upper.includes("12TH"), where).toBe(show("fixture.ladder"));
+            expect(upper.includes("13TH"), where).toBe(show("fixture.ladder"));
+            expect(text.includes(OPTIONAL_DATA.lastMeeting.line), where).toBe(
+              show("fixture.lastMeeting"),
+            );
+            expect(text.includes(OPTIONAL_DATA.milestoneWatch.line), where).toBe(
+              show("fixture.milestoneWatch"),
+            );
+            for (const line of doc.querySelectorAll("[data-content-line]"))
+              expect(line.innerHTML, `${where}: one line`).toMatch(/white-space:nowrap/);
             // The raw register name never prints; the short name does, uncut.
             expect(text, where).not.toContain("Cricket Club Inc");
             const boxes = [...doc.querySelectorAll("[data-fit]")];
@@ -220,5 +269,46 @@ describe("hidden fields leave no gaps", () => {
       );
       expect(html).not.toMatch(/SAT 10 OCT\s*·\s*</);
     }
+  });
+});
+
+describe("optional data with nothing to say leaves no box", () => {
+  it("a visible data field without data drops its line and its label in both packs", () => {
+    const bare = {
+      [fixture.id]: matchDayFixtureContent({
+        ...fixture,
+        roundLabel: fixture.roundLabel ?? null,
+        opponentLogoUrl: fixture.opponentLogoUrl ?? null,
+        venue: fixture.venue ?? null,
+        startAt: new Date(fixture.startAt),
+      }) as unknown as Record<string, unknown>,
+    };
+    const teams = createTeamSlides([fixture], [teamPhoto], bare);
+    const slides = buildWeekendSlides(
+      teams,
+      [teamPhoto],
+      { ...bundle, settings: { ...bundle.settings, livestreamUrl: null } } as SocialSettingsBundle,
+      "Round three",
+      "2026-10-09",
+      "2026-10-11",
+      "Australia/Perth",
+      undefined,
+      presetFields("matchDay", "full"),
+    );
+    for (const packId of CONTENT_PACK_IDS)
+      for (const slide of slides) {
+        const html = renderPackCard(
+          slide.input,
+          "square",
+          slide.sponsorsOn,
+          resolveCardTokens({ junior: false, data: slide.data, packId }),
+          false,
+          slide.data,
+          packId,
+        );
+        expect(html, `${packId} ${slide.id}`).not.toMatch(/LAST MET|LADDER|WATCH LIVE|TBC/);
+        expect(html, `${packId} ${slide.id}`).not.toContain("data-content-line");
+        expect(html, `${packId} ${slide.id}`).not.toContain("data-ladder-place");
+      }
   });
 });

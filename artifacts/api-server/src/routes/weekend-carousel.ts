@@ -7,6 +7,7 @@ import {
   GetWeekendCarouselSourcesResponse,
 } from "@workspace/api-zod";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { isMatchDayDataField, type MatchDayDataField } from "@workspace/scorecard/card-content";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -16,7 +17,7 @@ import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { carouselContent } from "../lib/carousel-content";
 import { loadClubGradeOrder } from "../lib/club-grade-order";
 import { sortByGradeOrder } from "@workspace/scorecard";
-import { buildMatchDayContent } from "../lib/card-content/match-day";
+import { OPTIONAL_FIELD_WARNING, buildMatchDayContent } from "../lib/card-content/match-day";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,13 @@ router.get(
       return;
     }
     const { from, to, setType = "matchDay", audience = "all" } = parsed.data;
+    // The visible optional data fields (ADR-010 P5): only these are loaded.
+    const dataFields = new Set<MatchDayDataField>(
+      (parsed.data.fields ?? "")
+        .split(",")
+        .map((f) => f.trim())
+        .filter(isMatchDayDataField),
+    );
     const validDay = (s: string) =>
       /^\d{4}-\d{2}-\d{2}$/.test(s) &&
       Number.isFinite(Date.parse(s)) &&
@@ -99,11 +107,17 @@ router.get(
       await loadClubGradeOrder(tenantId),
     );
     // Match Day slides come from the same builder as the 48-hour sweep (ADR-010).
+    const optionalWarnings: string[] = [];
     const matchDayContent =
       setType === "matchDay"
         ? await buildMatchDayContent(tenantId, fixtures, {
             junior: sources.junior,
             onNamesError: (err) => req.log.warn({ err, tenantId }, "card names: read failed"),
+            fields: dataFields,
+            onOptionalError: (field, err) => {
+              req.log.warn({ err, tenantId, field }, "match day optional data: read failed");
+              optionalWarnings.push(OPTIONAL_FIELD_WARNING[field]);
+            },
           })
         : null;
     const isJunior = (id: number) =>
@@ -183,6 +197,7 @@ router.get(
               ]
             : []),
           ...sources.warnings,
+          ...optionalWarnings,
         ],
       }),
     );

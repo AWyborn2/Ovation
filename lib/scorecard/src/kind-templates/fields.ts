@@ -791,6 +791,22 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         label: "Note body",
       },
       {
+        key: "ladder.club",
+        label: "Club ladder position",
+      },
+      {
+        key: "ladder.opposition",
+        label: "Opposition ladder position",
+      },
+      {
+        key: "lastMeeting",
+        label: "Last meeting",
+      },
+      {
+        key: "milestoneWatch",
+        label: "Milestone watch",
+      },
+      {
         key: "hashtags",
         label: "Hashtag footer",
       },
@@ -1949,11 +1965,14 @@ export type ContentFieldDef = {
 
 const ALL_PRESETS: readonly ContentPreset[] = CONTENT_PRESETS;
 const STANDARD_UP: readonly ContentPreset[] = ["standard", "full"];
+const FULL_ONLY: readonly ContentPreset[] = ["full"];
 
 /**
  * Standard is the cards as they were before presets existed, so a club that
  * never opens the settings sees no change. Full adds the optional data fields
- * as they land (ladder, last meeting, milestone watch, livestream: P5).
+ * (P5): the livestream link on the title page, and ladder positions, the last
+ * meeting and milestone watch on each fixture. Each data field is loaded only
+ * when it is visible and hides itself when its data is missing.
  */
 export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
   matchDay: [
@@ -1979,6 +1998,13 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       slide: "title",
       tier: "optional",
       presets: STANDARD_UP,
+    },
+    {
+      key: "title.livestream",
+      label: "Livestream link",
+      slide: "title",
+      tier: "optional",
+      presets: FULL_ONLY,
     },
     { key: "fixture.grade", label: "Grade", slide: "fixture", tier: "core", presets: ALL_PRESETS },
     {
@@ -2033,6 +2059,27 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       presets: STANDARD_UP,
     },
     {
+      key: "fixture.ladder",
+      label: "Ladder positions",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "fixture.lastMeeting",
+      label: "Last meeting",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "fixture.milestoneWatch",
+      label: "Milestone watch",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
       key: "sponsors.logos",
       label: "Sponsor logos",
       slide: "sponsors",
@@ -2041,6 +2088,21 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
     },
   ],
 };
+
+/**
+ * The fixture fields whose data the server loads only when they are visible
+ * (P5): the Weekend Carousel asks for the visible ones by key.
+ */
+export const MATCH_DAY_DATA_FIELDS = [
+  "fixture.ladder",
+  "fixture.lastMeeting",
+  "fixture.milestoneWatch",
+] as const;
+export type MatchDayDataField = (typeof MATCH_DAY_DATA_FIELDS)[number];
+
+export function isMatchDayDataField(key: unknown): key is MatchDayDataField {
+  return typeof key === "string" && (MATCH_DAY_DATA_FIELDS as readonly string[]).includes(key);
+}
 
 export function isContentKind(kind: unknown): kind is ContentKind {
   return typeof kind === "string" && (CONTENT_KINDS as readonly string[]).includes(kind);
