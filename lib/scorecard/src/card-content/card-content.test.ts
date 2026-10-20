@@ -32,9 +32,7 @@ describe("content field catalogue", () => {
 
   it("Minimal is core only; Standard and Full show every field built so far", () => {
     expect([...presetFields("matchDay", "minimal")].sort()).toEqual([...CORE].sort());
-    expect([...presetFields("matchDay", "standard")].sort()).toEqual(
-      [...CORE, ...OPTIONAL].sort(),
-    );
+    expect([...presetFields("matchDay", "standard")].sort()).toEqual([...CORE, ...OPTIONAL].sort());
     expect([...presetFields("matchDay", "full")].sort()).toEqual([...CORE, ...OPTIONAL].sort());
   });
 });

@@ -309,7 +309,8 @@ describe("carousel cover round labels", () => {
   const teams = (...rounds: (string | null | undefined)[]) =>
     createTeamSlides(
       rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel })),
-      [], md(rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel }))),
+      [],
+      md(rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel }))),
     );
 
   it("normalises numeric rounds and round prefixes across selected grades", () => {
@@ -451,7 +452,8 @@ describe("weekend sponsor placements", () => {
     buildWeekendSlides(
       createTeamSlides(
         [fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })],
-        [], md([fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })]),
+        [],
+        md([fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })]),
       ),
       [],
       b,
@@ -766,7 +768,11 @@ describe("strict photos and full ordered sets", () => {
     random.mockRestore();
   });
   it("revalidates deleted/reclassified selections without fallback and flags missing details", () => {
-    const teams = createTeamSlides([fixture(1, { venue: null, opponentName: "" })], [photo()], md([fixture(1, { venue: null, opponentName: "" })]));
+    const teams = createTeamSlides(
+      [fixture(1, { venue: null, opponentName: "" })],
+      [photo()],
+      md([fixture(1, { venue: null, opponentName: "" })]),
+    );
     const slides = buildWeekendSlides(
       teams,
       [photo(1, { grade: "B Grade" })],
@@ -784,7 +790,8 @@ describe("strict photos and full ordered sets", () => {
   it("keeps duplicate-grade fixtures and all 14 slides, plus every eligible sponsor", () => {
     const teams = createTeamSlides(
       Array.from({ length: 12 }, (_, i) => fixture(i + 1)),
-      [], md(Array.from({ length: 12 }, (_, i) => fixture(i + 1))),
+      [],
+      md(Array.from({ length: 12 }, (_, i) => fixture(i + 1))),
     );
     const slides = buildWeekendSlides(
       moveTeam(teams, 0, 11),
@@ -808,7 +815,11 @@ describe("strict photos and full ordered sets", () => {
     });
   });
   it("provides an explicit no-sponsors closing state and branded junior no-photo card", () => {
-    const teams = createTeamSlides([fixture(1, { grade: "U15" })], [photo(1, { grade: "U15" })], md([fixture(1, { grade: "U15" })]));
+    const teams = createTeamSlides(
+      [fixture(1, { grade: "U15" })],
+      [photo(1, { grade: "U15" })],
+      md([fixture(1, { grade: "U15" })]),
+    );
     const slides = buildWeekendSlides(
       teams,
       [],

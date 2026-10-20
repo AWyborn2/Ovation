@@ -120,8 +120,7 @@ export function useWeekendCarousel(
   const busy = exporting || generating;
 
   const fixtures = useMemo(
-    () =>
-      filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], content, audience),
+    () => filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], content, audience),
     [sources, content, audience],
   );
   const photos = useMemo(

@@ -65,7 +65,13 @@ const teamPhoto: ClubPhoto = {
   takenAt: null,
   matchFormat: null,
 };
-const coverPhoto: ClubPhoto = { ...teamPhoto, id: 6, grade: null, season: 2026, url: "https://photos.test/cover.jpg" };
+const coverPhoto: ClubPhoto = {
+  ...teamPhoto,
+  id: 6,
+  grade: null,
+  season: 2026,
+  url: "https://photos.test/cover.jpg",
+};
 const bundle = {
   settings: { sponsorsEnabled: true, clubHashtag: "#OURCLUB" },
   brand: { name: "Our Cricket Club", primaryColour: "#009900", backgroundColour: "#001122" },
@@ -87,7 +93,10 @@ function slidesFor(preset: ContentPreset) {
     "2026-10-09",
     "2026-10-11",
     "Australia/Perth",
-    { selection: { photoId: coverPhoto.id, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } }, photos: [coverPhoto] },
+    {
+      selection: { photoId: coverPhoto.id, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } },
+      photos: [coverPhoto],
+    },
     presetFields("matchDay", preset),
   );
 }
@@ -126,65 +135,73 @@ describe.each(CONTENT_PACK_IDS)("fit grid: %s", (packId) => {
     const slides = slidesFor(preset);
     const show = (k: string) => visible.has(k);
 
-    it.each(CONTENT_LAYOUT_SIZES)("renders every slide at %s with only its visible fields", (size) => {
-      expect(slides.map((s) => s.id)).toEqual(["title", "fixture-1", "sponsors"]);
-      for (const slide of slides) {
-        const html = renderPackCard(
-          slide.input,
-          size,
-          slide.sponsorsOn,
-          resolveCardTokens({ junior: slide.junior, data: slide.data, packId }),
-          slide.junior,
-          slide.data,
-          packId,
-        );
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const text = (doc.body.textContent ?? "").replace(/\s+/g, " ");
-        const where = `${packId} ${preset} ${size} ${slide.id}`;
-        expect(html, where).not.toContain("{{");
-        expect(html, where).not.toContain("data-drop-if-field");
-        expect(html, where).not.toMatch(SAMPLES);
-        expect(text, where).not.toMatch(/TBC/);
-
-        if (slide.id === "title") {
-          expect(text, where).toMatch(/SAT 10 OCT|FRI 9 OCT/);
-          expect(text.includes("ROUND 3"), where).toBe(show("title.round"));
-          expect(html.includes(coverPhoto.url), where).toBe(show("title.coverPhoto"));
-          // The presenting sponsor shows as its logo, or its name when it has none.
-          expect(
-            text.includes("Presenting Partner") || html.includes("https://s.test/presenting.png"),
-            where,
-          ).toBe(show("title.presentingSponsor"));
-        }
-        if (slide.id === "fixture-1") {
-          const upper = text.toUpperCase();
-          for (const value of ["ROCKINGHAM MANDURAH DISTRICTS", "SAT 10 OCT", "10:00 AM", "AWAY"])
-            expect(upper, `${where}: ${value}`).toContain(value);
-          expect(upper.includes("MIKE BARNETT SPORTS COMPLEX OVAL 2"), where).toBe(true);
-          expect(upper.includes("WESTERN DISTRICT FEMALE PREMIER CHAMPIONSHIP"), where).toBe(true);
-          expect(upper.includes("ROUND 3"), where).toBe(show("fixture.round"));
-          expect(html.includes("https://crest.test/rmd.png"), where).toBe(
-            show("fixture.oppositionCrest"),
+    it.each(CONTENT_LAYOUT_SIZES)(
+      "renders every slide at %s with only its visible fields",
+      (size) => {
+        expect(slides.map((s) => s.id)).toEqual(["title", "fixture-1", "sponsors"]);
+        for (const slide of slides) {
+          const html = renderPackCard(
+            slide.input,
+            size,
+            slide.sponsorsOn,
+            resolveCardTokens({ junior: slide.junior, data: slide.data, packId }),
+            slide.junior,
+            slide.data,
+            packId,
           );
-          expect(html.includes("https://s.test/team.png"), where).toBe(show("fixture.teamSponsor"));
-          expect(html.includes(teamPhoto.url), where).toBe(show("fixture.photo"));
-          // The raw register name never prints; the short name does, uncut.
-          expect(text, where).not.toContain("Cricket Club Inc");
-          const boxes = [...doc.querySelectorAll("[data-fit]")];
-          expect(boxes.length, where).toBeGreaterThan(0);
-          for (const box of boxes) {
-            const value = (box.textContent ?? "").trim();
-            const capacity = Number(box.getAttribute("data-fit"));
-            expect(fitsWithoutEllipsis(value, capacity), `${where}: "${value}" in ${capacity}`).toBe(
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const text = (doc.body.textContent ?? "").replace(/\s+/g, " ");
+          const where = `${packId} ${preset} ${size} ${slide.id}`;
+          expect(html, where).not.toContain("{{");
+          expect(html, where).not.toContain("data-drop-if-field");
+          expect(html, where).not.toMatch(SAMPLES);
+          expect(text, where).not.toMatch(/TBC/);
+
+          if (slide.id === "title") {
+            expect(text, where).toMatch(/SAT 10 OCT|FRI 9 OCT/);
+            expect(text.includes("ROUND 3"), where).toBe(show("title.round"));
+            expect(html.includes(coverPhoto.url), where).toBe(show("title.coverPhoto"));
+            // The presenting sponsor shows as its logo, or its name when it has none.
+            expect(
+              text.includes("Presenting Partner") || html.includes("https://s.test/presenting.png"),
+              where,
+            ).toBe(show("title.presentingSponsor"));
+          }
+          if (slide.id === "fixture-1") {
+            const upper = text.toUpperCase();
+            for (const value of ["ROCKINGHAM MANDURAH DISTRICTS", "SAT 10 OCT", "10:00 AM", "AWAY"])
+              expect(upper, `${where}: ${value}`).toContain(value);
+            expect(upper.includes("MIKE BARNETT SPORTS COMPLEX OVAL 2"), where).toBe(true);
+            expect(upper.includes("WESTERN DISTRICT FEMALE PREMIER CHAMPIONSHIP"), where).toBe(
               true,
             );
+            expect(upper.includes("ROUND 3"), where).toBe(show("fixture.round"));
+            expect(html.includes("https://crest.test/rmd.png"), where).toBe(
+              show("fixture.oppositionCrest"),
+            );
+            expect(html.includes("https://s.test/team.png"), where).toBe(
+              show("fixture.teamSponsor"),
+            );
+            expect(html.includes(teamPhoto.url), where).toBe(show("fixture.photo"));
+            // The raw register name never prints; the short name does, uncut.
+            expect(text, where).not.toContain("Cricket Club Inc");
+            const boxes = [...doc.querySelectorAll("[data-fit]")];
+            expect(boxes.length, where).toBeGreaterThan(0);
+            for (const box of boxes) {
+              const value = (box.textContent ?? "").trim();
+              const capacity = Number(box.getAttribute("data-fit"));
+              expect(
+                fitsWithoutEllipsis(value, capacity),
+                `${where}: "${value}" in ${capacity}`,
+              ).toBe(true);
+            }
+          }
+          if (slide.id === "sponsors") {
+            expect(html, where).toContain("https://s.test/club.png");
           }
         }
-        if (slide.id === "sponsors") {
-          expect(html, where).toContain("https://s.test/club.png");
-        }
-      }
-    });
+      },
+    );
   });
 });
 

@@ -12,9 +12,7 @@ const str = (v: unknown): v is string => typeof v === "string";
 const strOrNull = (v: unknown) => v === null || typeof v === "string";
 
 function team(v: unknown): v is ContentTeam {
-  return (
-    object(v) && str(v.name) && str(v.rawName) && strOrNull(v.crestUrl) && str(v.monogram)
-  );
+  return object(v) && str(v.name) && str(v.rawName) && strOrNull(v.crestUrl) && str(v.monogram);
 }
 
 function bookend(v: Record<string, unknown>): boolean {

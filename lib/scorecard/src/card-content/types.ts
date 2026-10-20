@@ -77,7 +77,8 @@ export interface MatchDayFixtureContent {
   source: MatchDayFixtureSource;
 }
 
-export type MatchDayContent = MatchDayTitleContent | MatchDayFixtureContent | MatchDaySponsorsContent;
+export type MatchDayContent =
+  MatchDayTitleContent | MatchDayFixtureContent | MatchDaySponsorsContent;
 
 /** Content per kind; more kinds join as they move onto the pipeline (P7). */
 export type CardContent = MatchDayContent;

@@ -26,7 +26,12 @@ export interface ContentLayout {
   capacity: Record<CardSize, Record<ContentPreset, number>>;
 }
 
-export const CONTENT_LAYOUT_SIZES: readonly CardSize[] = ["square", "portrait", "story", "landscape"];
+export const CONTENT_LAYOUT_SIZES: readonly CardSize[] = [
+  "square",
+  "portrait",
+  "story",
+  "landscape",
+];
 
 const everySize = (perPreset: Record<ContentPreset, number>) =>
   Object.fromEntries(CONTENT_LAYOUT_SIZES.map((s) => [s, { ...perPreset }])) as Record<
