@@ -78,6 +78,7 @@ router.post(
           grades: cleanGrades(parsed.data.grades),
           isPresenting,
           displayOrder: parsed.data.displayOrder ?? 0,
+          tier: parsed.data.tier ?? "standard",
         })
         .returning();
       return created;

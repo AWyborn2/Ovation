@@ -92,7 +92,7 @@ beforeAll(async () => {
     autoPostWindowHours: 12,
     notificationEmail: "studio@club.example",
   });
-  // What migration 0055 makes of the notification address.
+  // What migration 0056 makes of the notification address.
   process.env.EMAIL_FROM ??= "club@example.com";
   const [list] = await db
     .insert(emailListsTable)

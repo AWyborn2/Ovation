@@ -63,6 +63,8 @@ describe("A7 sponsors.is_presenting — schema + contract round-trip", () => {
       cardKinds: [],
       isPresenting: true,
       displayOrder: 0,
+      // Every row carries its tier (ADR-010 P6, default "standard").
+      tier: "standard",
     });
     expect(resp.isPresenting).toBe(true);
     expect(() =>

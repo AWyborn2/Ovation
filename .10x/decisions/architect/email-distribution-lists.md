@@ -161,7 +161,7 @@ once it has been logged is not.
   `payload.draftIds`, and a `NOT EXISTS … payload->'draftIds' @> id` check stops a draft being
   listed twice. Milestones means the `milestone` engine or the `achievements` family, while
   awaiting review or ready.
-- **Notification address.** Migration `0055_social_email_lists.sql` (data only) gives each club
+- **Notification address.** Migration `0056_social_email_lists.sql` (data only) gives each club
   with `social_settings.notification_email` a "Social media" list holding that address, with all
   three toggles on. `notifyDraftsReady` now queues `asset_ready` sends instead of emailing the
   address. `notifyClub` (published / failed / reconnect / posts due / cards rolled) bcc's the
@@ -184,7 +184,7 @@ once it has been logged is not.
 ## As built: junior lists (PR2, decision of 20 Oct 2026)
 
 - `email_lists.section` is `'senior'` or `'junior'` (default `'senior'`, CHECK constraint). It is
-  added in `0055_social_email_lists.sql` with `ADD COLUMN IF NOT EXISTS`. It is fixed when a list
+  added in `0056_social_email_lists.sql` with `ADD COLUMN IF NOT EXISTS`. It is fixed when a list
   is created, and an update never changes it. Only team-sheet lists can be junior; social lists
   are always `senior` (club-level).
 - A junior list keeps junior team labels in `email_list_teams.grade_key`. The label is
