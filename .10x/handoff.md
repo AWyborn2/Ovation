@@ -1,5 +1,24 @@
 # Handoff
 
+**From:** SDE (PR B)
+**To:** SDE sessions for PR C (if it merges second) and PR D
+**Feature:** selection-side-size
+
+## Context
+
+- PR B (`wyborn21/selection-side-size-pr-b-a48658`) does TB.1–TB.5 and adds no migration.
+  - Settings: `PUT /availability/settings` saves `sideSizes` through `cleanSideSizes` (12 is dropped as the default; leaving the field out keeps the stored map). GET and PUT also return `grades` (`loadSideGrades`). Admin → Availability has a "Sides by grade" card; PR C's overseas cap can go in the same card as a second column.
+  - A draft fixes `selections.side_size` from `gradeSideSize(settings.sideSizes, grade)` when it's created. A junior side is keyed by `juniorSideLabel`. Lowering a grade never touches existing drafts: the board sets `warnings.gradeSideSize` and `warnings.overSize`, and the hub shows "X is now N: move K players out".
+  - `saveBoard` accepts from 11 slots up to the side's size. Above 12, an older client's short post keeps the stored tail.
+  - Finalise publishes order 1–N, with `twelfth: true` only on the 12th of a 12-player side. `renumberList` handles withdrawals.
+  - The team sheet takes `TeamSheet.sideSize` and draws N rows. Rows shrink above 12.
+- Still open:
+  - The PCA team-sheet note "All 12 named players may bowl." (`team-sheet-rules.ts`, bylaw 5.3.1) still prints on a 14-player sheet. Ask Ash whether interchange grades need their own rules text.
+  - **PR D:** `TeamListPlayer.twelfth` is now populated, and packs need `maxRows: 14` plus auto-compress.
+  - The optional spec fields (`sideSize`, `gradeSideSize`, `overSize`) are always sent now and could be made required.
+
+## Previous handoff
+
 **From:** SDE (PR A)
 **To:** SDE sessions for PR B and PR C
 **Feature:** selection-side-size
