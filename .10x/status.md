@@ -59,3 +59,4 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 - 2026-10-20 Design: P8 brief agreed with Ash (full-bleed duotone photo in club colours, optional; one-line ROUND N headline; white info sheet; Archivo Expanded; no-photo slides use a zoomed, offset club logo at ~13% under halftone + grain). Content contract per preset and size in `docs/plans/2026-10-20-new-social-pack-brief.md`.
 
 - 2026-10-20 PM: email-distribution-lists scoped and approved; handed to architect.
+- 2026-10-20 Architect: email-distribution-lists design complete (outbox); handed to Staff/EM.
