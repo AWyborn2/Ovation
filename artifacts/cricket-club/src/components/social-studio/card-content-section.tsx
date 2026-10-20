@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Loader2, Save } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ContentFieldPicker } from "./content-field-picker";
