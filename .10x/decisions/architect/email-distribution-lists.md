@@ -20,13 +20,13 @@ image.
 
 ## Options considered
 
-| | A. Inline send in the request | **B. Postgres outbox + drain (recommended)** | C. External queue/worker |
-|---|---|---|---|
-| Retries | none | yes (attempts, backoff on the hourly sweep) | yes |
-| Scheduled mode | impossible | hourly sweep picks up due lists | yes |
-| Idempotency | hard | unique key per send | yes |
-| New infra | none | none | Redis/worker: rejected (no distributed problem) |
-| Blocks the admin's request | PDF + Chromium in the request path | no (fire-and-forget drain after commit) | no |
+|                            | A. Inline send in the request      | **B. Postgres outbox + drain (recommended)** | C. External queue/worker                        |
+| -------------------------- | ---------------------------------- | -------------------------------------------- | ----------------------------------------------- |
+| Retries                    | none                               | yes (attempts, backoff on the hourly sweep)  | yes                                             |
+| Scheduled mode             | impossible                         | hourly sweep picks up due lists              | yes                                             |
+| Idempotency                | hard                               | unique key per send                          | yes                                             |
+| New infra                  | none                               | none                                         | Redis/worker: rejected (no distributed problem) |
+| Blocks the admin's request | PDF + Chromium in the request path | no (fire-and-forget drain after commit)      | no                                              |
 
 B fits the existing patterns: notifications are written first and email is a best-effort echo
 (KTD5), and the hourly `POST /api/internal/playhq/sweep` is already the scheduler.
@@ -94,16 +94,16 @@ B fits the existing patterns: notifications are written first and email is a bes
 
 ## Failure modes
 
-| Failure | Behaviour | Detection |
-|---|---|---|
-| Resend down / 5xx | row `failed`; hourly retry ×3 | send log shows Failed; Resend button |
-| Email disabled (no key/from) | rows `skipped` with reason `disabled` | log |
-| PDF render fails | `failed`, retried; never blocks finalise | log + logger.warn |
-| Card PNG render fails (harness unreachable) | send with link fallback, `last_error` noted | log; smoke-check `RENDER_HARNESS_URL` at boot |
-| Double publish / double click | idempotency key drops duplicates (except manual) | — |
-| Server dies mid-send | stale `sending` older than 15 min is requeued by the sweep | — |
-| Attachment > 40 MB | not realistic (A4 PDF ≈ 100 KB, PNG ≈ 1 MB) | — |
-| Cross-tenant leak | every query filters on `tenant_id`; isolation test added | `email-lists-isolation.test.ts` |
+| Failure                                     | Behaviour                                                  | Detection                                     |
+| ------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| Resend down / 5xx                           | row `failed`; hourly retry ×3                              | send log shows Failed; Resend button          |
+| Email disabled (no key/from)                | rows `skipped` with reason `disabled`                      | log                                           |
+| PDF render fails                            | `failed`, retried; never blocks finalise                   | log + logger.warn                             |
+| Card PNG render fails (harness unreachable) | send with link fallback, `last_error` noted                | log; smoke-check `RENDER_HARNESS_URL` at boot |
+| Double publish / double click               | idempotency key drops duplicates (except manual)           | —                                             |
+| Server dies mid-send                        | stale `sending` older than 15 min is requeued by the sweep | —                                             |
+| Attachment > 40 MB                          | not realistic (A4 PDF ≈ 100 KB, PNG ≈ 1 MB)                | —                                             |
+| Cross-tenant leak                           | every query filters on `tenant_id`; isolation test added   | `email-lists-isolation.test.ts`               |
 
 ## Tests (Staff/SDE)
 

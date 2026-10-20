@@ -317,4 +317,3 @@ Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) prev
 Spike resolved: team-sheet PDF already server-side (`buildTeamSheet` + `renderHtmlToPdf`). Social PNG via `/__card-render` harness — needs `RENDER_HARNESS_URL` in prod.
 Build order: PR1 = transport (bcc + attachments), migration 0052 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
 Confirm the team key the Selection Hub uses for a fixture. Senior fixtures only.
-
