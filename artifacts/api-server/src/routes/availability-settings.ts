@@ -19,7 +19,7 @@ import {
 } from "../lib/availability-schedule";
 import { smsProvider } from "../lib/integrations/sms";
 import { cleanOverseasCaps } from "../lib/overseas";
-import { cleanSideSizes, loadSideGrades } from "../lib/side-sizes";
+import { cleanAllPlayGrades, cleanSideSizes, loadSideGrades } from "../lib/side-sizes";
 
 /**
  * The club's weekly availability round: the schedule, the current round's
@@ -44,7 +44,14 @@ const DEFAULTS = {
  */
 function serialize(row: AvailabilitySettingsRow | null, grades: string[]) {
   if (!row) {
-    return { ...DEFAULTS, sideSizes: {}, updatedAt: null, smsProvider: smsProvider(), grades };
+    return {
+      ...DEFAULTS,
+      sideSizes: {},
+      allPlayGrades: [],
+      updatedAt: null,
+      smsProvider: smsProvider(),
+      grades,
+    };
   }
   return {
     enabled: row.enabled,
@@ -59,6 +66,7 @@ function serialize(row: AvailabilitySettingsRow | null, grades: string[]) {
     finaliseTime: row.finaliseTime,
     selectionRule: row.selectionRule,
     sideSizes: row.sideSizes,
+    allPlayGrades: row.allPlayGrades ?? [],
     overseasCaps: row.overseasCaps ?? {},
     updatedAt: row.updatedAt,
     smsProvider: smsProvider(),
@@ -96,7 +104,8 @@ router.put("/availability/settings", requireAdmin, async (req, res): Promise<voi
   }
   const tenantId = getTenantId(req);
   // Side sizes are optional: omitted, the stored map is kept.
-  const { sideSizes, ...settings } = rest;
+  // The all-play list is optional the same way.
+  const { sideSizes, allPlayGrades, ...settings } = rest;
   const sized = sideSizes ? cleanSideSizes(sideSizes) : null;
   if (sized && "error" in sized) {
     res.status(400).json({ error: sized.error });
@@ -105,6 +114,7 @@ router.put("/availability/settings", requireAdmin, async (req, res): Promise<voi
   const values = {
     ...settings,
     ...(sized ? sized : {}),
+    ...(allPlayGrades ? { allPlayGrades: cleanAllPlayGrades(allPlayGrades) } : {}),
     ...(caps ? { overseasCaps: caps.caps } : {}),
     updatedAt: new Date(),
   };

@@ -10,7 +10,9 @@
  * - A side has 12 to 14 slots. A grade with no size set picks 12.
  * - Slots 1–11 are the XI; the side is complete when they're filled, and the
  *   rest are optional.
- * - At 12, slot 12 is the 12th player: labelled "12th" and holding no role.
+ * - At 12, slot 12 is the 12th player: labelled "12th" and holding no role,
+ *   unless the grade is "all play", where all 12 are numbered 1–12 like a
+ *   side above 12.
  * - Above 12, the extra players are interchange players: numbered 1–N with no
  *   label, and any slot can hold captain or keeper.
  */
@@ -39,6 +41,22 @@ export type SideShape = {
   roleSlots: number;
 };
 
+/**
+ * What fixes a side's shape: its size (12–14, null or absent = 12) and, at 12,
+ * whether all 12 play. A bare number is a size with `allPlay` false. Sides and
+ * selection rows pass themselves.
+ */
+export type SideSpec =
+  number | null | undefined | { sideSize?: number | null; allPlay?: boolean | null };
+
+function specSize(spec: SideSpec): unknown {
+  return spec != null && typeof spec === "object" ? spec.sideSize : spec;
+}
+
+function specAllPlay(spec: SideSpec): boolean {
+  return spec != null && typeof spec === "object" ? spec.allPlay === true : false;
+}
+
 /** A stored or configured side size as 12–14; anything else (null, 11, 15, 12.5) reads as 12. */
 export function resolveSideSize(raw: unknown): number {
   return typeof raw === "number" &&
@@ -49,10 +67,10 @@ export function resolveSideSize(raw: unknown): number {
     : DEFAULT_SIDE_SIZE;
 }
 
-/** The slots, labels and role rules for a side of `size` players (12 when unset). */
-export function sideShape(size?: number | null): SideShape {
-  const n = resolveSideSize(size);
-  const twelfthLabel = n === DEFAULT_SIDE_SIZE;
+/** The slots, labels and role rules for a side (12 with a 12th when unset). */
+export function sideShape(spec?: SideSpec): SideShape {
+  const n = resolveSideSize(specSize(spec));
+  const twelfthLabel = n === DEFAULT_SIDE_SIZE && !specAllPlay(spec);
   return {
     size: n,
     xi: XI_SIZE,
@@ -72,29 +90,29 @@ export function sideShape(size?: number | null): SideShape {
  */
 export function normaliseSlots<T extends { memberId: number | null }>(
   slots: readonly T[],
-  size?: number | null,
+  spec?: SideSpec,
 ): T[] {
-  const n = resolveSideSize(size);
+  const n = resolveSideSize(specSize(spec));
   const out = [...slots];
   while (out.length < n) out.push({ memberId: null } as T);
   return out;
 }
 
-/** The 12th player's member id, or null when the slot is open or the side has no 12th (above 12). */
+/** The 12th player's member id, or null when the slot is open or the side has no 12th (above 12, or all play). */
 export function twelfthMemberId(
   slots: readonly { memberId: number | null }[],
-  size?: number | null,
+  spec?: SideSpec,
 ): number | null {
-  const { twelfthIndex } = sideShape(size);
+  const { twelfthIndex } = sideShape(spec);
   return twelfthIndex == null ? null : (slots[twelfthIndex]?.memberId ?? null);
 }
 
 /** The members who can be captain or keeper: those in the side's first `roleSlots` slots. */
 export function roleMemberIds(
   slots: readonly { memberId: number | null }[],
-  size?: number | null,
+  spec?: SideSpec,
 ): Set<number> {
-  const { roleSlots } = sideShape(size);
+  const { roleSlots } = sideShape(spec);
   return new Set(
     slots.slice(0, roleSlots).flatMap((s) => (s.memberId != null ? [s.memberId] : [])),
   );

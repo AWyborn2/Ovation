@@ -35,3 +35,11 @@ lives as jsonb maps on `availability_settings`.
 - Renaming a grade silently resets its size and cap to the defaults. Mitigation: the settings page
   shows unmatched keys.
 - Each pack needs a 14-row auto-compress. This is guarded by a render test.
+
+## Amendment (20 Oct 2026): sides of 12 where all play
+
+- A grade at 12 can be "all play": numbered 1–12 with no "12th".
+  - Stored in `availability_settings.all_play_grades` (a jsonb list of grades).
+  - Each draft fixes it as `selections.all_play` when it is created, like `side_size`. This is migration 0050, additive.
+- `sideShape` takes a side spec (`{ sideSize, allPlay }` or a bare size). Callers pass the selection row or the board side, so the
+  flag reaches every rule without a separate argument.

@@ -274,6 +274,29 @@ describe("team sheet side size (ADR-009)", () => {
     expect(html).toContain("height: 9.2mm;");
   });
 
+  it("a side of 12 that all play prints 1–12 with no 12th row, and slot 12 can hold a role", () => {
+    const players = teamSheetPlayers({
+      side: {
+        slots: big(12).map((m) => ({ memberId: m.id })),
+        captainMemberId: 1,
+        keeperMemberId: 12,
+        sideSize: 12,
+        allPlay: true,
+      },
+      members: big(12),
+      shirtNumberOf: () => null,
+      juniorLimitOf: null,
+    });
+    expect(players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(players[11].role).toBe("WK");
+    const html = renderTeamSheetHtml({ ...sheet, sideSize: 12, allPlay: true, players }, null);
+    const rows = rowsOf(html);
+    expect(rows).toHaveLength(12);
+    expect(rows[11]).toBe("12||P12 Lee");
+    expect(html).not.toContain(">12th<");
+    expect(html).toContain("height: 9.2mm;");
+  });
+
   it("a side of 14 prints 14 numbered rows, no 12th, sized to stay on one A4 page", () => {
     const players = teamSheetPlayers({
       side: {

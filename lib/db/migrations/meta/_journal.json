@@ -351,6 +351,13 @@
       "when": 1792453779732,
       "tag": "0049_selection_side_size",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1792465777968,
+      "tag": "0050_selection_all_play",
+      "breakpoints": true
     }
   ]
 }

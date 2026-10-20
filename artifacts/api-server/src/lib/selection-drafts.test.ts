@@ -514,6 +514,37 @@ describe("side size (ADR-009)", () => {
     expect(draft.keeperMemberId).toBeNull();
   });
 
+  it("a side of 12 that all play: slot 12 can hold a role, and the draft says all play", () => {
+    const list = LIST15.slice(0, 12).map((p, i) => (i === 11 ? { ...p, role: "WK" as const } : p));
+    const allPlay = buildDraftSlots({
+      lastList: list,
+      members: SQUAD,
+      size: { sideSize: 12, allPlay: true },
+    });
+    expect(allPlay.allPlay).toBe(true);
+    expect(allPlay.slots[11].memberId).toBe(12);
+    expect(allPlay.keeperMemberId).toBe(12);
+    // The same list in a side of 12 with a 12th: the 12th holds no role.
+    const twelfth = buildDraftSlots({ lastList: list, members: SQUAD, size: 12 });
+    expect(twelfth.allPlay).toBe(false);
+    expect(twelfth.keeperMemberId).toBeNull();
+  });
+
+  it("carries a keeper in slot 12 of a side that all play", () => {
+    const previous = {
+      slots: SQUAD.slice(0, 12).map((m) => ({ memberId: m.id }) as SelectionSlot),
+      captainMemberId: 1,
+      keeperMemberId: 12,
+    };
+    const draft = carryDraftSlots({
+      previous,
+      members: SQUAD,
+      size: { sideSize: 12, allPlay: true },
+    });
+    expect(draft.allPlay).toBe(true);
+    expect(draft.keeperMemberId).toBe(12);
+  });
+
   it("an empty list still gives the side its size", () => {
     const draft = buildDraftSlots({ lastList: null, members: SQUAD, size: 13 });
     expect(draft.slots).toHaveLength(13);

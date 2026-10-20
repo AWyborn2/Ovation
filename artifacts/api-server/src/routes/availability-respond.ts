@@ -274,7 +274,7 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
           role: roleIn(final.selection, member.id),
           // Slot 12 of a side of 12 is the 12th player; older 11-slot sides
           // and sides above 12 (numbered 1–N) have none.
-          twelfth: twelfthMemberId(final.selection.slots, final.selection.sideSize) === member.id,
+          twelfth: twelfthMemberId(final.selection.slots, final.selection) === member.id,
         }
       : null,
     canWithdraw: sides.length > 0,

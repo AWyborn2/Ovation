@@ -181,6 +181,12 @@ export const availabilitySettingsTable = pgTable(
       .$type<Record<string, number>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
+    // Grades whose side of 12 all play: numbered 1–12 with no "12th", any of
+    // them captain or keeper. Only read for a grade at 12.
+    allPlayGrades: jsonb("all_play_grades")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     // Most overseas players per side by app grade, 0–14. A grade with no key has
     // no cap. Over the cap the Hub warns and never blocks.
     overseasCaps: jsonb("overseas_caps")
@@ -390,6 +396,9 @@ export const selectionsTable = pgTable(
     // Players in this side (12–14), fixed from the grade's size when the draft is
     // created so a later settings change never reshapes it. NULL reads as 12.
     sideSize: smallint("side_size"),
+    // A side of 12 where all 12 play (numbered 1–12, no "12th"), fixed from the
+    // grade's setting when the draft is created. Ignored above 12.
+    allPlay: boolean("all_play").notNull().default(false),
     captainMemberId: integer("captain_member_id").references(() => squadMembersTable.id, {
       onDelete: "set null",
     }),

@@ -53,6 +53,12 @@ export interface AvailabilitySettingsInput {
   stored map.
    */
   sideSizes?: AvailabilitySettingsInputSideSizes;
+  /** Grades whose side of 12 all play: numbered 1–12 with no "12th", and
+  any of the 12 can be captain or keeper. Only read for a grade at 12
+  (13 and 14 always number every player). Omit to keep the stored
+  list.
+   */
+  allPlayGrades?: string[];
   /** Most overseas players per side by app grade, 0–14. A grade with no
   key has no cap. Over the cap the Hub warns and never blocks. Omit
   to keep the stored map.

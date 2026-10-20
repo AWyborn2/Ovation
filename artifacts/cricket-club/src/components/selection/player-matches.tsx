@@ -73,8 +73,8 @@ function MatchRow({
     <li className="flex flex-col gap-1.5 rounded-md border border-border px-2.5 py-2">
       <div className="text-[12.5px]">
         <b className="font-semibold">{label}</b>, slot{" "}
-        {item.slot - 1 === sideShape(item.side.sideSize).twelfthIndex ? "12th" : item.slot}: PlayHQ
-        lists <b className="font-semibold">{item.name}</b>.{" "}
+        {item.slot - 1 === sideShape(item.side).twelfthIndex ? "12th" : item.slot}: PlayHQ lists{" "}
+        <b className="font-semibold">{item.name}</b>.{" "}
         <span className="text-muted-foreground">
           {item.participantId
             ? "Remembered for later PlayHQ lists once matched."

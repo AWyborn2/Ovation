@@ -3379,6 +3379,7 @@ export const GetAvailabilitySettingsResponse = zod.object({
   "finaliseTime": zod.string().regex(getAvailabilitySettingsResponseOneFinaliseTimeRegExp),
   "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
   "sideSizes": zod.record(zod.string(), zod.number().min(getAvailabilitySettingsResponseOneSideSizesMinOne).max(getAvailabilitySettingsResponseOneSideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "allPlayGrades": zod.array(zod.string()).optional().describe('Grades whose side of 12 all play: numbered 1–12 with no \"12th\", and\nany of the 12 can be captain or keeper. Only read for a grade at 12\n(13 and 14 always number every player). Omit to keep the stored\nlist.\n'),
   "overseasCaps": zod.record(zod.string(), zod.number().min(getAvailabilitySettingsResponseOneOverseasCapsMinOne).max(getAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
@@ -3432,6 +3433,7 @@ export const UpdateAvailabilitySettingsBody = zod.object({
   "finaliseTime": zod.string().regex(updateAvailabilitySettingsBodyFinaliseTimeRegExp),
   "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
   "sideSizes": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsBodySideSizesMinOne).max(updateAvailabilitySettingsBodySideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "allPlayGrades": zod.array(zod.string()).optional().describe('Grades whose side of 12 all play: numbered 1–12 with no \"12th\", and\nany of the 12 can be captain or keeper. Only read for a grade at 12\n(13 and 14 always number every player). Omit to keep the stored\nlist.\n'),
   "overseasCaps": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsBodyOverseasCapsMinOne).max(updateAvailabilitySettingsBodyOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n')
 
@@ -3472,6 +3474,7 @@ export const UpdateAvailabilitySettingsResponse = zod.object({
   "finaliseTime": zod.string().regex(updateAvailabilitySettingsResponseOneFinaliseTimeRegExp),
   "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
   "sideSizes": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsResponseOneSideSizesMinOne).max(updateAvailabilitySettingsResponseOneSideSizesMaxOne)).optional().describe('Players per side by app grade (\"A Grade\" → 14), 12–14. A grade with\nno key picks 12: the XI plus an optional 12th. Omit to keep the\nstored map.\n'),
+  "allPlayGrades": zod.array(zod.string()).optional().describe('Grades whose side of 12 all play: numbered 1–12 with no \"12th\", and\nany of the 12 can be captain or keeper. Only read for a grade at 12\n(13 and 14 always number every player). Omit to keep the stored\nlist.\n'),
   "overseasCaps": zod.record(zod.string(), zod.number().min(updateAvailabilitySettingsResponseOneOverseasCapsMinOne).max(updateAvailabilitySettingsResponseOneOverseasCapsMaxOne)).optional().describe('Most overseas players per side by app grade, 0–14. A grade with no\nkey has no cap. Over the cap the Hub warns and never blocks. Omit\nto keep the stored map.\n')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
   "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
@@ -3641,6 +3644,7 @@ export const GetSelectionBoardResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(getSelectionBoardResponseSelectionsItemSlotsMin).max(getSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(getSelectionBoardResponseSelectionsItemSideSizeMin).max(getSelectionBoardResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(getSelectionBoardResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(getSelectionBoardResponseSelectionsItemOverseasCapMin).max(getSelectionBoardResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -3834,6 +3838,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(saveSelectionBoardResponseSelectionsItemSlotsMin).max(saveSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(saveSelectionBoardResponseSelectionsItemSideSizeMin).max(saveSelectionBoardResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(saveSelectionBoardResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(saveSelectionBoardResponseSelectionsItemOverseasCapMin).max(saveSelectionBoardResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -3982,6 +3987,7 @@ export const FinaliseSelectionResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(finaliseSelectionResponseSelectionSlotsMin).max(finaliseSelectionResponseSelectionSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(finaliseSelectionResponseSelectionSideSizeMin).max(finaliseSelectionResponseSelectionSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(finaliseSelectionResponseSelectionOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(finaliseSelectionResponseSelectionOverseasCapMin).max(finaliseSelectionResponseSelectionOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -4143,6 +4149,7 @@ export const SyncSelectionFromPlayhqResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(syncSelectionFromPlayhqResponseSlotsMin).max(syncSelectionFromPlayhqResponseSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(syncSelectionFromPlayhqResponseSideSizeMin).max(syncSelectionFromPlayhqResponseSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(syncSelectionFromPlayhqResponseOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(syncSelectionFromPlayhqResponseOverseasCapMin).max(syncSelectionFromPlayhqResponseOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -4241,6 +4248,7 @@ export const ReopenSelectionResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(reopenSelectionResponseSlotsMin).max(reopenSelectionResponseSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(reopenSelectionResponseSideSizeMin).max(reopenSelectionResponseSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(reopenSelectionResponseOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(reopenSelectionResponseOverseasCapMin).max(reopenSelectionResponseOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -4380,6 +4388,7 @@ export const MatchSelectionSlotResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(matchSelectionSlotResponseSelectionsItemSlotsMin).max(matchSelectionSlotResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(matchSelectionSlotResponseSelectionsItemSideSizeMin).max(matchSelectionSlotResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(matchSelectionSlotResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(matchSelectionSlotResponseSelectionsItemOverseasCapMin).max(matchSelectionSlotResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
@@ -4573,6 +4582,7 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "overseas": zod.boolean().optional().describe('The slot\'s member is an overseas player this season. Live for a\ndraft; from the published snapshot once finalised. Absent reads as\nfalse.\n')
 })).min(setSelectionMemberStatusResponseSelectionsItemSlotsMin).max(setSelectionMemberStatusResponseSelectionsItemSlotsMax).describe('The side\'s slots in order, `sideSize` of them: 1–11 are the XI. At\n12, slot 12 is the 12th player; above 12, slots 12 to N are\ninterchange players numbered 1–N.\n'),
   "sideSize": zod.number().min(setSelectionMemberStatusResponseSelectionsItemSideSizeMin).max(setSelectionMemberStatusResponseSelectionsItemSideSizeMax).optional().describe('Players in this side (12–14), fixed when the draft was created.\nAbsent reads as 12.\n'),
+  "allPlay": zod.boolean().optional().describe('A side of 12 where all 12 play: numbered 1–12 with no \"12th\", and\nany slot can hold captain or keeper. Fixed when the draft was\ncreated. Absent reads as false. Ignored above 12.\n'),
   "overseas": zod.object({
   "count": zod.number().min(setSelectionMemberStatusResponseSelectionsItemOverseasCountMin).describe('Overseas players in the side'),
   "cap": zod.number().min(setSelectionMemberStatusResponseSelectionsItemOverseasCapMin).max(setSelectionMemberStatusResponseSelectionsItemOverseasCapMax).nullable().describe('The grade\'s cap; null when the grade has none'),
