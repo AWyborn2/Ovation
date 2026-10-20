@@ -28,6 +28,7 @@ const AdminStats = lazy(() => import("@/pages/admin-stats"));
 const AdminJuniorStats = lazy(() => import("@/pages/admin-junior-stats"));
 const AdminJuniorPlayers = lazy(() => import("@/pages/admin-junior-players"));
 const AdminJuniorFixtures = lazy(() => import("@/pages/admin-junior-fixtures"));
+const AdminEmailLists = lazy(() => import("@/pages/admin-email-lists"));
 const AdminCommittee = lazy(() => import("@/pages/admin-committee"));
 const AdminCaptains = lazy(() => import("@/pages/admin-captains"));
 const AdminJuniorCommittee = lazy(() => import("@/pages/admin-junior-committee"));
@@ -210,6 +211,7 @@ export function AdminSelectionGroup() {
       groupKey="selection"
       pages={{
         "junior-fixtures": <AdminJuniorFixtures />,
+        "email-lists": <AdminEmailLists />,
       }}
     />
   );

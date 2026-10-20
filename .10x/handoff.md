@@ -390,3 +390,11 @@ Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: 
 ## Handoff 2026-10-19 (PM -> Architect)
 
 Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) preview-render bug in share-card-modal/use-card-preview (own PR); 2) tenant name-override table + auto short-name; 3) crest slot in renderer; 4) square layout fit.
+
+## Current Handoff
+
+**From:** Principal Architect → **To:** Staff Engineer / EM (20 Oct 2026)
+**Read:** `.10x/decisions/architect/email-distribution-lists.md` (requirements: `.10x/decisions/product-manager/email-distribution-lists.md`)
+Spike resolved: team-sheet PDF already server-side (`buildTeamSheet` + `renderHtmlToPdf`). Social PNG via `/__card-render` harness — needs `RENDER_HARNESS_URL` in prod.
+Build order: PR1 = transport (bcc + attachments), migration 0053 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
+Confirm the team key the Selection Hub uses for a fixture. Senior fixtures only.
