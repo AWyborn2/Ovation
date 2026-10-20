@@ -1,6 +1,6 @@
 # Architect — match-day-carousel-content (ADR-010)
 
-Status: PROPOSED 2026-10-20 (option A chosen by Ash; scope widened by Ash the same day)
+Status: ACCEPTED 2026-10-20 by Ash (option A; scope widened the same day)
 Requirements: `.10x/decisions/product-manager/match-day-carousel-content.md`
 Absorbs: `.10x/decisions/product-manager/social-tile-short-names.md` (names + crests)
 
