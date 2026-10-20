@@ -49,7 +49,13 @@ export function juniorCardNamer(naming: JuniorNaming): JuniorCardNamer {
   };
 }
 
-type CardRow = { order: number; surname: string; firstInitial?: string; role?: string };
+type CardRow = {
+  order: number;
+  surname: string;
+  firstInitial?: string;
+  role?: string;
+  overseas?: boolean;
+};
 
 /**
  * The surname / first-initial shape the team-list designs print (`broadcastName` is
@@ -100,6 +106,8 @@ export function juniorTeamListToCardInput(
           order: p.order,
           ...cardName(named),
           ...(p.role ? { role: p.role } : {}),
+          // The overseas mark goes with the name: a withheld player has none.
+          ...(named && p.overseas ? { overseas: true } : {}),
         };
         const id = normaliseParticipantId(p.participantId);
         const shirtNumber =

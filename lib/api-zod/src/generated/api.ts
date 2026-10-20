@@ -12694,7 +12694,8 @@ export const GetJuniorFixtureResponse = zod.object({
   "name": zod.string().describe('Public name in the club\'s style, or \"Private Player\"'),
   "participantId": zod.string().nullable().describe('Null when the player is withheld'),
   "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
-  "shirtNumber": zod.string().nullable().describe('Junior shirt number for the fixture\'s season (null when withheld or none)')
+  "shirtNumber": zod.string().nullable().describe('Junior shirt number for the fixture\'s season (null when withheld or none)'),
+  "overseas": zod.boolean().optional().describe('An overseas player (ADR-009), from the side\'s finalise snapshot: a neutral \"OS\", never a country. Never set on a withheld player. Absent reads as false.')
 })).nullable().describe('The published team list in order, or null when none is published')
 })
 

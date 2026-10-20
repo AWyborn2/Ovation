@@ -18,6 +18,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { autoDebutPlayerIds } from "../lib/team-list-debuts";
+import { maskOverseas } from "../lib/selection-published-players";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -183,7 +184,11 @@ router.get("/fixtures/:id/team-list", async (req, res): Promise<void> => {
     .select()
     .from(teamListsTable)
     .where(and(eq(teamListsTable.fixtureId, fixture.id), eq(teamListsTable.tenantId, tenantId)));
-  res.json(row ? await withDebuts(tenantId, row, fixture.startAt) : null);
+  res.json(
+    row
+      ? await withDebuts(tenantId, { ...row, players: maskOverseas(row.players) }, fixture.startAt)
+      : null,
+  );
 });
 
 router.put(

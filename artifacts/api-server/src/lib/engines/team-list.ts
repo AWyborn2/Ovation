@@ -20,6 +20,7 @@ import { upsertDraftByKey } from "../draft-upsert";
 import { teamListPhotoPlayer } from "../draft-enrich";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
+import { PRIVATE_PLAYER } from "../selection-published-players";
 
 /**
  * Team lists are usually named a few days out, so look further ahead than the
@@ -196,6 +197,8 @@ export function teamListToCardInput(
           ...(firstInitial ? { firstInitial } : {}),
           role: p.role,
           ...(isDebut(p, autoDebuts) ? { debut: true } : {}),
+          // The snapshot's overseas mark (ADR-009), never on a "Private Player".
+          ...(p.overseas && p.displayName !== PRIVATE_PLAYER ? { overseas: true } : {}),
         };
         const shirtNumber = numbers ? shirtNumberOf(p, numbers) : null;
         return shirtNumber ? { ...row, shirtNumber } : row;

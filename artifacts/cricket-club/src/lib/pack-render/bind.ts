@@ -250,6 +250,8 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
       // Rows stay in batting order either way. With season shirt numbers on
       // (numbering "shirt") the number slot is the shirt number, bound
       // EXPLICITLY — empty when unnumbered, never the batting order.
+      // Every player is bound, up to a side of 14 (ADR-009): the designs
+      // compress their rows above 12 rather than drop anyone.
       const shirt = input.numbering === "shirt";
       rows["players"] = (input.players ?? []).map((p: TeamListPlayer) => ({
         values: {
@@ -258,6 +260,8 @@ export function bindInput(input: ShareCardInput, packId?: string | null): BoundI
           broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
           role: p.role ?? "",
           debut: p.debut ? "DEBUT" : "",
+          // The snapshot's overseas mark: a neutral "OS", never a country.
+          os: p.overseas ? "OS" : "",
         },
       }));
       break;

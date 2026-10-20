@@ -41,6 +41,19 @@ export function publicName(
   return namedPublicly(m, now) ? memberDisplayName(m) : PRIVATE_PLAYER;
 }
 
+/**
+ * The overseas mark goes with the name (ADR-009): a player shown as "Private
+ * Player" carries none, whatever the stored row says. Finalise already stores it
+ * that way; public reads apply this too, so no other writer's row can show it.
+ */
+export function maskOverseas(players: readonly TeamListPlayer[]): TeamListPlayer[] {
+  return players.map((p) => {
+    if (!p.overseas || p.displayName !== PRIVATE_PLAYER) return p;
+    const { overseas: _hidden, ...rest } = p;
+    return rest;
+  });
+}
+
 type PublishedMember = Pick<
   SquadMemberRow,
   "id" | "firstName" | "lastName" | "preferredName" | "isPrivate" | "linkedPlayerId"
