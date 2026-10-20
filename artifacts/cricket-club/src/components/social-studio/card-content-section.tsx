@@ -12,6 +12,8 @@ import {
   type ContentPreset,
 } from "@workspace/scorecard/card-content";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,10 +38,10 @@ export function choose(
 /**
  * What match day cards show (ADR-010): a preset (Minimal, Standard, Full) and
  * per-field switches on top. Every Weekend Carousel starts from these; a
- * carousel can change them for itself. The club's livestream link (P5) is set
- * here too: the title page prints it when "Livestream link" is on. The junior
- * same-day switch (P3) joins this section when the cards use it; until then
- * its stored value passes through untouched.
+ * carousel can change them for itself. The junior same-day switch (P3) puts a
+ * junior carousel's games of one day on one slide (Match Day, Results and
+ * Match Summaries). The club's livestream link (P5) is set here too: the title
+ * page prints it when "Livestream link" is on.
  */
 export function CardContentSection() {
   const queryClient = useQueryClient();
@@ -122,6 +124,27 @@ export function CardContentSection() {
                 setDraft({ ...draft, ...choose(draft, { key, on }) });
               }}
             />
+            <div className="flex items-start justify-between gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <Label htmlFor="content-settings-junior-day">
+                  Junior games on the same day share a slide
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Junior match day, results and match summary carousels list each day&rsquo;s games
+                  together, as many as fit the card size. Senior games always have a slide each.
+                </p>
+              </div>
+              <Switch
+                id="content-settings-junior-day"
+                checked={draft.juniorConsolidateByDay}
+                disabled={update.isPending}
+                onCheckedChange={(on) => {
+                  setSavedOk(false);
+                  setDraft({ ...draft, juniorConsolidateByDay: on });
+                }}
+                data-testid="content-settings-junior-day"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="content-settings-livestream">Livestream or scores link</Label>
               <Input

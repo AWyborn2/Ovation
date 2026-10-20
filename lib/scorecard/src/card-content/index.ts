@@ -2,6 +2,7 @@
 export * from "./types";
 export * from "./settings";
 export * from "./match-day";
+export * from "./day";
 export * from "./render-input";
 export * from "./validate";
 export {

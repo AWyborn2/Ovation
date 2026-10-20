@@ -113,7 +113,7 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
     !object(s.data) ||
     typeof s.junior !== "boolean" ||
     // Juniors isolation: a slide's junior flag is its content's.
-    (content.page === "fixture" && content.junior !== s.junior)
+    ((content.page === "fixture" || content.page === "day") && content.junior !== s.junior)
   )
     return null;
   return {
@@ -188,6 +188,13 @@ export function readQueuedCarousel(
     )
       return null;
     if (!bookend && "carouselPage" in s.input) return null;
+    // A junior day slide (P3) holds junior rows only, of a shape its layout prints.
+    if (
+      !bookend &&
+      "carouselDay" in s.input &&
+      (!s.junior || s.input.junior !== true || !validDaySlide(s.input.carouselDay, kind))
+    )
+      return null;
     if (
       !bookend &&
       kind === "teamList" &&
@@ -201,6 +208,7 @@ export function readQueuedCarousel(
     if (
       !bookend &&
       kind === "matchSummary" &&
+      !("carouselDay" in s.input) &&
       (!object(s.input.club) ||
         !object(s.input.opposition) ||
         !Array.isArray(s.input.innings) ||
@@ -246,6 +254,28 @@ export function readQueuedCarousel(
   )
     return null;
   return c as unknown as QueuedCarousel;
+}
+
+const str = (v: unknown): v is string => typeof v === "string";
+
+/** A day slide's rows: Match Day fixtures or results, every field a display string. */
+function validDaySlide(day: unknown, kind: string): boolean {
+  if (!object(day) || !str(day.heading)) return false;
+  const rows = kind === "matchDay" ? day.fixtures : kind === "matchSummary" ? day.results : null;
+  const keys =
+    kind === "matchDay"
+      ? ["grade", "opposition", "monogram", "homeAway", "venue", "startTime", "roundLabel"]
+      : ["grade", "opposition", "clubScore", "oppositionScore", "resultWord", "result", "winner"];
+  return (
+    Array.isArray(rows) &&
+    rows.length >= 2 &&
+    rows.every(
+      (r) =>
+        object(r) &&
+        keys.every((k) => str(r[k])) &&
+        (r.crestUrl === null || r.crestUrl === undefined || str(r.crestUrl)),
+    )
+  );
 }
 
 export function queuedSlideAdjustments(slide: QueuedCarouselSlide, size: CarouselSize) {

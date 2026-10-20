@@ -52,8 +52,12 @@ export * from "./captions";
 export * from "./pack-resolve";
 export * from "./photo-types";
 export {
+  DAY_GROUP_KINDS,
+  META_CAROUSEL_MAX_SLIDES,
   SET_CAPS,
   densityFor,
+  groupSlides,
+  isDayGroupKind,
   evenSizes,
   gradeTile,
   groupOfGrade,
@@ -67,6 +71,10 @@ export {
   type BalanceOptions,
   type BalancedCard,
   type CardSetOptions,
+  type DayGroupKind,
+  type GroupSlidesOptions,
+  type SlideGroup,
+  type SlideGroupPlan,
   type PlannedSlide,
   type SetDensity,
   type SetGroup,

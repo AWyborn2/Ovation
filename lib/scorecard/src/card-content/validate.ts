@@ -4,7 +4,7 @@
  * blanks.
  */
 
-import type { CardContent, ContentTeam } from "./types";
+import type { CardContent, ContentTeam, MatchDayFixtureContent } from "./types";
 
 const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -81,30 +81,52 @@ export function readCardContent(raw: unknown): CardContent | null {
       return bookend(raw) ? withoutBadOptionalData(raw, ["livestream"]) : null;
     case "sponsors":
       return bookend(raw) && sponsorsPage(raw) ? (raw as unknown as CardContent) : null;
-    case "fixture": {
-      const s = raw.source;
-      return Number.isSafeInteger(raw.fixtureId) &&
-        typeof raw.junior === "boolean" &&
-        strOrNull(raw.juniorTeamName) &&
-        str(raw.grade) &&
-        str(raw.roundLabel) &&
-        team(raw.opposition) &&
-        (raw.homeAway === "HOME" || raw.homeAway === "AWAY") &&
-        str(raw.venue) &&
-        str(raw.startAt) &&
+    case "day":
+      // Junior only, one day, every fixture well-formed and of that day.
+      return raw.junior === true &&
         str(raw.day) &&
         str(raw.date) &&
-        str(raw.startTime) &&
-        object(s) &&
-        str(s.grade) &&
-        strOrNull(s.roundLabel) &&
-        str(s.opponentName) &&
-        strOrNull(s.opponentLogoUrl) &&
-        strOrNull(s.venue)
-        ? withoutBadOptionalData(raw, ["ladder", "lastMeeting", "milestoneWatch"])
+        Array.isArray(raw.fixtures) &&
+        raw.fixtures.length > 0 &&
+        raw.fixtures.every((f) => {
+          const c = fixture(f);
+          return c !== null && c.junior && c.day === raw.day;
+        })
+        ? (raw as unknown as CardContent)
         : null;
-    }
+    case "fixture":
+      return fixture(raw);
     default:
       return null;
   }
+}
+
+/** A fixture slide's content, when well-formed. */
+function fixture(raw: unknown): MatchDayFixtureContent | null {
+  if (!object(raw) || raw.kind !== "matchDay" || raw.page !== "fixture") return null;
+  const s = raw.source;
+  return Number.isSafeInteger(raw.fixtureId) &&
+    typeof raw.junior === "boolean" &&
+    strOrNull(raw.juniorTeamName) &&
+    str(raw.grade) &&
+    str(raw.roundLabel) &&
+    team(raw.opposition) &&
+    (raw.homeAway === "HOME" || raw.homeAway === "AWAY") &&
+    str(raw.venue) &&
+    str(raw.startAt) &&
+    str(raw.day) &&
+    str(raw.date) &&
+    str(raw.startTime) &&
+    object(s) &&
+    str(s.grade) &&
+    strOrNull(s.roundLabel) &&
+    str(s.opponentName) &&
+    strOrNull(s.opponentLogoUrl) &&
+    strOrNull(s.venue)
+    ? (withoutBadOptionalData(raw, [
+        "ladder",
+        "lastMeeting",
+        "milestoneWatch",
+      ]) as MatchDayFixtureContent)
+    : null;
 }
