@@ -4,6 +4,7 @@ import {
   serial,
   text,
   integer,
+  smallint,
   boolean,
   date,
   timestamp,
@@ -54,8 +55,8 @@ export type SelectionGapReason =
   "no" | "maybe" | "no_reply" | "not_on_register" | "withdrew" | "picked_elsewhere";
 
 /**
- * One of a side's 12 slots (1–11 the XI, 12 the 12th player). `memberId` null is an open slot; `gap` names the
- * player who held it and why they left.
+ * One of a side's slots (1–11 the XI, then 12 up to the side size). `memberId` null is an
+ * open slot; `gap` names the player who held it and why they left.
  */
 export type SelectionSlot = {
   memberId: number | null;
@@ -168,6 +169,18 @@ export const availabilitySettingsTable = pgTable(
     // for a grade is remembered here.
     teamSheetOvers: jsonb("team_sheet_overs")
       .$type<Record<string, string>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    // Players per side by app grade ("A Grade" → 14), 12–14 (ADR-009). A grade
+    // with no key picks 12: the XI plus an optional 12th.
+    sideSizes: jsonb("side_sizes")
+      .$type<Record<string, number>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    // Most overseas players per side by app grade, 0–14. A grade with no key has
+    // no cap. Over the cap the Hub warns and never blocks.
+    overseasCaps: jsonb("overseas_caps")
+      .$type<Record<string, number>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -370,6 +383,9 @@ export const selectionsTable = pgTable(
       onDelete: "cascade",
     }),
     slots: jsonb("slots").$type<SelectionSlot[]>().notNull().default([]),
+    // Players in this side (12–14), fixed from the grade's size when the draft is
+    // created so a later settings change never reshapes it. NULL reads as 12.
+    sideSize: smallint("side_size"),
     captainMemberId: integer("captain_member_id").references(() => squadMembersTable.id, {
       onDelete: "set null",
     }),
@@ -463,3 +479,28 @@ export const squadMemberParticipantsTable = pgTable(
 );
 
 export type SquadMemberParticipantRow = typeof squadMemberParticipantsTable.$inferSelect;
+
+// Per-season facts about a squad member (ADR-009). `overseas` marks an overseas
+// player for one season (start year, 2026 = 2026/27, as `shirt_numbers.season`);
+// nothing carries over, so each season starts unticked. Finalising snapshots the
+// flag into the published team list, so a later change never rewrites a past side.
+export const squadMemberSeasonsTable = pgTable(
+  "squad_member_seasons",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    memberId: integer("member_id")
+      .notNull()
+      .references(() => squadMembersTable.id, { onDelete: "cascade" }),
+    season: integer("season").notNull(),
+    overseas: boolean("overseas").notNull().default(false),
+    setByAdminId: integer("set_by_admin_id"),
+    setAt: timestamp("set_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqMemberSeason: uniqueIndex("squad_member_seasons_member_season_uidx").on(t.memberId, t.season),
+    idxTenantSeason: index("squad_member_seasons_tenant_season_idx").on(t.tenantId, t.season),
+  }),
+);
+
+export type SquadMemberSeasonRow = typeof squadMemberSeasonsTable.$inferSelect;

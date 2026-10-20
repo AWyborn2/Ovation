@@ -13,7 +13,7 @@ import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { isUnder18OnDate, memberDisplayName, perthDate } from "./availability-grades";
-import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
+import { DEFAULT_SIDE_SIZE, normaliseSlots, sideShape } from "@workspace/scorecard/selection-shape";
 
 export const PRIVATE_PLAYER = "Private Player";
 
@@ -147,10 +147,11 @@ export function selectionPublishedPlayers(
 ): TeamListPlayer[] {
   const byId = new Map(members.map((m) => [m.id, m]));
   const players: TeamListPlayer[] = [];
-  normaliseSlots(side.slots).forEach((slot, index) => {
+  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
-    const twelfth = index === TWELFTH_INDEX;
+    const twelfth = index === shape.twelfthIndex;
     const c = !twelfth && side.captainMemberId === m.id;
     const wk = !twelfth && side.keeperMemberId === m.id;
     const role = c && wk ? "C/WK" : c ? "C" : wk ? "WK" : undefined;
@@ -158,7 +159,7 @@ export function selectionPublishedPlayers(
       !m.isPrivate && (m.linkedPlayerId == null || m.linkedPlayerId < FILL_IN_THRESHOLD);
     const participantId = eligible ? participantIds.get(m.id) : null;
     players.push({
-      order: twelfth ? SIDE_SIZE : players.length + 1,
+      order: twelfth ? shape.size : players.length + 1,
       ...(eligible && m.linkedPlayerId != null ? { playerId: m.linkedPlayerId } : {}),
       ...(participantId ? { participantId } : {}),
       displayName: publicName(m),

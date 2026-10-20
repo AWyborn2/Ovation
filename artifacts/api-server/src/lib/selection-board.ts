@@ -73,15 +73,18 @@ import {
 } from "./availability-schedule";
 import { isUnder18, messageMember, notifyStaff, type MessageBatch } from "./availability-messaging";
 import {
-  SIDE_SIZE,
-  TWELFTH_INDEX,
+  DEFAULT_SIDE_SIZE,
   XI_SIZE,
+  normaliseSlots,
+  roleMemberIds,
+  sideShape,
+  twelfthMemberId,
+} from "@workspace/scorecard/selection-shape";
+import {
   buildDraftSlots,
   buildRoundDrafts,
   juniorListAsNames,
   loadResponses,
-  normaliseSlots,
-  xiMemberIds,
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
@@ -724,7 +727,8 @@ export async function buildBoard(
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
     const final = sel.state === "final";
-    const slots = normaliseSlots(sel.slots).map((slot) => {
+    const shape = sideShape(sel.sideSize);
+    const slots = normaliseSlots(sel.slots, shape.size).map((slot) => {
       const m = slot.memberId != null ? byId.get(slot.memberId) : undefined;
       return {
         memberId: slot.memberId,
@@ -768,7 +772,7 @@ export async function buildBoard(
       warnings: {
         filled: inXi,
         open: XI_SIZE - inXi,
-        twelfth: slots[TWELFTH_INDEX]?.member != null,
+        twelfth: shape.twelfthIndex != null && slots[shape.twelfthIndex]?.member != null,
         unconfirmed: availability
           ? picked.filter((m) => m.status === "maybe" || m.status === "none").length
           : 0,
@@ -930,8 +934,8 @@ export async function saveBoard(
   }
   // 12 slots; an older client's 11 read as an empty 12th.
   const changes = input.map((c) => {
-    if (c.slots.length !== SIDE_SIZE && c.slots.length !== XI_SIZE) {
-      throw new SelectionError(400, `A side has exactly ${SIDE_SIZE} slots.`);
+    if (c.slots.length !== DEFAULT_SIDE_SIZE && c.slots.length !== XI_SIZE) {
+      throw new SelectionError(400, `A side has exactly ${DEFAULT_SIDE_SIZE} slots.`);
     }
     return { ...c, slots: normaliseSlots(c.slots) };
   });
@@ -1024,7 +1028,7 @@ export async function saveBoard(
             : { memberId: null },
       );
       const inSide = new Set(memberIdsOf(slots));
-      const inXi = xiMemberIds(slots);
+      const inXi = roleMemberIds(slots);
       // A captain or keeper must be in their own XI (not the 12th); otherwise the role clears.
       const rolesCleared: {
         role: "captain" | "keeper";
@@ -1293,7 +1297,8 @@ async function publishJuniorSide(
   const players: JuniorTeamListPlayer[] = [];
   const unlisted: string[] = [];
   const used = new Set<string>();
-  normaliseSlots(side.slots).forEach((slot, index) => {
+  const shape = sideShape(DEFAULT_SIDE_SIZE);
+  normaliseSlots(side.slots, shape.size).forEach((slot, index) => {
     const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
     if (!m) return;
     const participantId = resolve(m);
@@ -1302,10 +1307,10 @@ async function publishJuniorSide(
       return;
     }
     used.add(participantId);
-    const twelfth = index === TWELFTH_INDEX;
+    const twelfth = index === shape.twelfthIndex;
     const role = twelfth ? undefined : roleOf(m.id, side);
     players.push({
-      order: twelfth ? SIDE_SIZE : players.filter((p) => p.order <= XI_SIZE).length + 1,
+      order: twelfth ? shape.size : players.filter((p) => p.order <= XI_SIZE).length + 1,
       participantId,
       ...(role ? { role } : {}),
     });
@@ -1457,7 +1462,7 @@ export async function finaliseSelection(
 
     const sideSlots = normaliseSlots(selection.slots);
     const picked = memberIdsOf(sideSlots);
-    const twelfthId = sideSlots[TWELFTH_INDEX]?.memberId ?? null;
+    const twelfthId = twelfthMemberId(sideSlots);
     const members =
       picked.length > 0
         ? await tx
