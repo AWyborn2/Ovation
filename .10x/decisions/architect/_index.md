@@ -4,6 +4,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 ## Active features
 
+- [email-distribution-lists](email-distribution-lists.md) — Postgres outbox (`email_sends`) + lists/members/teams; reuses server team-sheet PDF + card-render harness PNG; drained after commit and by hourly sweep (proposed 20 Oct 2026)
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
 - [selection-hub-decoupling](selection-hub-decoupling.md) — on-demand rounds/drafts, carry-over, admin status, participant crosswalk, public-name flag (design proposed 19 Oct 2026; ADR-008)

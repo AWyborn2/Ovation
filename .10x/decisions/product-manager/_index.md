@@ -4,6 +4,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 ## Active features
 
+- [email-distribution-lists](email-distribution-lists.md) — team-sheet email lists per team (send mode: on publish / manual / scheduled / off, printable PDF) + social-manager list (ready assets, review-needed, milestone toggles) + send log (P0/P1, approved 20 Oct 2026)
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
 - [social-tile-short-names](social-tile-short-names.md) — crests + club-set short names on cards, square layout fixes, preview bug (P0, recommended 2026-10-19)

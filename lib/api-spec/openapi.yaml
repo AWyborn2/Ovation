@@ -62,6 +62,8 @@ tags:
     description: The club's squad register for player availability, imported from the PlayHQ participant export (admin only; contact details never leave admin payloads)
   - name: availability
     description: The weekly availability round — the club's schedule, the current round's progress and admin "Run now" steps (admin only)
+  - name: email-lists
+    description: The club's email distribution lists (team-sheet contacts) and their send log (admin only; addresses never leave admin payloads or reach the log)
   - name: selection
     description: The Selection Hub — the round board, versioned side saves, finalise and re-open, and reminders (admins and captains; never contact details)
   - name: availability-respond
@@ -2946,6 +2948,168 @@ paths:
           description: Side not found
         "409":
           description: The side is not finalised
+
+  /selection/{id}/email:
+    post:
+      operationId: emailTeamSheet
+      tags: [selection]
+      summary: Email a finalised senior side's team sheet to the lists covering its grade (admin or captain)
+      description: |
+        Queues the printable team sheet for every active team-sheet email list
+        covering the side's grade that isn't switched off; each call sends
+        again. Sending happens in the background and the club's send log shows
+        the outcome. Junior sides have no club lists.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: How many list emails were queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailTeamSheetResult"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised, is a junior side, or no list covers its grade
+
+  /admin/email-lists:
+    get:
+      operationId: listEmailLists
+      tags: [email-lists]
+      summary: The club's email lists with their members, grades and settings (admin)
+      responses:
+        "200":
+          description: Lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmailList"
+        "401":
+          description: Not signed in as this club's admin
+    post:
+      operationId: createEmailList
+      tags: [email-lists]
+      summary: Create an email list (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailListInput"
+      responses:
+        "201":
+          description: The new list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailList"
+        "400":
+          description: Invalid list
+        "401":
+          description: Not signed in as this club's admin
+
+  /admin/email-lists/{id}:
+    put:
+      operationId: updateEmailList
+      tags: [email-lists]
+      summary: Replace an email list's name, settings, grades and members (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailListInput"
+      responses:
+        "200":
+          description: The saved list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailList"
+        "400":
+          description: Invalid list
+        "401":
+          description: Not signed in as this club's admin
+        "404":
+          description: List not found
+    delete:
+      operationId: deleteEmailList
+      tags: [email-lists]
+      summary: Delete an email list and its send log (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Not signed in as this club's admin
+        "404":
+          description: List not found
+
+  /admin/email-sends:
+    get:
+      operationId: listEmailSends
+      tags: [email-lists]
+      summary: The club's email send log, newest first (admin)
+      parameters:
+        - name: listId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmailSend"
+        "401":
+          description: Not signed in as this club's admin
+
+  /admin/email-sends/{id}/resend:
+    post:
+      operationId: resendEmailSend
+      tags: [email-lists]
+      summary: Send a logged email again (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The new queued send
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailSend"
+        "401":
+          description: Not signed in as this club's admin
+        "404":
+          description: Send not found
 
   /selection/{id}/playhq-sync:
     post:
@@ -15545,6 +15709,121 @@ components:
         missingBirthDates:
           type: integer
           description: Listed players with no birth date (senior sheet only)
+
+    EmailTeamSheetResult:
+      type: object
+      required: [queued]
+      properties:
+        queued:
+          type: integer
+          description: List emails queued (one per list)
+
+    EmailListMember:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          maxLength: 254
+
+    EmailListInput:
+      type: object
+      required: [kind, name, sendMode, gradeKeys, members]
+      properties:
+        kind:
+          type: string
+          enum: [team_sheet]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        sendMode:
+          type: string
+          enum: [on_publish, manual, "off"]
+          description: on_publish emails a side when it is finalised; manual only from the Email button; off never
+        active:
+          type: boolean
+        gradeKeys:
+          type: array
+          maxItems: 30
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+          description: Senior grades the list covers, e.g. "A Grade"
+        members:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/EmailListMember"
+
+    EmailList:
+      type: object
+      required: [id, kind, name, sendMode, active, gradeKeys, members, createdAt]
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          enum: [team_sheet]
+        name:
+          type: string
+        sendMode:
+          type: string
+          enum: [on_publish, manual, "off"]
+        active:
+          type: boolean
+        gradeKeys:
+          type: array
+          items:
+            type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailListMember"
+        createdAt:
+          type: string
+          format: date-time
+
+    EmailSend:
+      type: object
+      required:
+        [id, listId, listName, kind, subjectType, subjectId, status, attempts, recipientCount, queuedAt]
+      properties:
+        id:
+          type: integer
+        listId:
+          type: integer
+        listName:
+          type: string
+        kind:
+          type: string
+        subjectType:
+          type: string
+        subjectId:
+          type: integer
+        status:
+          type: string
+          enum: [queued, sending, sent, failed, skipped]
+        attempts:
+          type: integer
+        lastError:
+          type: string
+          nullable: true
+          description: Why a send failed or was skipped
+        recipientCount:
+          type: integer
+        queuedAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
 
     TeamSheetPrintBody:
       type: object
