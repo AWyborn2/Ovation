@@ -1,5 +1,52 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** Senior Engineer / SDE sessions
+**Feature:** match-day-carousel-content
+
+## Context
+
+- The task list is in `.10x/decisions/engineering-manager/match-day-carousel-content.md`. Design: ADR-010 in `.10x/decisions/architect/match-day-carousel-content.md`.
+- Start now, in parallel sessions off `main`:
+  - **P0:** the Share to Socials preview fix (T0.1)
+  - **P1:** names and crests (T1.1–T1.6, migration 0050)
+- Next comes P2, the content contract plus the Match Day builder. It is the foundation for P3–P7, and its sweep/carousel parity test must pass before merge.
+- This runs in parallel with selection-side-size and admin-menu-consolidation, which share none of these files. Renumber the migrations at rebase if another feature takes a number first.
+
+## Previous handoff
+
+**From:** Principal Architect
+**To:** Engineering Manager / Staff Engineer
+**Feature:** match-day-carousel-content
+
+## Context
+
+- Design: `.10x/decisions/architect/match-day-carousel-content.md` (ADR-010 proposed). Requirements: `.10x/decisions/product-manager/match-day-carousel-content.md`; also covers `social-tile-short-names`.
+- Scope set by Ash: the same content pipeline for every card path (auto-queued, Create a Card, all four carousel set types). Junior match-day and results carousels can put same-day matches on one slide.
+- Components:
+  - `@workspace/scorecard/card-content`: the field catalogue, presets, `resolveVisibleFields` and `groupSlides`
+  - `api-server/src/lib/card-content/`: the name resolver, the builders and `pickPhoto`
+  - a layout contract in which packs declare what they can fit
+  - saved carousel v2
+- Migrations 0050–0053 (name overrides, the `card_content` jsonb and livestream link, sponsor tier and background, `photo_usage`). Ash runs each one by hand.
+- Delivery order has 8 steps, listed in the design file. Check that `central.ladder` exists before step 5.
+
+## Previous handoff
+
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** match-day-carousel-content
+
+## Context
+
+- Requirements: `.10x/decisions/product-manager/match-day-carousel-content.md` (decided with Ash 20 Oct 2026).
+- Build one server-side content builder for Match Day slides (title, fixture, sponsors) used by both the sweep and the carousel UI; remove the client duplicate in `components/weekend-carousel/model.ts`.
+- Content settings: per-field toggles, Minimal/Standard/Full presets, club default plus per-carousel override.
+- Packs: Club Kit and Broadcast Dark on shared slots, plus one new pack; retire the other four with a read-time fallback.
+- Depends on social-tile-short-names (names and crests). Design the ADR so each layout declares what it can fit for every preset and size.
+
+## Previous handoff
+
 **From:** SDE (PR C, merged after PR B)
 **To:** SDE session for PR D
 **Feature:** selection-side-size
