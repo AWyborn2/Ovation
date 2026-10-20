@@ -46,7 +46,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Selection Hub",
     href: "/admin/selection",
     icon: ClipboardList,
-    description: "This round's drafted sides, and the team lists for upcoming junior games.",
+    description:
+      "This round's drafted sides, the team lists for upcoming junior games, and who team sheets are emailed to.",
     tabs: [
       { value: "senior", label: "Senior selection", path: "/admin/selection" },
       {
@@ -54,6 +55,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: "Junior team lists",
         path: "/admin/selection/junior-fixtures",
       },
+      { value: "email-lists", label: "Email lists", path: "/admin/selection/email-lists" },
     ],
   },
   {

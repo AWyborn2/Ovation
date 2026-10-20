@@ -57,4 +57,8 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 - 2026-10-19 PM: scoped social-tile-short-names (preview fix P0 first).
 - 2026-10-20 DBA: match-day-carousel-content T5.0 done (decisions/dba/match-day-carousel-content.md). `central.ladder` is all-time with no season and no refresh path, so T5.1 reads the season ladder from `playhq.ladders` via `playhqGradeLadderUncached`; T5.2 (last meeting) is feasible from `central.matches`. Live Replit DB not reachable from the session: Ash runs the read-only SQL in that file (dev, then prod) to confirm.
 - 2026-10-20 Design: P8 brief agreed with Ash (full-bleed duotone photo in club colours, optional; one-line ROUND N headline; white info sheet; Archivo Expanded; no-photo slides use a zoomed, offset club logo at ~13% under halftone + grain). Content contract per preset and size in `docs/plans/2026-10-20-new-social-pack-brief.md`.
+
+- 2026-10-20 PM: email-distribution-lists scoped and approved; handed to architect.
+- 2026-10-20 Architect: email-distribution-lists design complete (outbox); handed to Staff/EM.
+- 2026-10-20 SDE: email-distribution-lists PR1 implemented (lists, outbox, finalise hook, admin page, send log). PR2 (social toggles, scheduled, resendOnChange) pending.
 - 2026-10-20 SDE: match-day-carousel-content P5 implemented (T5.1–T5.5). Still unconfirmed against live rows (no Replit access from the session): Ash runs the SQL in decisions/dba/match-day-carousel-content.md (queries 0–12) in dev, then prod. Fixed on the way: `centralClubIdForPlayhqOrg` could not run on real Postgres (text = uuid join, parameterised GROUP BY); `opponent-club.ts` uses it too.
