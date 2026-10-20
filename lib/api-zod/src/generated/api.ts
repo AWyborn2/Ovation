@@ -4071,6 +4071,187 @@ export const PrintTeamSheetBody = zod.object({
 
 
 /**
+ * Queues the printable team sheet for every active team-sheet email list
+covering the side's grade that isn't switched off; each call sends
+again. Sending happens in the background and the club's send log shows
+the outcome. Junior sides have no club lists.
+
+ * @summary Email a finalised senior side's team sheet to the lists covering its grade (admin or captain)
+ */
+export const EmailTeamSheetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const EmailTeamSheetResponse = zod.object({
+  "queued": zod.number().describe('List emails queued (one per list)')
+})
+
+
+/**
+ * @summary The club's email lists with their members, grades and settings (admin)
+ */
+export const listEmailListsResponseMembersItemNameMax = 80;
+
+export const listEmailListsResponseMembersItemEmailMax = 254;
+
+
+
+export const ListEmailListsResponseItem = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['team_sheet']),
+  "name": zod.string(),
+  "sendMode": zod.enum(['on_publish', 'manual', 'off']),
+  "active": zod.boolean(),
+  "gradeKeys": zod.array(zod.string()),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(listEmailListsResponseMembersItemNameMax),
+  "email": zod.string().email().max(listEmailListsResponseMembersItemEmailMax)
+})),
+  "createdAt": zod.coerce.date()
+})
+export const ListEmailListsResponse = zod.array(ListEmailListsResponseItem)
+
+
+/**
+ * @summary Create an email list (admin)
+ */
+export const createEmailListBodyNameMax = 80;
+
+export const createEmailListBodyGradeKeysItemMax = 60;
+
+export const createEmailListBodyGradeKeysMax = 30;
+
+export const createEmailListBodyMembersItemNameMax = 80;
+
+export const createEmailListBodyMembersItemEmailMax = 254;
+
+export const createEmailListBodyMembersMax = 50;
+
+
+
+export const CreateEmailListBody = zod.object({
+  "kind": zod.enum(['team_sheet']),
+  "name": zod.string().min(1).max(createEmailListBodyNameMax),
+  "sendMode": zod.enum(['on_publish', 'manual', 'off']).describe('on_publish emails a side when it is finalised; manual only from the Email button; off never'),
+  "active": zod.boolean().optional(),
+  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Senior grades the list covers, e.g. \"A Grade\"'),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(createEmailListBodyMembersItemNameMax),
+  "email": zod.string().email().max(createEmailListBodyMembersItemEmailMax)
+})).max(createEmailListBodyMembersMax)
+})
+
+
+/**
+ * @summary Replace an email list's name, settings, grades and members (admin)
+ */
+export const UpdateEmailListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateEmailListBodyNameMax = 80;
+
+export const updateEmailListBodyGradeKeysItemMax = 60;
+
+export const updateEmailListBodyGradeKeysMax = 30;
+
+export const updateEmailListBodyMembersItemNameMax = 80;
+
+export const updateEmailListBodyMembersItemEmailMax = 254;
+
+export const updateEmailListBodyMembersMax = 50;
+
+
+
+export const UpdateEmailListBody = zod.object({
+  "kind": zod.enum(['team_sheet']),
+  "name": zod.string().min(1).max(updateEmailListBodyNameMax),
+  "sendMode": zod.enum(['on_publish', 'manual', 'off']).describe('on_publish emails a side when it is finalised; manual only from the Email button; off never'),
+  "active": zod.boolean().optional(),
+  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Senior grades the list covers, e.g. \"A Grade\"'),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(updateEmailListBodyMembersItemNameMax),
+  "email": zod.string().email().max(updateEmailListBodyMembersItemEmailMax)
+})).max(updateEmailListBodyMembersMax)
+})
+
+export const updateEmailListResponseMembersItemNameMax = 80;
+
+export const updateEmailListResponseMembersItemEmailMax = 254;
+
+
+
+export const UpdateEmailListResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['team_sheet']),
+  "name": zod.string(),
+  "sendMode": zod.enum(['on_publish', 'manual', 'off']),
+  "active": zod.boolean(),
+  "gradeKeys": zod.array(zod.string()),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(updateEmailListResponseMembersItemNameMax),
+  "email": zod.string().email().max(updateEmailListResponseMembersItemEmailMax)
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an email list and its send log (admin)
+ */
+export const DeleteEmailListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary The club's email send log, newest first (admin)
+ */
+export const ListEmailSendsQueryParams = zod.object({
+  "listId": zod.coerce.number().optional()
+})
+
+export const ListEmailSendsResponseItem = zod.object({
+  "id": zod.number(),
+  "listId": zod.number(),
+  "listName": zod.string(),
+  "kind": zod.string(),
+  "subjectType": zod.string(),
+  "subjectId": zod.number(),
+  "status": zod.enum(['queued', 'sending', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish().describe('Why a send failed or was skipped'),
+  "recipientCount": zod.number(),
+  "queuedAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullish()
+})
+export const ListEmailSendsResponse = zod.array(ListEmailSendsResponseItem)
+
+
+/**
+ * @summary Send a logged email again (admin)
+ */
+export const ResendEmailSendParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResendEmailSendResponse = zod.object({
+  "id": zod.number(),
+  "listId": zod.number(),
+  "listName": zod.string(),
+  "kind": zod.string(),
+  "subjectType": zod.string(),
+  "subjectId": zod.number(),
+  "status": zod.enum(['queued', 'sending', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish().describe('Why a send failed or was skipped'),
+  "recipientCount": zod.number(),
+  "queuedAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullish()
+})
+
+
+/**
  * Fills the draft with the side named in PlayHQ for the fixture (senior or
 junior, as synced from PlayHQ). Each player is matched to a squad member
 as a draft is seeded; anyone matched to nobody, or already in another

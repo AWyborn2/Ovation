@@ -124,3 +124,20 @@ scheduled-window maths in the club timezone; the notificationEmail migration; te
 
 `email_sends` without stored addresses is deliberate. Adding addresses later is easy; removing PII
 once it has been logged is not.
+
+## As built: PR1 (20 Oct 2026)
+
+- The tables are as designed, plus `email_sends.payload` (the request origin is captured when the
+  row is queued, so the sheet's logo resolves in background sends) and `claimed_at` (to detect stale
+  `sending` rows). Migration `0052_email_lists.sql`.
+- The admin API replaces a list whole with `PUT /admin/email-lists/{id}` (name, mode, grades,
+  members), rather than having separate member endpoints. That is simpler for a list of 50 or
+  fewer contacts.
+- Enqueue runs inside the finalise transaction (`selection-board.ts`), for senior sides only. The
+  drain is kicked after commit and also runs at the end of the hourly `/internal/playhq/sweep`.
+- Every re-finalise (new version) re-sends, with "UPDATED:" when that list already received an
+  earlier version. The `resendOnChange` toggle is deferred to PR2.
+- Without `EMAIL_FROM`, sends are skipped and never sent to a contact in `to`. Contacts are always
+  bcc'd.
+- The admin page is at Selection Hub → Email lists (`/admin/selection/email-lists`). "Email team
+  sheet" sits under "Print team sheet" on finalised senior sides.

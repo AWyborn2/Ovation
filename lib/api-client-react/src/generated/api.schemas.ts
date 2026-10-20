@@ -3857,6 +3857,110 @@ export interface TeamSheetPreview {
   missingBirthDates: number;
 }
 
+export interface EmailTeamSheetResult {
+  /** List emails queued (one per list) */
+  queued: number;
+}
+
+export interface EmailListMember {
+  /** @maxLength 80 */
+  name: string;
+  /** @maxLength 254 */
+  email: string;
+}
+
+export type EmailListInputKind = typeof EmailListInputKind[keyof typeof EmailListInputKind];
+
+
+export const EmailListInputKind = {
+  team_sheet: 'team_sheet',
+} as const;
+
+/**
+ * on_publish emails a side when it is finalised; manual only from the Email button; off never
+ */
+export type EmailListInputSendMode = typeof EmailListInputSendMode[keyof typeof EmailListInputSendMode];
+
+
+export const EmailListInputSendMode = {
+  on_publish: 'on_publish',
+  manual: 'manual',
+  off: 'off',
+} as const;
+
+export interface EmailListInput {
+  kind: EmailListInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** on_publish emails a side when it is finalised; manual only from the Email button; off never */
+  sendMode: EmailListInputSendMode;
+  active?: boolean;
+  /**
+     * Senior grades the list covers, e.g. "A Grade"
+     * @maxItems 30
+     */
+  gradeKeys: string[];
+  /** @maxItems 50 */
+  members: EmailListMember[];
+}
+
+export type EmailListKind = typeof EmailListKind[keyof typeof EmailListKind];
+
+
+export const EmailListKind = {
+  team_sheet: 'team_sheet',
+} as const;
+
+export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListSendMode];
+
+
+export const EmailListSendMode = {
+  on_publish: 'on_publish',
+  manual: 'manual',
+  off: 'off',
+} as const;
+
+export interface EmailList {
+  id: number;
+  kind: EmailListKind;
+  name: string;
+  sendMode: EmailListSendMode;
+  active: boolean;
+  gradeKeys: string[];
+  members: EmailListMember[];
+  createdAt: string;
+}
+
+export type EmailSendStatus = typeof EmailSendStatus[keyof typeof EmailSendStatus];
+
+
+export const EmailSendStatus = {
+  queued: 'queued',
+  sending: 'sending',
+  sent: 'sent',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export interface EmailSend {
+  id: number;
+  listId: number;
+  listName: string;
+  kind: string;
+  subjectType: string;
+  subjectId: number;
+  status: EmailSendStatus;
+  attempts: number;
+  /** Why a send failed or was skipped */
+  lastError?: string | null;
+  recipientCount: number;
+  queuedAt: string;
+  sentAt?: string | null;
+}
+
 export interface TeamSheetPrintBody {
   /**
      * Overs per innings to print; remembered for the side's grade
@@ -10673,6 +10777,10 @@ offered only when it has fixtures (see the board's `weekends`).
 
  */
 weekend?: string;
+};
+
+export type ListEmailSendsParams = {
+listId?: number;
 };
 
 export type GetMetaConnectPendingParams = {

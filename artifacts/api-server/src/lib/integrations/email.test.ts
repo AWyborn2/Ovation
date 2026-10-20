@@ -46,4 +46,37 @@ describe("sendEmail (Resend)", () => {
     ).resolves.toMatchObject({ sent: false, reason: "failed" });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("sends bcc recipients and base64 attachments", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "club@example.com";
+    const bodies: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        bodies.push(JSON.parse(String(init.body)));
+        return new Response("{}", { status: 200 });
+      }),
+    );
+    await sendEmail({
+      to: "club@example.com",
+      bcc: ["a@example.com", "b@example.com"],
+      subject: "s",
+      text: "t",
+      attachments: [
+        { filename: "x.pdf", content: Buffer.from("pdf"), contentType: "application/pdf" },
+      ],
+    });
+    expect(bodies[0]).toMatchObject({
+      to: ["club@example.com"],
+      bcc: ["a@example.com", "b@example.com"],
+      attachments: [
+        {
+          filename: "x.pdf",
+          content: Buffer.from("pdf").toString("base64"),
+          content_type: "application/pdf",
+        },
+      ],
+    });
+  });
 });

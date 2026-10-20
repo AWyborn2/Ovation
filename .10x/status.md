@@ -60,3 +60,4 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 
 - 2026-10-20 PM: email-distribution-lists scoped and approved; handed to architect.
 - 2026-10-20 Architect: email-distribution-lists design complete (outbox); handed to Staff/EM.
+- 2026-10-20 SDE: email-distribution-lists PR1 implemented (lists, outbox, finalise hook, admin page, send log). PR2 (social toggles, scheduled, resendOnChange) pending.
