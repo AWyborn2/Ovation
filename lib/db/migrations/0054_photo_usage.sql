@@ -5,7 +5,7 @@
 --                written when a draft is posted, read by pickPhoto (least recently used first)
 -- Tenant-curated. A photo deleted from the library takes its rows; a deleted draft leaves them
 -- (draft_id NULL). UNIQUE (tenant_id, photo_id, draft_id): posting a draft twice records it once.
--- Numbered 0054: 0053 is reserved for the sponsors page (P6).
+-- Numbered 0054: 0053 is email_lists (#399).
 -- Apply BEFORE republishing: the new code reads and writes this table.
 --
 -- Idempotent (production was push-built and baselined at 0000): CREATE TABLE / INDEX IF NOT
