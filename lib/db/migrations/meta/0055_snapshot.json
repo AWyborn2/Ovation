@@ -14934,6 +14934,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "section": {
+          "name": "section",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'senior'"
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -15001,6 +15008,10 @@
         "email_lists_kind_check": {
           "name": "email_lists_kind_check",
           "value": "\"email_lists\".\"kind\" IN ('team_sheet', 'social')"
+        },
+        "email_lists_section_check": {
+          "name": "email_lists_section_check",
+          "value": "\"email_lists\".\"section\" IN ('senior', 'junior')"
         }
       },
       "isRLSEnabled": false

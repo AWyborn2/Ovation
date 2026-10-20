@@ -8,11 +8,13 @@
 import type { EmailListKind } from './emailListKind';
 import type { EmailListMember } from './emailListMember';
 import type { EmailListSchedule } from './emailListSchedule';
+import type { EmailListSection } from './emailListSection';
 import type { EmailListSendMode } from './emailListSendMode';
 
 export interface EmailList {
   id: number;
   kind: EmailListKind;
+  section: EmailListSection;
   name: string;
   sendMode: EmailListSendMode;
   /** Scheduled team-sheet lists; null otherwise */

@@ -1,11 +1,25 @@
 import type { EmailList, EmailListInput, EmailSend } from "@workspace/api-client-react";
 
 type SendMode = NonNullable<EmailListInput["sendMode"]>;
+type Section = NonNullable<EmailListInput["section"]>;
+
+export const SECTION_LABELS: Record<Section, string> = { senior: "Senior", junior: "Junior" };
+
+/** The label a junior side is listed under (juniorSideLabel on the server). */
+export function juniorTeamLabel(f: {
+  teamName?: string | null;
+  grade?: string | null;
+  ageGroup?: string | null;
+}): string {
+  return f.teamName?.trim() || f.grade?.trim() || f.ageGroup?.trim() || "Junior side";
+}
 
 /** The editor's working copy of a list (members as editable rows). */
 export type EmailListDraft = {
   id: number | null;
   kind: EmailListInput["kind"];
+  /** Team-sheet lists: fixed once the list is saved. */
+  section: Section;
   name: string;
   /** Team-sheet lists. */
   sendMode: SendMode;
@@ -82,10 +96,14 @@ export function listSummary(list: EmailList): string {
   return SEND_MODE_LABELS[list.sendMode];
 }
 
-export function emptyDraft(kind: EmailListInput["kind"] = "team_sheet"): EmailListDraft {
+export function emptyDraft(
+  kind: EmailListInput["kind"] = "team_sheet",
+  section: Section = "senior",
+): EmailListDraft {
   return {
     id: null,
     kind,
+    section,
     name: kind === "social" ? "Social media" : "",
     sendMode: "on_publish",
     scheduleDow: 4,
@@ -104,6 +122,7 @@ export function draftFrom(list: EmailList): EmailListDraft {
   return {
     id: list.id,
     kind: list.kind,
+    section: list.section,
     name: list.name,
     sendMode: list.sendMode,
     scheduleDow: list.schedule?.dow ?? 4,
@@ -154,6 +173,7 @@ export function toInput(draft: EmailListDraft): EmailListInput {
   }
   return {
     ...base,
+    section: draft.section,
     sendMode: draft.sendMode,
     schedule:
       draft.sendMode === "scheduled" ? { dow: draft.scheduleDow, time: draft.scheduleTime } : null,

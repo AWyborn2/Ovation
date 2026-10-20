@@ -4103,6 +4103,7 @@ export const listEmailListsResponseMembersItemEmailMax = 254;
 export const ListEmailListsResponseItem = zod.object({
   "id": zod.number(),
   "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']),
   "name": zod.string(),
   "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
   "schedule": zod.object({
@@ -4147,6 +4148,7 @@ export const createEmailListBodyMembersMax = 50;
 
 export const CreateEmailListBody = zod.object({
   "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']).optional().describe('Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.'),
   "name": zod.string().min(1).max(createEmailListBodyNameMax),
   "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
   "schedule": zod.object({
@@ -4158,7 +4160,7 @@ export const CreateEmailListBody = zod.object({
   "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
   "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean().optional(),
-  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Senior grades a team-sheet list covers, e.g. \"A Grade\" (empty for social lists)'),
+  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Grades (senior lists, e.g. \"A Grade\") or junior team labels (junior lists, e.g. \"Year 7 Gold\") a team-sheet list covers; empty for social lists'),
   "members": zod.array(zod.object({
   "name": zod.string().max(createEmailListBodyMembersItemNameMax),
   "email": zod.string().email().max(createEmailListBodyMembersItemEmailMax)
@@ -4193,6 +4195,7 @@ export const updateEmailListBodyMembersMax = 50;
 
 export const UpdateEmailListBody = zod.object({
   "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']).optional().describe('Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.'),
   "name": zod.string().min(1).max(updateEmailListBodyNameMax),
   "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
   "schedule": zod.object({
@@ -4204,7 +4207,7 @@ export const UpdateEmailListBody = zod.object({
   "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
   "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
   "active": zod.boolean().optional(),
-  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Senior grades a team-sheet list covers, e.g. \"A Grade\" (empty for social lists)'),
+  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Grades (senior lists, e.g. \"A Grade\") or junior team labels (junior lists, e.g. \"Year 7 Gold\") a team-sheet list covers; empty for social lists'),
   "members": zod.array(zod.object({
   "name": zod.string().max(updateEmailListBodyMembersItemNameMax),
   "email": zod.string().email().max(updateEmailListBodyMembersItemEmailMax)
@@ -4224,6 +4227,7 @@ export const updateEmailListResponseMembersItemEmailMax = 254;
 export const UpdateEmailListResponse = zod.object({
   "id": zod.number(),
   "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']),
   "name": zod.string(),
   "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
   "schedule": zod.object({

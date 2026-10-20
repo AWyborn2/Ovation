@@ -132,16 +132,11 @@ router.post("/selection/:id/email", requireAdminOrCaptain, async (req, res): Pro
   }
   const tenantId = getTenantId(req);
   try {
-    // Refused until the side is finalised; junior sides have no club lists.
-    const preview = await loadTeamSheetPreview(tenantId, params.data.id);
-    if (preview.section !== "senior") {
-      res.status(409).json({ error: "Junior team sheets aren't emailed to club lists." });
-      return;
-    }
+    // Refused until the side is finalised, and when no list of its section covers it.
+    await loadTeamSheetPreview(tenantId, params.data.id);
     const queued = await enqueueTeamSheetManual({
       tenantId,
       selectionId: params.data.id,
-      grade: preview.grade,
       origin: harnessOriginFromHeaders(req.headers),
     });
     kickOutbox(tenantId, req.log);

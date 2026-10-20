@@ -12,6 +12,7 @@ import {
   availabilityRoundsTable,
   emailSendsTable,
   socialDraftsTable,
+  juniorFixturesTable,
 } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
@@ -458,5 +459,153 @@ describe("social lists (PR2)", () => {
     expect((await as(other, otherCookie).get("/api/admin/email-lists").expect(200)).body).toEqual(
       [],
     );
+  });
+});
+
+describe("junior team-sheet lists (PR2, decision of 20 Oct 2026)", () => {
+  let juniorSide: number, juniorList: number, seniorSameName: number, juniorOnSenior: number;
+  const listSends = async (listId: number) =>
+    (await sendsFor()).filter((r) => r.listId === listId && r.kind === "team_sheet");
+
+  beforeAll(async () => {
+    const kids = await db
+      .insert(squadMembersTable)
+      .values(
+        Array.from({ length: 11 }, (_, i) => ({
+          tenantId: tenant,
+          firstName: "Kid",
+          lastName: `Junior${i}`,
+          section: "junior" as const,
+        })),
+      )
+      .returning();
+    const [round] = await db
+      .select()
+      .from(availabilityRoundsTable)
+      .where(eq(availabilityRoundsTable.tenantId, tenant));
+    const [fixture] = await db
+      .insert(juniorFixturesTable)
+      .values({
+        tenantId: tenant,
+        playhqMatchId: `email-jr-${stamp}`,
+        seasonStartYear: 2034,
+        ageGroup: "Year 7",
+        teamName: "Year 7 Gold",
+        opponentName: "Rivals Year 7",
+        startAt: new Date("2034-10-07T01:00:00Z"),
+        isHome: true,
+      })
+      .returning();
+    const [side] = await db
+      .insert(selectionsTable)
+      .values({
+        tenantId: tenant,
+        roundId: round.id,
+        juniorFixtureId: fixture.id,
+        slots: [...kids.map((m) => ({ memberId: m.id })), { memberId: null }],
+        captainMemberId: kids[0].id,
+        keeperMemberId: kids[1].id,
+      })
+      .returning();
+    juniorSide = side.id;
+  });
+
+  it("a junior list is fixed as junior and covers junior teams", async () => {
+    const jr = await as(tenant, cookie)
+      .post(
+        "/api/admin/email-lists",
+        list({
+          name: "Year 7 Gold parents",
+          section: "junior",
+          gradeKeys: ["Year 7 Gold"],
+          members: [{ name: "Parent", email: "parent@example.com" }],
+        }),
+      )
+      .expect(201);
+    expect(jr.body).toMatchObject({ section: "junior", gradeKeys: ["Year 7 Gold"] });
+    juniorList = jr.body.id;
+    // An update can't move a list to the other section.
+    const moved = await as(tenant, cookie)
+      .put(`/api/admin/email-lists/${juniorList}`, {
+        ...list({ name: "Year 7 Gold parents", gradeKeys: ["Year 7 Gold"] }),
+        section: "senior",
+        members: [{ name: "Parent", email: "parent@example.com" }],
+      })
+      .expect(200);
+    expect(moved.body.section).toBe("junior");
+
+    // A senior list whose key reads the same as the junior team, and a junior list on a senior grade.
+    seniorSameName = (
+      await as(tenant, cookie)
+        .post(
+          "/api/admin/email-lists",
+          list({
+            name: "Senior same name",
+            gradeKeys: ["Year 7 Gold"],
+            members: [{ name: "S", email: "senior-same@example.com" }],
+          }),
+        )
+        .expect(201)
+    ).body.id;
+    juniorOnSenior = (
+      await as(tenant, cookie)
+        .post(
+          "/api/admin/email-lists",
+          list({
+            name: "Junior on A Grade",
+            section: "junior",
+            gradeKeys: ["A Grade"],
+            members: [{ name: "J", email: "junior-a@example.com" }],
+          }),
+        )
+        .expect(201)
+    ).body.id;
+  });
+
+  it("a junior side finalises to its junior list only", async () => {
+    await finaliseSelection(tenant, actor, juniorSide, 1, { now });
+    expect(await listSends(juniorList)).toHaveLength(1);
+    expect(await listSends(seniorSameName)).toHaveLength(0);
+    await drainOutbox({ tenantId: tenant });
+    const toParent = sent.filter((m) => m.bcc?.includes("parent@example.com"));
+    expect(toParent).toHaveLength(1);
+    expect(toParent[0].attachments?.[0]).toMatchObject({ contentType: "application/pdf" });
+    expect(sent.some((m) => m.bcc?.includes("senior-same@example.com"))).toBe(false);
+  });
+
+  it("a junior list never gets a senior sheet", async () => {
+    await reopenSelection(tenant, actor, selectionId, now);
+    const [side] = await db
+      .select()
+      .from(selectionsTable)
+      .where(eq(selectionsTable.id, selectionId));
+    await finaliseSelection(tenant, actor, selectionId, side.version, { now });
+    expect(await listSends(juniorOnSenior)).toHaveLength(0);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.some((m) => m.bcc?.includes("junior-a@example.com"))).toBe(false);
+  });
+
+  it("Email team sheet works for a junior side, to junior lists only", async () => {
+    const res = await as(tenant, cookie).post(`/api/selection/${juniorSide}/email`).expect(200);
+    expect(res.body).toEqual({ queued: 1 });
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.map((m) => m.bcc)).toEqual([["parent@example.com"]]);
+  });
+
+  it("a send whose list and sheet sections differ is skipped, not sent", async () => {
+    // Force a mismatched row (as if a list were edited by hand): the drain refuses it.
+    await db.insert(emailSendsTable).values({
+      tenantId: tenant,
+      listId: seniorSameName,
+      kind: "team_sheet",
+      subjectType: "selection",
+      subjectId: juniorSide,
+      idempotencyKey: `mismatch-${stamp}`,
+      payload: {},
+    });
+    await drainOutbox({ tenantId: tenant });
+    expect(sent).toEqual([]);
+    const [row] = (await sendsFor()).filter((r) => r.idempotencyKey === `mismatch-${stamp}`);
+    expect(row.status).toBe("skipped");
   });
 });

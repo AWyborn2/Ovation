@@ -6,8 +6,10 @@ import {
   emailListsTable,
   emailSendsTable,
   fixturesTable,
+  juniorFixturesTable,
   selectionsTable,
   socialDraftsTable,
+  type EmailListSection,
   type EmailListSettings,
   type EmailSendRow,
   type SocialDraftRow,
@@ -41,6 +43,7 @@ import {
   type SocialEmailKind,
 } from "./social-list-email";
 import { fixtureSection } from "./availability-grades";
+import { juniorSideLabel, loadSideFixture, sideSection } from "./selection-fixtures";
 import { getTenantBrand } from "./tenant-brand";
 
 export { sendModeOf, teamSheetEmail, teamSheetKey };
@@ -66,8 +69,17 @@ export const MAX_EMAIL_ATTEMPTS = 3;
 /** A row stuck in "sending" this long (server died mid-send) is put back in the queue. */
 export const STALE_SENDING_MS = 15 * 60 * 1000;
 
-/** The active team-sheet lists covering a senior grade. */
-async function listsForGrade(ex: Executor, tenantId: number, grade: string) {
+/**
+ * The active team-sheet lists of one section covering a grade (senior) or a
+ * junior team label (junior). A senior list never matches a junior side and a
+ * junior list never a senior one, even when the keys read the same.
+ */
+async function listsForGrade(
+  ex: Executor,
+  tenantId: number,
+  grade: string,
+  section: EmailListSection,
+) {
   return ex
     .select({ id: emailListsTable.id, settings: emailListsTable.settings })
     .from(emailListsTable)
@@ -76,7 +88,9 @@ async function listsForGrade(ex: Executor, tenantId: number, grade: string) {
       and(
         eq(emailListsTable.tenantId, tenantId),
         eq(emailListsTable.kind, "team_sheet"),
+        eq(emailListsTable.section, section),
         eq(emailListsTable.active, true),
+        eq(emailListTeamsTable.tenantId, tenantId),
         eq(emailListTeamsTable.gradeKey, grade),
       ),
     );
@@ -120,9 +134,9 @@ async function listsTakingVersion<L extends { id: number; settings: EmailListSet
 }
 
 /**
- * Queue the finalised sheet for every "on publish" list covering the grade.
- * Runs inside the finalise transaction, so the queue and the side commit together.
- * Senior sides only: junior sides never reach a club list (juniors isolation).
+ * Queue the finalised sheet for every "on publish" list of the side's section
+ * covering its grade (senior) or team (junior). Runs inside the finalise
+ * transaction, so the queue and the side commit together.
  */
 export async function enqueueTeamSheetOnFinalise(
   tx: Tx,
@@ -131,6 +145,7 @@ export async function enqueueTeamSheetOnFinalise(
     selectionId: number;
     version: number;
     grade: string;
+    section: EmailListSection;
     origin: string | null;
   },
 ): Promise<number> {
@@ -139,7 +154,7 @@ export async function enqueueTeamSheetOnFinalise(
     input.tenantId,
     input.selectionId,
     input.version,
-    (await listsForGrade(tx, input.tenantId, input.grade)).filter(
+    (await listsForGrade(tx, input.tenantId, input.grade, input.section)).filter(
       (l) => sendModeOf(l.settings) === "on_publish",
     ),
   );
@@ -154,7 +169,7 @@ export async function enqueueTeamSheetOnFinalise(
         subjectType: "selection",
         subjectId: input.selectionId,
         idempotencyKey: `${teamSheetKey(input.selectionId, input.version)}:l${l.id}`,
-        payload: { origin: input.origin, grade: input.grade },
+        payload: { origin: input.origin, grade: input.grade, section: input.section },
       })),
     )
     .onConflictDoNothing({ target: emailSendsTable.idempotencyKey })
@@ -169,8 +184,8 @@ const SCHEDULE_LOOKBACK_MS = 12 * 60 * 60 * 1000;
 
 /**
  * Scheduled team-sheet lists (hourly sweep): each list whose weekly slot fell
- * in the last hour gets the latest finalised senior side per covered grade for
- * the coming round. The key is the on-publish one, so a version already
+ * in the last hour gets, per covered grade (senior list) or team (junior list),
+ * the finalised side of that section for the coming round. The key is the on-publish one, so a version already
  * emailed to the list is never sent twice.
  */
 export async function enqueueScheduledTeamSheets(
@@ -181,6 +196,7 @@ export async function enqueueScheduledTeamSheets(
     .select({
       id: emailListsTable.id,
       tenantId: emailListsTable.tenantId,
+      section: emailListsTable.section,
       settings: emailListsTable.settings,
     })
     .from(emailListsTable)
@@ -205,26 +221,13 @@ export async function enqueueScheduledTeamSheets(
           eq(emailListTeamsTable.listId, list.id),
         ),
       );
+    const from = new Date(now.getTime() - SCHEDULE_LOOKBACK_MS);
+    const to = new Date(now.getTime() + SCHEDULE_LOOKAHEAD_MS);
     for (const { grade } of grades) {
-      // Juniors isolation: only senior fixtures (selections.fixture_id) are emailed.
-      if (fixtureSection(grade) !== "senior") continue;
-      const [side] = await db
-        .select({ id: selectionsTable.id, version: selectionsTable.version })
-        .from(selectionsTable)
-        .innerJoin(fixturesTable, eq(fixturesTable.id, selectionsTable.fixtureId))
-        .where(
-          and(
-            eq(selectionsTable.tenantId, list.tenantId),
-            eq(fixturesTable.tenantId, list.tenantId),
-            eq(selectionsTable.state, "final"),
-            isNull(selectionsTable.juniorFixtureId),
-            eq(fixturesTable.grade, grade),
-            gte(fixturesTable.startAt, new Date(now.getTime() - SCHEDULE_LOOKBACK_MS)),
-            lte(fixturesTable.startAt, new Date(now.getTime() + SCHEDULE_LOOKAHEAD_MS)),
-          ),
-        )
-        .orderBy(asc(fixturesTable.startAt))
-        .limit(1);
+      const side =
+        list.section === "junior"
+          ? await comingJuniorSide(list.tenantId, grade, from, to)
+          : await comingSeniorSide(list.tenantId, grade, from, to);
       if (!side) continue;
       const [take] = await listsTakingVersion(db, list.tenantId, side.id, side.version, [list]);
       if (!take) continue;
@@ -237,7 +240,7 @@ export async function enqueueScheduledTeamSheets(
           subjectType: "selection",
           subjectId: side.id,
           idempotencyKey: `${teamSheetKey(side.id, side.version)}:l${list.id}`,
-          payload: { origin, grade, scheduled: true },
+          payload: { origin, grade, section: list.section, scheduled: true },
         })
         .onConflictDoNothing({ target: emailSendsTable.idempotencyKey })
         .returning({ id: emailSendsTable.id });
@@ -245,6 +248,58 @@ export async function enqueueScheduledTeamSheets(
     }
   }
   return queued;
+}
+
+/** The earliest finalised senior side of a grade starting in the window. */
+async function comingSeniorSide(tenantId: number, grade: string, from: Date, to: Date) {
+  if (fixtureSection(grade) !== "senior") return null;
+  const [side] = await db
+    .select({ id: selectionsTable.id, version: selectionsTable.version })
+    .from(selectionsTable)
+    .innerJoin(fixturesTable, eq(fixturesTable.id, selectionsTable.fixtureId))
+    .where(
+      and(
+        eq(selectionsTable.tenantId, tenantId),
+        eq(fixturesTable.tenantId, tenantId),
+        eq(selectionsTable.state, "final"),
+        isNull(selectionsTable.juniorFixtureId),
+        eq(fixturesTable.grade, grade),
+        gte(fixturesTable.startAt, from),
+        lte(fixturesTable.startAt, to),
+      ),
+    )
+    .orderBy(asc(fixturesTable.startAt))
+    .limit(1);
+  return side ?? null;
+}
+
+/**
+ * The earliest finalised junior side of a team (its juniorSideLabel) starting
+ * in the window. The label is derived, so candidates are matched here.
+ */
+async function comingJuniorSide(tenantId: number, team: string, from: Date, to: Date) {
+  const rows = await db
+    .select({
+      id: selectionsTable.id,
+      version: selectionsTable.version,
+      teamName: juniorFixturesTable.teamName,
+      grade: juniorFixturesTable.grade,
+      ageGroup: juniorFixturesTable.ageGroup,
+    })
+    .from(selectionsTable)
+    .innerJoin(juniorFixturesTable, eq(juniorFixturesTable.id, selectionsTable.juniorFixtureId))
+    .where(
+      and(
+        eq(selectionsTable.tenantId, tenantId),
+        eq(juniorFixturesTable.tenantId, tenantId),
+        eq(selectionsTable.state, "final"),
+        gte(juniorFixturesTable.startAt, from),
+        lte(juniorFixturesTable.startAt, to),
+      ),
+    )
+    .orderBy(asc(juniorFixturesTable.startAt));
+  const side = rows.find((r) => juniorSideLabel(r) === team);
+  return side ? { id: side.id, version: side.version } : null;
 }
 
 /** The club's active social lists with this email switched on. */
@@ -439,12 +494,16 @@ export class EmailOutboxError extends Error {
 export async function enqueueTeamSheetManual(input: {
   tenantId: number;
   selectionId: number;
-  grade: string;
   origin: string | null;
   now?: Date;
 }): Promise<number> {
   const [side] = await db
-    .select({ state: selectionsTable.state, version: selectionsTable.version })
+    .select({
+      state: selectionsTable.state,
+      version: selectionsTable.version,
+      fixtureId: selectionsTable.fixtureId,
+      juniorFixtureId: selectionsTable.juniorFixtureId,
+    })
     .from(selectionsTable)
     .where(
       and(eq(selectionsTable.id, input.selectionId), eq(selectionsTable.tenantId, input.tenantId)),
@@ -452,13 +511,18 @@ export async function enqueueTeamSheetManual(input: {
   if (!side) throw new EmailOutboxError(404, "Side not found");
   if (side.state !== "final")
     throw new EmailOutboxError(409, "Finalise the side before emailing it.");
-  const lists = (await listsForGrade(db, input.tenantId, input.grade)).filter(
+  // The key lists match on: a senior grade, or a junior side's team label (as on finalise).
+  const fixture = await loadSideFixture(db, input.tenantId, side);
+  if (!fixture) throw new EmailOutboxError(404, "Side not found");
+  const grade = fixture.grade;
+  const section = sideSection(fixture);
+  const lists = (await listsForGrade(db, input.tenantId, grade, section)).filter(
     (l) => sendModeOf(l.settings) !== "off",
   );
   if (lists.length === 0) {
     throw new EmailOutboxError(
       409,
-      `No email list covers ${input.grade}. Add one in Admin → Email lists.`,
+      `No ${section} email list covers ${grade}. Add one in Admin → Email lists.`,
     );
   }
   const stamp = (input.now ?? new Date()).getTime();
@@ -472,7 +536,7 @@ export async function enqueueTeamSheetManual(input: {
         subjectType: "selection",
         subjectId: input.selectionId,
         idempotencyKey: `${teamSheetKey(input.selectionId, side.version)}:l${l.id}:manual:${stamp}`,
-        payload: { origin: input.origin, grade: input.grade, manual: true },
+        payload: { origin: input.origin, grade, section, manual: true },
       })),
     )
     .onConflictDoNothing({ target: emailSendsTable.idempotencyKey })
@@ -564,9 +628,16 @@ async function deliverTeamSheet(row: EmailSendRow): Promise<SendOutcome> {
     if (err instanceof TeamSheetError) return { status: "skipped", reason: err.message };
     throw err;
   }
-  // Juniors isolation: a junior side never reaches a club list.
-  if (sheet.section !== "senior")
-    return { status: "skipped", reason: "Junior sides aren't emailed." };
+  // A senior list only ever gets a senior sheet and a junior list a junior one.
+  const [list] = await db
+    .select({ section: emailListsTable.section })
+    .from(emailListsTable)
+    .where(and(eq(emailListsTable.id, row.listId), eq(emailListsTable.tenantId, row.tenantId)));
+  if (!list || list.section !== sheet.section)
+    return {
+      status: "skipped",
+      reason: `A ${list?.section ?? "removed"} list doesn't get ${sheet.section} sheets.`,
+    };
   const pdf = await renderHtmlToPdf(
     renderTeamSheetHtml(sheet, absoluteLogoUrl(sheet.logoUrl, payloadOrigin(row))),
   );

@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { draftFrom, draftProblem, emptyDraft, isEmail, listSummary, toInput } from "./email-lists";
+import {
+  draftFrom,
+  draftProblem,
+  emptyDraft,
+  isEmail,
+  juniorTeamLabel,
+  listSummary,
+  toInput,
+} from "./email-lists";
 
 describe("email list drafts", () => {
   it("needs a name and real addresses, ignoring blank rows", () => {
@@ -28,6 +36,7 @@ describe("email list drafts", () => {
     };
     expect(toInput(d)).toEqual({
       kind: "team_sheet",
+      section: "senior",
       name: "A Grade",
       sendMode: "on_publish",
       schedule: null,
@@ -42,6 +51,7 @@ describe("email list drafts", () => {
     const d = draftFrom({
       id: 4,
       kind: "team_sheet",
+      section: "senior",
       name: "B",
       sendMode: "manual",
       schedule: null,
@@ -89,6 +99,7 @@ describe("email list drafts", () => {
   it("summarises when a list is emailed", () => {
     const base = {
       id: 1,
+      section: "senior" as const,
       name: "L",
       active: true,
       gradeKeys: [],
@@ -110,5 +121,12 @@ describe("email list drafts", () => {
     expect(listSummary({ ...base, kind: "social", sendMode: "off", schedule: null })).toBe(
       "Card ready to post, Milestones and achievements",
     );
+  });
+
+  it("a junior list keeps its section and labels junior teams like the server", () => {
+    const d = { ...emptyDraft("team_sheet", "junior"), name: "U13", gradeKeys: ["Year 7 Gold"] };
+    expect(toInput(d)).toMatchObject({ section: "junior", gradeKeys: ["Year 7 Gold"] });
+    expect(juniorTeamLabel({ teamName: " Year 7 Gold ", grade: "U13" })).toBe("Year 7 Gold");
+    expect(juniorTeamLabel({ teamName: null, grade: null, ageGroup: "U11" })).toBe("U11");
   });
 });

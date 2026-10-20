@@ -6,12 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EmailListInputKind } from './emailListInputKind';
+import type { EmailListInputSection } from './emailListInputSection';
 import type { EmailListInputSendMode } from './emailListInputSendMode';
 import type { EmailListMember } from './emailListMember';
 import type { EmailListSchedule } from './emailListSchedule';
 
 export interface EmailListInput {
   kind: EmailListInputKind;
+  /** Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists. */
+  section?: EmailListInputSection;
   /**
      * @minLength 1
      * @maxLength 80
@@ -31,7 +34,7 @@ export interface EmailListInput {
   milestone?: boolean;
   active?: boolean;
   /**
-     * Senior grades a team-sheet list covers, e.g. "A Grade" (empty for social lists)
+     * Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
      * @maxItems 30
      */
   gradeKeys: string[];

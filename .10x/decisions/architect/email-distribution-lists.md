@@ -41,9 +41,9 @@ B fits the existing patterns: notifications are written first and email is a bes
   unique `(list_id, lower(email))`.
 - `email_list_teams` (team_sheet lists only): `list_id, tenant_id, team_key`. This is many-to-many,
   so one contact list can cover several teams. `team_key` = the senior team/grade key the Selection
-  Hub resolves a fixture to (Staff Engineer to confirm the exact column). **Senior fixtures only**
-  (`selections.fixture_id`). Junior sides (`junior_fixture_id`) are excluded to keep juniors
-  isolated, and would get their own junior-scoped lists later.
+  Hub resolves a fixture to (Staff Engineer to confirm the exact column). ~~Senior fixtures only~~
+  (lifted 20 Oct 2026: junior sides are emailed through separate junior lists; see "As built:
+  junior lists" below).
 - `email_sends` (outbox and log): `id, tenant_id, list_id, kind ('team_sheet'|'asset_ready'|'review_needed'|'milestone'), subject_type, subject_id, idempotency_key UNIQUE, status ('queued'|'sending'|'sent'|'failed'|'skipped'), attempts, last_error, recipient_count, provider_id, queued_at, sent_at`.
   - Idempotency keys: team sheet `ts:{selectionId}:v{version}`, social `sa:{draftId}:{kind}`.
     Re-publishing an unchanged version does not send a second email.
@@ -180,3 +180,26 @@ once it has been logged is not.
 - The admin page creates both kinds of list. It shows the toggles for social lists, and for
   team-sheet lists a day and time picker (Perth time) and the resend switch. The send log now
   shows `last_error` on sent rows too, which is where the link-fallback note appears.
+
+## As built: junior lists (PR2, decision of 20 Oct 2026)
+
+- `email_lists.section` is `'senior'` or `'junior'` (default `'senior'`, CHECK constraint). It is
+  added in `0055_social_email_lists.sql` with `ADD COLUMN IF NOT EXISTS`. It is fixed when a list
+  is created, and an update never changes it. Only team-sheet lists can be junior; social lists
+  are always `senior` (club-level).
+- A junior list keeps junior team labels in `email_list_teams.grade_key`. The label is
+  `juniorSideLabel()` (team name, else grade, else age group), the same string as a junior side's
+  `SideFixture.grade`.
+- Every enqueue path (finalise, manual "Email team sheet", schedule) matches lists on
+  `section = sideSection(fixture)` and on `grade_key` equal to that fixture's grade or label. A
+  senior list never matches a junior side, even when its key reads the same, and a junior list
+  never matches a senior one. The manual route accepts junior sides and still returns 409 when no
+  list of the side's section covers it.
+- `deliverTeamSheet` checks the list's section against the sheet's section. On a mismatch it
+  skips the send and does not email it. This replaces the blanket junior skip.
+- Scheduled junior lists pick the earliest finalised junior side in the window whose label matches
+  the team.
+- Web: the list editor asks Senior or Junior when a list is created (and shows it, locked,
+  afterwards). The team picker comes from the club's junior fixtures (`useListJuniorFixtures`
+  labels, de-duplicated). Each list row shows its section, and "Email team sheet" shows on junior
+  sides too.

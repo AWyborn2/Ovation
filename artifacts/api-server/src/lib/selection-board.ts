@@ -1721,17 +1721,16 @@ export async function finaliseSelection(
       },
       createdAt: now,
     });
-    // Senior sides go to the club's team-sheet email lists (juniors never do).
-    const emailsQueued =
-      fixture.kind !== "junior" && sideSection(fixture) === "senior"
-        ? await enqueueTeamSheetOnFinalise(tx, {
-            tenantId,
-            selectionId: selection.id,
-            version: selection.version + 1,
-            grade: fixture.grade,
-            origin: opts.req ? harnessOriginFromHeaders(opts.req.headers) : null,
-          })
-        : 0;
+    // The side goes to the club's team-sheet email lists of its own section: senior
+    // lists cover senior grades, junior lists junior teams, never the other way.
+    const emailsQueued = await enqueueTeamSheetOnFinalise(tx, {
+      tenantId,
+      selectionId: selection.id,
+      version: selection.version + 1,
+      grade: fixture.grade,
+      section: sideSection(fixture),
+      origin: opts.req ? harnessOriginFromHeaders(opts.req.headers) : null,
+    });
     return { selection, fixture, toSelect, toDeselect, twelfthId, unlisted, emailsQueued };
   });
 

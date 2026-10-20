@@ -5,6 +5,7 @@ import {
   emailListTeamsTable,
   emailListsTable,
   type EmailListKind,
+  type EmailListSection,
   type EmailListSettings,
   type TeamSheetSendMode,
 } from "@workspace/db";
@@ -20,6 +21,8 @@ type Schedule = { dow: number; time: string };
 
 export type EmailListInput = {
   kind: EmailListKind;
+  /** team_sheet lists, fixed at creation (default senior). */
+  section?: EmailListSection;
   name: string;
   /** team_sheet lists (default on_publish). */
   sendMode?: TeamSheetSendMode;
@@ -37,6 +40,7 @@ export type EmailListInput = {
 export type EmailListView = {
   id: number;
   kind: EmailListKind;
+  section: EmailListSection;
   name: string;
   sendMode: TeamSheetSendMode;
   schedule: Schedule | null;
@@ -132,6 +136,7 @@ export async function listEmailLists(tenantId: number, ids?: number[]): Promise<
   return lists.map((l) => ({
     id: l.id,
     kind: l.kind,
+    section: l.section,
     name: l.name,
     sendMode: l.kind === "social" ? "off" : sendModeOf(l.settings),
     schedule: l.kind === "social" ? null : (l.settings.schedule ?? null),
@@ -164,9 +169,11 @@ export async function saveEmailList(
     };
     let listId: number;
     if (id == null) {
+      // The section is fixed here and never changed by an update; social lists are club-level.
+      const section = input.kind === "team_sheet" ? (input.section ?? "senior") : "senior";
       const [row] = await tx
         .insert(emailListsTable)
-        .values({ tenantId, ...values })
+        .values({ tenantId, section, ...values })
         .returning({ id: emailListsTable.id });
       listId = row.id;
     } else {

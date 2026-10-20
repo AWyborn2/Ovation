@@ -8,6 +8,7 @@ import {
   useListEmailLists,
   useListEmailSends,
   useListGrades,
+  useListJuniorFixtures,
   useResendEmailSend,
   useUpdateEmailList,
   type EmailList,
@@ -27,12 +28,14 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import {
   DAY_NAMES,
   KIND_LABELS,
+  SECTION_LABELS,
   SEND_MODE_LABELS,
   SEND_STATUS_LABELS,
   SOCIAL_TOGGLES,
   draftFrom,
   draftProblem,
   emptyDraft,
+  juniorTeamLabel,
   listSummary,
   toInput,
   type EmailListDraft,
@@ -55,6 +58,7 @@ export default function AdminEmailLists() {
     query: { queryKey: getListEmailSendsQueryKey(), refetchInterval: 15_000 },
   });
   const gradesQ = useListGrades();
+  const juniorQ = useListJuniorFixtures();
   const createM = useCreateEmailList();
   const updateM = useUpdateEmailList();
   const deleteM = useDeleteEmailList();
@@ -63,13 +67,20 @@ export default function AdminEmailLists() {
   const [error, setError] = useState<string | null>(null);
   const saving = createM.isPending || updateM.isPending || deleteM.isPending;
 
+  // A senior list picks senior grades; a junior list picks the club's junior teams.
+  const junior = draft?.section === "junior";
   const grades = useMemo(() => {
+    if (junior) {
+      const names = new Set((juniorQ.data ?? []).map((f) => juniorTeamLabel(f)));
+      for (const g of draft?.gradeKeys ?? []) names.add(g);
+      return [...names].sort((a, b) => a.localeCompare(b));
+    }
     const names = (gradesQ.data ?? [])
       .map((g) => g.grade)
       .filter((g) => g !== "CLUB TOTAL" && !isJuniorGradeLabel(g));
     for (const g of draft?.gradeKeys ?? []) if (!names.includes(g)) names.push(g);
     return sortGradesBySeniority(new Set(names));
-  }, [gradesQ.data, draft?.gradeKeys]);
+  }, [junior, juniorQ.data, gradesQ.data, draft?.gradeKeys]);
 
   const refresh = () =>
     Promise.all([
@@ -193,7 +204,8 @@ export default function AdminEmailLists() {
                       <span className="ml-2 text-xs text-muted-foreground">(paused)</span>
                     )}
                     <span className="block text-sm text-muted-foreground">
-                      {KIND_LABELS[l.kind]} ·{" "}
+                      {KIND_LABELS[l.kind]}
+                      {l.kind === "team_sheet" ? ` (${SECTION_LABELS[l.section]})` : ""} ·{" "}
                       {l.kind === "team_sheet"
                         ? `${l.gradeKeys.length > 0 ? l.gradeKeys.join(", ") : "No grades yet"} · `
                         : ""}
@@ -284,6 +296,33 @@ export default function AdminEmailLists() {
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
             </div>
+
+            {draft.kind === "team_sheet" && (
+              <fieldset className="space-y-1.5">
+                <legend className="text-sm font-medium">Senior or junior</legend>
+                {draft.id == null ? (
+                  (["senior", "junior"] as const).map((section) => (
+                    <label key={section} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="email-list-section"
+                        checked={draft.section === section}
+                        onChange={() => setDraft({ ...draft, section, gradeKeys: [] })}
+                      />
+                      {section === "senior"
+                        ? "Senior: covers senior grades"
+                        : "Junior: covers junior teams"}
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm">{SECTION_LABELS[draft.section]}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Fixed once the list is saved, so junior contacts and players never share a list
+                  with senior ones.
+                </p>
+              </fieldset>
+            )}
 
             {draft.kind === "team_sheet" ? (
               <>
@@ -379,7 +418,14 @@ export default function AdminEmailLists() {
 
             {draft.kind === "team_sheet" && (
               <fieldset className="space-y-1.5">
-                <legend className="text-sm font-medium">Grades</legend>
+                <legend className="text-sm font-medium">
+                  {junior ? "Junior teams" : "Grades"}
+                </legend>
+                {junior && grades.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No junior teams yet. They appear once junior fixtures sync from PlayHQ.
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {grades.map((g) => (
                     <button

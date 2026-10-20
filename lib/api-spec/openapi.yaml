@@ -15752,6 +15752,10 @@ components:
         kind:
           type: string
           enum: [team_sheet, social]
+        section:
+          type: string
+          enum: [senior, junior]
+          description: Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.
         name:
           type: string
           minLength: 1
@@ -15786,7 +15790,7 @@ components:
             type: string
             minLength: 1
             maxLength: 60
-          description: Senior grades a team-sheet list covers, e.g. "A Grade" (empty for social lists)
+          description: Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
         members:
           type: array
           maxItems: 50
@@ -15799,6 +15803,7 @@ components:
         [
           id,
           kind,
+          section,
           name,
           sendMode,
           schedule,
@@ -15817,6 +15822,9 @@ components:
         kind:
           type: string
           enum: [team_sheet, social]
+        section:
+          type: string
+          enum: [senior, junior]
         name:
           type: string
         sendMode:

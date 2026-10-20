@@ -3895,6 +3895,17 @@ export const EmailListInputKind = {
 } as const;
 
 /**
+ * Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.
+ */
+export type EmailListInputSection = typeof EmailListInputSection[keyof typeof EmailListInputSection];
+
+
+export const EmailListInputSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+/**
  * Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never
  */
 export type EmailListInputSendMode = typeof EmailListInputSendMode[keyof typeof EmailListInputSendMode];
@@ -3909,6 +3920,8 @@ export const EmailListInputSendMode = {
 
 export interface EmailListInput {
   kind: EmailListInputKind;
+  /** Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists. */
+  section?: EmailListInputSection;
   /**
      * @minLength 1
      * @maxLength 80
@@ -3928,7 +3941,7 @@ export interface EmailListInput {
   milestone?: boolean;
   active?: boolean;
   /**
-     * Senior grades a team-sheet list covers, e.g. "A Grade" (empty for social lists)
+     * Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
      * @maxItems 30
      */
   gradeKeys: string[];
@@ -3944,6 +3957,14 @@ export const EmailListKind = {
   social: 'social',
 } as const;
 
+export type EmailListSection = typeof EmailListSection[keyof typeof EmailListSection];
+
+
+export const EmailListSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
 export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListSendMode];
 
 
@@ -3957,6 +3978,7 @@ export const EmailListSendMode = {
 export interface EmailList {
   id: number;
   kind: EmailListKind;
+  section: EmailListSection;
   name: string;
   sendMode: EmailListSendMode;
   /** Scheduled team-sheet lists; null otherwise */
