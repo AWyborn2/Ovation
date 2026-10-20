@@ -6,7 +6,16 @@ import { env } from "../../config";
  * by {@link EMAIL_TIMEOUT_MS}, one retry, then the failure is reported to the
  * caller, which logs it — email never blocks the state change it describes.
  */
-export type EmailMessage = { to: string; subject: string; text: string };
+export type EmailAttachment = { filename: string; content: Buffer; contentType?: string };
+export type EmailMessage = {
+  /** One address or several; a list email puts its recipients in `bcc` instead. */
+  to: string | string[];
+  /** Hidden recipients, so a list's contacts never see each other's addresses. */
+  bcc?: string[];
+  subject: string;
+  text: string;
+  attachments?: EmailAttachment[];
+};
 export type EmailResult =
   { sent: true } | { sent: false; reason: "disabled" | "failed"; error?: string };
 
@@ -24,9 +33,19 @@ const resendTransport: EmailTransport = async (message) => {
     },
     body: JSON.stringify({
       from: env.EMAIL_FROM(),
-      to: [message.to],
+      to: Array.isArray(message.to) ? message.to : [message.to],
+      ...(message.bcc?.length ? { bcc: message.bcc } : {}),
       subject: message.subject,
       text: message.text,
+      ...(message.attachments?.length
+        ? {
+            attachments: message.attachments.map((a) => ({
+              filename: a.filename,
+              content: a.content.toString("base64"),
+              ...(a.contentType ? { content_type: a.contentType } : {}),
+            })),
+          }
+        : {}),
     }),
     signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS),
   });

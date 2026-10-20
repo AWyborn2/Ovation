@@ -90,6 +90,8 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
+import { enqueueTeamSheetOnFinalise, kickOutbox } from "./email-outbox";
+import { harnessOriginFromHeaders } from "./card-video-renderer";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
   loadOverseasMemberIds,
@@ -1719,9 +1721,21 @@ export async function finaliseSelection(
       },
       createdAt: now,
     });
-    return { selection, fixture, toSelect, toDeselect, twelfthId, unlisted };
+    // Senior sides go to the club's team-sheet email lists (juniors never do).
+    const emailsQueued =
+      fixture.kind !== "junior" && sideSection(fixture) === "senior"
+        ? await enqueueTeamSheetOnFinalise(tx, {
+            tenantId,
+            selectionId: selection.id,
+            version: selection.version + 1,
+            grade: fixture.grade,
+            origin: opts.req ? harnessOriginFromHeaders(opts.req.headers) : null,
+          })
+        : 0;
+    return { selection, fixture, toSelect, toDeselect, twelfthId, unlisted, emailsQueued };
   });
 
+  if (plan.emailsQueued > 0) kickOutbox(tenantId, opts.logger);
   const { selection, fixture } = plan;
   // A club not using availability publishes the side without messaging anyone,
   // and nobody is messaged once the match has started.
