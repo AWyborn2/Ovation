@@ -3207,6 +3207,7 @@ export const GetSquadMemberResponse = zod.object({
 }),
   "contactChangeFlag": zod.boolean(),
   "contactChangedAt": zod.string().nullable(),
+  "overseas": zod.boolean().optional().describe('An overseas player in the current season. Absent reads as false.'),
   "updatedAt": zod.string()
 })
 
@@ -3286,6 +3287,7 @@ export const UpdateSquadMemberResponse = zod.object({
 }),
   "contactChangeFlag": zod.boolean(),
   "contactChangedAt": zod.string().nullable(),
+  "overseas": zod.boolean().optional().describe('An overseas player in the current season. Absent reads as false.'),
   "updatedAt": zod.string()
 })
 
@@ -3306,7 +3308,7 @@ export const RemoveSquadMemberParams = zod.object({
 /**
  * Marks the member as an overseas player, or not, for one season. Each
 season stands alone: nothing carries over. Sides already finalised
-keep the flag they were published with. Not built yet: returns 501.
+keep the flag they were published with.
 
  * @summary Set a squad member's facts for one season (admin)
  */

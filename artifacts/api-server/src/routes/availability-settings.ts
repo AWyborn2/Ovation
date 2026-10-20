@@ -18,6 +18,7 @@ import {
   type ScheduleStep,
 } from "../lib/availability-schedule";
 import { smsProvider } from "../lib/integrations/sms";
+import { cleanOverseasCaps } from "../lib/overseas";
 import { cleanSideSizes, loadSideGrades } from "../lib/side-sizes";
 
 /**
@@ -34,6 +35,7 @@ const DEFAULTS = {
   smsEnabled: true,
   ...DEFAULT_SCHEDULE,
   selectionRule: "captains_own_grade",
+  overseasCaps: {},
 } as const;
 
 /**
@@ -57,6 +59,7 @@ function serialize(row: AvailabilitySettingsRow | null, grades: string[]) {
     finaliseTime: row.finaliseTime,
     selectionRule: row.selectionRule,
     sideSizes: row.sideSizes,
+    overseasCaps: row.overseasCaps ?? {},
     updatedAt: row.updatedAt,
     smsProvider: smsProvider(),
     grades,
@@ -83,15 +86,28 @@ router.put("/availability/settings", requireAdmin, async (req, res): Promise<voi
     res.status(400).json({ error: problem });
     return;
   }
+  // Overseas caps per grade (ADR-009): omitted keeps the stored map; a grade
+  // left out of a sent map has no cap.
+  const { overseasCaps, ...rest } = parsed.data;
+  const caps = overseasCaps === undefined ? undefined : cleanOverseasCaps(overseasCaps);
+  if (caps && "error" in caps) {
+    res.status(400).json({ error: caps.error });
+    return;
+  }
   const tenantId = getTenantId(req);
   // Side sizes are optional: omitted, the stored map is kept.
-  const { sideSizes, ...rest } = parsed.data;
+  const { sideSizes, ...settings } = rest;
   const sized = sideSizes ? cleanSideSizes(sideSizes) : null;
   if (sized && "error" in sized) {
     res.status(400).json({ error: sized.error });
     return;
   }
-  const values = { ...rest, ...(sized ? sized : {}), updatedAt: new Date() };
+  const values = {
+    ...settings,
+    ...(sized ? sized : {}),
+    ...(caps ? { overseasCaps: caps.caps } : {}),
+    updatedAt: new Date(),
+  };
   const [row] = await db
     .insert(availabilitySettingsTable)
     .values({ tenantId, ...values })

@@ -1,6 +1,13 @@
 import { Router, type IRouter, type Request } from "express";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
-import { db, squadMembersTable, playerIdMapTable, type SquadMemberRow } from "@workspace/db";
+import {
+  db,
+  squadMembersTable,
+  squadMemberSeasonsTable,
+  playerIdMapTable,
+  type SquadMemberRow,
+} from "@workspace/db";
+import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
   GetSquadMemberParams,
   UpdateSquadMemberBody,
@@ -9,6 +16,8 @@ import {
   SearchSquadPlayersQueryParams,
   CreateSquadMemberBody,
   ActivateSquadMemberParams,
+  SetSquadMemberSeasonParams,
+  SetSquadMemberSeasonBody,
 } from "@workspace/api-zod";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
@@ -28,6 +37,7 @@ import { isUnder18OnDate, perthDate } from "../lib/availability-grades";
 import { revokeMemberTokens } from "../lib/availability-tokens";
 import { linkedPlayerNames, loadCentralPlayerGroups, searchClubPlayers } from "../lib/squad-link";
 import { seedSquadFromSeason } from "../lib/squad-season-seed";
+import { loadOverseasMemberIds } from "../lib/overseas";
 
 /**
  * The club's squad register for player availability. Admin only. Contact
@@ -182,6 +192,11 @@ function namesFor(tenantId: number, rows: SquadMemberRow[]): Promise<Names> {
   );
 }
 
+/** The members flagged overseas this season (Perth time), among `ids` when given. */
+function overseasNow(tenantId: number, ids?: number[]): Promise<Set<number>> {
+  return loadOverseasMemberIds(db, tenantId, seasonStartYearFor(new Date()), ids);
+}
+
 router.get("/squad", requireAdmin, async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
   const rows = await db
@@ -193,8 +208,8 @@ router.get("/squad", requireAdmin, async (req, res): Promise<void> => {
       asc(squadMembersTable.firstName),
       asc(squadMembersTable.id),
     );
-  const names = await namesFor(tenantId, rows);
-  res.json(rows.map((r) => serializeSummary(r, names)));
+  const [names, overseas] = await Promise.all([namesFor(tenantId, rows), overseasNow(tenantId)]);
+  res.json(rows.map((r) => ({ ...serializeSummary(r, names), overseas: overseas.has(r.id) })));
 });
 
 // Registered before "/squad/:id" so "player-search" is never read as an id.
@@ -397,7 +412,11 @@ router.get("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Squad member not found" });
     return;
   }
-  res.json(serializeDetail(row, await namesFor(getTenantId(req), [row])));
+  const [names, overseas] = await Promise.all([
+    namesFor(getTenantId(req), [row]),
+    overseasNow(getTenantId(req), [row.id]),
+  ]);
+  res.json({ ...serializeDetail(row, names), overseas: overseas.has(row.id) });
 });
 
 router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -506,7 +525,11 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
       "squad contact edit",
     );
   }
-  res.json(serializeDetail(row, await namesFor(tenantId, [row])));
+  const [names, overseas] = await Promise.all([
+    namesFor(tenantId, [row]),
+    overseasNow(tenantId, [row.id]),
+  ]);
+  res.json({ ...serializeDetail(row, names), overseas: overseas.has(row.id) });
 });
 
 // A player's or guardian's removal request: contacts and date of birth are
@@ -559,14 +582,64 @@ router.delete(
   },
 );
 
-// A member's facts for one season (the overseas flag, ADR-009). The route is
-// in the spec ahead of its slice; until then it answers 501 and writes nothing.
+// A member's facts for one season (the overseas flag, ADR-009). Each season
+// stands alone: ticking 2026 says nothing about 2027. A side already finalised
+// keeps the flag it was published with (the snapshot), so this never rewrites one.
 router.put(
   "/squad/:id/seasons/:season",
   requireAdmin,
   adminWriteRateLimiter,
-  async (_req, res): Promise<void> => {
-    res.status(501).json({ error: "Overseas players aren't available yet." });
+  async (req, res): Promise<void> => {
+    const params = SetSquadMemberSeasonParams.safeParse(req.params);
+    if (
+      !params.success ||
+      !Number.isInteger(params.data.id) ||
+      !Number.isInteger(params.data.season)
+    ) {
+      res.status(400).json({ error: "Invalid member or season" });
+      return;
+    }
+    const body = SetSquadMemberSeasonBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: "Send overseas as true or false" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { id: memberId, season } = params.data;
+    const [member] = await db
+      .select({ id: squadMembersTable.id })
+      .from(squadMembersTable)
+      .where(and(eq(squadMembersTable.id, memberId), eq(squadMembersTable.tenantId, tenantId)));
+    if (!member) {
+      res.status(404).json({ error: "Squad member not found" });
+      return;
+    }
+    const adminId = (req as RequestWithAdmin).admin?.id ?? null;
+    const now = new Date();
+    const values = { overseas: body.data.overseas, setByAdminId: adminId, setAt: now };
+    const [row] = await db
+      .insert(squadMemberSeasonsTable)
+      .values({ tenantId, memberId, season, ...values })
+      .onConflictDoUpdate({
+        target: [squadMemberSeasonsTable.memberId, squadMemberSeasonsTable.season],
+        set: values,
+        setWhere: eq(squadMemberSeasonsTable.tenantId, tenantId),
+      })
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Squad member not found" });
+      return;
+    }
+    req.log?.info(
+      { tenantId, memberId, season, adminId, overseas: row.overseas },
+      "squad overseas flag set",
+    );
+    res.json({
+      memberId: row.memberId,
+      season: row.season,
+      overseas: row.overseas,
+      setAt: row.setAt.toISOString(),
+    });
   },
 );
 

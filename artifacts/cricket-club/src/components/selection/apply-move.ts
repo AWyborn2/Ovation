@@ -218,11 +218,20 @@ export function checkMove(
 }
 
 const emptySlot = (): SelectionSlot => ({ memberId: null, member: null, gap: null });
-const filledSlot = (m: SelectionMember): SelectionSlot => ({
+const filledSlot = (m: SelectionMember, overseas = false): SelectionSlot => ({
   memberId: m.id,
   member: m,
   gap: null,
+  ...(overseas ? { overseas: true } : {}),
 });
+
+/** A side's overseas counter after its slots change: the cap stays, the count is recounted. */
+function recountOverseas(side: SelectionSide): SelectionSide["overseas"] {
+  if (!side.overseas) return side.overseas;
+  const count = side.slots.filter((s) => s.memberId != null && s.overseas).length;
+  const { cap } = side.overseas;
+  return { count, cap, over: cap != null && count > cap };
+}
 
 function pickWarning(m: SelectionMember): string | null {
   switch (m.status) {
@@ -284,6 +293,13 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
   if (!r.ok) return r;
   const moving = memberOf(state, memberId);
   if (!moving) return refuse("unknown", "That player isn't on this board any more.");
+  // The overseas flag travels with the player (a pool player's is learnt on save).
+  const overseas = new Set(
+    state.selections.flatMap((s) =>
+      s.slots.flatMap((x) => (x.overseas && x.memberId != null ? [x.memberId] : [])),
+    ),
+  );
+  const fill = (m: SelectionMember) => filledSlot(m, overseas.has(m.id));
 
   // Copy only what can change: the slot arrays of the sides involved, and the pool.
   const slotsOf = new Map<number, SelectionSlot[]>();
@@ -317,14 +333,14 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     const occupant = to[index].member ?? null;
     const occupantId = to[index].memberId;
     if (from.kind === "side") slots(from.sideId)[from.index] = emptySlot();
-    to[index] = filledSlot(moving);
+    to[index] = fill(moving);
     const tLabel = label(target.sideId);
 
     if (occupantId != null) {
       const occName = occupant?.displayName ?? `Player #${occupantId}`;
       if (from.kind === "side") {
         slots(from.sideId)[from.index] = occupant
-          ? filledSlot(occupant)
+          ? fill(occupant)
           : { memberId: occupantId, member: null, gap: null };
         log.push(
           from.sideId === target.sideId
@@ -366,6 +382,7 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
       }
     }
     next.warnings = sideWarnings(next);
+    next.overseas = recountOverseas(next);
     return next;
   });
 

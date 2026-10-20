@@ -34,7 +34,35 @@ export function finaliseHeadsUp(side: SelectionSide): string[] {
   if (w.saidNo) bits.push(`${w.saidNo} said unavailable`);
   if (w.noCaptain) bits.push("no captain");
   if (w.noKeeper) bits.push("no keeper");
+  const os = side.overseas;
+  if (os?.over) bits.push(`overseas ${os.count} / cap ${os.cap}`);
   return bits;
+}
+
+/** The overseas counter: shown when the grade has a cap or the side has an overseas player. */
+function OverseasChip({ overseas }: { overseas: SelectionSide["overseas"] }) {
+  if (!overseas || (overseas.cap == null && overseas.count === 0)) return null;
+  const { count, cap, over } = overseas;
+  return (
+    <span
+      data-testid="overseas-count"
+      title={
+        cap == null
+          ? `${plural(count, "overseas player")}, no limit for this grade`
+          : `${plural(count, "overseas player")}, limit ${cap}${over ? ": over the limit" : ""}`
+      }
+      className={cn(
+        "rounded px-1.5 py-0.5",
+        over
+          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      Overseas {count}
+      {cap != null && `/${cap}`}
+      {over && " (over limit)"}
+    </span>
+  );
 }
 
 const selectClass =
@@ -180,7 +208,8 @@ export function TeamCard({
           w.saidNo > 0 ||
           w.noCaptain ||
           w.noKeeper ||
-          !!w.overSize) && (
+          !!w.overSize ||
+          (side.overseas != null && (side.overseas.cap != null || side.overseas.count > 0))) && (
           <div className="flex flex-wrap gap-1.5 text-[11.5px] font-semibold">
             {!!w.overSize && (
               <span
@@ -215,6 +244,7 @@ export function TeamCard({
                 No keeper
               </span>
             )}
+            <OverseasChip overseas={side.overseas} />
           </div>
         )}
       </div>
@@ -235,6 +265,7 @@ export function TeamCard({
               <PlayerChip
                 member={slot.member}
                 role={roleOf(side, slot.memberId)}
+                overseas={slot.overseas === true}
                 inSide={label}
                 draggable={edit && !busy}
                 dragging={draggingId === slot.memberId}

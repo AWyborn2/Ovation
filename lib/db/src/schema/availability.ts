@@ -63,6 +63,10 @@ export type SelectionSlot = {
   // `participantId` is the PlayHQ participant GUID of the list row behind the gap, when the
   // list carried one, so a "Private Player" row can be matched to a squad member.
   gap?: { name: string; reason: SelectionGapReason; participantId?: string | null };
+  // Set by finalise on an overseas player's slot (ADR-009): the flag as it was
+  // when the side was finalised, so a later squad change never rewrites it. A
+  // draft ignores it and reads the live flag.
+  overseas?: boolean;
 };
 
 // The club's squad register, upserted from the PlayHQ participant export

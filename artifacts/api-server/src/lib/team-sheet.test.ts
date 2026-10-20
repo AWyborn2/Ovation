@@ -58,6 +58,16 @@ describe("teamSheetPlayers", () => {
     ]);
   });
 
+  it("marks overseas players from the side's finalise snapshot only", () => {
+    const players = teamSheetPlayers({
+      side: { ...side, slots: side.slots.map((s, i) => (i === 2 ? { ...s, overseas: true } : s)) },
+      members: MEMBERS,
+      shirtNumberOf: () => null,
+      juniorLimitOf: null,
+    });
+    expect(players.map((p) => p.overseas)).toEqual([false, true, false, false]);
+  });
+
   it("never tags the 12th player as captain or keeper", () => {
     const players = teamSheetPlayers({
       side: { ...side, captainMemberId: 4, keeperMemberId: 4 },
@@ -161,6 +171,18 @@ describe("renderTeamSheetHtml", () => {
     expect(html).not.toContain("<script");
     // Always 12 rows, so blanks can be written in.
     expect(html.match(/<td class="c no">/g)).toHaveLength(12);
+  });
+
+  it("prints OS after an overseas player's name, with the key only when one is listed", () => {
+    expect(renderTeamSheetHtml(sheet, null)).not.toContain("OS overseas player");
+    const html = renderTeamSheetHtml(
+      { ...sheet, players: sheet.players.map((p, i) => (i === 0 ? { ...p, overseas: true } : p)) },
+      null,
+    );
+    expect(html).toContain(
+      'Ava Hill <b class="role">(C)</b> <b class="os" title="Overseas player">OS</b>',
+    );
+    expect(html).toContain("OS overseas player");
   });
 
   it("leaves the bowling columns off a junior sheet and labels the age group", () => {

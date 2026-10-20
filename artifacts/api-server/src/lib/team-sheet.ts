@@ -62,6 +62,8 @@ export type TeamSheetPlayer = {
   shirtNumber: string | null;
   /** Senior sheet only: the player's limits when they are a Junior Aged Player. */
   junior: JuniorBowlingLimit | null;
+  /** An overseas player, from the side's finalise snapshot (ADR-009): "OS" after the name. */
+  overseas?: boolean;
 };
 
 export type TeamSheet = {
@@ -141,6 +143,7 @@ type SheetMember = Pick<
  * The sheet's rows, pure: the side's members in slot order (in a side of 12
  * the 12th last, never holding a role; above 12 numbered 1–N, any of them
  * captain or keeper), and limits only when `rules` apply to a senior sheet.
+ * The overseas mark is the one finalise stored on the slot, never a live flag.
  */
 export function teamSheetPlayers(input: {
   side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId"> &
@@ -165,6 +168,7 @@ export function teamSheetPlayers(input: {
       role: c && wk ? "C/WK" : c ? "C" : wk ? "WK" : null,
       shirtNumber: input.shirtNumberOf(m),
       junior: input.juniorLimitOf ? input.juniorLimitOf(m) : null,
+      overseas: slot.overseas === true,
     });
   });
   return players;
@@ -522,6 +526,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
     const twelfth = shape.twelfthLabel && order === shape.size;
     const label = twelfth ? "12th" : String(order);
     const role = p?.role ? ` <b class="role">(${esc(p.role)})</b>` : "";
+    const overseas = p?.overseas ? ` <b class="os" title="Overseas player">OS</b>` : "";
     const jap = senior
       ? `<td class="c small">${p?.junior ? `${esc(p.junior.band)}<br><span class="age">age ${esc(p.junior.age)}</span>` : ""}</td>
          <td class="c small">${p?.junior ? esc(p.junior.maxOversPerDay) : ""}</td>
@@ -531,7 +536,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
     return `<tr class="${twelfth ? "twelfth" : ""}">
       <td class="c no">${label}</td>
       <td class="c shirt">${esc(p?.shirtNumber)}</td>
-      <td class="name">${esc(p?.name)}${role}</td>${jap}
+      <td class="name">${esc(p?.name)}${role}${overseas}</td>${jap}
     </tr>`;
   }).join("");
 
@@ -577,6 +582,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   .players .age { font-size: 7pt; color: #5B6770; }
   .players tr.twelfth td { background: #EEF1F3; }
   .role { color: #1F3A5F; }
+  .os { font-size: 8pt; letter-spacing: 0.5px; border: 1px solid #1F3A5F; border-radius: 2px; padding: 0 1mm; color: #1F3A5F; }
   .key { margin: 2mm 0 0; font-size: 8pt; color: #5B6770; }
   .note { margin: 1mm 0 0; font-size: 8pt; color: #5B6770; }
   .notes { margin-top: 3mm; font-size: 8pt; color: #5B6770; font-style: italic; }
@@ -617,7 +623,7 @@ export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): s
   }</tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<p class="key">(C) captain &nbsp; (WK) wicketkeeper${sheet.ruleNotes.map((n) => ` &nbsp; ${esc(n)}`).join("")}</p>
+<p class="key">(C) captain &nbsp; (WK) wicketkeeper${sheet.players.some((p) => p.overseas) ? " &nbsp; OS overseas player" : ""}${sheet.ruleNotes.map((n) => ` &nbsp; ${esc(n)}`).join("")}</p>
 ${rulesNote}
 <div class="notes">Notes:</div>
 <table class="sign"><tr><td><div>Captain's signature</div></td><td><div>Opposition captain / umpire</div></td></tr></table>

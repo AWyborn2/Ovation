@@ -145,11 +145,15 @@ export async function loadSelectionParticipantIds(
  * Players are numbered 1–N in slot order. In a side of 12 the 12th player is
  * order 12 with `twelfth` and no role; above 12 nobody is "the 12th" and any
  * player can hold a role (ADR-009).
+ * `overseasIds` (ADR-009) marks overseas players, snapshotted so a later squad
+ * change never rewrites the list; a member not named publicly gets no marker,
+ * like their name.
  */
 export function selectionPublishedPlayers(
   side: PublishedSide,
   members: readonly PublishedMember[],
   participantIds: ReadonlyMap<number, string> = new Map(),
+  overseasIds: ReadonlySet<number> = new Set(),
 ): TeamListPlayer[] {
   const byId = new Map(members.map((m) => [m.id, m]));
   const players: TeamListPlayer[] = [];
@@ -164,13 +168,16 @@ export function selectionPublishedPlayers(
     const eligible =
       !m.isPrivate && (m.linkedPlayerId == null || m.linkedPlayerId < FILL_IN_THRESHOLD);
     const participantId = eligible ? participantIds.get(m.id) : null;
+    const displayName = publicName(m);
+    const overseas = overseasIds.has(m.id) && displayName !== PRIVATE_PLAYER;
     players.push({
       order: twelfth ? shape.size : players.length + 1,
       ...(eligible && m.linkedPlayerId != null ? { playerId: m.linkedPlayerId } : {}),
       ...(participantId ? { participantId } : {}),
-      displayName: publicName(m),
+      displayName,
       ...(role ? { role } : {}),
       ...(twelfth ? { twelfth: true } : {}),
+      ...(overseas ? { overseas: true } : {}),
     });
   });
   return players;
