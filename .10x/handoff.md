@@ -309,3 +309,11 @@ Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: 
 ## Handoff 2026-10-19 (PM -> Architect)
 
 Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) preview-render bug in share-card-modal/use-card-preview (own PR); 2) tenant name-override table + auto short-name; 3) crest slot in renderer; 4) square layout fit.
+
+## Current Handoff
+
+**From:** Product Manager → **To:** Principal Architect (20 Oct 2026)
+**Read:** `.10x/decisions/product-manager/email-distribution-lists.md`
+Priority: P0 = transport upgrade (multi-recipient + attachments), team-sheet lists with on_publish/manual/off, server-side team-sheet PDF, send log. P1 = social list toggles (absorb `social_settings.notificationEmail`), scheduled mode, UPDATED re-send.
+Spike first: server-side team-sheet PDF rendering. Awaiting Ash's sign-off on scope.
+
