@@ -59,6 +59,7 @@ import {
 } from "../lib/publishing/publications";
 import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
+import { notePhotoUsage } from "../lib/card-content/photos";
 
 const router: IRouter = Router();
 
@@ -318,6 +319,8 @@ router.post(
       "held",
       "failed",
     ]);
+    // The photos it showed are now the most recently used (ADR-010 P4).
+    await notePhotoUsage(updated);
     // Stamp the linked milestone event so other features (push notifications,
     // "just posted" feeds) and re-detection know this moment has been shared.
     if (updated.milestoneEventId) {

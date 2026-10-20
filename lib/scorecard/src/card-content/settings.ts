@@ -25,10 +25,22 @@ export interface ContentKindSettings {
 /** `social_settings.card_content`: per content kind. */
 export type CardContentSettings = Record<ContentKind, ContentKindSettings>;
 
+/**
+ * Photos an admin swapped in for a carousel's automatic picks (ADR-010 P4): a
+ * library photo id, or null for "no photo". A slide with no entry keeps the
+ * automatic pick.
+ */
+export interface ContentPhotoOverride {
+  cover?: number | null;
+  /** By fixture id. */
+  fixtures?: Record<string, number | null>;
+}
+
 /** One carousel's change to the club's choices. A preset replaces the club's. */
 export interface ContentOverride {
   preset?: ContentPreset;
   fields?: Record<string, boolean>;
+  photos?: ContentPhotoOverride;
 }
 
 export const DEFAULT_CONTENT_KIND_SETTINGS: ContentKindSettings = {
@@ -79,13 +91,35 @@ export function readCardContentSettings(raw: unknown): CardContentSettings {
   return out;
 }
 
+const photoChoice = (v: unknown): v is number | null =>
+  v === null || (typeof v === "number" && Number.isSafeInteger(v) && v > 0);
+
+/** Swapped photos with a valid id (or null); everything else dropped. */
+function readPhotoOverride(raw: unknown): ContentPhotoOverride | null {
+  if (!object(raw)) return null;
+  const out: ContentPhotoOverride = {};
+  if (photoChoice(raw.cover)) out.cover = raw.cover;
+  if (object(raw.fixtures)) {
+    const fixtures = Object.fromEntries(
+      Object.entries(raw.fixtures).filter(([k, v]) => /^[1-9]\d*$/.test(k) && photoChoice(v)),
+    ) as Record<string, number | null>;
+    if (Object.keys(fixtures).length) out.fixtures = fixtures;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /** A saved carousel's override, or null when it has none worth keeping. */
 export function readContentOverride(kind: string, raw: unknown): ContentOverride | null {
   if (!isContentKind(kind) || !object(raw)) return null;
   const preset = isContentPreset(raw.preset) ? raw.preset : undefined;
   const fields = readFieldChoices(kind, raw.fields);
-  if (!preset && !Object.keys(fields).length) return null;
-  return { ...(preset ? { preset } : {}), ...(Object.keys(fields).length ? { fields } : {}) };
+  const photos = readPhotoOverride(raw.photos);
+  if (!preset && !Object.keys(fields).length && !photos) return null;
+  return {
+    ...(preset ? { preset } : {}),
+    ...(Object.keys(fields).length ? { fields } : {}),
+    ...(photos ? { photos } : {}),
+  };
 }
 
 /**

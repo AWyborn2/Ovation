@@ -65,6 +65,8 @@ const stockPhoto = {
 };
 let stockPhotos: Array<typeof stockPhoto> = [];
 let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
+/** The server's automatic Match Day photos (ADR-010 P4); undefined = none sent. */
+let photoPicks: { cover: number | null; fixtures: Record<string, number | null> } | undefined;
 const summary = {
   kind: "matchSummary",
   matchTitle: "A Grade • Round 5",
@@ -121,6 +123,7 @@ const refetch = vi.fn(async (): Promise<{ data: Record<string, unknown>; isError
     juniorStockPhotos: stockPhotos,
     content: content(),
     matchDayContent: matchDayContent(fixtures),
+    ...(activeType === "matchDay" && photoPicks ? { photoPicks } : {}),
   },
   isError: false,
 }));
@@ -147,6 +150,7 @@ vi.mock("@workspace/api-client-react", () => ({
         photos: teamPhotos,
         coverPhotos,
         juniorStockPhotos: stockPhotos,
+        ...(activeType === "matchDay" && photoPicks ? { photoPicks } : {}),
         warnings: ["PlayHQ status could not be checked for 1 fixture"],
       },
       isLoading: false,
@@ -224,8 +228,76 @@ afterEach(() => {
   coverPhotos = [coverPhoto];
   teamPhotos = [];
   stockPhotos = [];
+  photoPicks = undefined;
   activeType = "matchDay";
   many = false;
+});
+
+describe("WeekendCarousel automatic photos (ADR-010 P4)", () => {
+  const savedCarousel = () =>
+    queuedRequest().data.cardInput.weekendCarousel as unknown as {
+      contentOverride?: unknown;
+      slides: Array<{ id: string; photoId: number | null; data: { photoUrl?: string | null } }>;
+    };
+  const slide = (id: string) => savedCarousel().slides.find((sl) => sl.id === id)!;
+
+  it("starts on the auto picks and queues them with no override", async () => {
+    teamPhotos = [
+      { id: 20, grade: "A Grade", photoTypes: ["batting"], url: "/a20.jpg" },
+      { id: 21, grade: "A Grade", photoTypes: ["bowling"], url: "/a21.jpg" },
+    ];
+    photoPicks = { cover: 10, fixtures: { "1": 20, "2": null } };
+    mount();
+    await generatePreview();
+    expect(screen.getByTestId("auto-photo-1").textContent).toMatch(/Auto-picked/);
+    expect(screen.getByTestId("auto-photo-2").textContent).toMatch(/club's colours/);
+    expect(screen.getByTestId("auto-photo-cover").textContent).toMatch(/Auto-picked/);
+    // The choices stay closed until the admin asks to swap.
+    expect(screen.queryByTestId("button-photo-1-21")).toBeNull();
+    expect(screen.queryByTestId("button-cover-photo-10")).toBeNull();
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(savedCarousel()).not.toHaveProperty("contentOverride");
+    expect(slide("title").photoId).toBe(10);
+    expect(slide("fixture-1")).toMatchObject({ photoId: 20, data: { photoUrl: "/a20.jpg" } });
+    expect(slide("fixture-2").photoId).toBeNull();
+  });
+
+  it("saves a swap in the carousel override, and Use auto pick goes back", async () => {
+    teamPhotos = [
+      { id: 20, grade: "A Grade", photoTypes: ["batting"], url: "/a20.jpg" },
+      { id: 21, grade: "A Grade", photoTypes: ["bowling"], url: "/a21.jpg" },
+    ];
+    photoPicks = { cover: 10, fixtures: { "1": 20, "2": null } };
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByTestId("button-swap-photo-1"));
+    fireEvent.click(screen.getByTestId("button-photo-1-21"));
+    expect(screen.getByTestId("auto-photo-1").textContent).toMatch(/Swapped photo/);
+    fireEvent.click(screen.getByTestId("button-swap-photo-cover"));
+    fireEvent.click(screen.getByTestId("button-no-cover-photo"));
+    expect(screen.getByTestId("auto-photo-cover").textContent).toMatch(/Swapped to no photo/);
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(savedCarousel().contentOverride).toEqual({
+      photos: { cover: null, fixtures: { "1": 21 } },
+    });
+    expect(slide("fixture-1").photoId).toBe(21);
+    expect(slide("title").photoId).toBeNull();
+
+    cleanup();
+    mutateAsync.mockClear();
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByTestId("button-swap-photo-1"));
+    fireEvent.click(screen.getByTestId("button-photo-1-21"));
+    fireEvent.click(screen.getByTestId("button-use-auto-photo-1"));
+    expect(screen.getByTestId("auto-photo-1").textContent).toMatch(/Auto-picked/);
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(savedCarousel()).not.toHaveProperty("contentOverride");
+    expect(slide("fixture-1").photoId).toBe(20);
+  });
 });
 
 describe("WeekendCarousel", () => {

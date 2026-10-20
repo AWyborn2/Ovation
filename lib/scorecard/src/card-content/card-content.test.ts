@@ -118,6 +118,27 @@ describe("readCardContentSettings / readContentOverride", () => {
     expect(readContentOverride("ladder", { preset: "full" })).toBeNull();
     expect(readContentOverride("matchDay", { preset: "minimal" })).toEqual({ preset: "minimal" });
   });
+
+  it("keeps swapped photos (an id, or null for no photo) and drops anything else (P4)", () => {
+    expect(
+      readContentOverride("matchDay", {
+        photos: {
+          cover: null,
+          fixtures: { "12": 7, "13": null, "0": 4, x: 5, "14": -1, "15": 1.5, "16": "8" },
+          extra: 1,
+        },
+      }),
+    ).toEqual({ photos: { cover: null, fixtures: { "12": 7, "13": null } } });
+    expect(readContentOverride("matchDay", { photos: { cover: 9 } })).toEqual({
+      photos: { cover: 9 },
+    });
+    expect(readContentOverride("matchDay", { photos: { cover: "9", fixtures: [] } })).toBeNull();
+    // Photo swaps never change which fields a carousel shows.
+    const club = { preset: "standard" as const, fields: {} };
+    expect(resolveVisibleFields("matchDay", club, { photos: { cover: null } })).toEqual(
+      resolveVisibleFields("matchDay", club),
+    );
+  });
 });
 
 const fixture = (over: Partial<MatchDayFixtureLike> = {}): MatchDayFixtureLike => ({
