@@ -17,8 +17,14 @@ const server = app.listen(config.PORT, (err) => {
     process.exit(1);
   }
   logger.info({ port: config.PORT }, "Server listening");
-  // Ovation's template bundles into the library (ADR-011); logs, never throws.
-  void import("./lib/template-library/bundles").then((m) => m.syncBundlesAtBoot());
+  // The template fit job first, so versions the bundle sync adds are checked
+  // (L2-B); then Ovation's template bundles into the library (ADR-011). Logs,
+  // never throws.
+  void import("./lib/template-library/fit-job")
+    .then((m) => m.startFitJob())
+    .catch((err: unknown) => logger.error({ err }, "template fit job didn't start"))
+    .then(() => import("./lib/template-library/bundles"))
+    .then((m) => m.syncBundlesAtBoot());
 });
 
 /**

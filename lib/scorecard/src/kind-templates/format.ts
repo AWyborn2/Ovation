@@ -126,8 +126,17 @@ export const MAX_BLUR_PX = 20;
 export type TemplateFilter =
   | { preset: "duotone"; dark: TemplateColour; light: TemplateColour }
   | { preset: "grayscale"; amount?: number }
-  | { preset: "blur"; px: number };
-export const FILTER_PRESETS = ["duotone", "grayscale", "blur"] as const;
+  | { preset: "blur"; px: number }
+  | { preset: "brightness"; amount: number };
+export const FILTER_PRESETS = ["duotone", "grayscale", "blur", "brightness"] as const;
+
+/**
+ * A layer's clip: the polygon its box is cut to, as points in percent of the
+ * box (CSS `clip-path: polygon()`): angled bands and cut corners.
+ */
+export type TemplateClip = { polygon: Array<[number, number]> };
+/** The most points a clip polygon may have. */
+export const MAX_CLIP_POINTS = 32;
 
 /** A texture drawn over a layer: film grain or a halftone screen. */
 export type TemplateOverlay = { kind: "grain" | "halftone"; opacity?: number; scale?: number };
@@ -152,6 +161,8 @@ export type TemplateStyleV2 = TemplateTextStyle & {
   overlay?: TemplateOverlay;
   /** Line height, as a multiple of the font size (v1 text is 1.05). */
   lineHeight?: number;
+  /** The polygon the layer's box is cut to. */
+  clip?: TemplateClip;
 };
 
 // ── Layout, conditions and fit ──────────────────────────────────────────────

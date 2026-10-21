@@ -16,6 +16,8 @@ import {
   type StarterId,
 } from "@workspace/scorecard/kind-templates";
 import { PackCard } from "@/components/pack-card";
+import { FitCheckButton } from "@/components/template-library/fit-check-button";
+import { V2Samples } from "@/components/template-library/v2-samples";
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import type { ShareCardInput } from "@/lib/share-card";
 import { previewSample, stressSample } from "@/lib/kind-templates/samples";
@@ -49,6 +51,10 @@ function KindRow({
           </span>
         )}
       </h3>
+      {/* The fit check every template passes before it's listed (L2-B). */}
+      <div className="mb-2">
+        <FitCheckButton key={`${starter}/${kind}`} document={doc} kind={kind} />
+      </div>
       <div className="flex flex-wrap items-end gap-3">
         {TEMPLATE_SIZE_ORDER.map((size) => (
           <figure key={size} className="m-0">
@@ -75,6 +81,8 @@ export default function AdminStarterProofs() {
   const [variant, setVariant] = useState<Variant>("sample");
   const [scale, setScale] = useState(1);
   const [only, setOnly] = useState<string>("all");
+  // The starters, or the format v2 samples (L1-D): every v2 feature at every size.
+  const [view, setView] = useState<"starters" | "v2">("starters");
   return (
     <div className="space-y-4">
       <header>
@@ -85,6 +93,17 @@ export default function AdminStarterProofs() {
         </p>
       </header>
       <div className="flex flex-wrap gap-4 text-sm">
+        <label className="flex items-center gap-2">
+          Show
+          <select
+            className="rounded border border-border bg-background px-2 py-1"
+            value={view}
+            onChange={(e) => setView(e.target.value as "starters" | "v2")}
+          >
+            <option value="starters">Starters</option>
+            <option value="v2">Format v2 samples</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2">
           Starter
           <select
@@ -141,9 +160,13 @@ export default function AdminStarterProofs() {
           </select>
         </label>
       </div>
-      {TEMPLATE_CARD_KINDS.filter((k) => only === "all" || k === only).map((kind) => (
-        <KindRow key={kind} starter={starter} kind={kind} variant={variant} scale={scale} />
-      ))}
+      {view === "v2" ? (
+        <V2Samples scale={scale} />
+      ) : (
+        TEMPLATE_CARD_KINDS.filter((k) => only === "all" || k === only).map((kind) => (
+          <KindRow key={kind} starter={starter} kind={kind} variant={variant} scale={scale} />
+        ))
+      )}
     </div>
   );
 }

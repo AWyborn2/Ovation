@@ -55,12 +55,46 @@ export function stillRendererOverridden(): boolean {
 }
 
 // Renders share one headless browser; run them one at a time so a post pack
-// can't starve other renders or exhaust its memory.
-let queue: Promise<unknown> = Promise.resolve();
+// can't starve other renders or exhaust its memory. Two lanes: card renders
+// (posts, packs, layout checks) always go before template fit checks (L2-B),
+// so a fit check never delays a post.
+type QueuedJob = { run: () => Promise<unknown>; settle: (p: Promise<unknown>) => void };
+const renderLane: QueuedJob[] = [];
+const fitLane: QueuedJob[] = [];
+let rendering = false;
+
+function pump(): void {
+  if (rendering) return;
+  const job = renderLane.shift() ?? fitLane.shift();
+  if (!job) return;
+  rendering = true;
+  const done = Promise.resolve().then(job.run);
+  job.settle(done);
+  void done
+    .catch(() => undefined)
+    .finally(() => {
+      rendering = false;
+      pump();
+    });
+}
+
+function enqueue<T>(lane: QueuedJob[], job: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    lane.push({ run: job, settle: (p) => (p as Promise<T>).then(resolve, reject) });
+    pump();
+  });
+}
+
 function serialised<T>(job: () => Promise<T>): Promise<T> {
-  const next = queue.then(job, job);
-  queue = next.catch(() => undefined);
-  return next;
+  return enqueue(renderLane, job);
+}
+
+/** A card render on the shared browser, ahead of any waiting fit check (exported for tests). */
+export const serialisedRender = serialised;
+
+/** A template fit check on the shared browser, after every waiting card render (L2-B). */
+export function serialisedFitCheck<T>(job: () => Promise<T>): Promise<T> {
+  return enqueue(fitLane, job);
 }
 
 const sponsorApplies = (cardKinds: string[] | null | undefined, kind: string) =>

@@ -13,8 +13,15 @@ import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/p
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
-import { ensureDocumentFonts } from "@/lib/document-fonts";
-import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
+import { ensureDocumentFonts, loadFontCatalogue } from "@/lib/document-fonts";
+import type {
+  LayoutWarning,
+  PageKey,
+  TemplateFitReport,
+} from "@workspace/scorecard/kind-templates";
+import { createFitMount } from "@/lib/pack-render/fit-mount";
+import { runTemplateFit } from "@/lib/pack-render/template-fit";
+import { waitForImages } from "@/lib/pack-render/wait-images";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 import type { CaptureApi } from "@/lib/pack-render/capture";
 
@@ -55,6 +62,8 @@ type StillOptions = {
   packId?: string | null;
   /** Editor overlay (U15), so server stills match the editor preview. */
   adjustments?: CardAdjustments | null;
+  /** The template page to draw (format v2); omitted, the page the input is. */
+  page?: PageKey;
 };
 
 // Clip-mode payload for an animated pack card: the still options plus `pack`.
@@ -80,6 +89,11 @@ type HarnessApi = {
   /** Pack-card clips: pause every animation at `t` (0..1) of the clip. */
   seek: (t: number) => Promise<void>;
   renderStill: (payload: { input: ShareCardInput; options: StillOptions }) => Promise<StillMeta>;
+  /**
+   * The template fit check (L2-B): every variant of `document` drawn with
+   * worst-case content in this one page, and the report.
+   */
+  fitCheck: (payload: { document: unknown; kind: string }) => Promise<TemplateFitReport>;
   dispose: () => void;
 } & Partial<CaptureApi>; // capture: dev and CI builds only, installed just after `ready`
 
@@ -91,37 +105,6 @@ declare global {
 
 // The offscreen container id the server screenshots in static (pack) mode.
 const STILL_CONTAINER_ID = "pack-still-root";
-
-// Wait for every <img> under `root` to finish loading AND decoding before the
-// server screenshots the card. Pack image slots (club logo, player photo,
-// sponsors) render as real <img> elements (pack-render), and the first card in
-// a batch hits a cold image cache — without this the screenshot captures a
-// half-loaded (blank) photo while later cards, with the image now cached, look
-// fine. A per-image timeout keeps a slow/broken image from hanging the render;
-// a genuinely broken image simply paints blank.
-async function waitForImages(root: HTMLElement, timeoutMs = 8000): Promise<void> {
-  const imgs = Array.from(root.querySelectorAll("img"));
-  await Promise.all(
-    imgs.map(async (img) => {
-      const timeout = new Promise<void>((resolve) => setTimeout(resolve, timeoutMs));
-      if (!(img.complete && img.naturalWidth > 0)) {
-        await Promise.race([
-          new Promise<void>((resolve) => {
-            img.addEventListener("load", () => resolve(), { once: true });
-            img.addEventListener("error", () => resolve(), { once: true });
-          }),
-          timeout,
-        ]);
-      }
-      try {
-        // decode() guarantees the pixels are ready to paint (not just fetched).
-        await Promise.race([img.decode(), timeout]);
-      } catch {
-        // decode() rejects on a broken/undecodable image — paint what we have.
-      }
-    }),
-  );
-}
 
 // Hidden route (`/__card-render`) used ONLY by the server-side renderers. It has
 // two modes over one page:
@@ -227,6 +210,20 @@ export default function CardRenderHarness() {
           warnings,
         };
       },
+      async fitCheck(payload) {
+        teardownStill();
+        const fit = createFitMount();
+        try {
+          const catalogue = await loadFontCatalogue().catch(() => []);
+          const report = await runTemplateFit(payload.document, payload.kind, fit.mount, {
+            fonts: `google-fonts:${catalogue.length}`,
+          });
+          setStatus("fit-checked");
+          return report;
+        } finally {
+          fit.dispose();
+        }
+      },
       dispose() {
         handle?.cleanup();
         handle = null;
@@ -283,6 +280,7 @@ export default function CardRenderHarness() {
           data={options.data ?? null}
           packId={options.packId ?? null}
           adjustments={options.adjustments ?? null}
+          page={options.page}
           animate={animate}
           width={native.w}
         />,
