@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"><link rel="stylesheet" href="https://unpkg.com/lucide-static@0.454.0/font/lucide.css"><style>body{margin:0;background:#0b1014;color:#f2f5f8;font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}a{color:#f6b335;text-decoration:none}a:hover{color:#ffd27a}*{box-sizing:border-box}select,input,button{font-family:inherit}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#26313a;border-radius:4px}::-webkit-scrollbar-track{background:transparent}</style></helmet>
+<div style="display:flex;min-height:100vh;background:#0b1014;color:#f2f5f8">
+
+<sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ true }}">
+<aside style="position:sticky;top:0;height:100vh;width:272px;flex:none;border-right:1px solid #26313a;background:#131a20;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:12px;padding:20px 20px 14px"><img src="artifacts/cricket-club/public/mockup/club-logo.png" alt="" style="height:40px;width:auto;flex:none"><div style="min-width:0"><div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;text-transform:uppercase;line-height:1.1">HHCC</div><div style="font-size:12px;color:#8e9ba7">Club admin</div></div></div>
+<div style="padding:0 16px 10px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:10px;background:#1b242b;border:1px solid #26313a">
+<button type="button" onClick="{{ setMenu }}" style="height:32px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;background:{{ tabMenuBg }};color:{{ tabMenuC }}"><i class="icon-menu" style="font-size:15px"></i>Menu</button>
+<button type="button" onClick="{{ setPool }}" style="height:32px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;background:{{ tabPoolBg }};color:{{ tabPoolC }}"><i class="icon-users" style="font-size:15px"></i>Player pool<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;opacity:.8">{{ poolCount }}</span></button>
+</div></div>
+
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+<div style="padding:0 16px"><button type="button" style="display:flex;height:38px;width:100%;align-items:center;gap:8px;border-radius:12px;border:1px solid #26313a;background:#1b242b;padding:0 12px;font-size:14px;color:#8e9ba7"><i class="icon-search" style="font-size:16px"></i><span style="flex:1;text-align:left">Jump to…</span><kbd style="border-radius:5px;border:1px solid #26313a;padding:0 6px;font-family:'IBM Plex Mono',monospace;font-size:11px">⌘K</kbd></button></div>
+<nav style="margin-top:16px;flex:1;overflow-y:auto;padding:0 12px 16px;display:flex;flex-direction:column;gap:2px">
+<sc-for list="{{ nav }}" as="g" hint-placeholder-count="10"><div>
+<a href="#" style="display:flex;height:40px;align-items:center;gap:12px;border-radius:12px;padding:0 12px;font-size:14px;background:{{ g.bg }};color:{{ g.c }};font-weight:{{ g.fw }}" style-hover="background:#1b242b;color:#f2f5f8"><i class="{{ g.icon }}" style="font-size:17px;color:{{ g.ic }}"></i><span style="flex:1">{{ g.label }}</span><sc-if value="{{ g.badge }}"><span style="min-width:20px;border-radius:999px;background:#f6b335;padding:2px 6px;font-size:12px;font-weight:600;color:#14100a;text-align:center">{{ g.badge }}</span></sc-if></a>
+<sc-if value="{{ g.tabs }}"><ul style="margin:4px 0 4px 18px;padding:0 0 0 8px;list-style:none;border-left:1px solid #26313a;display:flex;flex-direction:column;gap:2px"><li style="display:flex;height:32px;align-items:center;border-radius:10px;padding:0 10px;font-size:13px;background:rgba(246,179,53,0.15);font-weight:600;color:#f6b335">Senior selection</li><li style="display:flex;height:32px;align-items:center;border-radius:10px;padding:0 10px;font-size:13px;color:#8e9ba7">Junior team lists</li></ul></sc-if>
+</div></sc-for>
+</nav>
+<div style="border-top:1px solid #26313a;padding:16px;display:flex;flex-direction:column;gap:12px"><a href="#" style="display:flex;align-items:center;gap:8px;font-size:13px;color:#8e9ba7"><i class="icon-external-link" style="font-size:16px"></i>View public site</a><div style="display:flex;align-items:center;gap:12px"><div style="width:34px;height:34px;border-radius:50%;background:#1b242b;border:1px solid #26313a;display:grid;place-items:center;font-size:13px;font-weight:600;color:#8e9ba7">A</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Admin</div><div style="font-size:12px;color:#8e9ba7">@ash_wyborn</div></div><button type="button" style="width:36px;height:36px;border-radius:50%;border:1px solid #26313a;background:transparent;color:#f2f5f8;display:grid;place-items:center"><i class="icon-sun" style="font-size:16px"></i></button></div><button type="button" style="height:36px;border-radius:10px;border:1px solid #f6b335;background:transparent;color:#f2f5f8;font-size:14px;font-weight:600">Sign out</button></div>
+</sc-if>
+
+<sc-if value="{{ isPool }}" hint-placeholder-val="{{ true }}">
+<div data-drop="pool" onDragOver="{{ poolDragOver }}" onDrop="{{ poolDrop }}" style="flex:1;min-height:0;display:flex;flex-direction:column;border-top:1px solid #26313a;background:{{ poolDropBg }}">
+<div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #26313a">
+<div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;line-height:1">Player pool</h2><span style="font-size:11.5px;color:#8e9ba7">{{ dropHint }}</span></div>
+<input type="search" placeholder="Search players" autocomplete="off" value="{{ query }}" onChange="{{ onQuery }}" style="height:36px;width:100%;border-radius:10px;border:1px solid #26313a;background:#0b1014;color:#f2f5f8;padding:0 12px;font-size:14px;outline:none" style-focus="border-color:#f6b335">
+</div>
+<div style="flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:6px 10px 12px;display:flex;flex-direction:column;gap:6px">
+<sc-for list="{{ groups }}" as="gr" hint-placeholder-count="5"><section style="border-radius:12px;padding:6px 4px">
+<button type="button" onClick="{{ gr.toggle }}" style="display:flex;width:100%;align-items:center;gap:8px;padding:4px 4px 6px;border:none;background:transparent;color:#f2f5f8;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;text-align:left"><i class="{{ gr.chev }}" style="font-size:13px;color:#8e9ba7"></i><sc-if value="{{ gr.mark }}"><span style="width:18px;height:18px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;font-family:'IBM Plex Sans',sans-serif;background:{{ gr.mark.bg }};color:{{ gr.mark.c }};border:1.5px dashed {{ gr.mark.bd }}">{{ gr.mark.g }}</span></sc-if>{{ gr.label }}<span style="flex:1"></span><sc-if value="{{ gr.remind }}"><span onClick="{{ remind }}" style="min-height:28px;display:inline-flex;align-items:center;border-radius:8px;border:1px solid #26313a;background:#131a20;padding:0 8px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0">Remind {{ gr.count }}</span></sc-if><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8e9ba7">{{ gr.count }}</span></button>
+<sc-if value="{{ gr.desc }}"><p style="margin:0 4px 6px;font-size:12px;color:#8e9ba7;line-height:1.4">{{ gr.desc }}</p></sc-if>
+<sc-if value="{{ gr.open }}">
+<sc-if value="{{ gr.empty }}"><div style="border-radius:10px;border:1.5px dashed #26313a;padding:8px 6px;text-align:center;font-size:12.5px;color:#8e9ba7">Nobody here</div></sc-if>
+<div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ gr.members }}" as="m"><button type="button" draggable="true" onDragStart="{{ m.onDragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ m.onClick }}" style="display:flex;min-height:36px;width:100%;align-items:center;gap:8px;border-radius:10px;border:1px solid #26313a;background:#131a20;padding:4px 8px 4px 4px;font-size:14px;color:#f2f5f8;cursor:grab;text-align:left;opacity:{{ m.opacity }}" style-hover="border-color:#56636e"><span style="display:grid;width:18px;height:26px;flex:none;place-items:center;color:#8e9ba7"><svg viewBox="0 0 10 16" style="height:16px;width:10px"><g fill="currentColor"><circle cx="2.5" cy="2.5" r="1.5"></circle><circle cx="7.5" cy="2.5" r="1.5"></circle><circle cx="2.5" cy="8" r="1.5"></circle><circle cx="7.5" cy="8" r="1.5"></circle><circle cx="2.5" cy="13.5" r="1.5"></circle><circle cx="7.5" cy="13.5" r="1.5"></circle></g></svg></span><span style="width:18px;height:18px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;background:{{ m.mk.bg }};color:{{ m.mk.c }};border:1.5px dashed {{ m.mk.bd }}">{{ m.mk.g }}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">{{ m.name }}</span><span style="display:flex;gap:4px;flex:none"><sc-for list="{{ m.badges }}" as="b"><span style="border-radius:4px;padding:2px 6px;font-size:10.5px;font-weight:600;line-height:1;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }}">{{ b.t }}</span></sc-for></span></button></sc-for></div>
+</sc-if>
+</section></sc-for>
+<p style="margin:4px 4px 0;font-size:12px;color:#8e9ba7">{{ showingText }}</p>
+</div>
+</div>
+</sc-if>
+</aside>
+</sc-if>
+
+<div style="display:flex;flex:1;min-width:0;flex-direction:column">
+<header style="position:sticky;top:0;z-index:30;display:flex;height:60px;align-items:center;gap:12px;border-bottom:1px solid #26313a;background:rgba(11,16,20,0.72);backdrop-filter:blur(24px);padding:0 24px">
+<button type="button" onClick="{{ toggleSidebar }}" title="{{ sidebarTitle }}" style="width:36px;height:36px;border-radius:10px;border:none;background:transparent;color:#f2f5f8;display:grid;place-items:center;cursor:pointer" style-hover="background:#1b242b"><i class="{{ sidebarIcon }}" style="font-size:20px"></i></button>
+<nav style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;color:#8e9ba7"><span>Admin</span><span>/</span><span>Selection Hub</span><span>/</span><span style="font-weight:600;color:#f2f5f8">Senior selection</span></nav>
+<div style="position:relative;width:36px;height:36px;display:grid;place-items:center"><i class="icon-bell" style="font-size:19px"></i><span style="position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:999px;background:#f6b335;color:#14100a;font-size:10px;font-weight:700;display:grid;place-items:center">3</span></div>
+<a href="#" style="height:40px;display:flex;align-items:center;gap:6px;border-radius:999px;background:#f6b335;color:#14100a;padding:0 16px;font-size:14px;font-weight:600"><i class="icon-plus" style="font-size:16px"></i>Create a card</a>
+</header>
+
+<main style="flex:1;min-width:0;padding:16px 24px 32px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+<button type="button" style="height:34px;display:flex;align-items:center;gap:6px;border-radius:10px;border:1px solid #f6b335;background:transparent;color:#f2f5f8;padding:0 12px;font-size:13px;font-weight:600"><i class="icon-chevron-left" style="font-size:15px"></i>Previous</button>
+<span style="font-size:15px;font-weight:700;color:#f6b335">weekend of 24–25 Oct 2026</span>
+<button type="button" style="height:34px;display:flex;align-items:center;gap:6px;border-radius:10px;border:1px solid #f6b335;background:transparent;color:#f2f5f8;padding:0 12px;font-size:13px;font-weight:600">Next<i class="icon-chevron-right" style="font-size:15px"></i></button>
+<span style="flex:1"></span>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:12px;color:#8e9ba7"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:50%;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fbbf24;display:grid;place-items:center;font-size:10px;font-weight:700">?</span>To confirm</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:50%;border:1px solid #4ade80;background:rgba(74,222,128,0.14);color:#4ade80;display:grid;place-items:center;font-size:10px;font-weight:700">✓</span>Available</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:16px;height:16px;border-radius:50%;border:1px solid #f87171;background:rgba(248,113,113,0.14);color:#f87171;display:grid;place-items:center;font-size:10px;font-weight:700">✕</span>Unavailable</span></div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;border-radius:12px;border:1px solid #26313a;background:#131a20;padding:10px 14px;font-size:12.5px;color:#8e9ba7">
+<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;background:rgba(74,222,128,0.14);color:#4ade80;display:grid;place-items:center;font-size:11px;font-weight:700">✓</span><b style="color:#f6b335">Requests sent</b> Mon 19 Oct</span>
+<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;background:#1b242b;display:grid;place-items:center;font-size:11px;font-weight:700">2</span><b style="color:#f6b335">Reminder</b> Wed 21 Oct</span>
+<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;background:#1b242b;display:grid;place-items:center;font-size:11px;font-weight:700">3</span><b style="color:#f6b335">Cut-off</b> Thu 22 Oct, 2:00pm</span>
+<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;background:#f6b335;color:#14100a;display:grid;place-items:center;font-size:11px;font-weight:700">4</span><b style="color:#f6b335">Finalise</b> by Fri 23 Oct</span>
+<span style="flex:1"></span>
+<span style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#f6b335;line-height:1">{{ repliedPct }} replied</span>
+<div style="width:200px;height:8px;border-radius:4px;background:#1b242b;overflow:hidden;display:flex"><div style="background:#4ade80;width:{{ barYes }}"></div><div style="background:#f59e0b;width:{{ barMaybe }}"></div><div style="background:#f87171;width:{{ barNo }}"></div><div style="background:#8b5cf6;flex:1"></div></div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#8e9ba7;margin-right:2px">{{ chipsLabel }}</span>
+<sc-for list="{{ gradeChips }}" as="c" hint-placeholder-count="8"><button type="button" onClick="{{ c.onClick }}" title="{{ c.title }}" style="height:34px;display:flex;align-items:center;gap:7px;border-radius:999px;padding:0 12px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.c }}" style-hover="border-color:#f6b335"><sc-if value="{{ c.final }}"><i class="icon-lock" style="font-size:12px;color:#4ade80"></i></sc-if>{{ c.label }}<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:{{ c.cc }}">{{ c.count }}</span><sc-if value="{{ c.warn }}"><span style="width:7px;height:7px;border-radius:50%;background:#f87171"></span></sc-if></button></sc-for>
+<span style="flex:1"></span>
+<div style="display:flex;gap:2px;padding:3px;border-radius:10px;border:1px solid #26313a;background:#131a20"><button type="button" onClick="{{ setFocus }}" style="height:28px;display:flex;align-items:center;gap:6px;border-radius:7px;border:none;padding:0 10px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ vFocusBg }};color:{{ vFocusC }}"><i class="icon-columns-3" style="font-size:14px"></i>Focus</button><button type="button" onClick="{{ setBoard }}" style="height:28px;display:flex;align-items:center;gap:6px;border-radius:7px;border:none;padding:0 10px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ vBoardBg }};color:{{ vBoardC }}"><i class="icon-layout-grid" style="font-size:14px"></i>Board</button></div>
+</div>
+
+<div style="display:grid;gap:14px;align-items:start;grid-template-columns:{{ gridCols }}">
+<sc-for list="{{ cards }}" as="s" hint-placeholder-count="3"><article onDragOver="{{ s.onDragOverCard }}" style="display:flex;min-width:0;flex-direction:column;border-radius:12px;background:#131a20;border:1px solid {{ s.border }}">
+<div style="display:flex;flex-direction:column;gap:6px;border-bottom:1px solid #26313a;padding:12px 14px 10px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;text-transform:uppercase;line-height:1">{{ s.label }}</h2><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8e9ba7"><b style="color:#f2f5f8">{{ s.filled }}</b>/11{{ s.extra }}</span><span style="display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;line-height:1;background:{{ s.stBg }};color:{{ s.stC }}"><sc-if value="{{ s.final }}"><i class="icon-lock" style="font-size:12px"></i></sc-if>{{ s.stateText }}</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12.5px;color:#8e9ba7"><span>vs <b style="font-weight:600;color:#f2f5f8">{{ s.opp }}</b></span><span>{{ s.when }}</span><span>{{ s.where }}</span></div>
+<sc-if value="{{ s.editable }}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<label style="display:flex;min-width:0;flex-direction:column;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8e9ba7">Captain<select value="{{ s.captain }}" onChange="{{ s.onCaptain }}" style="min-height:36px;width:100%;border-radius:10px;border:1px solid #26313a;background:#0b1014;color:#f2f5f8;padding:4px 8px;font-size:13px;font-weight:500"><option value="">Not set</option><sc-for list="{{ s.xi }}" as="o"><option value="{{ o.id }}">{{ o.name }}</option></sc-for></select></label>
+<label style="display:flex;min-width:0;flex-direction:column;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#8e9ba7">Keeper<select value="{{ s.keeper }}" onChange="{{ s.onKeeper }}" style="min-height:36px;width:100%;border-radius:10px;border:1px solid #26313a;background:#0b1014;color:#f2f5f8;padding:4px 8px;font-size:13px;font-weight:500"><option value="">Not set</option><sc-for list="{{ s.xi }}" as="o"><option value="{{ o.id }}">{{ o.name }}</option></sc-for></select></label>
+</div></sc-if>
+<sc-if value="{{ s.final }}"><div style="font-size:12.5px;color:#8e9ba7">Captain <b style="color:#f2f5f8">{{ s.captainName }}</b> · Keeper <b style="color:#f2f5f8">{{ s.keeperName }}</b></div></sc-if>
+<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;font-weight:600"><sc-for list="{{ s.warns }}" as="w"><span style="border-radius:4px;padding:2px 6px;background:{{ w.bg }};color:{{ w.c }}">{{ w.t }}</span></sc-for></div>
+</div>
+<ol style="margin:0;list-style:none;display:flex;flex:1;flex-direction:column;gap:3px;padding:6px 8px">
+<sc-for list="{{ s.slots }}" as="sl" hint-placeholder-count="12"><li onDragOver="{{ sl.onDragOver }}" onDrop="{{ sl.onDrop }}" style="display:flex;min-height:40px;align-items:center;gap:6px;border-radius:10px;padding:1px 2px;background:{{ sl.dropBg }};box-shadow:{{ sl.dropSh }}">
+<span style="width:28px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8e9ba7">{{ sl.num }}</span>
+<sc-if value="{{ sl.m }}"><button type="button" draggable="{{ sl.m.draggable }}" onDragStart="{{ sl.m.onDragStart }}" onDragEnd="{{ dragEnd }}" onClick="{{ sl.onClick }}" style="display:flex;min-height:36px;min-width:0;flex:1;align-items:center;gap:8px;border-radius:10px;padding:4px 8px 4px 4px;font-size:14px;color:#f2f5f8;text-align:left;cursor:{{ sl.m.cursor }};border:1px solid {{ sl.m.tb }};background:{{ sl.m.tbg }};opacity:{{ sl.m.opacity }}" style-hover="filter:brightness(1.15)"><span style="display:grid;width:18px;height:26px;flex:none;place-items:center;color:#8e9ba7;visibility:{{ sl.m.gripVis }}"><svg viewBox="0 0 10 16" style="height:16px;width:10px"><g fill="currentColor"><circle cx="2.5" cy="2.5" r="1.5"></circle><circle cx="7.5" cy="2.5" r="1.5"></circle><circle cx="2.5" cy="8" r="1.5"></circle><circle cx="7.5" cy="8" r="1.5"></circle><circle cx="2.5" cy="13.5" r="1.5"></circle><circle cx="7.5" cy="13.5" r="1.5"></circle></g></svg></span><span style="width:18px;height:18px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;border:1px solid {{ sl.m.tb }};background:{{ sl.m.sbg }};color:{{ sl.m.sc }}">{{ sl.m.glyph }}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">{{ sl.m.name }}</span><span style="display:flex;gap:4px;flex:none"><sc-for list="{{ sl.m.badges }}" as="b"><span style="border-radius:4px;padding:2px 6px;font-size:10.5px;font-weight:600;line-height:1;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }}">{{ b.t }}</span></sc-for></span></button></sc-if>
+<sc-if value="{{ sl.empty }}"><button type="button" onClick="{{ sl.onClick }}" style="display:flex;min-height:36px;min-width:0;flex:1;align-items:center;justify-content:space-between;gap:8px;border-radius:10px;border:1.5px dashed #26313a;background:transparent;padding:6px 10px;font-size:12.5px;color:#8e9ba7;cursor:{{ sl.emptyCursor }};text-align:left" style-hover="border-color:#f6b335;color:#f2f5f8"><span>Open slot</span><sc-if value="{{ sl.fillHint }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#f6b335"><i class="icon-search" style="font-size:12px"></i>Find player</span></sc-if></button></sc-if>
+</li></sc-for>
+</ol>
+<div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid #26313a;padding:10px 12px">
+<sc-if value="{{ s.final }}"><div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#4ade80"><i class="icon-lock" style="font-size:14px"></i>Finalised and published. {{ s.notified }} notified by SMS and email.</div><button type="button" style="height:36px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid #f6b335;background:transparent;color:#f2f5f8;font-size:14px;font-weight:600"><i class="icon-printer" style="font-size:16px"></i>Print team sheet</button><button type="button" onClick="{{ s.onReopen }}" style="height:36px;border-radius:10px;border:none;background:transparent;color:#f6b335;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#1b242b">Re-open for changes</button></sc-if>
+<sc-if value="{{ s.confirming }}"><div style="border-radius:10px;background:#1b242b;padding:8px 10px;font-size:12.5px;line-height:1.45">Finalise {{ s.label }} with {{ s.filled }} players? <b>{{ s.headsUp }}</b> Each player gets an SMS and email with the match details.</div><div style="display:flex;gap:8px"><button type="button" onClick="{{ s.onFinalise }}" style="flex:1;height:36px;border-radius:10px;border:none;background:#f6b335;color:#14100a;font-size:14px;font-weight:600;cursor:pointer">Finalise and notify</button><button type="button" onClick="{{ s.onCancel }}" style="flex:1;height:36px;border-radius:10px;border:1px solid #f6b335;background:transparent;color:#f2f5f8;font-size:14px;font-weight:600;cursor:pointer">Keep editing</button></div></sc-if>
+<sc-if value="{{ s.canAsk }}"><button type="button" onClick="{{ s.onAsk }}" style="height:36px;border-radius:10px;border:none;background:#f6b335;color:#14100a;font-size:14px;font-weight:600;cursor:pointer" style-hover="filter:brightness(1.08)">Finalise {{ s.label }}</button></sc-if>
+</div>
+</article></sc-for>
+</div>
+</main>
+</div>
+
+<sc-if value="{{ pop }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closePop }}" style="position:fixed;inset:0;z-index:40"></div>
+<div style="position:fixed;z-index:50;width:320px;border-radius:12px;border:1px solid #26313a;background:rgba(19,26,32,0.97);box-shadow:0 24px 48px -16px rgba(0,0,0,0.6);display:flex;flex-direction:column;top:{{ pop.top }};left:{{ pop.left }}">
+<div style="display:flex;align-items:center;gap:8px;padding:12px 12px 8px"><div style="flex:1;min-width:0"><div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;line-height:1.1">{{ pop.title }}</div><div style="font-size:12px;color:#8e9ba7">{{ pop.sub }}</div></div><button type="button" onClick="{{ closePop }}" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:#8e9ba7;display:grid;place-items:center;cursor:pointer" style-hover="background:#1b242b;color:#f2f5f8"><i class="icon-x" style="font-size:16px"></i></button></div>
+<sc-if value="{{ pop.isFill }}"><div style="padding:0 12px 8px"><input ref="{{ inputRef }}" type="search" placeholder="Type a name…" autocomplete="off" value="{{ pop.q }}" onChange="{{ popQuery }}" onKeyDown="{{ popKey }}" style="height:36px;width:100%;border-radius:10px;border:1.5px solid #f6b335;background:#0b1014;color:#f2f5f8;padding:0 12px;font-size:14px;outline:none"></div></sc-if>
+<div style="padding:0 12px 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#8e9ba7">{{ pop.listLabel }}</div>
+<div style="max-height:300px;overflow:auto;padding:0 6px 6px;display:flex;flex-direction:column;gap:2px">
+<sc-for list="{{ pop.items }}" as="it"><button type="button" onClick="{{ it.onPick }}" onMouseEnter="{{ it.onHover }}" disabled="{{ it.disabled }}" style="display:flex;align-items:center;gap:8px;min-height:40px;border-radius:8px;border:none;padding:4px 8px;text-align:left;color:#f2f5f8;cursor:pointer;background:{{ it.bg }};opacity:{{ it.opacity }}"><sc-if value="{{ it.mk }}"><span style="width:18px;height:18px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;background:{{ it.mk.bg }};color:{{ it.mk.c }};border:1.5px dashed {{ it.mk.bd }}">{{ it.mk.g }}</span></sc-if><span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.name }}</span><span style="display:block;font-size:11.5px;color:#8e9ba7">{{ it.meta }}</span></span><span style="display:flex;gap:4px;flex:none"><sc-for list="{{ it.badges }}" as="b"><span style="border-radius:4px;padding:2px 6px;font-size:10.5px;font-weight:600;line-height:1;background:{{ b.bg }};color:{{ b.c }};border:1px solid {{ b.bd }}">{{ b.t }}</span></sc-for></span><sc-if value="{{ it.hi }}"><kbd style="border-radius:5px;border:1px solid #26313a;padding:0 5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8e9ba7">↵</kbd></sc-if></button></sc-for>
+<sc-if value="{{ pop.none }}"><div style="padding:12px;text-align:center;font-size:12.5px;color:#8e9ba7">No matching players</div></sc-if>
+</div>
+<sc-if value="{{ pop.canRemove }}"><div style="border-top:1px solid #26313a;padding:8px 12px;display:flex;gap:8px"><button type="button" onClick="{{ popRemove }}" style="flex:1;height:34px;border-radius:10px;border:1px solid #26313a;background:transparent;color:#f87171;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:rgba(248,113,113,0.14)">Back to pool</button></div></sc-if>
+<sc-if value="{{ pop.isFill }}"><div style="border-top:1px solid #26313a;padding:6px 12px;font-size:11px;color:#8e9ba7">↑↓ choose · ↵ add · esc close</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}"><div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:60;border-radius:12px;border:1px solid #26313a;background:#1b242b;padding:10px 16px;font-size:13.5px;box-shadow:0 24px 48px -16px rgba(0,0,0,0.6);display:flex;align-items:center;gap:8px"><i class="icon-check" style="font-size:16px;color:#4ade80"></i>{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;focus&quot;,&quot;board&quot;],&quot;default&quot;:&quot;focus&quot;,&quot;tsType&quot;:&quot;'focus' | 'board'&quot;},&quot;maxFocus&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;min&quot;:1,&quot;max&quot;:4,&quot;default&quot;:3,&quot;tsType&quot;:&quot;number&quot;},&quot;tapToFill&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const MK = {
+  yes: { bg: 'rgba(74,222,128,0.14)', c: '#4ade80', bd: 'transparent', g: '✓', label: 'Available' },
+  maybe: { bg: '#f59e0b', c: '#14100a', bd: 'transparent', g: '?', label: 'Maybe' },
+  none: { bg: 'transparent', c: '#8e9ba7', bd: '#8e9ba7', g: '…', label: 'No reply' },
+  no: { bg: 'rgba(248,113,113,0.14)', c: '#f87171', bd: 'transparent', g: '✕', label: 'Unavailable' },
+};
+const TIER = {
+  confirm: { b: '#f59e0b', bg: 'rgba(245,158,11,0.10)', sbg: 'rgba(245,158,11,0.15)', sc: '#fbbf24', g: '?' },
+  in: { b: '#4ade80', bg: 'rgba(74,222,128,0.14)', sbg: 'rgba(74,222,128,0.14)', sc: '#4ade80', g: '✓' },
+  out: { b: '#f87171', bg: 'rgba(248,113,113,0.14)', sbg: 'rgba(248,113,113,0.14)', sc: '#f87171', g: '✕' },
+};
+const tierOf = (st) => (st === 'yes' ? 'in' : st === 'no' ? 'out' : 'confirm');
+const RANK = { yes: 0, maybe: 1, none: 2, no: 3 };
+const B = {
+  role: (t) => ({ t, bg: '#f6b335', c: '#14100a', bd: 'transparent' }),
+  os: { t: 'OS', bg: 'transparent', c: '#f2f5f8', bd: '#26313a' },
+  jr: { t: 'Jr', bg: 'rgba(139,92,246,0.15)', c: '#c4b5fd', bd: 'transparent' },
+  lg: (t) => ({ t, bg: 'rgba(246,179,53,0.15)', c: '#f6b335', bd: 'transparent' }),
+  also: (t) => ({ t, bg: '#1b242b', c: '#8e9ba7', bd: 'transparent' }),
+};
+
+function buildData() {
+  const members = [];
+  const byName = {};
+  const m = (name, o = {}) => {
+    if (byName[name]) return byName[name].id;
+    const r = { id: members.length + 1, name, status: o.st || 'none', jr: !!o.jr, os: !!o.os, lg: o.lg || null, section: o.section || 'senior' };
+    members.push(r); byName[name] = r; return r.id;
+  };
+  const yes = new Set(['Jake Wyllie', 'Jarod Little', 'Jack Manuel', 'Craig Ford', 'Russell Moffat', 'Philip Head', 'Kobe Lee', 'Matthew Guyton', 'Scott Martin', 'Elliot Foote']);
+  const maybe = new Set(['Timothy Miles', 'Angus Kent', 'Thomas Dix', 'Cooper Gray']);
+  const no = new Set(['Grant Pattison', 'Rory Collins', 'Jeremy White']);
+  const jr = new Set(['Archie Nicholson', 'Louie Labrow', 'Kobe Lee', 'Hayes Buller', 'Cohen Buller', 'Mason Head', 'Austin Miley', 'Devon Phelps', 'Eligh Frunks', 'Kayden May']);
+  const os = new Set(['Dexter Trego', 'Freddie Higton', 'Ben Higton']);
+  const col = new Set(['Dexter Trego', 'Zachary Dreckow', 'Freddie Higton', 'Mitchell Caine', 'Peter Walsh', 'Campbell Lockyer', 'Hugo Young', 'George Young', 'Taj DePedro']);
+  const fb = new Set(['Tiana Arrowsmith', 'Rebecca Wilkinson', 'Montanna Kelly-Wilson']);
+  const add = (n) => n == null ? null : m(n, { st: yes.has(n) ? 'yes' : maybe.has(n) ? 'maybe' : no.has(n) ? 'no' : 'none', jr: jr.has(n), os: os.has(n), lg: col.has(n) ? 'COL' : fb.has(n) ? 'FB' : null });
+  const G = [
+    ['A', 'A Grade', 'Mandurah Cricket Club', 'Sat, 24 Oct, 12:05pm', 'Away · Meadow Springs Sports Facility', ['Jack Manuel', 'Timothy Miles', 'Jake Wyllie', 'Josh Rudge', 'Dexter Trego', 'Travis Caine', 'Jarod Little', 'Zachary Dreckow', 'Freddie Higton', 'Mitchell Felton', 'Mitchell Caine', 'Ben Higton'], 'Jake Wyllie', 'Jarod Little', 'final'],
+    ['B', 'B Grade', 'Secret Harbour Dockers Cricket Club', 'Sat, 24 Oct, 12:05pm', 'Home · Peelwood Reserve', ['Jacob Barnes', 'Dilan Weerasinghe', 'Angus Kent', 'Alec Smith', 'Archie Nicholson', 'Peter Walsh', 'Craig Ford', 'Campbell Lockyer', 'Rylan Arms', 'Kyle Jeffrey', 'Hugo Young', null], 'Craig Ford', 'Hugo Young'],
+    ['C', 'C Grade', 'Waroona Cricket Club', 'Sat, 24 Oct, 12:15pm', 'Away · Waroona Recreation Complex', ['Ethan Sandery', 'George Young', 'Waldo Kruger', 'Peter Knight', 'Louie Labrow', 'Cameron Lucas', 'Cameron Hill', 'Russell Moffat', 'Michael Niven', 'Grant Pattison', 'Adam Gray', null], 'Russell Moffat', 'Cameron Hill'],
+    ['D', 'D Grade', 'South Mandurah Cricket Club', 'Sat, 24 Oct, 12:15pm', 'Home · Peelwood Reserve', ['Kobe Lee', 'Hayes Buller', 'Grant Matthews', 'Cohen Buller', 'Ben Dreckow', 'Mason Head', 'Christopher Walsh', 'Noah Dreckow', 'Austin Miley', 'Philip Head', 'Taj DePedro', 'Jason Young'], 'Philip Head', 'Mason Head'],
+    ['F', 'F Grade', 'Secret Harbour Dockers Cricket Club', 'Sat, 24 Oct, 12:35pm', 'Home · Peelwood Reserve', ['Devon Phelps', 'Mathew Branchi', 'Robin Singh', 'Bryce Kavanagh', 'Amninder Singh', 'Nick Natu', 'Eligh Frunks', 'Ethan Kavanagh', 'Andre Geeraets', 'Gunther-Uwe Weimann', 'Jake Bennett', 'Kayden May'], 'Ethan Kavanagh', null],
+    ['FA', 'Female A Grade', 'White Knights Baldivis Cricket Club', 'Sat, 24 Oct, 12:20pm', 'Away · Baldivis District Sporting Complex', ['Amelie Butterwick', 'Ava Broady', 'Sabrina Evans', 'Emma-Lee Hammond', 'Tiana Arrowsmith', 'Rebecca Wilkinson', 'Kaylee Ashford', 'Ellie Lovell', 'Jessica Bradley', 'Montanna Kelly-Wilson', 'Chloe Guyton', null], null, null],
+    ['FB', 'Female B Grade', 'SJ Blues Cricket Club', 'Sun, 25 Oct, 9:00am', 'Away · Kalimna Oval', ['Tiana Arrowsmith', 'Courtney McHardy', 'Rebecca Wilkinson', 'Sophia Iseppi', 'Sara Walsh', 'Sophie Phelps', 'Samantha Jeffrey', 'Claire Litchfield', 'Jolene Phelps', 'Montanna Kelly-Wilson', null, null], 'Montanna Kelly-Wilson', 'Tiana Arrowsmith'],
+    ['COL', 'Colts', 'Murdoch University Melville Cricket Club', 'Sun, 25 Oct, 12:30pm', 'Home · Peelwood Reserve', ['Freddie Higton', 'Tahj Bashford', 'Zachary Dreckow', 'Mitchell Caine', 'Campbell Lockyer', 'Dexter Trego', 'Taj DePedro', 'Hugo Young', 'Jaxon Wyllie', 'Angus Moseley', 'Daniel Litchfield', null], 'Zachary Dreckow', 'Angus Moseley'],
+  ];
+  const sides = G.map(([code, label, opp, when, where, names, c, k, state]) => {
+    const slots = names.map(add);
+    return { code, label, opp, when, where, slots, captain: c ? byName[c].id : null, keeper: k ? byName[k].id : null, state: state || 'draft' };
+  });
+  ['Anthony Brokate', 'Ash Wyborn', 'Blake Allen', 'Daniel Fogarty', 'Darren Jeffrey', 'David Arrowsmith', 'Hudson Malingre', 'James Skeels', 'Jason R Davey', 'Jett Demmery', 'Matthew Guyton', 'Scott Martin', 'Thomas Dix'].forEach(add);
+  [['Chris Phelps', 'A'], ['Elliot Foote', 'B'], ['Jeffrey Petrie', 'B'], ['Jeremy White', 'C'], ['Peter Boyce', 'C'], ['Rory Collins', 'C'], ['Matthew Loon', 'COL'], ['Cooper Gray', 'D'], ['Mike Litchfield', 'F']].forEach(([n, lg]) => { add(n); byName[n].lg = lg; });
+  ['Ollie Brokate', 'Max Phelps', 'Jack Dix', 'Sam Higton', 'Lachlan Kent', 'Ryan Felton'].forEach((n) => m(n, { jr: true, section: 'junior', lg: 'U17' }));
+  return { members, sides };
+}
+
+class Component extends DCLogic {
+  state = (() => {
+    const d = buildData();
+    return { ...d, nav: 'pool', sidebar: true, view: null, focus: [1, 2, 3], query: '', open: { yes: true, maybe: true, none: true, no: false, jr: false, picked: false }, drag: null, dropKey: null, pop: null, confirm: null, toast: null };
+  })();
+  inputRef = React.createRef();
+
+  componentDidUpdate(_, prev) {
+    if (this.state.pop && (!prev.pop || prev.pop.key !== this.state.pop.key) && this.inputRef.current) this.inputRef.current.focus();
+  }
+  flash(t) {
+    clearTimeout(this._t);
+    this.setState({ toast: t });
+    this._t = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  mem(id) { return this.state.members[id - 1]; }
+  placed() {
+    const map = new Map();
+    this.state.sides.forEach((s) => s.slots.forEach((id) => { if (id != null) map.set(id, [...(map.get(id) || []), s.code]); }));
+    return map;
+  }
+  maxFocus() { return Math.max(1, Math.min(4, this.props.maxFocus ?? 3)); }
+  view() { return this.state.view ?? this.props.startView ?? 'focus'; }
+
+  cleanRoles(side) {
+    const xi = side.slots.slice(0, 11);
+    if (side.captain && !xi.includes(side.captain)) side.captain = null;
+    if (side.keeper && !xi.includes(side.keeper)) side.keeper = null;
+  }
+  place(id, from, to) {
+    const sides = this.state.sides.map((s) => ({ ...s, slots: [...s.slots] }));
+    const name = this.mem(id).name;
+    let msg = '';
+    if (to.kind === 'pool') {
+      if (from.kind !== 'side') return;
+      const fs = sides[from.s];
+      if (fs.state === 'final') return this.flash(`Re-open ${fs.label} to change it`);
+      fs.slots[from.i] = null; this.cleanRoles(fs);
+      msg = `${name} back to the pool`;
+    } else {
+      const ts = sides[to.s];
+      if (ts.state === 'final') return this.flash(`Re-open ${ts.label} to change it`);
+      const occ = ts.slots[to.i];
+      if (occ === id) return;
+      if (from.kind === 'side') {
+        const fs = sides[from.s];
+        if (fs.state === 'final') return this.flash(`Re-open ${fs.label} to change it`);
+        if (from.s === to.s) { ts.slots[from.i] = occ; ts.slots[to.i] = id; msg = `Moved ${name} to slot ${to.i + 1}`; }
+        else {
+          ts.slots = ts.slots.map((x, j) => (x === id && j !== to.i ? null : x));
+          ts.slots[to.i] = id; fs.slots[from.i] = occ != null && !fs.slots.includes(occ) ? occ : null;
+          msg = `${name} moved to ${ts.label}`;
+          this.cleanRoles(fs);
+        }
+      } else {
+        ts.slots = ts.slots.map((x) => (x === id ? null : x));
+        ts.slots[to.i] = id;
+        msg = occ ? `${name} in for ${this.mem(occ).name} · ${ts.label}` : `${name} added to ${ts.label}`;
+      }
+      this.cleanRoles(ts);
+    }
+    this.setState({ sides, drag: null, dropKey: null, pop: null });
+    this.flash(msg);
+  }
+
+  dragStart = (id, from) => (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', String(id)); } catch (_) {}
+    setTimeout(() => this.setState({ drag: { id, from }, pop: null }), 0);
+  };
+  dragEnd = () => this.setState({ drag: null, dropKey: null });
+  over = (key) => (e) => { if (!this.state.drag) return; e.preventDefault(); if (this.state.dropKey !== key) this.setState({ dropKey: key }); };
+  drop = (to) => (e) => { e.preventDefault(); e.stopPropagation(); const d = this.state.drag; if (d) this.place(d.id, d.from, to); };
+
+  anchor(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const W = 320, H = 440;
+    let left = r.right + 10;
+    if (left + W > window.innerWidth - 8) left = Math.max(8, r.left - W - 10);
+    const top = Math.max(8, Math.min(r.top - 10, window.innerHeight - H));
+    return { top: top + 'px', left: left + 'px' };
+  }
+  openFill = (s, i) => (e) => {
+    if (this.props.tapToFill === false) return;
+    const side = this.state.sides[s];
+    if (side.state === 'final') return this.flash(`Re-open ${side.label} to change it`);
+    this.setState({ pop: { key: `f${s}-${i}-${Date.now()}`, mode: 'fill', s, i, q: '', hi: 0, ...this.anchor(e) } });
+  };
+  openPlace = (id) => (e) => this.setState({ pop: { key: `p${id}`, mode: 'place', id, hi: -1, ...this.anchor(e) } });
+
+  candidates(p) {
+    const side = this.state.sides[p.s];
+    const placed = this.placed();
+    const q = (p.q || '').trim().toLowerCase();
+    return this.state.members
+      .filter((m) => !side.slots.includes(m.id) && (!q || m.name.toLowerCase().includes(q)))
+      .sort((a, b) => RANK[a.status] - RANK[b.status] || (placed.has(a.id) ? 1 : 0) - (placed.has(b.id) ? 1 : 0) || (a.lg === side.code ? -1 : 0) - (b.lg === side.code ? -1 : 0) || a.name.localeCompare(b.name))
+      .slice(0, 8);
+  }
+  pickFill(id) { const p = this.state.pop; const from = this.state.sides.findIndex((s) => s.slots.includes(id)); this.place(id, { kind: 'pool' }, { kind: 'slot', s: p.s, i: p.i }); void from; }
+
+  badges(m, sideCode, role, placedIn) {
+    const b = [];
+    if (role) b.push(B.role(role));
+    if (m.os) b.push(B.os);
+    if (placedIn && placedIn.length) b.push(B.also(placedIn.join('·')));
+    if (m.jr) b.push(B.jr);
+    if (m.lg && m.lg !== sideCode) b.push(B.lg(m.lg));
+    return b;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const placed = this.placed();
+    const view = this.view();
+    const max = this.maxFocus();
+    const focus = st.focus.slice(-max);
+    const q = st.query.trim().toLowerCase();
+    const dragId = st.drag && st.drag.id;
+
+    const poolChip = (m) => ({
+      name: m.name, mk: MK[m.status], opacity: dragId === m.id ? 0.35 : 1,
+      badges: this.badges(m, null, null, placed.get(m.id)),
+      onDragStart: this.dragStart(m.id, { kind: 'pool' }), onClick: this.openPlace(m.id),
+    });
+    const searched = st.members.filter((m) => !q || m.name.toLowerCase().includes(q));
+    const free = searched.filter((m) => !placed.has(m.id));
+    const sorted = (arr) => [...arr].sort((a, b) => (a.lg || '~').localeCompare(b.lg || '~') || a.name.localeCompare(b.name));
+    const seniors = free.filter((m) => m.section === 'senior');
+    const by = (s) => sorted(seniors.filter((m) => m.status === s));
+    const mkGroup = (key, label, list, extra = {}) => {
+      const open = !!q || st.open[key];
+      return { label, count: list.length, open, empty: list.length === 0, members: open ? list.map(poolChip) : [], chev: extra.collapsible ? (open ? 'icon-chevron-down' : 'icon-chevron-right') : 'icon-chevron-down', toggle: () => this.setState((s) => ({ open: { ...s.open, [key]: !s.open[key] } })), ...extra };
+    };
+    const noneList = by('none');
+    const groups = [
+      mkGroup('yes', 'Available, not picked', by('yes'), { mark: MK.yes, collapsible: true }),
+      mkGroup('maybe', 'Maybe', by('maybe'), { mark: MK.maybe, collapsible: true }),
+      mkGroup('none', 'No reply', noneList, { mark: MK.none, collapsible: true, remind: noneList.length > 0, desc: 'Left out of drafts at cut-off. Picking one flags them until they reply.' }),
+      mkGroup('no', 'Unavailable', by('no'), { mark: MK.no, collapsible: true }),
+      mkGroup('jr', 'Juniors', sorted(free.filter((m) => m.section === 'junior')), { collapsible: true, desc: 'From the junior register, to play up in a senior side.' }),
+      mkGroup('picked', 'Already picked', sorted(searched.filter((m) => placed.has(m.id))), { collapsible: true, desc: 'Drag into another side too: a junior can play up, a senior can play Saturday and Sunday.' }),
+    ];
+
+    const sideVM = (side, s) => {
+      const final = side.state === 'final';
+      const xiIds = side.slots.slice(0, 11).filter((x) => x != null);
+      const filled = xiIds.length;
+      const picked = side.slots.filter((x) => x != null);
+      const unconf = picked.filter((id) => tierOf(this.mem(id).status) === 'confirm').length;
+      const saidNo = picked.filter((id) => this.mem(id).status === 'no').length;
+      const osCount = picked.filter((id) => this.mem(id).os).length;
+      const open = side.slots.slice(0, 11).filter((x) => x == null).length;
+      const warns = [];
+      const amber = { bg: 'rgba(245,158,11,0.15)', c: '#fbbf24' }, red = { bg: 'rgba(248,113,113,0.14)', c: '#f87171' }, mute = { bg: '#1b242b', c: '#8e9ba7' };
+      if (open) warns.push({ t: `${open} open slot${open > 1 ? 's' : ''}`, ...mute });
+      if (unconf) warns.push({ t: `${unconf} not confirmed`, ...amber });
+      if (saidNo) warns.push({ t: `${saidNo} said unavailable`, ...red });
+      if (!side.captain) warns.push({ t: 'No captain', ...amber });
+      if (!side.keeper) warns.push({ t: 'No keeper', ...amber });
+      warns.push({ t: `Overseas ${osCount}/2${osCount > 2 ? ' (over limit)' : ''}`, ...(osCount > 2 ? amber : mute) });
+      const dragging = !!st.drag;
+      const slots = side.slots.map((id, i) => {
+        const key = `${s}-${i}`;
+        const hot = dragging && st.dropKey === key;
+        const ok = hot && !final;
+        const base = { num: i === 11 ? '12th' : String(i + 1), onDragOver: this.over(key), onDrop: this.drop({ kind: 'slot', s, i }), onClick: this.openFill(s, i), dropBg: hot ? (ok ? 'rgba(59,130,246,0.10)' : 'rgba(248,113,113,0.14)') : 'transparent', dropSh: hot ? `inset 0 0 0 2px ${ok ? '#3b82f6' : '#f87171'}` : 'none' };
+        if (id == null) return { ...base, m: null, empty: true, fillHint: this.props.tapToFill !== false && !final, emptyCursor: final ? 'default' : 'pointer' };
+        const m = this.mem(id); const t = TIER[tierOf(m.status)];
+        const role = side.captain === id && side.keeper === id ? 'C/WK' : side.captain === id ? 'C' : side.keeper === id ? 'WK' : null;
+        return { ...base, empty: false, m: { name: m.name, glyph: t.g, tb: t.b, tbg: t.bg, sbg: t.sbg, sc: t.sc, badges: this.badges(m, side.code, role), draggable: final ? 'false' : 'true', cursor: final ? 'pointer' : 'grab', gripVis: final ? 'hidden' : 'visible', opacity: dragId === id && st.drag.from.kind === 'side' && st.drag.from.s === s ? 0.35 : 1, onDragStart: this.dragStart(id, { kind: 'side', s, i }) } };
+      });
+      const nm = (id) => (id ? this.mem(id).name : 'not set');
+      const setRole = (r) => (e) => { const v = e.target.value ? Number(e.target.value) : null; this.setState((p) => ({ sides: p.sides.map((x, j) => (j === s ? { ...x, [r]: v } : x)) })); };
+      const confirming = st.confirm === s;
+      const heads = [open && `${open} open`, unconf && `${unconf} not confirmed`, !side.captain && 'no captain', !side.keeper && 'no keeper'].filter(Boolean);
+      return {
+        label: side.label, opp: side.opp, when: side.when, where: side.where, filled, extra: side.slots[11] != null ? ' +1' : '',
+        final, editable: !final, stateText: final ? 'Final' : 'Draft', stBg: final ? 'rgba(74,222,128,0.14)' : '#1b242b', stC: final ? '#4ade80' : '#8e9ba7',
+        border: final ? '#4ade80' : dragging && st.dropKey && st.dropKey.startsWith(`${s}-`) ? '#3b82f6' : '#26313a',
+        captain: side.captain ?? '', keeper: side.keeper ?? '', captainName: nm(side.captain), keeperName: nm(side.keeper),
+        xi: xiIds.map((id) => ({ id, name: this.mem(id).name })), onCaptain: setRole('captain'), onKeeper: setRole('keeper'),
+        warns, slots, notified: `${picked.length} players`, confirming, canAsk: !final && !confirming,
+        headsUp: heads.length ? `Heads up: ${heads.join(', ')}.` : '',
+        onAsk: () => this.setState({ confirm: s }), onCancel: () => this.setState({ confirm: null }),
+        onFinalise: () => { this.setState((p) => ({ confirm: null, sides: p.sides.map((x, j) => (j === s ? { ...x, state: 'final' } : x)) })); this.flash(`${side.label} finalised — ${picked.length} players notified`); },
+        onReopen: () => this.setState((p) => ({ sides: p.sides.map((x, j) => (j === s ? { ...x, state: 'draft' } : x)) })),
+        onDragOverCard: () => {},
+      };
+    };
+    const shown = view === 'focus' ? focus : st.sides.map((_, i) => i);
+    const cards = shown.map((i) => sideVM(st.sides[i], i));
+
+    const gradeChips = st.sides.map((side, i) => {
+      const on = view === 'focus' && focus.includes(i);
+      const filled = side.slots.slice(0, 11).filter((x) => x != null).length;
+      const warn = !side.captain || !side.keeper || side.slots.filter((x) => x && this.mem(x).os).length > 2 || side.slots.some((x) => x && this.mem(x).status === 'no');
+      return {
+        label: side.label.replace(' Grade', ''), count: `${filled}/11`, final: side.state === 'final', warn,
+        title: warn ? 'Needs attention' : side.label,
+        bg: on ? 'rgba(246,179,53,0.15)' : '#131a20', bd: on ? '#f6b335' : '#26313a', c: on ? '#f6b335' : '#f2f5f8', cc: on ? '#f6b335' : '#8e9ba7',
+        onClick: () => this.setState((p) => {
+          if (this.view() !== 'focus') return { view: 'focus', focus: [i] };
+          const f = p.focus.slice(-max);
+          if (f.includes(i)) return f.length > 1 ? { focus: f.filter((x) => x !== i) } : null;
+          return { focus: [...f, i].slice(-max).sort((a, b) => a - b) };
+        }),
+      };
+    });
+
+    // popover
+    let pop = null;
+    if (st.pop) {
+      const p = st.pop;
+      if (p.mode === 'fill') {
+        const side = st.sides[p.s];
+        const occ = side.slots[p.i];
+        const list = this.candidates(p);
+        const hi = Math.min(p.hi, list.length - 1);
+        pop = {
+          top: p.top, left: p.left, isFill: true, q: p.q, none: list.length === 0,
+          title: `${side.label} · ${p.i === 11 ? '12th' : 'slot ' + (p.i + 1)}`,
+          sub: occ ? `Replace ${this.mem(occ).name}` : 'Fill this open slot',
+          listLabel: p.q ? 'Matches' : 'Best fits — available first',
+          canRemove: !!occ,
+          items: list.map((m, j) => {
+            const pl = placed.get(m.id);
+            return { name: m.name, mk: MK[m.status], meta: `${MK[m.status].label}${m.lg ? ' · last ' + m.lg : ''}${pl ? ' · also in ' + pl.join(', ') : ''}`, badges: this.badges(m, side.code, null, null).filter((b) => b.t !== m.lg), hi: j === hi, bg: j === hi ? '#1b242b' : 'transparent', opacity: 1, disabled: false, onPick: () => this.pickFill(m.id), onHover: () => this.setState((s) => ({ pop: { ...s.pop, hi: j } })) };
+          }),
+        };
+      } else {
+        const m = this.mem(p.id);
+        const targets = (view === 'focus' ? focus : st.sides.map((_, i) => i));
+        const all = [...targets, ...st.sides.map((_, i) => i).filter((i) => !targets.includes(i))];
+        pop = {
+          top: p.top, left: p.left, isFill: false, none: false, canRemove: false,
+          title: m.name, sub: `${MK[m.status].label}${m.lg ? ' · last played ' + m.lg : ''}`, listLabel: 'Add to',
+          items: all.map((i) => {
+            const side = st.sides[i];
+            const slot = side.slots.findIndex((x) => x == null);
+            const inIt = side.slots.includes(p.id);
+            const dis = side.state === 'final' || slot < 0 || inIt;
+            return { name: side.label, mk: null, badges: [], hi: false, meta: inIt ? 'Already in this side' : side.state === 'final' ? 'Finalised' : slot < 0 ? 'Full' : `Into ${slot === 11 ? '12th' : 'slot ' + (slot + 1)} · ${side.when}`, bg: 'transparent', opacity: dis ? 0.45 : 1, disabled: dis, onPick: () => this.place(p.id, { kind: 'pool' }, { kind: 'slot', s: i, i: slot }), onHover: () => {} };
+          }),
+        };
+      }
+    }
+
+    const all = st.members.filter((m) => m.section === 'senior');
+    const cnt = (s) => all.filter((m) => m.status === s).length;
+    const pct = (n) => `${Math.round((n / all.length) * 100)}%`;
+    const isPool = st.nav === 'pool';
+    const navItems = [['Hub', 'icon-layout-grid'], ['Selection Hub', 'icon-clipboard-list', true], ['Availability', 'icon-calendar-check'], ['Social Media Studio', 'icon-image', false, 34], ['Display & Settings', 'icon-settings'], ['People', 'icon-users'], ['Honours & Records', 'icon-trophy'], ['Stats & Data', 'icon-database'], ['Imports', 'icon-upload'], ['Admin users', 'icon-user-cog']];
+
+    return {
+      showSidebar: st.sidebar, isPool, isMenu: !isPool,
+      sidebarIcon: st.sidebar ? 'icon-panel-left-close' : 'icon-panel-left-open', sidebarTitle: st.sidebar ? 'Collapse side panel' : 'Expand side panel',
+      toggleSidebar: () => this.setState((s) => ({ sidebar: !s.sidebar })),
+      setMenu: () => this.setState({ nav: 'menu' }), setPool: () => this.setState({ nav: 'pool' }),
+      tabMenuBg: isPool ? 'transparent' : '#131a20', tabMenuC: isPool ? '#8e9ba7' : '#f2f5f8',
+      tabPoolBg: isPool ? '#f6b335' : 'transparent', tabPoolC: isPool ? '#14100a' : '#8e9ba7',
+      poolCount: st.members.filter((m) => !placed.has(m.id) && m.section === 'senior').length,
+      nav: navItems.map(([label, icon, active, badge]) => ({ label, icon, badge: badge || null, tabs: !!active, bg: active ? '#1b242b' : 'transparent', c: active ? '#f2f5f8' : '#8e9ba7', fw: active ? 600 : 400, ic: active ? '#f6b335' : 'inherit' })),
+      query: st.query, onQuery: (e) => this.setState({ query: e.target.value }),
+      groups, showingText: q ? 'Showing matching players.' : 'Showing seniors. Tap a player to add them to a side.',
+      remind: (e) => { e.stopPropagation(); this.flash(`Reminder sent to ${noneList.length} players`); },
+      poolDragOver: this.over('pool'), poolDrop: this.drop({ kind: 'pool' }),
+      poolDropBg: st.drag && st.drag.from.kind === 'side' && st.dropKey === 'pool' ? 'rgba(59,130,246,0.10)' : 'transparent',
+      dropHint: st.drag && st.drag.from.kind === 'side' ? 'Drop here to remove' : '',
+      dragEnd: this.dragEnd,
+      repliedPct: pct(all.length - cnt('none')), barYes: pct(cnt('yes')), barMaybe: pct(cnt('maybe')), barNo: pct(cnt('no')),
+      chipsLabel: view === 'focus' ? `On screen (up to ${max})` : 'Jump to focus',
+      gradeChips, cards, gridCols: view === 'focus' ? `repeat(${cards.length}, minmax(0, 1fr))` : 'repeat(auto-fill, minmax(300px, 1fr))',
+      setFocus: () => this.setState({ view: 'focus' }), setBoard: () => this.setState({ view: 'board' }),
+      vFocusBg: view === 'focus' ? '#f6b335' : 'transparent', vFocusC: view === 'focus' ? '#14100a' : '#8e9ba7',
+      vBoardBg: view === 'board' ? '#f6b335' : 'transparent', vBoardC: view === 'board' ? '#14100a' : '#8e9ba7',
+      pop, inputRef: this.inputRef, closePop: () => this.setState({ pop: null }),
+      popQuery: (e) => { const v = e.target.value; this.setState((s) => ({ pop: { ...s.pop, q: v, hi: 0 } })); },
+      popKey: (e) => {
+        const p = st.pop; if (!p) return;
+        const list = this.candidates(p);
+        if (e.key === 'Escape') this.setState({ pop: null });
+        else if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ pop: { ...p, hi: Math.min(p.hi + 1, list.length - 1) } }); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ pop: { ...p, hi: Math.max(p.hi - 1, 0) } }); }
+        else if (e.key === 'Enter' && list[Math.min(p.hi, list.length - 1)]) { e.preventDefault(); this.pickFill(list[Math.min(p.hi, list.length - 1)].id); }
+      },
+      popRemove: () => { const p = st.pop; this.place(st.sides[p.s].slots[p.i], { kind: 'side', s: p.s, i: p.i }, { kind: 'pool' }); },
+      toast: st.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>
