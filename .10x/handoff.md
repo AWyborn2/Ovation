@@ -14,6 +14,11 @@
   warnings gate). The `KIND_TEMPLATES` switch is on for one pilot club in production. The
   library ends with one format, layer documents bound to `CardContent` slots, and the code packs
   retire.
+- **Delivery rule (Ash, 21 Oct 2026):** nothing for this feature merges to `main` until the whole
+  feature is complete. The integration branch is `wyborn21/social-template-library-pm` (draft
+  PR #411). Phase and slice PRs branch off it and target it, not `main`. Ash tests everything
+  on a local dev server first, then gives the go for one merge to `main`. The usual
+  "merge when green" rule doesn't apply to #411. Keep syncing `main` into the branch.
 
 ## Requirements in priority order
 
