@@ -141,6 +141,10 @@ import type {
   DuplicateReview,
   DuplicateReviewBody,
   EditorTemplate,
+  EmailList,
+  EmailListInput,
+  EmailSend,
+  EmailTeamSheetResult,
   ErrorEnvelope,
   FetchGoogleDriveFilesRequest,
   FetchGoogleDriveFilesResponse,
@@ -243,6 +247,7 @@ import type {
   LifeMemberInput,
   LifeMemberUpdate,
   ListClubPhotosParams,
+  ListEmailSendsParams,
   ListFixturesParams,
   ListFixturesResultsParams,
   ListJuniorFixturesParams,
@@ -378,6 +383,7 @@ import type {
   SlugAvailability,
   SocialCalendar,
   SocialCalendarCard,
+  SocialCardPrefill,
   SocialDraft,
   SocialDraftRevision,
   SocialPublication,
@@ -9053,6 +9059,525 @@ export const usePrintTeamSheet = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getPrintTeamSheetMutationOptions(options));
+    }
+
+export const getEmailTeamSheetUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/email`
+}
+
+/**
+ * Queues the printable team sheet for every active team-sheet email list
+covering the side's grade that isn't switched off; each call sends
+again. Sending happens in the background and the club's send log shows
+the outcome. Junior sides have no club lists.
+
+ * @summary Email a finalised senior side's team sheet to the lists covering its grade (admin or captain)
+ */
+export const emailTeamSheet = async (id: number, options?: RequestInit): Promise<EmailTeamSheetResult> => {
+
+  return customFetch<EmailTeamSheetResult>(getEmailTeamSheetUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getEmailTeamSheetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emailTeamSheet>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof emailTeamSheet>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['emailTeamSheet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof emailTeamSheet>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  emailTeamSheet(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EmailTeamSheetMutationResult = NonNullable<Awaited<ReturnType<typeof emailTeamSheet>>>
+
+    export type EmailTeamSheetMutationError = ErrorType<void>
+
+    /**
+ * @summary Email a finalised senior side's team sheet to the lists covering its grade (admin or captain)
+ */
+export const useEmailTeamSheet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emailTeamSheet>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof emailTeamSheet>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getEmailTeamSheetMutationOptions(options));
+    }
+
+export const getListEmailListsUrl = () => {
+
+
+
+
+  return `/api/admin/email-lists`
+}
+
+/**
+ * @summary The club's email lists with their members, grades and settings (admin)
+ */
+export const listEmailLists = async ( options?: RequestInit): Promise<EmailList[]> => {
+
+  return customFetch<EmailList[]>(getListEmailListsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEmailListsQueryKey = () => {
+    return [
+    `/api/admin/email-lists`
+    ] as const;
+    }
+
+
+export const getListEmailListsQueryOptions = <TData = Awaited<ReturnType<typeof listEmailLists>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailLists>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEmailListsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEmailLists>>> = ({ signal }) => listEmailLists({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEmailLists>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEmailListsQueryResult = NonNullable<Awaited<ReturnType<typeof listEmailLists>>>
+export type ListEmailListsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's email lists with their members, grades and settings (admin)
+ */
+
+export function useListEmailLists<TData = Awaited<ReturnType<typeof listEmailLists>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailLists>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEmailListsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateEmailListUrl = () => {
+
+
+
+
+  return `/api/admin/email-lists`
+}
+
+/**
+ * @summary Create an email list (admin)
+ */
+export const createEmailList = async (emailListInput: EmailListInput, options?: RequestInit): Promise<EmailList> => {
+
+  return customFetch<EmailList>(getCreateEmailListUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailListInput,)
+  }
+);}
+
+
+
+
+export const getCreateEmailListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEmailList>>, TError,{data: BodyType<EmailListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEmailList>>, TError,{data: BodyType<EmailListInput>}, TContext> => {
+
+const mutationKey = ['createEmailList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEmailList>>, {data: BodyType<EmailListInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEmailList(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEmailListMutationResult = NonNullable<Awaited<ReturnType<typeof createEmailList>>>
+    export type CreateEmailListMutationBody = BodyType<EmailListInput>
+    export type CreateEmailListMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an email list (admin)
+ */
+export const useCreateEmailList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEmailList>>, TError,{data: BodyType<EmailListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEmailList>>,
+        TError,
+        {data: BodyType<EmailListInput>},
+        TContext
+      > => {
+      return useMutation(getCreateEmailListMutationOptions(options));
+    }
+
+export const getUpdateEmailListUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/email-lists/${id}`
+}
+
+/**
+ * @summary Replace an email list's name, settings, grades and members (admin)
+ */
+export const updateEmailList = async (id: number,
+    emailListInput: EmailListInput, options?: RequestInit): Promise<EmailList> => {
+
+  return customFetch<EmailList>(getUpdateEmailListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailListInput,)
+  }
+);}
+
+
+
+
+export const getUpdateEmailListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailList>>, TError,{id: number;data: BodyType<EmailListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEmailList>>, TError,{id: number;data: BodyType<EmailListInput>}, TContext> => {
+
+const mutationKey = ['updateEmailList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEmailList>>, {id: number;data: BodyType<EmailListInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateEmailList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEmailListMutationResult = NonNullable<Awaited<ReturnType<typeof updateEmailList>>>
+    export type UpdateEmailListMutationBody = BodyType<EmailListInput>
+    export type UpdateEmailListMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace an email list's name, settings, grades and members (admin)
+ */
+export const useUpdateEmailList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailList>>, TError,{id: number;data: BodyType<EmailListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEmailList>>,
+        TError,
+        {id: number;data: BodyType<EmailListInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateEmailListMutationOptions(options));
+    }
+
+export const getDeleteEmailListUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/email-lists/${id}`
+}
+
+/**
+ * @summary Delete an email list and its send log (admin)
+ */
+export const deleteEmailList = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteEmailListUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteEmailListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEmailList>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteEmailList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEmailList>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteEmailList(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEmailListMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEmailList>>>
+
+    export type DeleteEmailListMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an email list and its send log (admin)
+ */
+export const useDeleteEmailList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEmailList>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEmailList>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteEmailListMutationOptions(options));
+    }
+
+export const getListEmailSendsUrl = (params?: ListEmailSendsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/email-sends?${stringifiedParams}` : `/api/admin/email-sends`
+}
+
+/**
+ * @summary The club's email send log, newest first (admin)
+ */
+export const listEmailSends = async (params?: ListEmailSendsParams, options?: RequestInit): Promise<EmailSend[]> => {
+
+  return customFetch<EmailSend[]>(getListEmailSendsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEmailSendsQueryKey = (params?: ListEmailSendsParams,) => {
+    return [
+    `/api/admin/email-sends`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListEmailSendsQueryOptions = <TData = Awaited<ReturnType<typeof listEmailSends>>, TError = ErrorType<void>>(params?: ListEmailSendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailSends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEmailSendsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEmailSends>>> = ({ signal }) => listEmailSends(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEmailSends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEmailSendsQueryResult = NonNullable<Awaited<ReturnType<typeof listEmailSends>>>
+export type ListEmailSendsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's email send log, newest first (admin)
+ */
+
+export function useListEmailSends<TData = Awaited<ReturnType<typeof listEmailSends>>, TError = ErrorType<void>>(
+ params?: ListEmailSendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmailSends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEmailSendsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getResendEmailSendUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/email-sends/${id}/resend`
+}
+
+/**
+ * @summary Send a logged email again (admin)
+ */
+export const resendEmailSend = async (id: number, options?: RequestInit): Promise<EmailSend> => {
+
+  return customFetch<EmailSend>(getResendEmailSendUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResendEmailSendMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendEmailSend>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendEmailSend>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['resendEmailSend'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendEmailSend>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  resendEmailSend(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendEmailSendMutationResult = NonNullable<Awaited<ReturnType<typeof resendEmailSend>>>
+
+    export type ResendEmailSendMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a logged email again (admin)
+ */
+export const useResendEmailSend = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendEmailSend>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendEmailSend>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getResendEmailSendMutationOptions(options));
     }
 
 export const getSyncSelectionFromPlayhqUrl = (id: number,) => {
@@ -32792,6 +33317,162 @@ export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialMatchSummaryPrefillUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/social-prefill/match-summary/${matchId}`
+}
+
+/**
+ * Built by the same content builder as the auto-queued card and the results and match summary carousels, with the club's content choices, so a card made here matches the one the sweep queues. The match id is the one the match list gives (central's for a central-data club).
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+export const getSocialMatchSummaryPrefill = async (matchId: number, options?: RequestInit): Promise<SocialCardPrefill> => {
+
+  return customFetch<SocialCardPrefill>(getGetSocialMatchSummaryPrefillUrl(matchId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialMatchSummaryPrefillQueryKey = (matchId: number,) => {
+    return [
+    `/api/social-prefill/match-summary/${matchId}`
+    ] as const;
+    }
+
+
+export const getGetSocialMatchSummaryPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError = ErrorType<void>>(matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialMatchSummaryPrefillQueryKey(matchId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>> = ({ signal }) => getSocialMatchSummaryPrefill(matchId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(matchId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialMatchSummaryPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>>
+export type GetSocialMatchSummaryPrefillQueryError = ErrorType<void>
+
+
+/**
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialMatchSummaryPrefill<TData = Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError = ErrorType<void>>(
+ matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialMatchSummaryPrefillQueryOptions(matchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialTeamListPrefillUrl = (fixtureId: number,) => {
+
+
+
+
+  return `/api/social-prefill/team-list/${fixtureId}`
+}
+
+/**
+ * Built by the same content builder as the auto-queued card and the team list carousel, with the club's content choices: fill-ins left out, the side of up to 14 with its overseas marks, shirt numbers and debuts. A fixture with no saved team list gets its heading and no players.
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+export const getSocialTeamListPrefill = async (fixtureId: number, options?: RequestInit): Promise<SocialCardPrefill> => {
+
+  return customFetch<SocialCardPrefill>(getGetSocialTeamListPrefillUrl(fixtureId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialTeamListPrefillQueryKey = (fixtureId: number,) => {
+    return [
+    `/api/social-prefill/team-list/${fixtureId}`
+    ] as const;
+    }
+
+
+export const getGetSocialTeamListPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError = ErrorType<void>>(fixtureId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialTeamListPrefillQueryKey(fixtureId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialTeamListPrefill>>> = ({ signal }) => getSocialTeamListPrefill(fixtureId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(fixtureId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialTeamListPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialTeamListPrefill>>>
+export type GetSocialTeamListPrefillQueryError = ErrorType<void>
+
+
+/**
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialTeamListPrefill<TData = Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError = ErrorType<void>>(
+ fixtureId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialTeamListPrefillQueryOptions(fixtureId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

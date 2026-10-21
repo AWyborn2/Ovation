@@ -4071,6 +4071,239 @@ export const PrintTeamSheetBody = zod.object({
 
 
 /**
+ * Queues the printable team sheet for every active team-sheet email list
+covering the side's grade that isn't switched off; each call sends
+again. Sending happens in the background and the club's send log shows
+the outcome. Junior sides have no club lists.
+
+ * @summary Email a finalised senior side's team sheet to the lists covering its grade (admin or captain)
+ */
+export const EmailTeamSheetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const EmailTeamSheetResponse = zod.object({
+  "queued": zod.number().describe('List emails queued (one per list)')
+})
+
+
+/**
+ * @summary The club's email lists with their members, grades and settings (admin)
+ */
+export const listEmailListsResponseScheduleOneDowMin = 0;
+export const listEmailListsResponseScheduleOneDowMax = 6;
+
+export const listEmailListsResponseScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const listEmailListsResponseMembersItemNameMax = 80;
+
+export const listEmailListsResponseMembersItemEmailMax = 254;
+
+
+
+export const ListEmailListsResponseItem = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']),
+  "name": zod.string(),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
+  "schedule": zod.object({
+  "dow": zod.number().min(listEmailListsResponseScheduleOneDowMin).max(listEmailListsResponseScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(listEmailListsResponseScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullable().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean(),
+  "assetReady": zod.boolean().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
+  "active": zod.boolean(),
+  "gradeKeys": zod.array(zod.string()),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(listEmailListsResponseMembersItemNameMax),
+  "email": zod.string().email().max(listEmailListsResponseMembersItemEmailMax)
+})),
+  "createdAt": zod.coerce.date()
+})
+export const ListEmailListsResponse = zod.array(ListEmailListsResponseItem)
+
+
+/**
+ * @summary Create an email list (admin)
+ */
+export const createEmailListBodyNameMax = 80;
+
+export const createEmailListBodyScheduleOneDowMin = 0;
+export const createEmailListBodyScheduleOneDowMax = 6;
+
+export const createEmailListBodyScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const createEmailListBodyGradeKeysItemMax = 60;
+
+export const createEmailListBodyGradeKeysMax = 30;
+
+export const createEmailListBodyMembersItemNameMax = 80;
+
+export const createEmailListBodyMembersItemEmailMax = 254;
+
+export const createEmailListBodyMembersMax = 50;
+
+
+
+export const CreateEmailListBody = zod.object({
+  "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']).optional().describe('Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.'),
+  "name": zod.string().min(1).max(createEmailListBodyNameMax),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
+  "schedule": zod.object({
+  "dow": zod.number().min(createEmailListBodyScheduleOneDowMin).max(createEmailListBodyScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(createEmailListBodyScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullish().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean().optional().describe('Team-sheet lists; re-send when a side is re-finalised (default on)'),
+  "assetReady": zod.boolean().optional().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
+  "active": zod.boolean().optional(),
+  "gradeKeys": zod.array(zod.string().min(1).max(createEmailListBodyGradeKeysItemMax)).max(createEmailListBodyGradeKeysMax).describe('Grades (senior lists, e.g. \"A Grade\") or junior team labels (junior lists, e.g. \"Year 7 Gold\") a team-sheet list covers; empty for social lists'),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(createEmailListBodyMembersItemNameMax),
+  "email": zod.string().email().max(createEmailListBodyMembersItemEmailMax)
+})).max(createEmailListBodyMembersMax)
+})
+
+
+/**
+ * @summary Replace an email list's name, settings, grades and members (admin)
+ */
+export const UpdateEmailListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateEmailListBodyNameMax = 80;
+
+export const updateEmailListBodyScheduleOneDowMin = 0;
+export const updateEmailListBodyScheduleOneDowMax = 6;
+
+export const updateEmailListBodyScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmailListBodyGradeKeysItemMax = 60;
+
+export const updateEmailListBodyGradeKeysMax = 30;
+
+export const updateEmailListBodyMembersItemNameMax = 80;
+
+export const updateEmailListBodyMembersItemEmailMax = 254;
+
+export const updateEmailListBodyMembersMax = 50;
+
+
+
+export const UpdateEmailListBody = zod.object({
+  "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']).optional().describe('Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.'),
+  "name": zod.string().min(1).max(updateEmailListBodyNameMax),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']).optional().describe('Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list\'s schedule; off never'),
+  "schedule": zod.object({
+  "dow": zod.number().min(updateEmailListBodyScheduleOneDowMin).max(updateEmailListBodyScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(updateEmailListBodyScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullish().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean().optional().describe('Team-sheet lists; re-send when a side is re-finalised (default on)'),
+  "assetReady": zod.boolean().optional().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().optional().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().optional().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
+  "active": zod.boolean().optional(),
+  "gradeKeys": zod.array(zod.string().min(1).max(updateEmailListBodyGradeKeysItemMax)).max(updateEmailListBodyGradeKeysMax).describe('Grades (senior lists, e.g. \"A Grade\") or junior team labels (junior lists, e.g. \"Year 7 Gold\") a team-sheet list covers; empty for social lists'),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(updateEmailListBodyMembersItemNameMax),
+  "email": zod.string().email().max(updateEmailListBodyMembersItemEmailMax)
+})).max(updateEmailListBodyMembersMax)
+})
+
+export const updateEmailListResponseScheduleOneDowMin = 0;
+export const updateEmailListResponseScheduleOneDowMax = 6;
+
+export const updateEmailListResponseScheduleOneTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateEmailListResponseMembersItemNameMax = 80;
+
+export const updateEmailListResponseMembersItemEmailMax = 254;
+
+
+
+export const UpdateEmailListResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.enum(['team_sheet', 'social']),
+  "section": zod.enum(['senior', 'junior']),
+  "name": zod.string(),
+  "sendMode": zod.enum(['on_publish', 'manual', 'scheduled', 'off']),
+  "schedule": zod.object({
+  "dow": zod.number().min(updateEmailListResponseScheduleOneDowMin).max(updateEmailListResponseScheduleOneDowMax).describe('Day of week, 0 = Sunday'),
+  "time": zod.string().regex(updateEmailListResponseScheduleOneTimeRegExp).describe('Local time, HH:MM')
+}).describe('When a scheduled team-sheet list is emailed (Australia\/Perth)').nullable().describe('Scheduled team-sheet lists; null otherwise'),
+  "resendOnChange": zod.boolean(),
+  "assetReady": zod.boolean().describe('Social lists; email each card as it becomes ready to post'),
+  "reviewNeeded": zod.boolean().describe('Social lists; one email per sweep listing new cards awaiting review'),
+  "milestone": zod.boolean().describe('Social lists; one email per sweep listing new milestone and achievement cards'),
+  "active": zod.boolean(),
+  "gradeKeys": zod.array(zod.string()),
+  "members": zod.array(zod.object({
+  "name": zod.string().max(updateEmailListResponseMembersItemNameMax),
+  "email": zod.string().email().max(updateEmailListResponseMembersItemEmailMax)
+})),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an email list and its send log (admin)
+ */
+export const DeleteEmailListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary The club's email send log, newest first (admin)
+ */
+export const ListEmailSendsQueryParams = zod.object({
+  "listId": zod.coerce.number().optional()
+})
+
+export const ListEmailSendsResponseItem = zod.object({
+  "id": zod.number(),
+  "listId": zod.number(),
+  "listName": zod.string(),
+  "kind": zod.string(),
+  "subjectType": zod.string(),
+  "subjectId": zod.number(),
+  "status": zod.enum(['queued', 'sending', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish().describe('Why a send failed or was skipped'),
+  "recipientCount": zod.number(),
+  "queuedAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullish()
+})
+export const ListEmailSendsResponse = zod.array(ListEmailSendsResponseItem)
+
+
+/**
+ * @summary Send a logged email again (admin)
+ */
+export const ResendEmailSendParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ResendEmailSendResponse = zod.object({
+  "id": zod.number(),
+  "listId": zod.number(),
+  "listName": zod.string(),
+  "kind": zod.string(),
+  "subjectType": zod.string(),
+  "subjectId": zod.number(),
+  "status": zod.enum(['queued', 'sending', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish().describe('Why a send failed or was skipped'),
+  "recipientCount": zod.number(),
+  "queuedAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullish()
+})
+
+
+/**
  * Fills the draft with the side named in PlayHQ for the fixture (senior or
 junior, as synced from PlayHQ). Each player is matched to a squad member
 as a draft is seeded; anyone matched to nobody, or already in another
@@ -6607,7 +6840,8 @@ export const ListSponsorsResponseItem = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
 
@@ -6624,7 +6858,8 @@ export const CreateSponsorBody = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 
@@ -6644,7 +6879,8 @@ export const UpdateSponsorBody = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 export const UpdateSponsorResponse = zod.object({
@@ -6657,7 +6893,8 @@ export const UpdateSponsorResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 
@@ -8116,9 +8353,25 @@ export const GetSocialSettingsResponse = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
-  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -8135,7 +8388,8 @@ export const GetSocialSettingsResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })),
   "brand": zod.union([zod.object({
   "name": zod.string(),
@@ -8446,9 +8700,25 @@ export const UpdateSocialSettingsBody = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
-  "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
+  "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -8742,9 +9012,25 @@ export const UpdateSocialSettingsResponse = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
-  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 })
 
 
@@ -8987,7 +9273,8 @@ export const GetWeekendCarouselSourcesQueryParams = zod.object({
   "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
   "audience": zod.enum(['all', 'senior', 'junior']).default(getWeekendCarouselSourcesQueryAudienceDefault).describe('Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.'),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
-  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
+  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp),
+  "fields": zod.coerce.string().optional().describe('Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.')
 })
 
 export const GetWeekendCarouselSourcesResponse = zod.object({
@@ -9008,7 +9295,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })).optional(),
   "timeZone": zod.string(),
-  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
+  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Team list, results and match summary sets: each slide\'s content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
   "matchDayContent": zod.record(zod.string(), zod.object({
   "kind": zod.enum(['matchDay']),
   "page": zod.enum(['fixture']),
@@ -9035,8 +9322,87 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "opponentName": zod.string(),
   "opponentLogoUrl": zod.string().nullable(),
   "venue": zod.string().nullable()
-})
+}),
+  "ladder": zod.object({
+  "club": zod.string().describe('\"3RD\".'),
+  "opposition": zod.string().nullable(),
+  "teams": zod.number(),
+  "tableName": zod.string().nullable()
+}).optional().describe('Both teams\' season ladder positions (P5), when asked for and loaded.'),
+  "lastMeeting": zod.object({
+  "outcome": zod.enum(['won', 'lost', 'tied', 'noResult']),
+  "line": zod.string().describe('\"Won by 24 runs · 2025\/26\".'),
+  "date": zod.string(),
+  "season": zod.string().nullable()
+}).optional().describe('The clubs\' last finished senior meeting in this grade, from the club\'s side (P5).'),
+  "milestoneWatch": zod.object({
+  "playerName": zod.string(),
+  "line": zod.string()
+}).optional().describe('A player in the published side within reach of a club milestone (P5, senior only).')
 }).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.')).optional().describe('Match Day sets: each fixture\'s slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.'),
+  "sponsorsPage": zod.object({
+  "backgroundPhoto": zod.union([zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+}),zod.null()]).describe('The club\'s chosen background photo, when it is still in the library and safe to show.'),
+  "nextHomeGame": zod.union([zod.object({
+  "kind": zod.enum(['matchDay']),
+  "page": zod.enum(['fixture']),
+  "fixtureId": zod.number(),
+  "junior": zod.boolean(),
+  "juniorTeamName": zod.string().nullable(),
+  "grade": zod.string(),
+  "roundLabel": zod.string(),
+  "opposition": zod.object({
+  "name": zod.string().describe('The club\'s short name, else the automatic one, else the raw name.'),
+  "rawName": zod.string(),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string()
+}),
+  "homeAway": zod.enum(['HOME', 'AWAY']),
+  "venue": zod.string(),
+  "startAt": zod.string(),
+  "day": zod.string().describe('Club-time day, YYYY-MM-DD.'),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "source": zod.object({
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullable(),
+  "opponentName": zod.string(),
+  "opponentLogoUrl": zod.string().nullable(),
+  "venue": zod.string().nullable()
+}),
+  "ladder": zod.object({
+  "club": zod.string().describe('\"3RD\".'),
+  "opposition": zod.string().nullable(),
+  "teams": zod.number(),
+  "tableName": zod.string().nullable()
+}).optional().describe('Both teams\' season ladder positions (P5), when asked for and loaded.'),
+  "lastMeeting": zod.object({
+  "outcome": zod.enum(['won', 'lost', 'tied', 'noResult']),
+  "line": zod.string().describe('\"Won by 24 runs · 2025\/26\".'),
+  "date": zod.string(),
+  "season": zod.string().nullable()
+}).optional().describe('The clubs\' last finished senior meeting in this grade, from the club\'s side (P5).'),
+  "milestoneWatch": zod.object({
+  "playerName": zod.string(),
+  "line": zod.string()
+}).optional().describe('A player in the published side within reach of a club milestone (P5, senior only).')
+}).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.'),zod.null()]).describe('The club\'s next senior home fixture from the set\'s first day, built like a fixture slide. Null for junior sets or when there is none.'),
+  "socials": zod.array(zod.string()).describe('The club\'s social handles and website, in print order (Instagram, Facebook, website).')
+}).optional().describe('Match Day sets: what the sponsors page\'s optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty.'),
   "fixtures": zod.array(zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -9084,6 +9450,10 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
+  "photoPicks": zod.object({
+  "cover": zod.number().nullable().describe('A coverPhotos (or juniorStockPhotos) id.'),
+  "fixtures": zod.record(zod.string(), zod.number().nullable()).describe('By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.')
+}).optional().describe('Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide\'s pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel\'s content override.'),
   "warnings": zod.array(zod.string())
 })
 
@@ -9782,7 +10152,8 @@ export const GetHonourDisplayResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -10053,7 +10424,8 @@ export const GetKioskDisplayResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -15528,5 +15900,33 @@ export const GetSocialRoundResultsPrefillResponse = zod.object({
   "photoUrl": zod.string().nullable().describe('The player\'s library photo, else headshot; null when the club has neither.')
 }))
 }).describe('Results summary and team of the week prefill: a round\'s senior results per grade with the best players, and its standout performers.')
+
+
+/**
+ * Built by the same content builder as the auto-queued card and the results and match summary carousels, with the club's content choices, so a card made here matches the one the sweep queues. The match id is the one the match list gives (central's for a central-data club).
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+export const GetSocialMatchSummaryPrefillParams = zod.object({
+  "matchId": zod.coerce.number()
+})
+
+export const GetSocialMatchSummaryPrefillResponse = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "warnings": zod.array(zod.string())
+}).describe('A single card\'s input from the content builder (ADR-010 P7), exactly as the sweep would draft it.')
+
+
+/**
+ * Built by the same content builder as the auto-queued card and the team list carousel, with the club's content choices: fill-ins left out, the side of up to 14 with its overseas marks, shirt numbers and debuts. A fixture with no saved team list gets its heading and no players.
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+export const GetSocialTeamListPrefillParams = zod.object({
+  "fixtureId": zod.coerce.number()
+})
+
+export const GetSocialTeamListPrefillResponse = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "warnings": zod.array(zod.string())
+}).describe('A single card\'s input from the content builder (ADR-010 P7), exactly as the sweep would draft it.')
 
 

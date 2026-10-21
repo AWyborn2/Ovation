@@ -9,7 +9,9 @@ import {
   DEFAULT_GAMES_TIERS,
   DEFAULT_RUNS_TIERS,
   DEFAULT_WICKETS_TIERS,
+  MILESTONE_REACH,
   centralMilestoneTiers,
+  milestoneWithinReach,
   nativeCareerCrossings,
   nativeMilestoneTiers,
 } from "./milestone-crossings";
@@ -81,5 +83,53 @@ describe("milestone tier ladders", () => {
     expect(
       centralMilestoneTiers({ gamesTiers: [200, 50], runsTiers: [], wicketsTiers: [10] }),
     ).toEqual({ games: [200, 50], runs: [], wickets: [10] });
+  });
+});
+
+describe("milestoneWithinReach (Match Day milestone watch)", () => {
+  const tiers = { games: [100, 150], runs: [1000, 2000], wickets: [100] };
+  const career = (playerName: string, games: number, runs: number, wickets: number) => ({
+    playerName,
+    games,
+    runs,
+    wickets,
+  });
+
+  it("finds the next tier within reach, games first (playing makes it)", () => {
+    expect(
+      milestoneWithinReach(
+        [career("Jack Smith", 80, 990, 10), career("Ann Lee", 99, 10, 0)],
+        tiers,
+      ),
+    ).toEqual({ playerName: "Ann Lee", stat: "games", tier: 100, gap: 1 });
+  });
+
+  it("ranks runs and wickets by the gap as a share of a match's reach", () => {
+    // 10 runs short is 10/75 of the reach; 2 wickets short is 2/4.
+    expect(
+      milestoneWithinReach(
+        [career("Jack Smith", 80, 990, 10), career("Bo Hart", 80, 0, 98)],
+        tiers,
+      ),
+    ).toMatchObject({ playerName: "Jack Smith", stat: "runs", tier: 1000, gap: 10 });
+  });
+
+  it("ignores milestones out of reach and tiers already passed", () => {
+    expect(
+      milestoneWithinReach(
+        [
+          career("Far Away", 80, 1000 - MILESTONE_REACH.runs - 1, 0),
+          career("Done", 150, 2000, 100),
+        ],
+        tiers,
+      ),
+    ).toBeNull();
+    expect(milestoneWithinReach([], tiers)).toBeNull();
+  });
+
+  it("reads unsorted tiers the way the central board stores them", () => {
+    expect(
+      milestoneWithinReach([career("Jo", 149, 0, 0)], { games: [150, 100], runs: [], wickets: [] }),
+    ).toEqual({ playerName: "Jo", stat: "games", tier: 150, gap: 1 });
   });
 });

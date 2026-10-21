@@ -69,11 +69,19 @@ const patch = (i: number, body: object) =>
     .send(body);
 
 const STANDARD = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
+/** Every content kind (ADR-010 P7); a kind the club never chose is Standard. */
+const ALL = (matchDay = STANDARD, over: object = {}) => ({
+  matchDay,
+  results: STANDARD,
+  matchSummary: STANDARD,
+  teamList: STANDARD,
+  ...over,
+});
 
 describe("cardContent", () => {
   it("defaults to Standard with junior consolidation on, and no livestream", async () => {
     const res = await get(0).expect(200);
-    expect(res.body.settings.cardContent).toEqual({ matchDay: STANDARD });
+    expect(res.body.settings.cardContent).toEqual(ALL());
     expect(res.body.settings.livestreamUrl).toBeNull();
   });
 
@@ -92,8 +100,8 @@ describe("cardContent", () => {
       fields: { "fixture.oppositionCrest": true },
       juniorConsolidateByDay: false,
     };
-    expect(res.body.cardContent).toEqual({ matchDay: saved });
-    expect((await get(0).expect(200)).body.settings.cardContent).toEqual({ matchDay: saved });
+    expect(res.body.cardContent).toEqual(ALL(saved));
+    expect((await get(0).expect(200)).body.settings.cardContent).toEqual(ALL(saved));
   });
 
   it("rejects an unknown preset", async () => {
@@ -103,7 +111,25 @@ describe("cardContent", () => {
   });
 
   it("another club's settings are untouched", async () => {
-    expect((await get(1).expect(200)).body.settings.cardContent).toEqual({ matchDay: STANDARD });
+    expect((await get(1).expect(200)).body.settings.cardContent).toEqual(ALL());
+  });
+
+  it("saves a team list and a results choice beside match day (P7)", async () => {
+    const teamList = {
+      preset: "standard",
+      fields: { "team.shirtNumbers": false, "fixture.photo": false },
+      juniorConsolidateByDay: true,
+    };
+    const results = { preset: "minimal", fields: {}, juniorConsolidateByDay: true };
+    const matchDay = { preset: "minimal", fields: {}, juniorConsolidateByDay: false };
+    const res = await patch(0, { cardContent: { matchDay, results, teamList } }).expect(200);
+    // A key from another kind is dropped.
+    const want = ALL(matchDay, {
+      results,
+      teamList: { ...teamList, fields: { "team.shirtNumbers": false } },
+    });
+    expect(res.body.cardContent).toEqual(want);
+    expect((await get(0).expect(200)).body.settings.cardContent).toEqual(want);
   });
 
   it("other saves leave the content choices alone", async () => {

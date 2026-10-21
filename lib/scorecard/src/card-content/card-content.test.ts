@@ -5,20 +5,34 @@ import {
   contentInput,
   dateRangeLabel,
   defaultCardContentSettings,
+  ladderContent,
+  lastMeetingContent,
+  livestreamContent,
+  MATCH_DAY_DATA_FIELDS,
   matchDayDraftInput,
   matchDayFixtureContent,
   matchDaySponsorsContent,
   matchDayTitleContent,
+  milestoneWatchContent,
+  ordinal,
   presetFields,
   readCardContent,
   readCardContentSettings,
   readContentOverride,
   resolveVisibleFields,
+  shortPlayerName,
   type MatchDayFixtureLike,
 } from "./index";
 
 const CORE = CONTENT_FIELDS.matchDay.filter((f) => f.tier === "core").map((f) => f.key);
 const OPTIONAL = CONTENT_FIELDS.matchDay.filter((f) => f.tier === "optional").map((f) => f.key);
+const FULL_ONLY_KEYS = [
+  "sponsors.tiers",
+  "sponsors.teamSponsors",
+  "sponsors.thankYou",
+  "sponsors.nextHomeGame",
+  "sponsors.background",
+];
 
 describe("content field catalogue", () => {
   it("keys are unique, slide-prefixed, and core fields are in every preset", () => {
@@ -30,10 +44,21 @@ describe("content field catalogue", () => {
     }
   });
 
-  it("Minimal is core only; Standard and Full show every field built so far", () => {
+  it("Minimal is core only; Standard is the cards as they were; Full adds the data and sponsors-page fields", () => {
+    const FULL_ONLY = ["title.livestream", ...MATCH_DAY_DATA_FIELDS, ...FULL_ONLY_KEYS];
+    const STANDARD = OPTIONAL.filter((k) => !FULL_ONLY.includes(k));
     expect([...presetFields("matchDay", "minimal")].sort()).toEqual([...CORE].sort());
-    expect([...presetFields("matchDay", "standard")].sort()).toEqual([...CORE, ...OPTIONAL].sort());
+    expect([...presetFields("matchDay", "standard")].sort()).toEqual([...CORE, ...STANDARD].sort());
     expect([...presetFields("matchDay", "full")].sort()).toEqual([...CORE, ...OPTIONAL].sort());
+    for (const k of FULL_ONLY) expect(OPTIONAL).toContain(k);
+  });
+
+  it("the sponsors page options (P6) are optional and Full only", () => {
+    for (const key of FULL_ONLY_KEYS) {
+      const f = CONTENT_FIELDS.matchDay.find((x) => x.key === key)!;
+      expect(f.tier, key).toBe("optional");
+      expect(f.presets, key).toEqual(["full"]);
+    }
   });
 });
 
@@ -88,8 +113,12 @@ describe("resolveVisibleFields", () => {
 describe("readCardContentSettings / readContentOverride", () => {
   it("fills defaults: Standard, junior consolidation on", () => {
     expect(readCardContentSettings(null)).toEqual(defaultCardContentSettings());
+    const standard = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
     expect(readCardContentSettings({})).toEqual({
-      matchDay: { preset: "standard", fields: {}, juniorConsolidateByDay: true },
+      matchDay: standard,
+      results: standard,
+      matchSummary: standard,
+      teamList: standard,
     });
   });
 
@@ -104,6 +133,7 @@ describe("readCardContentSettings / readContentOverride", () => {
         ladder: { preset: "full" },
       }),
     ).toEqual({
+      ...defaultCardContentSettings(),
       matchDay: {
         preset: "standard",
         fields: { "fixture.photo": false },
@@ -117,6 +147,27 @@ describe("readCardContentSettings / readContentOverride", () => {
     expect(readContentOverride("matchDay", { preset: "x", fields: { y: true } })).toBeNull();
     expect(readContentOverride("ladder", { preset: "full" })).toBeNull();
     expect(readContentOverride("matchDay", { preset: "minimal" })).toEqual({ preset: "minimal" });
+  });
+
+  it("keeps swapped photos (an id, or null for no photo) and drops anything else (P4)", () => {
+    expect(
+      readContentOverride("matchDay", {
+        photos: {
+          cover: null,
+          fixtures: { "12": 7, "13": null, "0": 4, x: 5, "14": -1, "15": 1.5, "16": "8" },
+          extra: 1,
+        },
+      }),
+    ).toEqual({ photos: { cover: null, fixtures: { "12": 7, "13": null } } });
+    expect(readContentOverride("matchDay", { photos: { cover: 9 } })).toEqual({
+      photos: { cover: 9 },
+    });
+    expect(readContentOverride("matchDay", { photos: { cover: "9", fixtures: [] } })).toBeNull();
+    // Photo swaps never change which fields a carousel shows.
+    const club = { preset: "standard" as const, fields: {} };
+    expect(resolveVisibleFields("matchDay", club, { photos: { cover: null } })).toEqual(
+      resolveVisibleFields("matchDay", club),
+    );
   });
 });
 
@@ -322,5 +373,143 @@ describe("readCardContent", () => {
     expect(
       readCardContent({ ...t, page: "sponsors", sponsors: [{ name: "a", logoUrl: "b" }] }),
     ).not.toBeNull();
+  });
+});
+
+describe("optional data (P5)", () => {
+  const c = matchDayFixtureContent(fixture({ opponentLogoUrl: "https://crest" }));
+  const full = presetFields("matchDay", "full");
+  const standard = presetFields("matchDay", "standard");
+  const withData = {
+    ...c,
+    ladder: ladderContent({
+      teams: 8,
+      tableName: null,
+      club: { rank: 3 },
+      opposition: { rank: 5 },
+    })!,
+    lastMeeting: lastMeetingContent({
+      outcome: "won",
+      margin: "24 runs",
+      date: "2026-01-10",
+      season: "2025/26",
+    })!,
+    milestoneWatch: milestoneWatchContent({
+      playerName: "Jack Smith",
+      stat: "runs",
+      tier: 1000,
+      gap: 12,
+    })!,
+  };
+
+  it("formats ordinals, ladders, results and milestone lines", () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual([
+      "1ST",
+      "2ND",
+      "3RD",
+      "4TH",
+      "11TH",
+      "12TH",
+      "13TH",
+      "21ST",
+      "22ND",
+      "23RD",
+      "101ST",
+      "111TH",
+    ]);
+    expect(withData.ladder).toEqual({ club: "3RD", opposition: "5TH", teams: 8, tableName: null });
+    expect(
+      ladderContent({ teams: 8, tableName: "One Day", club: { rank: 2 }, opposition: null }),
+    ).toEqual({ club: "2ND", opposition: null, teams: 8, tableName: "One Day" });
+    expect(ladderContent(null)).toBeNull();
+    expect(withData.lastMeeting.line).toBe("Won by 24 runs · 2025/26");
+    expect(
+      lastMeetingContent({ outcome: "lost", margin: null, date: "2026-01-10", season: null })?.line,
+    ).toBe("Lost");
+    expect(
+      lastMeetingContent({ outcome: "noResult", margin: null, date: "x", season: "Summer 2024/25" })
+        ?.line,
+    ).toBe("No result · 2024/25");
+    expect(lastMeetingContent(null)).toBeNull();
+    expect(withData.milestoneWatch).toEqual({
+      playerName: "J. Smith",
+      line: "J. Smith needs 12 for 1,000 club runs",
+    });
+    expect(
+      milestoneWatchContent({ playerName: "Ann Lee", stat: "games", tier: 100, gap: 1 })?.line,
+    ).toBe("A. Lee's 100th club game");
+    expect(shortPlayerName("  Van der  Berg ")).toBe("V. der Berg");
+    expect(shortPlayerName("Cher")).toBe("Cher");
+  });
+
+  it("a livestream link must be https, and prints shortened", () => {
+    expect(livestreamContent("https://www.YouTube.com/@OurClub/")).toEqual({
+      url: "https://www.YouTube.com/@OurClub/",
+      label: "youtube.com/@ourclub",
+    });
+    expect(livestreamContent("http://example.com")).toBeNull();
+    expect(livestreamContent("not a url")).toBeNull();
+    expect(livestreamContent(null)).toBeNull();
+  });
+
+  it("binds each data field only when visible and loaded", () => {
+    expect(contentInput(withData, full)).toMatchObject({
+      ladderClub: "3RD",
+      ladderOpposition: "5TH",
+      lastMeeting: "Won by 24 runs · 2025/26",
+      milestoneWatch: "J. Smith needs 12 for 1,000 club runs",
+    });
+    const hidden = contentInput(withData, standard);
+    for (const k of ["ladderClub", "ladderOpposition", "lastMeeting", "milestoneWatch"])
+      expect(hidden).not.toHaveProperty(k);
+    // Visible but missing data: no box, never "TBC".
+    const missing = contentInput(c, full);
+    for (const k of ["ladderClub", "lastMeeting", "milestoneWatch"])
+      expect(missing).not.toHaveProperty(k);
+  });
+
+  it("never binds data fields on a junior slide", () => {
+    const input = contentInput({ ...withData, junior: true }, full);
+    for (const k of ["ladderClub", "lastMeeting", "milestoneWatch"])
+      expect(input).not.toHaveProperty(k);
+  });
+
+  it("the title page carries the livestream link; the sponsors page does not", () => {
+    const opts = {
+      heading: "Round 5",
+      from: "2024-10-11",
+      to: "2024-10-13",
+      roundLabels: ["5"],
+      fixtureCount: 2,
+      livestreamUrl: "https://live.example.com/club",
+    };
+    const title = matchDayTitleContent(opts);
+    expect(title.livestream).toEqual({ url: opts.livestreamUrl, label: "live.example.com/club" });
+    expect(contentInput(title, full).carouselPage).toMatchObject({
+      livestream: "live.example.com/club",
+    });
+    expect(contentInput(title, standard).carouselPage).not.toHaveProperty("livestream");
+    expect(matchDayTitleContent({ ...opts, livestreamUrl: "" })).not.toHaveProperty("livestream");
+    expect(matchDaySponsorsContent({ ...opts, sponsors: [] })).not.toHaveProperty("livestream");
+  });
+
+  it("saved content keeps good optional data and drops malformed data", () => {
+    const saved = JSON.parse(JSON.stringify(withData));
+    expect(readCardContent(saved)).toEqual(withData);
+    const bad = readCardContent({ ...saved, ladder: { club: 3 }, lastMeeting: { outcome: "x" } });
+    expect(bad).not.toBeNull();
+    expect(bad).not.toHaveProperty("ladder");
+    expect(bad).not.toHaveProperty("lastMeeting");
+    expect(bad).toHaveProperty("milestoneWatch");
+    const title = matchDayTitleContent({
+      heading: "x",
+      from: "2024-10-11",
+      to: "2024-10-12",
+      roundLabels: [],
+      fixtureCount: 0,
+    });
+    expect(readCardContent({ ...title, livestream: { url: "javascript:x", label: "x" } })).toEqual(
+      title,
+    );
   });
 });

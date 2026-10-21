@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
+  clubPhotosTable,
   socialSettingsTable,
   milestoneBoardSettingsTable,
   captionTemplatesTable,
@@ -195,6 +196,25 @@ router.patch(
         return;
       }
       parsed.data.livestreamUrl = url || null;
+    }
+    // The sponsors page background (ADR-010 P6): one of this club's own
+    // club-wide library photos. Another club's photo id reads as not found.
+    const background = parsed.data.sponsorsBackgroundPhotoId;
+    if (typeof background === "number") {
+      const [photo] = await db
+        .select({ id: clubPhotosTable.id })
+        .from(clubPhotosTable)
+        .where(
+          and(
+            eq(clubPhotosTable.id, background),
+            eq(clubPhotosTable.tenantId, tenantId),
+            isNull(clubPhotosTable.grade),
+          ),
+        );
+      if (!photo) {
+        res.status(400).json({ error: "Choose a club-wide photo from your library." });
+        return;
+      }
     }
     // Per-pack colour modes merge into the stored map, so toggling one pack's
     // tile never clobbers another's (two admins, two tiles, no lost write).

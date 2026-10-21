@@ -21,6 +21,7 @@ import {
   teamMonogram,
   type CardNames,
 } from "@workspace/scorecard/card-names";
+import { summaryResultWord } from "@workspace/scorecard/card-content";
 
 export function set(
   target: Record<string, string>,
@@ -80,8 +81,10 @@ export function bindInput(
       set(values, "club.name", clubName);
       set(values, "opposition.name", oppName);
       // A crest the input lacks comes from the club's names map (PlayHQ logos).
-      const clubLogo = input.club.logoUrl || cardTeamCrest(names, input.club.name);
-      const oppLogo = input.opposition.logoUrl || cardTeamCrest(names, input.opposition.name);
+      // Content-built inputs carry their crests final: none means hidden or none.
+      const crest = (name: string) => (resolved ? null : cardTeamCrest(names, name));
+      const clubLogo = input.club.logoUrl || crest(input.club.name);
+      const oppLogo = input.opposition.logoUrl || crest(input.opposition.name);
       if (clubLogo) images["club.logo"] = clubLogo;
       if (oppLogo) images["opposition.logo"] = oppLogo;
       set(values, "club.monogram", teamMonogram(clubName));
@@ -144,6 +147,19 @@ export function bindInput(
         );
       }
       if (input.carouselDetail === true) bindInningsDetail(input, values, team);
+      if (input.carouselDay) {
+        set(values, "dayHeading", input.carouselDay.heading);
+        input.carouselDay.results.forEach((r, i) => {
+          values[`day${i}.grade`] = comp(r.grade);
+          values[`day${i}.opposition`] = team(r.opposition);
+          values[`day${i}.result`] = r.result;
+          values[`day${i}.word`] = r.resultWord;
+          values[`day${i}.clubScore`] = r.clubScore;
+          values[`day${i}.oppScore`] = r.oppositionScore;
+          const rowCrest = r.crestUrl || crest(r.opposition);
+          if (rowCrest) images[`day${i}.crest`] = rowCrest;
+        });
+      }
       break;
     }
     case "player": {
@@ -239,6 +255,32 @@ export function bindInput(
         input.carouselPage.sponsors.forEach((s, i) => {
           set(values, `weekendSponsorName${i}`, s.name);
           if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
+        });
+        // The sponsors page's optional blocks (P6); always bound, so an absent
+        // one is empty and its box drops (never a template sample).
+        const page = input.carouselPage;
+        values["sponsorThanks"] = page.thankYou ?? "";
+        values["sponsorCta"] = page.cta ?? "";
+        values["nextHomeMatch"] = page.nextHome?.match ?? "";
+        values["nextHomeWhen"] = page.nextHome?.when ?? "";
+        values["sponsorSocials"] = page.socials ?? "";
+      }
+      // Optional data (ADR-010 P5): bound as given or empty, so a box with
+      // nothing to say drops out and a sample never prints.
+      values["livestream"] = input.carouselPage?.livestream ?? "";
+      values["ladder.club"] = input.ladderClub ?? "";
+      values["ladder.opposition"] = input.ladderClub ? (input.ladderOpposition ?? "") : "";
+      values["lastMeeting"] = input.lastMeeting ?? "";
+      values["milestoneWatch"] = input.milestoneWatch ?? "";
+      if (input.carouselDay) {
+        // A junior day slide (ADR-010 P3): content-built, so names are final.
+        set(values, "dayHeading", input.carouselDay.heading);
+        input.carouselDay.fixtures.forEach((r, i) => {
+          values[`day${i}.grade`] = r.grade;
+          values[`day${i}.opposition`] = r.opposition;
+          values[`day${i}.time`] = r.startTime;
+          values[`day${i}.meta`] = [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" · ");
+          if (r.crestUrl) images[`day${i}.crest`] = r.crestUrl;
         });
       }
       // Explicitly clear absent labels on historical frozen covers rather than
@@ -789,13 +831,7 @@ export function leaderTitle(category: string): [string, string] {
  * rather than shouting "LOSS" on the club's own channel; the result line
  * under it says who won.
  */
-export function resultWord(winner: "club" | "opposition" | "draw", result: string): string {
-  if (/abandon/i.test(result)) return "ABANDONED";
-  if (/no result/i.test(result)) return "NO RESULT";
-  if (/\btie[d]?\b/i.test(result)) return "TIE";
-  if (winner === "draw") return "DRAW";
-  return winner === "club" ? "WIN" : "RESULT";
-}
+export const resultWord = summaryResultWord;
 
 /**
  * Detailed carousel match card: one value set per innings, in input order,

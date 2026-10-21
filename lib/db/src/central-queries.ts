@@ -64,3 +64,4 @@ export * from "./central/identity-drift";
 export * from "./central/grade-debuts";
 export * from "./central/squad-link";
 export * from "./central/card-names";
+export * from "./central/last-meeting";

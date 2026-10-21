@@ -493,3 +493,110 @@ export function gradeTile(grade: string): string {
     .slice(0, 4)
     .toUpperCase();
 }
+
+/**
+ * Junior same-day slides (ADR-010 P3). A Weekend Carousel normally gives each
+ * fixture or result its own slide. With the club's switch on
+ * (`card_content.matchDay.juniorConsolidateByDay`), the junior items of one
+ * club-time day share a slide instead: grouped by day, then split evenly at
+ * the layout's capacity for the size and preset (7 at 4 → 4 + 3).
+ *
+ * Only Match Day, Results and Match Summary sets consolidate; senior items
+ * always keep a slide each, and a senior item never joins a junior day slide
+ * (juniors isolation). Slides keep the order the admin chose: a day's slide
+ * sits where its first junior item was.
+ */
+
+/** The carousel set types whose junior items can share a day slide. */
+export const DAY_GROUP_KINDS = ["matchDay", "results", "matchSummary"] as const;
+export type DayGroupKind = (typeof DAY_GROUP_KINDS)[number];
+
+export function isDayGroupKind(kind: string): kind is DayGroupKind {
+  return (DAY_GROUP_KINDS as readonly string[]).includes(kind);
+}
+
+/** The most images a Facebook or Instagram carousel takes. */
+export const META_CAROUSEL_MAX_SLIDES = 10;
+
+export interface GroupSlidesOptions<T> {
+  /** Whether an item was built from junior sources. */
+  junior: (item: T) => boolean;
+  /** The item's club-time day, YYYY-MM-DD (the tenant's time zone). */
+  dayOf: (item: T) => string;
+  /** The club's switch: junior items of one day share a slide. */
+  consolidateByDay: boolean;
+  /** Items a day slide holds: the layout's capacity for the size and preset. */
+  capacity: number;
+  /** Slides the carousel adds around these (its title and sponsors pages). */
+  reserved?: number;
+}
+
+export interface SlideGroup<T> {
+  /** "single": one item on its own slide; "day": junior items of one day. */
+  role: "single" | "day";
+  junior: boolean;
+  /** The day a "day" slide covers; null for a single slide. */
+  day: string | null;
+  items: T[];
+}
+
+export interface SlideGroupPlan<T> {
+  groups: SlideGroup<T>[];
+  /** Every slide the carousel posts, the reserved ones included. */
+  slideCount: number;
+  /** Set when the carousel has more slides than Meta takes. */
+  warning?: string;
+}
+
+/** Plan which items share a slide. */
+export function groupSlides<T>(
+  kind: string,
+  items: readonly T[],
+  opts: GroupSlidesOptions<T>,
+): SlideGroupPlan<T> {
+  const capacity = Math.floor(opts.capacity);
+  const consolidate = isDayGroupKind(kind) && opts.consolidateByDay && capacity >= 2;
+  type Entry = { item: T } | { day: string };
+  const entries: Entry[] = [];
+  const days = new Map<string, T[]>();
+  for (const item of items) {
+    if (!consolidate || !opts.junior(item)) {
+      entries.push({ item });
+      continue;
+    }
+    const day = opts.dayOf(item);
+    const list = days.get(day);
+    if (list) list.push(item);
+    else {
+      days.set(day, [item]);
+      entries.push({ day });
+    }
+  }
+  const single = (item: T): SlideGroup<T> => ({
+    role: "single",
+    junior: opts.junior(item),
+    day: null,
+    items: [item],
+  });
+  const groups = entries.flatMap((e): SlideGroup<T>[] => {
+    if ("item" in e) return [single(e.item)];
+    const list = days.get(e.day)!;
+    let at = 0;
+    return evenSizes(list.length, capacity).map((size) => {
+      const part = list.slice(at, (at += size));
+      return part.length === 1
+        ? single(part[0]!)
+        : { role: "day", junior: true, day: e.day, items: part };
+    });
+  });
+  const slideCount = groups.length + Math.max(0, opts.reserved ?? 0);
+  return {
+    groups,
+    slideCount,
+    ...(slideCount > META_CAROUSEL_MAX_SLIDES
+      ? {
+          warning: `This carousel has ${slideCount} slides. Facebook and Instagram take at most ${META_CAROUSEL_MAX_SLIDES}, so it can be downloaded but not published there. Select fewer fixtures or matches.`,
+        }
+      : {}),
+  };
+}

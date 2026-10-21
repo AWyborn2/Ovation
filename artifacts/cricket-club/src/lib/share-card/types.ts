@@ -3,6 +3,7 @@
 // its siblings so every other module can depend on it without cycles.
 import type { CardTemplate, CardLayoutLayer } from "@workspace/api-client-react";
 import type { HallsHeadBrand } from "@workspace/scorecard";
+import type { DayFixtureRow, DayResultRow } from "@workspace/scorecard/card-content";
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: "Feed square", code: "1080x1080" },
@@ -270,6 +271,12 @@ export type ShareCardInput =
        */
       carouselDetail?: boolean;
       /**
+       * On-demand carousel, junior day slide (ADR-010 P3): the junior results of
+       * one day as compact rows (the multi-result layout). The match fields above
+       * are the first result's; the layout prints only these rows.
+       */
+      carouselDay?: { heading: string; results: DayResultRow[] };
+      /**
        * Marks this as a JUNIOR card: forces the junior brown palette and a
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
        */
@@ -285,8 +292,25 @@ export type ShareCardInput =
         title: string;
         fixtureCount: number;
         sponsors: { name: string; logoUrl: string }[];
+        /** Title: the cover photo. Sponsors page: its background photo (P6). */
         hasCoverPhoto?: boolean;
+        /** Sponsors page (P6): the first N sponsors are major and print larger. */
+        majorCount?: number;
+        /** Sponsors page (P6): the thank-you heading and the call to action. */
+        thankYou?: string;
+        cta?: string;
+        /** Sponsors page (P6): the club's next home game. */
+        nextHome?: { match: string; when: string };
+        /** Sponsors page (P6): "@ourclub · Our Cricket Club · ourclub.com.au". */
+        socials?: string;
+        /** The title page's livestream link, shortened ("youtube.com/@club"); P5. */
+        livestream?: string;
       };
+      /**
+       * On-demand carousel, junior day slide (ADR-010 P3): the junior fixtures of
+       * one day as compact rows under its heading (the multi-fixture layout).
+       */
+      carouselDay?: { heading: string; fixtures: DayFixtureRow[] };
       roundLabel: string;
       oppositionName: string;
       oppositionLogoUrl?: string | null;
@@ -301,6 +325,11 @@ export type ShareCardInput =
       junior?: boolean;
       /** Built from card content (ADR-010): names and crest are final, bind them as given. */
       namesResolved?: boolean;
+      /** Optional data (ADR-010 P5), present only when the field is on and loaded. */
+      ladderClub?: string;
+      ladderOpposition?: string;
+      lastMeeting?: string;
+      milestoneWatch?: string;
     }
   | ({
       kind: "teamList";

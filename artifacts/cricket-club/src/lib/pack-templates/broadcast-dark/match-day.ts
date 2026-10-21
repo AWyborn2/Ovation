@@ -21,12 +21,34 @@ import {
 // A2 — Match Day. The handoff's "MATCH DAY" title with the grade and round lines, then
 // the fixture: both sides with logos and home/away tags, ground/date/start,
 // and the club's note. Landscape sets the title beside the fixture.
+// Optional data (ADR-010 P5) drops out when empty: each side's ladder place
+// beside its name, then one line each for the last meeting and milestone watch.
 
-function side(logoKey: string, name: string, tag: string, accent: boolean): string {
+/** One optional one-line note under the fixture; dropped when its field is empty. */
+function dataLine(key: string, label: string, accentDot = false): string {
+  return (
+    `<div data-drop-if-field="${key}" data-content-line="${key}" style="display:flex;align-items:center;gap:1.4cqmin;margin-top:1.6cqmin;min-width:0;font-size:2.8cqmin;line-height:1.25">` +
+    (accentDot
+      ? `<span style="flex:none;width:1.4cqmin;height:1.4cqmin;border-radius:50%;background:${ACC}"></span>`
+      : `<span style="flex:none;font-family:${SK_MONO};font-weight:600;font-size:1.8cqmin;letter-spacing:.18em;color:${MUTED}">${label}</span>`) +
+    `<span style="flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{${key}}}</span>` +
+    `</div>`
+  );
+}
+
+function side(
+  logoKey: string,
+  name: string,
+  tag: string,
+  accent: boolean,
+  ladderKey: string,
+): string {
   return (
     `<div style="display:flex;align-items:center;gap:2.4cqmin;padding:1.4cqmin 0;border-bottom:.2cqmin solid ${LINE}">` +
     `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.08)">${slot(logoKey, "logo", "circle")}</div>` +
     `<div data-fit="17" style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:calc(5cqmin * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
+    // The team's ladder place, small and grey ("3RD").
+    `<div data-drop-if-field="${ladderKey}" data-ladder-place="1" style="flex:none;font-family:${SK_MONO};font-weight:600;font-size:2.2cqmin;letter-spacing:.08em;color:${MUTED}">{{${ladderKey}}}</div>` +
     `<div style="flex:none;font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;letter-spacing:.1em;padding:.6cqmin 1.4cqmin;border-radius:.6cqmin;${accent ? `background:${ACC};color:var(--accent-ink,#10151B)` : `border:.2cqmin solid ${LINE};color:${MUTED}`}">${tag}</div>` +
     `</div>`
   );
@@ -48,10 +70,18 @@ function build(fmt: BdFormat): string {
     );
   const fixture =
     `<div style="border-top:.2cqmin solid ${LINE}">` +
-    side("clubLogo", "{{clubName}}", "{{homeAway}}", true) +
-    side("opposition.logo", "{{opposition.name}}", "{{oppositionHomeAway}}", false) +
+    side("clubLogo", "{{clubName}}", "{{homeAway}}", true, "ladder.club") +
+    side(
+      "opposition.logo",
+      "{{opposition.name}}",
+      "{{oppositionHomeAway}}",
+      false,
+      "ladder.opposition",
+    ) +
     `</div>` +
     `<div style="display:flex;gap:5cqmin;margin-top:2.6cqmin">${info("GROUND", "{{venue}}")}${info("DATE", "{{date}}")}${info("START", "{{startTime}}")}</div>` +
+    dataLine("lastMeeting", "LAST MET") +
+    dataLine("milestoneWatch", "", true) +
     `<div data-drop-if-field="note.title note.body" style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${ACC};background:rgba(255,255,255,.05);border-radius:0 1cqmin 1cqmin 0">` +
     `<div style="font-family:${SK_MONO};font-weight:600;font-size:2cqmin;letter-spacing:.16em;color:${ACC}">{{note.title}}</div>` +
     `<div style="font-size:2.8cqmin;line-height:1.35;margin-top:.6cqmin;color:rgba(242,245,248,.85)">{{note.body}}</div>` +
@@ -81,6 +111,11 @@ export const matchDay: PackCardTemplate = {
     textField("startTime", "Start time", "12:30 PM"),
     textField("note.title", "Note title", "BAR & KITCHEN OPEN"),
     textField("note.body", "Note body", "Get down early and get behind the boys."),
+    // Optional data (P5): bound from content, empty (so dropped) everywhere else.
+    textField("ladder.club", "Club ladder position", ""),
+    textField("ladder.opposition", "Opposition ladder position", ""),
+    textField("lastMeeting", "Last meeting", ""),
+    textField("milestoneWatch", "Milestone watch", ""),
     logoField("sponsor1", "Sponsor logo 1", "Sponsor"),
     logoField("sponsor2", "Sponsor logo 2", "Sponsor"),
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),

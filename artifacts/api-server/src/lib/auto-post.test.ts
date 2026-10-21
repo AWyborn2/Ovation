@@ -1,7 +1,8 @@
 /**
  * Social Studio U9 — auto-post deadlines, the sweep that stores them, and the
  * notifications they raise (R9, KTD4, KTD5; AE1, AE5, AE6). Real-DB
- * integration test (needs DATABASE_URL); email goes through a stub transport.
+ * integration test (needs DATABASE_URL); email goes through a stub transport,
+ * to the club's social email list (one "card ready" email per card).
  */
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import request from "supertest";
@@ -15,12 +16,15 @@ import {
   socialDraftsTable,
   notificationsTable,
   captionTemplatesTable,
+  emailListsTable,
+  emailListMembersTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "./auth";
 import { upsertDraftByKey } from "./draft-upsert";
 import { effectiveDraftStatus } from "./effective-draft-state";
 import { runDraftSweep } from "./draft-sweep";
 import { setEmailTransport, type EmailMessage } from "./integrations/email";
+import { settleOutbox } from "./email-outbox";
 
 const STAMP = Date.now();
 const log = { error: () => {}, warn: () => {}, info: () => {} };
@@ -88,6 +92,21 @@ beforeAll(async () => {
     autoPostWindowHours: 12,
     notificationEmail: "studio@club.example",
   });
+  // What migration 0056 makes of the notification address.
+  process.env.EMAIL_FROM ??= "club@example.com";
+  const [list] = await db
+    .insert(emailListsTable)
+    .values({
+      tenantId,
+      kind: "social",
+      name: "Social media",
+      settings: { assetReady: true, reviewNeeded: true, milestone: true },
+      createdAt: new Date("2000-01-01T00:00:00Z"),
+    })
+    .returning();
+  await db
+    .insert(emailListMembersTable)
+    .values({ tenantId, listId: list.id, email: "studio@club.example" });
   setEmailTransport(async (m) => {
     sent.push(m);
   });
@@ -100,6 +119,7 @@ afterEach(() => {
 afterAll(async () => {
   setEmailTransport(null);
   await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantId));
+  await db.delete(emailListsTable).where(eq(emailListsTable.tenantId, tenantId));
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
@@ -138,8 +158,9 @@ describe("AE1 — the posting window", () => {
       .from(notificationsTable)
       .where(eq(notificationsTable.tenantId, tenantId));
     expect(notes).toHaveLength(1);
+    await settleOutbox();
     expect(sent).toHaveLength(1);
-    expect(sent[0].to).toBe("studio@club.example");
+    expect(sent[0].bcc).toEqual(["studio@club.example"]);
   });
 
   it("an ad-hoc draft (no import deadline) stays awaiting review past any window", async () => {
@@ -221,7 +242,9 @@ describe("the sweep", () => {
     ]);
     expect(a.promoted + b.promoted).toBe(2);
     for (const d of drafts) expect((await stored(d.id)).status).toBe("ready");
-    expect(sent).toHaveLength(1);
+    // One "card ready" email per card, never doubled by the second sweep.
+    await settleOutbox();
+    expect(sent).toHaveLength(2);
     const notes = await db
       .select()
       .from(notificationsTable)
@@ -238,6 +261,7 @@ describe("the sweep", () => {
     });
     const draft = await draftAt("email-fail", new Date(Date.now() - 48 * 3600_000));
     await runDraftSweep(tenantId, { kind: "scheduled" }, log);
+    await settleOutbox();
     expect(attempts).toBe(2);
     expect((await stored(draft.id)).status).toBe("ready");
     const notes = await db

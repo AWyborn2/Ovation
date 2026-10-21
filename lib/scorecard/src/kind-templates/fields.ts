@@ -791,6 +791,22 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         label: "Note body",
       },
       {
+        key: "ladder.club",
+        label: "Club ladder position",
+      },
+      {
+        key: "ladder.opposition",
+        label: "Opposition ladder position",
+      },
+      {
+        key: "lastMeeting",
+        label: "Last meeting",
+      },
+      {
+        key: "milestoneWatch",
+        label: "Milestone watch",
+      },
+      {
         key: "hashtags",
         label: "Hashtag footer",
       },
@@ -1929,12 +1945,16 @@ export const CONTENT_PRESET_LABELS: Record<ContentPreset, string> = {
   full: "Full",
 };
 
-/** The card kinds built from content so far (more follow kind by kind, ADR-010). */
-export const CONTENT_KINDS = ["matchDay"] as const;
+/**
+ * The card kinds built from content (ADR-010): Match Day (P2), then results,
+ * match summaries and team lists (P7). Each serves its carousel set and its
+ * single card alike.
+ */
+export const CONTENT_KINDS = ["matchDay", "results", "matchSummary", "teamList"] as const;
 export type ContentKind = (typeof CONTENT_KINDS)[number];
 
-/** The slides a content kind is made of. */
-export type ContentSlide = "title" | "fixture" | "sponsors";
+/** The slides a content kind is made of: each result or team list is one card. */
+export type ContentSlide = "title" | "fixture" | "sponsors" | "result" | "team";
 
 export type ContentFieldDef = {
   /** `<slide>.<field>`, stable: saved settings and carousels key on it. */
@@ -1949,11 +1969,47 @@ export type ContentFieldDef = {
 
 const ALL_PRESETS: readonly ContentPreset[] = CONTENT_PRESETS;
 const STANDARD_UP: readonly ContentPreset[] = ["standard", "full"];
+const FULL_ONLY: readonly ContentPreset[] = ["full"];
+
+/**
+ * A result card (P7): the results set and the match summary share these; a
+ * match summary adds its top performers. Standard is every field, so the
+ * cards are as they were.
+ */
+const RESULT_FIELDS: readonly ContentFieldDef[] = [
+  { key: "result.grade", label: "Grade", slide: "result", tier: "core", presets: ALL_PRESETS },
+  {
+    key: "result.scores",
+    label: "Teams and scores",
+    slide: "result",
+    tier: "core",
+    presets: ALL_PRESETS,
+  },
+  { key: "result.result", label: "Result", slide: "result", tier: "core", presets: ALL_PRESETS },
+  { key: "result.round", label: "Round", slide: "result", tier: "optional", presets: STANDARD_UP },
+  {
+    key: "result.oppositionCrest",
+    label: "Opposition crest",
+    slide: "result",
+    tier: "optional",
+    presets: STANDARD_UP,
+  },
+  { key: "result.photo", label: "Photo", slide: "result", tier: "optional", presets: STANDARD_UP },
+  {
+    key: "result.teamSponsor",
+    label: "Team sponsor",
+    slide: "result",
+    tier: "optional",
+    presets: STANDARD_UP,
+  },
+];
 
 /**
  * Standard is the cards as they were before presets existed, so a club that
  * never opens the settings sees no change. Full adds the optional data fields
- * as they land (ladder, last meeting, milestone watch, livestream: P5).
+ * (P5): the livestream link on the title page, and ladder positions, the last
+ * meeting and milestone watch on each fixture. Each data field is loaded only
+ * when it is visible and hides itself when its data is missing.
  */
 export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
   matchDay: [
@@ -1979,6 +2035,13 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       slide: "title",
       tier: "optional",
       presets: STANDARD_UP,
+    },
+    {
+      key: "title.livestream",
+      label: "Livestream link",
+      slide: "title",
+      tier: "optional",
+      presets: FULL_ONLY,
     },
     { key: "fixture.grade", label: "Grade", slide: "fixture", tier: "core", presets: ALL_PRESETS },
     {
@@ -2033,14 +2096,140 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       presets: STANDARD_UP,
     },
     {
+      key: "fixture.ladder",
+      label: "Ladder positions",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "fixture.lastMeeting",
+      label: "Last meeting",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "fixture.milestoneWatch",
+      label: "Milestone watch",
+      slide: "fixture",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
       key: "sponsors.logos",
       label: "Sponsor logos",
       slide: "sponsors",
       tier: "core",
       presets: ALL_PRESETS,
     },
+    // Sponsors page options (P6). Full only, so Standard stays the page as it was.
+    {
+      key: "sponsors.tiers",
+      label: "Major sponsors larger",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.teamSponsors",
+      label: "Team sponsors too",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.thankYou",
+      label: "Thank-you line",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.nextHomeGame",
+      label: "Next home game and socials",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.background",
+      label: "Background photo",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+  ],
+  results: RESULT_FIELDS,
+  matchSummary: [
+    ...RESULT_FIELDS.slice(0, 3),
+    {
+      key: "result.performers",
+      label: "Top performers",
+      slide: "result",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    ...RESULT_FIELDS.slice(3),
+  ],
+  // Team lists (P7). The side's size and overseas marks (ADR-009) always print.
+  teamList: [
+    { key: "team.grade", label: "Grade", slide: "team", tier: "core", presets: ALL_PRESETS },
+    { key: "team.players", label: "Players", slide: "team", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "team.match",
+      label: "Opposition, date and ground",
+      slide: "team",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    { key: "team.round", label: "Round", slide: "team", tier: "optional", presets: STANDARD_UP },
+    {
+      key: "team.oppositionCrest",
+      label: "Opposition crest",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "team.shirtNumbers",
+      label: "Shirt numbers",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "team.debuts",
+      label: "Debut badges",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    { key: "team.photo", label: "Photo", slide: "team", tier: "optional", presets: STANDARD_UP },
+    {
+      key: "team.teamSponsor",
+      label: "Team sponsor",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
   ],
 };
+
+/**
+ * The fixture fields whose data the server loads only when they are visible
+ * (P5): the Weekend Carousel asks for the visible ones by key.
+ */
+export const MATCH_DAY_DATA_FIELDS = [
+  "fixture.ladder",
+  "fixture.lastMeeting",
+  "fixture.milestoneWatch",
+] as const;
+export type MatchDayDataField = (typeof MATCH_DAY_DATA_FIELDS)[number];
+
+export function isMatchDayDataField(key: unknown): key is MatchDayDataField {
+  return typeof key === "string" && (MATCH_DAY_DATA_FIELDS as readonly string[]).includes(key);
+}
 
 export function isContentKind(kind: unknown): kind is ContentKind {
   return typeof kind === "string" && (CONTENT_KINDS as readonly string[]).includes(kind);

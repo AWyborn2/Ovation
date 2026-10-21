@@ -1,3 +1,4 @@
+import type { MilestoneWithinReach } from "@workspace/scorecard/card-content";
 import { parseMatchDate } from "./match-date";
 
 /**
@@ -147,4 +148,59 @@ export function nativeCareerCrossings(ctx: {
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Milestone watch (ADR-010 P5): the player in a fixture's side closest to a
+// club milestone this match could bring. Same tier ladders as the board, so a
+// card never promises a milestone the board wouldn't then show. Pure.
+// ---------------------------------------------------------------------------
+
+/** How close counts as within reach in one match. Games: this match IS the milestone. */
+export const MILESTONE_REACH = { games: 1, runs: 75, wickets: 4 } as const;
+
+/** A player in the side, with the club career the board counts. */
+export interface WatchCareer {
+  playerName: string;
+  games: number;
+  runs: number;
+  wickets: number;
+}
+
+/**
+ * The milestone a side is closest to: for each player and stat, the lowest
+ * tier not yet reached, kept when it is within {@link MILESTONE_REACH}. A
+ * games milestone (it happens if they play) comes first; then the smallest
+ * gap as a share of the reach; then the name. Null when nobody is close.
+ * Callers pass senior careers only, with fill-ins and private players
+ * already left out.
+ */
+export function milestoneWithinReach(
+  careers: readonly WatchCareer[],
+  tiers: CareerTiers,
+): MilestoneWithinReach | null {
+  const found: Array<MilestoneWithinReach & { score: number }> = [];
+  for (const c of careers) {
+    for (const stat of ["games", "runs", "wickets"] as const) {
+      const value = c[stat];
+      const tier = [...tiers[stat]].sort((a, b) => a - b).find((t) => t > value);
+      if (tier === undefined) continue;
+      const gap = tier - value;
+      if (gap > MILESTONE_REACH[stat]) continue;
+      found.push({
+        playerName: c.playerName,
+        stat,
+        tier,
+        gap,
+        score: stat === "games" ? -1 : gap / MILESTONE_REACH[stat],
+      });
+    }
+  }
+  found.sort(
+    (a, b) => a.score - b.score || b.tier - a.tier || a.playerName.localeCompare(b.playerName),
+  );
+  const best = found[0];
+  return best
+    ? { playerName: best.playerName, stat: best.stat, tier: best.tier, gap: best.gap }
+    : null;
 }

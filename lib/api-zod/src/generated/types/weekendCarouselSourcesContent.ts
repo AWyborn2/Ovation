@@ -7,6 +7,6 @@
  */
 
 /**
- * Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+ * Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
  */
 export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};

@@ -1,22 +1,28 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
-import { db, fixturesTable, clubPhotosTable } from "@workspace/db";
+import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { db, fixturesTable } from "@workspace/db";
 import { playhqMatchStatusesForClub } from "@workspace/db/central-queries";
 import {
   GetWeekendCarouselSourcesQueryParams,
   GetWeekendCarouselSourcesResponse,
 } from "@workspace/api-zod";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { isMatchDayDataField, type MatchDayDataField } from "@workspace/scorecard/card-content";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { CLUB_TIME_ZONE, clubTimeToUtc } from "../lib/round-schedules";
 import { getTenantPlayhqOrgId } from "../lib/tenant";
-import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { carouselContent } from "../lib/carousel-content";
 import { loadClubGradeOrder } from "../lib/club-grade-order";
 import { sortByGradeOrder } from "@workspace/scorecard";
-import { buildMatchDayContent } from "../lib/card-content/match-day";
+import {
+  OPTIONAL_FIELD_WARNING,
+  buildMatchDayContent,
+  contentNames,
+} from "../lib/card-content/match-day";
+import { buildMatchDayPhotos, loadCarouselPhotos } from "../lib/card-content/photos";
+import { loadSponsorsPageSources } from "../lib/card-content/sponsors-page";
 
 const router: IRouter = Router();
 
@@ -31,6 +37,13 @@ router.get(
       return;
     }
     const { from, to, setType = "matchDay", audience = "all" } = parsed.data;
+    // The visible optional data fields (ADR-010 P5): only these are loaded.
+    const dataFields = new Set<MatchDayDataField>(
+      (parsed.data.fields ?? "")
+        .split(",")
+        .map((f) => f.trim())
+        .filter(isMatchDayDataField),
+    );
     const validDay = (s: string) =>
       /^\d{4}-\d{2}-\d{2}$/.test(s) &&
       Number.isFinite(Date.parse(s)) &&
@@ -99,11 +112,34 @@ router.get(
       await loadClubGradeOrder(tenantId),
     );
     // Match Day slides come from the same builder as the 48-hour sweep (ADR-010).
+    const names =
+      setType === "matchDay"
+        ? await contentNames(tenantId, (err) =>
+            req.log.warn({ err, tenantId }, "card names: read failed"),
+          )
+        : {};
+    const optionalWarnings: string[] = [];
     const matchDayContent =
       setType === "matchDay"
         ? await buildMatchDayContent(tenantId, fixtures, {
             junior: sources.junior,
-            onNamesError: (err) => req.log.warn({ err, tenantId }, "card names: read failed"),
+            names,
+            fields: dataFields,
+            onOptionalError: (field, err) => {
+              req.log.warn({ err, tenantId, field }, "match day optional data: read failed");
+              optionalWarnings.push(OPTIONAL_FIELD_WARNING[field]);
+            },
+          })
+        : null;
+    // The sponsors page's optional blocks (ADR-010 P6), each best effort.
+    const sponsorsPage =
+      setType === "matchDay"
+        ? await loadSponsorsPageSources(tenantId, {
+            from: start,
+            juniorOnly: audience === "junior",
+            names,
+            onError: (block, err) =>
+              req.log.warn({ err, tenantId, block }, "sponsors page: read failed"),
           })
         : null;
     const isJunior = (id: number) =>
@@ -116,51 +152,13 @@ router.get(
           .filter((g) => !isJuniorGradeLabel(g)),
       ),
     ];
-    const photoRows = grades.length
-      ? await db
-          .select()
-          .from(clubPhotosTable)
-          .where(
-            and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.grade, grades)),
-          )
-      : [];
-    const eligible = photoRows.filter((p) =>
-      p.photoTypes.some((t) => ["batting", "bowling", "fielding"].includes(t)),
-    );
-    // Club-wide is represented by a NULL grade, not all grade folders.
-    const coverRows = await db
-      .select()
-      .from(clubPhotosTable)
-      .where(
-        and(
-          eq(clubPhotosTable.tenantId, tenantId),
-          isNull(clubPhotosTable.grade),
-          eq(clubPhotosTable.season, 2026),
-        ),
-      )
-      .orderBy(asc(clubPhotosTable.id));
-    const coverPhotos = await presentPhotos(tenantId, coverRows);
-    const stockRows = await db
-      .select()
-      .from(clubPhotosTable)
-      .where(
-        and(
-          eq(clubPhotosTable.tenantId, tenantId),
-          eq(clubPhotosTable.juniorStock, true),
-          isNull(clubPhotosTable.grade),
-        ),
-      )
-      .orderBy(asc(clubPhotosTable.id));
-    const juniorStockPhotos = (await presentPhotos(tenantId, stockRows)).filter(
-      (p) => p.playerIds.length === 0,
-    );
-    const teamPhotos = await presentPhotos(tenantId, eligible);
-    const unsafePlayerIds = new Set(
-      await nonSeniorPlayerIds(
-        tenantId,
-        [...coverPhotos, ...teamPhotos].flatMap((p) => p.playerIds),
-      ),
-    );
+    const libraryPhotos = await loadCarouselPhotos(tenantId, grades);
+    // The automatic photos (ADR-010 P4), from the same pools the admin picks from.
+    const photoPicks = matchDayContent
+      ? await buildMatchDayPhotos(tenantId, [...matchDayContent.values()], {
+          photos: libraryPhotos,
+        })
+      : null;
     res.json(
       GetWeekendCarouselSourcesResponse.parse({
         timeZone: CLUB_TIME_ZONE,
@@ -169,13 +167,15 @@ router.get(
           startAt: f.startAt.toISOString(),
           createdAt: f.createdAt.toISOString(),
         })),
-        photos: teamPhotos.filter((p) => !p.playerIds.some((id) => unsafePlayerIds.has(id))),
-        coverPhotos: coverPhotos.filter((p) => !p.playerIds.some((id) => unsafePlayerIds.has(id))),
-        juniorStockPhotos,
+        photos: libraryPhotos.photos,
+        coverPhotos: libraryPhotos.coverPhotos,
+        juniorStockPhotos: libraryPhotos.juniorStockPhotos,
+        ...(photoPicks ? { photoPicks } : {}),
         // Keep the structured roundLabel beside each card input, independent of
         // its display title. The opaque source payload also accepts legacy inputs.
         content: sources.content,
         ...(matchDayContent ? { matchDayContent: Object.fromEntries(matchDayContent) } : {}),
+        ...(sponsorsPage ? { sponsorsPage } : {}),
         warnings: [
           ...(eligibleFixtures.length < rows.length
             ? [
@@ -183,6 +183,7 @@ router.get(
               ]
             : []),
           ...sources.warnings,
+          ...optionalWarnings,
         ],
       }),
     );

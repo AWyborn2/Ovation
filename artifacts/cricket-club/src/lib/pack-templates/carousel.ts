@@ -18,6 +18,15 @@ import {
   kitFormats,
 } from "./skeleton-kit";
 import { SK_COND, SK_MONO } from "./shared";
+import {
+  FLAT_SPONSORS_PAGE,
+  SPONSORS_PAGE_TEXT_FIELDS,
+  isFlatSponsorsPage,
+  sponsorGridHeight,
+  sponsorGridsHtml,
+  type SponsorsPageBudget,
+  type SponsorsPageLayout,
+} from "./sponsors-page";
 import { BD_LOOK } from "./broadcast-dark/fragments";
 import { FOIL_LOOK } from "./gold-foil/fragments";
 import { BOLD_LOOK } from "./bold-type/fragments";
@@ -39,6 +48,25 @@ const LOOKS: Record<string, PackLook> = {
   "sunset-v1": SUNSET_LOOK,
 };
 
+/** Characters the sponsors page's next home game line holds at full size. */
+export const SK_NEXT_HOME_FIT = 30;
+
+/** Height (cqmin) the sponsors page's optional blocks take from the logo grid. */
+export const SK_BUDGET: SponsorsPageBudget = {
+  thankYou: 3,
+  cta: 5,
+  nextHome: 14,
+  socials: 5,
+  minGrid: 30,
+};
+export const SK_LAND_BUDGET: SponsorsPageBudget = {
+  thankYou: 3,
+  cta: 5,
+  nextHome: 13,
+  socials: 5,
+  minGrid: 20,
+};
+
 /** Pack ids a carousel can render: Club Kit plus every skeleton pack. */
 export { CAROUSEL_PACK_IDS };
 
@@ -56,44 +84,77 @@ export function skeletonWeekendTemplate(
   sponsorCount: number,
   titleLength = 0,
   hasCoverPhoto = false,
+  /** The sponsors page's optional blocks (P6); none = the page as it was. */
+  options: Omit<SponsorsPageLayout, "count"> = FLAT_SPONSORS_PAGE,
 ): PackCardTemplate {
   const count = Math.max(0, sponsorCount);
-  const photoKey = page === "title" && hasCoverPhoto ? "photo" : undefined;
+  const layout: SponsorsPageLayout =
+    page === "sponsors" ? { ...options, count } : { ...FLAT_SPONSORS_PAGE, count };
+  const photoKey = hasCoverPhoto ? "photo" : undefined;
   const sponsorKeys = Array.from({ length: count }, (_, i) => `weekendSponsor${i}`);
   const build = (land: boolean): string => {
     // Every tile shares one exact 2:1 frame; the grid's width bounds its
     // height so logos are never squashed. Logos only, contained.
-    const cols =
-      count <= 2
-        ? Math.max(count, 1)
-        : land
-          ? count === 4
-            ? 2
-            : count <= 9
-              ? 3
-              : 4
-          : count <= 10
-            ? 2
-            : count <= 18
-              ? 3
-              : 4;
-    const rows = Math.max(1, Math.ceil(count / cols));
-    const gap = 1.5;
-    const gridH = land ? 52 : 74;
-    const tileH = Math.max(1, (gridH - (rows - 1) * gap) / rows);
-    const gridW = Math.min(tileH * 2 * cols + (cols - 1) * gap, land ? 150 : 96);
     const grid = count
-      ? `<div data-weekend-sponsor-grid="1" style="display:flex;flex-wrap:wrap;justify-content:center;gap:${gap}cqmin;width:100%;max-width:${gridW}cqmin;align-self:center;flex:none;margin-top:3cqmin">` +
-        sponsorKeys
-          .map(
-            (k, i) =>
-              `<div data-weekend-sponsor="${i}" data-sponsor-logo-frame="1" data-drop-if-empty="${k}" style="flex:0 0 calc((100% - ${(cols - 1) * gap}cqmin) / ${cols});aspect-ratio:2 / 1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:.9cqmin;background:#fff;border:1px solid ${K.line};min-width:0;overflow:hidden">` +
-              slot(k, "sponsor") +
-              `</div>`,
-          )
-          .join("") +
-        `</div>`
+      ? sponsorGridsHtml({
+          count,
+          majorCount: layout.majorCount,
+          height: sponsorGridHeight(land ? 52 : 74, layout, land ? SK_LAND_BUDGET : SK_BUDGET),
+          gap: 1.5,
+          cols: (n) =>
+            n <= 2
+              ? Math.max(n, 1)
+              : land
+                ? n === 4
+                  ? 2
+                  : n <= 9
+                    ? 3
+                    : 4
+                : n <= 10
+                  ? 2
+                  : n <= 18
+                    ? 3
+                    : 4,
+          majorCols: land ? 3 : 2,
+          maxWidth: land ? 150 : 96,
+          // With an option on, the grid has less height: size tiles to the space.
+          fitWidth: isFlatSponsorsPage(layout) ? undefined : land ? 150 : 84,
+          line: K.line,
+        })
       : kEyebrow("THANK YOU TO OUR CLUB COMMUNITY", K.muted, ";margin-top:4cqmin");
+    // The page's optional blocks (P6): each drops when its value is empty.
+    const heading = layout.thankYou
+      ? kCond(
+          "{{sponsorThanks}}",
+          land ? 6 : 6.4,
+          ";margin-top:1.4cqmin;max-width:100%;overflow-wrap:anywhere",
+        )
+      : kCond("OUR SPONSORS", 8, ";margin-top:1.4cqmin");
+    const below =
+      (layout.cta
+        ? kEyebrow("{{sponsorCta}}", K.muted, ";margin-top:2.4cqmin;max-width:100%").replace(
+            "<div ",
+            '<div data-drop-if-field="sponsorCta" ',
+          )
+        : "") +
+      (layout.nextHome
+        ? `<div data-drop-if-field="nextHomeMatch" data-sponsors-next-home="1" style="display:flex;flex-direction:column;align-items:center;max-width:100%;min-width:0;margin-top:3cqmin">` +
+          kEyebrow("NEXT HOME GAME") +
+          kCond(
+            "{{nextHomeMatch}}",
+            5,
+            ";max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.8cqmin;font-size:calc(5cqmin * var(--fit,1))",
+          ).replace("<div ", `<div data-fit="${SK_NEXT_HOME_FIT}" `) +
+          kEyebrow("{{nextHomeWhen}}", K.muted, ";margin-top:.6cqmin;max-width:100%") +
+          `</div>`
+        : "") +
+      (layout.socials
+        ? kEyebrow(
+            "{{sponsorSocials}}",
+            K.accText,
+            ";margin-top:2.4cqmin;max-width:100%;overflow-wrap:anywhere;text-transform:none",
+          ).replace("<div ", '<div data-drop-if-field="sponsorSocials" ')
+        : "");
     const tsz = titleLength > 45 ? 9 : titleLength > 25 ? 12 : 16;
     const body =
       page === "title"
@@ -109,13 +170,19 @@ export function skeletonWeekendTemplate(
                 "<div ",
                 '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="10" ',
               ) +
+              // The club's livestream link (P5): "WATCH LIVE" and the short address.
+              `<div data-drop-if-field="livestream" data-livestream="1" style="display:flex;align-items:center;gap:1.4cqmin;max-width:100%;min-width:0;margin-top:3cqmin">` +
+              `<span style="flex:none;padding:.6cqmin 1.4cqmin;border-radius:.6cqmin;background:${K.acc};color:${K.accInk};font-family:${SK_COND};font-weight:800;font-size:2.6cqmin;letter-spacing:.08em">WATCH LIVE</span>` +
+              `<span style="min-width:0;font-family:${SK_MONO};font-weight:600;font-size:2.2cqmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{livestream}}</span>` +
+              `</div>` +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )
         : `<div style="display:flex;flex-direction:column;align-items:center;width:100%;min-width:0;text-align:center">` +
           kEyebrow("{{date}}") +
-          kCond("OUR SPONSORS", 8, ";margin-top:1.4cqmin") +
+          heading +
           grid +
+          below +
           `</div>`;
     return kitCard(look, {
       chip: kitChip("THIS WEEKEND"),
@@ -130,9 +197,15 @@ export function skeletonWeekendTemplate(
   };
   const fields = [
     ...clubHeaderFields(),
-    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) =>
-      textField(k, k, ""),
-    ),
+    ...[
+      "clubHashtag",
+      "sponsorPresentedBy",
+      "weekendTitle",
+      "date",
+      "roundLabel",
+      "livestream",
+      ...(page === "sponsors" ? SPONSORS_PAGE_TEXT_FIELDS : []),
+    ].map((k) => textField(k, k, "")),
     ...(photoKey ? [photoField("photo", "Cover photo", "Club photo")] : []),
     ...sponsorKeys.map((k) => ({
       key: k,
@@ -216,6 +289,105 @@ export function skeletonMatchDetailTemplate(
     ],
     formats: kitFormats((f) => build(f === "landscape")),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Junior day slides (ADR-010 P3): the junior matches of one day as compact
+// rows under the day's heading, in the pack's own look. Club Kit's are in
+// `club-kit/day-slides.ts`; the row counts per size are the layout contract's.
+// ---------------------------------------------------------------------------
+
+/**
+ * Characters a day row's name box holds at full size. Square, portrait and
+ * story share one markup, so this is the narrowest of them as measured in the
+ * browser at capacity (portrait), less a margin for fallback fonts.
+ */
+export const SKELETON_DAY_ROW_FIT = 38;
+
+function skeletonDayCard(
+  look: PackLook,
+  kind: "fixtures" | "results",
+  count: number,
+): PackCardTemplate {
+  const n = Math.max(1, count);
+  const rowKeys =
+    kind === "fixtures"
+      ? ["grade", "opposition", "meta", "time"]
+      : ["grade", "opposition", "result", "word", "clubScore", "oppScore"];
+  const build = (land: boolean): string => {
+    const cols = land && n > 3 ? 2 : 1;
+    const perCol = Math.ceil(n / cols);
+    // Landscape's body is short, so its rows set a little larger to fill it.
+    const k = (perCol <= 4 ? 1 : Math.max(0.7, 4 / perCol + 0.1)) * (land ? 1.2 : 1);
+    const s = (v: number) => `${+(v * k).toFixed(2)}cqmin`;
+    const crest = (i: number) =>
+      `<div data-drop-if-empty="day${i}.crest" style="flex:none;width:${s(8)};height:${s(8)};display:flex;align-items:center;justify-content:center;background:#fff;border-radius:${K.rowR};overflow:hidden">${slot(`day${i}.crest`, "logo", "rect")}</div>`;
+    const name = (i: number) =>
+      `<div data-fit="${SKELETON_DAY_ROW_FIT}" data-fit-row style="font-family:${SK_COND};font-weight:800;font-size:calc(${s(4.2)} * var(--fit,1));line-height:1.02;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${K.panelText}">v {{day${i}.opposition}}</div>`;
+    const small = (text: string, mono = false, extra = "") =>
+      `<div style="${extra}font-family:${mono ? SK_MONO : SK_COND};font-weight:${mono ? 600 : 700};font-size:${s(mono ? 2 : 2.4)};${mono ? "letter-spacing:.14em;" : ""}line-height:1.3;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${K.panelMuted}">${text}</div>`;
+    const row = (i: number) =>
+      `<div data-day-row="${i}" style="box-sizing:border-box;display:flex;align-items:center;gap:${s(2)};min-width:0;padding:${s(1.4)} ${s(2)};background:${K.panel};border:1px solid ${K.panelBorder};border-radius:${K.rowR}">` +
+      (kind === "fixtures"
+        ? `<div style="flex:none;min-width:${s(15)};font-family:${K_DISP};font-size:${s(4.6)};line-height:1;color:${K.panelAcc}">{{day${i}.time}}</div>` +
+          `<div style="flex:1;min-width:0">${small(`{{day${i}.grade}}`, true)}${name(i)}${small(`{{day${i}.meta}}`)}</div>`
+        : `<div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:${s(1.4)};min-width:0"><span style="flex:none;font-family:${SK_COND};font-weight:800;font-size:${s(2.8)};line-height:1;padding:${s(0.4)} ${s(1)};border-radius:${K.pillR};background:${K.acc};color:${K.accInk}">{{day${i}.word}}</span>${small(`{{day${i}.grade}}`, true, "min-width:0;")}</div>${name(i)}${small(`{{day${i}.result}}`)}</div>` +
+          `<div style="flex:none;text-align:right;line-height:1"><div style="font-family:${K_DISP};font-size:${s(4.6)};color:${K.panelAcc}">{{day${i}.clubScore}}</div>` +
+          `<div style="font-family:${SK_COND};font-weight:800;font-size:${s(3)};margin-top:${s(0.5)};color:${K.panelMuted}">{{day${i}.oppScore}}</div></div>`) +
+      crest(i) +
+      `</div>`;
+    const list =
+      `<div data-day-rows="${n}" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${s(1.4)};width:100%;margin-top:2.4cqmin">` +
+      Array.from({ length: n }, (_, i) => row(i)).join("") +
+      `</div>`;
+    return kitCard(look, {
+      chip: kitChip(kind === "fixtures" ? "MATCH DAY" : "RESULTS"),
+      // Landscape spans the card (two columns of rows); the others use the pack's column.
+      body: (land
+        ? (inner: string) =>
+            `<div style="display:flex;flex-direction:column;align-items:flex-start;width:100%;min-width:0">${inner}</div>`
+        : (inner: string) => kColumn(look, inner, true))(
+        kEyebrow(kind === "fixtures" ? "JUNIOR MATCH DAY" : "JUNIOR RESULTS") +
+          kCond("{{dayHeading}}", land ? 9 : 11, ";margin-top:1cqmin") +
+          list,
+      ),
+      footer: kFooterOn("proudly supported by"),
+      deco: {
+        word: kind === "fixtures" ? "GAME DAY" : "RESULTS",
+        script: kind === "fixtures" ? "Junior match day" : "Junior results",
+      },
+    });
+  };
+  const keys = Array.from({ length: n }, (_, i) => rowKeys.map((k) => `day${i}.${k}`)).flat();
+  return {
+    kind: kind === "fixtures" ? "matchDay" : "matchSummary",
+    designKey: kind === "fixtures" ? `junior-day-${n}` : `junior-results-day-${n}`,
+    name: kind === "fixtures" ? "Junior match day" : "Junior results day",
+    sponsorVariants: ["on"],
+    fields: [
+      ...clubHeaderFields(),
+      ...["clubHashtag", "sponsorPresentedBy", "dayHeading", ...keys].map((x) =>
+        textField(x, x, ""),
+      ),
+      ...Array.from({ length: n }, (_, i) => ({
+        key: `day${i}.crest`,
+        label: "Opposition logo",
+        type: "logo" as const,
+        sample: "",
+      })),
+    ] as PackCardTemplate["fields"],
+    formats: kitFormats((f) => build(f === "landscape")),
+  };
+}
+
+/** Match Day: a day's junior fixtures (the multi-fixture layout). */
+export function skeletonDayFixturesTemplate(look: PackLook, count: number): PackCardTemplate {
+  return skeletonDayCard(look, "fixtures", count);
+}
+
+/** Results / Match Summary: a day's junior results (the multi-result layout). */
+export function skeletonDayResultsTemplate(look: PackLook, count: number): PackCardTemplate {
+  return skeletonDayCard(look, "results", count);
 }
 
 // ---------------------------------------------------------------------------

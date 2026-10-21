@@ -43,6 +43,141 @@
 
 ### Previous (match-day-carousel-content)
 
+**From:** SDE (P7, remaining kinds on builders)
+**To:** SDE session for P8 (new pack), then P9 (retire four packs)
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P7 (T7.1–T7.3)** is on `wyborn21/carousel-p7-other-kinds`. No migration: `card_content` is already jsonb keyed by kind, so the new kinds' choices are new keys in it.
+- **Contract (`@workspace/scorecard/card-content`):**
+  - `CONTENT_KINDS` is now `matchDay`, `results`, `matchSummary`, `teamList`. Their catalogue entries use the slides `result` and `team`. Standard and Full show every field, so the cards look as they did. Minimal hides the round, the opposition crest, the photo and the team sponsor, plus shirt numbers and debut badges on team lists. A match summary's top performers are a core field. A side of up to 14 and its overseas marks always print (ADR-009).
+  - `ResultContent` (`kind: "results" | "matchSummary"`, `page: "result"`), `ResultDayContent` (`page: "day"`, junior only) and `TeamListContent` (`page: "team"`).
+  - Each holds `source`: the card input its source made, exactly as the sweep saved it before the pipeline (raw names). The display values (short names, crests, normalised round, club day) sit beside it.
+  - `resultDraftInput` / `teamListDraftInput(content, visible)` give the single card's input. With every input-carried field shown (round, crest, plus shirt numbers and debuts for team lists), this is `source` itself, so existing drafts never change. A club that hides one gets a projection with `namesResolved: true`. Photo and team-sponsor toggles apply to carousel slides only. Single cards keep their card photo rules and sponsor settings.
+  - `resultSlideInput` / `teamListSlideInput` / `resultDaySlideInput` are the carousel projections, reached through `contentInput`. Results drop the top performers. A match summary sets `carouselDetail` only when it has performers.
+  - `dayableResult`: a result can join a junior day slide only when its scorecard is junior (`source.junior`) and it has a day. A senior scorecard with a junior-looking grade prints as junior (fail closed) but keeps its own slide.
+  - `readCardContent` validates the three new shapes. It also rejects a junior source on senior content. Saved v2 carousels now store these as content slides. Slides saved before P7 keep their frozen `input` and still read.
+- **Builders (`api-server/src/lib/card-content/`):**
+  - `results.ts`: `buildResultsContent` / `buildMatchSummaryContent(tenantId, sources)`. A source is `{ matchId, detail }` or `{ junior: true, matchId, detail }`.
+  - `team-list.ts`: `buildTeamListContent(tenantId, sides)` for senior fixtures. It applies identity recovery when shirt numbers are on, and masks a junior-looking grade's sides with no senior identities, numbers or debuts. `buildJuniorTeamListContent(tenantId, sides)` is the junior sweep's mapping (`juniorTeamListToCardInput`, public junior naming, juniors register) plus the opponent crest from the clubs register.
+  - `visible-fields.ts`: `contentVisibleFields(tenantId, kind)`. A failed read falls back to Standard.
+- **Callers:**
+  - Sweeps: `generateMatchSummaryDrafts`, `generateCentralStumpsDrafts`, `generateJuniorMatchSummaryDrafts`, `generateTeamListDrafts` and `generateJuniorTeamListDrafts`.
+  - Weekend Carousel: `carousel-content.ts` and `junior-carousel-content.ts` (sources `content` now carries content objects).
+  - Create a Card: `GET /social-prefill/match-summary/{matchId}` and `GET /social-prefill/team-list/{fixtureId}` (`SocialCardPrefill`).
+- **Behaviour changes, all toward the auto-queued card:**
+  - The junior team list carousel now names players as the junior sweep does: every listed player in order, with anyone not publicly named shown as "PRIVATE PLAYER". Before, the carousel dropped them.
+  - The senior team list sweep applies the carousel's identity recovery for old Selection Hub publications when shirt numbers are on. It also masks junior-looking grades as the carousel did. Only those two cases can refresh a draft.
+  - Create a Card's prefill replaces the starting sample's keys, so the sample "MATCH RESULT" headline no longer survives a prefill.
+- **Client:**
+  - `weekend-carousel/model.ts` has no input-based slides left. `TeamSlide.content` is `SlideContent`, and `buildWeekendSlides(..., grouping, kindVisible)` takes the set kind's fields (Match Day's `visible` stays for the bookends).
+  - The client mappings it replaced are gone: the summary day rows and the team list grade patch. Create a Card's prefill panels call the new endpoints (`builderCard`). `fixtureToTeamListMeta` / `teamListPlayersToState` stay, because the round team-lists card (`teamListRound`) still uses them.
+  - Social Studio → "What your cards show" has a tab per kind and saves every kind at once, because the PATCH stores the whole `card_content`.
+- **Layout contract:** `CONTENT_LAYOUTS` now covers the three kinds (`DAY_RESULT_CAPACITY` is folded in). Neither pack has an opposition crest on the match summary detail slide or the team list, nor a debut badge on the team list, so those slots are left out. The P7 fit grid in `content-layouts.test.ts` checks every pack, preset and size.
+- **Tests:**
+  - `social-card-parity.db.test.ts` checks, for a central match and a fixture, that the sweep draft, the Create a Card prefill and the carousel content agree. It also checks they agree with a field switched off.
+  - `result-team-list.test.ts` covers the pure contract.
+  - `create-a-card-builders.test.tsx` shows the panel applies the server card unchanged.
+  - The P7 block in `content-layouts.test.ts` is the fit grid.
+
+## For the next phases
+
+- **P8:** the new pack declares its `CONTENT_LAYOUTS` entry for all four kinds. If it has an opposition crest on the team list or match summary detail slide, or debut badges on the team list, add those slots and the fit grid will check them.
+- **P9:** nothing P7-specific. Retired pack ids still map to Club Kit at read time.
+- **Follow-ups not in P7:**
+  - Social Sets' match source (`social-sets/sources/match-source.tsx`) and the match page's Share window still map scorecards on the client (`matchToSummaryInput`).
+  - The round team-lists card still maps on the client.
+  - Results and team list carousels still pick a random grade photo. P4's `createPhotoPicker` could pick for them.
+
+## Previous handoff
+
+**From:** SDE (P3, junior same-day slides)
+**To:** SDE sessions for P4–P6, then P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P3 (T3.1–T3.3)** is on `wyborn21/carousel-p3-junior-day-slides` (PR #401). No migration: it reads the stored `card_content.matchDay.juniorConsolidateByDay` (default on), and that one switch covers Match Day, Results and Match Summary carousels.
+- **Grouping:** `groupSlides(kind, items, { junior, dayOf, consolidateByDay, capacity, reserved })` in `lib/scorecard/src/card-sets.ts`.
+  - Junior items of one club-time day share a slide, split evenly at `capacity` (7 at 4 → 4 + 3). A day with one junior game keeps the ordinary single slide.
+  - Senior items always get a slide each and never join a day slide. A day slide sits where its first junior item was.
+  - Only `matchDay`, `results` and `matchSummary` consolidate. Past `META_CAROUSEL_MAX_SLIDES` (10, counting `reserved`), the plan carries a warning, which the Weekend Carousel adds to the title slide.
+- **Content:** `MatchDayDayContent` (`page: "day"`, junior only, one day) in `card-content/types.ts`. `card-content/day.ts` holds the pure helpers:
+  - `matchDayDayContent(fixtures)` throws on a senior or other-day fixture.
+  - `dayFixtureRows(day, visible)` blanks a hidden crest and round.
+  - `dayResultRow(summary)` throws on a senior result.
+  - `summaryResultWord` is now the one result-word rule; `bind.ts`'s `resultWord` re-exports it.
+  - `contentInput` turns a day into a `matchDay` input with `carouselDay: { heading, fixtures }`. `readCardContent` validates it.
+- **Saved carousel:**
+  - A Match Day day slide is a v2 content slide.
+  - A Results or Match Summary day slide keeps a frozen `matchSummary` input with `carouselDay: { heading, results }`; its other match fields are the first result's.
+  - `readQueuedCarousel` rejects a day slide that is not junior or has fewer than two rows.
+- **Layouts:**
+  - Club Kit: `pack-templates/club-kit/day-slides.ts` (`dayFixturesTemplate`, `dayResultsTemplate`).
+  - Skeleton packs, Broadcast Dark included: `skeletonDayFixturesTemplate` / `skeletonDayResultsTemplate` in `pack-templates/carousel.ts`.
+  - `resolveTemplateBase` picks these when an input has `carouselDay`. Rows are indexed fields (`day{i}.*`, crest slot `day{i}.crest`), and every name box uses the shared name-fit rule.
+- **Capacity:** `DAY_ROWS` in `content-layouts.ts` (square 4, portrait 5, story 7, landscape 6). It is the same for every preset, because hidden fields don't change row height. `contentLayout(...).capacity` now means rows per junior day slide. `dayCapacity(packId, setType, size, preset)` is what the Weekend Carousel splits at.
+  - Measured in the browser for both packs at every size at capacity, crest showing: at least 80 px clear above the footer, and no name overflows.
+  - The name boxes' declared capacities (`dayRowFit`, `SKELETON_DAY_ROW_FIT`) sit about 10% under the measured minimum.
+- **Weekend Carousel:** `buildWeekendSlides(..., visible, grouping)` takes a `SlideGrouping`. A day slide has no photo and no team sponsor, and carries `fixtureIds` (not saved). The team editor shows the shared slide on the day's first game and a note on the others. The size and pack now change the slides, because the capacity depends on them.
+- **With P4 (auto photos):** a junior day slide has no photo, so the automatic pick and any Swap for a fixture on a day slide are not shown, and the slide saves `photoId: null`, so it writes no `photo_usage`. The team editor shows the Swap control only for fixtures that keep their own slide.
+- **Settings UI:** Social Studio → What match day cards show has the switch "Junior games on the same day share a slide".
+- **Tests:** `group-slides.test.ts`, `card-content/day.test.ts`, the day cases in `queued-carousel-v2.test.ts`, `weekend-carousel/day-slides.test.ts`, and the day fit grid in `content-layouts.test.ts`.
+
+## For the next phases
+
+- **P5:** a new optional fixture field that should show on day rows needs a cell in `dayFixtureRows` and in both day layouts, plus a check in the day fit grid.
+- **P7:** when Results and Match Summary move to builders, `dayResultRow` becomes the builder's job and the day slide can save `content` like Match Day. `DAY_RESULT_CAPACITY` then joins `CONTENT_LAYOUTS`.
+- **Automated round sets** (`engines/round-sets.ts`) are list cards (Game Day, Results Summary) that already put several junior grades on one card. P3 did not change them.
+
+## Previous handoff
+
+**From:** SDE (P6, sponsors page options)
+**To:** SDE sessions for P3, P5 and P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P6 (T6.1–T6.3)** is on `wyborn21/carousel-p6-sponsors-page`. Migration **0055** (renumbered twice: #399 took 0053 for email lists, P4 #404 took 0054 for `photo_usage`): `sponsors.tier` text ('major' | 'standard', default 'standard', CHECK `sponsors_tier_check`, listed in `ensure-constraints`) and `social_settings.sponsors_background_photo_id` (FK to `club_photos`, ON DELETE SET NULL). Ash runs it in Production SQL before republishing.
+- **Fields:** five optional `sponsors.*` keys in `CONTENT_FIELDS` (`tiers`, `teamSponsors`, `thankYou`, `nextHomeGame`, `background`), all `presets: ["full"]` (a `FULL_ONLY` constant), so Standard is the page as it was.
+- **Content:** `MatchDaySponsorsContent` now holds every active sponsor (club sponsors first, then team sponsors, each with `tier` and `teamSponsor`), `thankYou`, `cta`, `nextHomeGame` (`{ match, when }`) and `socials`. The new keys are optional, so P2-era carousels read unchanged. `contentInput` projects by visible fields: team sponsors only with `sponsors.teamSponsors`, majors first plus `majorCount` with `sponsors.tiers`, and so on. With none on, the template input is byte-identical to P2. No sponsors means no thank-you heading, so the club thank-you fallback stays.
+- **Server:** `api-server/src/lib/card-content/sponsors-page.ts` → `loadSponsorsPageSources` (background photo with the cover-photo privacy rule, next senior home game from the set's first day via `buildMatchDayContent`, socials from the Meta connection and `clubUrl`). `GET /weekend-carousel/sources` returns it as `sponsorsPage` for Match Day sets; junior-only sets get no next home game.
+- **Client:** `buildWeekendSlides(..., visible, sponsorsPage)` builds the sponsors content; the background rides on the slide's `photoId` and `data.photoUrl`, like the cover.
+- **Layout:** `pack-templates/sponsors-page.ts` holds the shared grid. Flat pages keep each pack's own column rule (byte-identical); with any option on, `fitGrid` picks the columns that give the largest tiles in the height the blocks leave (`sponsorGridHeight`, per-pack budgets `CK_BUDGET` / `SK_BUDGET`). Major tiles are 1.6×. `content-layouts.test.ts` checks each block shows exactly when its field is on; `sponsors-page.test.ts` renders 16 sponsors (3 major, every block on) in both packs at every size and asserts tile sizes.
+- **UI:** a "Major sponsor" switch per sponsor in the sponsor library; "Sponsors page background" picker (club-wide photos, saves at once) under Social Studio → What match day cards show. The five toggles appear in the existing field picker under "Sponsors".
+
+## For the next phases
+
+- **P5:** the sponsors toggles already use `FULL_ONLY`; reuse it rather than adding a second constant. The catalogue test lists the Full-only keys (`FULL_ONLY_KEYS` in `card-content.test.ts`); add yours there.
+- **P4 (merged first):** the sponsors slide's `photoId` is the background photo, so P4's `recordPhotoUsage` already counts it like the cover when a carousel posts.
+
+## Previous handoff
+
+**From:** SDE (P4, auto photos)
+**To:** SDE sessions for P3, P5, P6, then P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P4 (T4.1–T4.3)** is on `wyborn21/loving-mahavira-8d703f`. Migration **0054** `photo_usage (tenant_id, photo_id, used_at, draft_id)` (0053 went to email lists, #399). Ash runs 0054 in Production SQL before republishing.
+- **Usage:** `recordPhotoUsage` / `notePhotoUsage` (`api-server/src/lib/card-content/photos.ts`) write one row per library photo when a draft is posted: `POST /social-drafts/:id/posted` and the publish worker's `postDraftIfDone`. A carousel records each slide's `photoId` (and `data.photoUrl`); a single card its `photoUrl` when it is a library photo. Only the draft's own tenant's photos; UNIQUE (tenant, photo, draft), so a re-post records nothing. Best effort: a failed write is logged and never fails posting.
+- **Picks:** `createPhotoPicker(tenantId, grades)` loads the pools (`loadCarouselPhotos`, the same pools the sources route returns, moved out of the route), `photo_usage` and fixed card photo rules once. Order: least picked in this build, then least recently posted (never first), then team-tagged for the cover, then newest.
+  - Senior fixture: its grade's batting/bowling/fielding photos; a `fixed` matchDay card photo rule wins when its photo is in that pool.
+  - Cover: Club-wide · Season 2026 photos (the rule the Weekend Carousel already had; graded team photos were not added); stock only when there are none.
+  - Junior fixture, or the cover of a set with no senior fixture: junior stock images only. Never a junior player's photo, a junior grade's photo or a rule.
+  - Nothing fits: null, and the slide prints on the brand background with no warning.
+- `buildMatchDayPhotos(tenantId, content[])` → `{ cover, fixtures: { [fixtureId]: photoId | null } }`. `buildMatchDayContent` is unchanged (the content snapshot stays photo-free, so sweep parity and the legacy draft input hold); the sources route calls both and returns `photoPicks` (OpenAPI `WeekendCarouselPhotoPicks`). The sweep's single Match Day cards still use `pickDraftPhoto`.
+- **UI:** `createTeamSlides` / `refreshTeamSlides` take the picks (`TeamSlide.autoPhotoId`); the auto cover is frozen at generate (`generated.autoCoverId`). `AutoPhotoStatus` shows the pick with Swap / Use auto pick. A slide whose photo differs from its pick is swapped: `photoOverride` puts it in `contentOverride.photos` (`{ cover?, fixtures? }`, read by `readContentOverride`). Other set types keep the random grade photo.
+
+## For the next phases
+
+- **P3:** junior consolidated slides should take one stock pick per slide (`picker.pick({ kind: "fixture", junior: true, ... })`); `photoPicks.fixtures` is keyed by fixture id today.
+- **P6:** 0053 is taken; use the next free number at rebase, and regenerate the snapshot so its `prevId` chains to 0054's and its `when` is later than 0054's (the migrator skips an entry older than the last applied one).
+- **P7:** results / team list sets can use `createPhotoPicker` the same way instead of the client's random pick.
+
+## Previous handoff
+
 **From:** SDE (P2, content contract + Match Day builder)
 **To:** SDE sessions for P3–P6 (at most two at once), then P7
 **Feature:** match-day-carousel-content
@@ -393,3 +528,11 @@ Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: 
 ## Handoff 2026-10-19 (PM -> Architect)
 
 Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) preview-render bug in share-card-modal/use-card-preview (own PR); 2) tenant name-override table + auto short-name; 3) crest slot in renderer; 4) square layout fit.
+
+## Current Handoff
+
+**From:** Principal Architect → **To:** Staff Engineer / EM (20 Oct 2026)
+**Read:** `.10x/decisions/architect/email-distribution-lists.md` (requirements: `.10x/decisions/product-manager/email-distribution-lists.md`)
+Spike resolved: team-sheet PDF already server-side (`buildTeamSheet` + `renderHtmlToPdf`). Social PNG via `/__card-render` harness — needs `RENDER_HARNESS_URL` in prod.
+Build order: PR1 = transport (bcc + attachments), migration 0053 (email_lists, members, teams, email_sends), outbox enqueue/drain, team-sheet on_publish/manual/off, admin API + Email lists page + send log. PR2 = social toggles (migrate notificationEmail), scheduled mode, UPDATED re-send.
+Confirm the team key the Selection Hub uses for a fixture. Senior fixtures only.

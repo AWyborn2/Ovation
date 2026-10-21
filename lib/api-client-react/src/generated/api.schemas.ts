@@ -3857,6 +3857,172 @@ export interface TeamSheetPreview {
   missingBirthDates: number;
 }
 
+export interface EmailTeamSheetResult {
+  /** List emails queued (one per list) */
+  queued: number;
+}
+
+export interface EmailListMember {
+  /** @maxLength 80 */
+  name: string;
+  /** @maxLength 254 */
+  email: string;
+}
+
+/**
+ * When a scheduled team-sheet list is emailed (Australia/Perth)
+ */
+export interface EmailListSchedule {
+  /**
+     * Day of week, 0 = Sunday
+     * @minimum 0
+     * @maximum 6
+     */
+  dow: number;
+  /**
+     * Local time, HH:MM
+     * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+     */
+  time: string;
+}
+
+export type EmailListInputKind = typeof EmailListInputKind[keyof typeof EmailListInputKind];
+
+
+export const EmailListInputKind = {
+  team_sheet: 'team_sheet',
+  social: 'social',
+} as const;
+
+/**
+ * Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists.
+ */
+export type EmailListInputSection = typeof EmailListInputSection[keyof typeof EmailListInputSection];
+
+
+export const EmailListInputSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+/**
+ * Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never
+ */
+export type EmailListInputSendMode = typeof EmailListInputSendMode[keyof typeof EmailListInputSendMode];
+
+
+export const EmailListInputSendMode = {
+  on_publish: 'on_publish',
+  manual: 'manual',
+  scheduled: 'scheduled',
+  off: 'off',
+} as const;
+
+export interface EmailListInput {
+  kind: EmailListInputKind;
+  /** Team-sheet lists; fixed when the list is created (default senior). A junior list covers junior teams only, a senior list senior grades only. Ignored on update and for social lists. */
+  section?: EmailListInputSection;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** Team-sheet lists. on_publish emails a side when it is finalised; manual only from the Email button; scheduled at the list's schedule; off never */
+  sendMode?: EmailListInputSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule?: EmailListSchedule | null;
+  /** Team-sheet lists; re-send when a side is re-finalised (default on) */
+  resendOnChange?: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady?: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded?: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone?: boolean;
+  active?: boolean;
+  /**
+     * Grades (senior lists, e.g. "A Grade") or junior team labels (junior lists, e.g. "Year 7 Gold") a team-sheet list covers; empty for social lists
+     * @maxItems 30
+     */
+  gradeKeys: string[];
+  /** @maxItems 50 */
+  members: EmailListMember[];
+}
+
+export type EmailListKind = typeof EmailListKind[keyof typeof EmailListKind];
+
+
+export const EmailListKind = {
+  team_sheet: 'team_sheet',
+  social: 'social',
+} as const;
+
+export type EmailListSection = typeof EmailListSection[keyof typeof EmailListSection];
+
+
+export const EmailListSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+export type EmailListSendMode = typeof EmailListSendMode[keyof typeof EmailListSendMode];
+
+
+export const EmailListSendMode = {
+  on_publish: 'on_publish',
+  manual: 'manual',
+  scheduled: 'scheduled',
+  off: 'off',
+} as const;
+
+export interface EmailList {
+  id: number;
+  kind: EmailListKind;
+  section: EmailListSection;
+  name: string;
+  sendMode: EmailListSendMode;
+  /** Scheduled team-sheet lists; null otherwise */
+  schedule: EmailListSchedule | null;
+  resendOnChange: boolean;
+  /** Social lists; email each card as it becomes ready to post */
+  assetReady: boolean;
+  /** Social lists; one email per sweep listing new cards awaiting review */
+  reviewNeeded: boolean;
+  /** Social lists; one email per sweep listing new milestone and achievement cards */
+  milestone: boolean;
+  active: boolean;
+  gradeKeys: string[];
+  members: EmailListMember[];
+  createdAt: string;
+}
+
+export type EmailSendStatus = typeof EmailSendStatus[keyof typeof EmailSendStatus];
+
+
+export const EmailSendStatus = {
+  queued: 'queued',
+  sending: 'sending',
+  sent: 'sent',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export interface EmailSend {
+  id: number;
+  listId: number;
+  listName: string;
+  kind: string;
+  subjectType: string;
+  subjectId: number;
+  status: EmailSendStatus;
+  attempts: number;
+  /** Why a send failed or was skipped */
+  lastError?: string | null;
+  recipientCount: number;
+  queuedAt: string;
+  sentAt?: string | null;
+}
+
 export interface TeamSheetPrintBody {
   /**
      * Overs per innings to print; remembered for the side's grade
@@ -4704,6 +4870,17 @@ export const CardKind = {
   teamOfWeek: 'teamOfWeek',
 } as const;
 
+/**
+ * A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.
+ */
+export type SponsorTier = typeof SponsorTier[keyof typeof SponsorTier];
+
+
+export const SponsorTier = {
+  major: 'major',
+  standard: 'standard',
+} as const;
+
 export interface Sponsor {
   id: number;
   name: string;
@@ -4720,6 +4897,7 @@ export interface Sponsor {
   /** The tenant's designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards' "presented by <sponsor>" line; none set → that line renders empty. */
   isPresenting: boolean;
   displayOrder: number;
+  tier: SponsorTier;
 }
 
 export interface SponsorInput {
@@ -4736,6 +4914,7 @@ export interface SponsorInput {
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
+  tier?: SponsorTier;
 }
 
 export interface SponsorUpdate {
@@ -4752,6 +4931,7 @@ export interface SponsorUpdate {
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
+  tier?: SponsorTier;
 }
 
 /**
@@ -5650,10 +5830,13 @@ export interface CardContentKindSettings {
 }
 
 /**
- * Per content kind. Default: Standard (the cards as they were), junior consolidation on.
+ * Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.
  */
 export interface CardContentSettings {
   matchDay: CardContentKindSettings;
+  results?: CardContentKindSettings;
+  matchSummary?: CardContentKindSettings;
+  teamList?: CardContentKindSettings;
 }
 
 export interface SocialSettings {
@@ -5715,6 +5898,21 @@ export interface SocialSettings {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
+}
+
+export type SocialCardPrefillInput = { [key: string]: unknown };
+
+/**
+ * A single card's input from the content builder (ADR-010 P7), exactly as the sweep would draft it.
+ */
+export interface SocialCardPrefill {
+  input: SocialCardPrefillInput;
+  warnings: string[];
 }
 
 export interface ContentTeam {
@@ -5760,6 +5958,49 @@ export const MatchDayFixtureContentHomeAway = {
 } as const;
 
 /**
+ * Both teams' season ladder positions (P5), when asked for and loaded.
+ */
+export type MatchDayFixtureContentLadder = {
+  /** "3RD". */
+  club: string;
+  /** @nullable */
+  opposition: string | null;
+  teams: number;
+  /** @nullable */
+  tableName: string | null;
+};
+
+export type MatchDayFixtureContentLastMeetingOutcome = typeof MatchDayFixtureContentLastMeetingOutcome[keyof typeof MatchDayFixtureContentLastMeetingOutcome];
+
+
+export const MatchDayFixtureContentLastMeetingOutcome = {
+  won: 'won',
+  lost: 'lost',
+  tied: 'tied',
+  noResult: 'noResult',
+} as const;
+
+/**
+ * The clubs' last finished senior meeting in this grade, from the club's side (P5).
+ */
+export type MatchDayFixtureContentLastMeeting = {
+  outcome: MatchDayFixtureContentLastMeetingOutcome;
+  /** "Won by 24 runs · 2025/26". */
+  line: string;
+  date: string;
+  /** @nullable */
+  season: string | null;
+};
+
+/**
+ * A player in the published side within reach of a club milestone (P5, senior only).
+ */
+export type MatchDayFixtureContentMilestoneWatch = {
+  playerName: string;
+  line: string;
+};
+
+/**
  * One fixture's Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.
  */
 export interface MatchDayFixtureContent {
@@ -5780,6 +6021,12 @@ export interface MatchDayFixtureContent {
   date: string;
   startTime: string;
   source: MatchDayFixtureContentSource;
+  /** Both teams' season ladder positions (P5), when asked for and loaded. */
+  ladder?: MatchDayFixtureContentLadder;
+  /** The clubs' last finished senior meeting in this grade, from the club's side (P5). */
+  lastMeeting?: MatchDayFixtureContentLastMeeting;
+  /** A player in the published side within reach of a club milestone (P5, senior only). */
+  milestoneWatch?: MatchDayFixtureContentMilestoneWatch;
 }
 
 export interface Notification {
@@ -6581,6 +6828,11 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * One of the club's own club-wide library photos, or null to clear it.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
 }
 
 /**
@@ -8582,7 +8834,7 @@ export interface TrackedLink {
 }
 
 /**
- * Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+ * Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
  */
 export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};
 
@@ -8590,6 +8842,18 @@ export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unk
  * Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.
  */
 export type WeekendCarouselSourcesMatchDayContent = {[key: string]: MatchDayFixtureContent};
+
+/**
+ * Match Day sets: what the sponsors page's optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty.
+ */
+export interface WeekendSponsorsPageSources {
+  /** The club's chosen background photo, when it is still in the library and safe to show. */
+  backgroundPhoto: ClubPhoto | null;
+  /** The club's next senior home fixture from the set's first day, built like a fixture slide. Null for junior sets or when there is none. */
+  nextHomeGame: MatchDayFixtureContent | null;
+  /** The club's social handles and website, in print order (Instagram, Facebook, website). */
+  socials: string[];
+}
 
 /**
  * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
@@ -8629,17 +8893,37 @@ export interface Fixture {
   createdAt: string;
 }
 
+/**
+ * By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id.
+ */
+export type WeekendCarouselPhotoPicksFixtures = {[key: string]: number | null};
+
+/**
+ * Match Day sets: the automatic photos (ADR-010 P4), the least recently posted photo of each slide's pool. Null when nothing fits (the slide prints on the brand background). The admin can swap any pick; a swap is saved in the carousel's content override.
+ */
+export interface WeekendCarouselPhotoPicks {
+  /**
+     * A coverPhotos (or juniorStockPhotos) id.
+     * @nullable
+     */
+  cover: number | null;
+  /** By source fixture ID, a photos (or, for a junior fixture, juniorStockPhotos) id. */
+  fixtures: WeekendCarouselPhotoPicksFixtures;
+}
+
 export interface WeekendCarouselSources {
   juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
-  /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
+  /** Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
   /** Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep. */
   matchDayContent?: WeekendCarouselSourcesMatchDayContent;
+  sponsorsPage?: WeekendSponsorsPageSources;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
   coverPhotos: ClubPhoto[];
+  photoPicks?: WeekendCarouselPhotoPicks;
   warnings: string[];
 }
 
@@ -10792,6 +11076,10 @@ offered only when it has fixtures (see the board's `weekends`).
 weekend?: string;
 };
 
+export type ListEmailSendsParams = {
+listId?: number;
+};
+
 export type GetMetaConnectPendingParams = {
 token: string;
 };
@@ -10810,6 +11098,10 @@ from: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 to: string;
+/**
+ * Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.
+ */
+fields?: string;
 };
 
 export type GetWeekendCarouselSourcesSetType = typeof GetWeekendCarouselSourcesSetType[keyof typeof GetWeekendCarouselSourcesSetType];

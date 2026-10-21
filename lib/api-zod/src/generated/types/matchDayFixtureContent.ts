@@ -8,6 +8,9 @@
 import type { ContentTeam } from './contentTeam';
 import type { MatchDayFixtureContentHomeAway } from './matchDayFixtureContentHomeAway';
 import type { MatchDayFixtureContentKind } from './matchDayFixtureContentKind';
+import type { MatchDayFixtureContentLadder } from './matchDayFixtureContentLadder';
+import type { MatchDayFixtureContentLastMeeting } from './matchDayFixtureContentLastMeeting';
+import type { MatchDayFixtureContentMilestoneWatch } from './matchDayFixtureContentMilestoneWatch';
 import type { MatchDayFixtureContentPage } from './matchDayFixtureContentPage';
 import type { MatchDayFixtureContentSource } from './matchDayFixtureContentSource';
 
@@ -32,4 +35,10 @@ export interface MatchDayFixtureContent {
   date: string;
   startTime: string;
   source: MatchDayFixtureContentSource;
+  /** Both teams' season ladder positions (P5), when asked for and loaded. */
+  ladder?: MatchDayFixtureContentLadder;
+  /** The clubs' last finished senior meeting in this grade, from the club's side (P5). */
+  lastMeeting?: MatchDayFixtureContentLastMeeting;
+  /** A player in the published side within reach of a club milestone (P5, senior only). */
+  milestoneWatch?: MatchDayFixtureContentMilestoneWatch;
 }

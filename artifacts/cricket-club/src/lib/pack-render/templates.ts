@@ -13,14 +13,18 @@ import type {
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { PackImageSlot } from "./types";
 import { weekendBookendTemplate } from "../pack-templates/club-kit/weekend-bookends";
+import { sponsorsPageLayout } from "../pack-templates/sponsors-page";
 import {
   CAROUSEL_CLUB_KIT,
   carouselContentTemplate,
   carouselLook,
   isCarouselPack,
+  skeletonDayFixturesTemplate,
+  skeletonDayResultsTemplate,
   skeletonMatchDetailTemplate,
   skeletonWeekendTemplate,
 } from "../pack-templates/carousel";
+import { dayFixturesTemplate, dayResultsTemplate } from "../pack-templates/club-kit/day-slides";
 import { matchDetailTemplate } from "../pack-templates/club-kit/match-detail";
 
 /**
@@ -141,17 +145,28 @@ function resolveTemplateBase(
   packId?: string | null,
 ): PackCardTemplate | null {
   const isCarousel =
-    (input.kind === "matchDay" && !!input.carouselPage) ||
-    (input.kind === "matchSummary" && input.carouselDetail === true);
+    (input.kind === "matchDay" && (!!input.carouselPage || !!input.carouselDay)) ||
+    (input.kind === "matchSummary" && (input.carouselDetail === true || !!input.carouselDay));
   if (isCarousel) {
     const id = packId == null ? CAROUSEL_CLUB_KIT : packId;
     if (!isCarouselPack(id)) throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
     const look = carouselLook(id);
+    // A junior day slide (ADR-010 P3): the day's matches as compact rows.
+    if (input.kind === "matchDay" && input.carouselDay) {
+      const n = input.carouselDay.fixtures.length;
+      return look ? skeletonDayFixturesTemplate(look, n) : dayFixturesTemplate(n);
+    }
+    if (input.kind === "matchSummary" && input.carouselDay) {
+      const n = input.carouselDay.results.length;
+      return look ? skeletonDayResultsTemplate(look, n) : dayResultsTemplate(n);
+    }
     if (input.kind === "matchDay" && input.carouselPage) {
       const c = input.carouselPage;
+      // The sponsors page's optional blocks (P6); the title page ignores them.
+      const { count, ...page } = sponsorsPageLayout(c);
       return look
-        ? skeletonWeekendTemplate(look, c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto)
-        : weekendBookendTemplate(c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto);
+        ? skeletonWeekendTemplate(look, c.page, count, c.title.length, c.hasCoverPhoto, page)
+        : weekendBookendTemplate(c.page, count, c.title.length, c.hasCoverPhoto, page);
     }
     if (input.kind === "matchSummary") {
       return look

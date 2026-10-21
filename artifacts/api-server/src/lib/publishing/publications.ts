@@ -7,6 +7,7 @@ import {
   type SocialPublicationRow,
 } from "@workspace/db";
 import type { Platform, PostType } from "./destination";
+import { notePhotoUsage } from "../card-content/photos";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Executor = typeof db | Tx;
@@ -211,6 +212,8 @@ export async function postDraftIfDone(tenantId: number, draftId: number): Promis
       ),
     )
     .returning();
+  // The photos it showed are now the most recently used (ADR-010 P4).
+  if (updated) await notePhotoUsage(updated);
   if (updated?.milestoneEventId) {
     await db
       .update(milestoneEventsTable)

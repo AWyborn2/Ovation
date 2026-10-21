@@ -1,7 +1,35 @@
 import type { PackCardTemplate } from "../types";
-import { clubHeaderFields, textField, slot } from "../shared";
+import { clubHeaderFields, textField } from "../shared";
 import { ckCard, ckFormats } from "./card";
-import { C, cq, display, eyebrow, meta } from "./parts";
+import { C, CK_COND, CK_SANS, cq, display, eyebrow, meta } from "./parts";
+import {
+  FLAT_SPONSORS_PAGE,
+  SPONSORS_PAGE_TEXT_FIELDS,
+  isFlatSponsorsPage,
+  sponsorGridHeight,
+  sponsorGridsHtml,
+  type SponsorsPageBudget,
+  type SponsorsPageLayout,
+} from "../sponsors-page";
+
+/** Characters the next home game line holds at full size (the shared name-fit rule). */
+export const NEXT_HOME_FIT = 30;
+
+/** Height (cqmin) the sponsors page's optional blocks take from the logo grid. */
+export const CK_BUDGET: SponsorsPageBudget = {
+  thankYou: 4,
+  cta: 5,
+  nextHome: 13,
+  socials: 5,
+  minGrid: 18,
+};
+export const CK_TALL_BUDGET: SponsorsPageBudget = {
+  thankYou: 5,
+  cta: 6,
+  nextHome: 16,
+  socials: 6,
+  minGrid: 30,
+};
 
 /** Private variants of matchDay; not standalone gallery kinds. Same Club Kit
  * layout, brand tokens, escaping, fonts and still-render harness as team cards. */
@@ -10,8 +38,12 @@ export function weekendBookendTemplate(
   sponsorCount: number,
   titleLength = 0,
   hasCoverPhoto = false,
+  /** The sponsors page's optional blocks (P6); none = the page as it was. */
+  options: Omit<SponsorsPageLayout, "count"> = FLAT_SPONSORS_PAGE,
 ): PackCardTemplate {
   const count = Math.max(0, sponsorCount);
+  const layout: SponsorsPageLayout =
+    page === "sponsors" ? { ...options, count } : { ...FLAT_SPONSORS_PAGE, count };
   return {
     kind: "matchDay",
     designKey: `weekend-${page}`,
@@ -26,51 +58,86 @@ export function weekendBookendTemplate(
         "weekendTitle",
         "date",
         "roundLabel",
+        "livestream",
+        ...(page === "sponsors" ? SPONSORS_PAGE_TEXT_FIELDS : []),
       ].map((k) => textField(k, k, "")),
     ],
     formats: ckFormats((f) => {
       const tall = f === "story" || f === "portrait";
-      const cols =
-        count <= 2
-          ? Math.max(count, 1)
-          : tall
-            ? count <= 10
-              ? 2
-              : count <= 18
-                ? 3
-                : 4
-            : count === 4
-              ? 2
-              : count <= 9
-                ? 3
-                : 4;
-      const rows = Math.ceil(count / cols);
       // All tiles, including an incomplete final row, share one exact 2:1
       // size. Limit total height by constraining the grid's width, never by
       // squashing individual logos. Tall cards use fewer, larger columns.
-      const gridHeight = f === "story" ? 112 : f === "portrait" ? 70 : 48;
-      const tileHeight = Math.max(
-        1,
-        (gridHeight - Math.max(0, rows - 1) * 1.5) / Math.max(rows, 1),
-      );
-      const gridWidth = tileHeight * 2 * cols + (cols - 1) * 1.5;
       const sponsorGrid = count
-        ? `<div data-weekend-sponsor-grid="1" style="display:flex;flex-wrap:wrap;justify-content:center;gap:1.5cqmin;width:100%;max-width:${gridWidth}cqmin;align-self:center;flex:none;margin-top:3cqmin">` +
-          Array.from(
-            { length: count },
-            (_, i) =>
-              `<div data-weekend-sponsor="${i}" data-sponsor-logo-frame="1" data-drop-if-empty="weekendSponsor${i}" style="flex:0 0 calc((100% - ${(cols - 1) * 1.5}cqmin) / ${cols});aspect-ratio:2 / 1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:.9cqmin;background:#fff;border:1px solid var(--ck-line);min-width:0;overflow:hidden">` +
-              slot(`weekendSponsor${i}`, "sponsor") +
-              `</div>`,
-          ).join("") +
-          "</div>"
+        ? sponsorGridsHtml({
+            count,
+            majorCount: layout.majorCount,
+            height: sponsorGridHeight(
+              f === "story" ? 112 : f === "portrait" ? 70 : 48,
+              layout,
+              tall ? CK_TALL_BUDGET : CK_BUDGET,
+            ),
+            gap: 1.5,
+            cols: (n) =>
+              n <= 2
+                ? Math.max(n, 1)
+                : tall
+                  ? n <= 10
+                    ? 2
+                    : n <= 18
+                      ? 3
+                      : 4
+                  : n === 4
+                    ? 2
+                    : n <= 9
+                      ? 3
+                      : 4,
+            majorCols: tall ? 2 : 3,
+            // With an option on, the grid has less height: size tiles to the space.
+            fitWidth: isFlatSponsorsPage(layout) ? undefined : f === "landscape" ? 150 : 84,
+            line: "var(--ck-line)",
+          })
         : meta(cq, "THANK YOU TO OUR CLUB COMMUNITY", ";margin-top:4cqmin");
+      // The page's optional blocks (P6): each drops when its value is empty.
+      const heading = layout.thankYou
+        ? display(
+            cq,
+            "{{sponsorThanks}}",
+            tall ? 8 : 6,
+            ";max-width:100%;overflow-wrap:anywhere;line-height:.95",
+          )
+        : display(cq, "OUR SPONSORS", tall ? 10 : 8);
+      const below =
+        (layout.cta
+          ? meta(cq, "{{sponsorCta}}", ";margin-top:2.4cqmin;max-width:100%").replace(
+              "<div ",
+              '<div data-drop-if-field="sponsorCta" ',
+            )
+          : "") +
+        (layout.nextHome
+          ? `<div data-drop-if-field="nextHomeMatch" data-sponsors-next-home="1" style="display:flex;flex-direction:column;align-items:flex-start;max-width:100%;min-width:0;margin-top:3cqmin">` +
+            eyebrow(cq, "NEXT HOME GAME") +
+            display(
+              cq,
+              "{{nextHomeMatch}}",
+              tall ? 5.4 : 4.6,
+              `;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.8cqmin;font-size:calc(${cq(tall ? 5.4 : 4.6)} * var(--fit,1))`,
+            ).replace("<div ", `<div data-fit="${NEXT_HOME_FIT}" `) +
+            meta(cq, "{{nextHomeWhen}}", ";margin-top:.6cqmin;max-width:100%") +
+            `</div>`
+          : "") +
+        (layout.socials
+          ? meta(
+              cq,
+              "{{sponsorSocials}}",
+              `;margin-top:2.4cqmin;max-width:100%;overflow-wrap:anywhere;color:${C.pt}`,
+            ).replace("<div ", '<div data-drop-if-field="sponsorSocials" ')
+          : "");
       return ckCard({
         format: f,
         chip: "THIS WEEKEND",
         wide: true,
         centerBody: page === "sponsors",
-        backdropPhoto: page === "title" && hasCoverPhoto ? "photo" : undefined,
+        backdropPhoto: hasCoverPhoto ? "photo" : undefined,
         body:
           page === "title"
             ? eyebrow(cq, "{{date}}") +
@@ -89,8 +156,13 @@ export function weekendBookendTemplate(
                 "<div ",
                 '<div data-drop-if-field="roundLabel" data-carousel-cover-label="1" data-fit="7" ',
               ) +
+              // The club's livestream link (P5): "WATCH LIVE" and the short address.
+              `<div data-drop-if-field="livestream" data-livestream="1" style="display:flex;align-items:center;gap:1.4cqmin;max-width:100%;min-width:0;margin-top:3cqmin">` +
+              `<span style="flex:none;padding:.6cqmin 1.4cqmin;background:${C.p};color:${C.onp};font-family:${CK_COND};font-weight:800;font-size:${cq(2.6)};letter-spacing:.06em">WATCH LIVE</span>` +
+              `<span style="min-width:0;font-family:${CK_SANS};font-weight:500;font-size:${cq(2.2)};color:${C.chalk2};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{livestream}}</span>` +
+              `</div>` +
               display(cq, "SWIPE &gt;&gt;", tall ? 10 : 8, `;margin-top:2cqmin;color:${C.pt}`)
-            : eyebrow(cq, "{{date}}") + display(cq, "OUR SPONSORS", tall ? 10 : 8) + sponsorGrid,
+            : eyebrow(cq, "{{date}}") + heading + sponsorGrid + below,
         footer: {
           hashtag: "clubHashtag",
           sponsors: "logos",

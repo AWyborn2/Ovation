@@ -10,6 +10,7 @@ import type {
 } from "@workspace/api-client-react";
 import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cache";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { slideContentFor, sourcesFor } from "@/test/carousel-sources";
 
 const api = vi.hoisted(() => ({ sources: vi.fn(), settings: vi.fn(), queue: vi.fn() }));
 vi.mock("@workspace/api-client-react", () => ({
@@ -82,25 +83,21 @@ const source = (number: string | null = "36", enabled = true): WeekendCarouselSo
     coverPhotos: [],
     timeZone: "Australia/Perth",
     warnings: [],
-    content: Object.fromEntries(
-      fixtures.map((f) => [
-        f.id,
+    // Each team list from the server's content builder (ADR-010 P7).
+    content: sourcesFor("teamList", fixtures, (f) => ({
+      kind: "teamList",
+      grade: f.grade,
+      ...(enabled ? { numbering: "shirt" } : {}),
+      players: [
         {
-          kind: "teamList",
-          grade: f.grade,
-          ...(enabled ? { numbering: "shirt" } : {}),
-          players: [
-            {
-              order: 1,
-              surname: "SMITH",
-              role: "C/WK",
-              ...(number && enabled ? { shirtNumber: number } : {}),
-            },
-            { order: 2, surname: "UNNUMBERED" },
-          ],
+          order: 1,
+          surname: "SMITH",
+          role: "C/WK",
+          ...(number && enabled ? { shirtNumber: number } : {}),
         },
-      ]),
-    ),
+        { order: 2, surname: "UNNUMBERED" },
+      ],
+    })),
   }) as WeekendCarouselSources;
 const bundle = { settings: {}, activeSponsors: [] } as unknown as SocialSettingsBundle;
 const clients: QueryClient[] = [];
@@ -139,7 +136,7 @@ describe("fresh playing numbers in carousel previews", () => {
     const hook = await mount();
     const fresh = source(null);
     const recovered = ["77", "18", "39", "102", "75", "105"];
-    fresh.content![1] = {
+    fresh.content![1] = slideContentFor("teamList", fixtures[0]!, {
       kind: "teamList",
       grade: "A Grade",
       numbering: "shirt",
@@ -151,7 +148,7 @@ describe("fresh playing numbers in carousel previews", () => {
         })),
         { order: 6, surname: "UNNUMBERED" },
       ],
-    };
+    });
     api.sources.mockResolvedValue(fresh);
     await act(() => hook.result.current.generate());
     for (const pack of CAROUSEL_PACK_IDS) {
@@ -165,11 +162,14 @@ describe("fresh playing numbers in carousel previews", () => {
     }
     await act(() => hook.result.current.runQueue());
     const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
-    expect(saved.slides[1].input).toEqual({ ...fresh.content![1], carouselContent: true });
+    // Version 2: the slide saves the content it was built from (ADR-010 P7).
+    expect(saved.slides[1].content).toEqual(fresh.content![1]);
     api.sources.mockResolvedValue(source(null));
     await act(() => hook.result.current.generate());
     expect(
-      saved.slides[1].input.players.slice(0, 6).map((p: { shirtNumber: string }) => p.shirtNumber),
+      saved.slides[1].content.source.players
+        .slice(0, 6)
+        .map((p: { shirtNumber: string }) => p.shirtNumber),
     ).toEqual(recovered);
   });
 
@@ -187,12 +187,12 @@ describe("fresh playing numbers in carousel previews", () => {
     }
     await act(() => hook.result.current.runQueue());
     const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
-    expect(saved.slides[1].input.players[0].shirtNumber).toBe("88");
+    expect(saved.slides[1].content.source.players[0].shirtNumber).toBe("88");
     api.sources.mockResolvedValue(source("99"));
     await act(() => invalidateTeamListCarouselSources(hook.client));
     await waitFor(() => expect(hook.result.current.stale).toBe(true));
     expect(hook.result.current.canQueue).toBe(false);
-    expect(saved.slides[1].input.players[0].shirtNumber).toBe("88");
+    expect(saved.slides[1].content.source.players[0].shirtNumber).toBe("88");
     expect(teamInput(hook).players[0].shirtNumber).toBe("88");
   });
 
@@ -219,7 +219,7 @@ describe("fresh playing numbers in carousel previews", () => {
     expect(hook.result.current.generated?.teams[1]).toMatchObject({
       photoId: 11,
       transform: { focalX: 0.2, focalY: 0.7, zoom: 1.8 },
-      input: { players: [{ shirtNumber: "88" }, {}] },
+      content: { source: { players: [{ shirtNumber: "88" }, {}] } },
     });
     expect(hook.result.current.packId).toBe("gold-foil-v1");
     expect(hook.result.current.size).toBe("story");

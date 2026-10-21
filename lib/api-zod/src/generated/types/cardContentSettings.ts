@@ -8,8 +8,11 @@
 import type { CardContentKindSettings } from './cardContentKindSettings';
 
 /**
- * Per content kind. Default: Standard (the cards as they were), junior consolidation on.
+ * Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.
  */
 export interface CardContentSettings {
   matchDay: CardContentKindSettings;
+  results?: CardContentKindSettings;
+  matchSummary?: CardContentKindSettings;
+  teamList?: CardContentKindSettings;
 }

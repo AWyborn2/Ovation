@@ -221,7 +221,15 @@ describe("weekend carousel protected sources", () => {
         setType: "teamList",
       });
       expect(res.status, JSON.stringify(res.body)).toBe(200);
-      return res.body.content;
+      // Each team list is content from the builder (ADR-010 P7); its source is the card input.
+      return Object.fromEntries(
+        Object.entries(res.body.content as Record<string, { kind: string; source: unknown }>).map(
+          ([id, c]) => {
+            expect(c.kind).toBe("teamList");
+            return [id, c.source];
+          },
+        ),
+      ) as Record<string, Record<string, unknown> & { players: Record<string, unknown>[] }>;
     };
     try {
       const original = await load();
@@ -269,13 +277,14 @@ describe("weekend carousel protected sources", () => {
     });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.fixtures.map((f: { id: number }) => f.id)).toEqual([expected[0], expected[2]]);
-    expect(res.body.content[expected[0]].players).toMatchObject([
+    expect(res.body.content[expected[0]]).toMatchObject({ kind: "teamList", junior: false });
+    expect(res.body.content[expected[0]].source.players).toMatchObject([
       { surname: "CAPTAIN", order: 1, role: "C/WK" },
       { surname: "EXTRA", order: 12 },
     ]);
     expect(res.body.content[expected[2]]).toMatchObject({
       junior: true,
-      players: [{ surname: "PLAYER" }],
+      source: { junior: true, players: [{ surname: "PLAYER" }] },
     });
     expect(JSON.stringify(res.body)).not.toMatch(/Private Junior|Unpublished Person|Other Tenant/);
     expect(res.body.warnings.join(" ")).toContain("no published team list");
@@ -315,6 +324,14 @@ describe("weekend carousel protected sources", () => {
     expect(res.body.photos.map((p: { id: number }) => p.id)).toContain(photoId);
     expect(res.body.photos.every((p: { grade: string }) => p.grade === "A Grade")).toBe(true);
     expect(res.body.coverPhotos.map((p: { id: number }) => p.id)).toEqual(coverIds);
+    // Automatic photos (ADR-010 P4) come only from the pools the admin is offered.
+    const offered = res.body.photos.map((p: { id: number }) => p.id);
+    expect(coverIds).toContain(res.body.photoPicks.cover);
+    expect(Object.keys(res.body.photoPicks.fixtures).map(Number).sort()).toEqual(
+      Object.keys(res.body.matchDayContent).map(Number).sort(),
+    );
+    for (const pick of Object.values(res.body.photoPicks.fixtures))
+      if (pick !== null) expect(offered).toContain(pick);
   });
   it("rejects invalid/reversed dates rather than normalising them", async () => {
     for (const [from, to] of [
