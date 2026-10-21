@@ -79,18 +79,20 @@ function sizeLayers(m: SizeMaps): Placed[] {
     key: "photo" | "sponsors",
   ) => {
     if (!pair) return;
-    // Only when off: add, shown when there is none.
+    // Only when off: add, shown when there is none, in the off capture's paint order.
+    const extra = new Map<MappedLayer, Placed>();
     for (const l of onlyIn(pair.off, pair.on)) {
       const sig = `${l.sig}|${key}-off`;
       if (seen.has(sig)) continue;
       seen.add(sig);
-      out.push({
+      extra.set(l, {
         sig,
         layer: { ...withDrop(l), showWhen: { ...withDrop(l).showWhen, [key]: false } },
         box: l.box,
         element: l.element,
       });
     }
+    insertInPaintOrder(out, pair.off.layers, extra);
     // Only when on: condition the base layer (unless it binds the photo itself).
     for (const l of onlyIn(pair.on, pair.off)) {
       const hit = out.find((p) => p.sig === l.sig);
@@ -104,11 +106,68 @@ function sizeLayers(m: SizeMaps): Placed[] {
   return out;
 }
 
+/**
+ * Insert `extra` into `out` where its capture painted it: after the nearest
+ * earlier layer of `captured` that `out` already has, so a fallback drawn
+ * under the photo isn't painted over everything.
+ */
+function insertInPaintOrder(
+  out: Placed[],
+  captured: MappedLayer[],
+  extra: Map<MappedLayer, Placed>,
+) {
+  let cursor = -1;
+  for (const l of captured) {
+    const add = extra.get(l);
+    if (add) {
+      out.splice(++cursor, 0, add);
+      continue;
+    }
+    const at = out.findIndex((p) => p.sig === l.sig);
+    if (at >= 0) cursor = at;
+  }
+}
+
 function withDrop(l: MappedLayer): LayerNoGeo {
   const layer = { ...l.layer } as LayerNoGeo;
   if (l.dropIfField && !binds(layer, l.dropIfField))
     layer.showWhen = { ...layer.showWhen, field: l.dropIfField };
   return layer;
+}
+
+/**
+ * One paint order that keeps every size's: a layer only one size draws (a
+ * story's angled band) goes where that size painted it, not on top of the
+ * layers all sizes share. Ties go to the order the layers were first seen;
+ * sizes that disagree fall back to it.
+ */
+export function paintOrder(lists: string[][]): string[] {
+  const first = new Map<string, number>();
+  for (const list of lists) for (const sig of list) if (!first.has(sig)) first.set(sig, first.size);
+  const after = new Map<string, Set<string>>();
+  const before = new Map<string, number>();
+  for (const sig of first.keys()) before.set(sig, 0);
+  for (const list of lists)
+    for (let i = 1; i < list.length; i++) {
+      const [a, b] = [list[i - 1]!, list[i]!];
+      const next = after.get(a) ?? new Set<string>();
+      if (a === b || next.has(b)) continue;
+      next.add(b);
+      after.set(a, next);
+      before.set(b, before.get(b)! + 1);
+    }
+  const left = new Set(first.keys());
+  const order: string[] = [];
+  const byFirst = (a: string, b: string) => first.get(a)! - first.get(b)!;
+  while (left.size) {
+    const ready = [...left].filter((s) => before.get(s) === 0).sort(byFirst);
+    // A cycle (two sizes stacking the same pair differently): take the earliest seen.
+    const sig = ready[0] ?? [...left].sort(byFirst)[0]!;
+    left.delete(sig);
+    order.push(sig);
+    for (const b of after.get(sig) ?? []) before.set(b, before.get(b)! - 1);
+  }
+  return order;
 }
 
 /** Layers across sizes: one per signature and style, a box per size. */
@@ -117,16 +176,13 @@ export function mergeSizes(
   /** Layer ids are unique in a document: each page's are prefixed with it. */
   prefix = "",
 ): TemplateLayerV2[] {
-  const order: string[] = [];
   const bySig = new Map<string, Array<{ size: TemplateSize; p: Placed }>>();
   for (const { size, layers } of perSize)
     for (const p of layers) {
-      if (!bySig.has(p.sig)) {
-        bySig.set(p.sig, []);
-        order.push(p.sig);
-      }
+      if (!bySig.has(p.sig)) bySig.set(p.sig, []);
       bySig.get(p.sig)!.push({ size, p });
     }
+  const order = paintOrder(perSize.map(({ layers }) => layers.map((p) => p.sig)));
   const out: TemplateLayerV2[] = [];
   let n = 0;
   for (const sig of order) {
