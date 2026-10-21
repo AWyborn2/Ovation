@@ -211,7 +211,7 @@ export async function ensureKindTemplate(
       source: KIND_SOURCE,
       baseKind: kind,
       cardKinds: [kind],
-        isKindDefault: true,
+      isKindDefault: true,
       adjustments: startingDocument(starter, kind),
       version: 1,
       updatedAt: new Date(),
@@ -331,39 +331,55 @@ export async function applyKindTemplate(
     const template = await loadKindTemplate(tenantId, kind, tx);
     if (!template) throw notFound("This card kind has no template yet.");
     if (template.version !== version) throw await conflict(template);
-    // Lock the unposted drafts: a publish racing this apply waits for it, and
-    // a draft already posted is simply not selected (R18).
-    const candidates = await tx
-      .select()
-      .from(socialDraftsTable)
-      .where(
-        and(
-          eq(socialDraftsTable.tenantId, tenantId),
-          inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
-          sql`${socialDraftsTable.cardInput}->>'kind' = ${kind}`,
-        ),
-      )
-      .for("update");
-    let changed = 0;
-    for (const draft of candidates) {
-      if (draftKind(draft) !== kind) continue;
-      await recordDraftRevision(draft, "template", tx);
-      await tx
-        .update(socialDraftsTable)
-        .set({
-          adjustments: structuredClone(template.adjustments ?? { layers: [] }),
-          packId: "blank",
-          templateVersion: template.version,
-          designEditedAt: null,
-          layoutWarnings: null,
-          layoutCheckPending: true,
-        })
-        .where(eq(socialDraftsTable.id, draft.id));
-      changed += 1;
-    }
-    const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
-    return { changed, skipped };
+    return applyTemplateToDrafts(tx, template, expectedDrafts);
   });
+}
+
+/**
+ * Copy a club template's current document into the unposted drafts of its
+ * kind, inside `tx` (the caller has checked the version the admin saw). Each
+ * draft records the template it came from (`template_ref`, ADR-011).
+ */
+export async function applyTemplateToDrafts(
+  tx: Tx,
+  template: CardTemplateRow,
+  expectedDrafts?: number,
+): Promise<{ changed: number; skipped: number }> {
+  const tenantId = template.tenantId;
+  const kind = template.baseKind ?? "";
+  // Lock the unposted drafts: a publish racing this apply waits for it, and
+  // a draft already posted is simply not selected (R18).
+  const candidates = await tx
+    .select()
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
+        sql`${socialDraftsTable.cardInput}->>'kind' = ${kind}`,
+      ),
+    )
+    .for("update");
+  let changed = 0;
+  for (const draft of candidates) {
+    if (draftKind(draft) !== kind) continue;
+    await recordDraftRevision(draft, "template", tx);
+    await tx
+      .update(socialDraftsTable)
+      .set({
+        adjustments: structuredClone(template.adjustments ?? { layers: [] }),
+        packId: "blank",
+        templateVersion: template.version,
+        templateRef: { copyId: template.id, version: template.version },
+        designEditedAt: null,
+        layoutWarnings: null,
+        layoutCheckPending: true,
+      })
+      .where(eq(socialDraftsTable.id, draft.id));
+    changed += 1;
+  }
+  const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
+  return { changed, skipped };
 }
 
 /** The design columns a new draft takes from its kind's template. */

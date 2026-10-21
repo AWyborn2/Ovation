@@ -17,6 +17,8 @@ const server = app.listen(config.PORT, (err) => {
     process.exit(1);
   }
   logger.info({ port: config.PORT }, "Server listening");
+  // Ovation's template bundles into the library (ADR-011); logs, never throws.
+  void import("./lib/template-library/bundles").then((m) => m.syncBundlesAtBoot());
 });
 
 /**
