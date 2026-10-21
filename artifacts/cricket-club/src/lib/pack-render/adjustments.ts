@@ -12,6 +12,7 @@
 
 import {
   documentPageLayers,
+  flattenLayers,
   isDocumentV2,
   layerDropped,
   LOGO_ROW_FIELDS,
@@ -41,8 +42,17 @@ import {
   type DrawnLayer,
   type LayoutContext,
 } from "./layer-layout";
-import { MOTION_KEYFRAMES, motionCss } from "./layer-motion";
-import { layerBoxCss, paletteVars, textStyleCss } from "./layer-style";
+import { hasLoops, LOOP_KEYFRAMES, MOTION_KEYFRAMES, motionCss } from "./layer-motion";
+import {
+  colourResolver,
+  layerBoxCss,
+  overlayHtml,
+  paletteVars,
+  shapeFillCss,
+  textStyleCss,
+  type StyleContext,
+} from "./layer-style";
+import { duotonePaletteFor } from "./duotone-vars";
 import { renderVector } from "./layer-vector";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import type { PackCardData, PackTokens } from "./types";
@@ -327,6 +337,8 @@ export interface FreeLayerContext {
   page?: PageKey;
   /** The format of the document being drawn; v2-only rules apply to 2. Set by `renderFreeLayers`. */
   formatVersion?: 1 | 2;
+  /** Whether the card is animated (loops that run on the text need it). Set by `renderFreeLayers`. */
+  animate?: boolean;
 }
 
 const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
@@ -498,7 +510,9 @@ function layerInner(
       // Format v2 text: its fit rule (T1.17) and its style additions (L1-D).
       const v2 = ctx.formatVersion === 2;
       const fitMore = v2 && tokens ? textFitAttrs((layer as unknown as TextLayerV2).fit) : "";
-      const after = v2 ? textStyleCss(layer.style) : [];
+      const after = v2
+        ? textStyleCss(layer.style, (layer as unknown as TextLayerV2).motion, ctx.animate === true)
+        : [];
       const body = fitMore
         ? `<span ${FIT_TEXT_ATTR} style="min-width:0;max-width:100%">${escapeHtml(text)}</span>`
         : escapeHtml(text);
@@ -508,8 +522,11 @@ function layerInner(
       return renderPhoto(layer, size, ctx);
     case "rows":
       return renderRows(layer, ctx);
-    case "shape":
-      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+    case "shape": {
+      // A v2 shape paints its fill (a colour or gradient) in place of v1's background.
+      const fill = ctx.formatVersion === 2 ? shapeFillCss(layer.style) : null;
+      return `<div style="width:100%;height:100%;background:${fill ?? s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+    }
     case "image": {
       // A template's image can be a field token (the club crest, the club's
       // ground photo), resolved from the club's own brand so no template holds
@@ -590,7 +607,19 @@ export function renderFreeLayers(
   const layers = documentPageLayers(doc, page);
   if (layers.length === 0) return "";
   const v2 = doc.sourceFormat === 2;
-  const drawCtx: FreeLayerContext = { ...ctx, formatVersion: doc.sourceFormat };
+  const drawCtx: FreeLayerContext = {
+    ...ctx,
+    formatVersion: doc.sourceFormat,
+    animate: opts.animate === true,
+  };
+  // What v2 styles read: the card's colours (an SVG filter needs real ones)
+  // and the filter definitions the overlay carries.
+  const tokens = ctx.tokens;
+  const styleCtx: StyleContext = {
+    colours: colourResolver(tokens, ctx.brand),
+    ...(tokens ? { duotone: () => duotonePaletteFor(tokens, ctx.brand) } : {}),
+    defs: new Map(),
+  };
   // Library elements read the Club Kit palette, derived from the club's
   // brand; only an overlay that uses it gets the extra declarations.
   // Template styles may name the palette directly (`var(--ck-stage)`), with
@@ -636,8 +665,10 @@ export function renderFreeLayers(
       rotate ? `transform:rotate(${num(rotate)}deg)` : "",
       layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
       ...motionCss(layer.motion, opts.animate === true),
-      ...(v2 ? layerBoxCss(layer) : []),
+      ...(v2 ? layerBoxCss(layer, styleCtx) : []),
     ].filter(Boolean);
+    // A grain or halftone texture sits over the layer's content (v2).
+    if (v2) inner += overlayHtml(layer.style);
     const css = [
       "position:absolute",
       `left:${num(x)}%`,
@@ -652,6 +683,8 @@ export function renderFreeLayers(
   };
 
   const parts = layers.map((layer) => draw(layer, 1)?.html ?? "");
-  const style = opts.animate ? `<style>${MOTION_KEYFRAMES}</style>` : "";
-  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
+  const loops = v2 && hasLoops(flattenLayers(layers)) ? LOOP_KEYFRAMES : "";
+  const style = opts.animate ? `<style>${MOTION_KEYFRAMES}${loops}</style>` : "";
+  const defs = [...styleCtx.defs.values()].join("");
+  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${defs}${parts.join("")}</div>`;
 }

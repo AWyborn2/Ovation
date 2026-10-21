@@ -162,25 +162,6 @@ describe("motion", () => {
   });
 });
 
-describe("the vector seam draws nothing yet (L1-D)", () => {
-  it("skips a vector layer and draws the rest", () => {
-    const v2 = {
-      formatVersion: 2,
-      pages: {
-        card: {
-          layers: [
-            { id: "v", kind: "vector", svg: "<svg></svg>", geometry: box },
-            text("plain", "PLAIN"),
-          ],
-        },
-      },
-    } as CardAdjustments;
-    const html = render(previewSample("player", "Sample Cricket Club"), v2);
-    expect(html).toContain('data-layer-id="plain"');
-    expect(html).not.toContain('data-layer-id="v"');
-  });
-});
-
 describe("a starter as an explicit v2 document", () => {
   // The starters' live boxes are all token-only, so the drop rule removes
   // nothing v1's empty-box rule doesn't, and the two read the same on sample,
