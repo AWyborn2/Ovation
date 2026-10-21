@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
+import { tenantsTable } from "./tenants";
 import { adminsTable } from "./admins";
 import { clubPhotosTable } from "./club_photos";
 import {
@@ -175,7 +176,12 @@ export const cardTemplatesTable = pgTable(
   "card_templates",
   {
     id: serial("id").primaryKey(),
-    tenantId: tenantIdColumn(),
+    // A club's templates go with the club (migration 0060): every new draft now
+    // creates its kind's default template, so the rows are the club's own config.
+    tenantId: integer("tenant_id")
+      .notNull()
+      .default(1)
+      .references(() => tenantsTable.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     // Which ShareCardInput["kind"] values this template is ASSIGNED to (the asset
     // types it may be used for). Empty = applies to every card kind.

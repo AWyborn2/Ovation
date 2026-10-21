@@ -2,7 +2,7 @@
  * Card kind template API (plan 2026-10-07-002, U5; ADR-002, ADR-003).
  * Real-DB integration test (needs DATABASE_URL).
  */
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -25,7 +25,6 @@ const adminIds: number[] = [];
 let cookie: string;
 let secondCookie: string;
 let otherCookie: string;
-const SWITCH = process.env.KIND_TEMPLATES;
 
 async function makeAdmin(tenant: number, name: string): Promise<string> {
   const [admin] = await db
@@ -63,11 +62,6 @@ beforeAll(async () => {
   otherCookie = await makeAdmin(otherTenantId, "Outsider");
 });
 
-afterEach(() => {
-  if (SWITCH === undefined) delete process.env.KIND_TEMPLATES;
-  else process.env.KIND_TEMPLATES = SWITCH;
-});
-
 afterAll(async () => {
   const tenants = [tenantId, otherTenantId];
   await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenants));
@@ -85,31 +79,16 @@ const as = (c: string, tenant = tenantId) => ({
     request(app).post(`/api${path}`).set("Cookie", c).set("x-tenant-id", String(tenant)).send(body),
 });
 
-const on = () => {
-  process.env.KIND_TEMPLATES = `${tenantId},${otherTenantId}`;
-};
-
-describe("switched off (KTD18)", () => {
-  it("reports disabled and answers 404 for every kind route", async () => {
-    delete process.env.KIND_TEMPLATES;
+describe("every club (ADR-011: no switch)", () => {
+  it("lists as enabled, with no template until one is needed", async () => {
     const list = await as(cookie).get("/kind-templates");
     expect(list.status).toBe(200);
-    expect(list.body).toEqual({ enabled: false, templates: [] });
-    expect((await as(cookie).get("/kind-templates/milestone")).status).toBe(404);
-    expect(
-      (await as(cookie).post("/kind-templates/milestone/start", { starter: "club-kit" })).status,
-    ).toBe(404);
-    const rows = await db
-      .select()
-      .from(cardTemplatesTable)
-      .where(and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, "kind")));
-    expect(rows).toHaveLength(0);
+    expect(list.body).toEqual({ enabled: true, templates: [] });
   });
 });
 
 describe("starting, saving and conflicts", () => {
   it("has no template until one is started, then starts at version 1", async () => {
-    on();
     expect((await as(cookie).get("/kind-templates/milestone")).status).toBe(404);
     const res = await as(cookie).post("/kind-templates/milestone/start", { starter: "club-kit" });
     expect(res.status).toBe(200);
@@ -119,7 +98,6 @@ describe("starting, saving and conflicts", () => {
   });
 
   it("saves a new version and rejects a stale save naming who saved (KTD7)", async () => {
-    on();
     const doc = placeholderDocument("milestone");
     const saved = await as(cookie).put("/kind-templates/milestone", {
       baseVersion: 1,
@@ -149,7 +127,6 @@ describe("starting, saving and conflicts", () => {
   });
 
   it("refuses a template with an empty size (KTD15)", async () => {
-    on();
     const doc = placeholderDocument("milestone");
     for (const layer of doc.layers) layer.sizes = ["square", "portrait", "landscape"];
     const res = await as(cookie).put("/kind-templates/milestone", {
@@ -161,7 +138,6 @@ describe("starting, saving and conflicts", () => {
   });
 
   it("refuses markup smuggled into style values, unknown settings and foreign fields", async () => {
-    on();
     const base = placeholderDocument("milestone");
     const bad = [
       // Breaks out of style="…" if printed raw.
@@ -189,7 +165,6 @@ describe("starting, saving and conflicts", () => {
   });
 
   it("restarting an existing template needs the current version", async () => {
-    on();
     const missing = await as(cookie).post("/kind-templates/milestone/start", {
       starter: "broadcast",
     });
@@ -203,14 +178,12 @@ describe("starting, saving and conflicts", () => {
   });
 
   it("answers 404 for an unknown kind", async () => {
-    on();
     expect((await as(cookie).get("/kind-templates/notAKind")).status).toBe(404);
   });
 });
 
 describe("lazy creation (KTD11)", () => {
   it("creates exactly one template under concurrent calls", async () => {
-    on();
     const [a, b] = await Promise.all([
       ensureKindTemplate(tenantId, "century", "club-kit-v1"),
       ensureKindTemplate(tenantId, "century", "club-kit-v1"),
@@ -227,7 +200,6 @@ describe("lazy creation (KTD11)", () => {
   });
 
   it("records a retired pack and shows the notice until dismissed (AE7)", async () => {
-    on();
     await ensureKindTemplate(tenantId, "teamList", "gold-foil-v1");
     let list = await as(cookie).get("/kind-templates");
     let teamList = list.body.templates.find((t: { kind: string }) => t.kind === "teamList");
@@ -240,7 +212,6 @@ describe("lazy creation (KTD11)", () => {
   });
 
   it("leaves the club's pack choice alone and stays out of the card-template list", async () => {
-    on();
     await db.insert(cardTemplatesTable).values({
       tenantId,
       name: "Pack",
@@ -262,7 +233,6 @@ describe("lazy creation (KTD11)", () => {
 
 describe("tenant isolation", () => {
   it("never shows or changes another club's template", async () => {
-    on();
     const other = as(otherCookie, otherTenantId);
     expect((await other.get("/kind-templates/milestone")).status).toBe(404);
     expect(
@@ -307,7 +277,6 @@ describe("applying to waiting drafts (R16, R18, AE4)", () => {
   };
 
   it("replaces every unposted draft's design, keeps captions, skips posted", async () => {
-    on();
     const plain = await draft("awaiting_review");
     const ready = await draft("ready");
     const tweaked = await draft("awaiting_review", {
@@ -355,14 +324,12 @@ describe("applying to waiting drafts (R16, R18, AE4)", () => {
   });
 
   it("refuses an apply for a version that is no longer current", async () => {
-    on();
     const res = await as(cookie).post("/kind-templates/milestone/apply", { version: 2 });
     expect(res.status).toBe(409);
     expect(res.body.currentVersion).toBe(3);
   });
 
   it("counts waiting drafts per kind in the list", async () => {
-    on();
     const list = await as(cookie).get("/kind-templates");
     const milestone = list.body.templates.find((t: { kind: string }) => t.kind === "milestone");
     expect(milestone.waitingDrafts).toBe(3);
@@ -378,7 +345,6 @@ describe("hand-made and hand-edited drafts (U7)", () => {
       .send(body);
 
   it("a card started from the club's design copies the kind template when on", async () => {
-    on();
     const res = await as(cookie).post("/social-drafts", {
       cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
       packId: "club-kit",
@@ -391,23 +357,15 @@ describe("hand-made and hand-edited drafts (U7)", () => {
     });
   });
 
-  it("a blank canvas stays blank, and the switch off keeps the pack", async () => {
-    on();
+  it("a blank canvas stays blank", async () => {
     const blank = await as(cookie).post("/social-drafts", {
       cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
       packId: "blank",
     });
     expect(blank.body.templateVersion).toBeNull();
-    delete process.env.KIND_TEMPLATES;
-    const off = await as(cookie).post("/social-drafts", {
-      cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
-      packId: "club-kit-v1",
-    });
-    expect(off.body).toMatchObject({ packId: "club-kit-v1", templateVersion: null });
   });
 
   it("a design edit on a templated draft marks the design, not the caption", async () => {
-    on();
     const created = await as(cookie).post("/social-drafts", {
       cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
       packId: "club-kit",

@@ -222,7 +222,16 @@ export async function runDraftSweep(
     // out of automation, so a failure here only delays it.
     try {
       // Renders need the full app logger (sponsor logo migration logs through it).
-      await runPendingLayoutChecks(tenantId, appLogger);
+      // Every club's drafts are templated since the library (ADR-011), so SRE
+      // watches this time per club (T3.23).
+      const started = Date.now();
+      const checked = await runPendingLayoutChecks(tenantId, appLogger);
+      if (checked > 0) {
+        logger.info(
+          { tenantId, checked, renderMs: Date.now() - started },
+          "sweep layout checks rendered",
+        );
+      }
     } catch (err) {
       logger.error({ err, tenantId }, "layout checks failed");
     }

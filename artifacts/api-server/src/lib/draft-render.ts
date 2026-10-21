@@ -114,7 +114,12 @@ export async function renderDraftSlides(
               junior: slide.junior,
               sponsorsOn: slide.sponsorsOn,
               strictImages: true,
-              adjustments: queuedSlideAdjustments(slide, size),
+              // A templated (version 3) set draws every slide from its one
+              // assembled document; each slide picks its page from its input.
+              adjustments:
+                carousel.version === 3
+                  ? (draft.adjustments ?? null)
+                  : queuedSlideAdjustments(slide, size),
             },
             harnessOrigin,
           ),

@@ -6332,10 +6332,12 @@ paths:
     get:
       operationId: listKindTemplates
       tags: [socialCards]
-      summary: The club's card kind templates and whether the feature is on
+      summary: The club's default card kind templates, one per kind
       description: >-
-        Card kind templates (plan 2026-10-07-002). `enabled` is false until the
-        KIND_TEMPLATES release switch includes this club; the list is then empty.
+        Card kind templates (plan 2026-10-07-002): each kind's default club
+        template (ADR-011). `enabled` is always true since the library shipped to
+        every club; this route and the field go with the Studio's move to
+        `/club-templates`.
       responses:
         "200":
           description: Kind templates
@@ -22203,6 +22205,20 @@ components:
         templateId:
           type: integer
           description: "Start from a saved editor template (its pack and adjustments)."
+        templateRef:
+          $ref: "#/components/schemas/TemplateRef"
+
+    TemplateRef:
+      type: object
+      required: [version]
+      description: >-
+        A template a draft or carousel is drawn with (ADR-011): one of the club's
+        templates (`copyId`) or a library template (`libraryTemplateId`), at a
+        version. Exactly one of the two ids.
+      properties:
+        copyId: { type: integer }
+        libraryTemplateId: { type: integer }
+        version: { type: integer }
 
     SaveDraftTemplateRequest:
       type: object
@@ -22247,7 +22263,7 @@ components:
       properties:
         enabled:
           type: boolean
-          description: Whether card kind templates are switched on for this club.
+          description: Always true (kept for today's Studio until `/club-templates` replaces this list).
         templates:
           type: array
           items:
@@ -22637,6 +22653,11 @@ components:
           type: ["integer", "null"]
           description: >-
             The card kind template version this draft copied; null for a draft that uses a pack.
+        templateRef:
+          description: The template this draft's design was copied from; null for a pack draft.
+          oneOf:
+            - $ref: "#/components/schemas/TemplateRef"
+            - type: "null"
         designEditedAt:
           type: ["string", "null"]
           format: date-time

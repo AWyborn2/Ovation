@@ -5,7 +5,13 @@
  * (`content` + `visibleFields`): what was approved is what posts. Each slide's
  * render input is derived from that content when the carousel is read, so
  * every reader (queue preview, publish render, junior photo check) still sees
- * `slide.input`. Version 1 payloads are read and rendered unchanged. */
+ * `slide.input`. Version 1 payloads are read and rendered unchanged.
+ *
+ * Version 3 (template library, ADR-011) is version 2 drawn with a template
+ * instead of a pack: `templateRef` names the club template or library version
+ * the set was built from, and the assembled document (one document, its pages
+ * the set's slides need) sits in the draft's `adjustments`. Its slides render
+ * on the blank base (`carouselPackId` answers "blank"). */
 import { contentInput } from "./card-content/render-input";
 import { readCardContent } from "./card-content/validate";
 import { readContentOverride, type ContentOverride } from "./card-content/settings";
@@ -28,8 +34,11 @@ export {
   isLegacyPackId,
   resolveActivePackId,
 } from "./pack-ids";
+/** The base a templated (version 3) carousel's slides render on. */
+export const CAROUSEL_TEMPLATE_BASE = "blank";
 /** Only absence means legacy. Explicit invalid selections must not fall back. */
-export function carouselPackId(carousel: { packId?: unknown }): string {
+export function carouselPackId(carousel: { packId?: unknown; version?: unknown }): string {
+  if (carousel.version === 3) return CAROUSEL_TEMPLATE_BASE;
   if (carousel.packId === undefined) return LEGACY_CAROUSEL_PACK_ID;
   if (!isCarouselPackId(carousel.packId))
     throw new Error("Unknown carousel design pack. Choose a registered built-in pack.");
@@ -58,9 +67,18 @@ export interface QueuedCarouselSlide {
   /** Version 2: the photo chosen for the slide (a junior stock image's id authorises it). */
   photoId?: number | null;
 }
+/** The template a version 3 carousel was built from: a club copy or a library version. */
+export interface CarouselTemplateRef {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
+}
 export interface QueuedCarousel {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
+  /** Versions 1 and 2 only. */
   packId?: string;
+  /** Version 3 only. */
+  templateRef?: CarouselTemplateRef;
   setType?: CarouselSetType;
   submissionId: string;
   size: CarouselSize;
@@ -137,11 +155,34 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
  * A legacy pack id (`LEGACY_PACK_IDS`) reads as Club Kit; the stored payload is
  * left as saved.
  */
+const positiveInt = (v: unknown): v is number => Number.isSafeInteger(v) && Number(v) > 0;
+
+/** A version 3 carousel's template ref: exactly one of a club copy or a library template. */
+export function readCarouselTemplateRef(ref: unknown): CarouselTemplateRef | null {
+  if (!object(ref) || !positiveInt(ref.version)) return null;
+  const keys = Object.keys(ref);
+  if (keys.some((k) => !["copyId", "libraryTemplateId", "version"].includes(k))) return null;
+  const copy = ref.copyId !== undefined;
+  const library = ref.libraryTemplateId !== undefined;
+  if (copy === library) return null;
+  if (copy && !positiveInt(ref.copyId)) return null;
+  if (library && !positiveInt(ref.libraryTemplateId)) return null;
+  return copy
+    ? { copyId: ref.copyId as number, version: ref.version }
+    : { libraryTemplateId: ref.libraryTemplateId as number, version: ref.version };
+}
+
 export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
   if (!object(input) || !object(input.weekendCarousel)) return null;
   let c = input.weekendCarousel;
   if (isLegacyPackId(c.packId)) c = { ...c, packId: resolveActivePackId(c.packId as string) };
-  if (c.version === 2) {
+  if (c.version === 3) {
+    // A templated set names its template, never a pack.
+    const ref = readCarouselTemplateRef(c.templateRef);
+    if (!ref || c.packId !== undefined) return null;
+    c = { ...c, templateRef: ref };
+  }
+  if (c.version === 2 || c.version === 3) {
     if (!Array.isArray(c.slides) || (c.contentOverride !== undefined && !object(c.contentOverride)))
       return null;
     const slides = c.slides.map(readSlideV2);
@@ -159,7 +200,7 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
         ? "matchSummary"
         : "matchDay";
   if (
-    (c.version !== 1 && c.version !== 2) ||
+    (c.version !== 1 && c.version !== 2 && c.version !== 3) ||
     typeof c.submissionId !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(c.submissionId) ||
     !["square", "portrait", "story", "landscape"].includes(String(c.size)) ||

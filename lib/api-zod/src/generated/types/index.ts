@@ -891,6 +891,7 @@ export * from './templateFitReport';
 export * from './templateFitStatus';
 export * from './templatePreviewInput';
 export * from './templatePreviewInputSource';
+export * from './templateRef';
 export * from './tenantBrand';
 export * from './tenantBrandThemeOverrides';
 export * from './tenantExploreImages';
