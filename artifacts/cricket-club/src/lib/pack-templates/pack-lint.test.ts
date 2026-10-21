@@ -100,6 +100,10 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   "club-kit-v1/matchDay": ["photo", "grade"],
   "club-kit-v1/countdown": ["photo"],
   "club-kit-v1/bigMoment": ["photo"],
+  // Duotone (P8): its Match Day card is photo-led (the duotone photo), and its
+  // match result's headline is the one-word result, as Club Kit's.
+  "duotone-v1/matchDay": ["photo"],
+  "duotone-v1/matchSummary": ["resultWord"],
 };
 
 /**

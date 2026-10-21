@@ -7,8 +7,8 @@
  * worst-case content and fails the build when a declared field has no box, a
  * hidden field still shows, or a name is cut off.
  *
- * Packs on the contract: Club Kit and Broadcast Dark. Any other pack id
- * (the four packs P9 retires) lays out as Club Kit.
+ * Packs on the contract: Club Kit, Broadcast Dark and Duotone (P8). Any other
+ * pack id (the four packs P9 retires) lays out as Club Kit.
  */
 
 import {
@@ -55,6 +55,34 @@ const DAY_CAPACITY = Object.fromEntries(
   ]),
 ) as Record<CardSize, Record<ContentPreset, number>>;
 
+/** A capacity matrix with one number per size, the same at every preset. */
+const perSize = (rows: Record<CardSize, number>) =>
+  Object.fromEntries(
+    CONTENT_LAYOUT_SIZES.map((size) => [
+      size,
+      Object.fromEntries(CONTENT_PRESETS.map((p) => [p, rows[size]])),
+    ]),
+  ) as Record<CardSize, Record<ContentPreset, number>>;
+
+/**
+ * Duotone's junior day rows (brief §7.2, measured in the browser): a list on
+ * the white sheet under the day's headline. Day slides carry no photo, so
+ * every preset holds the no-photo count. Result rows (outcome, both scores)
+ * are taller than fixture rows.
+ */
+export const DUOTONE_DAY_ROWS: Record<CardSize, number> = {
+  square: 5,
+  portrait: 6,
+  story: 7,
+  landscape: 4,
+};
+export const DUOTONE_RESULT_ROWS: Record<CardSize, number> = {
+  square: 4,
+  portrait: 5,
+  story: 6,
+  landscape: 4,
+};
+
 const ALL_MATCH_DAY_FIELDS = CONTENT_FIELDS.matchDay.map((f) => f.key);
 const fieldsOf = (kind: ContentKind) => CONTENT_FIELDS[kind].map((f) => f.key);
 
@@ -85,7 +113,7 @@ const OTHER_KINDS = {
   },
 };
 
-export const CONTENT_PACK_IDS = ["club-kit-v1", "broadcast-dark-v1"] as const;
+export const CONTENT_PACK_IDS = ["club-kit-v1", "broadcast-dark-v1", "duotone-v1"] as const;
 export type ContentPackId = (typeof CONTENT_PACK_IDS)[number];
 
 export const CONTENT_LAYOUTS: Record<ContentPackId, Record<ContentKind, ContentLayout>> = {
@@ -96,6 +124,14 @@ export const CONTENT_LAYOUTS: Record<ContentPackId, Record<ContentKind, ContentL
   "broadcast-dark-v1": {
     matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: DAY_CAPACITY },
     ...OTHER_KINDS,
+  },
+  // Duotone has the same boxes as the other two (no opposition crest on the
+  // match detail slide or the team list, no debut badge), and its own rows.
+  "duotone-v1": {
+    matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: perSize(DUOTONE_DAY_ROWS) },
+    results: { ...OTHER_KINDS.results, capacity: perSize(DUOTONE_RESULT_ROWS) },
+    matchSummary: { ...OTHER_KINDS.matchSummary, capacity: perSize(DUOTONE_RESULT_ROWS) },
+    teamList: OTHER_KINDS.teamList,
   },
 };
 

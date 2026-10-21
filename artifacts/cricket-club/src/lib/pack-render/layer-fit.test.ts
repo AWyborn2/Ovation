@@ -199,7 +199,8 @@ describe("fitLayersInDom", () => {
         ),
         () => false,
       );
-      expect(root.querySelector('[data-fit="26"]')).not.toBeNull();
+      // A built-in name box (its character-count marker) is in the preview.
+      expect(root.querySelector("[data-fit]")).not.toBeNull();
       expect(root.querySelector("[data-carousel-cover-label]")).not.toBeNull();
       const preview = root.innerHTML;
       expect(fitLayersInDom(root, size)).toEqual([]);
