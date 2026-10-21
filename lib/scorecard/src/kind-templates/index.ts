@@ -2,6 +2,7 @@ export * from "./document";
 export * from "./drop-rule";
 export * from "./fields";
 export * from "./fit-matrix";
+export * from "./fit-rules";
 export * from "./format";
 export * from "./looks";
 export * from "./normalise";

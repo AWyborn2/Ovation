@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
-import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
+import type { LayoutWarning, TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import { logger } from "./logger";
 import { env } from "../config";
 
@@ -184,6 +184,8 @@ type HarnessApi = {
   drawFrame: (t: number) => string;
   seek: (t: number) => Promise<void>;
   renderStill: (payload: { input: unknown; options: unknown }) => Promise<StillMeta>;
+  /** The template fit check (L2-B); absent on harnesses built before it. */
+  fitCheck?: (payload: { document: unknown; kind: string }) => Promise<TemplateFitReport>;
   dispose: () => void;
 };
 type HarnessGlobal = typeof globalThis & {
@@ -396,6 +398,56 @@ export async function renderCardStill(
     await page?.close().catch(() => {});
   }
 }
+
+/**
+ * Fit-check a template document (ADR-011 §4, L2-B): the harness draws every
+ * variant with worst-case content in one page and returns the report. Throws
+ * when the harness can't run it, so the caller leaves the target pending.
+ */
+export async function renderFitCheck(
+  document: unknown,
+  kind: string,
+  harnessOrigin?: string | null,
+  timeoutMs = FIT_CHECK_TIMEOUT_MS,
+): Promise<TemplateFitReport> {
+  const browser = await getBrowser();
+  // A context of its own keeps the page visible: a second tab in one context
+  // is hidden in headless Chrome and gets no animation frames, which the
+  // harness waits on.
+  const context = await browser.createBrowserContext();
+  let timer: NodeJS.Timeout | null = null;
+  try {
+    const page = await context.newPage();
+    page.on("pageerror", (err) =>
+      logger.warn({ err: String(err) }, "fit-check harness page error"),
+    );
+    await page.goto(harnessUrl(harnessOrigin), { waitUntil: "load", timeout: 30_000 });
+    await page.waitForFunction(
+      () => typeof (globalThis as HarnessGlobal).__cardRenderHarness?.fitCheck === "function",
+      { timeout: 30_000, polling: 200 },
+    );
+    // The check holds the shared render queue, so it may never hang it.
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`fit check timed out after ${timeoutMs} ms`)),
+        timeoutMs,
+      );
+    });
+    return await Promise.race([
+      page.evaluate(
+        async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.fitCheck!(payload),
+        { document, kind } as { document: unknown; kind: string },
+      ) as Promise<TemplateFitReport>,
+      timeout,
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+    await context.close().catch(() => {});
+  }
+}
+
+/** The longest one template's fit check may take (about 100 variants for a carousel kind). */
+export const FIT_CHECK_TIMEOUT_MS = 120_000;
 
 // Print a self-contained HTML page (the team sheet) to an A4 PDF on the shared
 // browser. Images are allowed a few seconds to load; a slow or missing one

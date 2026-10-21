@@ -37,6 +37,7 @@ import { loadDraftingGates } from "./posting-plan";
 import { runAvailabilitySchedule } from "./availability-schedule";
 import { autoSeedSquadIfEmpty } from "./squad-season-seed";
 import { runPendingLayoutChecks } from "./draft-render";
+import { retryPendingFits } from "./template-library/fit-job";
 import { logger as appLogger } from "./logger";
 import { calendarEnabled } from "./posting-writer";
 import { runPostingSlots, type PostingSlotsSummary } from "./posting-slots";
@@ -316,6 +317,15 @@ export async function sweepTenants(
         roundSets: 0,
         promoted: 0,
       });
+    }
+  }
+  // Template fit checks that didn't run (no harness, a restart) are asked for
+  // again by the every-club scheduled sweep (L2-B, T2.7).
+  if (tenantId == null && scope === "scheduled") {
+    try {
+      await retryPendingFits(undefined, logger);
+    } catch (err) {
+      logger.error({ err }, "template fit retries failed");
     }
   }
   return results;

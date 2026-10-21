@@ -52,7 +52,8 @@
     "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts",
     "spike-template-schema": "tsx ./src/spike-template-schema.ts",
     "convert-pack": "tsx ./src/convert-pack.ts",
-    "refresh-worst-case-names": "tsx ./src/refresh-worst-case-names.ts"
+    "refresh-worst-case-names": "tsx ./src/refresh-worst-case-names.ts",
+    "check-template-bundles": "tsx ./src/check-template-bundles.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
