@@ -36,3 +36,35 @@ export function lookForPack(packId: string | null | undefined, kind: string): st
 export function lookTemplateSlug(look: string, kind: string): string {
   return `${look}/${templateKindFor(kind)}`;
 }
+
+/**
+ * The starter look (the original layer starters, exported as bundles in L4-B)
+ * a pack falls back to while its converted look isn't in the library: the
+ * dark-ground packs to Broadcast Classic, the rest to Club Kit Classic.
+ */
+const PACK_TO_STARTER_LOOK: Readonly<Record<string, string>> = {
+  "club-kit-v1": "club-kit-classic",
+  "broadcast-dark-v1": "broadcast-classic",
+  "gold-foil-v1": "broadcast-classic",
+  "neon-night-v1": "broadcast-classic",
+  "bold-type-v1": "club-kit-classic",
+  "sunset-v1": "club-kit-classic",
+};
+
+export function starterLookForPack(packId: string | null | undefined): string {
+  return (packId && PACK_TO_STARTER_LOOK[packId]) || "club-kit-classic";
+}
+
+/**
+ * Where a club's lazy default for `kind` is copied from, best first: its
+ * pack's look, Club Kit's look, then its pack's starter look.
+ */
+export function lazyDefaultSlugs(packId: string | null | undefined, kind: string): string[] {
+  return [
+    ...new Set([
+      lookTemplateSlug(lookForPack(packId, kind), kind),
+      lookTemplateSlug(CLUB_KIT_LOOK, kind),
+      lookTemplateSlug(starterLookForPack(packId), kind),
+    ]),
+  ];
+}
