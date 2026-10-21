@@ -414,6 +414,20 @@
       "when": 1792562203058,
       "tag": "0058_card_crest_and_junior_names",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792568263890,
+      "tag": "0059_template_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792573253472,
+      "tag": "0060_card_templates_tenant_cascade",
+      "breakpoints": true
     }
   ]
 }

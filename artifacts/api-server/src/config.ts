@@ -67,6 +67,15 @@ export const env = {
   // ── Object storage ───────────────────────────────────────────────────────
   PUBLIC_OBJECT_SEARCH_PATHS: () => optional("PUBLIC_OBJECT_SEARCH_PATHS"),
   PRIVATE_OBJECT_DIR: () => optional("PRIVATE_OBJECT_DIR"),
+  /**
+   * Dev only (template library, ADR-011 T3.12): a folder that stands in for
+   * public object storage where Replit's storage sidecar isn't running (the
+   * local dev stack). Library assets are written under `<dir>/public/library/`
+   * and served by `/storage/public-objects/*`. Ignored on a Replit deployment,
+   * so production always uses object storage.
+   */
+  LOCAL_OBJECT_STORAGE_DIR: () =>
+    process.env.REPLIT_DEPLOYMENT ? undefined : optional("LOCAL_OBJECT_STORAGE_DIR"),
 
   // ── Card video rendering ─────────────────────────────────────────────────
   RENDER_HARNESS_URL: () => optional("RENDER_HARNESS_URL"),
@@ -77,14 +86,6 @@ export const env = {
   // ── Social Studio drafting sweep ─────────────────────────────────────────
   /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
   SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
-
-  // ── Card kind templates (plan 2026-10-07-002, ADR-003) ───────────────────
-  /**
-   * Release switch: "all", or a comma-separated list of tenant ids. Unset (the
-   * default) keeps every club on design packs, so republishing main is safe
-   * while the starter designs are incomplete.
-   */
-  KIND_TEMPLATES: () => optional("KIND_TEMPLATES"),
 
   // ── Meta publishing (plan 2026-10-06-001) ────────────────────────────────
   /** Platform kill switch: connect and publish run only when this is "1". */
@@ -177,6 +178,14 @@ export const env = {
    * key needed); set before Ovation charges clubs (KTD14 licence note).
    */
   OPEN_METEO_API_KEY: () => optional("OPEN_METEO_API_KEY"),
+
+  // ── Template library: Figma import (ADR-011 §9) ──────────────────────────
+  /**
+   * Personal access token of Ovation's designer account, scope "File content:
+   * read" only. Unset = the Figma import is off. Personal tokens expire after
+   * at most 90 days: renew it before then (runbook).
+   */
+  FIGMA_ACCESS_TOKEN: () => optional("FIGMA_ACCESS_TOKEN"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();
@@ -209,12 +218,6 @@ const BootSchema = z
     CENTRAL_PROJECTION: z.enum(["off", "dry", "on"]).optional(),
     SMS_PROVIDER: z.enum(["twilio", "clicksend"]).optional(),
     META_PUBLISHING_ENABLED: z.enum(["0", "1"]).optional(),
-    KIND_TEMPLATES: z
-      .string()
-      // Spaces and stray commas are fine ("1, 7," reads as 1 and 7), exactly
-      // as the switch itself parses it.
-      .regex(/^\s*(all|[\d\s,]*)\s*$/, 'must be "all" or a comma-separated list of tenant ids')
-      .optional(),
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),
     META_LOGIN_CONFIG_ID: z.string().optional(),

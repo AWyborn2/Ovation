@@ -162,20 +162,13 @@ describe("motion", () => {
   });
 });
 
-describe("the seams draw nothing new yet", () => {
-  it("draws no group (L1-C) or vector (L1-D), and doesn't fail on them", () => {
+describe("the vector seam draws nothing yet (L1-D)", () => {
+  it("skips a vector layer and draws the rest", () => {
     const v2 = {
       formatVersion: 2,
       pages: {
         card: {
           layers: [
-            {
-              id: "g",
-              kind: "group",
-              geometry: box,
-              stack: { direction: "column", gap: 1 },
-              children: [text("child", "CHILD")],
-            },
             { id: "v", kind: "vector", svg: "<svg></svg>", geometry: box },
             text("plain", "PLAIN"),
           ],
@@ -184,8 +177,6 @@ describe("the seams draw nothing new yet", () => {
     } as CardAdjustments;
     const html = render(previewSample("player", "Sample Cricket Club"), v2);
     expect(html).toContain('data-layer-id="plain"');
-    expect(html).not.toContain('data-layer-id="g"');
-    expect(html).not.toContain('data-layer-id="child"');
     expect(html).not.toContain('data-layer-id="v"');
   });
 });

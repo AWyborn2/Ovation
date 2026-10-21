@@ -29,6 +29,7 @@ import type {
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
+  AdoptLookResult,
   ApplyKindTemplateRequest,
   ApplyKindTemplateResult,
   AutoseedCardSetBody,
@@ -123,8 +124,11 @@ import type {
   ClubRoleInput,
   ClubRoleUpdate,
   ClubSeasonGradeLeaders,
+  ClubTemplate,
+  ClubTemplateList,
   CommitImportInput,
   CommitImportResult,
+  CreateClubTemplateRequest,
   CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
@@ -177,6 +181,7 @@ import type {
   GetSocialLadderPrefillParams,
   GetSocialRoundResultsPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GetTemplatePreviewInputParams,
   GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
   GradeDecisionList,
@@ -251,10 +256,14 @@ import type {
   KioskTokenResponse,
   KnownCardCrestList,
   LadderCardRow,
+  LibraryLookList,
+  LibraryTemplate,
+  LibraryTemplatePage,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
   ListClubPhotosParams,
+  ListClubTemplatesParams,
   ListEmailSendsParams,
   ListFixturesParams,
   ListFixturesResultsParams,
@@ -264,6 +273,7 @@ import type {
   ListJuniorPlayersParams,
   ListJuniorShirtNumbersParams,
   ListJuniorStatCorrectionsParams,
+  ListLibraryTemplatesParams,
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
@@ -354,6 +364,7 @@ import type {
   ReschedulePublicationRequest,
   RoundResults,
   SaveCardPhotoRulesRequest,
+  SaveClubTemplateRequest,
   SaveDraftTemplateRequest,
   SaveKindTemplateRequest,
   SchedulePublicationsRequest,
@@ -419,6 +430,7 @@ import type {
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
+  TakeTemplateUpdateRequest,
   TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
@@ -428,6 +440,7 @@ import type {
   TeamOfDecadeMemberUpdate,
   TeamSheetPreview,
   TeamSheetPrintBody,
+  TemplatePreviewInput,
   TenantBrand,
   TenantPlan,
   TenantPlayhqSyncStatus,
@@ -20828,8 +20841,8 @@ export const getListKindTemplatesUrl = () => {
 }
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Card kind templates (plan 2026-10-07-002): each kind's default club template (ADR-011). `enabled` is always true since the library shipped to every club; this route and the field go with the Studio's move to `/club-templates`.
+ * @summary The club's default card kind templates, one per kind
  */
 export const listKindTemplates = async ( options?: RequestInit): Promise<KindTemplateList> => {
 
@@ -20876,7 +20889,7 @@ export type ListKindTemplatesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary The club's card kind templates and whether the feature is on
+ * @summary The club's default card kind templates, one per kind
  */
 
 export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>(
@@ -21259,6 +21272,1063 @@ export const useApplyKindTemplate = <TError = ErrorType<void | KindTemplateConfl
         TContext
       > => {
       return useMutation(getApplyKindTemplateMutationOptions(options));
+    }
+
+export const getListLibraryTemplatesUrl = (params?: ListLibraryTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/template-library?${stringifiedParams}` : `/api/template-library`
+}
+
+/**
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look. Library reads never return any club's own templates.
+ * @summary Browse the template library
+ */
+export const listLibraryTemplates = async (params?: ListLibraryTemplatesParams, options?: RequestInit): Promise<LibraryTemplatePage> => {
+
+  return customFetch<LibraryTemplatePage>(getListLibraryTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryTemplatesQueryKey = (params?: ListLibraryTemplatesParams,) => {
+    return [
+    `/api/template-library`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLibraryTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryTemplates>>, TError = ErrorType<unknown>>(params?: ListLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryTemplates>>> = ({ signal }) => listLibraryTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryTemplates>>>
+export type ListLibraryTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Browse the template library
+ */
+
+export function useListLibraryTemplates<TData = Awaited<ReturnType<typeof listLibraryTemplates>>, TError = ErrorType<unknown>>(
+ params?: ListLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListLibraryLooksUrl = () => {
+
+
+
+
+  return `/api/template-library/looks`
+}
+
+/**
+ * @summary The library's looks and the kinds each covers
+ */
+export const listLibraryLooks = async ( options?: RequestInit): Promise<LibraryLookList> => {
+
+  return customFetch<LibraryLookList>(getListLibraryLooksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryLooksQueryKey = () => {
+    return [
+    `/api/template-library/looks`
+    ] as const;
+    }
+
+
+export const getListLibraryLooksQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryLooks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryLooksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryLooks>>> = ({ signal }) => listLibraryLooks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryLooksQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryLooks>>>
+export type ListLibraryLooksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The library's looks and the kinds each covers
+ */
+
+export function useListLibraryLooks<TData = Awaited<ReturnType<typeof listLibraryLooks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryLooksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdoptLibraryLookUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/looks/${id}/adopt`
+}
+
+/**
+ * For every kind the look covers, reuses the club's unedited copy of the look's template at its current version, or creates one, and makes it the kind's default, in one transaction. Kinds the look doesn't cover keep their defaults.
+ * @summary Make a look's templates the club's defaults
+ */
+export const adoptLibraryLook = async (id: number, options?: RequestInit): Promise<AdoptLookResult> => {
+
+  return customFetch<AdoptLookResult>(getAdoptLibraryLookUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdoptLibraryLookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adoptLibraryLook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adoptLibraryLook>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adoptLibraryLook(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdoptLibraryLookMutationResult = NonNullable<Awaited<ReturnType<typeof adoptLibraryLook>>>
+
+    export type AdoptLibraryLookMutationError = ErrorType<void>
+
+    /**
+ * @summary Make a look's templates the club's defaults
+ */
+export const useAdoptLibraryLook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adoptLibraryLook>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdoptLibraryLookMutationOptions(options));
+    }
+
+export const getGetTemplatePreviewInputUrl = (params: GetTemplatePreviewInputParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/template-library/preview-input?${stringifiedParams}` : `/api/template-library/preview-input`
+}
+
+/**
+ * The club's latest senior draft input of the kind. Never a junior draft. With none, `source` is `sample` and the client draws the kind's sample in the club's identity.
+ * @summary The card input library thumbnails draw with
+ */
+export const getTemplatePreviewInput = async (params: GetTemplatePreviewInputParams, options?: RequestInit): Promise<TemplatePreviewInput> => {
+
+  return customFetch<TemplatePreviewInput>(getGetTemplatePreviewInputUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplatePreviewInputQueryKey = (params?: GetTemplatePreviewInputParams,) => {
+    return [
+    `/api/template-library/preview-input`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTemplatePreviewInputQueryOptions = <TData = Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError = ErrorType<void>>(params: GetTemplatePreviewInputParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplatePreviewInputQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplatePreviewInput>>> = ({ signal }) => getTemplatePreviewInput(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplatePreviewInputQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplatePreviewInput>>>
+export type GetTemplatePreviewInputQueryError = ErrorType<void>
+
+
+/**
+ * @summary The card input library thumbnails draw with
+ */
+
+export function useGetTemplatePreviewInput<TData = Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError = ErrorType<void>>(
+ params: GetTemplatePreviewInputParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplatePreviewInputQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}`
+}
+
+/**
+ * A listed template, or one the club holds a copy of (listed or not).
+ * @summary One library template at its current version
+ */
+export const getLibraryTemplate = async (id: number, options?: RequestInit): Promise<LibraryTemplate> => {
+
+  return customFetch<LibraryTemplate>(getGetLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/template-library/${id}`
+    ] as const;
+    }
+
+
+export const getGetLibraryTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryTemplate>>> = ({ signal }) => getLibraryTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLibraryTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryTemplate>>>
+export type GetLibraryTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library template at its current version
+ */
+
+export function useGetLibraryTemplate<TData = Awaited<ReturnType<typeof getLibraryTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLibraryTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListClubTemplatesUrl = (params?: ListClubTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-templates?${stringifiedParams}` : `/api/club-templates`
+}
+
+/**
+ * @summary The club's own templates, defaults first within each kind
+ */
+export const listClubTemplates = async (params?: ListClubTemplatesParams, options?: RequestInit): Promise<ClubTemplateList> => {
+
+  return customFetch<ClubTemplateList>(getListClubTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubTemplatesQueryKey = (params?: ListClubTemplatesParams,) => {
+    return [
+    `/api/club-templates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListClubTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listClubTemplates>>, TError = ErrorType<unknown>>(params?: ListClubTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubTemplates>>> = ({ signal }) => listClubTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listClubTemplates>>>
+export type ListClubTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's own templates, defaults first within each kind
+ */
+
+export function useListClubTemplates<TData = Awaited<ReturnType<typeof listClubTemplates>>, TError = ErrorType<unknown>>(
+ params?: ListClubTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClubTemplateUrl = () => {
+
+
+
+
+  return `/api/club-templates`
+}
+
+/**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const createClubTemplate = async (createClubTemplateRequest: CreateClubTemplateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getCreateClubTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getCreateClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['createClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubTemplate>>, {data: BodyType<CreateClubTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createClubTemplate>>>
+    export type CreateClubTemplateMutationBody = BodyType<CreateClubTemplateRequest>
+    export type CreateClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const useCreateClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubTemplate>>,
+        TError,
+        {data: BodyType<CreateClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateClubTemplateMutationOptions(options));
+    }
+
+export const getGetClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+export const getClubTemplate = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getGetClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/club-templates/${id}`
+    ] as const;
+    }
+
+
+export const getGetClubTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getClubTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubTemplate>>> = ({ signal }) => getClubTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getClubTemplate>>>
+export type GetClubTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+
+export function useGetClubTemplate<TData = Awaited<ReturnType<typeof getClubTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * A new document is the club's edit: the first one makes the template its own (no more update prompts), and every one starts a fit check. Renaming alone is neither.
+ * @summary Save one of the club's templates (rejected when someone saved first)
+ */
+export const saveClubTemplate = async (id: number,
+    saveClubTemplateRequest: SaveClubTemplateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getSaveClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveClubTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveClubTemplate>>, {id: number;data: BodyType<SaveClubTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveClubTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveClubTemplate>>>
+    export type SaveClubTemplateMutationBody = BodyType<SaveClubTemplateRequest>
+    export type SaveClubTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save one of the club's templates (rejected when someone saved first)
+ */
+export const useSaveClubTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveClubTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveClubTemplateMutationOptions(options));
+    }
+
+export const getDeleteClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * @summary Delete one of the club's templates (never a kind's default)
+ */
+export const deleteClubTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClubTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubTemplate>>>
+
+    export type DeleteClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete one of the club's templates (never a kind's default)
+ */
+export const useDeleteClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClubTemplateMutationOptions(options));
+    }
+
+export const getDuplicateClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/duplicate`
+}
+
+/**
+ * @summary Duplicate one of the club's templates
+ */
+export const duplicateClubTemplate = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getDuplicateClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDuplicateClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['duplicateClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateClubTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  duplicateClubTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateClubTemplate>>>
+
+    export type DuplicateClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Duplicate one of the club's templates
+ */
+export const useDuplicateClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateClubTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDuplicateClubTemplateMutationOptions(options));
+    }
+
+export const getSetClubTemplateDefaultUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/default`
+}
+
+/**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const setClubTemplateDefault = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getSetClubTemplateDefaultUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetClubTemplateDefaultMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['setClubTemplateDefault'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setClubTemplateDefault>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  setClubTemplateDefault(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetClubTemplateDefaultMutationResult = NonNullable<Awaited<ReturnType<typeof setClubTemplateDefault>>>
+
+    export type SetClubTemplateDefaultMutationError = ErrorType<void>
+
+    /**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const useSetClubTemplateDefault = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setClubTemplateDefault>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSetClubTemplateDefaultMutationOptions(options));
+    }
+
+export const getTakeClubTemplateUpdateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/update`
+}
+
+/**
+ * Replaces the template's document with the library template's current version. The template stays unedited. Refused for a template the club has changed (it is the club's own) and when there is no newer version.
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const takeClubTemplateUpdate = async (id: number,
+    takeTemplateUpdateRequest: TakeTemplateUpdateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getTakeClubTemplateUpdateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      takeTemplateUpdateRequest,)
+  }
+);}
+
+
+
+
+export const getTakeClubTemplateUpdateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext> => {
+
+const mutationKey = ['takeClubTemplateUpdate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, {id: number;data: BodyType<TakeTemplateUpdateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  takeClubTemplateUpdate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TakeClubTemplateUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof takeClubTemplateUpdate>>>
+    export type TakeClubTemplateUpdateMutationBody = BodyType<TakeTemplateUpdateRequest>
+    export type TakeClubTemplateUpdateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const useTakeClubTemplateUpdate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof takeClubTemplateUpdate>>,
+        TError,
+        {id: number;data: BodyType<TakeTemplateUpdateRequest>},
+        TContext
+      > => {
+      return useMutation(getTakeClubTemplateUpdateMutationOptions(options));
+    }
+
+export const getApplyClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/apply`
+}
+
+/**
+ * Replaces the design of every unposted draft of the template's kind; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply one of the club's templates to its kind's unposted drafts
+ */
+export const applyClubTemplate = async (id: number,
+    applyKindTemplateRequest: ApplyKindTemplateRequest, options?: RequestInit): Promise<ApplyKindTemplateResult> => {
+
+  return customFetch<ApplyKindTemplateResult>(getApplyClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      applyKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getApplyClubTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['applyClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyClubTemplate>>, {id: number;data: BodyType<ApplyKindTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  applyClubTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyClubTemplate>>>
+    export type ApplyClubTemplateMutationBody = BodyType<ApplyKindTemplateRequest>
+    export type ApplyClubTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Apply one of the club's templates to its kind's unposted drafts
+ */
+export const useApplyClubTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyClubTemplate>>,
+        TError,
+        {id: number;data: BodyType<ApplyKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getApplyClubTemplateMutationOptions(options));
     }
 
 export const getRunDraftSweepUrl = () => {

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useConfirm } from "@/components/confirm-dialog";
 import {
   useCreateSocialDraft,
+  type TemplateRef,
   useDeleteEditorTemplate,
   useListEditorTemplates,
   getListEditorTemplatesQueryKey,
@@ -73,6 +74,11 @@ type Props = {
   input: ShareCardInput;
   /** The design it previews in (the club's default pack for the kind). */
   packId: string | null;
+  /**
+   * The template picked for this card (ADR-011): "Open in editor" then makes
+   * the draft from that template rather than the pack.
+   */
+  templateRef?: TemplateRef | null;
   /** A fresh card of another kind, for a template saved from that kind. */
   inputFor: (kind: CardKind) => ShareCardInput;
   /** Tenant data and theme, for the Club Kit design thumbnails. */
@@ -87,7 +93,14 @@ type Props = {
  * (awaiting review, never auto-posted) and opens it; the editor's Elements
  * panel then offers every Club Kit element for the design.
  */
-export function EditorStarters({ input, packId, inputFor, data = null, theme = null }: Props) {
+export function EditorStarters({
+  input,
+  packId,
+  templateRef = null,
+  inputFor,
+  data = null,
+  theme = null,
+}: Props) {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -152,7 +165,11 @@ export function EditorStarters({ input, packId, inputFor, data = null, theme = n
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Button variant="outline" disabled={busy} onClick={() => start({ cardInput, packId })}>
+          <Button
+            variant="outline"
+            disabled={busy}
+            onClick={() => start(templateRef ? { cardInput, templateRef } : { cardInput, packId })}
+          >
             <PenSquare className="mr-2 h-4 w-4" aria-hidden />
             Open in editor
           </Button>

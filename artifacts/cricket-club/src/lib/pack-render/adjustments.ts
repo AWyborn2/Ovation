@@ -14,6 +14,7 @@ import {
   documentPageLayers,
   isDocumentV2,
   layerDropped,
+  LOGO_ROW_FIELDS,
   normaliseDocument,
   PHOTO_TOKEN,
   primaryPage,
@@ -31,9 +32,15 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
-import { FIT_ATTR, textFitAttrs } from "./layer-fit";
+import { FIT_ATTR, FIT_TEXT_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
-import { layerShows, renderGroup, type DrawnLayer, type LayoutContext } from "./layer-layout";
+import {
+  groupDepthAllowed,
+  layerShows,
+  renderGroup,
+  type DrawnLayer,
+  type LayoutContext,
+} from "./layer-layout";
 import { MOTION_KEYFRAMES, motionCss } from "./layer-motion";
 import { layerBoxCss, paletteVars, textStyleCss } from "./layer-style";
 import { renderVector } from "./layer-vector";
@@ -309,6 +316,12 @@ export interface FreeLayerContext {
   rowVariants?: Record<string, Array<string | undefined>>;
   /** The card photo for `photo` layers; null/absent draws nothing. */
   photoUrl?: string | null;
+  /**
+   * The card's bound images (crests, sponsor logos, the club logo), for v2
+   * image tokens and conditions. Photos are already left out of a junior
+   * card the server hasn't cleared.
+   */
+  images?: Record<string, string>;
   /** The card's kind and the page to draw (format v2); absent → the kind's primary page. */
   kind?: string;
   page?: PageKey;
@@ -401,6 +414,16 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         cell.h === undefined ? "height:100%" : `height:${num(cell.h, 100)}%`,
         "overflow:hidden",
       ];
+      // A stand-in (a monogram) draws only where the field it stands in for is empty.
+      if (cell.fallbackFor && (row[cell.fallbackFor] ?? "").trim()) return "";
+      if (cell.show === "logo") {
+        // A crest or sponsor logo the row holds, whole, on any card. Only logo
+        // fields: a logo cell can never put a photo on a junior card.
+        const src = LOGO_ROW_FIELDS.includes(cell.field) ? (row[cell.field] ?? "").trim() : "";
+        if (!src) return "";
+        const radius = style.radius != null ? `;border-radius:${num(style.radius)}px` : "";
+        return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" /></div>`;
+      }
       if (cell.show === "backdrop") {
         const bg = cssValue(style.background);
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
@@ -472,11 +495,14 @@ function layerInner(
       if (tokens && text.trim() === "") return null;
       // Live-field text shrinks to fit (KTD9); other text renders as before.
       const fit = tokens ? ` ${FIT_ATTR}="${fitBase(raw)}"` : "";
-      // Format v2 text: its fit rule and its style additions (L1-C, L1-D).
+      // Format v2 text: its fit rule (T1.17) and its style additions (L1-D).
       const v2 = ctx.formatVersion === 2;
-      const fitMore = v2 ? textFitAttrs((layer as unknown as TextLayerV2).fit) : "";
+      const fitMore = v2 && tokens ? textFitAttrs((layer as unknown as TextLayerV2).fit) : "";
       const after = v2 ? textStyleCss(layer.style) : [];
-      return `<div${fit}${fitMore} style="${textCss(raw, ["width:100%", "height:100%"], after)}">${escapeHtml(text)}</div>`;
+      const body = fitMore
+        ? `<span ${FIT_TEXT_ATTR} style="min-width:0;max-width:100%">${escapeHtml(text)}</span>`
+        : escapeHtml(text);
+      return `<div${fit}${fitMore} style="${textCss(raw, ["width:100%", "height:100%"], after)}">${body}</div>`;
     }
     case "photo":
       return renderPhoto(layer, size, ctx);
@@ -491,6 +517,8 @@ function layerInner(
       if (hasFieldTokens(layer.content)) {
         const src = substituteTokens(layer.content ?? "", {
           ...values,
+          // v2 images bind any image token the page has (crests, sponsor logos).
+          ...(ctx.formatVersion === 2 ? ctx.images : undefined),
           clubLogo: ctx.brand?.logoUrl ?? "",
           groundPhoto: ctx.brand?.groundPhotoUrl ?? "",
         }).trim();
@@ -530,6 +558,7 @@ function hasToken(token: string, values: Record<string, string>, ctx: FreeLayerC
   if (token === "clubLogo") return !!ctx.brand?.logoUrl;
   if (token === "groundPhoto") return !!ctx.brand?.groundPhotoUrl;
   if (token === PHOTO_TOKEN) return !!ctx.photoUrl && !(ctx.junior && !ctx.juniorPhotoAllowed);
+  if ((ctx.images?.[token] ?? "").trim()) return true;
   const rows =
     ctx.rows && Object.prototype.hasOwnProperty.call(ctx.rows, token) ? ctx.rows[token] : null;
   return Array.isArray(rows) && rows.length > 0;
@@ -578,8 +607,11 @@ export function renderFreeLayers(
     hasSponsors: ["sponsor1", "sponsor2", "sponsor3", "sponsors"].some(has),
   };
 
-  /** One layer, positioned on the artboard; null when it isn't drawn on this card. */
-  const draw = (layer: TemplateLayerV2): DrawnLayer | null => {
+  /**
+   * One layer, positioned on the artboard; null when it isn't drawn on this
+   * card. `depth` is how deep it sits in groups (1 = the page's own layer).
+   */
+  const draw = (layer: TemplateLayerV2, depth: number): DrawnLayer | null => {
     if (layer.hidden) return null;
     if (layer.sizes && !layer.sizes.includes(size)) return null;
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
@@ -587,8 +619,10 @@ export function renderFreeLayers(
     if (v2 && (!layerShows(layer, layout) || layerDropped(layer, { kind, page, has }))) return null;
     let inner: string | null;
     if (layer.kind === "group") {
+      // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
+      if (!groupDepthAllowed(depth)) return null;
       const children = (Array.isArray(layer.children) ? layer.children : [])
-        .map(draw)
+        .map((child) => draw(child, depth + 1))
         .filter((child): child is DrawnLayer => child !== null);
       inner = renderGroup(layer as GroupLayerV2, box.value, children, layout);
     } else if (layer.kind === "vector") {
@@ -598,22 +632,26 @@ export function renderFreeLayers(
     }
     if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;
+    const style = [
+      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
+      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
+      ...motionCss(layer.motion, opts.animate === true),
+      ...(v2 ? layerBoxCss(layer) : []),
+    ].filter(Boolean);
     const css = [
       "position:absolute",
       `left:${num(x)}%`,
       `top:${num(y)}%`,
       `width:${num(w)}%`,
       `height:${num(h)}%`,
-      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
-      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
-      ...motionCss(layer.motion, opts.animate === true),
-      ...(v2 ? layerBoxCss(layer) : []),
-    ].filter(Boolean);
-    const html = `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
-    return { layer, box: box.value, html };
+      ...style,
+    ];
+    const attrs = ` data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""}`;
+    const html = `<div${attrs} style="${css.join(";")}">${inner}</div>`;
+    return { layer, box: box.value, attrs, style, inner, html };
   };
 
-  const parts = layers.map((layer) => draw(layer)?.html ?? "");
+  const parts = layers.map((layer) => draw(layer, 1)?.html ?? "");
   const style = opts.animate ? `<style>${MOTION_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
 }

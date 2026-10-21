@@ -15,10 +15,13 @@ export function SlidePreview({
   slide,
   size,
   packId = WEEKEND_PACK_ID,
+  document,
 }: {
   slide: WeekendSlide;
   size: CardSize;
   packId?: string;
+  /** A templated (version 3) carousel's assembled document, drawn on every slide. */
+  document?: unknown;
 }) {
   return (
     <div className="min-w-0 space-y-2" data-testid={`slide-${slide.id}`}>
@@ -33,7 +36,11 @@ export function SlidePreview({
           junior={slide.junior}
           data={slide.data}
           packId={packId}
-          adjustments={slideAdjustments(slide, size)}
+          adjustments={
+            document !== undefined
+              ? (document as Parameters<typeof PackCard>[0]["adjustments"])
+              : slideAdjustments(slide, size)
+          }
         />
       </div>
       <p className="text-center text-xs text-muted-foreground">{slide.label}</p>
