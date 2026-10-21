@@ -11202,6 +11202,353 @@ export const ApplyKindTemplateResponse = zod.object({
 
 
 /**
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look. Library reads never return any club's own templates.
+ * @summary Browse the template library
+ */
+export const ListLibraryTemplatesQueryParams = zod.object({
+  "kind": zod.coerce.string().optional(),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional(),
+  "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
+})
+
+export const ListLibraryTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})),
+  "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
+})
+
+
+/**
+ * @summary The library's looks and the kinds each covers
+ */
+export const ListLibraryLooksResponse = zod.object({
+  "looks": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "authorName": zod.string(),
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number(),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+})
+}))
+}))
+})
+
+
+/**
+ * For every kind the look covers, reuses the club's unedited copy of the look's template at its current version, or creates one, and makes it the kind's default, in one transaction. Kinds the look doesn't cover keep their defaults.
+ * @summary Make a look's templates the club's defaults
+ */
+export const AdoptLibraryLookParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdoptLibraryLookResponse = zod.object({
+  "look": zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),
+  "changed": zod.array(zod.object({
+  "kind": zod.string(),
+  "copyId": zod.number(),
+  "created": zod.boolean().describe('Whether a new copy was made (else an unedited one was reused).')
+})),
+  "unchanged": zod.array(zod.object({
+  "kind": zod.string(),
+  "copyId": zod.number()
+}))
+})
+
+
+/**
+ * The club's latest senior draft input of the kind. Never a junior draft. With none, `source` is `sample` and the client draws the kind's sample in the club's identity.
+ * @summary The card input library thumbnails draw with
+ */
+export const GetTemplatePreviewInputQueryParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const GetTemplatePreviewInputResponse = zod.object({
+  "kind": zod.string(),
+  "source": zod.enum(['draft', 'sample']),
+  "draftId": zod.number().optional(),
+  "input": zod.unknown().describe('The draft\'s card input (ShareCardInput JSON); null for `sample`.')
+})
+
+
+/**
+ * A listed template, or one the club holds a copy of (listed or not).
+ * @summary One library template at its current version
+ */
+export const GetLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * @summary The club's own templates, defaults first within each kind
+ */
+export const ListClubTemplatesQueryParams = zod.object({
+  "kind": zod.coerce.string().optional()
+})
+
+export const ListClubTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}))
+})
+
+
+/**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const CreateClubTemplateBody = zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number().optional().describe('A library version; the current one when absent.'),
+  "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+export const GetClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplateResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}).and(zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
+}))
+
+
+/**
+ * A new document is the club's edit: the first one makes the template its own (no more update prompts), and every one starts a fit check. Renaming alone is neither.
+ * @summary Save one of the club's templates (rejected when someone saved first)
+ */
+export const SaveClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveClubTemplateBodyNameMax = 80;
+
+
+
+export const SaveClubTemplateBody = zod.object({
+  "baseVersion": zod.number().describe('The version this edit started from.'),
+  "name": zod.string().min(1).max(saveClubTemplateBodyNameMax).optional(),
+  "document": zod.record(zod.string(), zod.unknown()).optional().describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+export const SaveClubTemplateResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}).and(zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
+}))
+
+
+/**
+ * @summary Delete one of the club's templates (never a kind's default)
+ */
+export const DeleteClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Duplicate one of the club's templates
+ */
+export const DuplicateClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const SetClubTemplateDefaultParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetClubTemplateDefaultResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}).and(zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
+}))
+
+
+/**
+ * Replaces the design of every unposted draft of the template's kind; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply one of the club's templates to its kind's unposted drafts
+ */
+export const ApplyClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApplyClubTemplateBody = zod.object({
+  "version": zod.number().describe('The saved template version to apply.'),
+  "expectedDrafts": zod.number().optional().describe('How many waiting drafts the admin was shown; any shortfall is reported as skipped.')
+})
+
+export const ApplyClubTemplateResponse = zod.object({
+  "changed": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
  * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
  * @summary Run the social drafting sweep (scheduled job / fixtures projection)
  */
