@@ -506,6 +506,12 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       if (opacity < 1) style.opacity = r2(opacity);
       const filters = imageFilters(tree, el, polish);
       if (filters.length) style.filter = filters;
+      // A blend on a wrapper blends the image inside it (Bold Type's photo screens onto
+      // the panel behind it).
+      const blend = [el, ...tree.ancestors(el)]
+        .map((e) => e.style["mix-blend-mode"])
+        .find((b) => b && b !== "normal");
+      if (blend) style.blend = blend as BlendMode;
       if (!PHOTO_SLOTS.has(slot) && slot !== "groundPhoto" && el.style["object-fit"] === "cover")
         polish.push({
           element: el.id,
@@ -701,6 +707,9 @@ export function fillOverBox(
     },
   };
 }
+
+/** Outlined text's stand-in fill: this share of the stroke's own opacity. */
+const OUTLINE_FILL = 0.5;
 
 /** One side of a border drawn on fewer than four sides. */
 type Edge = {
@@ -1016,7 +1025,10 @@ function shapeStyle(
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
       });
-  return { style, key: JSON.stringify(style), edges };
+  // The signature that matches this paint across sizes: its colours, not its lengths
+  // (a radius or shadow in px differs per size; the merge splits styles that differ).
+  const key = JSON.stringify([style.fill ?? null, style.border?.color ?? null, !!style.boxShadow]);
+  return { style, key, edges };
 }
 
 const FONT_GENERIC =
@@ -1081,8 +1093,22 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
   if (clip === "text" && el.style["background-image"]) {
     const gradient = gradientFill(splitTopLevel(el.style["background-image"])[0] ?? "", ctx, el);
     if (gradient) style.textFill = gradient;
-  } else if (fillColour && parseColour(fillColour)?.a === 0) {
-    ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
+  } else if (
+    (fillColour && parseColour(fillColour)?.a === 0) ||
+    parseColour(tree.style(el, "color"))?.a === 0
+  ) {
+    // Outlined text (Bold Type's watermark numbers): v2 has no text stroke, so it's a
+    // faint fill in the stroke's colour, at half the stroke's strength.
+    const strokePx = px(tree.style(el, "-webkit-text-stroke-width"));
+    const stroke = ctx.colour(el, "-webkit-text-stroke-color");
+    if (Number.isFinite(strokePx) && strokePx > 0 && stroke) {
+      style.color = stroke;
+      style.opacity = r2((style.opacity ?? 1) * OUTLINE_FILL);
+      ctx.polish.push({
+        element: el.id,
+        what: "outlined text drawn as a faint fill (no text stroke in v2)",
+      });
+    } else ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
   }
   return style;
 }

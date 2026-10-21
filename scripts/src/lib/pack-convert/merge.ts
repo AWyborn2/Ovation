@@ -117,16 +117,15 @@ export function mergeSizes(
   /** Layer ids are unique in a document: each page's are prefixed with it. */
   prefix = "",
 ): TemplateLayerV2[] {
-  const order: string[] = [];
   const bySig = new Map<string, Array<{ size: TemplateSize; p: Placed }>>();
   for (const { size, layers } of perSize)
     for (const p of layers) {
-      if (!bySig.has(p.sig)) {
-        bySig.set(p.sig, []);
-        order.push(p.sig);
-      }
+      if (!bySig.has(p.sig)) bySig.set(p.sig, []);
       bySig.get(p.sig)!.push({ size, p });
     }
+  // Back to front as every size draws it: a layer only some sizes have goes where those
+  // sizes draw it, not after everything else (where it would cover what it sits under).
+  const order = mergeOrder(perSize.map(({ layers }) => layers.map((p) => p.sig)));
   const out: TemplateLayerV2[] = [];
   let n = 0;
   for (const sig of order) {
@@ -150,6 +149,35 @@ export function mergeSizes(
     }
   }
   return out;
+}
+
+/**
+ * One order for every size's layers, each size's own order kept: a layer only
+ * one size has goes just before the next layer it shares with the others, or
+ * after the last one it shares.
+ */
+export function mergeOrder(lists: readonly (readonly string[])[]): string[] {
+  const merged: string[] = [];
+  for (const list of lists) {
+    let after = -1;
+    list.forEach((key, i) => {
+      const at = merged.indexOf(key);
+      if (at >= 0) {
+        after = Math.max(after, at);
+        return;
+      }
+      let pos = after + 1;
+      for (const next of list.slice(i + 1)) {
+        const k = merged.indexOf(next);
+        if (k < 0) continue;
+        if (k > after) pos = k;
+        break;
+      }
+      merged.splice(pos, 0, key);
+      after = pos;
+    });
+  }
+  return merged;
 }
 
 // ── Stacks ──────────────────────────────────────────────────────────────────
@@ -190,9 +218,19 @@ export function stackContainers(
     else if (moved(was, l.box)) g.moves = true;
     groups.set(c.id, g);
   }
+  const inside = (id: number, container: CapturedElement) => {
+    for (let e = byId.get(id); e && e.parent !== null; e = byId.get(e.parent))
+      if (e.parent === container.id) return true;
+    return false;
+  };
   const out = [];
   for (const g of groups.values()) {
     if (!g.moves || !g.conditional || g.sigs.length < 2) continue;
+    // A stack moves all it holds: one with nested blocks laid out by their own flex
+    // containers (a sponsor grid, a next-game block) would collapse its own members over
+    // them, so it isn't stacked and every layer keeps its box.
+    if (m.base.layers.some((l) => !g.sigs.includes(l.sig) && inside(l.element, g.container)))
+      continue;
     const st = g.container.style;
     const direction = (st["flex-direction"] ?? "row").startsWith("column") ? "column" : "row";
     const gapPx = px(direction === "column" ? st["row-gap"] : st["column-gap"]);

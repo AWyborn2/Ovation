@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CapturedElement, PackCapture } from "@workspace/scorecard/pack-capture";
 import type { TemplateLayerV2 } from "@workspace/scorecard/kind-templates";
 import { Tree, alignTrees, fillOverBox, joinRuns, mapCapture, readingOrder } from "./map";
-import { mergePage, mergeSizes } from "./merge";
+import { mergeOrder, mergePage, mergeSizes, stackContainers, type SizeMaps } from "./merge";
 
 const TEXT = {
   "font-family": '"Barlow Condensed", "Arial Narrow", sans-serif',
@@ -291,5 +291,60 @@ describe("text fill over a taller box", () => {
       ],
     });
     expect(fillOverBox(style, { y: 0, h: 100 }, { y: 0, h: 100 })).toBe(style);
+  });
+});
+
+describe("stacks", () => {
+  // A flex column (1) holding two texts, a text only Full shows, and maybe a nested block.
+  function maps(nested: boolean): SizeMaps {
+    id = 0;
+    const elements = [
+      el(null, "div", [0, 0, 1080, 1080]),
+      el(0, "div", [60, 100, 960, 600], { style: { display: "flex", "flex-direction": "column" } }),
+      el(1, "div", [60, 100, 960, 50]),
+      el(1, "div", [60, 160, 960, 50]),
+      el(1, "div", [60, 220, 960, 50]),
+      el(1, "div", [60, 280, 960, 200], { style: { display: "flex" } }),
+      el(5, "div", [60, 280, 300, 200]),
+    ];
+    const layer = (sig: string, element: number, y: number) => ({
+      sig,
+      layer: { kind: "text", content: sig } as never,
+      box: { x: 5, y, w: 90, h: 5 },
+      element,
+    });
+    const base = [layer("a", 2, 10), layer("b", 3, 15), layer("full", 4, 20)];
+    if (nested) base.push(layer("tile", 6, 26));
+    const result = (layers: typeof base) => ({ layers, polish: [], untokenised: [], motion: {} });
+    return {
+      size: "square",
+      base: result(base),
+      baseCapture: { elements, native: { w: 1080, h: 1080 } } as unknown as PackCapture,
+      // Minimal hides "full" and moves "b" up.
+      minimal: result([layer("a", 2, 10), layer("b", 3, 12)]),
+    };
+  }
+
+  it("stacks a flex container whose members move between presets", () => {
+    const stacks = stackContainers(maps(false));
+    expect(stacks).toHaveLength(1);
+    expect(stacks[0]!.sigs).toEqual(["a", "b", "full"]);
+    expect(stacks[0]!.stack.direction).toBe("column");
+  });
+
+  it("doesn't stack a container with a nested flex block, which the stack would overlap", () => {
+    expect(stackContainers(maps(true))).toEqual([]);
+  });
+});
+
+describe("merging sizes", () => {
+  it("keeps a layer only some sizes have where they draw it", () => {
+    // Portrait's chip shape has its own signature: it still goes under the chip's text.
+    expect(
+      mergeOrder([
+        ["stage", "chip:sq", "chipText", "name"],
+        ["stage", "chip:po", "chipText", "name"],
+      ]),
+    ).toEqual(["stage", "chip:sq", "chip:po", "chipText", "name"]);
   });
 });
