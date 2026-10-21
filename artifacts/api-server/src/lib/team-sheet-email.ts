@@ -66,3 +66,49 @@ export function teamSheetEmail(
   ];
   return { subject, text: lines.join("\n") };
 }
+
+/**
+ * Subject and body for several sides in one email (Email all, scheduled): every
+ * sheet is a page of the one attached PDF. One sheet reads like a single send.
+ */
+export function teamSheetsEmail(sheets: TeamSheet[]): { subject: string; text: string } {
+  if (sheets.length === 1) return teamSheetEmail(sheets[0], false);
+  const rounds = [...new Set(sheets.map((s) => s.round).filter((r): r is string => !!r))];
+  const subject = `${sheets[0].clubName} team sheets${rounds.length === 1 ? ` — ${rounds[0]}` : ""} (${sheets.length} sides)`;
+  const lines = [
+    `${sheets.length} team sheets, one page each in the attached PDF:`,
+    "",
+    ...sheets.map(
+      (s) =>
+        `${s.grade}${s.round ? ` ${s.round}` : ""}: ${s.homeTeam} v ${s.awayTeam} — ${s.date}, ${s.startTime}${s.venue ? ` at ${s.venue}` : ""}`,
+    ),
+  ];
+  return { subject, text: lines.join("\n") };
+}
+
+/** The attachment's file name: the side's own for one sheet, else the round's. */
+export function teamSheetsFileName(sheets: TeamSheet[]): string {
+  const slug = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  if (sheets.length === 1)
+    return `${slug(`team-sheet-${sheets[0].grade}-${sheets[0].round ?? ""}`)}.pdf`;
+  const rounds = [...new Set(sheets.map((s) => s.round).filter((r): r is string => !!r))];
+  return `${slug(`team-sheets-${rounds.length === 1 ? rounds[0] : sheets[0].date}`)}.pdf`;
+}
+
+/** Recipients grouped by the exact set of sheets they get: one email (one PDF) per group. */
+export function groupRecipients(
+  sheetsOf: Map<string, number[]>,
+): { ids: number[]; to: string[] }[] {
+  const groups = new Map<string, { ids: number[]; to: string[] }>();
+  for (const [address, ids] of sheetsOf) {
+    const key = ids.join(",");
+    const g = groups.get(key) ?? { ids, to: [] };
+    g.to.push(address);
+    groups.set(key, g);
+  }
+  return [...groups.values()];
+}

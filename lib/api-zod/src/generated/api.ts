@@ -4071,6 +4071,29 @@ export const PrintTeamSheetBody = zod.object({
 
 
 /**
+ * Queues the finalised sides given (the ones shown on the Selection Hub
+board; drafts are ignored) as one batch. Each contact on a list that
+isn't switched off and covers one of them gets a single email with all
+the sheets they are due as pages of one PDF; contacts due the same
+sheets share one bcc'd email. Senior and junior sheets never share an
+email. Sending happens in the background; the send log shows it.
+
+ * @summary Email every finalised side on the board to the lists covering it, one email per contact (admin or captain)
+ */
+export const emailAllTeamSheetsBodySelectionIdsMax = 60;
+
+
+
+export const EmailAllTeamSheetsBody = zod.object({
+  "selectionIds": zod.array(zod.number()).min(1).max(emailAllTeamSheetsBodySelectionIdsMax)
+})
+
+export const EmailAllTeamSheetsResponse = zod.object({
+  "sides": zod.number().describe('Finalised sides queued')
+})
+
+
+/**
  * Queues the printable team sheet for every active team-sheet email list
 covering the side's grade that isn't switched off; each call sends
 again. Sending happens in the background and the club's send log shows
@@ -4265,8 +4288,8 @@ export const ListEmailSendsQueryParams = zod.object({
 
 export const ListEmailSendsResponseItem = zod.object({
   "id": zod.number(),
-  "listId": zod.number(),
-  "listName": zod.string(),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
+  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
@@ -4289,8 +4312,8 @@ export const ResendEmailSendParams = zod.object({
 
 export const ResendEmailSendResponse = zod.object({
   "id": zod.number(),
-  "listId": zod.number(),
-  "listName": zod.string(),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
+  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
