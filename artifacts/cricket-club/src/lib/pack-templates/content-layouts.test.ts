@@ -23,8 +23,12 @@ import {
   matchDayFixtureContent,
   milestoneWatchContent,
   presetFields,
+  resultContent,
+  teamListContent,
   type ContentPreset,
+  type TeamListSource,
 } from "@workspace/scorecard/card-content";
+import type { MatchSummaryInput } from "@workspace/scorecard";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { buildPackData } from "@/lib/pack-card-data";
@@ -529,5 +533,168 @@ describe.each(CONTENT_PACK_IDS)("junior day fit grid: %s", (packId) => {
     expect(text, where).not.toContain("CRICKET CLUB INC");
     expect(html, where).toContain("https://crest.test/r0.png");
     expectNamesFit(doc, where);
+  });
+});
+
+// ── Results, match summaries and team lists (ADR-010 P7) ────────────────────
+// Each slide is built from the server builders' content and laid out with
+// the set kind's fields: the round, the crest, shirt numbers and debut badges
+// print exactly when their field is on, and every name still fits.
+
+const P7_FIXTURE: Fixture = { ...fixture, id: -91, isHome: true };
+const P7_RESULT = {
+  kind: "matchSummary",
+  matchTitle: `${fixture.grade} • Round 3`,
+  roundLabel: "Round 3",
+  result: "Our Cricket Club won by 2 wickets",
+  resultWinner: "club",
+  club: {
+    name: "Our Cricket Club",
+    primaryColor: "#090",
+    secondaryColor: "#fff",
+    textColor: "#fff",
+  },
+  opposition: {
+    name: LONG_OPPONENT,
+    primaryColor: "#123",
+    secondaryColor: "#fff",
+    textColor: "#fff",
+    logoUrl: "https://crest.test/rmd.png",
+  },
+  innings: [
+    {
+      teamKey: "opposition",
+      inningsNum: 1,
+      totalRuns: "212",
+      wickets: "10",
+      overs: "49.4",
+      topBatters: [{ name: "Christopher Montgomery-Smythe", runs: 104 }],
+      topBowlers: [{ name: "Alexander Fitzgerald", wickets: 5, runs: 31, overs: "10" }],
+    },
+    {
+      teamKey: "club",
+      inningsNum: 1,
+      totalRuns: "213",
+      wickets: "8",
+      overs: "48.1",
+      topBatters: [{ name: "Benjamin Worthington", runs: 88, notOut: true }],
+      topBowlers: [{ name: "Maximilian Featherstonehaugh", wickets: 4, runs: 40, overs: "10" }],
+    },
+  ],
+};
+const P7_SIDE = Array.from({ length: 14 }, (_, i) => ({
+  order: i + 1,
+  surname: i === 0 ? "FEATHERSTONEHAUGH-WORTHINGTON" : `PLAYER${i + 1}`,
+  firstInitial: "M",
+  ...(i === 0 ? { role: "C/WK" } : {}),
+  ...(i === 2 ? { debut: true } : {}),
+  ...(i === 3 ? { overseas: true } : {}),
+  shirtNumber: String(40 + i),
+}));
+const P7_TEAM_LIST = {
+  kind: "teamList",
+  gradeRound: `${fixture.grade.toUpperCase()} — ROUND 3`,
+  competitionLine: fixture.grade,
+  venueDateTime: `${fixture.venue} • SAT 10 OCT • 10:00 AM`,
+  players: P7_SIDE,
+  grade: fixture.grade,
+  roundLabel: "ROUND 3",
+  opponent: LONG_OPPONENT,
+  opponentLogoUrl: "https://crest.test/rmd.png",
+  homeAway: "HOME",
+  venue: fixture.venue,
+  date: "SAT 10 OCT",
+  startTime: "10:00 AM",
+  numbering: "shirt",
+};
+
+function p7Slide(kind: "results" | "matchSummary" | "teamList", preset: ContentPreset) {
+  const content =
+    kind === "teamList"
+      ? teamListContent(
+          {
+            ...P7_FIXTURE,
+            roundLabel: "Round 3",
+            venue: fixture.venue!,
+            startAt: new Date(fixture.startAt),
+          },
+          P7_TEAM_LIST as unknown as TeamListSource,
+        )
+      : resultContent(P7_RESULT as unknown as MatchSummaryInput, {
+          kind,
+          matchId: 91,
+          grade: fixture.grade,
+          day: "2026-10-10",
+        });
+  const teams = createTeamSlides([P7_FIXTURE], [teamPhoto], {
+    [P7_FIXTURE.id]: content as unknown as Record<string, unknown>,
+  });
+  teams[0].photoId = teamPhoto.id;
+  const slides = buildWeekendSlides(
+    teams,
+    [teamPhoto],
+    bundle,
+    "Results",
+    "2026-10-09",
+    "2026-10-11",
+    "Australia/Perth",
+    undefined,
+    undefined,
+    null,
+    undefined,
+    presetFields(kind, preset),
+  );
+  return slides[1]!;
+}
+
+describe.each(CONTENT_PACK_IDS)("P7 fit grid: %s", (packId) => {
+  describe.each(["results", "matchSummary", "teamList"] as const)("%s", (kind) => {
+    const prefix = kind === "teamList" ? "team" : "result";
+    describe.each(CONTENT_PRESETS)("%s preset", (preset) => {
+      const visible = presetFields(kind, preset);
+      const show = (k: string) => visible.has(`${prefix}.${k}`);
+      it.each(CONTENT_LAYOUT_SIZES)(
+        "lays out the slide at %s with only its visible fields",
+        (size) => {
+          const slide = p7Slide(kind, preset);
+          const html = renderPackCard(
+            slide.input,
+            size,
+            slide.sponsorsOn,
+            resolveCardTokens({ junior: false, data: slide.data, packId }),
+            false,
+            slide.data,
+            packId,
+          );
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const text = (doc.body.textContent ?? "").replace(/\s+/g, " ").toUpperCase();
+          const where = `${packId} ${kind} ${preset} ${size}`;
+          expect(html, where).not.toContain("{{");
+          expect(html, where).not.toMatch(SAMPLES);
+          expect(text, where).not.toContain("CRICKET CLUB INC");
+          // A field shows exactly when it is on and the pack has a box for it.
+          const slots = new Set(contentLayout(packId, kind).slots);
+          expect(html.includes("https://crest.test/rmd.png"), where).toBe(
+            show("oppositionCrest") && slots.has(`${prefix}.oppositionCrest`),
+          );
+          expect(html.includes(teamPhoto.url), where).toBe(show("photo"));
+          expect(html.includes("https://s.test/team.png"), where).toBe(show("teamSponsor"));
+          // A hidden round never prints.
+          if (!show("round")) expect(text, where).not.toContain("ROUND 3");
+          if (kind === "teamList") {
+            expect(text, where).toContain("FEATHERSTONEHAUGH");
+            expect(text.includes("DEBUT"), where).toBe(show("debuts") && slots.has("team.debuts"));
+            expect(text.includes("53"), where).toBe(show("shirtNumbers"));
+            // The side of 14 and its overseas mark always print (ADR-009).
+            expect(text, where).toContain("PLAYER14");
+            expect(text, where).toContain("OS");
+          } else {
+            expect(text, where).toContain("213");
+            expect(text.includes("FEATHERSTONEHAUGH"), where).toBe(kind === "matchSummary");
+          }
+          if (doc.querySelector("[data-fit]")) expectNamesFit(doc, where);
+        },
+      );
+    });
   });
 });

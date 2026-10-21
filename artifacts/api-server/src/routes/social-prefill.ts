@@ -7,8 +7,27 @@ import { getRequestCentralClubId } from "../lib/tenant";
 import { inClubGradeOrder, loadClubGradeOrder } from "../lib/club-grade-order";
 import { sortByGradeOrder } from "@workspace/scorecard";
 import { taggedPlayerPhotoUrls } from "../lib/club-photo-library";
-import { db, playerIdMapTable, playerImagesTable } from "@workspace/db";
+import {
+  db,
+  fixturesTable,
+  playerIdMapTable,
+  playerImagesTable,
+  teamListsTable,
+} from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
+import {
+  GetSocialMatchSummaryPrefillParams,
+  GetSocialMatchSummaryPrefillResponse,
+  GetSocialTeamListPrefillParams,
+  GetSocialTeamListPrefillResponse,
+  type MatchDetail,
+} from "@workspace/api-zod";
+import { resultDraftInput, teamListDraftInput } from "@workspace/scorecard/card-content";
+import { dataSource } from "../lib/tenant";
+import { loadCentralMatchDetail, loadMatchDetail } from "../lib/match-detail";
+import { buildMatchSummaryContent } from "../lib/card-content/results";
+import { buildTeamListContent } from "../lib/card-content/team-list";
+import { contentVisibleFields } from "../lib/card-content/visible-fields";
 
 /**
  * Social Studio prefill reads for the fixture/stats-driven Pack A cards
@@ -124,6 +143,104 @@ router.get(
         photoUrl: photos.get(participantId) ?? null,
       })),
     });
+  },
+);
+
+/**
+ * Create a Card's match result prefill (ADR-010 P7): the card the results
+ * sweep drafts for this match, from the same scorecard loader, content builder
+ * and content choices, so a card made by hand matches the auto-queued one.
+ */
+router.get(
+  "/social-prefill/match-summary/:matchId",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = GetSocialMatchSummaryPrefillParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Choose a valid match." });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const source = await dataSource(req);
+    const matchId = params.data.matchId;
+    const detail =
+      source.kind === "central"
+        ? await loadCentralMatchDetail({ tenantId, clubId: source.clubId }, matchId)
+        : await loadMatchDetail(matchId, tenantId);
+    if (!detail) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+    const [content] = await buildMatchSummaryContent(tenantId, [
+      { matchId, detail: detail as MatchDetail },
+    ]);
+    const visible = await contentVisibleFields(tenantId, "matchSummary");
+    res.json(
+      GetSocialMatchSummaryPrefillResponse.parse({
+        input: resultDraftInput(content!, visible),
+        warnings: [],
+      }),
+    );
+  },
+);
+
+/**
+ * Create a Card's team list prefill (ADR-010 P7): the card the team list sweep
+ * drafts for this fixture, from the same builder and content choices. The
+ * saved list is used whether or not it is published yet (the admin is making
+ * the card by hand); a fixture without one gets its heading and no players.
+ */
+router.get(
+  "/social-prefill/team-list/:fixtureId",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = GetSocialTeamListPrefillParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Choose a valid fixture." });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const [fixture] = await db
+      .select()
+      .from(fixturesTable)
+      .where(
+        and(eq(fixturesTable.tenantId, tenantId), eq(fixturesTable.id, params.data.fixtureId)),
+      );
+    if (!fixture) {
+      res.status(404).json({ error: "Fixture not found" });
+      return;
+    }
+    const [list] = await db
+      .select()
+      .from(teamListsTable)
+      .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.fixtureId, fixture.id)));
+    const warnings: string[] = [];
+    const [content] = await buildTeamListContent(
+      tenantId,
+      [
+        {
+          fixture,
+          list: list ?? {
+            tenantId,
+            fixtureId: fixture.id,
+            source: "admin",
+            isPublished: false,
+            players: [],
+          },
+        },
+      ],
+      { onWarning: (_fixture, warning) => warnings.push(warning) },
+    );
+    if (!list?.players.length) warnings.push("This fixture has no saved team list yet.");
+    const visible = await contentVisibleFields(tenantId, "teamList");
+    res.json(
+      GetSocialTeamListPrefillResponse.parse({
+        input: teamListDraftInput(content!, visible),
+        warnings,
+      }),
+    );
   },
 );
 

@@ -81,8 +81,10 @@ export function bindInput(
       set(values, "club.name", clubName);
       set(values, "opposition.name", oppName);
       // A crest the input lacks comes from the club's names map (PlayHQ logos).
-      const clubLogo = input.club.logoUrl || cardTeamCrest(names, input.club.name);
-      const oppLogo = input.opposition.logoUrl || cardTeamCrest(names, input.opposition.name);
+      // Content-built inputs carry their crests final: none means hidden or none.
+      const crest = (name: string) => (resolved ? null : cardTeamCrest(names, name));
+      const clubLogo = input.club.logoUrl || crest(input.club.name);
+      const oppLogo = input.opposition.logoUrl || crest(input.opposition.name);
       if (clubLogo) images["club.logo"] = clubLogo;
       if (oppLogo) images["opposition.logo"] = oppLogo;
       set(values, "club.monogram", teamMonogram(clubName));
@@ -154,8 +156,8 @@ export function bindInput(
           values[`day${i}.word`] = r.resultWord;
           values[`day${i}.clubScore`] = r.clubScore;
           values[`day${i}.oppScore`] = r.oppositionScore;
-          const crest = r.crestUrl || cardTeamCrest(names, r.opposition);
-          if (crest) images[`day${i}.crest`] = crest;
+          const rowCrest = r.crestUrl || crest(r.opposition);
+          if (rowCrest) images[`day${i}.crest`] = rowCrest;
         });
       }
       break;

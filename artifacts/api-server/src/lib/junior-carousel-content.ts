@@ -1,22 +1,21 @@
-import { and, asc, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import {
   db,
   juniorFixturesTable,
   juniorTeamListsTable,
-  juniorParticipantsTable,
-  juniorShirtNumbersTable,
   type FixtureRow,
   type JuniorFixtureRow,
 } from "@workspace/db";
-import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { clubTimeToUtc } from "./round-schedules";
 import { isJuniorSyncOn } from "./junior-sync";
-import { getJuniorNameStyle, resolveUnlinkedJuniorOpponent } from "./junior-helpers";
-import { makeJuniorNaming, type JuniorNameFacts } from "./junior-names";
-import { shapePublicJuniorTeamList } from "./junior-fixtures";
+import { resolveUnlinkedJuniorOpponent } from "./junior-helpers";
 import { overlayNativeOpponents } from "./club-brand";
-import { teamListToCardInput } from "./engines/team-list";
 import type { JuniorFixtureMeta } from "./card-content/match-day";
+import {
+  buildJuniorTeamListContent,
+  juniorTeamGrade,
+  type JuniorTeamListSide,
+} from "./card-content/team-list";
 
 /** Separate namespace from native fixtures and both junior/senior scorecards. */
 export const juniorCarouselFixtureId = (id: number) => -(2_000_000_000 + id);
@@ -30,8 +29,15 @@ export function eligibleJuniorCarouselFixture(fixture: JuniorFixtureRow): boolea
   );
 }
 
-/** Only junior tables and neutral cosmetic club references; never senior players,
- * selection drafts, cap/debut history or senior shirt-number registers. */
+/**
+ * Only junior tables and neutral cosmetic club references; never senior players,
+ * selection drafts, cap/debut history or senior shirt-number registers.
+ *
+ * Team lists come from the junior team list content builder (ADR-010 P7), the
+ * same one the junior team list sweep uses, so a carousel slide prints the
+ * side exactly as the auto-queued card does: the club's public junior naming,
+ * withheld players as "Private Player", junior season numbers.
+ */
 export async function juniorCarouselContent(
   tenantId: number,
   type: "matchDay" | "teamList",
@@ -83,56 +89,10 @@ export async function juniorCarouselContent(
             ),
           )
       : [];
-  const ids = [
-    ...new Set(lists.flatMap((l) => l.players.map((p) => p.participantId.toLowerCase()))),
-  ];
-  const people = ids.length
-    ? await db
-        .select({
-          participantId: juniorParticipantsTable.participantId,
-          displayName: juniorParticipantsTable.displayName,
-          isPrivate: juniorParticipantsTable.isPrivate,
-          privacyOverride: juniorParticipantsTable.privacyOverride,
-        })
-        .from(juniorParticipantsTable)
-        .where(
-          and(
-            eq(juniorParticipantsTable.tenantId, tenantId),
-            inArray(sql`lower(${juniorParticipantsTable.participantId})`, ids),
-          ),
-        )
-    : [];
-  // Keep original casing here: makeJuniorNaming merges duplicate spellings
-  // using the stricter privacy facts, rather than letting the last row win.
-  const facts = new Map<string, JuniorNameFacts>(people.map((p) => [p.participantId, p]));
-  const naming = makeJuniorNaming(
-    lists.length ? await getJuniorNameStyle(tenantId) : "full",
-    facts,
-  );
-  const numbered = lists.length && (await getShirtNumberSettings(db, tenantId)).enabled;
-  const numberRows = numbered
-    ? await db
-        .select({
-          participantId: juniorShirtNumbersTable.participantId,
-          season: juniorShirtNumbersTable.season,
-          number: juniorShirtNumbersTable.number,
-        })
-        .from(juniorShirtNumbersTable)
-        .where(
-          and(
-            eq(juniorShirtNumbersTable.tenantId, tenantId),
-            inArray(juniorShirtNumbersTable.season, [
-              ...new Set(eligible.map((f) => f.seasonStartYear)),
-            ]),
-            eq(juniorShirtNumbersTable.held, false),
-            isNotNull(juniorShirtNumbersTable.number),
-          ),
-        )
-    : [];
 
+  const sides: Array<JuniorTeamListSide & { id: number }> = [];
   for (const row of eligible) {
-    const grade = row.ageGroup || row.grade || "Juniors";
-    const teamGrade = row.teamName && row.teamName !== grade ? `${grade} — ${row.teamName}` : grade;
+    const teamGrade = juniorTeamGrade(row);
     const label = `${teamGrade} v ${row.opponentName}`;
     const list = lists.find((l) => l.juniorFixtureId === row.id);
     if (type === "teamList" && !list?.players.length) {
@@ -147,7 +107,7 @@ export async function juniorCarouselContent(
     const fixture: FixtureRow = {
       id: juniorCarouselFixtureId(row.id),
       tenantId,
-      grade,
+      grade: row.ageGroup || row.grade || "Juniors",
       opponentName: row.opponentName!.trim(),
       opponentClubId: opponent?.id ?? null,
       opponentLogoUrl: opponent?.logoUrl128 ?? opponent?.logoUrl ?? null,
@@ -168,53 +128,12 @@ export async function juniorCarouselContent(
       homeTeamName: null,
       awayTeamName: null,
     };
-    if (type === "matchDay") {
+    if (type === "matchDay")
       junior.set(fixture.id, { gradeLabel: teamGrade, juniorTeamName: row.teamName ?? null });
-    } else {
-      const numbers = numbered
-        ? new Map(
-            numberRows
-              .filter((n) => n.season === row.seasonStartYear && n.number != null)
-              .map((n) => [n.participantId.toLowerCase(), n.number!]),
-          )
-        : null;
-      const players = shapePublicJuniorTeamList(
-        list!.players.map((p) => ({ ...p, participantId: p.participantId.toLowerCase() })),
-        naming,
-        new Set([...facts.keys()].map((id) => id.toLowerCase())),
-        numbers,
-      );
-      if (!players.length) {
-        warnings.push(
-          `${label}: published list has no recognised club juniors. Check the list in Junior fixtures.`,
-        );
-        continue;
-      }
-      content[fixture.id] = {
-        ...teamListToCardInput(
-          fixture,
-          players.map((p) => ({
-            order: p.order,
-            displayName: p.name,
-            role: p.role ?? undefined,
-          })),
-        ),
-        // Preserve the already-public name exactly, including shortened styles
-        // and "Private Player"; never reconstruct a surname or expose an id.
-        players: players.map((p) => ({
-          order: p.order,
-          surname: p.name,
-          ...(p.role ? { role: p.role } : {}),
-          ...(p.shirtNumber ? { shirtNumber: p.shirtNumber } : {}),
-        })),
-        ...(numbered ? { numbering: "shirt" } : {}),
-        grade: teamGrade,
-        gradeRound: teamGrade.toUpperCase(),
-        junior: true,
-        juniorTeamName: row.teamName,
-      };
-    }
+    else sides.push({ id: fixture.id, fixture: row, players: list!.players });
     fixtures.push(fixture);
   }
+  const built = await buildJuniorTeamListContent(tenantId, sides);
+  sides.forEach(({ id }, i) => (content[id] = built[i] as unknown as Record<string, unknown>));
   return { fixtures, content, warnings, junior };
 }

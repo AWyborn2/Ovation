@@ -62,7 +62,15 @@ const sources = async () => {
     .set("Cookie", cookie)
     .query({ from: "2034-10-06", to: "2034-10-08", setType: "teamList" });
   expect(res.status, JSON.stringify(res.body)).toBe(200);
-  return res.body;
+  // Each team list is content from the builder (ADR-010 P7): its source is the
+  // card input; `rawContent` keeps the whole content for the leak checks.
+  const content = res.body.content as Record<string, { kind: string; source: unknown }>;
+  for (const c of Object.values(content)) expect(c.kind).toBe("teamList");
+  return {
+    ...res.body,
+    rawContent: content,
+    content: Object.fromEntries(Object.entries(content).map(([id, c]) => [id, c.source])),
+  };
 };
 const legacy = () =>
   db
@@ -303,8 +311,8 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       body.content[fixtureId].players.map((p: { shirtNumber?: string }) => p.shirtNumber),
     ).toEqual(expectedNumbers);
     expect(body.content[fixtureId].players[9].order).toBe(12);
-    expect(JSON.stringify(body.content)).not.toMatch(/participantId|playerId|Member7/);
-    for (const profile of profiles) expect(JSON.stringify(body.content)).not.toContain(profile);
+    expect(JSON.stringify(body.rawContent)).not.toMatch(/participantId|playerId|Member7/);
+    for (const profile of profiles) expect(JSON.stringify(body.rawContent)).not.toContain(profile);
   });
 
   it("recovers all six old Held numbers by finalised member identity, with no publication or snapshot writes", async () => {

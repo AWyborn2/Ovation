@@ -383,6 +383,7 @@ import type {
   SlugAvailability,
   SocialCalendar,
   SocialCalendarCard,
+  SocialCardPrefill,
   SocialDraft,
   SocialDraftRevision,
   SocialPublication,
@@ -33316,6 +33317,162 @@ export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialMatchSummaryPrefillUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/social-prefill/match-summary/${matchId}`
+}
+
+/**
+ * Built by the same content builder as the auto-queued card and the results and match summary carousels, with the club's content choices, so a card made here matches the one the sweep queues. The match id is the one the match list gives (central's for a central-data club).
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+export const getSocialMatchSummaryPrefill = async (matchId: number, options?: RequestInit): Promise<SocialCardPrefill> => {
+
+  return customFetch<SocialCardPrefill>(getGetSocialMatchSummaryPrefillUrl(matchId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialMatchSummaryPrefillQueryKey = (matchId: number,) => {
+    return [
+    `/api/social-prefill/match-summary/${matchId}`
+    ] as const;
+    }
+
+
+export const getGetSocialMatchSummaryPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError = ErrorType<void>>(matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialMatchSummaryPrefillQueryKey(matchId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>> = ({ signal }) => getSocialMatchSummaryPrefill(matchId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(matchId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialMatchSummaryPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>>
+export type GetSocialMatchSummaryPrefillQueryError = ErrorType<void>
+
+
+/**
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialMatchSummaryPrefill<TData = Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError = ErrorType<void>>(
+ matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialMatchSummaryPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialMatchSummaryPrefillQueryOptions(matchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialTeamListPrefillUrl = (fixtureId: number,) => {
+
+
+
+
+  return `/api/social-prefill/team-list/${fixtureId}`
+}
+
+/**
+ * Built by the same content builder as the auto-queued card and the team list carousel, with the club's content choices: fill-ins left out, the side of up to 14 with its overseas marks, shirt numbers and debuts. A fixture with no saved team list gets its heading and no players.
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+export const getSocialTeamListPrefill = async (fixtureId: number, options?: RequestInit): Promise<SocialCardPrefill> => {
+
+  return customFetch<SocialCardPrefill>(getGetSocialTeamListPrefillUrl(fixtureId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialTeamListPrefillQueryKey = (fixtureId: number,) => {
+    return [
+    `/api/social-prefill/team-list/${fixtureId}`
+    ] as const;
+    }
+
+
+export const getGetSocialTeamListPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError = ErrorType<void>>(fixtureId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialTeamListPrefillQueryKey(fixtureId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialTeamListPrefill>>> = ({ signal }) => getSocialTeamListPrefill(fixtureId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(fixtureId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialTeamListPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialTeamListPrefill>>>
+export type GetSocialTeamListPrefillQueryError = ErrorType<void>
+
+
+/**
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialTeamListPrefill<TData = Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError = ErrorType<void>>(
+ fixtureId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialTeamListPrefillQueryOptions(fixtureId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

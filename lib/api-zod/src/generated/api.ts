@@ -8353,8 +8353,23 @@ export const GetSocialSettingsResponse = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 }),
@@ -8685,8 +8700,23 @@ export const UpdateSocialSettingsBody = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
   "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.')
 })
@@ -8982,8 +9012,23 @@ export const UpdateSocialSettingsResponse = zod.object({
   "preset": zod.enum(['minimal', 'standard', 'full']),
   "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
   "juniorConsolidateByDay": zod.boolean()
-}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
-}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
+}).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "results": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "matchSummary": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.'),
+  "teamList": zod.object({
+  "preset": zod.enum(['minimal', 'standard', 'full']),
+  "fields": zod.record(zod.string(), zod.boolean()).describe('Optional content field key (e.g. fixture.photo) to on\/off; overrides the preset. Core fields ignore it.'),
+  "juniorConsolidateByDay": zod.boolean()
+}).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
+}).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
   "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 })
@@ -9250,7 +9295,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })).optional(),
   "timeZone": zod.string(),
-  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
+  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Team list, results and match summary sets: each slide\'s content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
   "matchDayContent": zod.record(zod.string(), zod.object({
   "kind": zod.enum(['matchDay']),
   "page": zod.enum(['fixture']),
@@ -15855,5 +15900,33 @@ export const GetSocialRoundResultsPrefillResponse = zod.object({
   "photoUrl": zod.string().nullable().describe('The player\'s library photo, else headshot; null when the club has neither.')
 }))
 }).describe('Results summary and team of the week prefill: a round\'s senior results per grade with the best players, and its standout performers.')
+
+
+/**
+ * Built by the same content builder as the auto-queued card and the results and match summary carousels, with the club's content choices, so a card made here matches the one the sweep queues. The match id is the one the match list gives (central's for a central-data club).
+ * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
+ */
+export const GetSocialMatchSummaryPrefillParams = zod.object({
+  "matchId": zod.coerce.number()
+})
+
+export const GetSocialMatchSummaryPrefillResponse = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "warnings": zod.array(zod.string())
+}).describe('A single card\'s input from the content builder (ADR-010 P7), exactly as the sweep would draft it.')
+
+
+/**
+ * Built by the same content builder as the auto-queued card and the team list carousel, with the club's content choices: fill-ins left out, the side of up to 14 with its overseas marks, shirt numbers and debuts. A fixture with no saved team list gets its heading and no players.
+ * @summary Team list card prefill (ADR-010 P7): the card the team list sweep drafts for this fixture. Admin + socialStudio entitlement.
+ */
+export const GetSocialTeamListPrefillParams = zod.object({
+  "fixtureId": zod.coerce.number()
+})
+
+export const GetSocialTeamListPrefillResponse = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "warnings": zod.array(zod.string())
+}).describe('A single card\'s input from the content builder (ADR-010 P7), exactly as the sweep would draft it.')
 
 

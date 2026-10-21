@@ -783,6 +783,8 @@ export * from './socialCalendar';
 export * from './socialCalendarCard';
 export * from './socialCalendarDay';
 export * from './socialCalendarPlaceholder';
+export * from './socialCardPrefill';
+export * from './socialCardPrefillInput';
 export * from './socialDraft';
 export * from './socialDraftLayoutWarnings';
 export * from './socialDraftPlannedBy';

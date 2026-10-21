@@ -56,6 +56,34 @@ const DAY_CAPACITY = Object.fromEntries(
 ) as Record<CardSize, Record<ContentPreset, number>>;
 
 const ALL_MATCH_DAY_FIELDS = CONTENT_FIELDS.matchDay.map((f) => f.key);
+const fieldsOf = (kind: ContentKind) => CONTENT_FIELDS[kind].map((f) => f.key);
+
+/** A team list is one side per slide at every size and preset (no day slide). */
+const ONE_PER_SLIDE = Object.fromEntries(
+  CONTENT_LAYOUT_SIZES.map((size) => [
+    size,
+    Object.fromEntries(CONTENT_PRESETS.map((p) => [p, 1])),
+  ]),
+) as Record<CardSize, Record<ContentPreset, number>>;
+
+/**
+ * Results, match summaries (the multi-result day layout, P3) and team lists
+ * (P7). Neither pack has an opposition crest on the match summary detail slide
+ * or the team list, nor a debut badge on the team list (only the Starting XI
+ * single card prints one): they never printed these, so those fields cannot
+ * show there. The results slide and the day rows have a crest.
+ */
+const OTHER_KINDS = {
+  results: { slots: fieldsOf("results"), capacity: DAY_CAPACITY },
+  matchSummary: {
+    slots: fieldsOf("matchSummary").filter((k) => k !== "result.oppositionCrest"),
+    capacity: DAY_CAPACITY,
+  },
+  teamList: {
+    slots: fieldsOf("teamList").filter((k) => k !== "team.oppositionCrest" && k !== "team.debuts"),
+    capacity: ONE_PER_SLIDE,
+  },
+};
 
 export const CONTENT_PACK_IDS = ["club-kit-v1", "broadcast-dark-v1"] as const;
 export type ContentPackId = (typeof CONTENT_PACK_IDS)[number];
@@ -63,9 +91,11 @@ export type ContentPackId = (typeof CONTENT_PACK_IDS)[number];
 export const CONTENT_LAYOUTS: Record<ContentPackId, Record<ContentKind, ContentLayout>> = {
   "club-kit-v1": {
     matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: DAY_CAPACITY },
+    ...OTHER_KINDS,
   },
   "broadcast-dark-v1": {
     matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: DAY_CAPACITY },
+    ...OTHER_KINDS,
   },
 };
 
@@ -88,23 +118,15 @@ export function contentCapacity(
 }
 
 /**
- * Results one junior day slide holds (the multi-result layout, P3). Results
- * and match summaries are not on the content contract yet (P7), so they have
- * no preset: one number per pack and size.
+ * Matches one junior day slide holds for a carousel set type: fixtures (the
+ * multi-fixture layout) or results (the multi-result layout); a team list has
+ * a slide per side.
  */
-export const DAY_RESULT_CAPACITY: Record<ContentPackId, Record<CardSize, number>> = {
-  "club-kit-v1": { ...DAY_ROWS },
-  "broadcast-dark-v1": { ...DAY_ROWS },
-};
-
-/** Matches one junior day slide holds for a carousel set type. */
 export function dayCapacity(
   packId: string | null | undefined,
-  setType: "matchDay" | "teamList" | "results" | "matchSummary",
+  setType: ContentKind,
   size: CardSize,
   preset: ContentPreset,
 ): number {
-  if (setType === "matchDay") return contentCapacity(packId, "matchDay", size, preset);
-  if (setType === "teamList") return 1;
-  return DAY_RESULT_CAPACITY[isContentPack(packId) ? packId : "club-kit-v1"][size];
+  return contentCapacity(packId, setType, size, preset);
 }

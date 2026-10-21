@@ -7,6 +7,15 @@ import {
   type JuniorMatchDetail,
 } from "@workspace/api-zod";
 import { carouselContent, carouselMatchDay } from "./carousel-content";
+import {
+  contentInput,
+  resolveVisibleFields,
+  type CardContent,
+} from "@workspace/scorecard/card-content";
+
+/** What a result slide prints: the content's projection, Standard fields (ADR-010 P7). */
+const slide = (c: unknown) =>
+  contentInput(c as CardContent, resolveVisibleFields((c as CardContent).kind));
 
 const mocks = vi.hoisted(() => ({
   matches: vi.fn(),
@@ -103,7 +112,7 @@ describe("carousel completed-match sources", () => {
           coverPhotos: [],
           warnings: sources.warnings,
         });
-        expect(parsed.content?.[-91]).toMatchObject({ roundLabel: expected });
+        expect(slide(parsed.content?.[-91])).toMatchObject({ roundLabel: expected });
         expect(parsed.fixtures[0].roundLabel).toBe(expected);
       }
     },
@@ -128,7 +137,8 @@ describe("carousel completed-match sources", () => {
         innings: [],
       } as unknown as JuniorMatchDetail);
       const sources = await load("results");
-      expect(sources.content[-1_000_000_007]).toMatchObject({
+      expect(sources.content[-1_000_000_007]).toMatchObject({ kind: "results", junior: true });
+      expect(slide(sources.content[-1_000_000_007])).toMatchObject({
         roundLabel: round ?? "",
         junior: true,
       });
@@ -140,12 +150,12 @@ describe("carousel completed-match sources", () => {
     expect(mocks.matches).toHaveBeenCalledWith(88);
     expect(mocks.detail).toHaveBeenCalledWith({ kind: "central", tenantId: 8, clubId: 88 }, 91);
     expect(result.fixtures).toHaveLength(1);
-    const r = result.content[-91];
+    const r = slide(result.content[-91]);
     expect(r).toMatchObject({ kind: "matchSummary", carouselDetail: false, result: match.result });
     expect(JSON.stringify(r)).not.toContain("Sam Batter");
     const summary = await load("matchSummary");
-    expect(summary.content[-91]).toMatchObject({ carouselDetail: true });
-    expect(JSON.stringify(summary.content[-91])).toContain("Sam Batter");
+    expect(slide(summary.content[-91])).toMatchObject({ carouselDetail: true });
+    expect(JSON.stringify(slide(summary.content[-91]))).toContain("Sam Batter");
   });
   it("deduplicates canonical matches and reports pending, undated and detail-free data", async () => {
     mocks.matches.mockResolvedValue([
@@ -179,7 +189,7 @@ describe("carousel completed-match sources", () => {
       expect(r.warnings).toEqual([]);
       expect(r.fixtures).toHaveLength(1);
       // No innings to detail: it posts as the result card, even in Match summaries.
-      expect(r.content[-96]).toMatchObject({
+      expect(slide(r.content[-96])).toMatchObject({
         result: "Match abandoned",
         resultWinner: "draw",
         carouselDetail: false,

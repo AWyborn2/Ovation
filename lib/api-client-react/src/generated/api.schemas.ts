@@ -5830,10 +5830,13 @@ export interface CardContentKindSettings {
 }
 
 /**
- * Per content kind. Default: Standard (the cards as they were), junior consolidation on.
+ * Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.
  */
 export interface CardContentSettings {
   matchDay: CardContentKindSettings;
+  results?: CardContentKindSettings;
+  matchSummary?: CardContentKindSettings;
+  teamList?: CardContentKindSettings;
 }
 
 export interface SocialSettings {
@@ -5900,6 +5903,16 @@ export interface SocialSettings {
      * @nullable
      */
   sponsorsBackgroundPhotoId?: number | null;
+}
+
+export type SocialCardPrefillInput = { [key: string]: unknown };
+
+/**
+ * A single card's input from the content builder (ADR-010 P7), exactly as the sweep would draft it.
+ */
+export interface SocialCardPrefill {
+  input: SocialCardPrefillInput;
+  warnings: string[];
 }
 
 export interface ContentTeam {
@@ -8821,7 +8834,7 @@ export interface TrackedLink {
 }
 
 /**
- * Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+ * Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
  */
 export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};
 
@@ -8901,7 +8914,7 @@ export interface WeekendCarouselPhotoPicks {
 export interface WeekendCarouselSources {
   juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
-  /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
+  /** Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
   /** Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep. */
   matchDayContent?: WeekendCarouselSourcesMatchDayContent;

@@ -22,6 +22,9 @@ import { teamListPhotoPlayer } from "../draft-enrich";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
 import { PRIVATE_PLAYER } from "../selection-published-players";
+import { teamListDraftInput } from "@workspace/scorecard/card-content";
+import { buildTeamListContent } from "../card-content/team-list";
+import { contentVisibleFields } from "../card-content/visible-fields";
 
 /**
  * Team lists are usually named a few days out, so look further ahead than the
@@ -323,7 +326,9 @@ export const teamListKey = (fixtureId: number) => `teamlist:${fixtureId}`;
 /**
  * Team list card (match day family, R1): one draft per upcoming fixture whose
  * XI has been published in the fixtures admin. Keyed on the fixture, so a
- * changed selection refreshes the card rather than adding another.
+ * changed selection refreshes the card rather than adding another. The card
+ * comes from the team list content builder (ADR-010 P7), the same one the team
+ * list carousel and Create a Card use.
  */
 export async function generateTeamListDrafts(
   tenantId: number,
@@ -335,7 +340,7 @@ export async function generateTeamListDrafts(
   if (!gates.teamListsIndividual()) return result;
 
   const rows = await db
-    .select({ fixture: fixturesTable, players: teamListsTable.players })
+    .select({ fixture: fixturesTable, list: teamListsTable })
     .from(teamListsTable)
     .innerJoin(fixturesTable, eq(fixturesTable.id, teamListsTable.fixtureId))
     .where(
@@ -348,12 +353,17 @@ export async function generateTeamListDrafts(
       ),
     );
 
-  const shirtNumbers = teamListShirtNumberLoader(tenantId);
-  for (const { fixture, players } of rows) {
-    if (players.length === 0 || !gates.teamListsGrade(fixture.grade, false)) {
-      result.skipped++;
-      continue;
-    }
+  const sides = rows.filter(
+    ({ fixture, list }) => list.players.length > 0 && gates.teamListsGrade(fixture.grade, false),
+  );
+  result.skipped += rows.length - sides.length;
+  if (!sides.length) return result;
+  const [contents, visible] = await Promise.all([
+    buildTeamListContent(tenantId, sides),
+    contentVisibleFields(tenantId, "teamList"),
+  ]);
+  for (const [i, { fixture, list }] of sides.entries()) {
+    const players = list.players;
     const sourceKey = teamListKey(fixture.id);
     // The card's photo: one of the selected players, picked at random per
     // fixture, from the photo library (or their headshot).
@@ -367,12 +377,7 @@ export async function generateTeamListDrafts(
       engine: "teamlist",
       family: "matchday",
       sourceKey,
-      cardInput: teamListToCardInput(
-        fixture,
-        players,
-        await loadAutoDebuts(tenantId, players, fixture.startAt),
-        await shirtNumbers(teamListSeasonOf(fixture), teamListCategoryOf(fixture)),
-      ),
+      cardInput: teamListDraftInput(contents[i]!, visible),
       appPath: "/fixtures",
       playerId: featured,
       // The photo: one of the selected side, rotating towards the players and

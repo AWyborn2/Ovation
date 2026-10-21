@@ -121,6 +121,16 @@ export function useWeekendCarousel(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(clubContent), contentOverride],
   );
+  // Results, match summary and team list slides (P7) show their own kind's fields.
+  const setKind = setType === "matchDay" ? null : setType;
+  const kindContent = setKind
+    ? readCardContentSettings(bundle?.settings.cardContent)[setKind]
+    : null;
+  const kindVisible = useMemo(
+    () => (setKind ? resolveVisibleFields(setKind, kindContent) : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setKind, JSON.stringify(kindContent)],
+  );
   // The optional data fields shown (P5): the server loads only these.
   const dataFields =
     setType === "matchDay"
@@ -173,12 +183,18 @@ export function useWeekendCarousel(
     () => ({
       setType,
       consolidateByDay: clubContent.juniorConsolidateByDay,
-      capacity: dayCapacity(packId, setType, size, contentOverride.preset ?? clubContent.preset),
+      capacity: dayCapacity(
+        packId,
+        setType,
+        size,
+        kindContent?.preset ?? contentOverride.preset ?? clubContent.preset,
+      ),
     }),
     [
       setType,
       clubContent.juniorConsolidateByDay,
       clubContent.preset,
+      kindContent?.preset,
       packId,
       size,
       contentOverride,
@@ -332,6 +348,7 @@ export function useWeekendCarousel(
       visibleFields,
       sources?.sponsorsPage,
       grouping,
+      kindVisible,
     );
   }, [
     generated,
@@ -344,6 +361,7 @@ export function useWeekendCarousel(
     visibleFields,
     sources,
     grouping,
+    kindVisible,
   ]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
@@ -411,7 +429,7 @@ export function useWeekendCarousel(
         if (
           setType !== "matchDay" &&
           generated!.teams.some(
-            (t) => JSON.stringify(fresh.data.content?.[t.fixture.id]) !== JSON.stringify(t.input),
+            (t) => JSON.stringify(fresh.data.content?.[t.fixture.id]) !== JSON.stringify(t.content),
           )
         ) {
           throw new Error(
@@ -450,6 +468,7 @@ export function useWeekendCarousel(
           visibleFields,
           fresh.data.sponsorsPage,
           grouping,
+          kindVisible,
         );
       }
       // Swapped photos ride in the content override (ADR-010 P4).

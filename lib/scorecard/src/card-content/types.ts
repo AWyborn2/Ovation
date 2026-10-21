@@ -6,6 +6,8 @@
  * Pure data: no DB, no DOM.
  */
 
+import type { MatchSummaryInput } from "../match-summary-types";
+
 /** A team as a card prints it. */
 export interface ContentTeam {
   /** The club's short name, else the automatic one, else the raw name. */
@@ -175,5 +177,100 @@ export interface MatchDayDayContent {
 export type MatchDayContent =
   MatchDayTitleContent | MatchDayFixtureContent | MatchDayDayContent | MatchDaySponsorsContent;
 
-/** Content per kind; more kinds join as they move onto the pipeline (P7). */
-export type CardContent = MatchDayContent;
+// ---------------------------------------------------------------------------
+// Results, match summaries and team lists (P7). Each content holds `source`:
+// the card input its source made, exactly as the sweep saved it before the
+// content pipeline (raw names), so a single card for a club on Standard posts
+// the same input it always has. The display values beside it (short names,
+// crests, normalised round) are what a carousel slide, or a single card with a
+// field switched off, prints.
+// ---------------------------------------------------------------------------
+
+/** A result card: one completed match, from the club's side. */
+export interface ResultContent {
+  /** The results set prints the scores; a match summary adds the top performers. */
+  kind: "results" | "matchSummary";
+  page: "result";
+  /** The source match id: the club's, central's, or the junior match's (see `junior`). */
+  matchId: number;
+  /** Built from junior sources only (juniors isolation); never mixed with senior. */
+  junior: boolean;
+  /** The competition label as the card prints it. */
+  grade: string;
+  /** "ROUND 5", or "" when the match has none. */
+  roundLabel: string;
+  /** The club-time day, YYYY-MM-DD; null when the scorecard has no usable date. */
+  day: string | null;
+  /** "SAT 12 OCT", or "" without a day. */
+  date: string;
+  club: ContentTeam;
+  opposition: ContentTeam;
+  /** Whether any innings lists top batters or bowlers. */
+  hasPerformers: boolean;
+  /** The scorecard's card input as its source made it: the single card's input. */
+  source: MatchSummaryInput;
+}
+
+/**
+ * A junior results or match summary day slide (P3): the junior results of one
+ * club-time day, as compact rows. Junior only; each result keeps its content.
+ */
+export interface ResultDayContent {
+  kind: "results" | "matchSummary";
+  page: "day";
+  junior: true;
+  day: string;
+  /** "SAT 12 OCT". */
+  date: string;
+  results: ResultContent[];
+}
+
+/** A player as a team list card prints the row. */
+export interface ContentTeamListPlayer {
+  order: number;
+  surname: string;
+  firstInitial?: string;
+  role?: string;
+  debut?: boolean;
+  /** The published side's overseas mark (ADR-009); never on a withheld player. */
+  overseas?: boolean;
+  shirtNumber?: string;
+}
+
+/** A team list card: one fixture's published side. */
+export interface TeamListContent {
+  kind: "teamList";
+  page: "team";
+  /** The source fixture id: the club's fixture, or the junior fixture (see `junior`). */
+  fixtureId: number;
+  /** Built from junior sources only (juniors isolation); never mixed with senior. */
+  junior: boolean;
+  /** A junior side's own name ("Under 13 Blue"), when PlayHQ gives one. */
+  juniorTeamName: string | null;
+  /** The competition label as the card prints it. */
+  grade: string;
+  /** "ROUND 5", or "" when the fixture has none. */
+  roundLabel: string;
+  opposition: ContentTeam;
+  /** "" when the source doesn't say. */
+  homeAway: "HOME" | "AWAY" | "";
+  venue: string;
+  /** "SAT 12 OCT". */
+  date: string;
+  /** "12:30 PM". */
+  startTime: string;
+  /** The club-time day, YYYY-MM-DD; null without a start time. */
+  day: string | null;
+  /** The team list card input as its source made it (players included): the single card's input. */
+  source: TeamListSource;
+}
+
+/** A team list card input, as the sweep saves it. */
+export interface TeamListSource {
+  kind: "teamList";
+  players: ContentTeamListPlayer[];
+  [key: string]: unknown;
+}
+
+/** Content per kind. */
+export type CardContent = MatchDayContent | ResultContent | ResultDayContent | TeamListContent;

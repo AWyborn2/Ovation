@@ -23,8 +23,10 @@ import {
 import type { SocialSettingsRow } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
-import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
-import { getTenantBrand } from "./tenant-brand";
+import { resultDraftInput } from "@workspace/scorecard/card-content";
+import { buildMatchSummaryContent } from "./card-content/results";
+import { contentNames } from "./card-content/match-day";
+import { contentVisibleFields } from "./card-content/visible-fields";
 import { draftingGates, loadDraftingGates } from "./posting-plan";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
@@ -84,13 +86,13 @@ export function shouldDraftGrade(
 // through /api/juniors routes) because it runs server-side in a batch context
 // with no HTTP request. This is the ONLY non-juniors-route consumer of these
 // tables; the isolation invariant (junior tables never blended with senior
-// stats) is preserved because the output feeds juniorMatchToSummaryInput which
+// stats) is preserved because the output feeds the result content builder, which
 // produces a card marked junior:true, rendered in the distinct brown palette.
 // ---------------------------------------------------------------------------
 
 /**
  * Load a junior match in the JuniorMatchDetail shape needed by
- * `juniorMatchToSummaryInput`. Returns null when the match doesn't exist.
+ * the result content builder (`card-content/results.ts`). Returns null when the match doesn't exist.
  *
  * Card names use the club's public naming (KTD12): withheld private players,
  * the club's style for its own side, initials for the opposition. A batch caller
@@ -353,7 +355,8 @@ export type MatchSummarySource =
  * Generate match-summary social-card drafts for senior matches.
  *
  * For each match: loads the full scorecard, checks grade config, dedupes,
- * builds the card input via `matchToSummaryInput`, and upserts a draft row.
+ * builds the card input with the result content builder (the same one the
+ * results carousels and Create a Card use), and upserts a draft row.
  */
 export async function generateMatchSummaryDrafts(
   tenantId: number,
@@ -368,6 +371,12 @@ export async function generateMatchSummaryDrafts(
     result.skipped = matchIds.length;
     return result;
   }
+
+  // The club's names and content choices, once for the run (ADR-010 P7).
+  const [names, visible] = await Promise.all([
+    contentNames(tenantId),
+    contentVisibleFields(tenantId, "matchSummary"),
+  ]);
 
   const BATCH = 10;
   for (let i = 0; i < matchIds.length; i += BATCH) {
@@ -386,12 +395,16 @@ export async function generateMatchSummaryDrafts(
           result.skipped++;
           return;
         }
-        const cardInput = matchToSummaryInput(detail as MatchDetail);
+        const [content] = await buildMatchSummaryContent(
+          tenantId,
+          [{ matchId, detail: detail as MatchDetail }],
+          { names },
+        );
         const outcome = await upsertDraft(
           tenantId,
           matchId,
           false,
-          cardInput as Record<string, unknown>,
+          resultDraftInput(content!, visible),
           `/matches/${matchId}`,
           {
             central: source.kind === "central" ? { seenAt: source.seenAt } : undefined,
@@ -434,6 +447,10 @@ export async function generateCentralStumpsDrafts(
     result.skipped = matchIds.length;
     return result;
   }
+  const [names, visible] = await Promise.all([
+    contentNames(tenantId),
+    contentVisibleFields(tenantId, "matchSummary"),
+  ]);
   for (const matchId of matchIds) {
     try {
       const sourceKey = draftKeys.centralStumps(matchId);
@@ -446,8 +463,13 @@ export async function generateCentralStumpsDrafts(
         result.skipped++;
         continue;
       }
+      const [content] = await buildMatchSummaryContent(
+        tenantId,
+        [{ matchId, detail: detail as unknown as MatchDetail }],
+        { names },
+      );
       const cardInput = {
-        ...matchToSummaryInput(detail as unknown as MatchDetail),
+        ...resultDraftInput(content!, visible),
         result: "Stumps, Day 1",
         resultWinner: "draw" as const,
       };
@@ -524,13 +546,14 @@ export async function generateJuniorMatchSummaryDrafts(
     return result;
   }
 
-  const brand = await getTenantBrand(tenantId);
   // Club-wide naming loaded once for the batch (KTD12), the per-team publishing map,
-  // and the allowed players' own photos (ADR-007).
-  const [naming, publishing, photos] = await Promise.all([
+  // the allowed players' own photos (ADR-007), and the club's names and content choices.
+  const [naming, publishing, photos, names, visible] = await Promise.all([
     loadJuniorNaming(tenantId),
     loadJuniorTeamPublishing(tenantId),
     loadJuniorPhotos(tenantId),
+    contentNames(tenantId),
+    contentVisibleFields(tenantId, "matchSummary"),
   ]);
 
   const BATCH = 10;
@@ -555,8 +578,13 @@ export async function generateJuniorMatchSummaryDrafts(
         const photo = juniorPhotoFields(
           pickJuniorCardPhoto(photos, candidates, draftKeys.matchSummary(matchId, true), preferred),
         );
+        const [content] = await buildMatchSummaryContent(
+          tenantId,
+          [{ junior: true, matchId, detail: detail as JuniorMatchDetail }],
+          { names },
+        );
         const cardInput = {
-          ...juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand),
+          ...resultDraftInput(content!, visible),
           ...photo.cardInput,
           // The junior team this card covers, for the per-team publishing gate (ADR-006).
           juniorTeams: [{ ageGroup: detail.ageGroup ?? null, teamName: detail.teamName ?? null }],

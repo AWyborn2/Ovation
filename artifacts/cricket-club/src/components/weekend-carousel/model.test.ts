@@ -27,7 +27,13 @@ import {
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { readQueuedCarousel, CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
-import { matchDayFixtureContent, presetFields } from "@workspace/scorecard/card-content";
+import {
+  matchDayFixtureContent,
+  presetFields,
+  type ResultContent,
+  type TeamListContent,
+} from "@workspace/scorecard/card-content";
+import { slideContentFor } from "@/test/carousel-sources";
 
 /** The server's Match Day content for fixtures (what the sources route sends, ADR-010). */
 function md(fixtures: Fixture[], junior = false): Record<string, Record<string, unknown>> {
@@ -80,7 +86,7 @@ describe("club stock images across all carousels", () => {
               innings: [],
               carouselDetail: type === "matchSummary",
             };
-      const content = type === "matchDay" ? md([f]) : { [f.id]: input };
+      const content = type === "matchDay" ? md([f]) : { [f.id]: slideContentFor(type, f, input) };
       const teams = createTeamSlides([f], [stock], content);
       teams[0].photoId = stock.id;
       teams[0].transform = { focalX: 0.3, focalY: 0.6, zoom: 1.4 };
@@ -241,38 +247,43 @@ const bundle = {
 
 describe("carousel cover round labels", () => {
   it("freezes each selected team grade independently, filling only missing grades from its own fixture", () => {
-    const selected = createTeamSlides(
-      [
-        fixture(1, { grade: "A Grade" }),
-        fixture(2, { grade: "Female A Grade" }),
-        fixture(3, { grade: "Western District Female Premier Championship Grade" }),
-      ],
-      [],
-      {
-        1: {
-          kind: "teamList",
-          grade: "A Grade",
-          gradeRound: "Metadata 1",
-          competitionLine: "",
-          venueDateTime: "",
-          players: [],
-        },
-        2: {
-          kind: "teamList",
-          gradeRound: "Do not parse me",
-          competitionLine: "",
-          venueDateTime: "",
-          players: [],
-        },
-        3: {
-          kind: "teamList",
-          grade: " ",
-          gradeRound: "",
-          competitionLine: "",
-          venueDateTime: "",
-          players: [],
-        },
+    const gradeFixtures = [
+      fixture(1, { grade: "A Grade" }),
+      fixture(2, { grade: "Female A Grade" }),
+      fixture(3, { grade: "Western District Female Premier Championship Grade" }),
+    ];
+    const inputs: Record<number, Record<string, unknown>> = {
+      1: {
+        kind: "teamList",
+        grade: "A Grade",
+        gradeRound: "Metadata 1",
+        competitionLine: "",
+        venueDateTime: "",
+        players: [],
       },
+      2: {
+        kind: "teamList",
+        gradeRound: "Do not parse me",
+        competitionLine: "",
+        venueDateTime: "",
+        players: [],
+      },
+      3: {
+        kind: "teamList",
+        grade: " ",
+        gradeRound: "",
+        competitionLine: "",
+        venueDateTime: "",
+        players: [],
+      },
+    };
+    // The team list builder prints each side's own fixture grade (ADR-010 P7).
+    const selected = createTeamSlides(
+      gradeFixtures,
+      [],
+      Object.fromEntries(
+        gradeFixtures.map((f) => [f.id, slideContentFor("teamList", f, inputs[f.id]!)]),
+      ),
     );
     const slides = buildWeekendSlides(
       selected,
@@ -285,7 +296,7 @@ describe("carousel cover round labels", () => {
     expect(slides.map((s) => (s.input as { grade: string }).grade)).toEqual(
       selected.map((s) => s.fixture.grade),
     );
-    expect(selected[1].input).not.toHaveProperty("grade");
+    expect((selected[1].content as TeamListContent).source).not.toHaveProperty("grade");
     const frozen = JSON.parse(JSON.stringify(slides));
     for (const size of ["square", "portrait", "story", "landscape"] as CardSize[]) {
       for (const packId of [
@@ -334,7 +345,7 @@ describe("carousel cover round labels", () => {
     expect(carouselRoundLabel([])).toBe("");
   });
   it("uses explicit team-list rounds and summary rounds/stages, not grade numbers", () => {
-    const summary = (matchTitle: string): TeamSlide["input"] => ({
+    const summary = (matchTitle: string) => ({
       kind: "matchSummary",
       matchTitle,
       result: "Won",
@@ -348,27 +359,30 @@ describe("carousel cover round labels", () => {
       },
       innings: [],
     });
-    // Results and team lists carry card inputs, not Match Day content.
-    const selected = teams("14", null).map(({ content: _content, ...t }) => t as TeamSlide);
-    selected[0].input = summary("A Grade • Grand Final");
-    selected[1].input = summary("Under 14 • Grand Final");
+    // Results and team lists carry their own content (ADR-010 P7).
+    const selected = teams("14", null);
+    const result = (t: TeamSlide, matchTitle: string) =>
+      slideContentFor("results", t.fixture, summary(matchTitle)) as unknown as ResultContent;
+    selected[0].content = result(selected[0], "A Grade • Grand Final");
+    selected[1].content = result(selected[1], "Under 14 • Grand Final");
     expect(carouselRoundLabel(selected)).toBe("GRAND FINAL");
-    selected[1].input = summary("Under 14 • Round 5");
+    selected[1].content = result(selected[1], "Under 14 • Round 5");
     expect(carouselRoundLabel(selected)).toBe("MIXED ROUNDS");
-    selected[0].input = summary("Under 14");
+    selected[0].content = result(selected[0], "Under 14");
     selected[0].fixture.roundLabel = null;
     expect(carouselRoundLabel(selected)).toBe("");
-    const list = teams(null).map(({ content: _content, ...t }) => t as TeamSlide);
-    list[0].input = {
-      kind: "teamList",
-      gradeRound: "A Grade",
-      competitionLine: "",
-      venueDateTime: "",
-      players: [],
-      roundLabel: "R7",
-    };
+    const list = teams(null);
+    const teamList = (roundLabel: string) =>
+      slideContentFor("teamList", list[0].fixture, {
+        gradeRound: "A Grade",
+        competitionLine: "",
+        venueDateTime: "",
+        players: [],
+        roundLabel,
+      }) as unknown as TeamListContent;
+    list[0].content = teamList("R7");
     expect(carouselRoundLabel(list)).toBe("ROUND 7");
-    list[0].input.roundLabel = "";
+    list[0].content = teamList("");
     list[0].fixture.roundLabel = "R8";
     expect(carouselRoundLabel(list)).toBe("ROUND 8");
   });
@@ -390,23 +404,25 @@ describe("carousel cover round labels", () => {
     expect(slides[2].input).toMatchObject({ roundLabel: "ROUND 5" });
   });
   it("prefers source metadata over reformatted or conflicting display titles", () => {
-    const selected = createTeamSlides(
-      [fixture(1, { roundLabel: "14" }), fixture(2, { roundLabel: "14" })],
-      [],
-      {
-        1: {
-          kind: "matchSummary",
-          matchTitle: "A Grade: season decider",
-          roundLabel: "Grand Final",
-          innings: [],
-        },
-        2: {
-          kind: "matchSummary",
-          matchTitle: "Under 14 • Round 14",
-          roundLabel: " grand   final ",
-          innings: [],
-        },
+    const decider = [fixture(1, { roundLabel: "14" }), fixture(2, { roundLabel: "14" })];
+    const inputs: Record<number, Record<string, unknown>> = {
+      1: {
+        kind: "matchSummary",
+        matchTitle: "A Grade: season decider",
+        roundLabel: "Grand Final",
+        innings: [],
       },
+      2: {
+        kind: "matchSummary",
+        matchTitle: "Under 14 • Round 14",
+        roundLabel: " grand   final ",
+        innings: [],
+      },
+    };
+    const selected = createTeamSlides(
+      decider,
+      [],
+      Object.fromEntries(decider.map((f) => [f.id, slideContentFor("results", f, inputs[f.id]!)])),
     );
     expect(carouselRoundLabel(selected)).toBe("GRAND FINAL");
     const slides = buildWeekendSlides(selected, [], bundle, "Results", "2026-10-09", "2026-10-11");
@@ -417,18 +433,22 @@ describe("carousel cover round labels", () => {
       roundLabel: "Grand Final",
     });
     expect(frozen[1].data).toEqual(JSON.parse(JSON.stringify(slides[1].data)));
-    if (selected[0].input?.kind !== "matchSummary") throw new Error("Expected summary source");
-    selected[0].input.roundLabel = "Round 5";
+    selected[0].content = slideContentFor("results", decider[0]!, {
+      ...inputs[1],
+      roundLabel: "Round 5",
+    }) as unknown as ResultContent;
     expect(carouselRoundLabel(selected)).toBe("MIXED ROUNDS");
     expect(frozen[0].input.roundLabel).toBe("GRAND FINAL");
   });
   it("uses explicit numeric metadata and does not infer labels for explicitly unknown rounds", () => {
-    const selected = createTeamSlides([fixture(1, { roundLabel: "14" })], [], {
-      1: { kind: "matchSummary", matchTitle: "A Grade • Grand Final", roundLabel: "R05" },
-    });
+    const f = fixture(1, { roundLabel: "14" });
+    const input = { kind: "matchSummary", matchTitle: "A Grade • Grand Final", roundLabel: "R05" };
+    const selected = createTeamSlides([f], [], { 1: slideContentFor("results", f, input) });
     expect(carouselRoundLabel(selected)).toBe("ROUND 5");
-    if (selected[0].input?.kind !== "matchSummary") throw new Error("Expected summary source");
-    selected[0].input.roundLabel = "";
+    selected[0].content = slideContentFor("results", f, {
+      ...input,
+      roundLabel: "",
+    }) as unknown as ResultContent;
     expect(carouselRoundLabel(selected)).toBe("");
   });
 });
