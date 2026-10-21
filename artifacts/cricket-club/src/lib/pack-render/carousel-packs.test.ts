@@ -7,7 +7,7 @@ import {
   packColourModeFor,
 } from "@/lib/pack-render";
 import { resolveTemplate } from "./templates";
-import { getPackManifest, listPackManifests } from "../pack-templates/registry";
+import { getPackManifest, listAllPackManifests } from "../pack-templates/registry";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type { ShareCardInput, MatchSummaryInnings, CardSize } from "@/lib/share-card";
 
@@ -120,12 +120,12 @@ describe("carousel templates across packs", () => {
   });
   it("validates exactly the registered built-in packs", () => {
     expect([...CAROUSEL_PACK_IDS].sort()).toEqual(
-      listPackManifests()
+      listAllPackManifests()
         .map((p) => p.packId)
         .sort(),
     );
   });
-  for (const pack of listPackManifests()) {
+  for (const pack of listAllPackManifests()) {
     it(`${pack.packId}: detail and weekend render in all formats`, () => {
       for (const size of SIZES) {
         const d = renderPackCard(detail, size, false, tokens, false, null, pack.packId);
@@ -238,7 +238,7 @@ describe("carouselContent variant", () => {
       startTime: "1pm",
       ...extra,
     }) as ShareCardInput;
-  for (const pack of listPackManifests()) {
+  for (const pack of listAllPackManifests()) {
     it(`${pack.packId}: matchDay contained logos${pack.packId === "club-kit-v1" ? "" : " and photo slot"}`, () => {
       const plain = renderPackCard(md({}), "square", false, tokens, false, null, pack.packId);
       const c = renderPackCard(

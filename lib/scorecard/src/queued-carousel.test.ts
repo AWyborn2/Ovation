@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   readQueuedCarousel,
   carouselPackId,
-  CAROUSEL_PACK_IDS,
+  ACTIVE_PACK_IDS,
   type CarouselSetType,
 } from "./queued-carousel";
 
@@ -32,7 +32,7 @@ const make = (type?: CarouselSetType) => {
   };
 };
 describe("queued carousel compatibility and validation", () => {
-  it.each(CAROUSEL_PACK_IDS)("keeps the saved %s choice for every type and size", (packId) => {
+  it.each(ACTIVE_PACK_IDS)("keeps the saved %s choice for every type and size", (packId) => {
     for (const type of ["matchDay", "teamList", "results", "matchSummary"] as const) {
       for (const size of ["square", "portrait", "story", "landscape"]) {
         const payload = make(type);

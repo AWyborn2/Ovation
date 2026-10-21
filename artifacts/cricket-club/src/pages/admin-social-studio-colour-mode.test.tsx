@@ -5,7 +5,6 @@ import { installApiMock } from "../test/mock-api";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import type { CardTemplate } from "@workspace/api-client-react";
-import { SUNSET_CLUB_SKY, SUNSET_SKY } from "@/lib/pack-templates/sunset/fragments";
 import AdminSocialStudio from "./admin-social-studio";
 
 /**
@@ -72,6 +71,7 @@ function setupApi() {
   });
   installApiMock({
     "/card-themes": [],
+    // Sunset is a hidden legacy pack (P9): even listed, it gets no tile.
     "/card-templates": [packRow(1, "broadcast-dark-v1", ["matchSummary"]), packRow(2, "sunset-v1")],
   });
   const base = globalThis.fetch as unknown as (
@@ -116,28 +116,30 @@ describe("Design packs colour-mode switch", () => {
         <AdminSocialStudio />
       </ConfirmProvider>,
     );
-    const toggle = await screen.findByRole("switch", { name: "Sunset: use club colours" });
+    const toggle = await screen.findByRole("switch", {
+      name: "Broadcast Dark: use club colours",
+    });
     const tile = toggle.closest(".rounded-2xl") as HTMLElement;
 
-    // Default: club colours — the club's own sunset sky.
+    // Default: club colours.
     expect(toggle).toHaveAttribute("aria-checked", "true");
-    await waitFor(() => expect(tile.innerHTML).toContain(SUNSET_CLUB_SKY));
+    await waitFor(() => expect(tile.innerHTML).toContain("pack-card-root"));
     expect(tile).toHaveTextContent("Club colours");
+    const clubLook = tile.innerHTML;
 
     fireEvent.click(toggle);
 
-    await waitFor(() => expect(patches).toEqual([{ packColourModes: { "sunset-v1": "pack" } }]));
-    await waitFor(() => expect(tile.innerHTML).toContain(SUNSET_SKY));
-    expect(tile.innerHTML).not.toContain(SUNSET_CLUB_SKY);
-    expect(tile).toHaveTextContent("Pack's own look");
-    expect(screen.getByRole("switch", { name: "Sunset: use club colours" })).toHaveAttribute(
-      "aria-checked",
-      "false",
+    await waitFor(() =>
+      expect(patches).toEqual([{ packColourModes: { "broadcast-dark-v1": "pack" } }]),
     );
-
-    // The other pack is untouched.
+    await waitFor(() => expect(tile).toHaveTextContent("Pack's own look"));
+    expect(tile.innerHTML).not.toBe(clubLook);
     expect(
       screen.getByRole("switch", { name: "Broadcast Dark: use club colours" }),
-    ).toHaveAttribute("aria-checked", "true");
-  });
+    ).toHaveAttribute("aria-checked", "false");
+
+    // No tile for the hidden pack.
+    expect(screen.queryByRole("switch", { name: "Sunset: use club colours" })).toBeNull();
+    // The whole Studio page mounts here; give it room on a loaded runner.
+  }, 15_000);
 });

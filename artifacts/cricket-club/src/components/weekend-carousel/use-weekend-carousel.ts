@@ -18,6 +18,7 @@ import type { CardAdjustments } from "@/lib/pack-render";
 import {
   CAROUSEL_LABELS,
   isCarouselPackId,
+  isLegacyPackId,
   type CarouselSetType,
 } from "@workspace/scorecard/queued-carousel";
 import {
@@ -594,7 +595,9 @@ export function useWeekendCarousel(
     packId,
     setPackId: (value: string) => {
       if (busy) return;
-      if (!isCarouselPackId(value)) throw new Error("Choose a registered built-in carousel pack.");
+      // A hidden legacy pack (P9) isn't offered, so it isn't accepted either.
+      if (!isCarouselPackId(value) || isLegacyPackId(value))
+        throw new Error("Choose a registered built-in carousel pack.");
       setPackId(value);
       setQueueError(null);
     },

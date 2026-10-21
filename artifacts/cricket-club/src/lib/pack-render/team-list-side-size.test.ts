@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderPackCard, resolveCardTokens } from "../pack-render";
-import { listPackManifests } from "../pack-templates/registry";
+import { listAllPackManifests } from "../pack-templates/registry";
 import type { CardSize, ShareCardInput, TeamListPlayer } from "../share-card";
 import { getElement } from "../studio-elements/registry";
 import { cq } from "../pack-templates/club-kit/parts";
@@ -57,7 +57,7 @@ function input(players: TeamListPlayer[], design?: "team-list" | "starting-xi"):
   };
 }
 
-const teamListDesigns = listPackManifests().flatMap((pack) =>
+const teamListDesigns = listAllPackManifests().flatMap((pack) =>
   pack.designs
     .filter((d) => d.kind === "teamList" && d.role !== "cover")
     .map((d) => ({ packId: pack.packId, designKey: d.designKey, template: d.template })),

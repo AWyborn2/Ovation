@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listPackManifests } from "./registry";
+import { listAllPackManifests } from "./registry";
 import { renderPackCard } from "../pack-render";
 import { brandDefaultTokens, resolvePackTokens } from "../pack-render/tokens";
 import { buildPackData } from "../pack-card-data";
@@ -39,7 +39,7 @@ function renderDraft(input: ShareCardInput, packId: string, size: CardSize = "sq
 describe("switching a draft's pack (U13)", () => {
   it("covers every registered pack", () => {
     expect(Object.keys(PACK_MARKERS).sort()).toEqual(
-      listPackManifests()
+      listAllPackManifests()
         .map((p) => p.packId)
         .sort(),
     );
@@ -51,7 +51,9 @@ describe("switching a draft's pack (U13)", () => {
       const outputs = new Map<string, string>();
       // Packs that design the kind (Duotone designs the carousel kinds only).
       const packs = Object.keys(PACK_MARKERS).filter((id) =>
-        listPackManifests().some((m) => m.packId === id && m.designs.some((d) => d.kind === kind)),
+        listAllPackManifests().some(
+          (m) => m.packId === id && m.designs.some((d) => d.kind === kind),
+        ),
       );
       for (const packId of packs) {
         for (const size of ["square", "landscape"] as CardSize[]) {

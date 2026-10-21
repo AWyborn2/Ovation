@@ -21,6 +21,7 @@ import { resolveDraftPack } from "./draft-enrich";
 import { loadCardNames } from "./card-content/names";
 import {
   readQueuedCarousel,
+  resolveActivePackId,
   queuedSlideAdjustments,
   carouselPackId,
 } from "@workspace/scorecard/queued-carousel";
@@ -143,7 +144,8 @@ export async function renderDraftSlides(
   // A card kind template draft renders its own document on the blank base
   // (ADR-001); a pack draft renders its pack.
   const templated = draft.templateVersion !== null;
-  const packId = templated ? "blank" : (draft.packId ?? clubPack);
+  // A hidden legacy pack (P9) on a saved draft renders as Club Kit.
+  const packId = templated ? "blank" : resolveActivePackId(draft.packId ?? clubPack);
   // "Pack's own look" choices, as the Studio preview passes them; any other
   // pack renders in club colours.
   const modes = Object.fromEntries(

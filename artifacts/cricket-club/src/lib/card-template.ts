@@ -4,6 +4,7 @@ import {
   resolvePackIdForKind as sharedResolvePackIdForKind,
   templateAppliesToKind as sharedTemplateAppliesToKind,
 } from "@workspace/scorecard";
+import { isLegacyPackId } from "@workspace/scorecard/queued-carousel";
 import type { CardTemplate, CardTemplateSlot } from "@workspace/api-client-react";
 import type { CardKind, ShareCardInput } from "./share-card";
 import { listPackManifests } from "./pack-templates/registry";
@@ -335,7 +336,8 @@ export const listSelectablePacksForKind = (
   if (!templates?.length) return [];
   const lowestIdByPack = new Map<string, number>();
   for (const t of templates) {
-    if (t.source !== "pack" || !t.packId) continue;
+    // A hidden legacy pack (P9) is never offered, even if a stale list holds its rows.
+    if (t.source !== "pack" || !t.packId || isLegacyPackId(t.packId)) continue;
     if (!templateAppliesToKind(t, kind)) continue;
     const seen = lowestIdByPack.get(t.packId);
     if (seen === undefined || t.id < seen) lowestIdByPack.set(t.packId, t.id);

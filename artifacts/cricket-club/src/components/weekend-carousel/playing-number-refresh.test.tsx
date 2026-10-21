@@ -9,7 +9,7 @@ import type {
   SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cache";
-import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { ACTIVE_PACK_IDS, LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import { slideContentFor, sourcesFor } from "@/test/carousel-sources";
 
 const api = vi.hoisted(() => ({ sources: vi.fn(), settings: vi.fn(), queue: vi.fn() }));
@@ -151,7 +151,7 @@ describe("fresh playing numbers in carousel previews", () => {
     });
     api.sources.mockResolvedValue(fresh);
     await act(() => hook.result.current.generate());
-    for (const pack of CAROUSEL_PACK_IDS) {
+    for (const pack of ACTIVE_PACK_IDS) {
       act(() => hook.result.current.setPackId(pack));
       expect(
         teamInput(hook)
@@ -181,10 +181,13 @@ describe("fresh playing numbers in carousel previews", () => {
     expect(teamInput(hook).players[0].shirtNumber).toBe("88");
     expect(teamInput(hook).players[1]).not.toHaveProperty("shirtNumber");
     expect(hook.result.current.stale).toBe(false);
-    for (const pack of CAROUSEL_PACK_IDS) {
+    for (const pack of ACTIVE_PACK_IDS) {
       act(() => hook.result.current.setPackId(pack));
       expect(teamInput(hook).players[0].shirtNumber).toBe("88");
     }
+    // A hidden legacy pack (P9) can't be chosen.
+    for (const pack of LEGACY_PACK_IDS)
+      expect(() => hook.result.current.setPackId(pack)).toThrow(/registered built-in/);
     await act(() => hook.result.current.runQueue());
     const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
     expect(saved.slides[1].content.source.players[0].shirtNumber).toBe("88");
@@ -206,7 +209,7 @@ describe("fresh playing numbers in carousel previews", () => {
         transform: { focalX: 0.2, focalY: 0.7, zoom: 1.8 },
       });
       hook.result.current.moveTeamAt(0, 1);
-      hook.result.current.setPackId("gold-foil-v1");
+      hook.result.current.setPackId("broadcast-dark-v1");
       hook.result.current.setSize("story");
       hook.result.current.setCaption("Keep this caption");
     });
@@ -221,7 +224,7 @@ describe("fresh playing numbers in carousel previews", () => {
       transform: { focalX: 0.2, focalY: 0.7, zoom: 1.8 },
       content: { source: { players: [{ shirtNumber: "88" }, {}] } },
     });
-    expect(hook.result.current.packId).toBe("gold-foil-v1");
+    expect(hook.result.current.packId).toBe("broadcast-dark-v1");
     expect(hook.result.current.size).toBe("story");
     expect(hook.result.current.caption).toBe("Keep this caption");
   });

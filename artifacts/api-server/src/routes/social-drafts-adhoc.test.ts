@@ -16,10 +16,15 @@ import {
   socialDraftsTable,
   socialSettingsTable,
   cardTemplatesTable,
+  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { randomUUID } from "node:crypto";
-import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import {
+  ACTIVE_PACK_IDS,
+  CAROUSEL_PACK_IDS,
+  LEGACY_PACK_IDS,
+} from "@workspace/scorecard/queued-carousel";
 import {
   matchDayFixtureContent,
   matchDaySponsorsContent,
@@ -66,6 +71,8 @@ afterAll(async () => {
   await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenantIds));
   await db.delete(cardTemplatesTable).where(inArray(cardTemplatesTable.tenantId, tenantIds));
   await db.delete(socialSettingsTable).where(inArray(socialSettingsTable.tenantId, tenantIds));
+  // Rendering a single draft seeds the club's caption templates (ensureSettings).
+  await db.delete(captionTemplatesTable).where(inArray(captionTemplatesTable.tenantId, tenantIds));
   await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, tenantIds));
 });
@@ -106,7 +113,7 @@ describe("POST /social-drafts (ad-hoc)", () => {
   it("accepts exactly the server's registered built-in pack identities", () => {
     expect([...CAROUSEL_PACK_IDS].sort()).toEqual(PACKS.map((p) => p.id).sort());
   });
-  it.each(CAROUSEL_PACK_IDS)(
+  it.each(ACTIVE_PACK_IDS)(
     "freezes %s for review and exports instead of the mutable draft default",
     async (packId) => {
       const slides = ["title", "content", "sponsors"].map((id, index) => ({
@@ -177,7 +184,7 @@ describe("POST /social-drafts (ad-hoc)", () => {
       expect(invalid.status).toBe(400);
       expect(invalid.body.error).toMatch(/Unknown carousel design pack/);
       const mismatched = await as(0).post("/social-drafts", {
-        packId: packId === "sunset-v1" ? "club-kit-v1" : "sunset-v1",
+        packId: packId === "broadcast-dark-v1" ? "club-kit-v1" : "broadcast-dark-v1",
         caption: "Mismatch",
         cardInput: { kind: "matchDay", weekendCarousel: composition },
       });
@@ -261,6 +268,127 @@ describe("POST /social-drafts (ad-hoc)", () => {
     });
     expect(inputs[0]).toMatchObject({ carouselPage: { page: "title", title: "Round one" } });
   });
+  it.each(LEGACY_PACK_IDS)(
+    "renders a saved v1 or v2 carousel and a single draft naming %s as Club Kit (P9)",
+    async (legacy) => {
+      const v1Slides = ["title", "content", "sponsors"].map((id, index) => ({
+        id,
+        label: id,
+        junior: false,
+        sponsorsOn: false,
+        warnings: [],
+        input: {
+          kind: "matchDay",
+          ...(index !== 1 ? { carouselPage: { page: id, title: "Legacy", sponsors: [] } } : {}),
+        },
+        data: {},
+      }));
+      const v1 = { version: 1, packId: legacy, submissionId: randomUUID(), size: "square" };
+      // A stale page still sending the hidden pack: accepted, saved as Club Kit.
+      const created = await as(0).post("/social-drafts", {
+        packId: legacy,
+        caption: "Legacy v1",
+        cardInput: { kind: "matchDay", weekendCarousel: { ...v1, slides: v1Slides } },
+      });
+      expect(created.status, JSON.stringify(created.body)).toBe(201);
+      expect(created.body.packId).toBe("club-kit-v1");
+      const [row] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(eq(socialDraftsTable.id, created.body.id));
+      const opts = {
+        heading: "Round one",
+        from: "2026-10-09",
+        to: "2026-10-11",
+        roundLabels: ["1"],
+        fixtureCount: 1,
+      };
+      const minimal = [...presetFields("matchDay", "minimal")];
+      const v2Slide = (id: string, content: unknown) => ({
+        id,
+        label: id,
+        content,
+        visibleFields: minimal,
+        photoId: null,
+        data: {},
+        junior: false,
+        sponsorsOn: false,
+        warnings: [],
+      });
+      const v2 = {
+        version: 2,
+        packId: legacy,
+        setType: "matchDay",
+        submissionId: randomUUID(),
+        size: "square",
+        slides: [
+          v2Slide("title", matchDayTitleContent(opts)),
+          v2Slide(
+            "fixture-12",
+            matchDayFixtureContent({
+              id: 12,
+              grade: "A Grade",
+              roundLabel: "1",
+              opponentName: "Visitors Cricket Club",
+              opponentLogoUrl: "https://crest.test/v.png",
+              venue: "Oval",
+              startAt: new Date("2026-10-10T02:00:00Z"),
+              isHome: true,
+            }),
+          ),
+          v2Slide("sponsors", matchDaySponsorsContent({ ...opts, sponsors: [] })),
+        ],
+      };
+      const calls: Record<string, unknown>[] = [];
+      setStillRenderer(async (_input, options) => {
+        calls.push(options as Record<string, unknown>);
+        return { buffer: Buffer.from("png"), contentType: "image/png" };
+      });
+      try {
+        // Saved rows keep the legacy id (no migration); every render is Club Kit.
+        for (const weekendCarousel of [{ ...v1, slides: v1Slides }, v2]) {
+          await renderDraftSlides(
+            { ...row, packId: legacy, cardInput: { kind: "matchDay", weekendCarousel } },
+            ["square"],
+            null,
+            logger,
+          );
+        }
+        expect(calls).toHaveLength(6);
+        await renderDraftSlides(
+          { ...row, packId: legacy, cardInput: signing, templateVersion: null },
+          ["square"],
+          null,
+          logger,
+        );
+        expect(calls).toHaveLength(7);
+        expect(calls.map((c) => c.packId)).toEqual(Array(7).fill("club-kit-v1"));
+      } finally {
+        setStillRenderer(null);
+      }
+      // A saved single draft naming the pack reads as Club Kit; its row is not rewritten.
+      const [single] = await db
+        .insert(socialDraftsTable)
+        .values({
+          tenantId: tenantIds[0],
+          engine: "ondemand",
+          status: "awaiting_review",
+          cardInput: signing,
+          packId: legacy,
+        })
+        .returning();
+      const listed = await as(0).get("/social-drafts");
+      const shown = (listed.body as { id: number; packId: string | null }[]).find(
+        (d) => d.id === single.id,
+      );
+      expect(shown?.packId).toBe("club-kit-v1");
+      const [stored] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(eq(socialDraftsTable.id, single.id));
+      expect(stored.packId).toBe(legacy);
+    },
+  );
   it("queues an entire match-day carousel once, keeps it private and renders every saved slide", async () => {
     const slides = ["title", "fixture-11", "sponsors"].map((id, index) => ({
       id,

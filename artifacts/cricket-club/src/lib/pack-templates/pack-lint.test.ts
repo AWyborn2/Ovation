@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listPackManifests, DEFAULT_PACK_ID, getPackManifest } from "./registry";
+import { listAllPackManifests, DEFAULT_PACK_ID, getPackManifest } from "./registry";
 import type { PackDesignEntry, PackTemplateField } from "./types";
 import { renderPackCard, PACK_DEFAULT_TOKENS, packSupportsKind } from "../pack-render";
 import { sampleCardInput } from "../sample-card-inputs";
@@ -175,7 +175,7 @@ describe("field-key parity across packs (R4)", () => {
     expect(reference.packId).toBe(DEFAULT_PACK_ID);
   });
 
-  for (const pack of listPackManifests()) {
+  for (const pack of listAllPackManifests()) {
     if (pack.packId === DEFAULT_PACK_ID) continue;
 
     it(`${pack.name} declares no key the reference pack lacks`, () => {
@@ -212,7 +212,7 @@ describe("field-key parity across packs (R4)", () => {
   }
 });
 
-for (const pack of listPackManifests()) {
+for (const pack of listAllPackManifests()) {
   describe(`pack contract: ${pack.name} (${pack.packId})`, () => {
     const designs = pack.designs;
 

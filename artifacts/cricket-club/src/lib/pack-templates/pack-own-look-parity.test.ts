@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { listPackManifests } from "./registry";
+import { listAllPackManifests } from "./registry";
 import { renderPackCard, resolveCardTokens } from "../pack-render";
 import { buildPackData } from "../pack-card-data";
 import { sampleCardInput } from "../sample-card-inputs";
@@ -83,7 +83,7 @@ function digest(packId: string, scenario: Scenario, mode: "club" | "pack"): stri
   });
   const tokens = resolveCardTokens({ theme: s.theme, junior: s.junior, data, packId });
   const hash = createHash("sha256");
-  const manifest = listPackManifests().find((m) => m.packId === packId)!;
+  const manifest = listAllPackManifests().find((m) => m.packId === packId)!;
   // Set covers and the round team-list kind arrived after these digests were
   // captured; they have no "before" to match, and every other design is
   // unchanged by them.
@@ -103,8 +103,8 @@ function digest(packId: string, scenario: Scenario, mode: "club" | "pack"): stri
 }
 
 /** Packs with a "Pack's own look" (every pack but the club-only ones). */
-const DUAL_MODE = listPackManifests().filter((m) => m.colourMode !== "club-only");
-const CLUB_ONLY = listPackManifests().filter((m) => m.colourMode === "club-only");
+const DUAL_MODE = listAllPackManifests().filter((m) => m.colourMode !== "club-only");
+const CLUB_ONLY = listAllPackManifests().filter((m) => m.colourMode === "club-only");
 
 // Explicit opt-in for intentional visual changes; normal runs remain strict.
 if (process.env.PRINT_PACK_BASELINES) {

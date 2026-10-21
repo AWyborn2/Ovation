@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { carouselPackId, contentSlideInput, readQueuedCarousel } from "./queued-carousel";
+import {
+  ACTIVE_PACK_IDS,
+  CAROUSEL_PACK_IDS,
+  LEGACY_PACK_IDS,
+  carouselPackId,
+  contentSlideInput,
+  readQueuedCarousel,
+  resolveActivePackId,
+} from "./queued-carousel";
 import {
   dayResultRow,
   matchDayDayContent,
@@ -8,7 +16,7 @@ import {
   matchDayTitleContent,
   presetFields,
 } from "./card-content";
-import { livePackId, resolvePackIdForKind } from "./pack-resolve";
+import { resolvePackIdForKind } from "./pack-resolve";
 
 const bookendOpts = {
   heading: "This weekend",
@@ -266,25 +274,67 @@ describe("junior day slides (P3)", () => {
   });
 });
 
-describe("retired packs", () => {
-  it("a retired pack id in a saved carousel reads as Club Kit (v1 and v2)", () => {
-    const retired = ["gold-foil-v1"];
-    const p = v2({ packId: "gold-foil-v1" });
-    expect(carouselPackId(readQueuedCarousel(p, retired)!)).toBe("club-kit-v1");
-    expect(p.weekendCarousel.packId).toBe("gold-foil-v1");
-    const v1 = { weekendCarousel: { ...readQueuedCarousel(v2())!, version: 1 } };
-    Object.assign(v1.weekendCarousel, { packId: "gold-foil-v1" });
-    expect(carouselPackId(readQueuedCarousel(v1, retired)!)).toBe("club-kit-v1");
-    // Not retired: the saved choice stands.
-    expect(carouselPackId(readQueuedCarousel(v2({ packId: "gold-foil-v1" }))!)).toBe(
-      "gold-foil-v1",
+describe("legacy packs (P9)", () => {
+  const packRow = (packId: string, over: Record<string, unknown> = {}) => ({
+    source: "pack",
+    packId,
+    cardKinds: [] as string[],
+    isActive: true,
+    isDefault: false,
+    defaultForKinds: [] as string[],
+    ...over,
+  });
+
+  it("hides exactly the four legacy packs, keeping them registered", () => {
+    expect([...LEGACY_PACK_IDS].sort()).toEqual(
+      ["bold-type-v1", "gold-foil-v1", "neon-night-v1", "sunset-v1"].sort(),
+    );
+    for (const id of LEGACY_PACK_IDS) {
+      expect(CAROUSEL_PACK_IDS as readonly string[]).toContain(id);
+      expect(ACTIVE_PACK_IDS).not.toContain(id);
+    }
+    expect(ACTIVE_PACK_IDS).toContain("club-kit-v1");
+    expect(ACTIVE_PACK_IDS).toContain("broadcast-dark-v1");
+    expect(ACTIVE_PACK_IDS).toContain("duotone-v1");
+  });
+
+  it("resolveActivePackId maps legacy and unknown ids to Club Kit, and nothing else", () => {
+    for (const id of LEGACY_PACK_IDS) expect(resolveActivePackId(id)).toBe("club-kit-v1");
+    expect(resolveActivePackId("withdrawn-pack-v9")).toBe("club-kit-v1");
+    for (const id of ACTIVE_PACK_IDS) expect(resolveActivePackId(id)).toBe(id);
+    expect(resolveActivePackId("blank")).toBe("blank");
+    expect(resolveActivePackId(null)).toBeNull();
+    expect(resolveActivePackId(undefined)).toBeUndefined();
+  });
+
+  it("a legacy pack id in a saved v1 or v2 carousel reads as Club Kit, payload untouched", () => {
+    for (const id of LEGACY_PACK_IDS) {
+      const p = v2({ packId: id });
+      expect(carouselPackId(readQueuedCarousel(p)!)).toBe("club-kit-v1");
+      expect(p.weekendCarousel.packId).toBe(id);
+      const v1 = { weekendCarousel: { ...readQueuedCarousel(v2())!, version: 1, packId: id } };
+      expect(carouselPackId(readQueuedCarousel(v1)!)).toBe("club-kit-v1");
+      expect(v1.weekendCarousel.packId).toBe(id);
+    }
+    // An active choice stands.
+    expect(carouselPackId(readQueuedCarousel(v2({ packId: "broadcast-dark-v1" }))!)).toBe(
+      "broadcast-dark-v1",
     );
   });
 
-  it("livePackId maps only retired ids", () => {
-    expect(livePackId("sunset-v1", ["sunset-v1"])).toBe("club-kit-v1");
-    expect(livePackId("sunset-v1", [])).toBe("sunset-v1");
-    expect(livePackId(null, ["sunset-v1"])).toBeNull();
+  it("the auto-queue never resolves a legacy pack", () => {
+    for (const id of LEGACY_PACK_IDS) {
+      expect(
+        resolvePackIdForKind([packRow(id, { defaultForKinds: ["matchDay"] })], "matchDay"),
+      ).toBe("club-kit-v1");
+      expect(resolvePackIdForKind([packRow(id, { isDefault: true })], "result")).toBe(
+        "club-kit-v1",
+      );
+    }
+    expect(resolvePackIdForKind([], "matchDay")).toBeNull();
+  });
+
+  it("an active pack claim resolves unchanged", () => {
     expect(
       resolvePackIdForKind(
         [

@@ -106,6 +106,7 @@ import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
 import { resolvePackIdForKind } from "@/lib/card-template";
+import { renderablePackId } from "@/lib/pack-templates/registry";
 import { useBrand } from "@/lib/brand-context";
 import {
   withGroundPhoto,
@@ -205,8 +206,10 @@ function EditorApp({ draftId }: { draftId: number }) {
   const kindTemplatesOn =
     useListKindTemplates({ query: { queryKey: getListKindTemplatesQueryKey() } }).data?.enabled ===
     true;
-  const packId =
-    draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind);
+  // A draft saved with a hidden legacy pack (P9) edits as Club Kit.
+  const packId = renderablePackId(
+    draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind),
+  );
 
   // A team list carries its team's own sponsor.
   const grade = cardGrade(input);

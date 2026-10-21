@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { renderPackCard, resolvePackTokens, brandDefaultTokens } from "@/lib/pack-render";
-import { listPackManifests } from "@/lib/pack-templates/registry";
+import { listAllPackManifests } from "@/lib/pack-templates/registry";
 import { leaderTitle } from "./bind";
 import type { ShareCardInput } from "@/lib/share-card";
 
@@ -31,7 +31,7 @@ describe("leaderTitle", () => {
   });
 });
 
-describe.each(listPackManifests().map((m) => m.packId))("pack %s", (packId) => {
+describe.each(listAllPackManifests().map((m) => m.packId))("pack %s", (packId) => {
   const render = (category: string) =>
     renderPackCard(leader(category), "square", false, tokens, false, null, packId);
 

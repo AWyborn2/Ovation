@@ -10,6 +10,7 @@ import {
   type CardAdjustments,
   type PackCardData,
 } from "@/lib/pack-render";
+import { renderablePackId } from "@/lib/pack-templates/registry";
 
 /**
  * Live DOM preview of a Pack A card. Renders the bound template HTML at native
@@ -37,8 +38,9 @@ export interface PackCardProps {
    */
   data?: PackCardData | null;
   /**
-   * Which registered design pack supplies the layout. Omitted (or unknown)
-   * resolves to the default pack, so existing callers are unchanged.
+   * Which registered design pack supplies the layout. Omitted resolves to the
+   * default pack, so existing callers are unchanged; a hidden legacy pack or an
+   * unknown id renders as Club Kit (P9).
    */
   packId?: string | null;
   /** Editor overlay (U15). Omitted renders the pack as designed. */
@@ -76,13 +78,16 @@ export function PackCard({
   theme,
   junior,
   data,
-  packId,
+  packId: savedPackId,
   adjustments,
   animate = false,
   width,
   className,
 }: PackCardProps) {
   const native = packNativeSize(size);
+  // Every preview, the editor canvas and the server render harness draw here, so
+  // a saved legacy pack (P9) renders as Club Kit everywhere.
+  const packId = renderablePackId(savedPackId);
   // Resolve tokens through `resolveCardTokens`, the one resolver every pack
   // surface shares (the server harness mounts this same component). The club's
   // per-pack colour mode rides on `data.packColourModes`:

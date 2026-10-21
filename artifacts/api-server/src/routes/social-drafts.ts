@@ -4,6 +4,7 @@ import {
   readQueuedCarousel,
   carouselPackId,
   isCarouselPackId,
+  resolveActivePackId,
 } from "@workspace/scorecard/queued-carousel";
 import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import {
@@ -80,7 +81,12 @@ export function presentDraft<
   autoPost: AutoPost = { enabled: false },
   now: Date = new Date(),
 ): T & { status: DraftStatus } {
-  return { ...row, status: effectiveDraftStatus(row, autoPost, now) };
+  // A draft saved with a hidden legacy pack (P9) reads as Club Kit; the row is not rewritten.
+  const pack =
+    "packId" in row && typeof row.packId === "string"
+      ? { packId: resolveActivePackId(row.packId) }
+      : {};
+  return { ...row, ...pack, status: effectiveDraftStatus(row, autoPost, now) };
 }
 
 /**
@@ -447,7 +453,8 @@ router.post(
       return;
     }
     const tenantId = getTenantId(req);
-    let packId = parsed.data.packId ?? null;
+    // A hidden legacy pack (P9) from a stale page is saved as Club Kit.
+    let packId = resolveActivePackId(parsed.data.packId ?? null);
     if ("weekendCarousel" in cardInput) {
       const selection = cardInput.weekendCarousel as { packId?: unknown } | null;
       if (
@@ -519,7 +526,7 @@ router.post(
         res.status(404).json({ error: "Template not found" });
         return;
       }
-      packId = template.packId;
+      packId = resolveActivePackId(template.packId);
       adjustments = template.adjustments;
     }
     // With card kind templates on, a card started from the club's design
@@ -597,7 +604,7 @@ const presentTemplate = (t: typeof cardTemplatesTable.$inferSelect) => ({
   id: t.id,
   name: t.name,
   baseKind: t.baseKind,
-  packId: t.packId,
+  packId: resolveActivePackId(t.packId),
   adjustments: t.adjustments,
   createdAt: t.createdAt,
 });
