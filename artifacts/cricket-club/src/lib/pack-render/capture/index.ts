@@ -19,9 +19,13 @@ import {
   type ColourMode,
   type PackCapture,
 } from "@workspace/scorecard/pack-capture";
+import type { PageKey } from "@workspace/scorecard/kind-templates";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { ensureDocumentFonts } from "@/lib/document-fonts";
+import type { CardAdjustments } from "../adjustments";
 import { applyPackData, bindInput } from "../bind";
-import { packColourModeFor } from "../render";
+import { fitLayersInDom } from "../layer-fit";
+import { BLANK_PACK_ID, packColourModeFor, renderPackCard } from "../render";
 import { prepareTeamNames } from "../team-name-fit";
 import { packNativeSize } from "../tokens";
 import { captureCardDom, shortenUrls } from "./dom";
@@ -41,6 +45,18 @@ export interface CaptureApi {
   ): CaptureRender;
   /** Mount `input` for `packId` at `size` and record its DOM. */
   capture(packId: string, input: CaptureRender, size: CaptureSize): Promise<PackCapture>;
+  /**
+   * Mount a card and leave it for a screenshot (`#pack-capture-root`): the
+   * pack's own card, or with `document` a converted template's page drawn on
+   * the blank base from the same input. Returns the layout warnings.
+   */
+  mount(
+    packId: string,
+    input: CaptureRender,
+    size: CaptureSize,
+    opts?: { document?: unknown; page?: string },
+  ): Promise<{ selector: string; warnings: string[] }>;
+  unmount(): void;
 }
 
 const CAPTURE_ROOT_ID = "pack-capture-root";
@@ -116,37 +132,9 @@ export async function capture(
   if (!card.html) throw new Error(`${packId} has no design for ${card.input.kind}`);
 
   const native = packNativeSize(size);
-  document.getElementById(CAPTURE_ROOT_ID)?.remove();
-  const container = document.createElement("div");
-  container.id = CAPTURE_ROOT_ID;
-  Object.assign(container.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    width: `${native.w}px`,
-    height: `${native.h}px`,
-    margin: "0",
-    padding: "0",
-    overflow: "hidden",
-    zIndex: "2147483647",
-  } as Partial<CSSStyleDeclaration>);
-  container.innerHTML = card.html;
-  document.body.appendChild(container);
+  const container = await mountHtml(card.html, size);
 
   try {
-    // As the still render: fonts, slot images, then the team-name fit.
-    await ensureCardFontsLoaded();
-    try {
-      await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
-    } catch {
-      // No Font Loading API: system fallback.
-    }
-    await frame();
-    await waitForImages(container);
-    await prepareTeamNames(container);
-    await frame();
-    await frame();
-
     const root = (container.querySelector(".pack-card-root") ??
       container.firstElementChild) as HTMLElement;
     const { elements, keyframes } = captureCardDom(root, render.detail);
@@ -199,7 +187,75 @@ export async function capture(
   }
 }
 
+/** Mount `html` at native size in the capture container and settle it as the still render does. */
+async function mountHtml(html: string, size: CaptureSize): Promise<HTMLElement> {
+  const native = packNativeSize(size);
+  document.getElementById(CAPTURE_ROOT_ID)?.remove();
+  const container = document.createElement("div");
+  container.id = CAPTURE_ROOT_ID;
+  Object.assign(container.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: `${native.w}px`,
+    height: `${native.h}px`,
+    margin: "0",
+    padding: "0",
+    overflow: "hidden",
+    zIndex: "2147483647",
+  } as Partial<CSSStyleDeclaration>);
+  container.innerHTML = html;
+  document.body.appendChild(container);
+  await ensureCardFontsLoaded();
+  try {
+    await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+  } catch {
+    // No Font Loading API: system fallback.
+  }
+  await frame();
+  await waitForImages(container);
+  await prepareTeamNames(container);
+  await frame();
+  await frame();
+  return container;
+}
+
+async function mount(
+  packId: string,
+  render: CaptureRender,
+  size: CaptureSize,
+  opts: { document?: unknown; page?: string } = {},
+): Promise<{ selector: string; warnings: string[] }> {
+  const card = prepareCard(packId, { ...render, markFields: false }, size);
+  let html = card.html;
+  if (opts.document) {
+    html = renderPackCard(
+      card.input,
+      size,
+      render.sponsorsOn,
+      card.tokens,
+      card.junior,
+      card.data,
+      BLANK_PACK_ID,
+      opts.document as CardAdjustments,
+      { page: opts.page as PageKey | undefined },
+    );
+  }
+  const container = await mountHtml(html, size);
+  // The converted template's own fit: text that still overflows at its minimum.
+  await ensureDocumentFonts(opts.document ? (opts.document as CardAdjustments) : null);
+  const warnings = opts.document
+    ? fitLayersInDom(container, size).map((w) => `${w.reason}${w.detail ? `: ${w.detail}` : ""}`)
+    : [];
+  await frame();
+  return { selector: `#${CAPTURE_ROOT_ID}`, warnings };
+}
+
+function unmount(): void {
+  document.getElementById(CAPTURE_ROOT_ID)?.remove();
+}
+
 /** The methods the harness installs (dev and CI builds only). */
 export function captureApi(): CaptureApi {
-  return { captureVariants, captureRender, capture };
+  return { captureVariants, captureRender, capture, mount, unmount };
 }

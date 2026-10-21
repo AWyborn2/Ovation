@@ -232,6 +232,9 @@ async function openHarnessPage(
   // Large enough for the tallest card (story, 1080×1920) at 1:1.
   await page.setViewport({ width: 1200, height: 1920, deviceScaleFactor: 1 });
   page.on("pageerror", (e) => errors.push(String(e)));
+  // tsx (esbuild) wraps named inner functions in `__name(…)`; functions sent to
+  // the page with `evaluate` carry it, so the page needs the helper too.
+  await page.evaluateOnNewDocument("globalThis.__name = (fn) => fn;");
   await page.goto(`${baseUrl}${HARNESS_PATH}`, { waitUntil: "load", timeout: 120_000 });
   await page.waitForFunction(
     () =>
