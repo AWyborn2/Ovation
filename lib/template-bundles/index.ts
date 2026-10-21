@@ -27,58 +27,83 @@ import look0_21 from "./broadcast-classic/teamListRound.json";
 import look0_22 from "./broadcast-classic/teamOfWeek.json";
 import look0_23 from "./broadcast-classic/tradingCard.json";
 import look0_24 from "./broadcast-classic/weekendWrap.json";
-import look1 from "./club-kit-classic/look.json";
-import look1_0 from "./club-kit-classic/announcement.json";
-import look1_1 from "./club-kit-classic/bigMoment.json";
-import look1_2 from "./club-kit-classic/century.json";
-import look1_3 from "./club-kit-classic/clubLeaderboard.json";
-import look1_4 from "./club-kit-classic/countdown.json";
-import look1_5 from "./club-kit-classic/debut.json";
-import look1_6 from "./club-kit-classic/fiveFor.json";
-import look1_7 from "./club-kit-classic/gradeLeader.json";
-import look1_8 from "./club-kit-classic/juniorHighlights.json";
-import look1_9 from "./club-kit-classic/ladder.json";
-import look1_10 from "./club-kit-classic/matchDay.json";
-import look1_11 from "./club-kit-classic/matchSummary.json";
-import look1_12 from "./club-kit-classic/milestone.json";
-import look1_13 from "./club-kit-classic/newSigning.json";
-import look1_14 from "./club-kit-classic/player.json";
-import look1_15 from "./club-kit-classic/premiership.json";
-import look1_16 from "./club-kit-classic/record.json";
-import look1_17 from "./club-kit-classic/resultsSummary.json";
-import look1_18 from "./club-kit-classic/roundFixtures.json";
-import look1_19 from "./club-kit-classic/sponsor.json";
-import look1_20 from "./club-kit-classic/teamList.json";
-import look1_21 from "./club-kit-classic/teamListRound.json";
-import look1_22 from "./club-kit-classic/teamOfWeek.json";
-import look1_23 from "./club-kit-classic/tradingCard.json";
-import look1_24 from "./club-kit-classic/weekendWrap.json";
-import look2 from "./clubhouse/look.json";
-import look2_0 from "./clubhouse/announcement.json";
-import look2_1 from "./clubhouse/bigMoment.json";
-import look2_2 from "./clubhouse/century.json";
-import look2_3 from "./clubhouse/clubLeaderboard.json";
-import look2_4 from "./clubhouse/countdown.json";
-import look2_5 from "./clubhouse/debut.json";
-import look2_6 from "./clubhouse/fiveFor.json";
-import look2_7 from "./clubhouse/gradeLeader.json";
-import look2_8 from "./clubhouse/juniorHighlights.json";
-import look2_9 from "./clubhouse/ladder.json";
-import look2_10 from "./clubhouse/matchDay.json";
-import look2_11 from "./clubhouse/matchSummary.json";
-import look2_12 from "./clubhouse/milestone.json";
-import look2_13 from "./clubhouse/newSigning.json";
-import look2_14 from "./clubhouse/player.json";
-import look2_15 from "./clubhouse/premiership.json";
-import look2_16 from "./clubhouse/record.json";
-import look2_17 from "./clubhouse/resultsSummary.json";
-import look2_18 from "./clubhouse/roundFixtures.json";
-import look2_19 from "./clubhouse/sponsor.json";
-import look2_20 from "./clubhouse/teamList.json";
-import look2_21 from "./clubhouse/teamListRound.json";
-import look2_22 from "./clubhouse/teamOfWeek.json";
-import look2_23 from "./clubhouse/tradingCard.json";
-import look2_24 from "./clubhouse/weekendWrap.json";
+import look1 from "./club-kit/look.json";
+import look1_0 from "./club-kit/announcement.json";
+import look1_1 from "./club-kit/bigMoment.json";
+import look1_2 from "./club-kit/century.json";
+import look1_3 from "./club-kit/clubLeaderboard.json";
+import look1_4 from "./club-kit/countdown.json";
+import look1_5 from "./club-kit/debut.json";
+import look1_6 from "./club-kit/fiveFor.json";
+import look1_7 from "./club-kit/gradeLeader.json";
+import look1_8 from "./club-kit/juniorHighlights.json";
+import look1_9 from "./club-kit/ladder.json";
+import look1_10 from "./club-kit/matchDay.json";
+import look1_11 from "./club-kit/matchSummary.json";
+import look1_12 from "./club-kit/milestone.json";
+import look1_13 from "./club-kit/newSigning.json";
+import look1_14 from "./club-kit/player.json";
+import look1_15 from "./club-kit/premiership.json";
+import look1_16 from "./club-kit/record.json";
+import look1_17 from "./club-kit/resultsSummary.json";
+import look1_18 from "./club-kit/roundFixtures.json";
+import look1_19 from "./club-kit/sponsor.json";
+import look1_20 from "./club-kit/teamList.json";
+import look1_21 from "./club-kit/teamOfWeek.json";
+import look1_22 from "./club-kit/tradingCard.json";
+import look1_23 from "./club-kit/weekendWrap.json";
+import look2 from "./club-kit-classic/look.json";
+import look2_0 from "./club-kit-classic/announcement.json";
+import look2_1 from "./club-kit-classic/bigMoment.json";
+import look2_2 from "./club-kit-classic/century.json";
+import look2_3 from "./club-kit-classic/clubLeaderboard.json";
+import look2_4 from "./club-kit-classic/countdown.json";
+import look2_5 from "./club-kit-classic/debut.json";
+import look2_6 from "./club-kit-classic/fiveFor.json";
+import look2_7 from "./club-kit-classic/gradeLeader.json";
+import look2_8 from "./club-kit-classic/juniorHighlights.json";
+import look2_9 from "./club-kit-classic/ladder.json";
+import look2_10 from "./club-kit-classic/matchDay.json";
+import look2_11 from "./club-kit-classic/matchSummary.json";
+import look2_12 from "./club-kit-classic/milestone.json";
+import look2_13 from "./club-kit-classic/newSigning.json";
+import look2_14 from "./club-kit-classic/player.json";
+import look2_15 from "./club-kit-classic/premiership.json";
+import look2_16 from "./club-kit-classic/record.json";
+import look2_17 from "./club-kit-classic/resultsSummary.json";
+import look2_18 from "./club-kit-classic/roundFixtures.json";
+import look2_19 from "./club-kit-classic/sponsor.json";
+import look2_20 from "./club-kit-classic/teamList.json";
+import look2_21 from "./club-kit-classic/teamListRound.json";
+import look2_22 from "./club-kit-classic/teamOfWeek.json";
+import look2_23 from "./club-kit-classic/tradingCard.json";
+import look2_24 from "./club-kit-classic/weekendWrap.json";
+import look3 from "./clubhouse/look.json";
+import look3_0 from "./clubhouse/announcement.json";
+import look3_1 from "./clubhouse/bigMoment.json";
+import look3_2 from "./clubhouse/century.json";
+import look3_3 from "./clubhouse/clubLeaderboard.json";
+import look3_4 from "./clubhouse/countdown.json";
+import look3_5 from "./clubhouse/debut.json";
+import look3_6 from "./clubhouse/fiveFor.json";
+import look3_7 from "./clubhouse/gradeLeader.json";
+import look3_8 from "./clubhouse/juniorHighlights.json";
+import look3_9 from "./clubhouse/ladder.json";
+import look3_10 from "./clubhouse/matchDay.json";
+import look3_11 from "./clubhouse/matchSummary.json";
+import look3_12 from "./clubhouse/milestone.json";
+import look3_13 from "./clubhouse/newSigning.json";
+import look3_14 from "./clubhouse/player.json";
+import look3_15 from "./clubhouse/premiership.json";
+import look3_16 from "./clubhouse/record.json";
+import look3_17 from "./clubhouse/resultsSummary.json";
+import look3_18 from "./clubhouse/roundFixtures.json";
+import look3_19 from "./clubhouse/sponsor.json";
+import look3_20 from "./clubhouse/teamList.json";
+import look3_21 from "./clubhouse/teamListRound.json";
+import look3_22 from "./clubhouse/teamOfWeek.json";
+import look3_23 from "./clubhouse/tradingCard.json";
+import look3_24 from "./clubhouse/weekendWrap.json";
 
 export type * from "./types";
 
@@ -115,65 +140,95 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
     ],
   },
   {
-    slug: "club-kit-classic",
+    slug: "club-kit",
     look: look1,
     templates: [
-      { kind: "announcement", hash: "082cae46156fe697cd5565e4993cf1f8bed058a05509fcfed3effcd0a48250fb", file: look1_0 },
-      { kind: "bigMoment", hash: "bf666d6bd79ef09468f167745c2b09ed46f228dd5b8595aea9c1a67645ed8263", file: look1_1 },
-      { kind: "century", hash: "2955838e10b0a0d6cb0c40c45843eb2953db3cde814fd7249f5651f27c488ec6", file: look1_2 },
-      { kind: "clubLeaderboard", hash: "b2e23b3d0cee1d3006c43a0ecb8ecd78b56cbfcccd0ceac83cec4cee2bb7cf87", file: look1_3 },
-      { kind: "countdown", hash: "0762178802962ea3bec64ad17bf032f25ccdefac66687a9700729ebe5a613272", file: look1_4 },
-      { kind: "debut", hash: "8db7eadfd69caa8ae6dd1b4ac99902e733d8b5b36d3ec98d7259de88f87c078e", file: look1_5 },
-      { kind: "fiveFor", hash: "39b0b85fda65d4769de892bb238fb472e87cceeeb342ed47807afa4e6e17fa67", file: look1_6 },
-      { kind: "gradeLeader", hash: "4ea3c0c4ddbbb5fc7364f59351db93b642ef4632d08cca4b66bf148f9124801e", file: look1_7 },
-      { kind: "juniorHighlights", hash: "e18b0cdb0e01a12052c5c8e9fefb3ff39b87256084d95d00090329e6bac415f0", file: look1_8 },
-      { kind: "ladder", hash: "de30365dc0390aa43dabb4946d16ea96117e26d1151dafd0473b229dd7def8a5", file: look1_9 },
-      { kind: "matchDay", hash: "e3a98aae33d4d239f6dabdfe7e851801140f6be3cf4d5d1b2b57f491c8625850", file: look1_10 },
-      { kind: "matchSummary", hash: "4e717c4af28f8bb3f3622890f5e6bd5dd700ae03d895b40af4df8433ebd42a68", file: look1_11 },
-      { kind: "milestone", hash: "8669d931bc3b0fff29f0f2883063dec4c7e20cab56be0d565d9e663d66f6b38b", file: look1_12 },
-      { kind: "newSigning", hash: "197d446b85a1593305178d84bebf418d0e79406e2a853f95a602dfee91d1d85f", file: look1_13 },
-      { kind: "player", hash: "b0b47b86d669516f79a8970cd708b27aa770ff53d13b7ac5927d12d804575dcf", file: look1_14 },
-      { kind: "premiership", hash: "801466d979c09e87abbf6257e93a858a17e50c6b09a5fab4d8a7019d20d949b7", file: look1_15 },
-      { kind: "record", hash: "9cc71e5323074b7c7b38300a01c426e8ec606e0ff6db76395f9135fda06fd67e", file: look1_16 },
-      { kind: "resultsSummary", hash: "0e6e3ff753ad542663aa7402ecc1bdb356dd08a3fdf112e09ed65f524419e181", file: look1_17 },
-      { kind: "roundFixtures", hash: "160ae66c79e2a607ea2eca2d690a4d61bc991b1df6dcec21efce28df98294938", file: look1_18 },
-      { kind: "sponsor", hash: "18bccda5bf4edf7179fc5dad2906177df25f54306da77770dbf4f7038ff03da6", file: look1_19 },
-      { kind: "teamList", hash: "f7dd8a33ada64594b9d417b2e7af88fecbd5f31c83a50bd09638f29cb1ba6105", file: look1_20 },
-      { kind: "teamListRound", hash: "9f97eb61c221fb8c50fc9e7f80e607ab700433e83bcbfcfdee1b2a81b056341b", file: look1_21 },
-      { kind: "teamOfWeek", hash: "08ee26e6bf0f7ed63f66e8ae73af0a02565c631aba1f059ea8fb3a9c8c352520", file: look1_22 },
-      { kind: "tradingCard", hash: "9d7176ccac33ba4a4da6a9929f2134c4b8a41089c540903be0dc38aa89419405", file: look1_23 },
-      { kind: "weekendWrap", hash: "408e978629916447a0421782827f9f62f00d7f8892aa606abe90d181b1af75ae", file: look1_24 },
+      { kind: "announcement", hash: "bc4c56db2b24cbd53804d587c077971d1546a6bae6539df2ef71ee617d50faa1", file: look1_0 },
+      { kind: "bigMoment", hash: "0a4025384099fe8de579a4a5dd9f436603d07c2ecf764b52aff8fd7f9700bcd4", file: look1_1 },
+      { kind: "century", hash: "24acff490f34c9e3e97493d48a153e71635907ace2afb6909bcb7e98b77b98f7", file: look1_2 },
+      { kind: "clubLeaderboard", hash: "cfe12b7c75ee35ed08f03151dff7fff28d2c88837ee061c37f10ac62e7a09546", file: look1_3 },
+      { kind: "countdown", hash: "bca1d30c7d3442c30f31c31b0c49d927621b673b4cdb5114e3c008018d49daf7", file: look1_4 },
+      { kind: "debut", hash: "79877185d14c7e5372b1924b2f241b707bd3cdea91499ad4193ff8e65a00afc1", file: look1_5 },
+      { kind: "fiveFor", hash: "8feefdb04855d321c557b9759106bf4ce7cb2220933e4b47bd596332c2a4e645", file: look1_6 },
+      { kind: "gradeLeader", hash: "bff6fd6985d1456552d95fc724341b910ed3039efa447904fc79425ab9a64435", file: look1_7 },
+      { kind: "juniorHighlights", hash: "ecf5f3b5a93ef30e8ece21d9efab9ab141f946495de93942279671e85045fdeb", file: look1_8 },
+      { kind: "ladder", hash: "441a1c8b92423be3209be7a05ca64f10d1eb5c7b1df5564192aad550436c2f9b", file: look1_9 },
+      { kind: "matchDay", hash: "130dec6778ff4bc884d9f0ed29a71cb0965d8b910e9035c083e0d31ee5364b59", file: look1_10 },
+      { kind: "matchSummary", hash: "5b9d2238fdd45c2ae5b7171fe951537f5804852a9c736bc24889793e597b948a", file: look1_11 },
+      { kind: "milestone", hash: "9ac550b6c386b1e4ea8e6da723a00146812d5e77b78c957cada9fa7cac0f218e", file: look1_12 },
+      { kind: "newSigning", hash: "d319aaee91b8dd05b54e6698e041f5cfdc6c789ac4d2217f28e949a0df5341d6", file: look1_13 },
+      { kind: "player", hash: "37f50601911ac984a8908f4496ebc323ecfed0f2a01e4cb3b1db18c5e0d58470", file: look1_14 },
+      { kind: "premiership", hash: "f2700067c2c3710cf97c2309e54f9b5ecc72254a85cccb278cce4c1c538de45c", file: look1_15 },
+      { kind: "record", hash: "eb09db4e8a3aa0a626eec235462586d757635b2467202199f282e69c86d9e95e", file: look1_16 },
+      { kind: "resultsSummary", hash: "6f0fb59cd3ee511176896f7604d3253481c706a4895f01e2df4b9f8dc28a0380", file: look1_17 },
+      { kind: "roundFixtures", hash: "d564867a50307381174c40f063194bdd2b8c7e59f8cf7447008b87b35cea7270", file: look1_18 },
+      { kind: "sponsor", hash: "0708987c1eae7a530675f331f45dc8fb712d5ef1632b41f23abb8d39818be694", file: look1_19 },
+      { kind: "teamList", hash: "f693377a3fafa4a3931ecdfe21ebcbbdd9e773c43bd05642a72bd39d8ba4e5e0", file: look1_20 },
+      { kind: "teamOfWeek", hash: "4a8c36eaa4cb84166e8f82c34e3c1dd6c21edce02142f149dfd97f27a0be2199", file: look1_21 },
+      { kind: "tradingCard", hash: "f23d35b6969d52cdc2ce505fad20d6d1980e209dba13336aacda3e04d360b06f", file: look1_22 },
+      { kind: "weekendWrap", hash: "0ad1d129a3fb55219c5053d127112c026336155db347110041f3d01c297ce173", file: look1_23 },
+    ],
+  },
+  {
+    slug: "club-kit-classic",
+    look: look2,
+    templates: [
+      { kind: "announcement", hash: "082cae46156fe697cd5565e4993cf1f8bed058a05509fcfed3effcd0a48250fb", file: look2_0 },
+      { kind: "bigMoment", hash: "bf666d6bd79ef09468f167745c2b09ed46f228dd5b8595aea9c1a67645ed8263", file: look2_1 },
+      { kind: "century", hash: "2955838e10b0a0d6cb0c40c45843eb2953db3cde814fd7249f5651f27c488ec6", file: look2_2 },
+      { kind: "clubLeaderboard", hash: "b2e23b3d0cee1d3006c43a0ecb8ecd78b56cbfcccd0ceac83cec4cee2bb7cf87", file: look2_3 },
+      { kind: "countdown", hash: "0762178802962ea3bec64ad17bf032f25ccdefac66687a9700729ebe5a613272", file: look2_4 },
+      { kind: "debut", hash: "8db7eadfd69caa8ae6dd1b4ac99902e733d8b5b36d3ec98d7259de88f87c078e", file: look2_5 },
+      { kind: "fiveFor", hash: "39b0b85fda65d4769de892bb238fb472e87cceeeb342ed47807afa4e6e17fa67", file: look2_6 },
+      { kind: "gradeLeader", hash: "4ea3c0c4ddbbb5fc7364f59351db93b642ef4632d08cca4b66bf148f9124801e", file: look2_7 },
+      { kind: "juniorHighlights", hash: "e18b0cdb0e01a12052c5c8e9fefb3ff39b87256084d95d00090329e6bac415f0", file: look2_8 },
+      { kind: "ladder", hash: "de30365dc0390aa43dabb4946d16ea96117e26d1151dafd0473b229dd7def8a5", file: look2_9 },
+      { kind: "matchDay", hash: "e3a98aae33d4d239f6dabdfe7e851801140f6be3cf4d5d1b2b57f491c8625850", file: look2_10 },
+      { kind: "matchSummary", hash: "4e717c4af28f8bb3f3622890f5e6bd5dd700ae03d895b40af4df8433ebd42a68", file: look2_11 },
+      { kind: "milestone", hash: "8669d931bc3b0fff29f0f2883063dec4c7e20cab56be0d565d9e663d66f6b38b", file: look2_12 },
+      { kind: "newSigning", hash: "197d446b85a1593305178d84bebf418d0e79406e2a853f95a602dfee91d1d85f", file: look2_13 },
+      { kind: "player", hash: "b0b47b86d669516f79a8970cd708b27aa770ff53d13b7ac5927d12d804575dcf", file: look2_14 },
+      { kind: "premiership", hash: "801466d979c09e87abbf6257e93a858a17e50c6b09a5fab4d8a7019d20d949b7", file: look2_15 },
+      { kind: "record", hash: "9cc71e5323074b7c7b38300a01c426e8ec606e0ff6db76395f9135fda06fd67e", file: look2_16 },
+      { kind: "resultsSummary", hash: "0e6e3ff753ad542663aa7402ecc1bdb356dd08a3fdf112e09ed65f524419e181", file: look2_17 },
+      { kind: "roundFixtures", hash: "160ae66c79e2a607ea2eca2d690a4d61bc991b1df6dcec21efce28df98294938", file: look2_18 },
+      { kind: "sponsor", hash: "18bccda5bf4edf7179fc5dad2906177df25f54306da77770dbf4f7038ff03da6", file: look2_19 },
+      { kind: "teamList", hash: "f7dd8a33ada64594b9d417b2e7af88fecbd5f31c83a50bd09638f29cb1ba6105", file: look2_20 },
+      { kind: "teamListRound", hash: "9f97eb61c221fb8c50fc9e7f80e607ab700433e83bcbfcfdee1b2a81b056341b", file: look2_21 },
+      { kind: "teamOfWeek", hash: "08ee26e6bf0f7ed63f66e8ae73af0a02565c631aba1f059ea8fb3a9c8c352520", file: look2_22 },
+      { kind: "tradingCard", hash: "9d7176ccac33ba4a4da6a9929f2134c4b8a41089c540903be0dc38aa89419405", file: look2_23 },
+      { kind: "weekendWrap", hash: "408e978629916447a0421782827f9f62f00d7f8892aa606abe90d181b1af75ae", file: look2_24 },
     ],
   },
   {
     slug: "clubhouse",
-    look: look2,
+    look: look3,
     templates: [
-      { kind: "announcement", hash: "7dd0a77bdc591a851097600755edac88bb194593aaccf133c21730009a3bd36e", file: look2_0 },
-      { kind: "bigMoment", hash: "a11633b92e88f597f7e19fd75d9b3ec6635890e9ee0884c0ff29e0ac51bfa168", file: look2_1 },
-      { kind: "century", hash: "916502cf58ec2e56ce23b92190aae2b22d26914479bac0ca630873be71ab67da", file: look2_2 },
-      { kind: "clubLeaderboard", hash: "40fa726c24b400f9fdd44a1873f6b44051a0e3324ff95d255d8ebd2e1f84b68f", file: look2_3 },
-      { kind: "countdown", hash: "0de2a7381a79e182b5812720048f5e4ee32aae10a29c6c59843dd9403d914f19", file: look2_4 },
-      { kind: "debut", hash: "6f3a1a00bebdc01605f4cd9d17095202e81f50c5f3dffff7466081bb6f98cd59", file: look2_5 },
-      { kind: "fiveFor", hash: "9eb03ba7eb288555d2bc0b1e0ce1655e3e84d4ed1f9e74dde72ac611a33d0149", file: look2_6 },
-      { kind: "gradeLeader", hash: "3e37cb264bc07a12a235038d2e9f24548c76318131fae2fbea6f1e7905d8e754", file: look2_7 },
-      { kind: "juniorHighlights", hash: "8946e3c2b433198a8c56e31068d7a8b08bb3b05dae2a5e2344f8b20be3deee02", file: look2_8 },
-      { kind: "ladder", hash: "127265320bd8961a623151171963ec50f1062ca18c1ce06ac29790983ba586a5", file: look2_9 },
-      { kind: "matchDay", hash: "1e2d6d883513f42156c5b866b2074f07c4834f023d33c7be14b2f3e82ddc09dc", file: look2_10 },
-      { kind: "matchSummary", hash: "72b2559a8a3055fcbc65793cb307aa4f32ec0b87907bd39b9a83ff571e1c718c", file: look2_11 },
-      { kind: "milestone", hash: "a69ff89147f95dfceacad66b67416363816c6016af6eb1768ed368a453df61f2", file: look2_12 },
-      { kind: "newSigning", hash: "7b4667cc2db73619953e758c969287b3a32f5421431e35a9ce3a6489ed3bbc94", file: look2_13 },
-      { kind: "player", hash: "f8a8e631e24256741d565ed0c35d5d2ec9b0ae3d6417139a61946dabe12cdb2d", file: look2_14 },
-      { kind: "premiership", hash: "e848a13ec754650d08a45adc704950c1ced6156890528e25e7c5b414462f8579", file: look2_15 },
-      { kind: "record", hash: "2bc1e31ed2e61c409b4fc9d7800355c88cbccf4f41c826254e156e8ea61c37b9", file: look2_16 },
-      { kind: "resultsSummary", hash: "608630e8e9563af18f3574accf8430d322bf80e016439c358fbc021d661cb7cf", file: look2_17 },
-      { kind: "roundFixtures", hash: "87be1f3d4d49ee10d61354b67c4eff01b95cbe059bd9fc57d03d24e80a9c7ba1", file: look2_18 },
-      { kind: "sponsor", hash: "fced63e97b2d648a6782847f4e405ccb86ad07c681a789603dfa9180c9aeb942", file: look2_19 },
-      { kind: "teamList", hash: "38548d0bb4e2268923d0a6ff8b909d5bd2930d93dfec48b13fb227fc8b8098dc", file: look2_20 },
-      { kind: "teamListRound", hash: "bd6326b6deeb1def6775ecb6c7872802786d3f070159db196535c6f0fbe9ed27", file: look2_21 },
-      { kind: "teamOfWeek", hash: "1f488004d82c59cf9f651c3d6a5b942b5fc25552b7f95392b1ccd9ad57cf1c21", file: look2_22 },
-      { kind: "tradingCard", hash: "bb0e6d2556800838611ac195c150f2a2a63972f40dd87ce342c14d783cc82724", file: look2_23 },
-      { kind: "weekendWrap", hash: "92ac08bae7735767c2c7c8ea65d099a9248d210dc065a291ce2d55fe5ba9925e", file: look2_24 },
+      { kind: "announcement", hash: "7dd0a77bdc591a851097600755edac88bb194593aaccf133c21730009a3bd36e", file: look3_0 },
+      { kind: "bigMoment", hash: "a11633b92e88f597f7e19fd75d9b3ec6635890e9ee0884c0ff29e0ac51bfa168", file: look3_1 },
+      { kind: "century", hash: "916502cf58ec2e56ce23b92190aae2b22d26914479bac0ca630873be71ab67da", file: look3_2 },
+      { kind: "clubLeaderboard", hash: "40fa726c24b400f9fdd44a1873f6b44051a0e3324ff95d255d8ebd2e1f84b68f", file: look3_3 },
+      { kind: "countdown", hash: "0de2a7381a79e182b5812720048f5e4ee32aae10a29c6c59843dd9403d914f19", file: look3_4 },
+      { kind: "debut", hash: "6f3a1a00bebdc01605f4cd9d17095202e81f50c5f3dffff7466081bb6f98cd59", file: look3_5 },
+      { kind: "fiveFor", hash: "9eb03ba7eb288555d2bc0b1e0ce1655e3e84d4ed1f9e74dde72ac611a33d0149", file: look3_6 },
+      { kind: "gradeLeader", hash: "3e37cb264bc07a12a235038d2e9f24548c76318131fae2fbea6f1e7905d8e754", file: look3_7 },
+      { kind: "juniorHighlights", hash: "8946e3c2b433198a8c56e31068d7a8b08bb3b05dae2a5e2344f8b20be3deee02", file: look3_8 },
+      { kind: "ladder", hash: "127265320bd8961a623151171963ec50f1062ca18c1ce06ac29790983ba586a5", file: look3_9 },
+      { kind: "matchDay", hash: "1e2d6d883513f42156c5b866b2074f07c4834f023d33c7be14b2f3e82ddc09dc", file: look3_10 },
+      { kind: "matchSummary", hash: "72b2559a8a3055fcbc65793cb307aa4f32ec0b87907bd39b9a83ff571e1c718c", file: look3_11 },
+      { kind: "milestone", hash: "a69ff89147f95dfceacad66b67416363816c6016af6eb1768ed368a453df61f2", file: look3_12 },
+      { kind: "newSigning", hash: "7b4667cc2db73619953e758c969287b3a32f5421431e35a9ce3a6489ed3bbc94", file: look3_13 },
+      { kind: "player", hash: "f8a8e631e24256741d565ed0c35d5d2ec9b0ae3d6417139a61946dabe12cdb2d", file: look3_14 },
+      { kind: "premiership", hash: "e848a13ec754650d08a45adc704950c1ced6156890528e25e7c5b414462f8579", file: look3_15 },
+      { kind: "record", hash: "2bc1e31ed2e61c409b4fc9d7800355c88cbccf4f41c826254e156e8ea61c37b9", file: look3_16 },
+      { kind: "resultsSummary", hash: "608630e8e9563af18f3574accf8430d322bf80e016439c358fbc021d661cb7cf", file: look3_17 },
+      { kind: "roundFixtures", hash: "87be1f3d4d49ee10d61354b67c4eff01b95cbe059bd9fc57d03d24e80a9c7ba1", file: look3_18 },
+      { kind: "sponsor", hash: "fced63e97b2d648a6782847f4e405ccb86ad07c681a789603dfa9180c9aeb942", file: look3_19 },
+      { kind: "teamList", hash: "38548d0bb4e2268923d0a6ff8b909d5bd2930d93dfec48b13fb227fc8b8098dc", file: look3_20 },
+      { kind: "teamListRound", hash: "bd6326b6deeb1def6775ecb6c7872802786d3f070159db196535c6f0fbe9ed27", file: look3_21 },
+      { kind: "teamOfWeek", hash: "1f488004d82c59cf9f651c3d6a5b942b5fc25552b7f95392b1ccd9ad57cf1c21", file: look3_22 },
+      { kind: "tradingCard", hash: "bb0e6d2556800838611ac195c150f2a2a63972f40dd87ce342c14d783cc82724", file: look3_23 },
+      { kind: "weekendWrap", hash: "92ac08bae7735767c2c7c8ea65d099a9248d210dc065a291ce2d55fe5ba9925e", file: look3_24 },
     ],
   },
 ];
