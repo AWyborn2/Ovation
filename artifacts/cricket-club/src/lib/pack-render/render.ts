@@ -4,7 +4,7 @@
  * self-contained card html string.
  */
 
-import { kindFields } from "@workspace/scorecard/kind-templates";
+import { kindFields, type PageKey } from "@workspace/scorecard/kind-templates";
 import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
@@ -197,7 +197,11 @@ export function renderPackCard(
   packId?: string | null,
   /** Editor overlay (U15, KTD12). Absent or empty renders byte-identically. */
   adjustments?: CardAdjustments | null,
-  opts: { animate?: boolean } = {},
+  /**
+   * `page`: the template page to draw (format v2, ADR-011); absent → the
+   * kind's primary page, where a v1 document's layers are.
+   */
+  opts: { animate?: boolean; page?: PageKey } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
   input = firstSlideOf(input);
@@ -224,6 +228,8 @@ export function renderPackCard(
         rows: rowValues(bound.rows),
         rowVariants: rowVariantsOf(bound.rows),
         photoUrl: junior && !juniorPhotoAllowedOn(input) ? null : (data?.photoUrl ?? null),
+        kind: input.kind,
+        page: opts.page,
       },
     );
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
@@ -330,6 +336,8 @@ export function renderPackCard(
     brand: data?.brand,
     junior,
     rows: rowValues(bound.rows),
+    kind: input.kind,
+    page: opts.page,
   });
   const extra = manifest.rootVars?.(packCtx);
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, manifest.inkTint, mode)}${extra ? `;${extra}` : ""}">${html}${layers}</div>`;
