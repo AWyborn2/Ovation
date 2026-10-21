@@ -64,7 +64,7 @@ export const templateLooksTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => ({
+  () => ({
     chkOrigin: check(
       "template_looks_origin_check",
       sql`"origin" IN ('bundle', 'console', 'club')`,
