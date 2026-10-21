@@ -29,12 +29,22 @@
    - Use as is or edit a copy; one default per kind; adopt a look; any template for a single
      manual post.
    - Pilot club's kind templates carried over with no visible change. Warnings gate unchanged.
-2. P1, release 1: "update available" on copies; motion mapped to per-layer animations where
-   possible.
-3. P1, release 2: design from scratch and publish to every club. Publishing requires the
-   automatic checks (fit, identity swapped for slots, flagged literal names, image rights);
-   author and Ovation can unlist; club credit and use count; style tags.
+   - Motion parity: no converted pack loses its current motion. The format leaves room for
+     release 3's timeline.
+2. P1, release 1: "update available" on copies; an AI designer tool (brief or screenshot →
+   draft template, fit-check retries, sample data only); a Figma import for Ovation designers.
+3. P1, release 2:
+   - Design from scratch and publish to every club. Publishing requires the automatic checks
+     (fit, identity swapped for slots, flagged literal names, image rights).
+   - Author and Ovation can unlist; club credit and use count; style tags.
+   - Club-facing Generate (Canva exports come in this way), with a monthly cap per club, once
+     the designer tool clears its quality bar.
+   - Figma import with a club's own account.
 4. P2, release 2: sorting, favourites, reporting.
+5. P1, release 3: full motion. A per-layer timeline, loops and video-first templates, MP4
+   renders, and automatic publishing as video where Meta allows (otherwise a still).
+6. P2, release 4 (gated on the licensing hold and billing): premium Ovation looks by plan
+   through `entitlements.ts`. Club-made templates stay free.
 
 ## Acceptance (from the success criteria)
 
@@ -51,7 +61,9 @@
 These are listed at the end of the requirements file: carousel page types in one template,
 shared and private storage against `card_templates` and its one-per-kind index, converter input
 and mapping, where the fit check runs, and what becomes of `KIND_TEMPLATES`, `PACK_TO_STARTER`
-and `LEGACY_PACK_IDS`. Next ADR is 011.
+and `LEGACY_PACK_IDS`. Also: motion in the format from release 1, the AI generation loop, the
+Figma node mapping and connection storage, and how premium looks plug into entitlements. Next
+ADR is 011.
 
 ## Handoff History
 

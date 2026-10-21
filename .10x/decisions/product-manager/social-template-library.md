@@ -1,6 +1,7 @@
 # Social template library: many designs per card kind, shared across clubs
 
-Status: APPROVED 2026-10-21 by Ash (awaiting architect design)
+Status: APPROVED 2026-10-21 by Ash; scope revised the same day (motion, AI, imports, paid
+looks: decisions 10–13). Awaiting architect design.
 
 Follows: `match-day-carousel-content.md` (revision of 21 Oct 2026: Gold Foil, Bold Type, Neon
 Night and Sunset are hidden pending this library) and `card-kind-templates.md` (ADR-001..003:
@@ -70,13 +71,51 @@ There are two template systems, and the library has to end up on one.
    retire and one template format remains.
 8. **Pilot carry-over.** The pilot club's kind templates become its own private copies and stay
    its defaults. Its cards must not change on the day the library ships.
-9. **Scope.** Staged. Release 1 is the library (Ovation and converted content, browse, use, edit
-   a copy, looks, defaults). Release 2 adds publishing from scratch, then style tags, sorting and
-   favourites.
+9. **Scope.** Staged.
+   - Release 1 is the library: Ovation and converted content, browse, use, edit a copy, looks
+     and defaults.
+   - Release 2 adds publishing from scratch, then style tags, sorting and favourites.
+   - Release 3 adds full motion; release 4 adds premium looks (decisions 10 and 13).
 
-PM defaults (Ash had no preference on the out-of-scope list): paid templates, Canva or Figma
-import and AI-generated designs are out. Motion is kept only as far as the editor's existing
-per-layer animations go (see Prioritisation).
+## Decisions, revised scope (Ash, 21 Oct 2026)
+
+My first defaults ruled out motion, AI, imports and paid templates. Ash reviewed them and set
+these instead.
+
+10. **Motion.**
+    - Release 3 adds **full motion templates**: a per-layer timeline, loops, and video-first
+      designs for Reels and Stories.
+    - Release 1 keeps **parity**: every pack's current motion survives conversion, so nothing
+      regresses. The R1 format must leave room for the timeline, so R3 needs no format change.
+    - When a club's default template has motion, automatic publishing posts **video where Meta
+      allows** (a feed video or Reel). Otherwise it posts a still of the final frame. This needs
+      Meta's video permissions in App Review.
+11. **AI-generated designs.**
+    - Clubs integrate nothing. Ovation connects one model provider on its own server and pays
+      for it.
+    - A brief, a reference image, or both go in. Out comes an editable template (layers, styles,
+      slot tokens), not a picture. It is fit-checked, sent back to the model with its warnings for
+      a retry or two if it fails, and lands as a private draft.
+    - Release 1: an internal designer tool to fill the library faster.
+    - Release 2: club-facing **Generate**, beside design-from-scratch, with a monthly cap per
+      club. It ships only once the designer tool clears a quality bar (PM default: at least 70%
+      of the first 50 generated drafts pass the fit check first time).
+    - Generation uses sample data only, so no player data reaches the provider. Junior photos are
+      blocked from reference images.
+12. **Imports.**
+    - **Canva** comes in through the AI reference-image path: a Canva export becomes an editable
+      template. There is no direct Canva connection, because Canva's API exports only flat images.
+      Uploaded-background templates stay as the quick "image plus data slots" route.
+    - **Figma** gets a direct import (Figma's API gives exact positions and text styles).
+      Ovation designers use it in release 1 through Ovation's own Figma connection. In release 2
+      a club can connect its own Figma account and import into a private draft.
+13. **Paid looks.**
+    - Some Ovation-made looks become **premium**, available only on paid plans through the
+      dormant `entitlements.ts`. Club-made templates are always free, and there is no club
+      marketplace.
+    - This is a later release (4). It starts only once the data-licensing hold lifts
+      ([PR #290](https://github.com/AWyborn2/Ovation/pull/290) is still a draft) and billing is
+      live.
 
 ## Browsing (full version; release split under Prioritisation)
 
@@ -126,9 +165,14 @@ per-layer animations go (see Prioritisation).
 - **P0** Carry over the pilot club's kind templates as copies and defaults, with no visible
   change.
 - **P0** The warnings gate is unchanged: a card that doesn't fit never auto-posts.
+- **P0** Motion parity: every pack's current motion survives conversion. Layer animation is
+  extended as far as the seven packs need, and the conversion report confirms it per pack. The
+  format leaves room for release 3's timeline.
 - **P1** "Update available" on copies when the author publishes a new version.
-- **P1** Motion: the converter maps a pack's animation onto per-layer entrance animations where
-  it can. Bespoke motion that doesn't map is dropped and listed in the conversion report.
+- **P1** AI designer tool (Ovation only): a brief or screenshot becomes a draft template, with
+  fit-check retries, a private draft and sample data only.
+- **P1** Figma import for Ovation designers, through Ovation's own Figma connection, into a draft
+  template.
 
 ### Release 2: clubs share designs
 
@@ -142,15 +186,35 @@ per-layer animations go (see Prioritisation).
 - **P1** Credit by club name and a "used by N clubs" count.
 - **P1** Style tags, set on publish and checked against the design (for example, photo-led
   needs a photo slot).
+- **P1** Club-facing Generate, beside design-from-scratch: a brief or reference image (a Canva
+  export, say) becomes a private draft. It has a monthly cap per club and blocks junior photos in
+  reference images. It ships once the designer tool clears its quality bar (decision 11).
+- **P1** Figma import for clubs: a club connects its own Figma account and imports into a private
+  draft.
 - **P2** Sorting (popular, new, Ovation or club) and favourites.
 - **P2** A "Report this template" link that flags a template to Ovation.
 
+### Release 3: full motion
+
+- **P1** A per-layer timeline in the editor (order, duration, easing), loops, and video-first
+  templates for Reels and Stories at every size.
+- **P1** MP4 renders for motion templates through the existing render harness and video jobs.
+- **P1** Automatic publishing posts video where Meta allows (a feed video or Reel), falling back
+  to a still of the final frame. It depends on Meta's video permissions in App Review.
+- **P1** The fit check covers every frame that shows data, not just the last one.
+
+### Release 4: premium looks (gated)
+
+- **P2** Some Ovation-made looks become premium, on paid plans only, through `entitlements.ts`.
+  Club-made templates stay free. It starts only after the data-licensing hold lifts and billing
+  is live.
+
 ### Won't do (P3)
 
-- Paid or premium templates, a marketplace, or plan-gated templates. Everything is free to every
-  club.
-- Importing from Canva, Figma or other design files.
-- AI-generated templates.
+- A club marketplace or paid club-made templates. Clubs never sell designs, and Ovation takes no
+  cut.
+- A direct Canva connection. Canva designs come in through the AI image path.
+- Club-facing AI generation before the designer tool clears its quality bar.
 - Rotating several templates per kind, or per-grade or per-audience defaults (Ash chose one
   default per kind).
 - Ratings or comments on templates.
@@ -173,6 +237,12 @@ per-layer animations go (see Prioritisation).
 - (Release 2) As a club admin, I filter by style, sort by popular, and keep a shortlist.
 - (Release 2) As Ovation, I unlist a template that breaks the rules, and the clubs using it keep
   their copies.
+- As an Ovation designer, I turn a screenshot or a short brief into a draft template, or import a
+  Figma frame, and polish it instead of starting from nothing.
+- (Release 2) As a club admin, I upload a design I made in Canva and get an editable template
+  with our data in it.
+- (Release 3) As a club admin, I pick an animated match summary, and the automated post goes up
+  as a video.
 
 ## Success criteria
 
@@ -194,7 +264,12 @@ its own look is not a success gate, but it is worth watching.
   - Zero truncated names or overflow across every listed template, preset and size.
   - Carousels and drafts saved before the library render exactly as they did, or as Club Kit
     for a hidden pack.
-  - No junior or private-player data leaves a club through a published template.
+  - No junior or private-player data leaves a club through a published template, and none
+    reaches the AI provider.
+  - Release 1: no converted pack loses motion it has today (conversion report per pack).
+- **AI quality bar (gate for club Generate).** At least 70% of the first 50 drafts the designer
+  tool generates pass the fit check first time. Track the cost per generation against the
+  monthly cap.
 
 ## Not building
 
@@ -202,7 +277,6 @@ its own look is not a success gate, but it is worth watching.
   current editor.
 - New card kinds or content fields. The library designs over the existing field catalogue.
 - Changes to central or PlayHQ data. Previews read the club's own existing cards.
-- Video templates beyond per-layer entrance animation.
 - Anything in the Won't do list.
 
 ## Risks
@@ -223,11 +297,26 @@ its own look is not a success gate, but it is worth watching.
   another club, and a published template must carry none of the author's data. Needs isolation
   tests like `tenant-isolation.test.ts`; RLS is still a TODO.
 - **Pilot regression.** The pilot club's live kind templates must carry over byte-identically.
-- **Work in flight.** P8 (Duotone) is being built now as a code pack. It gets converted with the
-  others. Whether later packs should be authored straight into the library is the architect's
-  call; P8 is not changed.
-- **Data governance.** Templates hold no scraped data; previews use the club's own cards. Keeping
-  paid templates out keeps the non-commercial framing intact.
+- **Work in flight.** P8 (Duotone) merged on 21 Oct 2026 as a code pack, and it gets converted
+  with the others. Whether later packs should be authored straight into the library is the
+  architect's call.
+- **Motion parity adds to release 1.** Packs with bespoke motion need layer animation extended
+  before they can retire. Mitigation: the conversion report lists each pack's motion. A pack
+  whose motion can't be matched yet stays a code pack until it can (it isn't dropped).
+- **Meta video.** Meta publishing is still off pending App Review, and video needs further
+  permissions. Mitigation: release 3 falls back to the still, so motion templates are useful
+  before video posting is approved.
+- **AI cost, quality and copying.**
+  - Generations are billed to Ovation. Mitigation: a monthly cap per club, cost tracked per
+    generation, and a designer-only tool first.
+  - "Make it like this" could reproduce a paid Canva template. Mitigation: rights confirmation
+    on publish and Ovation unlisting.
+  - Reference images leave Ovation. Mitigation: block junior photos, use sample data only, and
+    tell the club what is sent.
+- **Figma per-club connections.** Release 2 needs each club's own Figma sign-in and token
+  storage. The tokens are secrets, so they need encryption at rest and revocation.
+- **Data governance.** Templates hold no scraped data; previews use the club's own cards.
+  Premium looks (release 4) wait for the licensing hold to lift and billing to go live.
 
 ## Open questions for the architect
 
@@ -242,3 +331,12 @@ its own look is not a success gate, but it is worth watching.
   runs (publish time, copy save, CI for Ovation templates).
 - What happens to `KIND_TEMPLATES`, `PACK_TO_STARTER` and `LEGACY_PACK_IDS` once the library is
   the only path.
+- How motion sits in the format from release 1, so the release 3 timeline is an extension rather
+  than a migration. Which pack motions the R1 layer animation must express.
+- The AI generation loop: provider and model, the prompt built from the field catalogue and
+  format, validation (`kind-templates/validate.ts`), fit-check retries, the per-club cap, and
+  where usage is recorded.
+- Figma import: how Figma nodes map to layers (frames, auto layout, text styles, images), and
+  how Ovation's and clubs' Figma connections are stored.
+- How premium looks would plug into `entitlements.ts` without blocking clubs on free plans from
+  their existing copies.
