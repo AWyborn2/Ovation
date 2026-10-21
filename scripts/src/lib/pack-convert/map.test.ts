@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { CapturedElement, PackCapture } from "@workspace/scorecard/pack-capture";
 import type { TemplateLayerV2 } from "@workspace/scorecard/kind-templates";
-import { Tree, alignTrees, fillOverBox, joinRuns, mapCapture, readingOrder } from "./map";
+import {
+  Tree,
+  alignTrees,
+  fillOverBox,
+  joinRuns,
+  mapCapture,
+  readingOrder,
+  sizedGradient,
+} from "./map";
 import { mergeOrder, mergePage, mergeSizes, stackContainers, type SizeMaps } from "./merge";
 
 const TEXT = {
@@ -346,5 +354,26 @@ describe("merging sizes", () => {
         ["stage", "chip:po", "chipText", "name"],
       ]),
     ).toEqual(["stage", "chip:sq", "chip:po", "chipText", "name"]);
+  });
+});
+
+describe("gradients taller than their box", () => {
+  it("keeps the part the box shows (background-size 100% 220%, at the top)", () => {
+    const fill = {
+      type: "linear" as const,
+      stops: [
+        { color: "#ffffff", at: 0 },
+        { color: "#000000", at: 100 },
+      ],
+    };
+    expect(sizedGradient(fill, "100% 220%", "50% 0%")).toEqual({
+      type: "linear",
+      stops: [
+        { color: "#ffffff", at: 0 },
+        { color: "#8B8B8B", at: 100 },
+      ],
+    });
+    // A gradient the box's own size is left alone.
+    expect(sizedGradient(fill, "auto", undefined)).toBe(fill);
   });
 });

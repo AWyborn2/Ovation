@@ -38,6 +38,7 @@ import type {
 import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
+  toHex,
   parseGradient,
   parseMatrix,
   parseShadows,
@@ -713,6 +714,58 @@ export function fillOverBox(
 /** Outlined text's stand-in fill: this share of the stroke's own opacity. */
 const OUTLINE_FILL = 0.5;
 
+/**
+ * The part of a vertical gradient a box shows when the gradient is taller than
+ * the box (`background-size: 100% 220%`, Gold Foil's foil, positioned by its
+ * shine): stops moved into box coordinates, the ends interpolated, the rest cut.
+ */
+export function sizedGradient(
+  fill: TemplateFill,
+  size: string | undefined,
+  position: string | undefined,
+): TemplateFill {
+  if (typeof fill !== "object" || fill.type !== "linear") return fill;
+  const angle = fill.angle ?? 180;
+  if (angle !== 180 && angle !== 0) return fill;
+  const h = parseFloat((size ?? "").trim().split(/\s+/)[1] ?? "");
+  if (!Number.isFinite(h) || !/%$/.test((size ?? "").trim()) || h <= 100) return fill;
+  const posY = parseFloat((position ?? "").trim().split(/\s+/)[1] ?? "0");
+  const p = Number.isFinite(posY) ? posY : 0;
+  if (fill.stops.some((s) => s.at === undefined)) return fill;
+  // A stop at s % of the gradient lands at s·h − (h − 100)·p (percent of the box).
+  const at = (s: number) => (s * h) / 100 - ((h - 100) * p) / 100;
+  const moved = fill.stops.map((s) => ({ color: s.color, at: at(s.at!) }));
+  const colourAt = (y: number) => {
+    const after = moved.findIndex((s) => s.at >= y);
+    if (after <= 0) return moved[Math.max(0, after)]!.color;
+    if (after < 0) return moved[moved.length - 1]!.color;
+    const a = moved[after - 1]!;
+    const b = moved[after]!;
+    return mixHex(a.color, b.color, (y - a.at) / Math.max(1e-6, b.at - a.at));
+  };
+  const inside = moved.filter((s) => s.at > 0 && s.at < 100);
+  const stops = [
+    { color: colourAt(0), at: 0 },
+    ...inside.map((s) => ({ color: s.color, at: r2(s.at) })),
+    { color: colourAt(100), at: 100 },
+  ];
+  return { ...fill, stops };
+}
+
+/** Two hex colours mixed (`t` of the way to `b`); a token can't be mixed, so the nearer one. */
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseColour(a);
+  const pb = parseColour(b);
+  if (!pa || !pb || !a.startsWith("#") || !b.startsWith("#")) return t < 0.5 ? a : b;
+  const k = Math.min(1, Math.max(0, t));
+  return toHex({
+    r: pa.r + (pb.r - pa.r) * k,
+    g: pa.g + (pb.g - pa.g) * k,
+    b: pa.b + (pb.b - pa.b) * k,
+    a: pa.a + (pb.a - pa.a) * k,
+  });
+}
+
 /** One side of a border drawn on fewer than four sides. */
 type Edge = {
   side: "top" | "right" | "bottom" | "left";
@@ -1094,7 +1147,12 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
   const fillColour = el.style["-webkit-text-fill-color"];
   if (clip === "text" && el.style["background-image"]) {
     const gradient = gradientFill(splitTopLevel(el.style["background-image"])[0] ?? "", ctx, el);
-    if (gradient) style.textFill = gradient;
+    if (gradient)
+      style.textFill = sizedGradient(
+        gradient,
+        el.style["background-size"],
+        el.style["background-position"],
+      );
   } else if (
     (fillColour && parseColour(fillColour)?.a === 0) ||
     parseColour(tree.style(el, "color"))?.a === 0
