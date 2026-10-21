@@ -1,5 +1,64 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Engineering Manager
+**Feature:** social-template-library
+
+## Context
+
+- **Design:** `.10x/decisions/architect/social-template-library.md` and `.10x/adrs/011-social-template-library.md` (ADR-011, accepted 21 Oct 2026). **Requirements:** `.10x/decisions/product-manager/social-template-library.md`.
+- **Delivery rule (Ash):**
+  - Every PR branches off `wyborn21/social-template-library-pm` and targets it (draft PR #411).
+  - Nothing merges to `main` until the whole feature is done and Ash has tested it on a local dev server. Never merge #411 itself.
+  - Keep syncing `main` into it.
+- **Choices made with Ash on 21 Oct 2026:**
+  - Ovation's converted looks and starters ship as repo JSON bundles (`lib/template-bundles/`), CI fit-checked and loaded at server start. Everything made later lives in the database.
+  - Stack groups handle reflow.
+  - Every club moves at once, and `KIND_TEMPLATES` is deleted.
+  - Claude Opus 5.5 is the AI provider.
+  - An edited copy becomes standalone (no update prompts).
+
+## Architecture in brief
+
+- **Format v2** (a superset; v1 `{ layers }` reads as the kind's primary page, and stored rows are never rewritten):
+  - pages per kind (Match Day: fixture/title/day/sponsors; Match Summary: result/day, which the Results set uses too; Team List: team; others: card)
+  - stack groups, `showWhen` conditions, text `fit` with two lines
+  - gradients, shadows, filters (duotone), sanitised vector layers
+  - `motion: { in, loop }` with rise/fade/pop/pulse/shine; R3 extends it
+  - capacity read from the rows layer
+- **Storage (migration 0057):**
+  - `template_looks`, `library_templates` and immutable `library_template_versions` (origin bundle/console/club)
+  - club copies in `card_templates` (`source = 'kind'`), with `is_kind_default` under a new partial unique index replacing `card_templates_kind_unique`, plus `origin_template_id`/`origin_version`, `edited_at` and fit columns
+  - `social_drafts.template_ref` and `template_generations`
+  - The pilot's rows only gain `is_kind_default = true`.
+- **Fit check:** one harness routine, `fitCheck(document, kind)`, over page × size × preset (× photo / sponsors) with worst-case content. It runs in CI for bundles (new Chromium job via `puppeteer-core`), on the server before listing, and after each copy save. Automation stays blocked until it passes (ADR-003 gate).
+- **Converter:** `scripts/src/convert-pack.ts` captures the rendered DOM through the harness (sentinel tokens and palettes) and writes bundles plus a per-pack report covering polish items, motion and pixel diff. Ash signs off Club Kit, Broadcast Dark and Duotone before the merge. Hidden looks list when ready.
+- **Retirement:**
+  - `PACK_TO_LOOK` replaces `PACK_TO_STARTER` (lazy defaults).
+  - Starters become bundles and their TypeScript is deleted.
+  - Pack code and `LEGACY_PACK_IDS` stay for drafts saved before the ship, then go in cleanup PRs once nothing references them.
+- **AI and Figma:** `template-ai/` (Opus 5.5, cached prompt, structured output, validate → fit → up to 2 retries → private draft, usage and cost per row) and `template-import/figma.ts`, both in the platform console in R1.
+
+## Slices to plan (detail in §15 of the design file)
+
+L1 format and renderer → L2 fit check → L3 store and pipeline (0057, bundles, defaults, carousel v3, switch removal) ∥ L4 converter and content → L5 library UI → L6 update available. L7 (AI designer tool) and L8 (Figma import) depend on L1 and L2 and run in parallel.
+
+## For the plan
+
+- Migration 0057 is Ash's to run in Production SQL before the republish that ships the feature.
+- New secrets: `ANTHROPIC_API_KEY`, `FIGMA_ACCESS_TOKEN`.
+- Spike in L1/L7: whether the format's JSON Schema fits structured outputs with nested stacks.
+- Tests to require:
+  - v1 documents render byte-identically
+  - tenant isolation for copies, defaults and previews
+  - no junior content in previews or AI input
+  - the bundle fit job in CI
+  - the pilot carry-over
+
+## Handoff History
+
+### Previous (PM → Architect, social-template-library)
+
 **From:** Product Manager
 **To:** Architect
 **Feature:** social-template-library
@@ -69,8 +128,6 @@ and mapping, where the fit check runs, and what becomes of `KIND_TEMPLATES`, `PA
 and `LEGACY_PACK_IDS`. Also: motion in the format from release 1, the AI generation loop, the
 Figma node mapping and connection storage, and how premium looks plug into entitlements. Next
 ADR is 011.
-
-## Handoff History
 
 ### Previous (EM → SDE, selection-hub-redesign; still the open handoff for that feature)
 
