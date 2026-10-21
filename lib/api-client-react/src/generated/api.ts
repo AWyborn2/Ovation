@@ -430,6 +430,7 @@ import type {
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
+  TakeTemplateUpdateRequest,
   TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
@@ -22182,6 +22183,79 @@ export const useSetClubTemplateDefault = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSetClubTemplateDefaultMutationOptions(options));
+    }
+
+export const getTakeClubTemplateUpdateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/update`
+}
+
+/**
+ * Replaces the template's document with the library template's current version. The template stays unedited. Refused for a template the club has changed (it is the club's own) and when there is no newer version.
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const takeClubTemplateUpdate = async (id: number,
+    takeTemplateUpdateRequest: TakeTemplateUpdateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getTakeClubTemplateUpdateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      takeTemplateUpdateRequest,)
+  }
+);}
+
+
+
+
+export const getTakeClubTemplateUpdateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext> => {
+
+const mutationKey = ['takeClubTemplateUpdate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, {id: number;data: BodyType<TakeTemplateUpdateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  takeClubTemplateUpdate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TakeClubTemplateUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof takeClubTemplateUpdate>>>
+    export type TakeClubTemplateUpdateMutationBody = BodyType<TakeTemplateUpdateRequest>
+    export type TakeClubTemplateUpdateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const useTakeClubTemplateUpdate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof takeClubTemplateUpdate>>,
+        TError,
+        {id: number;data: BodyType<TakeTemplateUpdateRequest>},
+        TContext
+      > => {
+      return useMutation(getTakeClubTemplateUpdateMutationOptions(options));
     }
 
 export const getApplyClubTemplateUrl = (id: number,) => {

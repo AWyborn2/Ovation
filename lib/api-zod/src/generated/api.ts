@@ -11373,6 +11373,9 @@ export const ListClubTemplatesResponse = zod.object({
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "coverage": zod.object({
@@ -11420,6 +11423,9 @@ export const GetClubTemplateResponse = zod.object({
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "coverage": zod.object({
@@ -11470,6 +11476,9 @@ export const SaveClubTemplateResponse = zod.object({
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "coverage": zod.object({
@@ -11525,6 +11534,56 @@ export const SetClubTemplateDefaultResponse = zod.object({
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}).and(zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
+}))
+
+
+/**
+ * Replaces the template's document with the library template's current version. The template stays unedited. Refused for a template the club has changed (it is the club's own) and when there is no newer version.
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const TakeClubTemplateUpdateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const TakeClubTemplateUpdateBody = zod.object({
+  "baseVersion": zod.number().describe('The template version the admin was looking at.')
+})
+
+export const TakeClubTemplateUpdateResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "coverage": zod.object({

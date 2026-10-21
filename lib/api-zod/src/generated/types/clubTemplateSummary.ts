@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ClubTemplateOrigin } from './clubTemplateOrigin';
+import type { ClubTemplateSummaryUpdateAvailable } from './clubTemplateSummaryUpdateAvailable';
 import type { TemplateCoverage } from './templateCoverage';
 import type { TemplateFitReport } from './templateFitReport';
 import type { TemplateFitStatus } from './templateFitStatus';
@@ -21,6 +22,8 @@ export interface ClubTemplateSummary {
   basedOn: ClubTemplateOrigin | null;
   /** The club saved changes to it, so it is its own (no update prompts). */
   edited: boolean;
+  /** A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise. */
+  updateAvailable: ClubTemplateSummaryUpdateAvailable;
   fitStatus: TemplateFitStatus;
   fitReport: TemplateFitReport | null;
   coverage: TemplateCoverage;

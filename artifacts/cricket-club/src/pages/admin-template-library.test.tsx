@@ -73,6 +73,7 @@ const copy = (over: Partial<ClubTemplateSummary>): ClubTemplateSummary => ({
   isDefault: true,
   basedOn: null,
   edited: false,
+  updateAvailable: null,
   fitStatus: "pass",
   fitReport: null,
   coverage: { pages: ["card"], sizes: ["square"] },
@@ -191,6 +192,58 @@ describe("Studio → Templates", () => {
     fireEvent.click(buttons[1]!);
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]!.url).toContain("/club-templates/102/default");
+  });
+});
+
+describe("update available (T6.3)", () => {
+  it("shows the newer version side by side and takes it", async () => {
+    installApiMock({
+      "/template-library/preview-input": { kind: "milestone", source: "sample", input: null },
+      "/template-library/1": template({ version: 3 }),
+      "/template-library/looks": { looks: [] },
+      "/template-library": { templates: [], nextCursor: null },
+      "/club-templates/100": { ...CLUB.templates[0], document: placeholderDocument("milestone") },
+      "/club-templates": {
+        templates: [
+          {
+            ...CLUB.templates[0],
+            updateAvailable: { version: 3 },
+          },
+        ],
+      },
+      "/social-settings": {},
+    });
+    const base = globalThis.fetch as unknown as (
+      i: RequestInfo | URL,
+      init?: RequestInit,
+    ) => Promise<Response>;
+    const writes: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if ((init?.method ?? "GET").toUpperCase() === "POST") {
+          writes.push({ url: String(input), body: JSON.parse(String(init?.body ?? "null")) });
+          return new Response(JSON.stringify({ ...CLUB.templates[0], document: {} }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return base(input, init);
+      }),
+    );
+    renderAt(<AdminTemplateLibrary />);
+    fireEvent.mouseDown(await screen.findByRole("tab", { name: "Your templates" }));
+    expect(await screen.findByText("Update available")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "See update" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Yours now (version 2)")).toBeInTheDocument();
+    expect(within(dialog).getByText("Version 3")).toBeInTheDocument();
+    const take = within(dialog).getByRole("button", { name: "Take update" });
+    await waitFor(() => expect(take).toBeEnabled());
+    fireEvent.click(take);
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]!.url).toContain("/club-templates/100/update");
+    expect(writes[0]!.body).toEqual({ baseVersion: 1 });
   });
 });
 

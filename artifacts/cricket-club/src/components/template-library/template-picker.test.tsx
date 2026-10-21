@@ -18,6 +18,7 @@ const copy = (id: number, isDefault: boolean, name: string) => ({
   isDefault,
   basedOn: null,
   edited: false,
+  updateAvailable: null,
   fitStatus: "pass",
   fitReport: null,
   coverage: { pages: ["card"], sizes: ["square"] },

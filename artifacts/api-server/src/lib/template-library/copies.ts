@@ -13,6 +13,7 @@ import {
   db,
   cardTemplatesTable,
   libraryTemplatesTable,
+  libraryTemplateVersionsTable,
   templateLooksTable,
   tenantsTable,
   type CardTemplateRow,
@@ -47,6 +48,9 @@ export type ClubTemplateOrigin = {
   look: { id: number; slug: string; name: string } | null;
 };
 
+/** The origin's current version, for working out "update available". */
+type OriginRow = ClubTemplateOrigin & { currentVersion: number };
+
 export type ClubTemplateView = {
   id: number;
   kind: string;
@@ -57,6 +61,11 @@ export type ClubTemplateView = {
   basedOn: ClubTemplateOrigin | null;
   /** Saved changes made it the club's own: no update prompts. */
   edited: boolean;
+  /**
+   * A newer version of the library template it came from (listed or not), for
+   * an unedited copy (ADR-011 §3 "Update available", T6.1); null otherwise.
+   */
+  updateAvailable: { version: number } | null;
   fitStatus: TemplateFitStatus;
   fitReport: TemplateFitReportColumn | null;
   coverage: TemplateCoverageColumn;
@@ -70,7 +79,7 @@ const kindRows = (tenantId: number) =>
   and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, KIND_SOURCE));
 
 /** Origins of the given copies, keyed by library template id. */
-async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, ClubTemplateOrigin>> {
+async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, OriginRow>> {
   const ids = [
     ...new Set(rows.map((r) => r.originTemplateId).filter((id): id is number => id !== null)),
   ];
@@ -79,6 +88,7 @@ async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, ClubTemp
     .select({
       id: libraryTemplatesTable.id,
       name: libraryTemplatesTable.name,
+      currentVersion: libraryTemplatesTable.currentVersion,
       lookId: templateLooksTable.id,
       lookSlug: templateLooksTable.slug,
       lookName: templateLooksTable.name,
@@ -94,6 +104,7 @@ async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, ClubTemp
       {
         templateId: t.id,
         version: 0,
+        currentVersion: t.currentVersion,
         name: t.name,
         authorName: t.authorName ?? OVATION_AUTHOR,
         look:
@@ -107,7 +118,7 @@ async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, ClubTemp
 
 function present(
   row: CardTemplateRow,
-  origins: Map<number, ClubTemplateOrigin>,
+  origins: Map<number, OriginRow>,
   waiting: Map<string, number>,
   opts: { withDocument?: boolean; updatedByName?: string | null } = {},
 ): ClubTemplateView {
@@ -119,8 +130,20 @@ function present(
     name: row.name,
     version: row.version,
     isDefault: row.isKindDefault,
-    basedOn: origin ? { ...origin, version: row.originVersion ?? 0 } : null,
+    basedOn: origin
+      ? {
+          templateId: origin.templateId,
+          version: row.originVersion ?? 0,
+          name: origin.name,
+          authorName: origin.authorName,
+          look: origin.look,
+        }
+      : null,
     edited: row.editedAt !== null,
+    updateAvailable:
+      origin && row.editedAt === null && origin.currentVersion > (row.originVersion ?? 0)
+        ? { version: origin.currentVersion }
+        : null,
     fitStatus: row.fitStatus,
     fitReport: row.fitReport,
     coverage: documentCoverage(row.adjustments, kind),
@@ -482,4 +505,69 @@ export async function applyCopy(
     if (row.version !== version) throw await conflict(row);
     return applyTemplateToDrafts(tx, row, expectedDrafts);
   });
+}
+
+/**
+ * Take the library's newer version into an unedited copy (ADR-011 §3, T6.1):
+ * the document is replaced, `origin_version` moves to the new version and the
+ * copy's own `version` goes up. The copy stays unedited, so it keeps being
+ * offered updates. An edited copy is the club's own and is refused.
+ */
+export async function takeUpdate(
+  tenantId: number,
+  id: number,
+  baseVersion: number,
+  adminId: number | null,
+): Promise<CardTemplateRow> {
+  const row = await loadCopy(tenantId, id);
+  if (row.editedAt !== null) {
+    throw new TemplateLibraryError(409, {
+      error: "This template has your own changes, so it doesn't take updates.",
+    });
+  }
+  if (row.originTemplateId === null) {
+    throw new TemplateLibraryError(409, { error: "This template didn't come from the library." });
+  }
+  const [origin] = await db
+    .select({
+      currentVersion: libraryTemplatesTable.currentVersion,
+      document: libraryTemplateVersionsTable.document,
+      fitStatus: libraryTemplateVersionsTable.fitStatus,
+      fitReport: libraryTemplateVersionsTable.fitReport,
+    })
+    .from(libraryTemplatesTable)
+    .innerJoin(
+      libraryTemplateVersionsTable,
+      and(
+        eq(libraryTemplateVersionsTable.templateId, libraryTemplatesTable.id),
+        eq(libraryTemplateVersionsTable.version, libraryTemplatesTable.currentVersion),
+      ),
+    )
+    .where(eq(libraryTemplatesTable.id, row.originTemplateId));
+  if (!origin || origin.currentVersion <= (row.originVersion ?? 0)) {
+    throw new TemplateLibraryError(409, { error: "There is no newer version to take." });
+  }
+  if (row.version !== baseVersion) throw await conflict(row);
+  const [saved] = await db
+    .update(cardTemplatesTable)
+    .set({
+      adjustments: structuredClone(origin.document),
+      originVersion: origin.currentVersion,
+      version: row.version + 1,
+      fitStatus: origin.fitStatus,
+      fitReport: origin.fitReport,
+      updatedAt: new Date(),
+      updatedByAdminId: adminId,
+    })
+    .where(
+      and(
+        kindRows(tenantId),
+        eq(cardTemplatesTable.id, id),
+        eq(cardTemplatesTable.version, row.version),
+        isNull(cardTemplatesTable.editedAt),
+      ),
+    )
+    .returning();
+  if (!saved) throw await conflict(await loadCopy(tenantId, id));
+  return saved;
 }
