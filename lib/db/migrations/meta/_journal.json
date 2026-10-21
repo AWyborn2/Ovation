@@ -400,6 +400,13 @@
       "when": 1792483949790,
       "tag": "0056_social_email_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792554718867,
+      "tag": "0057_email_send_batches",
+      "breakpoints": true
     }
   ]
 }

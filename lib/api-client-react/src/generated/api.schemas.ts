@@ -3996,6 +3996,19 @@ export interface EmailList {
   createdAt: string;
 }
 
+export interface EmailAllTeamSheetsBody {
+  /**
+     * @minItems 1
+     * @maxItems 60
+     */
+  selectionIds: number[];
+}
+
+export interface EmailAllTeamSheetsResult {
+  /** Finalised sides queued */
+  sides: number;
+}
+
 export type EmailSendStatus = typeof EmailSendStatus[keyof typeof EmailSendStatus];
 
 
@@ -4009,7 +4022,9 @@ export const EmailSendStatus = {
 
 export interface EmailSend {
   id: number;
-  listId: number;
+  /** The list sent to; null for a batch (Email all, scheduled), which spans lists */
+  listId: number | null;
+  /** The list's name, or what sent a batch ("Email all team sheets (4 sides)") */
   listName: string;
   kind: string;
   subjectType: string;

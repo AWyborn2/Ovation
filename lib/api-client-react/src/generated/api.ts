@@ -141,6 +141,8 @@ import type {
   DuplicateReview,
   DuplicateReviewBody,
   EditorTemplate,
+  EmailAllTeamSheetsBody,
+  EmailAllTeamSheetsResult,
   EmailList,
   EmailListInput,
   EmailSend,
@@ -9059,6 +9061,84 @@ export const usePrintTeamSheet = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getPrintTeamSheetMutationOptions(options));
+    }
+
+export const getEmailAllTeamSheetsUrl = () => {
+
+
+
+
+  return `/api/selection/email-all`
+}
+
+/**
+ * Queues the finalised sides given (the ones shown on the Selection Hub
+board; drafts are ignored) as one batch. Each contact on a list that
+isn't switched off and covers one of them gets a single email with all
+the sheets they are due as pages of one PDF; contacts due the same
+sheets share one bcc'd email. Senior and junior sheets never share an
+email. Sending happens in the background; the send log shows it.
+
+ * @summary Email every finalised side on the board to the lists covering it, one email per contact (admin or captain)
+ */
+export const emailAllTeamSheets = async (emailAllTeamSheetsBody: EmailAllTeamSheetsBody, options?: RequestInit): Promise<EmailAllTeamSheetsResult> => {
+
+  return customFetch<EmailAllTeamSheetsResult>(getEmailAllTeamSheetsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailAllTeamSheetsBody,)
+  }
+);}
+
+
+
+
+export const getEmailAllTeamSheetsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emailAllTeamSheets>>, TError,{data: BodyType<EmailAllTeamSheetsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof emailAllTeamSheets>>, TError,{data: BodyType<EmailAllTeamSheetsBody>}, TContext> => {
+
+const mutationKey = ['emailAllTeamSheets'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof emailAllTeamSheets>>, {data: BodyType<EmailAllTeamSheetsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  emailAllTeamSheets(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EmailAllTeamSheetsMutationResult = NonNullable<Awaited<ReturnType<typeof emailAllTeamSheets>>>
+    export type EmailAllTeamSheetsMutationBody = BodyType<EmailAllTeamSheetsBody>
+    export type EmailAllTeamSheetsMutationError = ErrorType<void>
+
+    /**
+ * @summary Email every finalised side on the board to the lists covering it, one email per contact (admin or captain)
+ */
+export const useEmailAllTeamSheets = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof emailAllTeamSheets>>, TError,{data: BodyType<EmailAllTeamSheetsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof emailAllTeamSheets>>,
+        TError,
+        {data: BodyType<EmailAllTeamSheetsBody>},
+        TContext
+      > => {
+      return useMutation(getEmailAllTeamSheetsMutationOptions(options));
     }
 
 export const getEmailTeamSheetUrl = (id: number,) => {

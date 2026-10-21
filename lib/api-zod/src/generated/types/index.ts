@@ -275,6 +275,8 @@ export * from './duplicateReview';
 export * from './duplicateReviewBody';
 export * from './duplicateReviewBodyAction';
 export * from './editorTemplate';
+export * from './emailAllTeamSheetsBody';
+export * from './emailAllTeamSheetsResult';
 export * from './emailList';
 export * from './emailListInput';
 export * from './emailListInputKind';

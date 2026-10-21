@@ -22,15 +22,19 @@ import {
   absoluteLogoUrl,
   buildTeamSheet,
   renderTeamSheetHtml,
+  renderTeamSheetsHtml,
   type TeamSheet,
 } from "./team-sheet";
 import { logger as defaultLogger } from "./logger";
 import {
   resendOnChangeOf,
   scheduleDueAt,
+  groupRecipients,
   sendModeOf,
   teamSheetEmail,
   teamSheetKey,
+  teamSheetsEmail,
+  teamSheetsFileName,
 } from "./team-sheet-email";
 import {
   assetReadyEmail,
@@ -68,6 +72,14 @@ type Logger = {
 export const MAX_EMAIL_ATTEMPTS = 3;
 /** A row stuck in "sending" this long (server died mid-send) is put back in the queue. */
 export const STALE_SENDING_MS = 15 * 60 * 1000;
+
+/** A batch row: several sides, sent per recipient group with one combined PDF each. */
+export const BATCH_KIND = "team_sheet_batch";
+
+const numbers = (v: unknown): number[] =>
+  Array.isArray(v) ? v.filter((x): x is number => typeof x === "number") : [];
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
 /**
  * The active team-sheet lists of one section covering a grade (senior) or a
@@ -184,9 +196,10 @@ const SCHEDULE_LOOKBACK_MS = 12 * 60 * 60 * 1000;
 
 /**
  * Scheduled team-sheet lists (hourly sweep): each list whose weekly slot fell
- * in the last hour gets, per covered grade (senior list) or team (junior list),
- * the finalised side of that section for the coming round. The key is the on-publish one, so a version already
- * emailed to the list is never sent twice.
+ * in the last hour is due, per covered grade (senior list) or team (junior
+ * list), the finalised side of that section for the coming round. All of a
+ * club's due lists go out as one batch, so a contact on several gets one email
+ * with one PDF. Each list's slot is batched once (`slots` in the payload).
  */
 export async function enqueueScheduledTeamSheets(
   now: Date,
@@ -209,9 +222,25 @@ export async function enqueueScheduledTeamSheets(
       ),
     );
   const origin = env.RENDER_HARNESS_ORIGIN() ?? null;
-  let queued = 0;
+  // One batch per club per sweep: a contact on several due lists gets one email.
+  const due = new Map<number, { slots: string[]; listIds: number[]; sideIds: number[] }>();
   for (const list of lists) {
-    if (!scheduleDueAt(list.settings.schedule, now)) continue;
+    const at = scheduleDueAt(list.settings.schedule, now);
+    if (!at) continue;
+    // Each list's weekly slot is batched once, whichever sweep (and batch) took it.
+    const slot = `l${list.id}@${at.toISOString()}`;
+    const [taken] = await db
+      .select({ id: emailSendsTable.id })
+      .from(emailSendsTable)
+      .where(
+        and(
+          eq(emailSendsTable.tenantId, list.tenantId),
+          eq(emailSendsTable.kind, BATCH_KIND),
+          sql`${emailSendsTable.payload}->'slots' ? ${slot}`,
+        ),
+      )
+      .limit(1);
+    if (taken) continue;
     const grades = await db
       .select({ grade: emailListTeamsTable.gradeKey })
       .from(emailListTeamsTable)
@@ -220,32 +249,45 @@ export async function enqueueScheduledTeamSheets(
           eq(emailListTeamsTable.tenantId, list.tenantId),
           eq(emailListTeamsTable.listId, list.id),
         ),
-      );
+      )
+      .orderBy(asc(emailListTeamsTable.gradeKey));
     const from = new Date(now.getTime() - SCHEDULE_LOOKBACK_MS);
     const to = new Date(now.getTime() + SCHEDULE_LOOKAHEAD_MS);
+    const entry = due.get(list.tenantId) ?? { slots: [], listIds: [], sideIds: [] };
     for (const { grade } of grades) {
       const side =
         list.section === "junior"
           ? await comingJuniorSide(list.tenantId, grade, from, to)
           : await comingSeniorSide(list.tenantId, grade, from, to);
-      if (!side) continue;
-      const [take] = await listsTakingVersion(db, list.tenantId, side.id, side.version, [list]);
-      if (!take) continue;
-      const rows = await db
-        .insert(emailSendsTable)
-        .values({
-          tenantId: list.tenantId,
-          listId: list.id,
-          kind: "team_sheet",
-          subjectType: "selection",
-          subjectId: side.id,
-          idempotencyKey: `${teamSheetKey(side.id, side.version)}:l${list.id}`,
-          payload: { origin, grade, section: list.section, scheduled: true },
-        })
-        .onConflictDoNothing({ target: emailSendsTable.idempotencyKey })
-        .returning({ id: emailSendsTable.id });
-      queued += rows.length;
+      if (side && !entry.sideIds.includes(side.id)) entry.sideIds.push(side.id);
     }
+    entry.slots.push(slot);
+    entry.listIds.push(list.id);
+    due.set(list.tenantId, entry);
+  }
+  let queued = 0;
+  for (const [tenantId, entry] of due) {
+    if (entry.sideIds.length === 0) continue;
+    const rows = await db
+      .insert(emailSendsTable)
+      .values({
+        tenantId,
+        listId: null,
+        kind: BATCH_KIND,
+        subjectType: "batch",
+        subjectId: entry.sideIds[0],
+        idempotencyKey: `batch:scheduled:t${tenantId}:${[...entry.slots].sort().join(",")}`,
+        payload: {
+          selectionIds: entry.sideIds,
+          listIds: entry.listIds,
+          slots: entry.slots,
+          origin,
+          reason: "scheduled",
+        },
+      })
+      .onConflictDoNothing({ target: emailSendsTable.idempotencyKey })
+      .returning({ id: emailSendsTable.id });
+    queued += rows.length;
   }
   return queued;
 }
@@ -544,6 +586,66 @@ export async function enqueueTeamSheetManual(input: {
   return rows.length;
 }
 
+/**
+ * "Email all" from the Selection Hub: queue the finalised sides shown on the
+ * board as one batch. Each contact then gets one email with every sheet they
+ * are due (across all their lists) as pages of one PDF. Every click sends again.
+ */
+export async function enqueueTeamSheetBatch(input: {
+  tenantId: number;
+  selectionIds: number[];
+  origin: string | null;
+  now?: Date;
+}): Promise<{ sides: number }> {
+  const wanted = [...new Set(input.selectionIds)];
+  const rows =
+    wanted.length === 0
+      ? []
+      : await db
+          .select({
+            id: selectionsTable.id,
+            state: selectionsTable.state,
+            fixtureId: selectionsTable.fixtureId,
+            juniorFixtureId: selectionsTable.juniorFixtureId,
+          })
+          .from(selectionsTable)
+          .where(
+            and(eq(selectionsTable.tenantId, input.tenantId), inArray(selectionsTable.id, wanted)),
+          );
+  const final = new Map(rows.filter((r) => r.state === "final").map((r) => [r.id, r]));
+  const ids = wanted.filter((id) => final.has(id));
+  if (ids.length === 0) {
+    throw new EmailOutboxError(409, "No finalised sides to email. Finalise a side first.");
+  }
+  let covered = false;
+  for (const id of ids) {
+    const fixture = await loadSideFixture(db, input.tenantId, final.get(id)!);
+    if (!fixture) continue;
+    const lists = await listsForGrade(db, input.tenantId, fixture.grade, sideSection(fixture));
+    if (lists.some((l) => sendModeOf(l.settings) !== "off")) {
+      covered = true;
+      break;
+    }
+  }
+  if (!covered) {
+    throw new EmailOutboxError(
+      409,
+      "No email list covers these sides. Add one in Admin → Email lists.",
+    );
+  }
+  const stamp = (input.now ?? new Date()).getTime();
+  await db.insert(emailSendsTable).values({
+    tenantId: input.tenantId,
+    listId: null,
+    kind: BATCH_KIND,
+    subjectType: "batch",
+    subjectId: ids[0],
+    idempotencyKey: `batch:email_all:t${input.tenantId}:${stamp}`,
+    payload: { selectionIds: ids, listIds: null, origin: input.origin, reason: "email_all" },
+  });
+  return { sides: ids.length };
+}
+
 /** Re-queue one logged send (any status) as a fresh row. */
 export async function requeueSend(tenantId: number, sendId: number, now = new Date()) {
   const [row] = await db
@@ -560,7 +662,8 @@ export async function requeueSend(tenantId: number, sendId: number, now = new Da
       subjectType: row.subjectType,
       subjectId: row.subjectId,
       idempotencyKey: `${row.idempotencyKey}:resend:${now.getTime()}`,
-      payload: { ...row.payload, resendOf: row.id },
+      // A resent batch goes to every group again, not only the ones that failed.
+      payload: { ...row.payload, sentGroups: [], resendOf: row.id },
     })
     .returning();
   return copy;
@@ -583,7 +686,7 @@ type SendOutcome =
  * bcc'd so none sees the others.
  */
 async function recipientsFor(
-  row: EmailSendRow,
+  row: ListSendRow,
 ): Promise<{ from: string; recipients: string[] } | SendOutcome> {
   const members = await db
     .select({ email: emailListMembersTable.email })
@@ -616,7 +719,7 @@ function finish(
   return { status: "failed", error: result.error ?? "Send failed", recipients };
 }
 
-async function deliverTeamSheet(row: EmailSendRow): Promise<SendOutcome> {
+async function deliverTeamSheet(row: ListSendRow): Promise<SendOutcome> {
   const to = await recipientsFor(row);
   if ("status" in to) return to;
 
@@ -670,6 +773,144 @@ async function deliverTeamSheet(row: EmailSendRow): Promise<SendOutcome> {
   return finish(result, to.recipients.length);
 }
 
+/**
+ * A batch: every contact on a list (not switched off; for a scheduled batch,
+ * only its due lists) covering one of the sides gets the sheets they're due as
+ * pages of one PDF, in one email. Contacts due the same sheets share one bcc'd
+ * email. Senior and junior sheets never share an email. A group already sent
+ * is recorded by its sheet set (never an address), so a retry sends only the rest.
+ */
+async function deliverTeamSheetBatch(row: EmailSendRow): Promise<SendOutcome> {
+  const from = env.EMAIL_FROM();
+  if (!emailEnabled() || !from) return { status: "skipped", reason: "Email is not configured." };
+  const ids = numbers(row.payload.selectionIds);
+  const only = Array.isArray(row.payload.listIds) ? numbers(row.payload.listIds) : null;
+  const sentGroups = strings(row.payload.sentGroups);
+  const sides =
+    ids.length === 0
+      ? []
+      : await db
+          .select({
+            id: selectionsTable.id,
+            state: selectionsTable.state,
+            fixtureId: selectionsTable.fixtureId,
+            juniorFixtureId: selectionsTable.juniorFixtureId,
+          })
+          .from(selectionsTable)
+          .where(and(eq(selectionsTable.tenantId, row.tenantId), inArray(selectionsTable.id, ids)));
+
+  // Per section: address (first spelling kept) -> the sides it is due, in batch order.
+  const due = { senior: new Map<string, number[]>(), junior: new Map<string, number[]>() };
+  const spelling = new Map<string, string>();
+  for (const id of ids) {
+    const side = sides.find((s) => s.id === id);
+    if (!side || side.state !== "final") continue;
+    const fixture = await loadSideFixture(db, row.tenantId, side);
+    if (!fixture) continue;
+    const section = sideSection(fixture);
+    const lists = (await listsForGrade(db, row.tenantId, fixture.grade, section)).filter(
+      (l) => sendModeOf(l.settings) !== "off" && (!only || only.includes(l.id)),
+    );
+    if (lists.length === 0) continue;
+    const members = await db
+      .select({ email: emailListMembersTable.email })
+      .from(emailListMembersTable)
+      .where(
+        and(
+          eq(emailListMembersTable.tenantId, row.tenantId),
+          inArray(
+            emailListMembersTable.listId,
+            lists.map((l) => l.id),
+          ),
+        ),
+      );
+    for (const m of members) {
+      const address = m.email.trim();
+      const key = address.toLowerCase();
+      if (!spelling.has(key)) spelling.set(key, address);
+      const got = due[section].get(key) ?? [];
+      if (!got.includes(id)) got.push(id);
+      due[section].set(key, got);
+    }
+  }
+
+  const groups = (["senior", "junior"] as const).flatMap((section) =>
+    groupRecipients(due[section]).map((g) => ({
+      key: `${section}:${g.ids.join(",")}`,
+      ids: g.ids,
+      to: g.to.map((k) => spelling.get(k) ?? k),
+    })),
+  );
+  if (groups.length === 0)
+    return { status: "skipped", reason: "No list with contacts covers these sides." };
+
+  const origin = payloadOrigin(row);
+  const sheets = new Map<number, TeamSheet | null>();
+  const sheetOf = async (id: number) => {
+    if (!sheets.has(id)) {
+      try {
+        sheets.set(id, await buildTeamSheet(row.tenantId, id));
+      } catch (err) {
+        // Re-opened or removed since it was queued: left out of the email.
+        if (!(err instanceof TeamSheetError)) throw err;
+        sheets.set(id, null);
+      }
+    }
+    return sheets.get(id) ?? null;
+  };
+
+  let reached = 0;
+  const errors: string[] = [];
+  for (const g of groups) {
+    if (sentGroups.includes(g.key)) {
+      reached += g.to.length;
+      continue;
+    }
+    const pages = (await Promise.all(g.ids.map(sheetOf))).filter((s): s is TeamSheet => !!s);
+    if (pages.length === 0) continue;
+    const pdf = await renderHtmlToPdf(
+      renderTeamSheetsHtml(
+        pages.map((sheet) => ({ sheet, logoSrc: absoluteLogoUrl(sheet.logoUrl, origin) })),
+      ),
+    );
+    const { subject, text } = teamSheetsEmail(pages);
+    const result = await sendEmail({
+      to: from,
+      bcc: g.to,
+      subject,
+      text,
+      attachments: [
+        {
+          filename: teamSheetsFileName(pages),
+          content: Buffer.from(pdf),
+          contentType: "application/pdf",
+        },
+      ],
+    });
+    if (result.sent) {
+      reached += g.to.length;
+      sentGroups.push(g.key);
+      await db
+        .update(emailSendsTable)
+        .set({ payload: { ...row.payload, sentGroups } })
+        .where(eq(emailSendsTable.id, row.id));
+    } else if (result.reason === "disabled") {
+      return { status: "skipped", reason: "Email is not configured." };
+    } else {
+      errors.push(result.error ?? "Send failed");
+    }
+  }
+  if (errors.length > 0)
+    return {
+      status: "failed",
+      error: `${errors.length} of ${groups.length} emails failed: ${errors[0]}`,
+      recipients: reached,
+    };
+  if (reached === 0)
+    return { status: "skipped", reason: "None of the sides is finalised any more." };
+  return { status: "sent", recipients: reached };
+}
+
 type CardPngRenderer = (draft: SocialDraftRow, origin: string | null) => Promise<Buffer[]>;
 let cardPngRenderer: CardPngRenderer | null = null;
 
@@ -689,7 +930,7 @@ async function renderCardPngs(draft: SocialDraftRow, origin: string | null): Pro
   return slides.map((s) => s.png);
 }
 
-async function deliverAssetReady(row: EmailSendRow): Promise<SendOutcome> {
+async function deliverAssetReady(row: ListSendRow): Promise<SendOutcome> {
   const [draft] = await db
     .select()
     .from(socialDraftsTable)
@@ -732,7 +973,7 @@ async function deliverAssetReady(row: EmailSendRow): Promise<SendOutcome> {
 }
 
 async function deliverDigest(
-  row: EmailSendRow,
+  row: ListSendRow,
   kind: "review_needed" | "milestone",
 ): Promise<SendOutcome> {
   const raw = row.payload.draftIds;
@@ -773,7 +1014,16 @@ async function deliverDigest(
   return finish(result, to.recipients.length);
 }
 
+/** A send to one list (every kind but a batch). */
+type ListSendRow = EmailSendRow & { listId: number };
+
 async function deliver(row: EmailSendRow): Promise<SendOutcome> {
+  if (row.kind === BATCH_KIND) return deliverTeamSheetBatch(row);
+  if (row.listId == null) return { status: "skipped", reason: "The list was removed." };
+  return deliverToList({ ...row, listId: row.listId });
+}
+
+async function deliverToList(row: ListSendRow): Promise<SendOutcome> {
   switch (row.kind) {
     case "team_sheet":
       return deliverTeamSheet(row);
@@ -874,11 +1124,13 @@ export async function settleOutbox(): Promise<void> {
 
 /** Rows for the admin send log, newest first (no addresses — the table holds none). */
 export async function listSends(tenantId: number, opts: { listId?: number; limit?: number } = {}) {
-  return db
+  const rows = await db
     .select({
       id: emailSendsTable.id,
       listId: emailSendsTable.listId,
       listName: emailListsTable.name,
+      reason: sql<string | null>`${emailSendsTable.payload}->>'reason'`,
+      sheets: sql<number | null>`jsonb_array_length(${emailSendsTable.payload}->'selectionIds')`,
       kind: emailSendsTable.kind,
       subjectType: emailSendsTable.subjectType,
       subjectId: emailSendsTable.subjectId,
@@ -890,7 +1142,13 @@ export async function listSends(tenantId: number, opts: { listId?: number; limit
       sentAt: emailSendsTable.sentAt,
     })
     .from(emailSendsTable)
-    .innerJoin(emailListsTable, eq(emailListsTable.id, emailSendsTable.listId))
+    .leftJoin(
+      emailListsTable,
+      and(
+        eq(emailListsTable.id, emailSendsTable.listId),
+        eq(emailListsTable.tenantId, emailSendsTable.tenantId),
+      ),
+    )
     .where(
       and(
         eq(emailSendsTable.tenantId, tenantId),
@@ -899,4 +1157,11 @@ export async function listSends(tenantId: number, opts: { listId?: number; limit
     )
     .orderBy(sql`${emailSendsTable.queuedAt} DESC, ${emailSendsTable.id} DESC`)
     .limit(Math.min(opts.limit ?? 100, 500));
+  // A batch has no list: it is named for what sent it.
+  return rows.map(({ reason, sheets, ...r }) => ({
+    ...r,
+    listName:
+      r.listName ??
+      `${reason === "scheduled" ? "Scheduled team sheets" : "Email all team sheets"}${sheets ? ` (${sheets} ${sheets === 1 ? "side" : "sides"})` : ""}`,
+  }));
 }

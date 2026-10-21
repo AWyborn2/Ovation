@@ -9,7 +9,9 @@ import type { EmailSendStatus } from './emailSendStatus';
 
 export interface EmailSend {
   id: number;
-  listId: number;
+  /** The list sent to; null for a batch (Email all, scheduled), which spans lists */
+  listId: number | null;
+  /** The list's name, or what sent a batch ("Email all team sheets (4 sides)") */
   listName: string;
   kind: string;
   subjectType: string;

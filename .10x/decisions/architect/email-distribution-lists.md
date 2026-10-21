@@ -203,3 +203,27 @@ once it has been logged is not.
   afterwards). The team picker comes from the club's junior fixtures (`useListJuniorFixtures`
   labels, de-duplicated). Each list row shows its section, and "Email team sheet" shows on junior
   sides too.
+
+## As built: Email all + combined sheets (21 Oct 2026)
+
+Ash asked for an "Email all" button on the Selection Hub, and for anyone due several team sheets to
+get them in one email with one attachment.
+
+- **Batch row:** `email_sends.kind = 'team_sheet_batch'`, with `list_id` NULL (migration
+  `0057_email_send_batches.sql`). The payload holds `selectionIds`, `listIds` (null = every list
+  not switched off), `reason` (`email_all` | `scheduled`), `origin`, and `sentGroups`.
+- **Delivery:** for each side, find the lists of its section covering it, then map each address to
+  the sides it's due. Addresses due the same set share one bcc'd email whose PDF has one page per
+  sheet (`renderTeamSheetsHtml`). Senior and junior sheets never share an email. Each group that is
+  sent is recorded in `sentGroups` (its section and sheet ids, never an address), so a retry sends
+  only the groups that failed. A resend clears it.
+- **Email all:** `POST /selection/email-all` takes the board's finalised sides (drafts are
+  ignored). It refuses when none is finalised or no list covers them.
+- **Scheduled:** all of a club's lists due in a sweep go out as one batch. Each list's weekly slot
+  (`l{id}@{slot}`) is recorded in `payload.slots`, so a slot is batched once even if a later sweep
+  batches other lists. The per-version `resendOnChange` check no longer applies to scheduled sends
+  (one send per weekly slot).
+- **Unchanged:** finalise ("on publish") and the per-side Email team sheet button still send per
+  list, one sheet each.
+- **Send log:** a batch shows as "Email all team sheets (N sides)" or "Scheduled team sheets (N
+  sides)".
