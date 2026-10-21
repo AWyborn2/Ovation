@@ -278,6 +278,7 @@ export function FillPopover({
               id={optionId(i)}
               data-row={i}
               role="option"
+              tabIndex={-1}
               aria-selected={i === active}
               aria-disabled={row.disabled || undefined}
               onMouseEnter={() => !row.disabled && setHighlight(i)}
