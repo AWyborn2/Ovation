@@ -671,6 +671,9 @@ importers:
       pg:
         specifier: 'catalog:'
         version: 8.23.0
+      puppeteer-core:
+        specifier: ^25.10.0
+        version: 25.10.0
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
