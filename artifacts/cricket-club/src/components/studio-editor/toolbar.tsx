@@ -3,6 +3,8 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowUpToLine,
+  ClipboardCopy,
+  ClipboardPaste,
   Copy,
   Group,
   Lock,
@@ -12,6 +14,8 @@ import {
 } from "lucide-react";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { ReorderMove } from "./document";
+import type { Alignment, MatchDimension, MatchReference } from "./arrange";
+import { ArrangeMenu } from "./arrange-menu";
 import { cn } from "@/lib/utils";
 
 const btn =
@@ -27,8 +31,9 @@ const SWATCHES: { label: string; value: string }[] = [
 
 /**
  * The floating contextual toolbar (Social Studio U16): text content and colour
- * for a text layer, fill for a shape, and always lock / duplicate / delete;
- * group or ungroup for a multi-selection.
+ * for a text layer, fill for a shape, and always lock / copy / duplicate /
+ * delete; group or ungroup for a multi-selection; Arrange (align, distribute,
+ * match size) when the page passes it. With nothing selected it offers Paste.
  */
 export function EditorToolbar({
   selected,
@@ -41,6 +46,10 @@ export function EditorToolbar({
   onGroup,
   onUngroup,
   onReorder,
+  onCopy,
+  onPaste,
+  canPaste = false,
+  arrange,
 }: {
   selected: FreeLayer[];
   isGroup: boolean;
@@ -53,11 +62,36 @@ export function EditorToolbar({
   onUngroup: () => void;
   /** Stacking order (bring forward / send backward / to front / to back). */
   onReorder?: (move: ReorderMove) => void;
+  /** Copy the selection to the editor clipboard (Ctrl/Cmd+C). */
+  onCopy?: () => void;
+  /** Paste the editor clipboard (Ctrl/Cmd+V). */
+  onPaste?: () => void;
+  canPaste?: boolean;
+  /** Align, distribute and match size; `count` is how many units can move. */
+  arrange?: {
+    count: number;
+    onAlign: (to: Alignment) => void;
+    onDistribute: (axis: "horizontal" | "vertical") => void;
+    onMatch: (dim: MatchDimension, ref: MatchReference) => void;
+  };
 }) {
+  const pasteBtn = onPaste && (
+    <button
+      type="button"
+      className={btn}
+      onClick={onPaste}
+      disabled={!canPaste}
+      aria-label="Paste"
+      title="Paste (Ctrl+V)"
+    >
+      <ClipboardPaste className="h-4 w-4" />
+    </button>
+  );
   if (selected.length === 0) {
     return (
-      <div className="h-11 px-3 text-sm leading-[44px] text-[var(--ed-ink2)]">
+      <div className="flex h-11 items-center gap-2 px-3 text-sm text-[var(--ed-ink2)]">
         Select a layer to edit it, or add one from the panel.
+        {canPaste && pasteBtn}
       </div>
     );
   }
@@ -176,7 +210,33 @@ export function EditorToolbar({
           </button>
         </div>
       )}
-      <button type="button" className={btn} onClick={onDuplicate} aria-label="Duplicate">
+      {arrange && (
+        <ArrangeMenu
+          count={arrange.count}
+          onAlign={arrange.onAlign}
+          onDistribute={arrange.onDistribute}
+          onMatch={arrange.onMatch}
+        />
+      )}
+      {onCopy && (
+        <button
+          type="button"
+          className={btn}
+          onClick={onCopy}
+          aria-label="Copy"
+          title="Copy (Ctrl+C)"
+        >
+          <ClipboardCopy className="h-4 w-4" />
+        </button>
+      )}
+      {pasteBtn}
+      <button
+        type="button"
+        className={btn}
+        onClick={onDuplicate}
+        aria-label="Duplicate"
+        title="Duplicate (Ctrl+D)"
+      >
         <Copy className="h-4 w-4" />
       </button>
       <button

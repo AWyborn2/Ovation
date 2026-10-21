@@ -7,6 +7,10 @@ export type EditorAction =
   | { type: "undo" }
   | { type: "redo" }
   | { type: "duplicate" }
+  | { type: "copy" }
+  | { type: "cut" }
+  | { type: "paste" }
+  | { type: "selectAll" }
   | { type: "group" }
   | { type: "ungroup" }
   | { type: "delete" }
@@ -25,6 +29,10 @@ export function actionForKey(e: KeyLike): EditorAction | null {
   if (mod && key === "z") return e.shiftKey ? { type: "redo" } : { type: "undo" };
   if (mod && key === "y") return { type: "redo" };
   if (mod && key === "d") return { type: "duplicate" };
+  if (mod && key === "c") return { type: "copy" };
+  if (mod && key === "x") return { type: "cut" };
+  if (mod && key === "v") return { type: "paste" };
+  if (mod && key === "a") return { type: "selectAll" };
   if (mod && key === "g") return e.shiftKey ? { type: "ungroup" } : { type: "group" };
   if (mod) return null;
   if (key === "delete" || key === "backspace") return { type: "delete" };
