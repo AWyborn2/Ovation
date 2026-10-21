@@ -1,0 +1,253 @@
+{
+  "name": "Ovation looks — fixture",
+  "lastModified": "2026-10-21T08:00:00Z",
+  "version": "1",
+  "nodes": {
+    "10:1": {
+      "document": {
+        "id": "10:1",
+        "name": "card/square",
+        "type": "FRAME",
+        "absoluteBoundingBox": { "x": 0, "y": 0, "width": 540, "height": 540 },
+        "fills": [],
+        "children": [
+          {
+            "id": "10:2",
+            "name": "Stage",
+            "type": "RECTANGLE",
+            "absoluteBoundingBox": { "x": 0, "y": 0, "width": 540, "height": 540 },
+            "fills": [
+              { "type": "SOLID", "color": { "r": 0.0627, "g": 0.0706, "b": 0.0863, "a": 1 } }
+            ],
+            "styles": { "fill": "S:ink" }
+          },
+          {
+            "id": "10:3",
+            "name": "Accent bar",
+            "type": "RECTANGLE",
+            "absoluteBoundingBox": { "x": 27, "y": 27, "width": 216, "height": 13.5 },
+            "cornerRadius": 4,
+            "fills": [
+              {
+                "type": "GRADIENT_LINEAR",
+                "gradientHandlePositions": [
+                  { "x": 0, "y": 0.5 },
+                  { "x": 1, "y": 0.5 },
+                  { "x": 0, "y": 1 }
+                ],
+                "gradientStops": [
+                  { "color": { "r": 0.984, "g": 0.675, "b": 0.153, "a": 1 }, "position": 0 },
+                  { "color": { "r": 0.984, "g": 0.675, "b": 0.153, "a": 0 }, "position": 1 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "10:4",
+            "name": "Header",
+            "type": "GROUP",
+            "absoluteBoundingBox": { "x": 27, "y": 54, "width": 486, "height": 60 },
+            "children": [
+              {
+                "id": "10:5",
+                "name": "Player",
+                "type": "TEXT",
+                "absoluteBoundingBox": { "x": 27, "y": 54, "width": 486, "height": 40 },
+                "characters": "{{playerName}}",
+                "style": {
+                  "fontFamily": "Anton",
+                  "fontWeight": 400,
+                  "fontSize": 36,
+                  "letterSpacing": 0.72,
+                  "lineHeightPx": 40,
+                  "textAlignHorizontal": "LEFT",
+                  "textCase": "UPPER"
+                },
+                "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1, "a": 1 } }],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 8,
+                    "color": { "r": 0, "g": 0, "b": 0, "a": 0.5 },
+                    "offset": { "x": 0, "y": 2 }
+                  }
+                ]
+              },
+              {
+                "id": "10:6",
+                "name": "Label",
+                "type": "TEXT",
+                "absoluteBoundingBox": { "x": 27, "y": 96, "width": 200, "height": 18 },
+                "characters": "CENTURY · {{runs}}",
+                "style": {
+                  "fontFamily": "Helvetica Neue",
+                  "fontWeight": 700,
+                  "fontSize": 14,
+                  "letterSpacing": 2.8,
+                  "lineHeightPx": 18,
+                  "textAlignHorizontal": "CENTER"
+                },
+                "fills": [
+                  { "type": "SOLID", "color": { "r": 0.984, "g": 0.675, "b": 0.153, "a": 1 } }
+                ],
+                "styles": { "fill": "S:accent" }
+              }
+            ]
+          },
+          {
+            "id": "10:7",
+            "name": "Badge",
+            "type": "ELLIPSE",
+            "absoluteBoundingBox": { "x": 440, "y": 440, "width": 60, "height": 60 },
+            "fills": [
+              {
+                "type": "SOLID",
+                "color": { "r": 0.2, "g": 0.25, "b": 0.3, "a": 1 },
+                "opacity": 0.8
+              }
+            ],
+            "styles": { "fill": "S:panel" },
+            "strokes": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1, "a": 1 } }],
+            "strokeWeight": 2,
+            "effects": [
+              {
+                "type": "DROP_SHADOW",
+                "visible": true,
+                "radius": 10,
+                "spread": 1,
+                "color": { "r": 0, "g": 0, "b": 0, "a": 0.25 },
+                "offset": { "x": 0, "y": 4 }
+              }
+            ],
+            "blendMode": "MULTIPLY",
+            "opacity": 0.9
+          },
+          {
+            "id": "10:12",
+            "name": "Tag",
+            "type": "RECTANGLE",
+            "absoluteBoundingBox": {
+              "x": 347.703,
+              "y": 33.236,
+              "width": 104.594,
+              "height": 53.528
+            },
+            "relativeTransform": [
+              [0.990268, -0.139173, 352.6],
+              [0.139173, 0.990268, 13.42]
+            ],
+            "size": { "x": 100, "y": 40 },
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 0, "b": 0, "a": 1 } }]
+          },
+          {
+            "id": "10:8",
+            "name": "{{photo}}",
+            "type": "RECTANGLE",
+            "absoluteBoundingBox": { "x": 270, "y": 120, "width": 270, "height": 300 },
+            "fills": [{ "type": "IMAGE", "imageRef": "abc123", "scaleMode": "FILL" }]
+          },
+          {
+            "id": "10:9",
+            "name": "Swoosh",
+            "type": "VECTOR",
+            "absoluteBoundingBox": { "x": 0, "y": 480, "width": 540, "height": 60 },
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1, "a": 0.1 } }]
+          },
+          {
+            "id": "10:10",
+            "name": "Draft note",
+            "type": "TEXT",
+            "visible": false,
+            "absoluteBoundingBox": { "x": 0, "y": 0, "width": 100, "height": 20 },
+            "characters": "hidden",
+            "style": { "fontFamily": "Inter", "fontWeight": 400, "fontSize": 12 }
+          },
+          {
+            "id": "10:11",
+            "name": "Stray",
+            "type": "TEXT",
+            "absoluteBoundingBox": { "x": 27, "y": 500, "width": 200, "height": 20 },
+            "characters": "{{notAField}}",
+            "style": { "fontFamily": "Inter", "fontWeight": 400, "fontSize": 12 },
+            "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1, "a": 1 } }]
+          }
+        ]
+      },
+      "components": {},
+      "schemaVersion": 0,
+      "styles": {
+        "S:ink": { "key": "k1", "name": "ovation/ink", "styleType": "FILL", "description": "" },
+        "S:accent": {
+          "key": "k2",
+          "name": "ovation/accent",
+          "styleType": "FILL",
+          "description": ""
+        },
+        "S:panel": { "key": "k3", "name": "Ovation/Panel", "styleType": "FILL", "description": "" }
+      }
+    },
+    "20:1": {
+      "document": {
+        "id": "20:1",
+        "name": "Century — story",
+        "type": "FRAME",
+        "absoluteBoundingBox": { "x": 1000, "y": 0, "width": 1080, "height": 1920 },
+        "layoutMode": "VERTICAL",
+        "itemSpacing": 24,
+        "fills": [],
+        "children": [
+          {
+            "id": "20:2",
+            "name": "Stage",
+            "type": "RECTANGLE",
+            "absoluteBoundingBox": { "x": 1000, "y": 0, "width": 1080, "height": 1920 },
+            "fills": [
+              { "type": "SOLID", "color": { "r": 0.0627, "g": 0.0706, "b": 0.0863, "a": 1 } }
+            ],
+            "styles": { "fill": "S:ink" }
+          },
+          {
+            "id": "20:4",
+            "name": "Header",
+            "type": "GROUP",
+            "absoluteBoundingBox": { "x": 1054, "y": 200, "width": 972, "height": 160 },
+            "children": [
+              {
+                "id": "20:5",
+                "name": "Player",
+                "type": "TEXT",
+                "absoluteBoundingBox": { "x": 1054, "y": 200, "width": 972, "height": 120 },
+                "characters": "{{playerName}}",
+                "style": {
+                  "fontFamily": "Anton",
+                  "fontWeight": 400,
+                  "fontSize": 108,
+                  "letterSpacing": 2.16,
+                  "lineHeightPx": 120,
+                  "textAlignHorizontal": "LEFT",
+                  "textCase": "UPPER"
+                },
+                "fills": [{ "type": "SOLID", "color": { "r": 1, "g": 1, "b": 1, "a": 1 } }],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 16,
+                    "color": { "r": 0, "g": 0, "b": 0, "a": 0.5 },
+                    "offset": { "x": 0, "y": 4 }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "components": {},
+      "schemaVersion": 0,
+      "styles": {
+        "S:ink": { "key": "k1", "name": "ovation/ink", "styleType": "FILL", "description": "" }
+      }
+    }
+  }
+}
