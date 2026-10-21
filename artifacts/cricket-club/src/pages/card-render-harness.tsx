@@ -19,9 +19,14 @@ import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock"
 import type { CaptureApi } from "@/lib/pack-render/capture";
 
 // The pack converter's capture (social template library, L4-A1) exists on the
-// dev server and in `vite build --mode capture` (CI) only. Both are build-time
-// constants, so a production build drops the capture module entirely.
-const CAPTURE_ENABLED = import.meta.env.DEV || import.meta.env.MODE === "capture";
+// dev server, in tests and in `vite build --mode capture` (CI) only. The mode
+// is a build-time constant, so a production build drops the capture module
+// entirely. Not `import.meta.env.DEV`: a dev server started with
+// NODE_ENV=production reports DEV false.
+const CAPTURE_ENABLED =
+  import.meta.env.MODE === "development" ||
+  import.meta.env.MODE === "test" ||
+  import.meta.env.MODE === "capture";
 
 // Metrics returned by init() so the server knows how many frames to capture.
 type HarnessMeta = {
