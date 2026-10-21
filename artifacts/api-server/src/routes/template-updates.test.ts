@@ -97,10 +97,17 @@ const as = (i: number) => ({
       .send(body),
 });
 
-const summary = async (id: number) =>
-  ((await as(0).get("/club-templates")).body.templates as Array<{ id: number }>).find(
-    (t) => t.id === id,
-  ) as { edited: boolean; updateAvailable: { version: number } | null; version: number };
+type Summary = {
+  id: number;
+  edited: boolean;
+  updateAvailable: { version: number } | null;
+  version: number;
+};
+
+const summary = async (id: number): Promise<Summary> => {
+  const res = await as(0).get("/club-templates");
+  return (res.body.templates as Summary[]).find((t) => t.id === id)!;
+};
 
 describe("update available", () => {
   let copyId: number;
