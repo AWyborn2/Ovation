@@ -11,11 +11,12 @@ import { useQueries } from "@tanstack/react-query";
 import {
   getFixtureTeamList,
   useListMatches,
-  useGetMatch,
-  getGetMatchQueryKey,
   getListMatchesQueryKey,
   useListFixtures,
-  useGetFixtureTeamList,
+  useGetSocialMatchSummaryPrefill,
+  getGetSocialMatchSummaryPrefillQueryKey,
+  useGetSocialTeamListPrefill,
+  getGetSocialTeamListPrefillQueryKey,
   getGetFixtureTeamListQueryKey,
   useGetSocialLadderPrefill,
   getGetSocialLadderPrefillQueryKey,
@@ -39,21 +40,19 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
-import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
+import { seasonLabel } from "@/lib/match-summary";
 import type { CardKind, ClubLeaderboardCategory } from "@/lib/share-card";
-import type { CardFormState } from "./logic";
+import { initialCardState, type CardFormState } from "./logic";
 import { DESCRIPTORS } from "./descriptors";
 import {
   matchContextPatch,
   fixtureToMatchDayState,
   fixtureToCountdownState,
-  fixtureToTeamListMeta,
   fixtureRoundLabel,
   fixtureRoundToState,
   fixtureRoundTeamsToState,
   groupFixturesByRound,
   ROUND_FIXTURES_CAP,
-  teamListPlayersToState,
   ladderRowsToState,
   clubSeasonTotalsToState,
   weekendWrapToState,
@@ -74,6 +73,27 @@ function defaultSeasonYear(): number {
 }
 
 type Apply = (patch: CardFormState) => void;
+
+/**
+ * A card from the server's content builders (ADR-010 P7) as form state. A key
+ * the starting card has and the server's card lacks (a sample headline) is
+ * cleared, so the card made here is the one the queue gets. `keep` names keys
+ * the form keeps as they are.
+ */
+function builderCard(
+  kind: CardKind,
+  input: Record<string, unknown>,
+  keep: readonly string[] = [],
+): CardFormState {
+  const { kind: _kind, ...card } = input;
+  const cleared = Object.keys(initialCardState(kind)).filter((k) => !keep.includes(k));
+  const out: CardFormState = {
+    ...Object.fromEntries(cleared.map((k) => [k, undefined])),
+    ...card,
+  };
+  for (const k of keep) delete out[k];
+  return out;
+}
 
 /** Dispatch to the right prefill panel for a kind, or nothing when form-only. */
 export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
@@ -123,8 +143,13 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
   );
   const selected = filtered.find((m) => m.id === matchId) ?? null;
 
-  const detailQ = useGetMatch(matchId ?? 0, {
-    query: { enabled: matchId != null, queryKey: getGetMatchQueryKey(matchId ?? 0) },
+  // The Match Result card comes from the server's content builder (ADR-010
+  // P7): the card the results sweep would queue for this match.
+  const detailQ = useGetSocialMatchSummaryPrefill(matchId ?? 0, {
+    query: {
+      enabled: kind === "matchSummary" && matchId != null,
+      queryKey: getGetSocialMatchSummaryPrefillQueryKey(matchId ?? 0),
+    },
   });
 
   const matchLabel = (m: MatchSummaryDto) => {
@@ -135,8 +160,7 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
   const apply = () => {
     if (kind === "matchSummary") {
       if (!detailQ.data) return;
-      const { kind: _k, ...rest } = matchToSummaryInput(detailQ.data) as Record<string, unknown>;
-      onApply(rest as CardFormState);
+      onApply(builderCard("matchSummary", detailQ.data.input));
       return;
     }
     if (selected) onApply(matchContextPatch(kind, grade, selected));
@@ -150,7 +174,7 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
       title="Prefill from a match"
       hint={
         needsDetail
-          ? "Loads the full scorecard for the Match Result card."
+          ? "Loads the full scorecard: the same card your results queue gets for this match."
           : "Fills the match context (grade, opponent, round); enter the player and figures below."
       }
     >
@@ -217,10 +241,12 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
   const fixtures = (fixturesQ.data ?? []) as Fixture[];
   const selected = fixtures.find((f) => f.id === fixtureId) ?? null;
 
-  const teamListQ = useGetFixtureTeamList(fixtureId ?? 0, {
+  // The team list card comes from the server's content builder (ADR-010 P7):
+  // the card the team list sweep would queue for this fixture.
+  const teamListQ = useGetSocialTeamListPrefill(fixtureId ?? 0, {
     query: {
       enabled: kind === "teamList" && fixtureId != null,
-      queryKey: getGetFixtureTeamListQueryKey(fixtureId ?? 0),
+      queryKey: getGetSocialTeamListPrefillQueryKey(fixtureId ?? 0),
     },
   });
 
@@ -229,11 +255,11 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
     if (kind === "matchDay") return onApply(fixtureToMatchDayState(selected));
     if (kind === "countdown") return onApply(fixtureToCountdownState(selected));
     if (kind === "teamList") {
-      const meta = fixtureToTeamListMeta(selected);
-      const players = teamListQ.data
-        ? teamListPlayersToState(teamListQ.data.players, teamListQ.data.debutPlayerIds ?? [])
-        : {};
-      return onApply({ ...meta, ...players });
+      if (!teamListQ.data) return;
+      // No saved list: the heading only, so the players already in the form stay.
+      const { players } = teamListQ.data.input;
+      const listed = Array.isArray(players) && players.length > 0;
+      return onApply(builderCard("teamList", teamListQ.data.input, listed ? [] : ["players"]));
     }
   };
 
@@ -245,7 +271,7 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
       title="Prefill from a fixture"
       hint={
         kind === "teamList"
-          ? "Pulls the fixture heading and the saved team list (fill-in players excluded)."
+          ? "Pulls the fixture heading and the saved team list, as your team list queue would (fill-in players excluded)."
           : "Fills the fixture details; hype / note lines stay for you to write."
       }
     >
@@ -281,7 +307,7 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
       </div>
       <ApplyButton
         onClick={apply}
-        disabled={fixtureId == null || (kind === "teamList" && teamListQ.isLoading)}
+        disabled={fixtureId == null || (kind === "teamList" && !teamListQ.data)}
         loading={kind === "teamList" && teamListQ.isLoading}
       />
     </PrefillCard>

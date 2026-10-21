@@ -10656,6 +10656,62 @@ paths:
               schema:
                 $ref: "#/components/schemas/RoundResults"
 
+  /social-prefill/match-summary/{matchId}:
+    get:
+      operationId: getSocialMatchSummaryPrefill
+      tags: [socialCards]
+      summary: >-
+        Match result card prefill (ADR-010 P7): the card the results sweep
+        drafts for this match. Admin + socialStudio entitlement.
+      description: >-
+        Built by the same content builder as the auto-queued card and the
+        results and match summary carousels, with the club's content choices,
+        so a card made here matches the one the sweep queues. The match id is
+        the one the match list gives (central's for a central-data club).
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The card input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCardPrefill"
+        "404":
+          description: Not found
+
+  /social-prefill/team-list/{fixtureId}:
+    get:
+      operationId: getSocialTeamListPrefill
+      tags: [socialCards]
+      summary: >-
+        Team list card prefill (ADR-010 P7): the card the team list sweep
+        drafts for this fixture. Admin + socialStudio entitlement.
+      description: >-
+        Built by the same content builder as the auto-queued card and the team
+        list carousel, with the club's content choices: fill-ins left out, the
+        side of up to 14 with its overseas marks, shirt numbers and debuts. A
+        fixture with no saved team list gets its heading and no players.
+      parameters:
+        - name: fixtureId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The card input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCardPrefill"
+        "404":
+          description: Not found
+
 components:
   schemas:
     MatchCardPhoto:
@@ -18134,11 +18190,29 @@ components:
 
     CardContentSettings:
       type: object
-      description: "Per content kind. Default: Standard (the cards as they were), junior consolidation on."
+      description: "Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set."
       required: [matchDay]
       properties:
         matchDay:
           $ref: "#/components/schemas/CardContentKindSettings"
+        results:
+          $ref: "#/components/schemas/CardContentKindSettings"
+        matchSummary:
+          $ref: "#/components/schemas/CardContentKindSettings"
+        teamList:
+          $ref: "#/components/schemas/CardContentKindSettings"
+
+    SocialCardPrefill:
+      type: object
+      description: "A single card's input from the content builder (ADR-010 P7), exactly as the sweep would draft it."
+      required: [input, warnings]
+      properties:
+        input:
+          type: object
+          additionalProperties: true
+        warnings:
+          type: array
+          items: { type: string }
 
     ContentTeam:
       type: object
@@ -22051,7 +22125,7 @@ components:
         timeZone: { type: string }
         content:
           type: object
-          description: Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+          description: "Team list, results and match summary sets: each slide's content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings."
           additionalProperties:
             type: object
             additionalProperties: true

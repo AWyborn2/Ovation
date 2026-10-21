@@ -258,15 +258,29 @@ describe("junior match-day and team-list carousel sources", () => {
     const result = await juniorCarouselContent(tenant, "teamList", query.from, query.to);
     expect(result.fixtures).toHaveLength(1);
     const input = result.content[juniorCarouselFixtureId(fixtureId)];
+    // The junior team list builder (ADR-010 P7), the same one the junior sweep
+    // uses: the club's public naming, every listed player kept in order and
+    // anyone not publicly named (private, another club's, unknown) withheld.
     expect(input).toMatchObject({
       kind: "teamList",
+      page: "team",
       junior: true,
-      numbering: "shirt",
-      players: [
-        { order: 1, surname: "Alice P", role: "C", shirtNumber: "7" },
-        { order: 2, surname: "Private Player", role: "WK" },
-      ],
+      grade: "Year 5 — Gold",
+      juniorTeamName: "Gold",
+      source: {
+        kind: "teamList",
+        junior: true,
+        numbering: "shirt",
+        players: [
+          { order: 1, surname: "ALICE P", role: "C", shirtNumber: "7" },
+          { order: 2, surname: "PRIVATE PLAYER", role: "WK" },
+          { order: 3, surname: "PRIVATE PLAYER" },
+          { order: 4, surname: "PRIVATE PLAYER" },
+        ],
+      },
     });
+    const players = (input as { source: { players: Record<string, unknown>[] } }).source.players;
+    expect(players.slice(1).some((p) => "shirtNumber" in p)).toBe(false);
     const serialized = JSON.stringify(input);
     for (const secret of [
       publicId,

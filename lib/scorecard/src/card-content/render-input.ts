@@ -6,6 +6,8 @@
  */
 
 import { dayFixtureRows } from "./day";
+import { resultDaySlideInput, resultSlideInput } from "./result";
+import { teamListSlideInput } from "./team-list";
 import type { CardContent, MatchDayFixtureContent, MatchDaySponsorsContent } from "./types";
 
 export interface ContentInputOptions {
@@ -22,6 +24,12 @@ export function contentInput(
   visible: ReadonlySet<string>,
   opts: ContentInputOptions = {},
 ): Record<string, unknown> {
+  // Results, match summaries and team lists (P7) have their own projections.
+  if (content.kind === "teamList") return teamListSlideInput(content, visible);
+  if (content.kind !== "matchDay")
+    return content.page === "day"
+      ? resultDaySlideInput(content, visible)
+      : resultSlideInput(content, visible);
   if (content.page === "fixture") return fixtureInput(content, visible);
   if (content.page === "day") {
     // A junior day slide (P3): compact rows under the day's heading.

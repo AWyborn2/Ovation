@@ -8,6 +8,7 @@ import type { Fixture, SocialSettingsBundle } from "@workspace/api-client-react"
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
+import { sourcesFor } from "@/test/carousel-sources";
 import {
   buildWeekendSlides,
   createTeamSlides,
@@ -128,7 +129,7 @@ describe("Match Day: junior same-day slides", () => {
 
   it("never puts a senior fixture on a junior day slide", () => {
     for (const s of build(weekend, on())) {
-      if (s.content?.page !== "day") continue;
+      if (s.content?.kind !== "matchDay" || s.content.page !== "day") continue;
       expect(s.content.fixtures.every((f) => f.junior)).toBe(true);
       expect(s.fixtureIds).not.toContain(1);
       expect(s.fixtureIds).not.toContain(3);
@@ -229,14 +230,9 @@ describe("Results and Match Summaries: junior same-day slides", () => {
     "%s: puts a day's junior results on one multi-result slide",
     (setType) => {
       const games = [fixture(-1, "A Grade", SAT), fixture(-2, "U13", SAT), fixture(-3, "U15", SAT)];
-      const content = Object.fromEntries(
-        games.map((f) => [
-          f.id,
-          summary(f, f.grade !== "A Grade", setType === "matchSummary") as unknown as Record<
-            string,
-            unknown
-          >,
-        ]),
+      // Each result from the server's result content builder (ADR-010 P7).
+      const content = sourcesFor(setType, games, (f) =>
+        summary(f as Fixture, f.grade !== "A Grade", setType === "matchSummary"),
       );
       const slides = build(games, on(setType), content);
       expect(slides.map((s) => s.id)).toEqual([
@@ -280,9 +276,7 @@ describe("Results and Match Summaries: junior same-day slides", () => {
 
   it("a senior-sourced result with a junior-looking grade is never put on a day slide", () => {
     const games = [fixture(-2, "U13", SAT), fixture(-3, "U15", SAT)];
-    const content = Object.fromEntries(
-      games.map((f) => [f.id, summary(f, false, false) as unknown as Record<string, unknown>]),
-    );
+    const content = sourcesFor("results", games, (f) => summary(f as Fixture, false, false));
     const slides = build(games, on("results"), content);
     expect(slides.map((s) => s.id)).toEqual(["title", "fixture--2", "fixture--3", "sponsors"]);
   });

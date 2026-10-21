@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-li
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type * as Model from "./model";
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
+import { sourcesFor } from "@/test/carousel-sources";
 
 const fixtures = [
   {
@@ -96,10 +97,13 @@ const inputFor = (type: string) =>
     : { ...summary, carouselDetail: type === "matchSummary" };
 let activeType = "matchDay";
 let many = false;
+/** Team list and result slides come from the server's content builders (ADR-010 P7). */
 const content = () =>
   activeType === "matchDay"
     ? {}
-    : Object.fromEntries(fixtures.map((f) => [f.id, inputFor(activeType)]));
+    : sourcesFor(activeType as "teamList" | "results" | "matchSummary", fixtures, () =>
+        inputFor(activeType),
+      );
 /** Match Day slides come from the server's content builder (ADR-010). */
 const matchDayContent = (list: typeof fixtures) =>
   activeType === "matchDay"
@@ -463,7 +467,19 @@ describe("WeekendCarousel", () => {
         "fixture-1",
         "sponsors",
       ]);
-      expect(request.cardInput.weekendCarousel.slides[1]).toMatchObject({ input: inputFor(type) });
+      // Version 2: the slide saves its content snapshot (ADR-010 P7), not a derived input.
+      const slide = request.cardInput.weekendCarousel.slides[1];
+      expect(slide).not.toHaveProperty("input");
+      expect(slide).toMatchObject({
+        content: {
+          kind: type,
+          page: type === "teamList" ? "team" : "result",
+          source: { kind: inputFor(type).kind },
+        },
+        visibleFields: expect.arrayContaining([
+          type === "teamList" ? "team.photo" : "result.photo",
+        ]),
+      });
     },
   );
   it("blocks a changed source at submission rather than queuing stale results", async () => {

@@ -1945,12 +1945,16 @@ export const CONTENT_PRESET_LABELS: Record<ContentPreset, string> = {
   full: "Full",
 };
 
-/** The card kinds built from content so far (more follow kind by kind, ADR-010). */
-export const CONTENT_KINDS = ["matchDay"] as const;
+/**
+ * The card kinds built from content (ADR-010): Match Day (P2), then results,
+ * match summaries and team lists (P7). Each serves its carousel set and its
+ * single card alike.
+ */
+export const CONTENT_KINDS = ["matchDay", "results", "matchSummary", "teamList"] as const;
 export type ContentKind = (typeof CONTENT_KINDS)[number];
 
-/** The slides a content kind is made of. */
-export type ContentSlide = "title" | "fixture" | "sponsors";
+/** The slides a content kind is made of: each result or team list is one card. */
+export type ContentSlide = "title" | "fixture" | "sponsors" | "result" | "team";
 
 export type ContentFieldDef = {
   /** `<slide>.<field>`, stable: saved settings and carousels key on it. */
@@ -1966,6 +1970,39 @@ export type ContentFieldDef = {
 const ALL_PRESETS: readonly ContentPreset[] = CONTENT_PRESETS;
 const STANDARD_UP: readonly ContentPreset[] = ["standard", "full"];
 const FULL_ONLY: readonly ContentPreset[] = ["full"];
+
+/**
+ * A result card (P7): the results set and the match summary share these; a
+ * match summary adds its top performers. Standard is every field, so the
+ * cards are as they were.
+ */
+const RESULT_FIELDS: readonly ContentFieldDef[] = [
+  { key: "result.grade", label: "Grade", slide: "result", tier: "core", presets: ALL_PRESETS },
+  {
+    key: "result.scores",
+    label: "Teams and scores",
+    slide: "result",
+    tier: "core",
+    presets: ALL_PRESETS,
+  },
+  { key: "result.result", label: "Result", slide: "result", tier: "core", presets: ALL_PRESETS },
+  { key: "result.round", label: "Round", slide: "result", tier: "optional", presets: STANDARD_UP },
+  {
+    key: "result.oppositionCrest",
+    label: "Opposition crest",
+    slide: "result",
+    tier: "optional",
+    presets: STANDARD_UP,
+  },
+  { key: "result.photo", label: "Photo", slide: "result", tier: "optional", presets: STANDARD_UP },
+  {
+    key: "result.teamSponsor",
+    label: "Team sponsor",
+    slide: "result",
+    tier: "optional",
+    presets: STANDARD_UP,
+  },
+];
 
 /**
  * Standard is the cards as they were before presets existed, so a club that
@@ -2121,6 +2158,60 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       slide: "sponsors",
       tier: "optional",
       presets: FULL_ONLY,
+    },
+  ],
+  results: RESULT_FIELDS,
+  matchSummary: [
+    ...RESULT_FIELDS.slice(0, 3),
+    {
+      key: "result.performers",
+      label: "Top performers",
+      slide: "result",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    ...RESULT_FIELDS.slice(3),
+  ],
+  // Team lists (P7). The side's size and overseas marks (ADR-009) always print.
+  teamList: [
+    { key: "team.grade", label: "Grade", slide: "team", tier: "core", presets: ALL_PRESETS },
+    { key: "team.players", label: "Players", slide: "team", tier: "core", presets: ALL_PRESETS },
+    {
+      key: "team.match",
+      label: "Opposition, date and ground",
+      slide: "team",
+      tier: "core",
+      presets: ALL_PRESETS,
+    },
+    { key: "team.round", label: "Round", slide: "team", tier: "optional", presets: STANDARD_UP },
+    {
+      key: "team.oppositionCrest",
+      label: "Opposition crest",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "team.shirtNumbers",
+      label: "Shirt numbers",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    {
+      key: "team.debuts",
+      label: "Debut badges",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
+    },
+    { key: "team.photo", label: "Photo", slide: "team", tier: "optional", presets: STANDARD_UP },
+    {
+      key: "team.teamSponsor",
+      label: "Team sponsor",
+      slide: "team",
+      tier: "optional",
+      presets: STANDARD_UP,
     },
   ],
 };

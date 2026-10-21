@@ -113,8 +113,12 @@ describe("resolveVisibleFields", () => {
 describe("readCardContentSettings / readContentOverride", () => {
   it("fills defaults: Standard, junior consolidation on", () => {
     expect(readCardContentSettings(null)).toEqual(defaultCardContentSettings());
+    const standard = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
     expect(readCardContentSettings({})).toEqual({
-      matchDay: { preset: "standard", fields: {}, juniorConsolidateByDay: true },
+      matchDay: standard,
+      results: standard,
+      matchSummary: standard,
+      teamList: standard,
     });
   });
 
@@ -129,6 +133,7 @@ describe("readCardContentSettings / readContentOverride", () => {
         ladder: { preset: "full" },
       }),
     ).toEqual({
+      ...defaultCardContentSettings(),
       matchDay: {
         preset: "standard",
         fields: { "fixture.photo": false },

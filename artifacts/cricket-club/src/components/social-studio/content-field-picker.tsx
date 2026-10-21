@@ -13,6 +13,8 @@ const SLIDE_LABELS: Record<ContentSlide, string> = {
   title: "Title page",
   fixture: "Each fixture",
   sponsors: "Sponsors page",
+  result: "Each result",
+  team: "Each team list",
 };
 
 const PRESET_HINTS: Record<ContentPreset, string> = {

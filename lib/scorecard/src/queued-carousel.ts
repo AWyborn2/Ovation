@@ -1,7 +1,7 @@
 /** Frozen, admin-authored carousel payload shared by queue previews and publishing.
  * No browser types: this module is also used by the API server.
  *
- * Version 2 (ADR-010 P2) saves Match Day slides as their content snapshot
+ * Version 2 (ADR-010 P2, P7) saves content slides as their content snapshot
  * (`content` + `visibleFields`): what was approved is what posts. Each slide's
  * render input is derived from that content when the carousel is read, so
  * every reader (queue preview, publish render, junior photo check) still sees
@@ -49,7 +49,7 @@ export interface QueuedCarouselSlide {
   junior: boolean;
   sponsorsOn: boolean;
   warnings: string[];
-  /** Version 2: the content this slide was built from (Match Day slides). */
+  /** Version 2: the content this slide was built from. */
   content?: CardContent;
   /** Version 2: the content fields this slide shows. */
   visibleFields?: string[];
@@ -85,7 +85,9 @@ export function contentSlideInput(slide: {
   const visible = new Set(slide.visibleFields);
   const hasPhoto = !!data.photoUrl;
   const input = contentInput(content, visible, { hasCoverPhoto: hasPhoto });
-  if (content.page !== "fixture") return input;
+  // One match per slide (a fixture, result or team list); bookends and day slides are as built.
+  if (content.page !== "fixture" && content.page !== "result" && content.page !== "team")
+    return input;
   return {
     ...input,
     carouselContent: true,
@@ -100,7 +102,7 @@ export function contentSlideInput(slide: {
 function readSlideV2(s: unknown): Record<string, unknown> | null {
   if (!object(s)) return null;
   if (s.content === undefined) {
-    // Kinds not on the content pipeline yet keep their frozen input (P7 moves them).
+    // Slides saved before their kind moved onto the content pipeline keep their frozen input.
     return s.visibleFields === undefined && object(s.input) ? s : null;
   }
   const content = readCardContent(s.content);
@@ -113,7 +115,7 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
     !object(s.data) ||
     typeof s.junior !== "boolean" ||
     // Juniors isolation: a slide's junior flag is its content's.
-    ((content.page === "fixture" || content.page === "day") && content.junior !== s.junior)
+    ("junior" in content && content.junior !== s.junior)
   )
     return null;
   return {

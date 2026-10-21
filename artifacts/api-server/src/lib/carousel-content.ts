@@ -8,49 +8,28 @@ import {
   type FixtureRow,
 } from "@workspace/db";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
-import {
-  isJuniorGradeLabel,
-  matchToSummaryInput,
-  juniorMatchToSummaryInput,
-} from "@workspace/scorecard";
 import { dataSource } from "./tenant";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { loadJuniorMatchDetail } from "./match-summary-drafter";
-import { parseMatchDate } from "./match-date";
 import { clubTimeToUtc } from "./round-schedules";
-import { getPrivateIds } from "./junior-helpers";
-import { JUNIOR_WITHHELD_NAME } from "./junior-names";
-import { getTenantBrand } from "./tenant-brand";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
-import {
-  teamListToCardInput,
-  teamListShirtNumberLoader,
-  teamListCategoryOf,
-  teamListSeasonOf,
-  loadAutoDebuts,
-} from "./engines/team-list";
-import { recoverPublishedSelectionIdentities } from "./selection-published-players";
 import { juniorCarouselContent } from "./junior-carousel-content";
-import type { JuniorFixtureMeta } from "./card-content/match-day";
+import { contentNames, type JuniorFixtureMeta } from "./card-content/match-day";
+import {
+  buildMatchSummaryContent,
+  buildResultsContent,
+  resultDay,
+  type ResultSource,
+} from "./card-content/results";
+import { buildTeamListContent, type TeamListSide } from "./card-content/team-list";
 
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
 type Content = Record<string, Record<string, unknown>>;
+/** Content as the sources response carries it (an opaque object per fixture). */
+const toContent = (c: object) => c as unknown as Record<string, unknown>;
 
-export function carouselMatchDay(value: string | null): string | null {
-  // Timestamp sources must cross midnight in club time, not UTC/browser time.
-  if (value && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
-    const date = new Date(value);
-    if (!Number.isFinite(+date)) return null;
-    const p = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Australia/Perth",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(date);
-    return ["year", "month", "day"].map((k) => p.find((x) => x.type === k)!.value).join("-");
-  }
-  return parseMatchDate(value);
-}
+/** A source's club-time day (timestamps cross midnight in club time, not UTC/browser time). */
+export const carouselMatchDay = (value: string | null): string | null => resultDay(value);
 
 /** Grade labels as the same team: "A Grade" / "a-grade" / "A GRADE". */
 function sameGrade(a: string, b: string): boolean {
@@ -58,7 +37,12 @@ function sameGrade(a: string, b: string): boolean {
   return key(a) === key(b);
 }
 
-/** Reuse published-list and scorecard builders; never read Selection Hub drafts. */
+/**
+ * Each set's sources. Team lists, results and match summaries come from the
+ * content builders (ADR-010 P7) that also make the auto-queued cards and
+ * Create a Card's prefill; Match Day's fixtures go to its own builder in the
+ * route. Published lists only; never Selection Hub drafts.
+ */
 export async function carouselContent(
   req: Request,
   tenantId: number,
@@ -104,9 +88,7 @@ export async function carouselContent(
             ),
           )
       : [];
-    const numbers = teamListShirtNumberLoader(tenantId);
-    const privateIds = await getPrivateIds(tenantId);
-    const available: FixtureRow[] = [];
+    const sides: TeamListSide[] = [];
     for (const fixture of fixtures) {
       const list = lists.find((l) => l.fixtureId === fixture.id);
       if (!list?.players.length) {
@@ -115,38 +97,14 @@ export async function carouselContent(
         );
         continue;
       }
-      const junior = isJuniorGradeLabel(fixture.grade);
-      const shirtNumbers = junior
-        ? null
-        : await numbers(teamListSeasonOf(fixture), teamListCategoryOf(fixture));
-      const resolved = shirtNumbers
-        ? await recoverPublishedSelectionIdentities(tenantId, list, fixture.startAt)
-        : { players: list.players };
-      if (resolved.warning)
-        warnings.push(`${fixture.grade} v ${fixture.opponentName}: ${resolved.warning}`);
-      // Junior cards never look up senior identities, shirt numbers or debut records.
-      const players = resolved.players.map((p) =>
-        junior && (!p.participantId || privateIds.has(p.participantId))
-          ? {
-              ...p,
-              displayName: JUNIOR_WITHHELD_NAME,
-              playerId: undefined,
-              participantId: undefined,
-              debut: false,
-            }
-          : p,
-      );
-      content[fixture.id] = {
-        ...teamListToCardInput(
-          fixture,
-          players,
-          junior ? new Set() : await loadAutoDebuts(tenantId, players, fixture.startAt),
-          shirtNumbers,
-        ),
-        junior,
-      };
-      available.push(fixture);
+      sides.push({ fixture, list });
     }
+    const built = await buildTeamListContent(tenantId, sides, {
+      onWarning: (fixture, warning) =>
+        warnings.push(`${fixture.grade} v ${fixture.opponentName}: ${warning}`),
+    });
+    sides.forEach(({ fixture }, i) => (content[fixture.id] = toContent(built[i])));
+    const available = sides.map((s) => s.fixture);
     return {
       fixtures: [...available, ...juniorSources.fixtures],
       content: { ...content, ...juniorSources.content },
@@ -167,7 +125,8 @@ export async function carouselContent(
     audience === "senior"
       ? []
       : await db.select().from(juniorMatchesTable).where(eq(juniorMatchesTable.tenantId, tenantId));
-  const brand = await getTenantBrand(tenantId);
+  const names = await contentNames(tenantId);
+  const build = type === "results" ? buildResultsContent : buildMatchSummaryContent;
   const available: FixtureRow[] = [];
   let undated = 0;
   const seen = new Set<string>();
@@ -222,11 +181,11 @@ export async function carouselContent(
       warnings.push(`${label}: scorecard is no longer available.`);
       continue;
     }
-    const input = match.junior
-      ? juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand)
-      : matchToSummaryInput(detail as MatchDetail);
-    const performances = input.innings.some((i) => i.topBatters.length || i.topBowlers.length);
-    if (type === "matchSummary" && !abandoned && !performances) {
+    const scorecard: ResultSource = match.junior
+      ? { junior: true, matchId: match.id, detail: detail as JuniorMatchDetail }
+      : { matchId: match.id, detail: detail as MatchDetail };
+    const [result] = await build(tenantId, [scorecard], { names });
+    if (type === "matchSummary" && !abandoned && !result!.hasPerformers) {
       warnings.push(
         `${label}: no detailed innings or player performances recorded. Try Results instead.`,
       );
@@ -242,24 +201,17 @@ export async function carouselContent(
       opponentName: match.opponent || "Opponent unknown",
       startAt: clubTimeToUtc(`${day}T00:00`)!,
       venue: match.venue,
-      roundLabel: input.roundLabel ?? "",
+      roundLabel: result!.source.roundLabel ?? "",
       isHome: true,
       source: "scorecard",
       createdAt: new Date(0),
       playhqMatchId: null,
-      opponentLogoUrl: input.opposition.logoUrl ?? null,
+      opponentLogoUrl: result!.source.opposition.logoUrl ?? null,
       notes: null,
     } as FixtureRow;
-    content[id] = {
-      ...input,
-      grade: match.grade,
-      junior: match.junior,
-      // An abandoned game with nothing to detail posts as the result card.
-      carouselDetail: type === "matchSummary" && performances,
-      ...(type === "results"
-        ? { innings: input.innings.map((i) => ({ ...i, topBatters: [], topBowlers: [] })) }
-        : {}),
-    };
+    // The slide (scores only for results; the innings in detail on a match
+    // summary that has them) is the content's projection in the carousel.
+    content[id] = toContent(result!);
     available.push(fixture);
     seen.add(identity);
   }

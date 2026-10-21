@@ -47,8 +47,10 @@ export function carouselCaption(
     );
   return [
     `${CAROUSEL_LABELS[type].toUpperCase()}${title && title !== CAROUSEL_LABELS[type] ? ` — ${title}` : ""}`,
-    ...teams.map(({ fixture: f, input }) => {
+    ...teams.map(({ fixture: f, content }) => {
       const heading = `${f.grade} v ${f.opponentName}`;
+      // The card input the content was built from, names as the source gave them.
+      const input = content && content.kind !== "matchDay" ? content.source : undefined;
       if (input?.kind === "teamList")
         return [
           heading,

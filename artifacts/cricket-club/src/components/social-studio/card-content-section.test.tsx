@@ -4,6 +4,8 @@ import { renderAt } from "../../test/render";
 import { installApiMock } from "../../test/mock-api";
 import { CardContentSection, choose } from "./card-content-section";
 
+const STANDARD = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
+
 const BUNDLE = (cardContent?: unknown) => ({
   settings: { ...(cardContent ? { cardContent } : {}) },
   activeSponsors: [],
@@ -71,6 +73,7 @@ describe("CardContentSection", () => {
     fireEvent.click(screen.getByTestId("content-settings-field-fixture.oppositionCrest"));
     fireEvent.click(screen.getByTestId("content-settings-save"));
     await waitFor(() => expect(writes).toHaveLength(1));
+    // Every kind is sent: the server stores the whole set of choices.
     expect(writes[0]).toEqual({
       cardContent: {
         matchDay: {
@@ -78,6 +81,38 @@ describe("CardContentSection", () => {
           fields: { "fixture.oppositionCrest": true },
           juniorConsolidateByDay: false,
         },
+        results: STANDARD,
+        matchSummary: STANDARD,
+        teamList: STANDARD,
+      },
+    });
+  });
+
+  it("chooses fields per card kind and keeps the other kinds as saved (P7)", async () => {
+    const writes = setup({
+      matchDay: { preset: "full", fields: {}, juniorConsolidateByDay: true },
+      results: { preset: "minimal", fields: {}, juniorConsolidateByDay: true },
+    });
+    fireEvent.click(await screen.findByTestId("content-settings-kind-teamList"));
+    expect(screen.getByTestId("content-settings-preset-standard")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByTestId("content-settings-field-team.players")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("content-settings-field-team.shirtNumbers"));
+    fireEvent.click(screen.getByTestId("content-settings-kind-results"));
+    expect(screen.getByTestId("content-settings-preset-minimal")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByTestId("content-settings-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({
+      cardContent: {
+        matchDay: { preset: "full", fields: {}, juniorConsolidateByDay: true },
+        results: { preset: "minimal", fields: {}, juniorConsolidateByDay: true },
+        matchSummary: STANDARD,
+        teamList: { ...STANDARD, fields: { "team.shirtNumbers": false } },
       },
     });
   });
