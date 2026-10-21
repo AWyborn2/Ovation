@@ -401,9 +401,9 @@ describe("hand-made and hand-edited drafts (U7)", () => {
     delete process.env.KIND_TEMPLATES;
     const off = await as(cookie).post("/social-drafts", {
       cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
-      packId: "club-kit",
+      packId: "club-kit-v1",
     });
-    expect(off.body).toMatchObject({ packId: "club-kit", templateVersion: null });
+    expect(off.body).toMatchObject({ packId: "club-kit-v1", templateVersion: null });
   });
 
   it("a design edit on a templated draft marks the design, not the caption", async () => {

@@ -12,6 +12,7 @@ import {
   type TemplateLayerBase,
   type TemplateSize,
 } from "./document";
+import { LEGACY_PACK_IDS } from "../pack-ids";
 import { kindFields, TEMPLATE_CARD_KINDS, type TemplateCardKind } from "./fields";
 import { BROADCAST_STARTERS } from "./starters/broadcast";
 import { CLUB_KIT_STARTERS } from "./starters/club-kit";
@@ -59,13 +60,8 @@ export const PACK_TO_STARTER: Record<string, StarterId> = {
   "sunset-v1": "club-kit",
 };
 
-/** Packs that retire with card kind templates (R19). */
-export const RETIRED_PACK_IDS: readonly string[] = [
-  "gold-foil-v1",
-  "neon-night-v1",
-  "bold-type-v1",
-  "sunset-v1",
-];
+/** Packs that retire with card kind templates (R19): the hidden legacy packs, one list. */
+export const RETIRED_PACK_IDS: readonly string[] = LEGACY_PACK_IDS;
 
 /** The starter for a club's current pack; Club Kit when it has none or an unknown one. */
 export function starterForPack(packId: string | null | undefined): StarterId {

@@ -143,22 +143,22 @@ describe("photo pick (R5, AE2)", () => {
 
 describe("pack and caption", () => {
   it("uses the club's default pack; changing the default leaves existing drafts alone", async () => {
-    const [sunset] = await db
+    const [broadcast] = await db
       .insert(cardTemplatesTable)
       .values({
         tenantId,
-        name: "Sunset",
+        name: "Broadcast Dark",
         source: "pack",
-        packId: "sunset-v1",
+        packId: "broadcast-dark-v1",
         packVariant: "square",
         defaultForKinds: ["matchSummary"],
       })
       .returning();
     await db.insert(cardTemplatesTable).values({
       tenantId,
-      name: "Neon",
+      name: "Club Kit",
       source: "pack",
-      packId: "neon-night-v1",
+      packId: "club-kit-v1",
       packVariant: "square",
     });
 
@@ -171,17 +171,17 @@ describe("pack and caption", () => {
       appPath: "/matches/77",
       grade: "A Grade",
     });
-    expect(first.draft.packId).toBe("sunset-v1");
+    expect(first.draft.packId).toBe("broadcast-dark-v1");
     expect(first.draft.caption).toContain("enrich.example/matches/77");
 
     await db
       .update(cardTemplatesTable)
       .set({ defaultForKinds: [] })
-      .where(eq(cardTemplatesTable.id, sunset.id));
+      .where(eq(cardTemplatesTable.id, broadcast.id));
     await db
       .update(cardTemplatesTable)
       .set({ defaultForKinds: ["matchSummary"] })
-      .where(eq(cardTemplatesTable.packId, "neon-night-v1"));
+      .where(eq(cardTemplatesTable.packId, "club-kit-v1"));
 
     const refreshed = await upsertDraftByKey({
       tenantId,
@@ -193,7 +193,7 @@ describe("pack and caption", () => {
       grade: "A Grade",
     });
     expect(refreshed.action).toBe("refreshed");
-    expect(refreshed.draft.packId).toBe("sunset-v1");
+    expect(refreshed.draft.packId).toBe("broadcast-dark-v1");
 
     const fresh = await upsertDraftByKey({
       tenantId,
@@ -203,7 +203,7 @@ describe("pack and caption", () => {
       cardInput: { kind: "matchSummary", result: "Lost", matchTitle: "A Grade R3" },
       appPath: "/matches/78",
     });
-    expect(fresh.draft.packId).toBe("neon-night-v1");
+    expect(fresh.draft.packId).toBe("club-kit-v1");
   });
 });
 

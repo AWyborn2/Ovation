@@ -6,6 +6,7 @@ import { ConfirmProvider } from "@/components/confirm-dialog";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { packName } from "@/lib/social-studio";
 import type { CardTemplate } from "@workspace/api-client-react";
+import { LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import AdminSocialStudio from "./admin-social-studio";
 
 /**
@@ -87,7 +88,7 @@ function byoRow(
  * A tenant with both packs materialised (three variants each, as
  * `ensurePackTemplates` writes them), a layer template holding the "player"
  * default, and an uploaded background template. `matchSummary` is claimed by
- * Broadcast Dark; `record` is claimed by Gold Foil; `century` is unclaimed.
+ * Broadcast Dark; `record` is claimed by Club Kit; `century` is unclaimed.
  */
 function fixtureTemplates() {
   nextId = 100;
@@ -107,31 +108,29 @@ function fixtureTemplates() {
     "Broadcast Dark — Story (1080×1920)",
     "story",
   );
-  const goldSquare = packRow("gold-foil-v1", "Gold Foil — Square (1080×1080)", "square", [
-    "record",
-  ]);
-  const goldPortrait = packRow("gold-foil-v1", "Gold Foil — Portrait (1080×1350)", "portrait");
-  const goldStory = packRow("gold-foil-v1", "Gold Foil — Story (1080×1920)", "story");
+  const kitSquare = packRow("club-kit-v1", "Club Kit — Square (1080×1080)", "square", ["record"]);
+  const kitPortrait = packRow("club-kit-v1", "Club Kit — Portrait (1080×1350)", "portrait");
+  const kitStory = packRow("club-kit-v1", "Club Kit — Story (1080×1920)", "story");
   const layerTemplate = byoRow("My Player Layout", "layers", ["player"], ["player"]);
   const backgroundTemplate = byoRow("My Uploaded Background", "background", [], ["debut"]);
   return {
     broadcastSquare,
     broadcastPortrait,
     broadcastStory,
-    goldSquare,
-    goldPortrait,
-    goldStory,
+    kitSquare,
+    kitPortrait,
+    kitStory,
     layerTemplate,
     backgroundTemplate,
     all: [
       // Deliberately not id-ordered: `canonicalPackRowFor` must pick the lowest
       // active id per pack, not the first row it happens to see.
       broadcastStory,
-      goldPortrait,
+      kitPortrait,
       broadcastSquare,
-      goldStory,
+      kitStory,
       layerTemplate,
-      goldSquare,
+      kitSquare,
       broadcastPortrait,
       backgroundTemplate,
     ],
@@ -272,13 +271,7 @@ async function renderStatefulStudio(templates: CardTemplate[]) {
 
 // U14 replaced the per-type <select> with one swatch radio per pack. These
 // helpers keep the old select semantics: value "" = the default pack.
-const PACK_IDS = [
-  "broadcast-dark-v1",
-  "gold-foil-v1",
-  "bold-type-v1",
-  "neon-night-v1",
-  "sunset-v1",
-];
+const PACK_IDS = ["broadcast-dark-v1", "club-kit-v1"];
 const packGroup = (label: string) =>
   screen.getByRole("radiogroup", { name: `Design pack for ${label}` });
 const selectorFor = (label: string) => {
@@ -298,12 +291,12 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    pickPack("Century", "gold-foil-v1");
+    pickPack("Century", "club-kit-v1");
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].method).toBe("PATCH");
     // Canonical row = lowest active id for the pack (the square variant here).
-    expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
+    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
     expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining(["record", "century"]));
   });
 
@@ -316,10 +309,10 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     // kind sits on, because both render that pack. The list carries the default
     // pack once, not twice under two values that do the same thing.
     expect(selectorFor("Match Summary").value).toBe("");
-    pickPack("Match Summary", "gold-foil-v1");
+    pickPack("Match Summary", "club-kit-v1");
 
     await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
+    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
     const claimed = writes[0].body?.defaultForKinds as string[];
     expect(claimed.filter((k) => k === "matchSummary")).toHaveLength(1);
     // The old owner is NOT patched from the client — the server clears it.
@@ -332,8 +325,8 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    // `record` is claimed by Gold Foil; move it back to the default pack.
-    expect(selectorFor("Record").value).toBe("gold-foil-v1");
+    // `record` is claimed by Club Kit; move it back to the default pack.
+    expect(selectorFor("Record").value).toBe("club-kit-v1");
     pickPack("Record", "");
 
     await waitFor(() => expect(writes).toHaveLength(1));
@@ -364,6 +357,34 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
   });
 });
 
+describe("admin social studio — legacy packs are hidden (P9)", () => {
+  it("offers no legacy pack anywhere, and shows a legacy claim as Club Kit", async () => {
+    const f = fixtureTemplates();
+    // A list that still carries legacy pack rows (the API hides them; this is the
+    // client's own guard), one of them holding the Century claim.
+    const legacy = LEGACY_PACK_IDS.map((id, i) =>
+      packRow(id, `Legacy ${i} — Square (1080×1080)`, "square", i === 0 ? ["century"] : []),
+    );
+    const duotone = {
+      ...packRow("duotone-v1", "Duotone — Square (1080×1080)", "square"),
+      cardKinds: ["matchDay", "matchSummary", "teamList"],
+    } as CardTemplate;
+    await renderStudio([...f.all, ...legacy, duotone]);
+
+    for (const id of LEGACY_PACK_IDS) {
+      const name = packName(id);
+      expect(screen.queryAllByRole("radio", { name })).toHaveLength(0);
+      expect(screen.queryByLabelText(`Use ${name} for every card`)).toBeNull();
+    }
+    expect(screen.getByLabelText("Use Club Kit for every card")).toBeInTheDocument();
+    expect(selectorFor("Century").value).toBe("club-kit-v1");
+    // The new pack (P8) stays offered for the kinds it designs.
+    expect(
+      within(packGroup("Match Summary")).getByRole("radio", { name: packName("duotone-v1") }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("admin social studio — the selection survives the round trip", () => {
   /**
    * The reported bug: pick a pack, a spinner flashes, the control goes back to
@@ -378,19 +399,19 @@ describe("admin social studio — the selection survives the round trip", () => 
     await renderStatefulStudio(f.all);
 
     expect(selectorFor("Century").value).toBe("");
-    pickPack("Century", "gold-foil-v1");
+    pickPack("Century", "club-kit-v1");
 
-    await waitFor(() => expect(selectorFor("Century").value).toBe("gold-foil-v1"));
+    await waitFor(() => expect(selectorFor("Century").value).toBe("club-kit-v1"));
   });
 
   it("persists the claim server-side on the pack's canonical row", async () => {
     const f = fixtureTemplates();
     const store = await renderStatefulStudio(f.all);
 
-    pickPack("Century", "gold-foil-v1");
+    pickPack("Century", "club-kit-v1");
 
     await waitFor(() =>
-      expect(store.find((t) => t.id === f.goldSquare.id)?.defaultForKinds).toContain("century"),
+      expect(store.find((t) => t.id === f.kitSquare.id)?.defaultForKinds).toContain("century"),
     );
   });
 
@@ -433,7 +454,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     );
     await screen.findByText("Pack per card type");
 
-    pickPack("Century", "gold-foil-v1");
+    pickPack("Century", "club-kit-v1");
 
     const banner = await screen.findByText(/internal server error/i);
     expect(banner).toBeInTheDocument();
@@ -448,7 +469,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     const f = fixtureTemplates();
     const store = await renderStatefulStudio(f.all);
 
-    expect(selectorFor("Record").value).toBe("gold-foil-v1");
+    expect(selectorFor("Record").value).toBe("club-kit-v1");
     pickPack("Record", "");
 
     await waitFor(() => expect(selectorFor("Record").value).toBe(""));
@@ -479,7 +500,7 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
     expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
     expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
     // Pack claims never surface as a "Default template" caption at all.
-    expect(screen.queryByText(/Default template: Gold Foil/)).toBeNull();
+    expect(screen.queryByText(/Default template: Club Kit/)).toBeNull();
     expect(screen.queryByText(/Default template: Broadcast Dark/)).toBeNull();
   });
 });
@@ -489,7 +510,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Metallic Foil for every card"));
+    fireEvent.click(screen.getByLabelText("Use Club Kit for every card"));
     const cancel = await screen.findByRole("button", { name: /cancel/i });
     fireEvent.click(cancel);
 
@@ -501,7 +522,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Metallic Foil for every card"));
+    fireEvent.click(screen.getByLabelText("Use Club Kit for every card"));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("My Player Layout");
@@ -511,7 +532,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].method).toBe("PATCH");
-    expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
+    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
     expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining([...ALL_KINDS]));
   });
 });

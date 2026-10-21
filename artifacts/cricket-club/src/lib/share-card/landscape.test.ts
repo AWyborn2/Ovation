@@ -22,7 +22,7 @@ vi.mock("../pack-render/templates", async (importOriginal) => {
 
 import { renderPackCard, PACK_DEFAULT_TOKENS, packNativeSize } from "../pack-render";
 import { selectFormatHtml, hasLandscapeFormat } from "../pack-render/templates";
-import { listPackManifests } from "../pack-templates/registry";
+import { listAllPackManifests } from "../pack-templates/registry";
 import { sampleCardInput } from "../sample-card-inputs";
 import { SIZES } from "./types";
 
@@ -54,7 +54,7 @@ describe("landscape renders", () => {
     const input = sampleCardInput("century");
     flags.noLandscape = true;
     // Packs that design the kind (Duotone designs the carousel kinds only).
-    for (const { packId } of listPackManifests().filter((m) =>
+    for (const { packId } of listAllPackManifests().filter((m) =>
       m.designs.some((d) => d.kind === input.kind),
     )) {
       const html = renderPackCard(
@@ -76,7 +76,7 @@ describe("landscape renders", () => {
   });
 
   it("every registered pack ships a landscape layout for every design (U12/U13)", () => {
-    for (const pack of listPackManifests()) {
+    for (const pack of listAllPackManifests()) {
       for (const d of pack.designs) {
         expect(hasLandscapeFormat(d.template.formats), `${pack.packId}/${d.designKey}`).toBe(true);
       }

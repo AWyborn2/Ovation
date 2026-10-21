@@ -44,6 +44,7 @@ import { StylePanel } from "./style-panel";
 import { SlotImagesPanel } from "./slot-images-panel";
 import { CaptionsPanel } from "./captions-panel";
 import { ExportFooter, VideoPreviewDialog } from "./export-footer";
+import { renderablePackId } from "@/lib/pack-templates/registry";
 
 export type { EngineKey } from "./constants";
 
@@ -107,8 +108,9 @@ export function ShareCardModal({
     layoutSig,
     imageOverrides,
   } = layout;
-  // A templated draft renders on the blank pack with its own layer document.
-  const packId = modalPackId(layoutPackId, templateDoc);
+  // A templated draft renders on the blank pack with its own layer document; a
+  // hidden legacy pack (P9) renders as Club Kit.
+  const packId = modalPackId(renderablePackId(layoutPackId), templateDoc);
 
   const motionAudio = useMotionAudio({ open, input, selectedTemplate });
   const { motion, durationMs, speed, audioSpec, previewSoundOn } = motionAudio;

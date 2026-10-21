@@ -22,7 +22,7 @@ import JSZip from "jszip";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable, adminsTable, socialDraftsTable } from "@workspace/db";
-import { CAROUSEL_PACK_IDS, type QueuedCarouselSlide } from "@workspace/scorecard/queued-carousel";
+import { ACTIVE_PACK_IDS, type QueuedCarouselSlide } from "@workspace/scorecard/queued-carousel";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { setPhotoStore } from "../lib/photo-store";
@@ -36,7 +36,7 @@ const filter = (key: string) => process.argv.find((a) => a.startsWith(`--${key}=
 const output = filter("output") ?? "/tmp/carousel-image-audit";
 const types = allTypes.filter((t) => !filter("type") || filter("type") === t);
 const sizes = allSizes.filter((s) => !filter("size") || filter("size") === s);
-const packs = CAROUSEL_PACK_IDS.filter((p) => !filter("pack") || filter("pack") === p);
+const packs = ACTIVE_PACK_IDS.filter((p) => !filter("pack") || filter("pack") === p);
 assert(types.length && sizes.length && packs.length, "Invalid type, size or pack filter");
 await mkdir(output, { recursive: true });
 

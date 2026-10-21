@@ -205,7 +205,7 @@ describe("POST /social-drafts/:id/post-pack", () => {
     });
     await db
       .update(socialSettingsTable)
-      .set({ packColourModes: { "sunset-v1": "pack", "club-kit-v1": "club" } })
+      .set({ packColourModes: { "broadcast-dark-v1": "pack", "club-kit-v1": "club" } })
       .where(eq(socialSettingsTable.tenantId, tenantId));
     try {
       const d = await draft({ packId: null });
@@ -216,14 +216,14 @@ describe("POST /social-drafts/:id/post-pack", () => {
         expect(r.options.packId).toBe("club-kit-v1");
         // Only "pack's own look" choices ride along (as the Studio passes them).
         expect((r.options.data as Record<string, unknown>).packColourModes).toEqual({
-          "sunset-v1": "pack",
+          "broadcast-dark-v1": "pack",
         });
       }
       // A draft's own pack still wins.
-      const own = await draft({ packId: "sunset-v1" });
+      const own = await draft({ packId: "broadcast-dark-v1" });
       renders.length = 0;
       expect((await post(own.id)).status).toBe(200);
-      expect(renders.every((r) => r.options.packId === "sunset-v1")).toBe(true);
+      expect(renders.every((r) => r.options.packId === "broadcast-dark-v1")).toBe(true);
     } finally {
       await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
       await db
@@ -237,7 +237,7 @@ describe("POST /social-drafts/:id/post-pack", () => {
     const d = await draft({
       caption: "Sam 104* #PackClub",
       photoUrl: "/api/storage/objects/p.jpg",
-      packId: "sunset-v1",
+      packId: "broadcast-dark-v1",
     });
     renders.length = 0;
     const res = await post(d.id);
@@ -250,7 +250,7 @@ describe("POST /social-drafts/:id/post-pack", () => {
       junior: boolean;
       data: { hashtag: string; photoUrl: string; brand: { name: string } };
     };
-    expect(opts.packId).toBe("sunset-v1");
+    expect(opts.packId).toBe("broadcast-dark-v1");
     expect(opts.junior).toBe(false);
     expect(opts.data.hashtag).toBe("#PackClub");
     expect(opts.data.photoUrl).toBe("/api/storage/objects/p.jpg");

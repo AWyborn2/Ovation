@@ -15,6 +15,7 @@ import {
   type TemplateContext,
 } from "./card-template";
 import { listPackManifests } from "./pack-templates/registry";
+import { LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 
 const CTX: TemplateContext = {
   clubName: "Sample Club",
@@ -207,16 +208,16 @@ describe("resolvePackIdForKind", () => {
   it("picks the pack row marked default for that kind", () => {
     const templates = [
       row({ id: 1, packId: "broadcast-dark-v1" }),
-      row({ id: 2, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
+      row({ id: 2, packId: "club-kit-v1", defaultForKinds: ["milestone"] }),
     ];
-    expect(resolvePackIdForKind(templates, "milestone")).toBe("gold-foil-v1");
+    expect(resolvePackIdForKind(templates, "milestone")).toBe("club-kit-v1");
     // Another kind has no default → null → renderer's default pack.
     expect(resolvePackIdForKind(templates, "century")).toBeNull();
   });
 
   it("falls back to the legacy global isDefault flag", () => {
-    const templates = [row({ id: 1, packId: "gold-foil-v1", isDefault: true })];
-    expect(resolvePackIdForKind(templates, "milestone")).toBe("gold-foil-v1");
+    const templates = [row({ id: 1, packId: "club-kit-v1", isDefault: true })];
+    expect(resolvePackIdForKind(templates, "milestone")).toBe("club-kit-v1");
   });
 
   it("ignores non-pack templates — a BYO default must not select a pack", () => {
@@ -230,13 +231,13 @@ describe("resolvePackIdForKind", () => {
   it("ignores inactive pack rows and rows scoped to other kinds", () => {
     expect(
       resolvePackIdForKind(
-        [row({ packId: "gold-foil-v1", isActive: false, defaultForKinds: ["milestone"] })],
+        [row({ packId: "club-kit-v1", isActive: false, defaultForKinds: ["milestone"] })],
         "milestone",
       ),
     ).toBeNull();
     expect(
       resolvePackIdForKind(
-        [row({ packId: "gold-foil-v1", cardKinds: ["century"], isDefault: true })],
+        [row({ packId: "club-kit-v1", cardKinds: ["century"], isDefault: true })],
         "milestone",
       ),
     ).toBeNull();
@@ -271,42 +272,59 @@ describe("listSelectablePacksForKind", () => {
 
   it("offers only source:'pack' rows — a BYO row is never offered as a pack", () => {
     const templates = [
-      tpl({ id: 1, source: "layers", packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
-      tpl({ id: 2, source: "background", packId: "bold-type-v1" }),
+      tpl({ id: 1, source: "layers", packId: "club-kit-v1", defaultForKinds: ["milestone"] }),
+      tpl({ id: 2, source: "background", packId: "broadcast-dark-v1" }),
     ];
     expect(listSelectablePacksForKind(templates, "milestone")).toEqual([]);
   });
 
   it("lists a pack once even though it materialises three variant rows", () => {
     const templates = [
-      tpl({ id: 1, packId: "gold-foil-v1", packVariant: "square" }),
-      tpl({ id: 2, packId: "gold-foil-v1", packVariant: "portrait" }),
-      tpl({ id: 3, packId: "gold-foil-v1", packVariant: "story" }),
+      tpl({ id: 1, packId: "club-kit-v1", packVariant: "square" }),
+      tpl({ id: 2, packId: "club-kit-v1", packVariant: "portrait" }),
+      tpl({ id: 3, packId: "club-kit-v1", packVariant: "story" }),
     ];
-    expect(listSelectablePacksForKind(templates, "milestone")).toEqual(["gold-foil-v1"]);
+    expect(listSelectablePacksForKind(templates, "milestone")).toEqual(["club-kit-v1"]);
   });
 
   it("does not offer a pack whose rows are scoped to other kinds", () => {
-    const templates = [tpl({ id: 1, packId: "gold-foil-v1", cardKinds: ["century"] })];
+    const templates = [tpl({ id: 1, packId: "club-kit-v1", cardKinds: ["century"] })];
     expect(listSelectablePacksForKind(templates, "milestone")).toEqual([]);
-    expect(listSelectablePacksForKind(templates, "century")).toEqual(["gold-foil-v1"]);
+    expect(listSelectablePacksForKind(templates, "century")).toEqual(["club-kit-v1"]);
   });
 
   it("offers a pack whose rows carry no kind scope (empty = all kinds)", () => {
-    const templates = [tpl({ id: 1, packId: "gold-foil-v1", cardKinds: [] })];
-    expect(listSelectablePacksForKind(templates, "milestone")).toEqual(["gold-foil-v1"]);
+    const templates = [tpl({ id: 1, packId: "club-kit-v1", cardKinds: [] })];
+    expect(listSelectablePacksForKind(templates, "milestone")).toEqual(["club-kit-v1"]);
   });
 
   it("does not offer an inactive pack row", () => {
-    const templates = [tpl({ id: 1, packId: "gold-foil-v1", isActive: false })];
+    const templates = [tpl({ id: 1, packId: "club-kit-v1", isActive: false })];
     expect(listSelectablePacksForKind(templates, "milestone")).toEqual([]);
     // One active variant is enough for the pack to be offered.
     expect(
       listSelectablePacksForKind(
-        [...templates, tpl({ id: 2, packId: "gold-foil-v1" })],
+        [...templates, tpl({ id: 2, packId: "club-kit-v1" })],
         "milestone",
       ),
-    ).toEqual(["gold-foil-v1"]);
+    ).toEqual(["club-kit-v1"]);
+  });
+
+  it("never offers a hidden legacy pack, even when its rows are listed (P9)", () => {
+    const templates = [
+      ...LEGACY_PACK_IDS.map((packId, i) => tpl({ id: i + 1, packId })),
+      tpl({ id: 10, packId: "club-kit-v1" }),
+    ];
+    expect(listSelectablePacksForKind(templates, "milestone")).toEqual(["club-kit-v1"]);
+    for (const id of LEGACY_PACK_IDS) expect(REGISTERED).not.toContain(id);
+  });
+
+  it("resolves a stored legacy pack claim to Club Kit (P9)", () => {
+    for (const packId of LEGACY_PACK_IDS) {
+      expect(
+        resolvePackIdForKind([tpl({ id: 1, packId, defaultForKinds: ["milestone"] })], "milestone"),
+      ).toBe("club-kit-v1");
+    }
   });
 
   it("orders by listPackManifests() registration order, not row order", () => {
@@ -344,56 +362,56 @@ describe("listSelectablePacksForKind", () => {
 
 describe("canonicalPackRowFor", () => {
   it("returns null for empty / undefined / null template lists", () => {
-    expect(canonicalPackRowFor([], "gold-foil-v1")).toBeNull();
-    expect(canonicalPackRowFor(undefined, "gold-foil-v1")).toBeNull();
-    expect(canonicalPackRowFor(null, "gold-foil-v1")).toBeNull();
+    expect(canonicalPackRowFor([], "club-kit-v1")).toBeNull();
+    expect(canonicalPackRowFor(undefined, "club-kit-v1")).toBeNull();
+    expect(canonicalPackRowFor(null, "club-kit-v1")).toBeNull();
   });
 
   it("returns the lowest-id active row when several variants exist", () => {
     const templates = [
-      tpl({ id: 7, packId: "gold-foil-v1", packVariant: "story" }),
-      tpl({ id: 3, packId: "gold-foil-v1", packVariant: "square" }),
-      tpl({ id: 9, packId: "gold-foil-v1", packVariant: "portrait" }),
+      tpl({ id: 7, packId: "club-kit-v1", packVariant: "story" }),
+      tpl({ id: 3, packId: "club-kit-v1", packVariant: "square" }),
+      tpl({ id: 9, packId: "club-kit-v1", packVariant: "portrait" }),
     ];
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")?.id).toBe(3);
+    expect(canonicalPackRowFor(templates, "club-kit-v1")?.id).toBe(3);
     // Deterministic: the same row on every call, so repeated claims target one row.
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")).toBe(
-      canonicalPackRowFor(templates, "gold-foil-v1"),
+    expect(canonicalPackRowFor(templates, "club-kit-v1")).toBe(
+      canonicalPackRowFor(templates, "club-kit-v1"),
     );
   });
 
   it("skips inactive rows when choosing the lowest id", () => {
     const templates = [
-      tpl({ id: 2, packId: "gold-foil-v1", isActive: false }),
-      tpl({ id: 4, packId: "gold-foil-v1" }),
+      tpl({ id: 2, packId: "club-kit-v1", isActive: false }),
+      tpl({ id: 4, packId: "club-kit-v1" }),
     ];
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")?.id).toBe(4);
+    expect(canonicalPackRowFor(templates, "club-kit-v1")?.id).toBe(4);
   });
 
   it("returns null for an unknown packId", () => {
-    const templates = [tpl({ id: 1, packId: "gold-foil-v1" })];
-    expect(canonicalPackRowFor(templates, "bold-type-v1")).toBeNull();
+    const templates = [tpl({ id: 1, packId: "club-kit-v1" })];
+    expect(canonicalPackRowFor(templates, "broadcast-dark-v1")).toBeNull();
   });
 
   it("returns null when the pack's only rows are inactive", () => {
     const templates = [
-      tpl({ id: 1, packId: "gold-foil-v1", isActive: false }),
-      tpl({ id: 2, packId: "gold-foil-v1", isActive: false }),
+      tpl({ id: 1, packId: "club-kit-v1", isActive: false }),
+      tpl({ id: 2, packId: "club-kit-v1", isActive: false }),
     ];
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")).toBeNull();
+    expect(canonicalPackRowFor(templates, "club-kit-v1")).toBeNull();
   });
 
   it("never returns a non-pack row carrying the same packId", () => {
     const templates = [
-      tpl({ id: 1, source: "layers", packId: "gold-foil-v1" }),
-      tpl({ id: 5, packId: "gold-foil-v1" }),
+      tpl({ id: 1, source: "layers", packId: "club-kit-v1" }),
+      tpl({ id: 5, packId: "club-kit-v1" }),
     ];
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")?.id).toBe(5);
+    expect(canonicalPackRowFor(templates, "club-kit-v1")?.id).toBe(5);
   });
 
   it("ignores a row's kind scope — variants share the pack's cardKinds", () => {
-    const templates = [tpl({ id: 2, packId: "gold-foil-v1", cardKinds: ["century"] })];
-    expect(canonicalPackRowFor(templates, "gold-foil-v1")?.id).toBe(2);
+    const templates = [tpl({ id: 2, packId: "club-kit-v1", cardKinds: ["century"] })];
+    expect(canonicalPackRowFor(templates, "club-kit-v1")?.id).toBe(2);
   });
 });
 
@@ -449,7 +467,7 @@ describe("byoDefaultsClearedBy", () => {
 
   it("excludes pack rows — a pack claim is not a cost the admin is warned about", () => {
     const templates = [
-      tpl({ id: 1, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
+      tpl({ id: 1, packId: "club-kit-v1", defaultForKinds: ["milestone"] }),
       tpl({ id: 2, source: "background", packId: null, defaultForKinds: ["milestone"] }),
     ];
     expect(byoDefaultsClearedBy(templates, ["milestone"]).map((t) => t.id)).toEqual([2]);
@@ -492,22 +510,22 @@ describe("resolveDefaultLayoutTemplate", () => {
 
   it("stays built-in when a pack row claims the kind", () => {
     const templates = [
-      tpl({ id: 1, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
+      tpl({ id: 1, packId: "club-kit-v1", defaultForKinds: ["milestone"] }),
       tpl({
         id: 2,
-        packId: "gold-foil-v1",
+        packId: "club-kit-v1",
         packVariant: "portrait",
         defaultForKinds: ["milestone"],
       }),
     ];
     expect(resolveDefaultLayoutTemplate(templates, "milestone")).toBeNull();
     // The pack decision is still readable — it just is not the layout choice.
-    expect(resolvePackIdForKind(templates, "milestone")).toBe("gold-foil-v1");
+    expect(resolvePackIdForKind(templates, "milestone")).toBe("club-kit-v1");
   });
 
   it("still pre-selects a layers template claiming the kind", () => {
     const templates = [
-      tpl({ id: 1, packId: "gold-foil-v1", defaultForKinds: ["milestone"] }),
+      tpl({ id: 1, packId: "club-kit-v1", defaultForKinds: ["milestone"] }),
       tpl({ id: 2, source: "layers", packId: null, defaultForKinds: ["milestone"] }),
     ];
     expect(resolveDefaultLayoutTemplate(templates, "milestone")?.id).toBe(2);
@@ -526,7 +544,7 @@ describe("resolveDefaultLayoutTemplate", () => {
   });
 
   it("never falls back to a pack row carrying isDefault", () => {
-    const templates = [tpl({ id: 1, packId: "gold-foil-v1", isDefault: true })];
+    const templates = [tpl({ id: 1, packId: "club-kit-v1", isDefault: true })];
     expect(resolveDefaultLayoutTemplate(templates, "milestone")).toBeNull();
   });
 

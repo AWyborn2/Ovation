@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { HTTPRequest, Page } from "puppeteer-core";
-import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { ACTIVE_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 
 /** Browser-only fixture responses. Auth and production routes remain untouched. */
 export async function auditCarouselBuilder(
@@ -161,7 +161,7 @@ export async function auditCarouselBuilder(
         }
         document.querySelector('[data-testid="team-1"] [aria-label$=" down"]').click();
       });
-      for (const packId of CAROUSEL_PACK_IDS) {
+      for (const packId of ACTIVE_PACK_IDS) {
         await page.select('[data-testid="select-carousel-pack"]', packId);
         for (const size of ["square", "portrait", "story", "landscape"]) {
           await page.evaluate((size) => {

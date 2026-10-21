@@ -1,6 +1,6 @@
 /** Font-loaded glyph bounds and real PNG parity for all built-in covers. */
 import type { Page } from "puppeteer-core";
-import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { ACTIVE_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import sharp from "sharp";
@@ -147,7 +147,7 @@ export async function checkCarouselCovers(page: Page, outputDir: string) {
       .update(await sharp(png).ensureAlpha().raw().toBuffer())
       .digest("hex");
   let checked = 0;
-  for (const packId of [...CAROUSEL_PACK_IDS].reverse())
+  for (const packId of [...ACTIVE_PACK_IDS].reverse())
     for (const size of FORMATS) {
       for (const hasCoverPhoto of [false, true])
         for (const [caseIndex, roundLabel] of LABELS.entries()) {

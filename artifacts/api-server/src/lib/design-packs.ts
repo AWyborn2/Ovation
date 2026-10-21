@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db, cardTemplatesTable } from "@workspace/db";
+import { isLegacyPackId } from "@workspace/scorecard/queued-carousel";
 
 // ---------------------------------------------------------------------------
 // Design pack registry
@@ -309,6 +310,15 @@ export const PACKS: DesignPack[] = [
 export function getPackById(id: string): DesignPack | undefined {
   return PACKS.find((p) => p.id === id);
 }
+
+/**
+ * The packs a club can choose. Gold Foil, Bold Type, Neon Night and Sunset
+ * (`LEGACY_PACK_IDS`) are hidden until the social template library converts
+ * them; `PACKS` keeps their entries (and the client keeps their templates) so
+ * nothing is deleted. Tenants keep their materialised rows too (no migration);
+ * `hideLegacyPackRows` (lib/legacy-packs.ts) keeps them out of listings.
+ */
+export const ACTIVE_PACKS: DesignPack[] = PACKS.filter((p) => !isLegacyPackId(p.id));
 
 export function _resetEnsuredTenants(): void {
   ensuredTenants.clear();

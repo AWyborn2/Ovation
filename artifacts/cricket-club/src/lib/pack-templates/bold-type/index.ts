@@ -1,3 +1,5 @@
+// Hidden legacy pack (LEGACY_PACK_IDS, match-day carousel content P9): kept for the planned
+// social template library to convert; no picker offers it and saved choices render as Club Kit.
 import type { PackManifest } from "../types";
 import { BOLD_LOOK } from "./fragments";
 import { TEAM_LISTS_COVER, WEEKEND_WRAP_COVER, skeletonCover } from "../cover";
