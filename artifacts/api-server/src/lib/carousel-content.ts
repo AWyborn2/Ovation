@@ -15,6 +15,7 @@ import { clubTimeToUtc } from "./round-schedules";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import { juniorCarouselContent } from "./junior-carousel-content";
 import { contentNames, type JuniorFixtureMeta } from "./card-content/match-day";
+import { contentJuniorNames } from "./card-content/junior-names";
 import {
   buildMatchSummaryContent,
   buildResultsContent,
@@ -125,7 +126,9 @@ export async function carouselContent(
     audience === "senior"
       ? []
       : await db.select().from(juniorMatchesTable).where(eq(juniorMatchesTable.tenantId, tenantId));
-  const names = await contentNames(tenantId);
+  const names = audience === "junior" ? {} : await contentNames(tenantId);
+  // Junior results take the club's junior names only (juniors isolation).
+  const juniorNames = juniors.length ? await contentJuniorNames(tenantId) : {};
   const build = type === "results" ? buildResultsContent : buildMatchSummaryContent;
   const available: FixtureRow[] = [];
   let undated = 0;
@@ -184,7 +187,7 @@ export async function carouselContent(
     const scorecard: ResultSource = match.junior
       ? { junior: true, matchId: match.id, detail: detail as JuniorMatchDetail }
       : { matchId: match.id, detail: detail as MatchDetail };
-    const [result] = await build(tenantId, [scorecard], { names });
+    const [result] = await build(tenantId, [scorecard], { names, juniorNames });
     if (type === "matchSummary" && !abandoned && !result!.hasPerformers) {
       warnings.push(
         `${label}: no detailed innings or player performances recorded. Try Results instead.`,

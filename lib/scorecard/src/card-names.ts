@@ -22,6 +22,11 @@ export interface CardNames {
   teams?: Record<string, string> | null;
   /** Raw team / club name key → crest url, for cards whose input has none. */
   crests?: Record<string, string> | null;
+  /**
+   * Raw team / club name key → the club's own crest choice, which wins over
+   * any crest a card input carries: an image url, or "" for the initials badge.
+   */
+  crestOverrides?: Record<string, string> | null;
   /** Raw competition / grade key → the club's label. */
   competitions?: Record<string, string> | null;
 }
@@ -133,6 +138,21 @@ export function resolveCardCompetition(
 ): string {
   const set = names?.competitions?.[cardNameKey(raw)];
   return set?.trim() || autoCompetitionLabel(raw);
+}
+
+/**
+ * The crest a card shows for a team: the club's own choice (an image, or none
+ * for the initials badge), else the input's crest, else the crest the names
+ * map has for it. Null → the card shows the monogram.
+ */
+export function resolveCardCrest(
+  names: CardNames | null | undefined,
+  raw: string | null | undefined,
+  inputUrl?: string | null,
+): string | null {
+  const chosen = names?.crestOverrides?.[cardNameKey(raw)];
+  if (chosen !== undefined && chosen !== null) return chosen || null;
+  return inputUrl || cardTeamCrest(names, raw);
 }
 
 /** The crest the club's names map has for a team, when its card input carries none. */

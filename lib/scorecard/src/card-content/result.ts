@@ -9,7 +9,7 @@
  */
 
 import {
-  cardTeamCrest,
+  resolveCardCrest,
   resolveCardCompetition,
   resolveCardTeamName,
   teamMonogram,
@@ -52,7 +52,7 @@ function contentTeam(names: CardNames | null, team: MatchSummaryTeam): ContentTe
   return {
     name,
     rawName,
-    crestUrl: team.logoUrl || cardTeamCrest(names, rawName),
+    crestUrl: resolveCardCrest(names, rawName, team.logoUrl),
     monogram: teamMonogram(name),
   };
 }

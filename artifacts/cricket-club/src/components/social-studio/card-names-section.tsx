@@ -2,20 +2,30 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetCardNamesQueryKey,
+  getGetJuniorCardNamesQueryKey,
   getGetSocialSettingsQueryKey,
   useGetCardNames,
+  useGetJuniorCardNames,
   useSetCardCompetitionLabel,
+  useSetCardTeamCrest,
   useSetCardTeamName,
+  useSetJuniorCardCompetitionLabel,
+  useSetJuniorCardTeamCrest,
+  useSetJuniorCardTeamName,
   type CardCompetitionLabel,
   type CardNamesListing,
-  type CardTeamName,
   type CardTeamNameRow,
+  type JuniorCardCompetitionLabel,
+  type JuniorCardNamesListing,
+  type JuniorCardTeamName,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, RotateCcw } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { CrestBadge, CrestControl, type CrestChoiceUpdate } from "./crest-control";
 
 /** The longest name a card takes (the API enforces it too). */
 const MAX_NAME = 40;
@@ -23,122 +33,223 @@ const MAX_NAME = 40;
 /**
  * Team and competition names (ADR-010 P1). Square cards print a short name
  * for every team: the club's own, else an automatic one ("SJ Blues Senior
- * Women" → "SJ Blues"). Here the club sees each name as cards print it and can
- * change it once for every future card. A name is saved when the field loses
- * focus or on Enter; clearing it, or Reset, goes back to the automatic name.
+ * Women" → "SJ Blues"), with its crest. Here the club sees each name and crest
+ * as cards print them and can change them once for every future card. A name
+ * is saved when the field loses focus or on Enter; clearing it, or Reset, goes
+ * back to the automatic name. Seniors and Juniors are separate lists, stored
+ * apart: junior names only ever reach junior cards.
  */
 export function CardNamesSection() {
-  const queryClient = useQueryClient();
-  const namesQ = useGetCardNames();
   const [error, setError] = useState<string | null>(null);
-
-  const onSaved = (listing: CardNamesListing) => {
-    setError(null);
-    queryClient.setQueryData(getGetCardNamesQueryKey(), listing);
-    // Previews read the names from the settings bundle.
-    void queryClient.invalidateQueries({ queryKey: getGetSocialSettingsQueryKey() });
-  };
-  const mutation = {
-    onSuccess: onSaved,
-    onError: (e: unknown) => setError(handleAdminMutationError(e)),
-  };
-  const teamM = useSetCardTeamName({ mutation });
-  const compM = useSetCardCompetitionLabel({ mutation });
-
-  const listing = namesQ.data;
   return (
     <section className="space-y-3" aria-labelledby="card-names-heading">
       <h2 id="card-names-heading" className="text-lg font-semibold">
         Team and competition names
       </h2>
       <p className="text-sm text-muted-foreground">
-        The names your cards print for each club and grade. Each one starts as a short name made
-        from PlayHQ&rsquo;s. Change one here and every new card uses it.
+        The names and crests your cards print for each club and grade. Each one starts from
+        PlayHQ&rsquo;s. Change one here and every new card uses it. Click a crest to upload your
+        own, pick a known one, or use the initials badge.
       </p>
       {error && (
         <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}
-      {namesQ.isLoading ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading names…
-        </p>
-      ) : namesQ.isError ? (
-        <p className="text-sm text-destructive">
-          Couldn&rsquo;t load the names. Try again shortly.
-        </p>
-      ) : !listing?.available ? (
-        <p className="text-sm text-muted-foreground">
-          Names appear here once your club&rsquo;s match data is connected.
-        </p>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardContent className="space-y-1 pt-6">
-              <h3 className="mb-2 text-sm font-medium">Teams</h3>
-              {listing.teams.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No matches yet this season or last.</p>
-              ) : (
-                listing.teams.map((row) => (
-                  <TeamNameRow
-                    key={row.centralClubId}
-                    row={row}
-                    saving={teamM.isPending}
-                    onSave={(gradeKey, shortName) =>
-                      teamM.mutate({
-                        data: { centralClubId: row.centralClubId, gradeKey, shortName },
-                      })
-                    }
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="space-y-1 pt-6">
-              <h3 className="mb-2 text-sm font-medium">Competitions</h3>
-              {listing.competitions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No grades yet this season or last.</p>
-              ) : (
-                listing.competitions.map((c) => (
-                  <CompetitionRow
-                    key={c.gradeKey}
-                    label={c}
-                    saving={compM.isPending}
-                    onSave={(label) => compM.mutate({ data: { gradeKey: c.gradeKey, label } })}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <Tabs defaultValue="seniors" onValueChange={() => setError(null)}>
+        <TabsList>
+          <TabsTrigger value="seniors">Seniors</TabsTrigger>
+          <TabsTrigger value="juniors">Juniors</TabsTrigger>
+        </TabsList>
+        <TabsContent value="seniors" className="mt-3">
+          <SeniorNames onError={setError} />
+        </TabsContent>
+        <TabsContent value="juniors" className="mt-3">
+          <JuniorNames onError={setError} />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }
 
-/** The crest a card shows, or the monogram that stands in for it. */
-function Crest({ name }: { name: CardTeamName }) {
-  if (name.crestUrl) {
-    return (
-      <img
-        src={name.crestUrl}
-        alt=""
-        className="h-8 w-8 flex-none rounded bg-white object-contain p-0.5"
-        loading="lazy"
-      />
-    );
-  }
+function Loading() {
   return (
-    <span
-      aria-hidden
-      className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
-    >
-      {name.monogram}
-    </span>
+    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading names…
+    </p>
   );
 }
+
+function LoadFailed() {
+  return (
+    <p className="text-sm text-destructive">Couldn&rsquo;t load the names. Try again shortly.</p>
+  );
+}
+
+// ── Seniors ─────────────────────────────────────────────────────────────────
+
+function SeniorNames({ onError }: { onError: (message: string | null) => void }) {
+  const queryClient = useQueryClient();
+  const namesQ = useGetCardNames();
+  const onSaved = (listing: CardNamesListing) => {
+    onError(null);
+    queryClient.setQueryData(getGetCardNamesQueryKey(), listing);
+    // Previews read the names from the settings bundle.
+    void queryClient.invalidateQueries({ queryKey: getGetSocialSettingsQueryKey() });
+  };
+  const mutation = {
+    onSuccess: onSaved,
+    onError: (e: unknown) => onError(handleAdminMutationError(e)),
+  };
+  const teamM = useSetCardTeamName({ mutation });
+  const crestM = useSetCardTeamCrest({ mutation });
+  const compM = useSetCardCompetitionLabel({ mutation });
+  const saving = teamM.isPending || crestM.isPending;
+
+  const listing = namesQ.data;
+  if (namesQ.isLoading) return <Loading />;
+  if (namesQ.isError) return <LoadFailed />;
+  if (!listing?.available)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Names appear here once your club&rsquo;s match data is connected.
+      </p>
+    );
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card>
+        <CardContent className="space-y-1 pt-6">
+          <h3 className="mb-2 text-sm font-medium">Teams</h3>
+          {listing.teams.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No matches yet this season or last.</p>
+          ) : (
+            listing.teams.map((row) => (
+              <TeamNameRow
+                key={row.centralClubId}
+                row={row}
+                saving={saving}
+                onSave={(gradeKey, shortName) =>
+                  teamM.mutate({
+                    data: { centralClubId: row.centralClubId, gradeKey, shortName },
+                  })
+                }
+                onCrest={(choice) =>
+                  crestM.mutate({
+                    data: {
+                      centralClubId: row.centralClubId,
+                      crestSource: choice?.crestSource ?? null,
+                      crestUrl: choice?.crestUrl ?? null,
+                    },
+                  })
+                }
+              />
+            ))
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-1 pt-6">
+          <h3 className="mb-2 text-sm font-medium">Competitions</h3>
+          {listing.competitions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No grades yet this season or last.</p>
+          ) : (
+            listing.competitions.map((c) => (
+              <CompetitionRow
+                key={c.gradeKey}
+                label={c}
+                saving={compM.isPending}
+                onSave={(label) => compM.mutate({ data: { gradeKey: c.gradeKey, label } })}
+              />
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── Juniors ─────────────────────────────────────────────────────────────────
+
+function JuniorNames({ onError }: { onError: (message: string | null) => void }) {
+  const queryClient = useQueryClient();
+  const namesQ = useGetJuniorCardNames();
+  const mutation = {
+    onSuccess: (listing: JuniorCardNamesListing) => {
+      onError(null);
+      queryClient.setQueryData(getGetJuniorCardNamesQueryKey(), listing);
+    },
+    onError: (e: unknown) => onError(handleAdminMutationError(e)),
+  };
+  const teamM = useSetJuniorCardTeamName({ mutation });
+  const crestM = useSetJuniorCardTeamCrest({ mutation });
+  const compM = useSetJuniorCardCompetitionLabel({ mutation });
+  const saving = teamM.isPending || crestM.isPending;
+
+  const listing = namesQ.data;
+  if (namesQ.isLoading) return <Loading />;
+  if (namesQ.isError) return <LoadFailed />;
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Junior cards only. Each opposing club is one row for all its age groups; these names never
+        appear on senior cards.
+      </p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-1 pt-6">
+            <h3 className="mb-2 text-sm font-medium">Junior teams</h3>
+            {!listing?.teams.length ? (
+              <p className="text-sm text-muted-foreground">
+                No junior opponents yet this season or last.
+              </p>
+            ) : (
+              listing.teams.map((row) => (
+                <JuniorTeamRow
+                  key={row.teamKey}
+                  row={row}
+                  saving={saving}
+                  onSave={(shortName) =>
+                    teamM.mutate({ data: { teamKey: row.teamKey, shortName } })
+                  }
+                  onCrest={(choice) =>
+                    crestM.mutate({
+                      data: {
+                        teamKey: row.teamKey,
+                        crestSource: choice?.crestSource ?? null,
+                        crestUrl: choice?.crestUrl ?? null,
+                      },
+                    })
+                  }
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-1 pt-6">
+            <h3 className="mb-2 text-sm font-medium">Junior competitions</h3>
+            {!listing?.competitions.length ? (
+              <p className="text-sm text-muted-foreground">
+                No junior grades yet this season or last.
+              </p>
+            ) : (
+              listing.competitions.map((c) => (
+                <CompetitionRow
+                  key={c.gradeKey}
+                  label={c}
+                  saving={compM.isPending}
+                  onSave={(label) => compM.mutate({ data: { gradeKey: c.gradeKey, label } })}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ── Rows ────────────────────────────────────────────────────────────────────
 
 /**
  * One name, edited in place: shows what cards print, saves on blur or Enter,
@@ -205,17 +316,35 @@ function TeamNameRow({
   row,
   saving,
   onSave,
+  onCrest,
 }: {
   row: CardTeamNameRow;
   saving: boolean;
   onSave: (gradeKey: string | null, shortName: string | null) => void;
+  onCrest: (choice: CrestChoiceUpdate) => void;
 }) {
   const [open, setOpen] = useState(() => row.grades.some((g) => g.overrideName));
   const playhq = row.teamNames.slice(0, 3).join(", ");
   return (
     <div className="border-b py-2 last:border-b-0">
       <div className="flex items-center gap-3">
-        <Crest name={row} />
+        {row.isOwnClub ? (
+          // The club's own crest is its logo, set in Branding.
+          <span title="Your club's logo is set in Branding">
+            <CrestBadge crestUrl={row.crestUrl} monogram={row.monogram} />
+          </span>
+        ) : (
+          <CrestControl
+            teamName={row.name}
+            searchSeed={row.autoName}
+            crestUrl={row.crestUrl}
+            crestSource={row.crestSource}
+            autoCrestUrl={row.autoCrestUrl}
+            monogram={row.monogram}
+            saving={saving}
+            onChoose={onCrest}
+          />
+        )}
         <div className="min-w-0 flex-1">
           <NameField
             value={row.overrideName ?? row.autoName}
@@ -272,12 +401,58 @@ function TeamNameRow({
   );
 }
 
+function JuniorTeamRow({
+  row,
+  saving,
+  onSave,
+  onCrest,
+}: {
+  row: JuniorCardTeamName;
+  saving: boolean;
+  onSave: (shortName: string | null) => void;
+  onCrest: (choice: CrestChoiceUpdate) => void;
+}) {
+  const shown = row.rawNames.slice(0, 3).join(", ");
+  return (
+    <div className="border-b py-2 last:border-b-0">
+      <div className="flex items-center gap-3">
+        <CrestControl
+          teamName={row.name}
+          searchSeed={row.autoName}
+          crestUrl={row.crestUrl}
+          crestSource={row.crestSource}
+          autoCrestUrl={row.autoCrestUrl}
+          monogram={row.monogram}
+          saving={saving}
+          onChoose={onCrest}
+        />
+        <div className="min-w-0 flex-1">
+          <NameField
+            value={row.overrideName ?? row.autoName}
+            placeholder={row.autoName}
+            overridden={!!row.overrideName}
+            label={`Junior card name for ${row.autoName}`}
+            saving={saving}
+            onSave={onSave}
+          />
+          <p
+            className="mt-0.5 truncate text-xs text-muted-foreground"
+            title={row.rawNames.join(", ")}
+          >
+            {shown ? `PlayHQ: ${shown}${row.rawNames.length > 3 ? "…" : ""}` : row.autoName}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CompetitionRow({
   label,
   saving,
   onSave,
 }: {
-  label: CardCompetitionLabel;
+  label: CardCompetitionLabel | JuniorCardCompetitionLabel;
   saving: boolean;
   onSave: (label: string | null) => void;
 }) {

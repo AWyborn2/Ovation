@@ -11,7 +11,7 @@
  */
 
 import {
-  cardTeamCrest,
+  resolveCardCrest,
   resolveCardCompetition,
   resolveCardTeamName,
   teamMonogram,
@@ -66,7 +66,7 @@ export function teamListContent(
     opposition: {
       name,
       rawName,
-      crestUrl: fixture.opponentLogoUrl || cardTeamCrest(names, rawName),
+      crestUrl: resolveCardCrest(names, rawName, fixture.opponentLogoUrl),
       monogram: teamMonogram(name),
     },
     homeAway,
