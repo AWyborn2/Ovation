@@ -67,6 +67,15 @@ export const env = {
   // ── Object storage ───────────────────────────────────────────────────────
   PUBLIC_OBJECT_SEARCH_PATHS: () => optional("PUBLIC_OBJECT_SEARCH_PATHS"),
   PRIVATE_OBJECT_DIR: () => optional("PRIVATE_OBJECT_DIR"),
+  /**
+   * Dev only (template library, ADR-011 T3.12): a folder that stands in for
+   * public object storage where Replit's storage sidecar isn't running (the
+   * local dev stack). Library assets are written under `<dir>/public/library/`
+   * and served by `/storage/public-objects/*`. Ignored on a Replit deployment,
+   * so production always uses object storage.
+   */
+  LOCAL_OBJECT_STORAGE_DIR: () =>
+    process.env.REPLIT_DEPLOYMENT ? undefined : optional("LOCAL_OBJECT_STORAGE_DIR"),
 
   // ── Card video rendering ─────────────────────────────────────────────────
   RENDER_HARNESS_URL: () => optional("RENDER_HARNESS_URL"),

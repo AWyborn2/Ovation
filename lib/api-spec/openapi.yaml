@@ -6475,6 +6475,307 @@ paths:
               schema:
                 $ref: "#/components/schemas/KindTemplateConflict"
 
+  /template-library:
+    get:
+      operationId: listLibraryTemplates
+      tags: [socialCards]
+      summary: Browse the template library
+      description: >-
+        Listed templates whose current version passed the fit check (ADR-011),
+        24 a page, optionally for one card kind, card size or look. Library
+        reads never return any club's own templates.
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [square, portrait, story, landscape]
+        - name: look
+          in: query
+          required: false
+          description: A look's slug.
+          schema: { type: string }
+        - name: cursor
+          in: query
+          required: false
+          description: The previous page's `nextCursor`.
+          schema: { type: integer }
+      responses:
+        "200":
+          description: One page of library templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryTemplatePage"
+
+  /template-library/looks:
+    get:
+      operationId: listLibraryLooks
+      tags: [socialCards]
+      summary: The library's looks and the kinds each covers
+      responses:
+        "200":
+          description: Looks with at least one listed template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLookList"
+
+  /template-library/looks/{id}/adopt:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: adoptLibraryLook
+      tags: [socialCards]
+      summary: Make a look's templates the club's defaults
+      description: >-
+        For every kind the look covers, reuses the club's unedited copy of the
+        look's template at its current version, or creates one, and makes it
+        the kind's default, in one transaction. Kinds the look doesn't cover
+        keep their defaults.
+      responses:
+        "200":
+          description: The defaults that changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdoptLookResult"
+        "404":
+          description: No such look, or none of its templates are listed
+
+  /template-library/preview-input:
+    get:
+      operationId: getTemplatePreviewInput
+      tags: [socialCards]
+      summary: The card input library thumbnails draw with
+      description: >-
+        The club's latest senior draft input of the kind. Never a junior draft.
+        With none, `source` is `sample` and the client draws the kind's sample
+        in the club's identity.
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The preview input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplatePreviewInput"
+        "404":
+          description: Unknown card kind
+
+  /template-library/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getLibraryTemplate
+      tags: [socialCards]
+      summary: One library template at its current version
+      description: >-
+        A listed template, or one the club holds a copy of (listed or not).
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryTemplate"
+        "404":
+          description: Not in the library
+
+  /club-templates:
+    get:
+      operationId: listClubTemplates
+      tags: [socialCards]
+      summary: The club's own templates, defaults first within each kind
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: The club's templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplateList"
+    post:
+      operationId: createClubTemplate
+      tags: [socialCards]
+      summary: Use a library template (copy it into the club's templates)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClubTemplateRequest"
+      responses:
+        "201":
+          description: The club's new copy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not in the library, or no such version
+        "409":
+          description: makeDefault while the version's fit check is pending
+
+  /club-templates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getClubTemplate
+      tags: [socialCards]
+      summary: One of the club's templates, with its document
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+    put:
+      operationId: saveClubTemplate
+      tags: [socialCards]
+      summary: Save one of the club's templates (rejected when someone saved first)
+      description: >-
+        A new document is the club's edit: the first one makes the template
+        its own (no more update prompts), and every one starts a fit check.
+        Renaming alone is neither.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveClubTemplateRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "400":
+          description: Invalid document or name
+        "404":
+          description: Not one of this club's templates
+        "409":
+          description: Someone saved this template since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+    delete:
+      operationId: deleteClubTemplate
+      tags: [socialCards]
+      summary: Delete one of the club's templates (never a kind's default)
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: It is its kind's default
+        "404":
+          description: Not one of this club's templates
+
+  /club-templates/{id}/duplicate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: duplicateClubTemplate
+      tags: [socialCards]
+      summary: Duplicate one of the club's templates
+      responses:
+        "201":
+          description: The duplicate (never the default)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+
+  /club-templates/{id}/default:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: setClubTemplateDefault
+      tags: [socialCards]
+      summary: Make one of the club's templates its kind's default
+      responses:
+        "200":
+          description: The template, now the default
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+        "409":
+          description: Its fit check is still pending
+
+  /club-templates/{id}/apply:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: applyClubTemplate
+      tags: [socialCards]
+      summary: Apply one of the club's templates to its kind's unposted drafts
+      description: >-
+        Replaces the design of every unposted draft of the template's kind;
+        captions are kept. Each draft's previous design is saved as a revision
+        first. Drafts posted meanwhile are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyKindTemplateRequest"
+      responses:
+        "200":
+          description: How many drafts changed and were skipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyKindTemplateResult"
+        "404":
+          description: Not one of this club's templates
+        "409":
+          description: The template has been saved again since `version`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
   /internal/draft-sweep:
     post:
       operationId: runDraftSweep
@@ -22011,6 +22312,254 @@ components:
         currentVersion: { type: integer }
         updatedAt: { type: ["string", "null"], format: date-time }
         updatedByName: { type: ["string", "null"] }
+
+    TemplateDocument:
+      type: object
+      description: >-
+        A template layer document, format v1 (`{ layers }`) or v2
+        (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own
+        the detailed shape; the server checks it on save.
+      additionalProperties: true
+
+    TemplateFitStatus:
+      type: string
+      enum: [pending, pass, fail]
+
+    TemplateFitReport:
+      type: ["object", "null"]
+      description: The fit check's warnings per page, size and preset; null until a check has run.
+      additionalProperties: true
+
+    TemplateCoverage:
+      type: object
+      required: [pages, sizes]
+      properties:
+        pages:
+          type: array
+          items: { type: string }
+        sizes:
+          type: array
+          items: { type: string }
+
+    LibraryLookRef:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+
+    LibraryTemplate:
+      type: object
+      required:
+        [id, slug, kind, name, origin, authorName, look, version, coverage, fitStatus, fitReport, listed, document]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        kind: { type: string }
+        name: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that published it.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        version:
+          type: integer
+          description: The template's current version.
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+        fitStatus:
+          $ref: "#/components/schemas/TemplateFitStatus"
+        fitReport:
+          $ref: "#/components/schemas/TemplateFitReport"
+        listed: { type: boolean }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    LibraryTemplatePage:
+      type: object
+      required: [templates, nextCursor]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryTemplate"
+        nextCursor:
+          type: ["integer", "null"]
+          description: Pass as `cursor` for the next page; null on the last page.
+
+    LibraryLookTemplate:
+      type: object
+      required: [id, kind, name, version, coverage]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        name: { type: string }
+        version: { type: integer }
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+
+    LibraryLook:
+      type: object
+      required: [id, slug, name, description, authorName, templates]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        authorName: { type: string }
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLookTemplate"
+
+    LibraryLookList:
+      type: object
+      required: [looks]
+      properties:
+        looks:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLook"
+
+    AdoptLookChange:
+      type: object
+      required: [kind, copyId, created]
+      properties:
+        kind: { type: string }
+        copyId: { type: integer }
+        created:
+          type: boolean
+          description: Whether a new copy was made (else an unedited one was reused).
+
+    AdoptLookResult:
+      type: object
+      required: [look, changed, unchanged]
+      properties:
+        look:
+          $ref: "#/components/schemas/LibraryLookRef"
+        changed:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdoptLookChange"
+        unchanged:
+          type: array
+          items:
+            type: object
+            required: [kind, copyId]
+            properties:
+              kind: { type: string }
+              copyId: { type: integer }
+
+    TemplatePreviewInput:
+      type: object
+      required: [kind, source, input]
+      properties:
+        kind: { type: string }
+        source:
+          type: string
+          enum: [draft, sample]
+        draftId: { type: integer }
+        input:
+          description: The draft's card input (ShareCardInput JSON); null for `sample`.
+
+    ClubTemplateOrigin:
+      type: object
+      required: [templateId, version, name, authorName, look]
+      properties:
+        templateId: { type: integer }
+        version:
+          type: integer
+          description: The library version this copy was taken from.
+        name: { type: string }
+        authorName: { type: string }
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+
+    ClubTemplateSummary:
+      type: object
+      required:
+        [id, kind, name, version, isDefault, basedOn, edited, fitStatus, fitReport, coverage, updatedAt, waitingDrafts]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        name: { type: string }
+        version:
+          type: integer
+          description: The copy's own save counter.
+        isDefault:
+          type: boolean
+          description: New drafts of this kind copy this template.
+        basedOn:
+          oneOf:
+            - $ref: "#/components/schemas/ClubTemplateOrigin"
+            - type: "null"
+        edited:
+          type: boolean
+          description: The club saved changes to it, so it is its own (no update prompts).
+        fitStatus:
+          $ref: "#/components/schemas/TemplateFitStatus"
+        fitReport:
+          $ref: "#/components/schemas/TemplateFitReport"
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+        updatedAt: { type: ["string", "null"], format: date-time }
+        waitingDrafts:
+          type: integer
+          description: For a default, the unposted drafts of its kind an apply would change; else 0.
+
+    ClubTemplate:
+      allOf:
+        - $ref: "#/components/schemas/ClubTemplateSummary"
+        - type: object
+          required: [document]
+          properties:
+            document:
+              $ref: "#/components/schemas/TemplateDocument"
+            updatedByName:
+              type: ["string", "null"]
+
+    ClubTemplateList:
+      type: object
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubTemplateSummary"
+
+    CreateClubTemplateRequest:
+      type: object
+      required: [libraryTemplateId]
+      properties:
+        libraryTemplateId: { type: integer }
+        version:
+          type: integer
+          description: A library version; the current one when absent.
+        makeDefault:
+          type: boolean
+          description: Also make the copy its kind's default (Use as default).
+
+    SaveClubTemplateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion:
+          type: integer
+          description: The version this edit started from.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
 
     CardAdjustments:
       type: object
