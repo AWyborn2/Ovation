@@ -79,7 +79,12 @@ async function libraryTemplate(lookSlug: string, kind: string, document: unknown
 async function tenant(name: string): Promise<number> {
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `pl-${name}-${STAMP}`, centralClubId: 9990 + tenants.length, name, plan: "pro" })
+    .values({
+      slug: `pl-${name}-${STAMP}`,
+      centralClubId: 9990 + tenants.length,
+      name,
+      plan: "pro",
+    })
     .returning();
   tenants.push(t!.id);
   return t!.id;
@@ -90,12 +95,18 @@ beforeAll(async () => {
   await db.delete(libraryTemplatesTable).where(
     inArray(
       libraryTemplatesTable.slug,
-      LOOKS.flatMap((l) => ["milestone", "matchDay", "matchSummary", "teamList"].map((k) => `${l}/${k}`)),
+      LOOKS.flatMap((l) =>
+        ["milestone", "matchDay", "matchSummary", "teamList"].map((k) => `${l}/${k}`),
+      ),
     ),
   );
   await libraryTemplate("club-kit", "milestone", placeholderDocument("milestone"));
   await libraryTemplate("broadcast-dark", "milestone", placeholderDocument("milestone"));
-  await libraryTemplate("club-kit", "matchDay", pagesDoc("ck-md", ["fixture", "title", "day", "sponsors"]));
+  await libraryTemplate(
+    "club-kit",
+    "matchDay",
+    pagesDoc("ck-md", ["fixture", "title", "day", "sponsors"]),
+  );
   await libraryTemplate("club-kit", "matchSummary", pagesDoc("ck-ms", ["result", "day"]));
   await libraryTemplate("duotone", "matchDay", pagesDoc("dt-md", ["fixture", "title", "sponsors"]));
   // A look with a Match Summary but no Match Day template.
@@ -104,7 +115,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.delete(cardTemplatesTable).where(inArray(cardTemplatesTable.tenantId, tenants));
-  await db.delete(libraryTemplatesTable).where(inArray(libraryTemplatesTable.id, Object.values(ids)));
+  await db
+    .delete(libraryTemplatesTable)
+    .where(inArray(libraryTemplatesTable.id, Object.values(ids)));
   await db.delete(templateLooksTable).where(inArray(templateLooksTable.slug, LOOKS));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, tenants));
 });
@@ -134,12 +147,16 @@ describe("lazy defaults from the club's pack look (T3.14, T3.23)", () => {
     await ensureKindTemplate(duotone, "milestone", "duotone-v1");
     await ensureKindTemplate(duotone, "matchDay", "duotone-v1");
     await ensureKindTemplate(hidden, "milestone", "gold-foil-v1");
-    expect((await defaultOf(clubKit, "milestone")).originTemplateId).toBe(ids["club-kit/milestone"]);
+    expect((await defaultOf(clubKit, "milestone")).originTemplateId).toBe(
+      ids["club-kit/milestone"],
+    );
     expect((await defaultOf(broadcast, "milestone")).originTemplateId).toBe(
       ids["broadcast-dark/milestone"],
     );
     // Duotone designs Match Day; its other kinds take Club Kit's.
-    expect((await defaultOf(duotone, "milestone")).originTemplateId).toBe(ids["club-kit/milestone"]);
+    expect((await defaultOf(duotone, "milestone")).originTemplateId).toBe(
+      ids["club-kit/milestone"],
+    );
     expect((await defaultOf(duotone, "matchDay")).originTemplateId).toBe(ids["duotone/matchDay"]);
     const gf = await defaultOf(hidden, "milestone");
     expect(gf.originTemplateId).toBe(ids["club-kit/milestone"]);
@@ -220,7 +237,13 @@ describe("the pilot (T3.15, T3.22)", () => {
 
 /** A Match Day carousel: title, one fixture, sponsors. */
 function matchDaySet() {
-  const opts = { heading: "This weekend", from: "2026-10-09", to: "2026-10-11", roundLabels: ["3"], fixtureCount: 1 };
+  const opts = {
+    heading: "This weekend",
+    from: "2026-10-09",
+    to: "2026-10-11",
+    roundLabels: ["3"],
+    fixtureCount: 1,
+  };
   const slide = (id: string, content: unknown) => ({
     id,
     label: id,

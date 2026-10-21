@@ -527,7 +527,10 @@ router.post(
         return;
       }
     }
-    if (templateRef !== undefined && (carousel || templateId !== undefined || parsed.data.adjustments)) {
+    if (
+      templateRef !== undefined &&
+      (carousel || templateId !== undefined || parsed.data.adjustments)
+    ) {
       res.status(400).json({
         error: "A picked template can't be combined with a saved layout or a carousel payload.",
       });

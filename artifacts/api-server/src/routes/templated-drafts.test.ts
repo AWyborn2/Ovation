@@ -89,7 +89,9 @@ beforeAll(async () => {
 afterAll(async () => {
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
-  await db.delete(libraryTemplatesTable).where(inArray(libraryTemplatesTable.id, Object.values(lib)));
+  await db
+    .delete(libraryTemplatesTable)
+    .where(inArray(libraryTemplatesTable.id, Object.values(lib)));
   await db.delete(templateLooksTable).where(eq(templateLooksTable.slug, LOOK));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
