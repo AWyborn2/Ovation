@@ -640,12 +640,13 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const right = clips ? across.x + across.w : Math.max(across.x + across.w, extent.x + extent.w);
     const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
     const box = clips ? raw : textBox(raw, textStyle.align, W);
-    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis.
+    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
+    // after a second line unless it's kept to one (`white-space: nowrap`).
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
         ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
         : clips && ellipsis
-          ? { minScale: 1, maxLines: 1, ellipsis: true }
+          ? { minScale: 1, maxLines: nowrap ? 1 : 2, ellipsis: true }
           : null;
     const m = motionFor();
     add(
