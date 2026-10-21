@@ -11,10 +11,7 @@ import { slidesForSize } from "@/lib/card-sets/plan";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { CreateHero } from "@/components/social-studio/create-hero";
 import { EditorStarters } from "@/components/social-studio/editor-starters";
-import {
-  TemplatePicker,
-  type PickedTemplate,
-} from "@/components/template-library/template-picker";
+import { TemplatePicker, type PickedTemplate } from "@/components/template-library/template-picker";
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import {
   CardFormRouter,
