@@ -178,6 +178,14 @@ export const env = {
    * key needed); set before Ovation charges clubs (KTD14 licence note).
    */
   OPEN_METEO_API_KEY: () => optional("OPEN_METEO_API_KEY"),
+
+  // ── Template library: Figma import (ADR-011 §9) ──────────────────────────
+  /**
+   * Personal access token of Ovation's designer account, scope "File content:
+   * read" only. Unset = the Figma import is off. Personal tokens expire after
+   * at most 90 days: renew it before then (runbook).
+   */
+  FIGMA_ACCESS_TOKEN: () => optional("FIGMA_ACCESS_TOKEN"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();

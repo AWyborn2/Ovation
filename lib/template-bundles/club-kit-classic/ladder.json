@@ -1,0 +1,1200 @@
+{
+  "name": "Club Kit ladder",
+  "version": 1,
+  "listed": true,
+  "document": {
+    "layers": [
+      {
+        "id": "background",
+        "kind": "element",
+        "name": "Club background",
+        "element": {
+          "id": "ck.background"
+        },
+        "geometry": {
+          "square": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "story": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          }
+        }
+      },
+      {
+        "id": "watermark",
+        "kind": "element",
+        "name": "Crest watermark",
+        "element": {
+          "id": "ck.watermark"
+        },
+        "geometry": {
+          "square": {
+            "x": 0,
+            "y": 30,
+            "w": 70,
+            "h": 70
+          },
+          "portrait": {
+            "x": 0,
+            "y": 44,
+            "w": 70,
+            "h": 56
+          },
+          "story": {
+            "x": 0,
+            "y": 60.63,
+            "w": 70,
+            "h": 39.37
+          },
+          "landscape": {
+            "x": 0,
+            "y": 30,
+            "w": 36.75,
+            "h": 70
+          }
+        }
+      },
+      {
+        "id": "photo-frame-side",
+        "kind": "element",
+        "name": "Photo frame",
+        "element": {
+          "id": "ck.frame-side",
+          "props": {
+            "photo": "{{photo}}"
+          }
+        },
+        "geometry": {
+          "square": {
+            "x": 50,
+            "y": 0,
+            "w": 50,
+            "h": 100
+          },
+          "landscape": {
+            "x": 52.24,
+            "y": 0,
+            "w": 47.77,
+            "h": 100
+          }
+        },
+        "sizes": ["square", "landscape"]
+      },
+      {
+        "id": "photo-frame-top",
+        "kind": "element",
+        "name": "Photo frame",
+        "element": {
+          "id": "ck.frame-top",
+          "props": {
+            "photo": "{{photo}}"
+          }
+        },
+        "geometry": {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 34.37
+          },
+          "story": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 48
+          }
+        },
+        "sizes": ["portrait", "story"]
+      },
+      {
+        "id": "crest",
+        "kind": "element",
+        "name": "Crest",
+        "element": {
+          "id": "ck.crest"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 6,
+            "w": 10,
+            "h": 10
+          },
+          "portrait": {
+            "x": 6,
+            "y": 4.8,
+            "w": 10,
+            "h": 8
+          },
+          "story": {
+            "x": 6,
+            "y": 3.37,
+            "w": 10,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 6,
+            "w": 5.25,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "club-name-1",
+        "kind": "text",
+        "name": "Club name",
+        "content": "{{clubName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 4,
+          "fontWeight": 900,
+          "letterSpacing": 0.02,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18,
+            "y": 6.4,
+            "w": 58,
+            "h": 5.2
+          },
+          "portrait": {
+            "x": 18,
+            "y": 5.12,
+            "w": 58,
+            "h": 4.16
+          },
+          "story": {
+            "x": 18,
+            "y": 3.6,
+            "w": 58,
+            "h": 2.92
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "club-name-2",
+        "kind": "text",
+        "name": "Club name",
+        "content": "{{clubName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.1,
+          "fontWeight": 900,
+          "letterSpacing": 0.02,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 9.45,
+            "y": 6.4,
+            "w": 77.95,
+            "h": 5.2
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "club-tagline-1",
+        "kind": "text",
+        "name": "Club tagline",
+        "content": "{{clubTagline}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.18,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18,
+            "y": 11.8,
+            "w": 58,
+            "h": 3
+          },
+          "portrait": {
+            "x": 18,
+            "y": 9.44,
+            "w": 58,
+            "h": 2.4
+          },
+          "story": {
+            "x": 18,
+            "y": 6.64,
+            "w": 58,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "club-tagline-2",
+        "kind": "text",
+        "name": "Club tagline",
+        "content": "{{clubTagline}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.18,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 9.45,
+            "y": 11.8,
+            "w": 77.95,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "chip",
+        "kind": "element",
+        "name": "Card-type chip",
+        "element": {
+          "id": "ck.kind-chip",
+          "props": {
+            "label": "LADDER"
+          }
+        },
+        "geometry": {
+          "square": {
+            "x": 78,
+            "y": 8.5,
+            "w": 16,
+            "h": 5
+          },
+          "portrait": {
+            "x": 78,
+            "y": 6.8,
+            "w": 16,
+            "h": 4
+          },
+          "story": {
+            "x": 78,
+            "y": 4.78,
+            "w": 16,
+            "h": 2.81
+          },
+          "landscape": {
+            "x": 88.45,
+            "y": 8.5,
+            "w": 8.4,
+            "h": 5
+          }
+        }
+      },
+      {
+        "id": "rule",
+        "kind": "element",
+        "name": "Tricolour rule",
+        "element": {
+          "id": "ck.tricolour-rule"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 87,
+            "w": 88,
+            "h": 0.8
+          },
+          "portrait": {
+            "x": 6,
+            "y": 89.6,
+            "w": 88,
+            "h": 0.64
+          },
+          "story": {
+            "x": 6,
+            "y": 92.69,
+            "w": 88,
+            "h": 0.45
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 87,
+            "w": 93.7,
+            "h": 0.8
+          }
+        }
+      },
+      {
+        "id": "sponsor-1",
+        "kind": "text",
+        "name": "Sponsor",
+        "content": "{{sponsorPresentedBy}}",
+        "style": {
+          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+          "fontSize": 2,
+          "fontWeight": 700,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 89.6,
+            "w": 51.04,
+            "h": 4.4
+          },
+          "portrait": {
+            "x": 6,
+            "y": 91.68,
+            "w": 51.04,
+            "h": 3.52
+          },
+          "story": {
+            "x": 6,
+            "y": 94.15,
+            "w": 51.04,
+            "h": 2.47
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "sponsor-2",
+        "kind": "text",
+        "name": "Sponsor",
+        "content": "{{sponsorPresentedBy}}",
+        "style": {
+          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+          "fontSize": 1.05,
+          "fontWeight": 700,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 89.6,
+            "w": 54.35,
+            "h": 4.4
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "hashtag-1",
+        "kind": "text",
+        "name": "Hashtag",
+        "content": "{{clubHashtag}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.8,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "right"
+        },
+        "geometry": {
+          "square": {
+            "x": 60,
+            "y": 89.6,
+            "w": 34,
+            "h": 4.4
+          },
+          "portrait": {
+            "x": 60,
+            "y": 91.68,
+            "w": 34,
+            "h": 3.52
+          },
+          "story": {
+            "x": 60,
+            "y": 94.15,
+            "w": 34,
+            "h": 2.47
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "hashtag-2",
+        "kind": "text",
+        "name": "Hashtag",
+        "content": "{{clubHashtag}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 1.47,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "right"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 79,
+            "y": 89.6,
+            "w": 17.85,
+            "h": 4.4
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "competition-1",
+        "kind": "text",
+        "name": "Eyebrow",
+        "content": "{{competitionName}} · {{asOfLabel}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.8,
+          "fontWeight": 600,
+          "letterSpacing": 0.22,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 16.51,
+            "w": 44,
+            "h": 5.6
+          },
+          "portrait": {
+            "x": 6,
+            "y": 38.37,
+            "w": 88,
+            "h": 2.56
+          },
+          "story": {
+            "x": 6,
+            "y": 50.82,
+            "w": 88,
+            "h": 1.8
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "competition-2",
+        "kind": "text",
+        "name": "Eyebrow",
+        "content": "{{competitionName}} · {{asOfLabel}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.94,
+          "fontWeight": 600,
+          "letterSpacing": 0.22,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 30.28,
+            "w": 48.3,
+            "h": 3.2
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "title-1",
+        "kind": "text",
+        "name": "Title",
+        "content": "{{gradeLabel}} LADDER",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 9,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 23.11,
+            "w": 44,
+            "h": 19.08
+          },
+          "portrait": {
+            "x": 6,
+            "y": 41.73,
+            "w": 88,
+            "h": 7.63
+          },
+          "story": {
+            "x": 6,
+            "y": 53.18,
+            "w": 88,
+            "h": 5.37
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "title-2",
+        "kind": "text",
+        "name": "Title",
+        "content": "{{gradeLabel}} LADDER",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 4.72,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 34.48,
+            "w": 48.3,
+            "h": 9.54
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-1-1",
+        "kind": "text",
+        "name": "Heading #",
+        "content": "#",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 43.59,
+            "w": 3.96,
+            "h": 3
+          },
+          "portrait": {
+            "x": 6,
+            "y": 50.48,
+            "w": 7.92,
+            "h": 2.4
+          },
+          "story": {
+            "x": 6,
+            "y": 59.33,
+            "w": 7.92,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-1-2",
+        "kind": "text",
+        "name": "Heading #",
+        "content": "#",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 45.42,
+            "w": 4.35,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-2-1",
+        "kind": "text",
+        "name": "Heading TEAM",
+        "content": "TEAM",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 9.96,
+            "y": 43.59,
+            "w": 20.68,
+            "h": 3
+          },
+          "portrait": {
+            "x": 13.92,
+            "y": 50.48,
+            "w": 41.36,
+            "h": 2.4
+          },
+          "story": {
+            "x": 13.92,
+            "y": 59.33,
+            "w": 41.36,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-2-2",
+        "kind": "text",
+        "name": "Heading TEAM",
+        "content": "TEAM",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 7.5,
+            "y": 45.42,
+            "w": 22.7,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-3-1",
+        "kind": "text",
+        "name": "Heading P",
+        "content": "P",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "square": {
+            "x": 30.64,
+            "y": 43.59,
+            "w": 4.84,
+            "h": 3
+          },
+          "portrait": {
+            "x": 55.28,
+            "y": 50.48,
+            "w": 9.68,
+            "h": 2.4
+          },
+          "story": {
+            "x": 55.28,
+            "y": 59.33,
+            "w": 9.68,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-3-2",
+        "kind": "text",
+        "name": "Heading P",
+        "content": "P",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 30.2,
+            "y": 45.42,
+            "w": 5.31,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-4-1",
+        "kind": "text",
+        "name": "Heading W",
+        "content": "W",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "square": {
+            "x": 35.48,
+            "y": 43.59,
+            "w": 4.84,
+            "h": 3
+          },
+          "portrait": {
+            "x": 64.96,
+            "y": 50.48,
+            "w": 9.68,
+            "h": 2.4
+          },
+          "story": {
+            "x": 64.96,
+            "y": 59.33,
+            "w": 9.68,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-4-2",
+        "kind": "text",
+        "name": "Heading W",
+        "content": "W",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 35.51,
+            "y": 45.42,
+            "w": 5.31,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-5-1",
+        "kind": "text",
+        "name": "Heading L",
+        "content": "L",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "square": {
+            "x": 40.32,
+            "y": 43.59,
+            "w": 4.84,
+            "h": 3
+          },
+          "portrait": {
+            "x": 74.64,
+            "y": 50.48,
+            "w": 9.68,
+            "h": 2.4
+          },
+          "story": {
+            "x": 74.64,
+            "y": 59.33,
+            "w": 9.68,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-5-2",
+        "kind": "text",
+        "name": "Heading L",
+        "content": "L",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 40.82,
+            "y": 45.42,
+            "w": 5.31,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "table-head-6-1",
+        "kind": "text",
+        "name": "Heading PTS",
+        "content": "PTS",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.4,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "square": {
+            "x": 45.16,
+            "y": 43.59,
+            "w": 4.84,
+            "h": 3
+          },
+          "portrait": {
+            "x": 84.32,
+            "y": 50.48,
+            "w": 9.68,
+            "h": 2.4
+          },
+          "story": {
+            "x": 84.32,
+            "y": 59.33,
+            "w": 9.68,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "table-head-6-2",
+        "kind": "text",
+        "name": "Heading PTS",
+        "content": "PTS",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.73,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "center"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 46.14,
+            "y": 45.42,
+            "w": 5.31,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "ladder-rows-1",
+        "kind": "rows",
+        "name": "Ladder rows",
+        "rows": {
+          "repeat": "rows",
+          "rowHeight": 4.6,
+          "gap": 0.6,
+          "cells": [
+            {
+              "field": "pos",
+              "x": 0,
+              "w": 9,
+              "style": {
+                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                "fontWeight": 900,
+                "color": "var(--ck-pt,var(--gold,#FBAC27))",
+                "align": "center",
+                "fontSize": 2.8,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "team",
+              "x": 9,
+              "w": 47,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk,#F2F5F8)",
+                "align": "left",
+                "fontSize": 2.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "played",
+              "x": 56,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 2.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "won",
+              "x": 67,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 2.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "lost",
+              "x": 78,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 2.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "points",
+              "x": 89,
+              "w": 11,
+              "style": {
+                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                "fontWeight": 900,
+                "color": "var(--ck-chalk,#F2F5F8)",
+                "align": "center",
+                "fontSize": 2.8,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            }
+          ],
+          "variants": {
+            "club": {
+              "pos": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "team": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "played": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "won": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "lost": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "points": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              }
+            }
+          }
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 47.19,
+            "w": 44,
+            "h": 41.3
+          },
+          "portrait": {
+            "x": 6,
+            "y": 53.36,
+            "w": 88,
+            "h": 33.04
+          },
+          "story": {
+            "x": 6,
+            "y": 61.36,
+            "w": 88,
+            "h": 29.08
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "ladder-rows-2",
+        "kind": "rows",
+        "name": "Ladder rows",
+        "rows": {
+          "repeat": "rows",
+          "rowHeight": 2.41,
+          "gap": 0.31,
+          "cells": [
+            {
+              "field": "pos",
+              "x": 0,
+              "w": 9,
+              "style": {
+                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                "fontWeight": 900,
+                "color": "var(--ck-pt,var(--gold,#FBAC27))",
+                "align": "center",
+                "fontSize": 1.47,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "team",
+              "x": 9,
+              "w": 47,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk,#F2F5F8)",
+                "align": "left",
+                "fontSize": 1.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "played",
+              "x": 56,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 1.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "won",
+              "x": 67,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 1.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "lost",
+              "x": 78,
+              "w": 11,
+              "style": {
+                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                "fontWeight": 600,
+                "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+                "align": "center",
+                "fontSize": 1.1,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            },
+            {
+              "field": "points",
+              "x": 89,
+              "w": 11,
+              "style": {
+                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                "fontWeight": 900,
+                "color": "var(--ck-chalk,#F2F5F8)",
+                "align": "center",
+                "fontSize": 1.47,
+                "background": "var(--ck-panel,rgba(242,245,248,.07))"
+              }
+            }
+          ],
+          "variants": {
+            "club": {
+              "pos": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "team": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "played": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "won": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "lost": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              },
+              "points": {
+                "background": "var(--ck-p,var(--gold,#FBAC27))",
+                "color": "var(--ck-onp,var(--accent-ink,#10151B))"
+              }
+            }
+          }
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 49.02,
+            "w": 48.3,
+            "h": 25.7
+          }
+        },
+        "sizes": ["landscape"]
+      }
+    ]
+  }
+}
