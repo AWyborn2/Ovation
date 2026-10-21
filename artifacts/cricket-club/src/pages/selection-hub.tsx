@@ -37,6 +37,7 @@ import {
   type Location,
 } from "@/components/selection/apply-move";
 import { weekendLabel } from "@/components/selection/labels";
+import { FillPopover, type HubPop } from "@/components/selection/fill-popover";
 import { GradeChipBar } from "@/components/selection/grade-chip-bar";
 import { MoveDialog } from "@/components/selection/move-dialog";
 import { MemberStatusControl } from "@/components/selection/member-status-control";
@@ -99,6 +100,7 @@ export default function SelectionHub() {
   useEffect(() => {
     setLocal(null);
     setOpenId(null);
+    setPop(null);
   }, [section, nav.weekend]);
 
   const refetch = useCallback(() => qc.invalidateQueries({ queryKey }), [qc, queryKey]);
@@ -146,7 +148,10 @@ export default function SelectionHub() {
     ]
       .filter(Boolean)
       .join(" ");
-    if (heads) toast({ description: heads });
+    // Every move is confirmed on screen; a role change only when it needs attention.
+    const done = action.kind === "move" ? `${result.log[0]}.` : null;
+    const message = [done, heads].filter(Boolean).join(" ");
+    if (message) toast({ description: message });
     save.mutate(
       { data: { changes: toChanges(result.state, result.touched) } },
       {
@@ -178,8 +183,22 @@ export default function SelectionHub() {
     scrollContainer: poolRef,
   });
 
+  // Tap-to-fill: an open slot's candidate search, or a pool player's "Add to…".
+  const [pop, setPop] = useState<HubPop | null>(null);
+
   const openMember = (id: number, from?: Location) => {
     if (drag.shouldSuppressClick()) return;
+    // On desktop a pool player opens "Add to…"; its "More options…" (and a phone) the Move dialog.
+    const anchor =
+      from?.kind === "pool" && wide && board.data && !board.data.readOnly
+        ? document.querySelector<HTMLElement>(
+            `[aria-label="Player pool"] [data-testid="chip-${id}"]`,
+          )
+        : null;
+    if (anchor) {
+      setPop({ mode: "place", memberId: id, anchor });
+      return;
+    }
     setOpenFrom(from ?? null);
     setOpenId(id);
   };
@@ -624,6 +643,10 @@ export default function SelectionHub() {
                       onFinalise={() => doFinalise(side.id)}
                       onReopen={() => doReopen(side.id)}
                       onPlayhqSync={() => doPlayhqSync(side.id)}
+                      onSlotClick={(index, anchor) => {
+                        if (drag.shouldSuppressClick()) return;
+                        setPop({ mode: "fill", sideId: side.id, index, anchor });
+                      }}
                     />
                   ))
                 )}
@@ -638,6 +661,20 @@ export default function SelectionHub() {
           </>
         )}
 
+        {view && (
+          <FillPopover
+            pop={pop}
+            state={view}
+            focused={hubView.focused}
+            busy={busy}
+            onClose={() => setPop(null)}
+            onMove={(memberId, target, from) => act({ kind: "move", memberId, target, from })}
+            onMore={(id) => {
+              setOpenFrom({ kind: "pool" });
+              setOpenId(id);
+            }}
+          />
+        )}
         {view && (
           <MoveDialog
             junior={junior}

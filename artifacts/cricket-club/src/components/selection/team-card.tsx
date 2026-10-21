@@ -1,6 +1,6 @@
 import { useState, type PointerEvent } from "react";
 import type { SelectionSide } from "@workspace/api-client-react";
-import { Lock } from "lucide-react";
+import { Lock, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { plural } from "@/lib/plural";
@@ -86,6 +86,7 @@ export function TeamCard({
   onFinalise,
   onReopen,
   onPlayhqSync,
+  onSlotClick,
 }: {
   side: SelectionSide;
   /** Junior section: players' parents are notified. */
@@ -100,6 +101,8 @@ export function TeamCard({
   onReopen: () => void;
   /** Replace the draft with the side PlayHQ has published (`side.playhqPlayers`). */
   onPlayhqSync: () => void;
+  /** Tap-to-fill: an open slot in an editable side was clicked. */
+  onSlotClick?: (index: number, anchor: HTMLElement) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -129,7 +132,7 @@ export function TeamCard({
       aria-labelledby={`${slug}-title`}
       data-testid={`side-${side.id}`}
       className={cn(
-        "flex min-w-0 flex-col rounded-lg border border-border bg-card data-[drop-state]:outline-dashed data-[drop-state]:outline-2 data-[drop-state]:outline-offset-2 data-[drop-state=no]:outline-[var(--loss-fg)] data-[drop-state=ok]:outline-blue-500",
+        "flex min-w-0 flex-col rounded-lg border border-border bg-card has-[[data-drop-state=ok]]:border-blue-500 data-[drop-state]:outline-dashed data-[drop-state]:outline-2 data-[drop-state]:outline-offset-2 data-[drop-state=no]:outline-[var(--loss-fg)] data-[drop-state=ok]:outline-blue-500",
         final && "border-[var(--win-fg)]",
       )}
     >
@@ -277,6 +280,27 @@ export function TeamCard({
                   onChipPointerDown(e, slot.memberId!, { kind: "side", sideId: side.id, index: i })
                 }
               />
+            ) : slot.memberId == null && edit && onSlotClick ? (
+              <button
+                type="button"
+                aria-label={`Fill ${label} ${i === shape.twelfthIndex ? "12th" : `slot ${i + 1}`}`}
+                disabled={busy}
+                onClick={(e) => onSlotClick(i, e.currentTarget)}
+                className="group flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-md border-[1.5px] border-dashed border-border px-2.5 py-1.5 text-left text-[12.5px] text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+              >
+                <span className="min-w-0">
+                  Open slot
+                  {slot.gap && (
+                    <small className="block text-[11.5px]">
+                      was {slot.gap.name} · {GAP_REASON[slot.gap.reason] ?? slot.gap.reason}
+                    </small>
+                  )}
+                </span>
+                <span className="flex shrink-0 items-center gap-1 text-[11.5px] font-semibold text-primary-text group-hover:text-foreground">
+                  <Search className="h-3 w-3" aria-hidden />
+                  Find player
+                </span>
+              </button>
             ) : (
               <div className="flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-md border-[1.5px] border-dashed border-border px-2.5 py-1.5 text-[12.5px] text-muted-foreground">
                 <span>{slot.memberId != null ? "Player not on register" : "Open slot"}</span>
