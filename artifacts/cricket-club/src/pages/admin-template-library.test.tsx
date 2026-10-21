@@ -46,8 +46,20 @@ const LOOKS: LibraryLookList = {
       description: "Clean club colours.",
       authorName: "Ovation",
       templates: [
-        { id: 1, kind: "milestone", name: "Club Kit milestone", version: 2, coverage: LIBRARY.templates[0]!.coverage },
-        { id: 2, kind: "record", name: "Club Kit record", version: 2, coverage: LIBRARY.templates[0]!.coverage },
+        {
+          id: 1,
+          kind: "milestone",
+          name: "Club Kit milestone",
+          version: 2,
+          coverage: LIBRARY.templates[0]!.coverage,
+        },
+        {
+          id: 2,
+          kind: "record",
+          name: "Club Kit record",
+          version: 2,
+          coverage: LIBRARY.templates[0]!.coverage,
+        },
       ],
     },
   ],
@@ -75,7 +87,13 @@ const CLUB = {
       id: 100,
       isDefault: true,
       name: "Club Kit milestone",
-      basedOn: { templateId: 1, version: 2, name: "Club Kit milestone", authorName: "Ovation", look: null },
+      basedOn: {
+        templateId: 1,
+        version: 2,
+        name: "Club Kit milestone",
+        authorName: "Ovation",
+        look: null,
+      },
     }),
     copy({ id: 101, isDefault: false, name: "Pending copy", fitStatus: "pending" }),
     copy({ id: 102, isDefault: false, name: "Spare copy" }),
@@ -107,7 +125,11 @@ function setup() {
           body: init?.body ? JSON.parse(String(init.body)) : null,
         });
         const body = String(input).includes("/adopt")
-          ? { look: LOOKS.looks[0], changed: [{ kind: "record", copyId: 9, created: true }], unchanged: [] }
+          ? {
+              look: LOOKS.looks[0],
+              changed: [{ kind: "record", copyId: 9, created: true }],
+              unchanged: [],
+            }
           : { ...CLUB.templates[0], document: placeholderDocument("milestone") };
         return new Response(JSON.stringify(body), {
           status: method === "DELETE" ? 204 : 200,

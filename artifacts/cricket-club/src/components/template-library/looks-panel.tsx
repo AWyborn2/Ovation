@@ -44,15 +44,7 @@ export function defaultsAdoptionChanges(
     .map((t) => t.kind);
 }
 
-function KindThumb({
-  look,
-  kind,
-  preview,
-}: {
-  look: string;
-  kind: string;
-  preview: Preview;
-}) {
+function KindThumb({ look, kind, preview }: { look: string; kind: string; preview: Preview }) {
   const params = { look, kind };
   const q = useListLibraryTemplates(params, {
     query: { queryKey: getListLibraryTemplatesQueryKey(params), staleTime: 60_000 },

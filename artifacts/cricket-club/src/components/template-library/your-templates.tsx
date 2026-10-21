@@ -89,7 +89,12 @@ function CopyRow({
             Set as default
           </Button>
         )}
-        <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAction("duplicate", template)}>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={busy}
+          onClick={() => onAction("duplicate", template)}
+        >
           Duplicate
         </Button>
         {!template.isDefault && (
@@ -174,7 +179,13 @@ export function YourTemplates({ preview }: { preview: Preview }) {
             {templates
               .filter((t) => t.kind === kind)
               .map((t) => (
-                <CopyRow key={t.id} template={t} preview={preview} onAction={onAction} busy={busy} />
+                <CopyRow
+                  key={t.id}
+                  template={t}
+                  preview={preview}
+                  onAction={onAction}
+                  busy={busy}
+                />
               ))}
           </ul>
         </section>
