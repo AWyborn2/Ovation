@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { centralDb } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
+import { pickClubOrgs, type MatchSideLink } from "./crest-orgs";
 import { classifyCentralGrade } from "./grades";
 
 // ---------------------------------------------------------------------------
@@ -13,8 +14,8 @@ import { classifyCentralGrade } from "./grades";
 //   - each club's register name and earlier names;
 //   - each club's crest. `central.clubs` has no logo: crests are the PlayHQ
 //     organisation logos, reached through the `central.club_playhq_orgs`
-//     crosswalk (or, where that has no row, the PlayHQ side of a projected
-//     match).
+//     crosswalk (or, where that has no row, the organisation the club's
+//     projected matches clearly make it: crest-orgs.ts).
 // Senior grades only: a junior / pathway label maps to no app grade and is
 // left out (juniors isolation). Read-only, cached like every central read.
 // ---------------------------------------------------------------------------
@@ -95,7 +96,7 @@ export async function centralCardClubs(clubIds: readonly number[]): Promise<Cent
       where c.club_id in (${idList})
       order by c.club_id
     `);
-    const orgs = await playhqOrgsForClubs(idList);
+    const orgs = await playhqOrgsForClubs(ids, idList);
     return (
       clubs.rows as Array<{
         clubId: number;
@@ -124,45 +125,70 @@ export async function centralCardClubs(clubIds: readonly number[]): Promise<Cent
 }
 
 /**
- * PlayHQ organisations per central club: the crosswalk first, then the PlayHQ
- * side of a projected match for a club the crosswalk lacks. A database without
- * the crosswalk or the PlayHQ tables (a bare central fixture) has no crests.
+ * PlayHQ organisations per central club, best first: the crosswalk where it
+ * has the club, else the one organisation the club's projected matches clearly
+ * make it (`pickClubOrgs` in crest-orgs.ts has the rules), else none, and the
+ * card shows the initials badge. A database without the crosswalk or the
+ * PlayHQ tables (a bare central fixture) has no crests.
  */
 async function playhqOrgsForClubs(
+  clubIds: readonly number[],
   idList: ReturnType<typeof sql.join>,
 ): Promise<Map<number, Array<{ name: string | null; logoUrl: string | null }>>> {
   const out = new Map<number, Array<{ name: string | null; logoUrl: string | null }>>();
   try {
-    const res = await centralDb.execute(sql`
-      with links as (
-        select x.club_id, lower(x.playhq_org_id) as org_id, 0 as rank
-          from central.club_playhq_orgs x
-         where x.club_id in (${idList})
-        union
-        select side.club_id, lower(side.org_id::text), 1
-          from central.matches m
-          join playhq.matches p on p.id::text = m.playhq_match_id
-          cross join lateral (values (m.home_club_id, p.home_org_id), (m.away_club_id, p.away_org_id))
-            as side(club_id, org_id)
-         where side.club_id in (${idList}) and side.org_id is not null
-      )
-      select distinct on (l.club_id, o.id) l.club_id as "clubId", o.name, o.logo_url as "logoUrl", l.rank
-        from links l
-        join playhq.organisations o on lower(o.id::text) = l.org_id
-       order by l.club_id, o.id, l.rank
+    // Every crosswalk row: a club's own, and the organisations no other club may take.
+    const crosswalk = await centralDb.execute(sql`
+      select x.club_id as "clubId", lower(x.playhq_org_id) as "orgId"
+        from central.club_playhq_orgs x
+       order by (x.source = 'manual') desc, x.votes desc, x.playhq_org_id
     `);
-    const rows = (
-      res.rows as Array<{
-        clubId: number;
-        name: string | null;
-        logoUrl: string | null;
-        rank: number;
-      }>
-    ).sort((a, b) => a.rank - b.rank);
-    for (const r of rows) {
-      const list = out.get(Number(r.clubId)) ?? [];
-      list.push({ name: r.name, logoUrl: r.logoUrl });
-      out.set(Number(r.clubId), list);
+    const sides = await centralDb.execute(sql`
+      select side.club_id as "clubId", m.match_id as "matchId", side.team,
+             p.home_team_name as "homeTeam", p.away_team_name as "awayTeam",
+             lower(p.home_org_id::text) as "homeOrg", lower(p.away_org_id::text) as "awayOrg"
+        from central.matches m
+        join playhq.matches p on p.id::text = m.playhq_match_id
+        cross join lateral (values (m.home_club_id, m.home_team), (m.away_club_id, m.away_team))
+          as side(club_id, team)
+       where side.club_id in (${idList})
+         and side.club_id not in (select x.club_id from central.club_playhq_orgs x)
+    `);
+    const crosswalkRows = (crosswalk.rows as Array<{ clubId: number; orgId: string }>).map((r) => ({
+      clubId: Number(r.clubId),
+      orgId: r.orgId,
+    }));
+    const wanted = new Set(clubIds);
+    const picked = pickClubOrgs(
+      clubIds,
+      crosswalkRows,
+      (sides.rows as Array<Omit<MatchSideLink, "clubId"> & { clubId: number }>).map((r) => ({
+        ...r,
+        clubId: Number(r.clubId),
+      })),
+    );
+    for (const clubId of [...picked.keys()]) if (!wanted.has(clubId)) picked.delete(clubId);
+    const orgIds = [...new Set([...picked.values()].flat())];
+    if (orgIds.length === 0) return out;
+    const orgs = await centralDb.execute(sql`
+      select lower(o.id::text) as "orgId", o.name, o.logo_url as "logoUrl"
+        from playhq.organisations o
+       where lower(o.id::text) in (${sql.join(
+         orgIds.map((id) => sql`${id}`),
+         sql`, `,
+       )})
+    `);
+    const byId = new Map(
+      (orgs.rows as Array<{ orgId: string; name: string | null; logoUrl: string | null }>).map(
+        (o) => [o.orgId, o],
+      ),
+    );
+    for (const [clubId, list] of picked) {
+      const found = list.flatMap((id) => {
+        const o = byId.get(id);
+        return o ? [{ name: o.name, logoUrl: o.logoUrl }] : [];
+      });
+      if (found.length) out.set(clubId, found);
     }
   } catch (err) {
     // The crosswalk or PlayHQ tables aren't there: crests then fall back to monograms.
@@ -178,4 +204,33 @@ function isUndefinedTable(err: unknown): boolean {
     e = (e as { cause?: unknown }).cause;
   }
   return false;
+}
+
+/** A crest Ovation already knows: a PlayHQ organisation's logo. */
+export interface KnownCardCrest {
+  orgId: string;
+  name: string;
+  logoUrl: string;
+}
+
+/**
+ * Every PlayHQ organisation with a logo, by name: the crests a club can pick
+ * for a team whose automatic crest is wrong or missing. Neutral reference
+ * data. A database without the PlayHQ tables knows none.
+ */
+export async function centralKnownCrests(): Promise<KnownCardCrest[]> {
+  return withCentralCache(cacheKey("centralKnownCrests", []), async () => {
+    try {
+      const res = await centralDb.execute(sql`
+        select lower(o.id::text) as "orgId", o.name, o.logo_url as "logoUrl"
+          from playhq.organisations o
+         where coalesce(o.logo_url, '') <> '' and coalesce(o.name, '') <> ''
+         order by o.name, o.id
+      `);
+      return res.rows as unknown as KnownCardCrest[];
+    } catch (err) {
+      if (!isUndefinedTable(err)) throw err;
+      return [];
+    }
+  });
 }

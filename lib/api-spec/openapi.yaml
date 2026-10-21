@@ -5462,6 +5462,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/CardNamesListing"
 
+  /social-settings/card-names/crests:
+    put:
+      operationId: setCardTeamCrest
+      tags: [socialCards]
+      summary: Set or reset the club's crest for a team on cards
+      description: >-
+        Admin. Keyed on the central club id, for every grade. crestSource
+        "upload" takes an image uploaded to the club's storage, "known" a crest
+        from the known-crests list, "initials" the initials badge (no crestUrl);
+        null resets to the automatic crest. Tenant-scoped; never written to the
+        central database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardTeamCrestUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardNamesListing"
+
+  /social-settings/card-names/known-crests:
+    get:
+      operationId: listKnownCardCrests
+      tags: [socialCards]
+      summary: Crests Ovation already knows, to pick one for a team
+      description: >-
+        Admin. Every PlayHQ organisation with a logo, by name. Neutral reference
+        data (no player or match data), shared by the senior and junior name
+        settings. Empty when the PlayHQ tables are unavailable.
+      responses:
+        "200":
+          description: Known crests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnownCardCrestList"
+
   /social-connections/meta:
     get:
       operationId: getMetaConnection
@@ -8045,6 +8087,91 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /juniors/card-names:
+    get:
+      operationId: getJuniorCardNames
+      tags: [juniors]
+      summary: The club's junior opponent and grade names for junior cards
+      description: >-
+        Admin. Every junior opponent (grouped by its automatic short name, so
+        each age group of one club is one row) and every junior grade, from the
+        junior tables only, each with its automatic and club-set name and crest.
+        Junior names are stored apart from senior names and never mix with
+        them. Tenant-scoped.
+      responses:
+        "200":
+          description: Names as junior cards print them
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorCardNamesListing"
+
+  /juniors/card-names/teams:
+    put:
+      operationId: setJuniorCardTeamName
+      tags: [juniors]
+      summary: Set or clear the club's short name for a junior opponent
+      description: >-
+        Admin. An empty or null shortName clears it, so junior cards fall back
+        to the automatic short name. Tenant-scoped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorCardTeamNameUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorCardNamesListing"
+
+  /juniors/card-names/crests:
+    put:
+      operationId: setJuniorCardTeamCrest
+      tags: [juniors]
+      summary: Set or reset the club's crest for a junior opponent
+      description: >-
+        Admin. As the senior crest: "upload", "known", "initials", or null to
+        reset to the automatic crest. Tenant-scoped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorCardTeamCrestUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorCardNamesListing"
+
+  /juniors/card-names/competitions:
+    put:
+      operationId: setJuniorCardCompetitionLabel
+      tags: [juniors]
+      summary: Set or clear the club's card label for a junior grade
+      description: >-
+        Admin. An empty or null label clears it, so junior cards fall back to
+        the automatic label. Tenant-scoped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorCardCompetitionLabelUpdate"
+      responses:
+        "200":
+          description: The updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorCardNamesListing"
 
   /juniors/overview:
     get:
@@ -20987,6 +21114,14 @@ components:
           additionalProperties:
             type: string
           description: Raw team or club name key to a crest url, for inputs with none.
+        crestOverrides:
+          type: object
+          additionalProperties:
+            type: string
+          description: >-
+            Raw team or club name key to the club's own crest choice, which wins
+            over any crest a card input carries: an image url, or "" for the
+            initials badge.
         competitions:
           type: object
           additionalProperties:
@@ -20997,10 +21132,33 @@ components:
       type: string
       enum: [override, auto, raw]
 
+    CardCrestSource:
+      type: string
+      enum: [auto, upload, known, initials]
+      description: >-
+        Where a team's crest comes from: the automatic PlayHQ crest, an uploaded
+        image, a known crest the club picked, or the initials badge.
+
+    CardCrestChoice:
+      type: string
+      enum: [upload, known, initials]
+
     CardTeamName:
       type: object
       required:
-        [centralClubId, gradeKey, rawName, autoName, overrideName, name, source, crestUrl, monogram]
+        [
+          centralClubId,
+          gradeKey,
+          rawName,
+          autoName,
+          overrideName,
+          name,
+          source,
+          crestUrl,
+          crestSource,
+          autoCrestUrl,
+          monogram,
+        ]
       properties:
         centralClubId:
           type: integer
@@ -21020,6 +21178,12 @@ components:
           $ref: "#/components/schemas/CardNameSource"
         crestUrl:
           type: ["string", "null"]
+          description: The crest cards show; null shows the monogram.
+        crestSource:
+          $ref: "#/components/schemas/CardCrestSource"
+        autoCrestUrl:
+          type: ["string", "null"]
+          description: The automatic crest (PlayHQ), whatever the club chose.
         monogram:
           type: string
           description: Stands in for a missing crest.
@@ -21091,6 +21255,162 @@ components:
           type: ["string", "null"]
           maxLength: 64
         shortName:
+          type: ["string", "null"]
+          maxLength: 40
+
+    CardTeamCrestUpdate:
+      type: object
+      required: [centralClubId, crestSource]
+      properties:
+        centralClubId:
+          type: integer
+          minimum: 1
+        crestSource:
+          oneOf:
+            - $ref: "#/components/schemas/CardCrestChoice"
+            - type: "null"
+          description: Null resets to the automatic crest.
+        crestUrl:
+          type: ["string", "null"]
+          maxLength: 1000
+          description: >-
+            For "upload", the uploaded image's /api/storage/objects/ path; for
+            "known", a url from the known-crests list. Ignored for "initials".
+
+    KnownCardCrest:
+      type: object
+      required: [orgId, name, logoUrl]
+      properties:
+        orgId:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          type: string
+
+    KnownCardCrestList:
+      type: object
+      required: [crests]
+      properties:
+        crests:
+          type: array
+          items:
+            $ref: "#/components/schemas/KnownCardCrest"
+
+    JuniorCardTeamName:
+      type: object
+      required:
+        [
+          teamKey,
+          rawNames,
+          autoName,
+          overrideName,
+          name,
+          source,
+          crestUrl,
+          crestSource,
+          autoCrestUrl,
+          monogram,
+        ]
+      properties:
+        teamKey:
+          type: string
+          description: The normalised automatic short name every age group of the club shares.
+        rawNames:
+          type: array
+          items:
+            type: string
+          description: The opponent's names as PlayHQ gives them ("Mandurah U13 Blue").
+        autoName:
+          type: string
+        overrideName:
+          type: ["string", "null"]
+        name:
+          type: string
+        source:
+          $ref: "#/components/schemas/CardNameSource"
+        crestUrl:
+          type: ["string", "null"]
+        crestSource:
+          $ref: "#/components/schemas/CardCrestSource"
+        autoCrestUrl:
+          type: ["string", "null"]
+        monogram:
+          type: string
+
+    JuniorCardCompetitionLabel:
+      type: object
+      required: [gradeKey, rawLabel, autoLabel, overrideLabel, label, source, rawLabels]
+      properties:
+        gradeKey:
+          type: string
+          description: The grade label junior cards print (the age group, else the grade).
+        rawLabel:
+          type: string
+        autoLabel:
+          type: string
+        overrideLabel:
+          type: ["string", "null"]
+        label:
+          type: string
+        source:
+          $ref: "#/components/schemas/CardNameSource"
+        rawLabels:
+          type: array
+          items:
+            type: string
+          description: The PlayHQ competitions this grade appears under.
+
+    JuniorCardNamesListing:
+      type: object
+      required: [teams, competitions]
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorCardTeamName"
+        competitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorCardCompetitionLabel"
+
+    JuniorCardTeamNameUpdate:
+      type: object
+      required: [teamKey, shortName]
+      properties:
+        teamKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        shortName:
+          type: ["string", "null"]
+          maxLength: 40
+
+    JuniorCardTeamCrestUpdate:
+      type: object
+      required: [teamKey, crestSource]
+      properties:
+        teamKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        crestSource:
+          oneOf:
+            - $ref: "#/components/schemas/CardCrestChoice"
+            - type: "null"
+        crestUrl:
+          type: ["string", "null"]
+          maxLength: 1000
+
+    JuniorCardCompetitionLabelUpdate:
+      type: object
+      required: [gradeKey, label]
+      properties:
+        gradeKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        label:
           type: ["string", "null"]
           maxLength: 40
 

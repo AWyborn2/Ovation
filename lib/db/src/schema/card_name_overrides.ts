@@ -58,3 +58,35 @@ export const competitionLabelOverridesTable = pgTable(
 );
 
 export type CompetitionLabelOverrideRow = typeof competitionLabelOverridesTable.$inferSelect;
+
+/** Where a club-set crest comes from: an uploaded image, a known PlayHQ crest, or none (initials). */
+export const CREST_SOURCES = ["upload", "known", "initials"] as const;
+export type CrestSource = (typeof CREST_SOURCES)[number];
+
+/**
+ * Club-set crests for teams on social cards (migration 0058). The automatic
+ * crest is the club's PlayHQ organisation logo, which can be wrong or missing;
+ * an admin uploads one, picks a crest Ovation already knows, or chooses the
+ * initials badge (`crest_source = 'initials'`, `crest_url` NULL). No row =
+ * the automatic crest.
+ *
+ * Keyed on the central club id like `team_name_overrides`; one crest per club
+ * (every grade). Tenant-curated: every read filters on `tenant_id`, every write
+ * sets it from the request. Never written to `central`.
+ */
+export const teamCrestOverridesTable = pgTable(
+  "team_crest_overrides",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    centralClubId: integer("central_club_id").notNull(),
+    crestSource: text("crest_source").$type<CrestSource>().notNull(),
+    crestUrl: text("crest_url"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqTenantClub: unique("team_crest_overrides_tenant_club_unique").on(t.tenantId, t.centralClubId),
+  }),
+);
+
+export type TeamCrestOverrideRow = typeof teamCrestOverridesTable.$inferSelect;

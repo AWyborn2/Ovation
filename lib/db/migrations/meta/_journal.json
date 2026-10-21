@@ -407,6 +407,13 @@
       "when": 1792554718867,
       "tag": "0057_email_send_batches",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792562203058,
+      "tag": "0058_card_crest_and_junior_names",
+      "breakpoints": true
     }
   ]
 }

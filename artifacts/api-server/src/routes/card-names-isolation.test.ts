@@ -129,6 +129,69 @@ describe("card names routes", () => {
     expect(JSON.stringify(listing3.body)).not.toContain("T2");
   });
 
+  it("a club's crest choice reaches its own cards only, and validates", async () => {
+    const UPLOAD = "/api/storage/objects/uploads/t2-mandurah-crest";
+    await as(t2, null)
+      .put("/api/social-settings/card-names/crests", {
+        centralClubId: MANDURAH,
+        crestSource: "upload",
+        crestUrl: UPLOAD,
+      })
+      .expect(401);
+    await as(t2, cookie2)
+      .put("/api/social-settings/card-names/crests", {
+        centralClubId: MANDURAH,
+        crestSource: "known",
+        crestUrl: "https://not-known.test/crest.png",
+      })
+      .expect(400);
+    const saved = await as(t2, cookie2)
+      .put("/api/social-settings/card-names/crests", {
+        centralClubId: MANDURAH,
+        crestSource: "upload",
+        crestUrl: UPLOAD,
+      })
+      .expect(200);
+    expect(
+      saved.body.teams.find((t: { centralClubId: number }) => t.centralClubId === MANDURAH),
+    ).toMatchObject({ crestUrl: UPLOAD, crestSource: "upload" });
+    const key = cardNameKey("Mandurah Cricket Club");
+    const bundle2 = await as(t2, null).get("/api/social-settings").expect(200);
+    expect(bundle2.body.cardNames.crestOverrides[key]).toBe(UPLOAD);
+    const bundle3 = await as(t3, null).get("/api/social-settings").expect(200);
+    expect(JSON.stringify(bundle3.body.cardNames ?? {})).not.toContain(UPLOAD);
+
+    // Initials badge: an empty choice; reset removes it.
+    await as(t2, cookie2)
+      .put("/api/social-settings/card-names/crests", {
+        centralClubId: MANDURAH,
+        crestSource: "initials",
+      })
+      .expect(200);
+    expect(
+      (await as(t2, null).get("/api/social-settings").expect(200)).body.cardNames.crestOverrides[
+        key
+      ],
+    ).toBe("");
+    await as(t2, cookie2)
+      .put("/api/social-settings/card-names/crests", {
+        centralClubId: MANDURAH,
+        crestSource: null,
+      })
+      .expect(200);
+    expect(
+      (await as(t2, null).get("/api/social-settings").expect(200)).body.cardNames?.crestOverrides,
+    ).toBeUndefined();
+  });
+
+  it("lists the crests Ovation knows, admin-only", async () => {
+    await as(t2, null).get("/api/social-settings/card-names/known-crests").expect(401);
+    const res = await as(t2, cookie2)
+      .get("/api/social-settings/card-names/known-crests")
+      .expect(200);
+    expect(Array.isArray(res.body.crests)).toBe(true);
+  });
+
   it("clearing a name goes back to the automatic one", async () => {
     const cleared = await as(t2, cookie2)
       .put("/api/social-settings/card-names/teams", { centralClubId: MANDURAH, shortName: null })

@@ -7814,6 +7814,11 @@ export type CardNamesTeams = {[key: string]: string};
 export type CardNamesCrests = {[key: string]: string};
 
 /**
+ * Raw team or club name key to the club's own crest choice, which wins over any crest a card input carries: an image url, or "" for the initials badge.
+ */
+export type CardNamesCrestOverrides = {[key: string]: string};
+
+/**
  * Raw competition or grade key to the club's label.
  */
 export type CardNamesCompetitions = {[key: string]: string};
@@ -7826,6 +7831,8 @@ export interface CardNames {
   teams?: CardNamesTeams;
   /** Raw team or club name key to a crest url, for inputs with none. */
   crests?: CardNamesCrests;
+  /** Raw team or club name key to the club's own crest choice, which wins over any crest a card input carries: an image url, or "" for the initials badge. */
+  crestOverrides?: CardNamesCrestOverrides;
   /** Raw competition or grade key to the club's label. */
   competitions?: CardNamesCompetitions;
 }
@@ -7848,6 +7855,28 @@ export const CardNameSource = {
   raw: 'raw',
 } as const;
 
+/**
+ * Where a team's crest comes from: the automatic PlayHQ crest, an uploaded image, a known crest the club picked, or the initials badge.
+ */
+export type CardCrestSource = typeof CardCrestSource[keyof typeof CardCrestSource];
+
+
+export const CardCrestSource = {
+  auto: 'auto',
+  upload: 'upload',
+  known: 'known',
+  initials: 'initials',
+} as const;
+
+export type CardCrestChoice = typeof CardCrestChoice[keyof typeof CardCrestChoice];
+
+
+export const CardCrestChoice = {
+  upload: 'upload',
+  known: 'known',
+  initials: 'initials',
+} as const;
+
 export interface CardTeamName {
   centralClubId: number;
   /**
@@ -7862,8 +7891,17 @@ export interface CardTeamName {
   /** What a card prints. */
   name: string;
   source: CardNameSource;
-  /** @nullable */
+  /**
+     * The crest cards show; null shows the monogram.
+     * @nullable
+     */
   crestUrl: string | null;
+  crestSource: CardCrestSource;
+  /**
+     * The automatic crest (PlayHQ), whatever the club chose.
+     * @nullable
+     */
+  autoCrestUrl: string | null;
   /** Stands in for a missing crest. */
   monogram: string;
 }
@@ -7907,6 +7945,105 @@ export interface CardTeamNameUpdate {
      * @nullable
      */
   shortName: string | null;
+}
+
+export interface CardTeamCrestUpdate {
+  /** @minimum 1 */
+  centralClubId: number;
+  /** Null resets to the automatic crest. */
+  crestSource: CardCrestChoice | null;
+  /**
+     * For "upload", the uploaded image's /api/storage/objects/ path; for "known", a url from the known-crests list. Ignored for "initials".
+     * @maxLength 1000
+     * @nullable
+     */
+  crestUrl?: string | null;
+}
+
+export interface KnownCardCrest {
+  orgId: string;
+  name: string;
+  logoUrl: string;
+}
+
+export interface KnownCardCrestList {
+  crests: KnownCardCrest[];
+}
+
+export interface JuniorCardTeamName {
+  /** The normalised automatic short name every age group of the club shares. */
+  teamKey: string;
+  /** The opponent's names as PlayHQ gives them ("Mandurah U13 Blue"). */
+  rawNames: string[];
+  autoName: string;
+  /** @nullable */
+  overrideName: string | null;
+  name: string;
+  source: CardNameSource;
+  /** @nullable */
+  crestUrl: string | null;
+  crestSource: CardCrestSource;
+  /** @nullable */
+  autoCrestUrl: string | null;
+  monogram: string;
+}
+
+export interface JuniorCardCompetitionLabel {
+  /** The grade label junior cards print (the age group, else the grade). */
+  gradeKey: string;
+  rawLabel: string;
+  autoLabel: string;
+  /** @nullable */
+  overrideLabel: string | null;
+  label: string;
+  source: CardNameSource;
+  /** The PlayHQ competitions this grade appears under. */
+  rawLabels: string[];
+}
+
+export interface JuniorCardNamesListing {
+  teams: JuniorCardTeamName[];
+  competitions: JuniorCardCompetitionLabel[];
+}
+
+export interface JuniorCardTeamNameUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  teamKey: string;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  shortName: string | null;
+}
+
+export interface JuniorCardTeamCrestUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  teamKey: string;
+  crestSource: CardCrestChoice | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  crestUrl?: string | null;
+}
+
+export interface JuniorCardCompetitionLabelUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  gradeKey: string;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  label: string | null;
 }
 
 export interface CardCompetitionLabelUpdate {
