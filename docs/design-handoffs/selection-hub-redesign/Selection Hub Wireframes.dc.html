@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&family=Caveat:wght@500;700&display=swap"><style>body{margin:0;background:#f0eee9;font-family:'Patrick Hand',system-ui,sans-serif;color:#1a1a1a}a{color:#1a1a1a}a:hover{color:#c2410c}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Pool rail <a class="dv-oid" href="#1b">1b</a> + focus <a class="dv-oid" href="#1e">1e</a> + tap-to-fill <a class="dv-oid" href="#1f">1f</a></span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Rail pool · grade chips on top · floating fill popover</div>
+<div class="dv-card" style="width:760px">
+<div style="display:flex;height:520px;position:relative">
+<div style="width:44px;border-right:2px solid #222;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:10px;font-size:11px"><span style="border:1.5px solid #222;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Nav</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Pool</span></div>
+<div style="width:180px;border-right:2px solid #222;background:#faf8f3;display:flex;flex-direction:column;padding:8px;gap:5px">
+<div style="font-family:Kalam;font-weight:700;font-size:16px">PLAYER POOL</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search…</div>
+<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-bottom:1.5px solid #222"><span>▾ NO REPLY</span><span>23 · Remind</span></div>
+<div style="display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+<div style="font-size:12px;display:flex;flex-direction:column;gap:2px"><span>▸ AVAILABLE 0</span><span>▸ MAYBE 0</span><span>▸ UNAVAILABLE 0</span><span>▸ JUNIORS 121</span><span>▸ PICKED 80</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:2px solid #222;font-size:13px"><span>Selection Hub / <b>Senior</b></span><span style="flex:1"></span><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px">‹ 24–25 Oct ›</span><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px">Board ⇄ <b>Focus</b></span></div>
+<div style="display:flex;gap:4px;padding:6px 10px;border-bottom:1.5px solid #222;font-size:12px;flex-wrap:wrap"><span style="border:2px solid #222;background:#f5a623;border-radius:4px;padding:0 8px">A ✓</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;padding:0 8px">B 11/11</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;padding:0 8px">C 11/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">D</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">F</span><span style="border:1.5px solid #c2410c;color:#c2410c;border-radius:4px;padding:0 8px">Fem A !</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Fem B 10/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Colts</span></div>
+<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 10px;min-height:0">
+<sc-for list="{{ teams3 }}" as="t" hint-placeholder-count="3"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px;overflow:hidden"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:15px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><div style="font-size:11px;color:#555">vs Opponent · Sat 12:05</div><div style="display:flex;gap:4px;font-size:11px"><span style="flex:1;border:1.5px solid #222;border-radius:3px;padding:0 4px">Capt ▾</span><span style="flex:1;border:1.5px solid #222;border-radius:3px;padding:0 4px">WK ▾</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:1.5px dashed #999;border-radius:4px;padding:1px 6px;font-size:12px;color:#888">+ Open slot</div><div style="margin-top:auto;border:2px solid #222;background:#f5a623;border-radius:4px;text-align:center;font-size:12px">Finalise</div></div></sc-for>
+</div></div>
+<div style="position:absolute;left:470px;top:300px;width:230px;border:2.5px solid #222;border-radius:8px;background:#fff;box-shadow:5px 5px 0 #222;padding:8px;display:flex;flex-direction:column;gap:5px">
+<div style="font-family:Kalam;font-weight:700;font-size:14px">Fill B Grade · slot 12</div>
+<div style="border:2px solid #2a78d6;border-radius:4px;padding:1px 6px;font-size:12px">mat|</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8;display:flex;justify-content:space-between"><span>Matthew Guyton</span><span>↵</span></div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px">Matthew Loon · COL</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px">Matthew White · <i>also in C</i></div>
+<div style="font-size:11px;color:#666">↑↓ · ↵ add · esc</div>
+</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:740px">The straight merge. Rail pool for dragging, 1–3 grade chips choose what's on screen, tapping an open slot pops a ranked search. Problem grades go red in the chip bar.</div>
+</div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Grades listed in the rail too · inline slot search</div>
+<div class="dv-card" style="width:760px">
+<div style="display:flex;height:520px">
+<div style="width:200px;border-right:2px solid #222;background:#faf8f3;display:flex;flex-direction:column;padding:8px;gap:5px">
+<div style="display:flex;gap:3px;font-size:12px"><span style="flex:1;text-align:center;border:1.5px solid #bbb;border-radius:4px">Nav</span><span style="flex:1;text-align:center;border:2px solid #222;background:#f5a623;border-radius:4px">Pool</span><span style="flex:1;text-align:center;border:1.5px solid #bbb;border-radius:4px">Grades</span></div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search…</div>
+<div style="display:flex;flex-wrap:wrap;gap:3px;font-size:11px"><span style="border:1.5px solid #222;border-radius:10px;padding:0 6px;background:#fff"><b>No reply 23</b></span><span style="border:1.5px solid #bbb;border-radius:10px;padding:0 6px">Avail 0</span><span style="border:1.5px solid #bbb;border-radius:10px;padding:0 6px">Maybe 0</span><span style="border:1.5px solid #bbb;border-radius:10px;padding:0 6px">Jnr 121</span><span style="border:1.5px solid #bbb;border-radius:10px;padding:0 6px">Picked 80</span></div>
+<div style="display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+<div style="font-family:Caveat;font-size:14px;color:#c2410c">"Grades" tab = checklist of all 8 with status</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:2px solid #222;font-size:13px"><span>Selection Hub / <b>Senior</b></span><span style="flex:1"></span><span>Showing <b>B, C</b> of 8 ▾</span><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px">‹ 24–25 Oct ›</span></div>
+<div style="flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px;min-height:0">
+<div style="border:2px solid #222;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:17px"><span>B GRADE</span><span style="font-size:12px">11/11 · draft</span></div><div style="font-size:11px;color:#555">vs Secret Harbour · Sat 12:05 · Home</div><sc-for list="{{ slotsB }}" as="p" hint-placeholder-count="11"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for>
+<div style="border:2px solid #2a78d6;border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;gap:3px;background:#eaf2fc"><div style="font-size:12px;border:1.5px solid #222;border-radius:3px;padding:0 5px;background:#fff">12 · mat|</div><div style="display:flex;gap:3px;flex-wrap:wrap;font-size:11px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 5px;background:#fdecc8">M. Guyton ↵</span><span style="border:1.5px solid #222;border-radius:3px;padding:0 5px;background:#fff">M. Loon</span><span style="border:1.5px solid #222;border-radius:3px;padding:0 5px;background:#fff">M. White · C</span></div></div></div>
+<div style="border:2px solid #222;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:17px"><span>C GRADE</span><span style="font-size:12px">11/11 · draft</span></div><div style="font-size:11px;color:#555">vs Waroona · Sat 12:15 · Away</div><sc-for list="{{ slotsB }}" as="p" hint-placeholder-count="11"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:1.5px dashed #999;border-radius:4px;padding:1px 6px;font-size:12px;color:#888">+ 12 · Open slot</div></div>
+</div></div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:740px">Bigger, roomier cards (2 at a time). Clicking an open slot turns it into a search field in place — suggestions appear as chips, no popover covering the team.</div>
+</div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Overview strip → click a grade to focus</div>
+<div class="dv-card" style="width:760px">
+<div style="display:flex;height:520px;position:relative">
+<div style="width:44px;border-right:2px solid #222;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:10px;font-size:11px"><span style="border:1.5px solid #222;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Nav</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Pool</span></div>
+<div style="width:170px;border-right:2px solid #222;background:#faf8f3;display:flex;flex-direction:column;padding:8px;gap:5px">
+<div style="font-family:Kalam;font-weight:700;font-size:16px">PLAYER POOL</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search…</div>
+<div style="font-size:12px;font-weight:700;border-bottom:1.5px solid #222">▾ NO REPLY 23</div>
+<div style="display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:2px solid #222;font-size:13px"><span>Selection Hub / <b>Senior</b></span><span style="flex:1"></span><span>0% replied ▬▬</span></div>
+<div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;padding:6px 10px;border-bottom:1.5px solid #222">
+<sc-for list="{{ overview }}" as="o" hint-placeholder-count="8"><div style="border:1.5px solid #222;border-radius:4px;padding:2px 3px;font-size:10px;display:flex;flex-direction:column;gap:2px;background:#fff"><b>{{ o.n }}</b><span>{{ o.s }}</span><div style="height:4px;background:#f5a623;border-radius:2px"></div></div></sc-for>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:10px;padding:10px;min-height:0">
+<div style="border:2.5px solid #222;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:18px"><span>FEMALE A GRADE</span><span style="font-size:12px;color:#c2410c">no captain · no keeper</span></div><div style="display:flex;gap:4px;font-size:11px"><span style="flex:1;border:2px solid #c2410c;border-radius:3px;padding:0 4px">Capt ▾ not set</span><span style="flex:1;border:2px solid #c2410c;border-radius:3px;padding:0 4px">WK ▾ not set</span></div><sc-for list="{{ slotsB }}" as="p" hint-placeholder-count="11"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:1.5px dashed #999;border-radius:4px;padding:1px 6px;font-size:12px;color:#888">+ 12 · Open slot</div></div>
+<div style="border:2px dashed #999;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;color:#888;font-size:13px;text-align:center"><span>+ pin another grade</span><span style="font-size:11px">(drop zone — drag a grade chip here)</span></div>
+</div></div>
+<div style="position:absolute;left:295px;top:120px;font-family:Caveat;font-size:15px;color:#c2410c">click any mini card ↑ to focus it</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:740px">All 8 grades always visible as mini cards (fill + warnings). Click one to focus; pin a second to compare. Tap-to-fill works on any open slot.</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "go with <a class="dv-oid" href="#2a">2a</a> but inline search from <a class="dv-oid" href="#2b">2b</a>" · "add the overview strip from <a class="dv-oid" href="#2c">2c</a> to <a class="dv-oid" href="#2a">2a</a>" · "show the phone version"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Where does the player pool live? Six layouts</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Pool on top — sticky strip, grouped tabs</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;flex-direction:column;height:480px">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:2px solid #222;font-size:13px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 4px">≡</span><span>Admin / Selection Hub / <b>Senior selection</b></span><span style="flex:1"></span><span style="background:#f5a623;border:1.5px solid #222;border-radius:12px;padding:1px 10px">+ Create a card</span></div>
+<div style="padding:8px 12px;border-bottom:2px dashed #222;background:#faf8f3;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px"><span style="font-family:Kalam;font-weight:700;font-size:16px">PLAYER POOL</span><span style="flex:1;border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search players…</span><span style="font-size:12px">weekend 24–25 Oct · 0% replied</span></div>
+<div style="display:flex;gap:4px;font-size:12px"><span style="border:1.5px solid #222;border-bottom:3px solid #f5a623;border-radius:4px;padding:1px 8px;background:#fff"><b>No reply 23</b></span><span style="border:1.5px solid #bbb;border-radius:4px;padding:1px 8px">Available 0</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:1px 8px">Maybe 0</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:1px 8px">Juniors 121</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:1px 8px">Picked 80</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:1px 8px">Unavail. 0</span><span style="flex:1"></span><span style="font-size:11px;border:1.5px solid #222;border-radius:4px;padding:1px 6px">Remind 23</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:4px"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="14"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+<div style="align-self:center;font-size:11px;color:#666">═ drag to show more rows ═</div>
+</div>
+<div style="flex:1;overflow:hidden;padding:10px 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;position:relative">
+<sc-for list="{{ teams }}" as="t" hint-placeholder-count="4"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:14px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><div style="height:4px;background:#ddd;width:70%;border-radius:2px"></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:0 5px;font-size:11px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:1.5px dashed #999;border-radius:4px;padding:0 5px;font-size:11px;color:#888">Open slot</div></div></sc-for>
+</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Pool pins under the top bar; teams scroll beneath it. Tabs keep it to 2–3 rows so you're never more than one flick from a drop target.</div>
+</div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Pool as the side menu — swaps with main nav</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;height:480px">
+<div style="width:44px;border-right:2px solid #222;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:10px;font-size:11px"><span style="border:1.5px solid #222;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Nav</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;width:26px;height:22px;display:flex;align-items:center;justify-content:center">Pool</span><span style="width:20px;height:2px;background:#ccc"></span><span style="width:20px;height:16px;border:1.5px solid #bbb;border-radius:3px"></span><span style="width:20px;height:16px;border:1.5px solid #bbb;border-radius:3px"></span><span style="width:20px;height:16px;border:1.5px solid #bbb;border-radius:3px"></span></div>
+<div style="width:180px;border-right:2px solid #222;background:#faf8f3;display:flex;flex-direction:column;padding:8px;gap:5px">
+<div style="font-family:Kalam;font-weight:700;font-size:16px">PLAYER POOL</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search…</div>
+<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-bottom:1.5px solid #222"><span>▾ NO REPLY</span><span>23</span></div>
+<div style="display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+<div style="font-size:12px;display:flex;flex-direction:column;gap:2px"><span>▸ AVAILABLE 0</span><span>▸ MAYBE 0</span><span>▸ JUNIORS 121</span><span>▸ PICKED 80</span></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:2px solid #222;font-size:13px"><span>Selection Hub / <b>Senior</b></span><span style="flex:1"></span><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px">‹ 24–25 Oct ›</span></div>
+<div style="flex:1;overflow:hidden;padding:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+<sc-for list="{{ teams6 }}" as="t" hint-placeholder-count="6"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:14px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:0 5px;font-size:11px;background:#fdecc8">{{ p }}</div></sc-for></div></sc-for>
+</div></div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Collapse the nav and the rail flips to "Pool". Frozen full height, only one group open at a time — teams get the whole right side.</div>
+</div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Frozen right panel + grade jump bar</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;flex-direction:column;height:480px">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:2px solid #222;font-size:13px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 4px">≡</span><span>Selection Hub / <b>Senior selection</b></span><span style="flex:1"></span><span>0% replied ▬▬▬</span></div>
+<div style="display:flex;gap:4px;padding:6px 12px;border-bottom:1.5px solid #222;font-size:11px;flex-wrap:wrap"><span>Jump:</span><sc-for list="{{ jump }}" as="j" hint-placeholder-count="8"><span style="border:1.5px solid #222;border-radius:10px;padding:0 7px">{{ j }}</span></sc-for></div>
+<div style="flex:1;display:flex;min-height:0">
+<div style="flex:1;overflow:hidden;padding:8px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-content:start">
+<sc-for list="{{ teams6 }}" as="t" hint-placeholder-count="6"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:14px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:0 5px;font-size:11px;background:#fdecc8">{{ p }}</div></sc-for></div></sc-for>
+</div>
+<div style="width:190px;border-left:3px double #222;background:#faf8f3;padding:8px;display:flex;flex-direction:column;gap:5px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:Kalam;font-weight:700;font-size:16px">POOL</span><span style="font-size:10px;border:1.5px solid #222;border-radius:3px;padding:0 4px">pinned</span></div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;color:#777">Search…</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:11px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 4px;background:#fff"><b>No reply 23</b></span><span style="border:1.5px solid #bbb;border-radius:3px;padding:0 4px">Avail 0</span><span style="border:1.5px solid #bbb;border-radius:3px;padding:0 4px">Maybe 0</span><span style="border:1.5px solid #bbb;border-radius:3px;padding:0 4px">Jnr 121</span></div>
+<div style="display:flex;flex-direction:column;gap:3px;overflow:hidden;flex:1"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+</div></div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Closest to today. Pool is viewport-height and never scrolls away; its list scrolls on its own. Jump bar fixes "where's Colts?".</div>
+</div>
+
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Bottom dock — tray of chips, pull up to expand</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;flex-direction:column;height:480px">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:2px solid #222;font-size:13px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 4px">≡</span><span>Selection Hub / <b>Senior selection</b></span></div>
+<div style="flex:1;overflow:hidden;padding:10px 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+<sc-for list="{{ teams }}" as="t" hint-placeholder-count="4"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:14px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:0 5px;font-size:11px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:2px dashed #2a78d6;border-radius:4px;padding:0 5px;font-size:11px;color:#2a78d6;background:#eaf2fc">drop here</div></div></sc-for>
+</div>
+<div style="border-top:3px solid #222;background:#faf8f3;padding:6px 12px 10px;display:flex;flex-direction:column;gap:6px">
+<div style="align-self:center;width:50px;height:5px;border-radius:3px;background:#222"></div>
+<div style="display:flex;gap:6px;align-items:center;font-size:12px"><span style="font-family:Kalam;font-weight:700;font-size:15px">POOL</span><span style="border:1.5px solid #222;border-radius:4px;padding:0 8px;background:#fff"><b>No reply 23</b></span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Available 0</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Maybe 0</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Juniors</span><span style="flex:1;border:1.5px solid #222;border-radius:4px;padding:0 6px;color:#777">Search…</span></div>
+<div style="display:flex;gap:4px;overflow:hidden;white-space:nowrap"><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fff;flex:none">⠿ {{ p }}</span></sc-for></div>
+<div style="font-size:11px;color:#666">← swipe for more →</div>
+</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Like a dock — always at the bottom of the viewport, drag a chip straight up into any visible team. Pull the handle for a taller tray.</div>
+</div>
+
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Focus mode — pick grades to work on, pool beside</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;flex-direction:column;height:480px">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:2px solid #222;font-size:13px"><span>Selection Hub / <b>Senior selection</b></span><span style="flex:1"></span><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px">Board ⇄ <b>Focus</b></span></div>
+<div style="display:flex;gap:4px;padding:6px 12px;border-bottom:1.5px solid #222;font-size:12px;flex-wrap:wrap"><span style="border:2px solid #222;background:#f5a623;border-radius:4px;padding:0 8px">A ✓ 11/11</span><span style="border:2px solid #222;background:#f5a623;border-radius:4px;padding:0 8px">B 11/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">C 11/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">D 11/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">F 11/11</span><span style="border:1.5px solid #c2410c;color:#c2410c;border-radius:4px;padding:0 8px">Fem A ! no capt</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Fem B 10/11</span><span style="border:1.5px solid #bbb;border-radius:4px;padding:0 8px">Colts</span></div>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr 170px;gap:10px;padding:10px 12px;min-height:0">
+<sc-for list="{{ teams2 }}" as="t" hint-placeholder-count="2"><div style="border:2px solid #222;border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:17px"><span>{{ t.n }}</span><span style="font-size:12px">{{ t.s }}</span></div><div style="font-size:11px;color:#555">vs Opponent · Sat 12:05 · Away</div><div style="display:flex;gap:4px;font-size:11px"><span style="flex:1;border:1.5px solid #222;border-radius:3px;padding:0 4px">Capt ▾</span><span style="flex:1;border:1.5px solid #222;border-radius:3px;padding:0 4px">Keeper ▾</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8">{{ p }}</div></sc-for></div></sc-for>
+<div style="border:2px solid #222;border-radius:6px;background:#faf8f3;padding:6px;display:flex;flex-direction:column;gap:4px;overflow:hidden"><div style="font-family:Kalam;font-weight:700;font-size:15px">POOL</div><div style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;color:#777">Search…</div><div style="font-size:12px;font-weight:700">▾ NO REPLY 23</div><sc-for list="{{ pool }}" as="p" hint-placeholder-count="10"><span style="border:1.5px solid #222;border-radius:4px;padding:0 6px;font-size:12px;background:#fff">⠿ {{ p }}</span></sc-for></div>
+</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Toggle 1–3 grades on; everything fits one screen, no scrolling. Status chips flag problems in grades you're not looking at.</div>
+</div>
+
+<div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Tap a slot → pool pops up (no drag needed)</div>
+<div class="dv-card" style="width:660px">
+<div style="display:flex;flex-direction:column;height:480px;position:relative">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:2px solid #222;font-size:13px"><span style="border:1.5px solid #222;border-radius:3px;padding:0 4px">≡</span><span>Selection Hub / <b>Senior selection</b></span></div>
+<div style="flex:1;overflow:hidden;padding:10px 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+<sc-for list="{{ teams }}" as="t" hint-placeholder-count="4"><div style="border:2px solid #222;border-radius:6px;padding:6px;display:flex;flex-direction:column;gap:3px"><div style="display:flex;justify-content:space-between;font-family:Kalam;font-weight:700;font-size:14px"><span>{{ t.n }}</span><span style="font-size:11px">{{ t.s }}</span></div><sc-for list="{{ t.slots }}" as="p" hint-placeholder-count="6"><div style="border:1.5px solid #222;border-radius:4px;padding:0 5px;font-size:11px;background:#fdecc8">{{ p }}</div></sc-for><div style="border:1.5px dashed #999;border-radius:4px;padding:0 5px;font-size:11px;color:#888">+ Open slot</div></div></sc-for>
+</div>
+<div style="position:absolute;left:190px;top:205px;width:250px;border:2.5px solid #222;border-radius:8px;background:#fff;box-shadow:5px 5px 0 #222;padding:8px;display:flex;flex-direction:column;gap:5px">
+<div style="font-family:Kalam;font-weight:700;font-size:14px">Fill B Grade · slot 12</div>
+<div style="border:2px solid #2a78d6;border-radius:4px;padding:1px 6px;font-size:12px">mat|</div>
+<div style="font-size:11px;color:#666">Best fits — available, last played B</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px;background:#fdecc8;display:flex;justify-content:space-between"><span>Matthew Guyton</span><span>↵</span></div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px">Matthew Loon · COL</div>
+<div style="border:1.5px solid #222;border-radius:4px;padding:1px 6px;font-size:12px">Matthew White · <i>already C</i></div>
+<div style="font-size:11px;color:#666">↑↓ choose · ↵ add · esc close</div>
+</div>
+<div style="position:absolute;left:150px;top:180px;font-family:Caveat;font-size:16px;color:#c2410c">tap ↘</div>
+</div></div>
+<div style="font-family:Caveat;font-size:16px;color:#c2410c;max-width:640px">Pairs with any layout above. Click an open slot (or a player to swap) → searchable, ranked mini-pool right there. Great on phone too.</div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "combine <a class="dv-oid" href="#1b">1b</a> with <a class="dv-oid" href="#1f">1f</a>" · "push <a class="dv-oid" href="#1a">1a</a> further — denser chips" · "show <a class="dv-oid" href="#1d">1d</a> on mobile"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const s = (a) => a;
+    const teams = [
+      { n: "A GRADE", s: "11/11 ✓", slots: s(["Jack Manuel","Timothy Miles","Jake Wyllie C","Josh Rudge","Dexter Trego","Travis Caine"]) },
+      { n: "B GRADE", s: "11/11", slots: s(["Jacob Barnes","Dilan W.","Angus Kent","Alec Smith","Archie N.","Peter Walsh"]) },
+      { n: "C GRADE", s: "11/11", slots: s(["Ethan Sandery","George Young","Waldo Kruger","Peter Knight","Louie Labrow","Cam Lucas"]) },
+      { n: "D GRADE", s: "11/11", slots: s(["Kobe Lee","Hayes Buller","Grant M.","Cohen Buller","Ben Dreckow","Mason Head"]) },
+    ];
+    const extra = [
+      { n: "F GRADE", s: "11/11", slots: ["Devon Phelps","Mathew B.","Robin Singh","Bryce K.","Amninder S.","Nick Natu"] },
+      { n: "COLTS", s: "11/11", slots: ["Freddie Higton","Tahj Bashford","Zach Dreckow","Mitchell Caine","C. Lockyer","Dexter Trego"] },
+    ];
+    return {
+      teams,
+      teams6: [...teams, ...extra],
+      teams2: teams.slice(0, 2),
+      teams3: [{ ...teams[0], n: "A GRADE" }, teams[1], teams[2]],
+      slotsB: ["Jacob Barnes","Dilan Weerasinghe","Angus Kent","Alec Smith","Archie Nicholson","Peter Walsh","Craig Ford  C","Campbell Lockyer","Rylan Arms","Kyle Jeffrey","Hugo Young  WK"],
+      overview: [{n:"A",s:"✓ final"},{n:"B",s:"11/11"},{n:"C",s:"11/11"},{n:"D",s:"11/11"},{n:"F",s:"11/11"},{n:"Fem A",s:"! capt"},{n:"Fem B",s:"10/11"},{n:"Colts",s:"11/11"}],
+      jump: ["A ✓","B","C","D","F","Fem A","Fem B","Colts"],
+      pool: ["Anthony Brokate","Ash Wyborn","Blake Allen","Daniel Fogarty","Darren Jeffrey","David Arrowsmith","Hudson Malingre","James Skeels","Jason R Davey","Jett Demmery","Matthew Guyton","Scott Martin","Thomas Dix","Chris Phelps"],
+    };
+  }
+}
+</script>
+</body>
+</html>

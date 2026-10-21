@@ -1,5 +1,48 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** SDE
+**Feature:** selection-hub-redesign
+
+## Context
+
+- Plan: `.10x/decisions/engineering-manager/selection-hub-redesign.md`. Architecture: `.10x/decisions/architect/selection-hub-redesign.md`. Visual spec: `docs/design-handoffs/selection-hub-redesign/README.md`.
+- Start PR 1 (T1.1 to T1.7) on `wyborn21/ovation-selection-hub-redesign-9ab7a5`. Verify drag from the sidebar pool in the browser right after T1.3, before T1.4.
+- PR 2 (T2.1 to T2.7) stacks on PR 1. Retarget it to main before PR 1 merges with --delete-branch.
+- Client only: no API change and no migration. Every move goes through the existing `act()` → `applyMove`.
+
+## Handoff History
+
+### Previous (Architect → EM, selection-hub-redesign)
+
+**From:** Principal Architect
+**To:** Engineering Manager / SDE
+**Feature:** selection-hub-redesign
+
+## Context
+
+- Architecture: `.10x/decisions/architect/selection-hub-redesign.md`. Requirements: `.10x/decisions/product-manager/selection-hub-redesign.md`. Visual spec: `docs/design-handoffs/selection-hub-redesign/README.md`.
+- Pattern: `AdminLayout` exposes a sidebar slot context (DOM node + `menu`/`pool` mode, route-gated to `/admin/selection`). The hub portals `PlayerPool` into it and falls back inline on mobile, in Menu mode or with the sidebar collapsed. Board state stays in `selection-hub.tsx`.
+- New modules: `grade-chip-bar.tsx`, `use-hub-view.ts` (pure focus rules), `fill-popover.tsx` (fill/place modes), `rankCandidates` and `sideNeedsAttention` as pure, unit-tested helpers.
+- Every move goes through the existing `act()` → `applyMove` → save mutation. No API, schema or migration change.
+- Delivery: PR 1 is layout (slot, toggle, pool, chip bar, Focus/Board, compact strip). PR 2 is interaction (popovers, Find-player, attention dots, toasts), stacked on PR 1. Retarget it to main before merging PR 1.
+- Lands before selection-hub-decoupling PR1–PR3.
+
+### Previous (PM → Architect, selection-hub-redesign)
+
+**From:** Product Manager
+**To:** Architect / Engineering Manager
+**Feature:** selection-hub-redesign
+
+## Context
+
+- Decision: `.10x/decisions/product-manager/selection-hub-redesign.md`. Design: `docs/design-handoffs/selection-hub-redesign/README.md` (hi-fi spec, §1–9) and `Selection Hub Prototype.dc.html`.
+- Full handoff scope in one release (may split into 2 PRs: layout+pool+focus, then popovers+strip+toasts). Client-only: no API, no migration. Reuse `use-pointer-drag`, `apply-move.ts`, `TeamCard`, `PlayerPool`, Radix Popover and the existing toaster. Theme tokens only.
+- Sequencing: lands before selection-hub-decoupling PR1–PR3, which then build on the new layout.
+- Priority: P0 sidebar pool, Focus/Board + chip bar, fill popover. P1 Add-to popover, chip attention dots, compact strip. P2 toasts. P3 mobile bottom sheet (out).
+
+### Previous (match-day-carousel-content)
+
 **From:** SDE (P7, remaining kinds on builders)
 **To:** SDE session for P8 (new pack), then P9 (retire four packs)
 **Feature:** match-day-carousel-content

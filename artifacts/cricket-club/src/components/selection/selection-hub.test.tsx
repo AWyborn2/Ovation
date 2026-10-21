@@ -4,17 +4,30 @@
  * through to the versioned board save — plus a refused save reverting and
  * a pointer drag landing on a slot.
  */
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
 import type { SelectionBoard, SelectionMember, SelectionSide } from "@workspace/api-client-react";
 import SelectionHub from "@/pages/selection-hub";
+import { AdminSidebarSlotContext } from "@/components/admin-sidebar-slot";
 import { renderAt } from "@/test/render";
 import { moveOptions } from "./move-dialog";
 import { applyMove, sideWarnings } from "./apply-move";
 
+// Board view: these tests look at every side at once (Focus is covered below).
+beforeEach(() => {
+  localStorage.clear();
+  for (const section of ["senior", "junior"]) {
+    localStorage.setItem(
+      `selection-hub-view:${section}`,
+      JSON.stringify({ view: "board", focused: [] }),
+    );
+  }
+});
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 // jsdom has no PointerEvent; without it fireEvent drops pointerId/clientX.
@@ -843,5 +856,89 @@ describe("overseas players", () => {
     });
     if (!out.ok) throw new Error(out.message);
     expect(out.state.selections[0].overseas).toEqual({ count: 1, cap: 1, over: false });
+  });
+});
+
+describe("Focus and Board (selection hub redesign)", () => {
+  const chip = (label: string) =>
+    within(screen.getByTestId("grade-chip-bar"))
+      .getAllByRole("button")
+      .find((b) => b.textContent?.startsWith(label) && b.hasAttribute("title"))!;
+  const shownSides = () =>
+    within(screen.getByRole("main", { name: "Teams" }))
+      .queryAllByRole("article")
+      .map((a) => a.getAttribute("data-side-id"));
+
+  it("starts on one grade on a narrow screen; chips add and drop grades, never below one", async () => {
+    localStorage.clear();
+    stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    expect(shownSides()).toEqual(["1"]);
+
+    fireEvent.click(chip("B"));
+    expect(shownSides()).toEqual(["1", "2"]);
+    fireEvent.click(chip("A"));
+    expect(shownSides()).toEqual(["2"]);
+    // The last grade on screen can't be switched off.
+    fireEvent.click(chip("B"));
+    expect(shownSides()).toEqual(["2"]);
+    expect(JSON.parse(localStorage.getItem("selection-hub-view:senior")!)).toEqual({
+      view: "focus",
+      focused: [2],
+    });
+  });
+
+  it("Board shows every side, and a chip there jumps to Focus on that grade", async () => {
+    localStorage.clear();
+    stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    fireEvent.click(screen.getByRole("button", { name: "Board" }));
+    expect(shownSides()).toEqual(["1", "2", "3", "4", "5"]);
+    fireEvent.click(chip("C"));
+    expect(shownSides()).toEqual(["3"]);
+    expect(screen.getByRole("button", { name: "Focus" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("flags a grade that still needs a captain, a keeper or a replacement", async () => {
+    const board = makeBoard();
+    board.selections[0].warnings = { ...board.selections[0].warnings, noCaptain: true };
+    stubApi(board);
+    renderHub();
+    await screen.findByTestId("side-1");
+    expect(chip("A").getAttribute("title")).toMatch(/no captain/);
+    expect(within(chip("A")).getByLabelText("Needs attention")).toBeTruthy();
+  });
+});
+
+describe("pool in the admin side panel (selection hub redesign)", () => {
+  it("renders the pool into the sidebar slot and reports the unpicked count", async () => {
+    const node = document.createElement("div");
+    document.body.appendChild(node);
+    const setCount = vi.fn();
+    stubApi(makeBoard());
+    renderAt(
+      <AdminSidebarSlotContext.Provider value={{ node, setCount }}>
+        <SelectionHub />
+      </AdminSidebarSlotContext.Provider>,
+      "/admin/selection",
+    );
+    await screen.findByTestId("side-1");
+    const pool = await within(node).findByRole("complementary", { name: "Player pool" });
+    expect(pool).toBeTruthy();
+    expect(screen.getAllByRole("complementary", { name: "Player pool" })).toHaveLength(1);
+    // The sidebar copy drops the long instructions for a one-line footer.
+    expect(within(pool).getByText(/Tap a player to add them to a side/)).toBeTruthy();
+    await waitFor(() => expect(setCount).toHaveBeenLastCalledWith(3));
+    node.remove();
+  });
+
+  it("stays inline when there's no sidebar slot (mobile, Menu mode, captain area)", async () => {
+    stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    const pool = screen.getByRole("complementary", { name: "Player pool" });
+    expect(pool.className).toMatch(/rounded-lg/);
   });
 });
