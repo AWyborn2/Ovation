@@ -40,10 +40,12 @@ becomes:
 
 - **A drift test that runs `validate.ts` over every starter now and every bundle later.**
   `validate.ts` is the contract; a second, schema-shaped copy of the same rules would only drift.
-- **The prompt's format guide, built from `validate.ts`'s own constants** (layer kinds, enums,
-  ranges, limits), so the rules the model reads can't drift from the rules it's checked against.
-  Port the spike's guide (`formatGuide()` in `scripts/src/spike-template-schema/prompt.ts`):
-  prose plus one example document, 3,100–3,500 tokens with the kind's catalogue.
+- **The prompt's format guide, built from `format.ts`'s closed lists and `validate.ts`'s limits**
+  (layer kinds, presets, colour tokens, ranges), so the rules the model reads can't drift from
+  the rules it's checked against. Take the spike's guide (`formatGuide()` in
+  `scripts/src/spike-template-schema/prompt.ts`, prose plus one example document, 3,100–3,500
+  tokens with the kind's catalogue) as the template for its wording, not its values: see "Lines
+  up with T1.1" below.
 - **Only if a JSON Schema is still wanted as documentation:** one nested schema of the whole
   format with a recursive `$ref` for `children` (no unrolled levels, no per-kind or flat
   variants) and every constraint kept. Validating starters against it would need its own
@@ -84,6 +86,26 @@ And for T1.7–T1.8, since the validator now drives the AI's retries:
   the console should say a design takes a few minutes. Budget T7.13's cost figure from these.
 - **No refusals and no fallbacks** in 14 requests; every reply ended with `end_turn` and parsed as
   JSON.
+
+## Lines up with T1.1
+
+L1-A pushed T1.1 (`lib/scorecard/src/kind-templates/format.ts` on `wyborn21/stl-l1a-format-v2`)
+while the spike ran. Its structure is the spike's: `pages`, groups with `children` and `stack`,
+`showWhen`, `fit`, `motion`, `vector`. It is richer in places: a fill is a colour or a gradient (a
+union), shadows and filters are lists, radial gradients take a centre, and `element` and photo
+adjustments stay. That only adds unions and properties to any schema, so the answer stands.
+
+Its closed lists differ from the spike's prompt, which is why the guide must be built from
+`format.ts`:
+
+- motion: T1.1 has `rise`, `fade`, `pop` and the loops `pulse`, `shine`; the spike also offered
+  `slide`, `zoom` and `glow`.
+- colours: T1.1 takes a hex or `var(--token)` with tokens `--gold`, `--panel`, `--panel-2`,
+  `--ink`, `--accent-ink` (plus the `--ck-*` and `--dt-*` palettes); the spike also allowed
+  `rgba()` and `var(--accent, fallback)`.
+- smaller differences: T1.1 adds `dotted` borders, more blend modes and `space-around` /
+  `space-evenly`, measures borders and shadows in percent of the artboard width, and declares
+  `palettes` as a list.
 
 ## Evidence
 
@@ -207,10 +229,10 @@ only sent when its worst case still fitted under the cap.
 
 ## Caveats
 
-- **The format is the spike's draft, not T1.1's.** T1.1 may add or drop fields, but the bisection
-  shows the limit is far below any useful schema: a nested depth-4 skeleton with five properties
-  per layer fails, and a flat one compiles only when stripped of the v2 features. A leaner T1.1
-  won't change the answer.
+- **The schemas were built from the spike's draft, not T1.1's.** T1.1 is richer (see "Lines up
+  with T1.1"), and the bisection shows the limit is far below any useful schema: a nested depth-4
+  skeleton with five properties per layer fails, and a flat one compiles only when stripped of the
+  v2 features. T1.1's format won't change the answer.
 - **The validator is a stand-in** for L1-B's (T1.7–T1.9), and nothing was rendered or fit-checked.
   The validity figures are an upper bound on what L1-B's validator plus the fit check will pass.
 - **The grammar limit is server-side and unpublished.** It can move. Re-checking costs nothing
