@@ -38,6 +38,7 @@ import type {
 import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
+  parseClipPolygon,
   parseGradient,
   parseMatrix,
   parseShadows,
@@ -545,6 +546,23 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
         what: `transform ${el.style.transform} (skew or scale) drawn untransformed`,
       });
     if (paint && (paint.style.fill || paint.style.border || paint.style.boxShadow)) {
+      // The box's other background layers, beneath it: same box, corners, clip and opacity.
+      paint.under.forEach((fill, i) => {
+        const s = paint.style;
+        add(
+          `shape:under:${i}:${paint.key}`,
+          {
+            kind: "shape",
+            style: {
+              fill,
+              ...(s.radius !== undefined ? { radius: s.radius } : {}),
+              ...(s.clip ? { clip: s.clip } : {}),
+              ...(s.opacity !== undefined ? { opacity: s.opacity } : {}),
+            },
+          } as MappedLayer["layer"],
+          withRotate(pct(g.box)),
+        );
+      });
       const m = motionFor();
       add(
         `shape:${paint.key}`,
@@ -725,18 +743,24 @@ function withOpacity(layer: MappedLayer["layer"], factor: number): MappedLayer["
  */
 function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): TemplateFilter[] {
   const out: TemplateFilter[] = [];
+  let brightness: number | null = null;
   for (const e of [el, ...tree.ancestors(el)]) {
     const value = e.style.filter;
     if (!value || value === "none") continue;
     for (const [, name, arg] of value.matchAll(/([a-z-]+)\(([^)]*)\)/g)) {
       const n = parseFloat(arg!);
+      const amount = arg!.endsWith("%") ? n / 100 : n;
       if (name === "grayscale" && Number.isFinite(n))
-        out.push({ preset: "grayscale", amount: r2(arg!.endsWith("%") ? n / 100 : n) });
+        out.push({ preset: "grayscale", amount: r2(amount) });
       else if (name === "blur" && Number.isFinite(n))
         out.push({ preset: "blur", px: Math.min(MAX_BLUR_PX, r2(n)) });
+      // A darkened photo (a scrimmed hero): nested brightness() filters multiply.
+      else if (name === "brightness" && Number.isFinite(n)) brightness = (brightness ?? 1) * amount;
       else polish.push({ element: el.id, what: `filter ${name}(${arg}) not mapped` });
     }
   }
+  if (brightness !== null)
+    out.push({ preset: "brightness", amount: r2(Math.min(3, Math.max(0, brightness))) });
   return out;
 }
 
@@ -925,25 +949,30 @@ function shapeStyle(
   tree: Tree,
   el: CapturedElement,
   ctx: StyleContext,
-): { style: TemplateStyleV2; key: string; edges: Edge[] } | null {
+): { style: TemplateStyleV2; key: string; edges: Edge[]; under: TemplateFill[] } | null {
   const style: TemplateStyleV2 = {};
-  const fill = ctx.colour(el, "background-color");
-  if (el.style["background-color"] && fill) style.fill = fill;
+  // CSS paints its background images top first, over the background colour.
+  // The top one is the box's fill; the others are drawn beneath as shapes of
+  // their own (`under`, bottom first), so layered stages keep every layer.
+  const fills: TemplateFill[] = [];
   const image = el.style["background-image"];
   if (image && image !== "none") {
-    const layers = splitTopLevel(image).filter((p) => !p.startsWith("url("));
-    const gradient = layers.length ? gradientFill(layers[0]!, ctx, el) : null;
-    if (gradient) style.fill = gradient;
-    if (layers.length > 1)
-      ctx.polish.push({
-        element: el.id,
-        what: `${layers.length} layered backgrounds; the first is kept`,
-      });
-    if (layers.length && !gradient)
-      ctx.polish.push({ element: el.id, what: `background ${layers[0]!.slice(0, 50)} not mapped` });
+    for (const layer of splitTopLevel(image).filter((p) => !p.startsWith("url("))) {
+      const gradient = gradientFill(layer, ctx, el);
+      if (gradient) fills.push(gradient);
+      else ctx.polish.push({ element: el.id, what: `background ${layer.slice(0, 50)} not mapped` });
+    }
+  }
+  const colour = ctx.colour(el, "background-color");
+  if (el.style["background-color"] && colour) fills.push(colour);
+  let under: TemplateFill[] = [];
+  if (fills.length) {
+    style.fill = fills[0]!;
+    under = fills.slice(1).reverse();
   }
   if (el.style["background-clip"] === "text" || el.style["-webkit-background-clip"] === "text") {
     delete style.fill; // a text fill, handled with the text style
+    under = [];
   }
   const sides = ["top", "right", "bottom", "left"].map((s) => ({
     s,
@@ -1010,13 +1039,24 @@ function shapeStyle(
   if (opacity < 1) style.opacity = r2(opacity);
   const blend = el.style["mix-blend-mode"];
   if (blend && blend !== "normal") style.blend = blend as BlendMode;
+  // A polygon clip (Club Kit's angled bands) cuts the box to that shape.
+  const clipValue = el.style["clip-path"];
+  let clipped = false;
+  if (clipValue && clipValue !== "none") {
+    const size = el.size ?? { w: el.box.w, h: el.box.h };
+    const polygon = parseClipPolygon(clipValue, size.w, size.h);
+    if (polygon) {
+      style.clip = { polygon };
+      clipped = true;
+    }
+  }
   for (const prop of ["filter", "backdrop-filter", "clip-path", "mask-image"])
-    if (el.style[prop] && el.style[prop] !== "none")
+    if (el.style[prop] && el.style[prop] !== "none" && !(prop === "clip-path" && clipped))
       ctx.polish.push({
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
       });
-  return { style, key: JSON.stringify(style), edges };
+  return { style, key: JSON.stringify(style), edges, under };
 }
 
 const FONT_GENERIC =

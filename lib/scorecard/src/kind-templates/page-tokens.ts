@@ -38,8 +38,26 @@ export type PageTokenCatalogue = {
   repeats: PageRepeat[];
 };
 
-/** Images every page can show without listing them: the club's crest and ground photo. */
-export const IMPLICIT_IMAGE_TOKENS = ["clubLogo", "groundPhoto"] as const;
+/**
+ * Images every page can show without listing them: the club's crest and
+ * ground photo, and its first three sponsors' logos (every pack prints a
+ * sponsor strip on every card; decision O8).
+ */
+export const IMPLICIT_IMAGE_TOKENS = [
+  "clubLogo",
+  "groundPhoto",
+  "sponsor1",
+  "sponsor2",
+  "sponsor3",
+] as const;
+
+/** A carousel page's sponsor logos by position, as the packs lay them out (`weekendSponsor0…`). */
+const weekendSponsors = (n: number): PageImageToken[] =>
+  Array.from({ length: n }, (_, i) => ({
+    key: `weekendSponsor${i}`,
+    label: `Sponsor logo ${i + 1}`,
+    type: "logo" as const,
+  }));
 
 /** The token photo layers bind: the card's photo. */
 export const PHOTO_TOKEN = "photo";
@@ -175,6 +193,7 @@ const MATCH_DAY_TITLE: Omit<PageTokenCatalogue, "kind" | "page"> = {
   images: [
     CLUB_LOGO,
     { key: "photo", label: "Cover photo", type: "photo", content: "title.coverPhoto" },
+    ...weekendSponsors(3),
   ],
   repeats: [],
 };
@@ -220,6 +239,8 @@ const MATCH_DAY_SPONSORS: Omit<PageTokenCatalogue, "kind" | "page"> = {
   images: [
     CLUB_LOGO,
     { key: "photo", label: "Background photo", type: "photo", content: "sponsors.background" },
+    // The packs' sponsor grid by position; the `sponsors` repeat lays out any number.
+    ...weekendSponsors(12),
   ],
   repeats: [
     {

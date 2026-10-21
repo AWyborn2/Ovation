@@ -293,3 +293,65 @@ describe("text fill over a taller box", () => {
     expect(fillOverBox(style, { y: 0, h: 100 }, { y: 0, h: 100 })).toBe(style);
   });
 });
+
+describe("clips, layered backgrounds and brightness", () => {
+  const cap = capture();
+  const band = el(0, "div", [0, 800, 1080, 200], {
+    size: { w: 1080, h: 200 },
+    style: {
+      "background-color": "rgb(211, 23, 90)",
+      "clip-path": "polygon(160px 0px, 100% 0px, 100% 100%, 0px calc(100% - 50px))",
+    },
+  });
+  const stage = el(0, "div", [0, 0, 1080, 400], {
+    style: {
+      "background-color": "rgb(14, 43, 81)",
+      "background-image":
+        "linear-gradient(rgba(0, 0, 0, 0.5), rgb(0, 0, 0)), radial-gradient(circle at 50% 0%, rgb(211, 23, 90), rgb(14, 43, 81))",
+    },
+  });
+  const wrap = el(0, "div", [100, 100, 300, 300], { style: { filter: "brightness(50%)" } });
+  const pic = el(wrap.id, "img", [100, 100, 300, 300], {
+    src: "sentinel:photo",
+    style: { filter: "brightness(0.6)" },
+  });
+  cap.elements.push(band, stage, wrap, pic);
+  const result = mapCapture(cap);
+  const of = (e: CapturedElement) => result.layers.filter((l) => l.element === e.id);
+
+  it("cuts a clipped box to its polygon, in percent of the box", () => {
+    const [shape] = of(band);
+    expect(shape!.layer).toMatchObject({
+      kind: "shape",
+      style: {
+        clip: {
+          polygon: [
+            [14.81, 0],
+            [100, 0],
+            [100, 100],
+            [0, 75],
+          ],
+        },
+      },
+    });
+    expect(result.polish.some((p) => p.element === band.id && /clip-path/.test(p.what))).toBe(
+      false,
+    );
+  });
+
+  it("keeps every background layer, bottom first, the top one on the box", () => {
+    const layers = of(stage).map((l) => (l.layer as { style: { fill: unknown } }).style.fill);
+    expect(layers).toHaveLength(3);
+    expect(typeof layers[0]).toBe("string"); // the background colour, at the bottom
+    expect(layers[1]).toMatchObject({ type: "radial" });
+    expect(layers[2]).toMatchObject({ type: "linear" });
+    expect(result.polish.some((p) => /layered backgrounds/.test(p.what))).toBe(false);
+  });
+
+  it("maps brightness, nested filters multiplied", () => {
+    const photo = result.layers.find((l) => l.layer.kind === "photo" && l.element === pic.id)!;
+    expect((photo.layer as { style?: { filter?: unknown } }).style?.filter).toEqual([
+      { preset: "brightness", amount: 0.3 },
+    ]);
+  });
+});

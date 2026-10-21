@@ -23,6 +23,7 @@ import {
   FILTER_PRESETS,
   FORMAT_VERSION,
   LAYER_KINDS_V2,
+  MAX_CLIP_POINTS,
   MAX_STACK_DEPTH,
   MOTION_EASINGS,
   MOTION_IN_PRESETS,
@@ -89,8 +90,9 @@ motion: { in: { preset ${list(MOTION_IN_PRESETS)}, delayMs ${range(r.motionDelay
 - border: { width (percent of the artboard width, ${range(r.borderWidth)}), color, style ${list(BORDER_STYLES)} }.
 - boxShadow: up to ${MAX_SHADOWS} of { x, y, blur, spread, color, inset }; textShadow: up to ${MAX_SHADOWS} of { x, y, blur, color }. Offsets and spread ${range(r.shadowOffset)} and blur ${range(r.shadowBlur)}, in percent of the artboard width.
 - blend: ${list(BLEND_MODES)}.
-- filter (photos and images): a list of { preset: "duotone", dark, light }, { preset: "grayscale", amount ${range(r.grayscale)} }, { preset: "blur", px ${range(r.blurPx)} }; presets ${list(FILTER_PRESETS)}, each at most once.
+- filter (photos and images): a list of { preset: "duotone", dark, light }, { preset: "grayscale", amount ${range(r.grayscale)} }, { preset: "blur", px ${range(r.blurPx)} }, { preset: "brightness", amount ${range(r.brightness)} (1 is unchanged) }; presets ${list(FILTER_PRESETS)}, each at most once.
 - overlay: { kind ${list(OVERLAY_KINDS)}, opacity ${range(r.overlayOpacity)}, scale ${range(r.overlayScale)} }.
+- clip: { polygon: [[x, y], …] }, 3 to ${MAX_CLIP_POINTS} points in percent of the layer's box (${range(r.clipPoint)}), cutting the box to that shape: angled bands, cut corners.
 
 Colours in fill, textFill, border, shadows and filters are a hex (#rgb, #rgba, #rrggbb or #rrggbbaa) or one of the club's colour tokens as var(--token), optionally with a hex fallback (var(--gold, #FBAC27)): ${list(COLOUR_TOKENS)}, or the derived palettes ${palettes}. Use the tokens for anything that should follow the club's colours: --gold is the club's accent.
 

@@ -190,3 +190,30 @@ describe("a starter as an explicit v2 document", () => {
     }
   });
 });
+
+describe("the card's photo on a v2 document", () => {
+  const input = {
+    kind: "player",
+    playerName: "Sam Keeper",
+    photoUrl: "https://cdn.example.org/sam.jpg",
+  } as ShareCardInput;
+  const photo = { id: "pic", kind: "photo", geometry: box } as TemplateLayerV2;
+  const noData = { brand: { name: "Sample Cricket Club" } };
+  const draw = (doc: CardAdjustments, junior = false) => {
+    const tokens = resolveCardTokens({ theme: null, junior, data: noData, packId: BLANK_PACK_ID });
+    return renderPackCard(input, "square", true, tokens, junior, noData, BLANK_PACK_ID, doc);
+  };
+
+  it("draws the photo the input carries when no photo was picked", () => {
+    expect(
+      draw({ formatVersion: 2, pages: { card: { layers: [photo] } } } as CardAdjustments),
+    ).toContain("sam.jpg");
+  });
+
+  it("leaves v1 documents as they were, and junior cards without it", () => {
+    expect(draw({ layers: [photo] } as CardAdjustments)).not.toContain("sam.jpg");
+    expect(
+      draw({ formatVersion: 2, pages: { card: { layers: [photo] } } } as CardAdjustments, true),
+    ).not.toContain("sam.jpg");
+  });
+});

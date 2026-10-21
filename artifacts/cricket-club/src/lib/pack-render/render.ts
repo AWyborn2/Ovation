@@ -158,6 +158,9 @@ function rowVariantsOf(
   return out;
 }
 
+/** Where a card's input carries its photo: the player's, or a kind's own photo slot. */
+const CARD_PHOTO_SLOTS = ["photo", "teamPhoto", "squadPhoto", "cardPhoto"] as const;
+
 /** Image slots that hold logos (crests, sponsors), never photos. */
 const LOGO_SLOT = /^(?:clubLogo|sponsor\d+|weekendSponsor\d+)$|(?:^|\.)(?:logo|crest)$/;
 
@@ -262,7 +265,14 @@ export function renderPackCard(
         juniorPhotoAllowed: juniorPhotoAllowedOn(input),
         rows: rowValues(bound.rows),
         rowVariants: rowVariantsOf(bound.rows),
-        photoUrl: withholdPhotos ? null : (data?.photoUrl ?? null),
+        // The card's photo; a v2 document also draws the one the input carries
+        // (a player's, a premiership's team photo), as the packs do.
+        photoUrl: withholdPhotos
+          ? null
+          : (data?.photoUrl ??
+            (isDocumentV2(adj)
+              ? (CARD_PHOTO_SLOTS.map((slot) => withData.images[slot]).find(Boolean) ?? null)
+              : null)),
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,

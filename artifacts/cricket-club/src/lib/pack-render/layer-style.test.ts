@@ -372,3 +372,73 @@ describe("motion (T1.23)", () => {
     expect(clipDuration([entrance, loop])).toBe(clipDuration([entrance]));
   });
 });
+
+describe("clips and brightness (converter fidelity)", () => {
+  it("cuts a layer's box to its clip polygon", () => {
+    const html = draw(
+      v2([
+        {
+          id: "band",
+          kind: "shape",
+          geometry: box,
+          style: {
+            fill: "var(--gold)",
+            clip: {
+              polygon: [
+                [14.81, 0],
+                [100, 0],
+                [100, 100],
+                [0, 75],
+              ],
+            },
+          },
+        },
+      ]),
+    );
+    expect(wrapper(html, "band")).toContain(
+      "clip-path:polygon(14.81% 0%, 100% 0%, 100% 100%, 0% 75%)",
+    );
+  });
+
+  it("ignores a clip that isn't a polygon of numbers", () => {
+    const html = draw(
+      v2([
+        {
+          id: "bad",
+          kind: "shape",
+          geometry: box,
+          style: {
+            clip: {
+              polygon: [
+                [0, 0],
+                [1, "x" as never],
+              ],
+            },
+          } as never,
+        },
+      ]),
+    );
+    expect(wrapper(html, "bad")).not.toContain("clip-path");
+  });
+
+  it("darkens a photo with brightness", () => {
+    const html = renderPackCard(
+      { kind: "player", playerName: "Sam" } as ShareCardInput,
+      "square",
+      true,
+      tokens,
+      false,
+      { brand, photoUrl: "https://cdn.example.org/p.jpg" },
+      BLANK_PACK_ID,
+      v2([
+        {
+          id: "pic",
+          kind: "photo",
+          geometry: box,
+          style: { filter: [{ preset: "brightness", amount: 0.6 }] },
+        },
+      ]),
+    );
+    expect(wrapper(html, "pic")).toContain("filter:brightness(0.6)");
+  });
+});
