@@ -51,7 +51,8 @@
     "selection-crosswalk-backfill": "tsx ./src/selection-crosswalk-backfill.ts",
     "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts",
     "spike-template-schema": "tsx ./src/spike-template-schema.ts",
-    "convert-pack": "tsx ./src/convert-pack.ts"
+    "convert-pack": "tsx ./src/convert-pack.ts",
+    "refresh-worst-case-names": "tsx ./src/refresh-worst-case-names.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

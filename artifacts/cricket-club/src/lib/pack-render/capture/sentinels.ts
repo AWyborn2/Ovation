@@ -8,10 +8,8 @@
  *     (`[[playerName]]`, see `fieldMarker`), so text maps to `{{tokens}}`.
  *   - Two sentinel palettes (`SENTINEL_PALETTES`): a colour that moves with the
  *     palette is a token.
- *   - Worst-case content, for boxes: the longest names the pilot clubs
- *     produce, rows filled to the layout's capacity, every optional field on.
- *     Interim: L2-A's `kind-templates/worst-case.ts` replaces these fixtures
- *     when it lands.
+ *   - Worst-case content, for boxes, is the fit check's own
+ *     (`worstCaseCard` in `kind-templates/worst-case.ts`, see `./plan.ts`).
  *
  * Images are tiny inline SVGs whose title names the slot (`sentinel:photo`),
  * so a capture never touches the network for them and `src` says which slot
@@ -20,7 +18,6 @@
 
 import {
   SENTINEL_PALETTES,
-  type CaptureContent,
   type ColourMode,
   type SentinelPaletteId,
 } from "@workspace/scorecard/pack-capture";
@@ -78,9 +75,8 @@ const photo = (name: string) => sentinelImage(name, 1200, 1500, "#707070");
 
 type TextKind = "person" | "team" | "grade" | "venue" | "round" | "line" | "label" | "sponsor";
 
-/** Where content strings come from: unique markers, or the longest real ones. */
+/** Where content strings come from: unique markers. */
 interface Texts {
-  readonly content: CaptureContent;
   text(kind: TextKind, sample: string): string;
 }
 
@@ -95,7 +91,6 @@ function letters(n: number): string {
 }
 
 class SentinelTexts implements Texts {
-  readonly content = "sentinel" as const;
   private n = 0;
   text(kind: TextKind): string {
     const id = letters(this.n++);
@@ -104,28 +99,9 @@ class SentinelTexts implements Texts {
   }
 }
 
-/** The longest names and labels the pilot clubs produce (the fit grid's worst case). */
-const LONG: Record<TextKind, string> = {
-  person: "Alexander Featherstonehaugh-Smith",
-  team: "Rockingham Mandurah Districts Cricket Club Inc",
-  grade: "Western District Female Premier Championship Grade",
-  venue: "Mike Barnett Sports Complex Oval 2",
-  round: "Round 15",
-  line: "Rockingham Mandurah Districts won by 10 wickets (DLS method)",
-  label: "",
-  sponsor: "Mandurah Toyota & Peel Automotive Group",
-};
-
-class WorstTexts implements Texts {
-  readonly content = "worst" as const;
-  text(kind: TextKind, sample: string): string {
-    // Labels and headlines are the pack's own words: keep the sample.
-    return kind === "label" ? sample : LONG[kind];
-  }
-}
-
-export function textsFor(content: CaptureContent): Texts {
-  return content === "sentinel" ? new SentinelTexts() : new WorstTexts();
+/** Fresh sentinel markers for one render (deterministic: the same render gets the same markers). */
+export function sentinelTexts(): Texts {
+  return new SentinelTexts();
 }
 
 // ---------------------------------------------------------------------------
@@ -145,22 +121,9 @@ const LINE_KEY = /^(result|resultLine|performers|note|noteBody|equation|boundary
 /** Digits, scores, overs, times and figures: the sample's own value is realistic. */
 const NUMERIC = /^[\d\s.,/*()&+:#-]*$/;
 
-/** Arrays of rows a layout repeats: worst-case content fills them to capacity. */
-const ROW_ARRAYS: Record<string, number | "template"> = {
-  players: 12,
-  rows: "template",
-  matches: "template",
-  leaders: "template",
-  fixtures: "template",
-  results: "template",
-  highlights: "template",
-};
-
 interface Revoice {
   texts: Texts;
   photo: boolean;
-  /** Most rows any repeat of the design holds (worst case). */
-  rowCap: number;
 }
 
 function textKind(key: string, parentKey: string | null): TextKind | null {
@@ -189,28 +152,10 @@ function revoiceValue(
     if (KEEP_KEY.test(key) || /colou?r$/i.test(key)) return value;
     if (/url$/i.test(key)) return value;
     if (!value || NUMERIC.test(value)) return value;
-    const kind = textKind(key, parentKey) ?? "label";
-    if (r.texts.content === "worst" && key === "surname")
-      return LONG.person.split(" ")[1]!.toUpperCase();
-    return r.texts.text(kind, value);
+    return r.texts.text(textKind(key, parentKey) ?? "label", value);
   }
-  if (Array.isArray(value)) {
-    const cap = ROW_ARRAYS[key];
-    let items = value;
-    if (r.texts.content === "worst" && cap !== undefined && value.length > 0) {
-      const n = cap === "template" ? Math.max(value.length, r.rowCap) : cap;
-      items = Array.from({ length: n }, (_, i) => {
-        const item = value[i % value.length];
-        if (!item || typeof item !== "object") return item;
-        const row = { ...(item as Record<string, unknown>) };
-        if (typeof row.order === "number") row.order = i + 1;
-        if (typeof row.pos === "number") row.pos = i + 1;
-        if (i > 0 && "isClub" in row) row.isClub = false;
-        return row;
-      });
-    }
-    return items.map((v, i) => revoiceValue(v, key, parentKey, `${path}[${i}]`, r));
-  }
+  if (Array.isArray(value))
+    return value.map((v, i) => revoiceValue(v, key, parentKey, `${path}[${i}]`, r));
   if (value && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
@@ -233,11 +178,11 @@ function imageFor(key: string, path: string, withPhoto: boolean): string | null 
   return null;
 }
 
-/** A kind's sample input in sentinel or worst-case voice. */
+/** A kind's sample input with sentinel markers for its strings. */
 export function revoicedSample(
   kind: ShareCardInput["kind"],
   texts: Texts,
-  opts: { photo: boolean; rowCap: number },
+  opts: { photo: boolean },
 ): Record<string, unknown> {
   const sample = sampleCardInput(kind) as unknown as Record<string, unknown>;
   return revoiceValue(sample, "", null, "", { texts, ...opts }) as Record<string, unknown>;
@@ -280,7 +225,7 @@ function fixtureContent(
     })!,
     lastMeeting: lastMeetingContent({
       outcome: "won",
-      margin: texts.content === "worst" ? "10 wickets (DLS method)" : texts.text("line", ""),
+      margin: texts.text("line", ""),
       date: "2026-02-07",
       season: "2025/26",
     })!,
@@ -298,7 +243,6 @@ function summarySource(texts: Texts, i: number, junior: boolean): MatchSummaryIn
   const voiced = revoiceValue(sample, "", null, `summary${i}`, {
     texts,
     photo: false,
-    rowCap: 0,
   }) as MatchSummaryInput;
   return {
     ...voiced,
@@ -364,14 +308,11 @@ export function pageContent(
         teamSponsor: i === rows.sponsors - 1,
       })),
       nextHomeGame: fixtureContent(texts, 9),
-      socials:
-        texts.content === "worst"
-          ? ["@ourcricketclubofficial", "Our Cricket Club Official", "ourcricketclub.com.au"]
-          : [texts.text("label", ""), texts.text("label", ""), texts.text("label", "")],
+      socials: [texts.text("label", ""), texts.text("label", ""), texts.text("label", "")],
     });
   }
   if (kind === "teamList") {
-    const sample = revoicedSample("teamList", texts, { photo: false, rowCap: 12 });
+    const sample = revoicedSample("teamList", texts, { photo: false });
     const players = (sample.players as Array<Record<string, unknown>>).map((p, i) => ({
       ...p,
       shirtNumber: String(10 + i),
@@ -423,33 +364,29 @@ export function contentPageInput(
 // Tenant data
 // ---------------------------------------------------------------------------
 
+/** A sentinel palette's brand colours. */
+export function paletteBrand(id: SentinelPaletteId) {
+  const palette = SENTINEL_PALETTES.find((p) => p.id === id);
+  if (!palette) throw new Error(`Unknown sentinel palette: ${id}`);
+  return palette.brand;
+}
+
 /** The sentinel club: one palette's colours, sentinel logos, sponsors and photo. */
-export function captureData(
+export function sentinelData(
   packId: string,
-  opts: {
-    palette: SentinelPaletteId;
-    content: CaptureContent;
-    photo: boolean;
-    colourMode: ColourMode;
-  },
+  opts: { palette: SentinelPaletteId; photo: boolean; colourMode: ColourMode },
 ): PackCardData {
-  const palette = SENTINEL_PALETTES.find((p) => p.id === opts.palette);
-  if (!palette) throw new Error(`Unknown sentinel palette: ${opts.palette}`);
-  const worst = opts.content === "worst";
   return {
     brand: {
-      name: worst ? LONG.team : "Sentinel Cricket Club",
-      tagline: worst ? "Cricket Club · Established 1897 · Home of the Mariners" : "QTAGLINE",
+      name: "Sentinel Cricket Club",
+      tagline: "QTAGLINE",
       logoUrl: logo("clubLogo"),
       groundPhotoUrl: photo("groundPhoto"),
-      ...palette.brand,
+      ...paletteBrand(opts.palette),
     },
-    hashtag: worst ? "#ROCKINGHAMMANDURAHDISTRICTS" : "#QHASHTAG",
-    sponsors: [1, 2, 3].map((n) => ({
-      name: worst ? LONG.sponsor : `QSPONSOR${n}`,
-      logoUrl: logo(`sponsor${n}`),
-    })),
-    presentingSponsorName: worst ? LONG.sponsor : "QPRESENTING",
+    hashtag: "#QHASHTAG",
+    sponsors: [1, 2, 3].map((n) => ({ name: `QSPONSOR${n}`, logoUrl: logo(`sponsor${n}`) })),
+    presentingSponsorName: "QPRESENTING",
     photoUrl: opts.photo ? photo("photo") : null,
     packColourModes: { [packId]: opts.colourMode },
   };

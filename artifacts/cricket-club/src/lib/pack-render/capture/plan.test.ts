@@ -6,6 +6,7 @@ import {
   markerField,
   markersIn,
 } from "@workspace/scorecard/pack-capture";
+import { WORST_CASE_NAMES } from "@workspace/scorecard/kind-templates";
 import { listAllPackManifests } from "../../pack-templates/registry";
 import { captureRender, captureVariants, prepareCard } from "./plan";
 import { sentinelImage } from "./sentinels";
@@ -95,7 +96,7 @@ describe("converter capture plan (L4-A1)", () => {
     }
   }, 120_000);
 
-  it("worst-case renders carry no markers, and fill the team list to twelve", () => {
+  it("worst-case renders are the fit check's content: no markers, the team list at twelve", () => {
     const v = captureVariants("broadcast-dark-v1").find((x) => x.id === "teamList.team.full")!;
     const worst = v.renders.find((r) => r.content === "worst")!;
     const card = prepareCard(
@@ -106,7 +107,9 @@ describe("converter capture plan (L4-A1)", () => {
     expect(card.html).not.toMatch(FIELD_MARKER_RE);
     const players = (card.input as unknown as { players: unknown[] }).players;
     expect(players).toHaveLength(12);
-    expect(card.html).toContain("FEATHERSTONEHAUGH");
+    // The longest surname in the names fixture (a stand-in), as the card prints it.
+    const surname = WORST_CASE_NAMES.players[0].split(" ").slice(1).join(" ").toUpperCase();
+    expect(card.html).toContain(surname.split(" ")[0]);
   });
 
   it("the two sentinel palettes move every brand token", () => {

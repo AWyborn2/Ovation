@@ -30,13 +30,16 @@ import type { ShareCardInput } from "../../share-card";
 import { packFieldValues, renderPackCard, resolveCardTokens } from "../render";
 import { resolveTemplate } from "../templates";
 import type { PackCardData, PackTokens } from "../types";
+import { worstCaseCard, type PageKey } from "@workspace/scorecard/kind-templates";
 import {
   SENTINEL_ROWS,
-  captureData,
   contentPageInput,
   pageContent,
+  paletteBrand,
   revoicedSample,
-  textsFor,
+  sentinelData,
+  sentinelImage,
+  sentinelTexts,
 } from "./sentinels";
 
 /** The kinds a carousel set and its single card are built from (ADR-010). */
@@ -164,34 +167,83 @@ function variantId(
   ].join(".");
 }
 
-/** The render input for a page spec, before tenant data. */
-function specInput(
-  packId: string,
-  spec: Pick<CaptureVariant, "kind" | "page" | "design" | "slide" | "role" | "preset" | "photo"> & {
-    named?: boolean;
-  },
-  content: CaptureContent,
-  size: CaptureSize,
-): Record<string, unknown> {
-  const texts = textsFor(content);
+type SpecFields = Pick<
+  CaptureVariant,
+  | "kind"
+  | "page"
+  | "design"
+  | "named"
+  | "slide"
+  | "role"
+  | "preset"
+  | "photo"
+  | "sponsorsOn"
+  | "junior"
+>;
+
+/** The sentinel input for a page spec, before tenant data. */
+function sentinelInput(packId: string, spec: SpecFields): Record<string, unknown> {
+  const texts = sentinelTexts();
   if (isContentKind(spec.kind)) {
-    const kind = spec.kind;
-    const preset = spec.preset ?? "full";
-    const rows =
-      content === "worst"
-        ? { day: dayCapacity(packId, kind, size, preset), sponsors: 12 }
-        : SENTINEL_ROWS;
-    const page = pageContent(kind, spec.page, texts, rows);
+    const page = pageContent(spec.kind, spec.page, texts, SENTINEL_ROWS);
     const input = contentPageInput(page, spec.preset, { slide: spec.slide, photo: spec.photo });
     return spec.named ? { ...input, design: spec.design } : input;
   }
-  const kind = spec.kind as ShareCardInput["kind"];
-  // Worst case fills every repeat to the most rows the design lays out.
-  const probe = revoicedSample(kind, texts, { photo: spec.photo, rowCap: 0 });
-  const template = resolveTemplate(withRole(probe, spec) as unknown as ShareCardInput, packId);
-  const rowCap = Math.max(0, ...(template?.repeats ?? []).map((r) => r.maxRows));
-  const sample = revoicedSample(kind, texts, { photo: spec.photo, rowCap });
+  const sample = revoicedSample(spec.kind as ShareCardInput["kind"], texts, { photo: spec.photo });
   return firstPlannedSlide(withRole(sample, spec), spec.role === "cover");
+}
+
+/** The most rows each of a design's repeats lays out at a size: worst case fills them. */
+function worstRows(packId: string, spec: SpecFields, size: CaptureSize): Record<string, number> {
+  if (isContentKind(spec.kind))
+    return {
+      dayRows: dayCapacity(packId, spec.kind, size, spec.preset ?? "full"),
+      sponsors: 12,
+      players: 12,
+    };
+  const probe = revoicedSample(spec.kind as ShareCardInput["kind"], sentinelTexts(), {
+    photo: spec.photo,
+  });
+  const template = resolveTemplate(withRole(probe, spec) as unknown as ShareCardInput, packId);
+  return Object.fromEntries((template?.repeats ?? []).map((r) => [r.key, r.maxRows]));
+}
+
+/**
+ * The worst-case render for a page spec: the fit check's content
+ * (`worstCaseCard`), rows at the pack layout's capacity, in a sentinel palette.
+ */
+function worstRender(
+  packId: string,
+  spec: SpecFields,
+  size: CaptureSize,
+  palette: SentinelPaletteId,
+  colourMode: ColourMode,
+): { input: Record<string, unknown>; data: PackCardData } {
+  const card = worstCaseCard(
+    spec.kind,
+    {
+      page: spec.page as PageKey,
+      contentKind: spec.kind,
+      ...(spec.preset ? { preset: spec.preset } : {}),
+      photo: spec.photo,
+      sponsors: spec.sponsorsOn ? "max" : "none",
+      junior: spec.junior,
+    },
+    { rows: worstRows(packId, spec, size), image: (name) => sentinelImage(`worst.${name}`) },
+  );
+  // A single card is not a carousel slide.
+  const { carouselContent: _slide, ...single } = card.input;
+  let input = spec.slide ? card.input : single;
+  if (isContentKind(spec.kind)) input = spec.named ? { ...input, design: spec.design } : input;
+  else input = firstPlannedSlide(withRole(input, spec), spec.role === "cover");
+  return {
+    input,
+    data: {
+      ...card.data,
+      brand: { ...card.data.brand, ...paletteBrand(palette) },
+      packColourModes: { [packId]: colourMode },
+    },
+  };
 }
 
 function withRole(
@@ -334,22 +386,18 @@ export function renderWith(packId: string, render: CaptureRender, size: CaptureS
 
 function buildRender(
   packId: string,
-  spec: Pick<
-    CaptureVariant,
-    "kind" | "page" | "design" | "slide" | "role" | "preset" | "photo" | "sponsorsOn" | "junior"
-  > & { named?: boolean },
+  spec: SpecFields,
   content: CaptureContent,
   palette: SentinelPaletteId,
   detail: CaptureDetail,
   size: CaptureSize,
   colourMode: ColourMode,
 ): CaptureRender {
+  const worst = content === "worst" ? worstRender(packId, spec, size, palette, colourMode) : null;
   return {
-    input: specInput(packId, spec, content, size),
-    data: captureData(packId, { palette, content, photo: spec.photo, colourMode }) as Record<
-      string,
-      unknown
-    >,
+    input: worst?.input ?? sentinelInput(packId, spec),
+    data: (worst?.data ??
+      sentinelData(packId, { palette, photo: spec.photo, colourMode })) as Record<string, unknown>,
     sponsorsOn: spec.sponsorsOn,
     junior: spec.junior,
     markFields: content === "sentinel",
