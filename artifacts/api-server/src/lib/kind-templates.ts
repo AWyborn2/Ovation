@@ -33,6 +33,8 @@ import {
   isRetiredPack,
   kindFields,
   lazyDefaultSlugs,
+  lookTemplateSlug,
+  starterLookForPack,
   startingDocument,
   starterForPack,
   templateDocumentErrors,
@@ -196,9 +198,9 @@ const conflict = async (row: CardTemplateRow) =>
 
 /**
  * What a club's lazy default for a kind is copied from: its pack's look's
- * template for the kind (Club Kit's when that look lacks the kind), else its
- * pack's starter look (L4-B's starter bundles), at the template's current
- * version. With none of those in the library, the TypeScript starter its pack
+ * template for the kind (Club Kit's when that look lacks the kind) once that
+ * template is listed, else its pack's starter look (L4-B's starter bundles),
+ * at the template's current version. With none of those in the library, the TypeScript starter its pack
  * maps to stands in, with no origin (until L5-C deletes the starters).
  */
 async function lazyDefaultSource(
@@ -218,6 +220,7 @@ async function lazyDefaultSource(
       id: libraryTemplatesTable.id,
       slug: libraryTemplatesTable.slug,
       name: libraryTemplatesTable.name,
+      listed: libraryTemplatesTable.listed,
       version: libraryTemplateVersionsTable.version,
       document: libraryTemplateVersionsTable.document,
       fitStatus: libraryTemplateVersionsTable.fitStatus,
@@ -232,7 +235,13 @@ async function lazyDefaultSource(
       ),
     )
     .where(inArray(libraryTemplatesTable.slug, slugs));
-  const pick = slugs.map((slug) => found.find((f) => f.slug === slug)).find(Boolean);
+  // A converted look counts once it is listed (polished, signed off and past
+  // its fit check); until then the pack's starter look, today's design, stands
+  // in, listed or not, so no club starts from a raw conversion.
+  const starterSlug = lookTemplateSlug(starterLookForPack(currentPackId), kind);
+  const pick = slugs
+    .map((slug) => found.find((f) => f.slug === slug))
+    .find((f) => f && ((f.listed && f.fitStatus === "pass") || f.slug === starterSlug));
   if (pick) {
     return {
       name: pick.name,
