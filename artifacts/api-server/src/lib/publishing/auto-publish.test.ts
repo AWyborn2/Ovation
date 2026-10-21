@@ -54,7 +54,14 @@ async function autoDraft(importedHoursAgo: number, cardInput: Record<string, unk
     appPath: "/records",
     sourceImportedAt: new Date(Date.now() - importedHoursAgo * HOUR),
   });
-  return draft;
+  // A templated draft owes a layout check before automation may act on it
+  // (ADR-003); no render harness runs here, so record it as checked and clean.
+  const [checked] = await db
+    .update(socialDraftsTable)
+    .set({ layoutCheckPending: false, layoutWarnings: {} })
+    .where(eq(socialDraftsTable.id, draft.id))
+    .returning();
+  return checked!;
 }
 
 const pubsFor = (draftId: number) =>
