@@ -54,7 +54,12 @@ beforeAll(async () => {
     tenants.push(t!.id);
     const [a] = await db
       .insert(adminsTable)
-      .values({ tenantId: t!.id, username: `upd${i}_${STAMP}`, displayName: name, passwordHash: "x" })
+      .values({
+        tenantId: t!.id,
+        username: `upd${i}_${STAMP}`,
+        displayName: name,
+        passwordHash: "x",
+      })
       .returning();
     admins.push(a!.id);
     cookies.push(`${SESSION_COOKIE}=${encodeSession({ adminId: a!.id, issuedAt: Date.now() })}`);
@@ -112,7 +117,10 @@ describe("update available", () => {
   it("offers a newer version to an unedited copy, listed or not, and takes it", async () => {
     await sync(2);
     // Unlisting the origin doesn't hide the update from copies.
-    await db.update(libraryTemplatesTable).set({ listed: false }).where(eq(libraryTemplatesTable.id, libId));
+    await db
+      .update(libraryTemplatesTable)
+      .set({ listed: false })
+      .where(eq(libraryTemplatesTable.id, libId));
     expect((await summary(copyId)).updateAvailable).toEqual({ version: 2 });
     // The new version is viewable for the side-by-side preview.
     const lib = await as(0).get(`/template-library/${libId}`);
@@ -120,9 +128,13 @@ describe("update available", () => {
     expect(lib.body.version).toBe(2);
 
     const before = await summary(copyId);
-    const stale = await as(0).post(`/club-templates/${copyId}/update`, { baseVersion: before.version - 1 });
+    const stale = await as(0).post(`/club-templates/${copyId}/update`, {
+      baseVersion: before.version - 1,
+    });
     expect(stale.status).toBe(409);
-    const taken = await as(0).post(`/club-templates/${copyId}/update`, { baseVersion: before.version });
+    const taken = await as(0).post(`/club-templates/${copyId}/update`, {
+      baseVersion: before.version,
+    });
     expect(taken.status).toBe(200);
     expect(taken.body).toMatchObject({
       edited: false,
@@ -131,18 +143,26 @@ describe("update available", () => {
       basedOn: { templateId: libId, version: 2 },
     });
     expect(taken.body.document).toEqual(docV(2));
-    expect((await as(0).post(`/club-templates/${copyId}/update`, { baseVersion: taken.body.version })).status).toBe(409);
+    expect(
+      (await as(0).post(`/club-templates/${copyId}/update`, { baseVersion: taken.body.version }))
+        .status,
+    ).toBe(409);
   });
 
   it("another club can't take it", async () => {
     await sync(3);
-    expect((await as(1).post(`/club-templates/${copyId}/update`, { baseVersion: 1 })).status).toBe(404);
+    expect((await as(1).post(`/club-templates/${copyId}/update`, { baseVersion: 1 })).status).toBe(
+      404,
+    );
     expect((await summary(copyId)).updateAvailable).toEqual({ version: 3 });
   });
 
   it("a rename isn't an edit; the first document save is, and then no update is offered", async () => {
     let s = await summary(copyId);
-    const renamed = await as(0).put(`/club-templates/${copyId}`, { baseVersion: s.version, name: "Ours" });
+    const renamed = await as(0).put(`/club-templates/${copyId}`, {
+      baseVersion: s.version,
+      name: "Ours",
+    });
     expect(renamed.body).toMatchObject({ edited: false, updateAvailable: { version: 3 } });
     const saved = await as(0).put(`/club-templates/${copyId}`, {
       baseVersion: renamed.body.version,
@@ -153,9 +173,14 @@ describe("update available", () => {
     // Still credited to its origin.
     expect(saved.body.basedOn).toMatchObject({ templateId: libId });
     s = await summary(copyId);
-    const refused = await as(0).post(`/club-templates/${copyId}/update`, { baseVersion: s.version });
+    const refused = await as(0).post(`/club-templates/${copyId}/update`, {
+      baseVersion: s.version,
+    });
     expect(refused.status).toBe(409);
-    const [row] = await db.select().from(cardTemplatesTable).where(eq(cardTemplatesTable.id, copyId));
+    const [row] = await db
+      .select()
+      .from(cardTemplatesTable)
+      .where(eq(cardTemplatesTable.id, copyId));
     expect(row!.adjustments).toEqual(docV(99));
   });
 });
