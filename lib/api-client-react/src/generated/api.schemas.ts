@@ -8455,6 +8455,15 @@ export interface UpdateSocialDraftRequest {
  */
 export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
 
+/**
+ * A template a draft or carousel is drawn with (ADR-011): one of the club's templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.
+ */
+export interface TemplateRef {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
+}
+
 export interface CreateSocialDraftRequest {
   /**
      * Optional caption supplied with a manually queued card or carousel.
@@ -8471,6 +8480,7 @@ export interface CreateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
+  templateRef?: TemplateRef;
 }
 
 export interface SaveDraftTemplateRequest {
@@ -8901,6 +8911,8 @@ export interface SocialDraft {
      * @nullable
      */
   templateVersion?: number | null;
+  /** The template this draft's design was copied from; null for a pack draft. */
+  templateRef?: TemplateRef | null;
   /**
      * When an admin last edited this templated draft's design by hand.
      * @nullable
