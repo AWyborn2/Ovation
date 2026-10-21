@@ -8,7 +8,6 @@ import {
   missingCoreFields,
   pageCoreFields,
   pageRepeatCapacities,
-  pageRowsCapacity,
   type FitIssue,
 } from "./fit-rules";
 
@@ -109,9 +108,9 @@ describe("list capacity", () => {
       },
     });
     // 50 % of 1080 = 540 px; rows of 54 px → 10.
-    expect(pageRowsCapacity(list, "team", "square", "players")).toBe(10);
-    expect(pageRowsCapacity(list, "team", "square", "rows")).toBeNull();
+    expect(pageRepeatCapacities(list, "team", "square")).toEqual({ players: 10 });
     expect(pageRepeatCapacities(list, "team", "story")).toEqual({ players: 17 });
+    expect(pageRepeatCapacities(doc({ team: { layers: [] } }), "team", "square")).toEqual({});
   });
 });
 
