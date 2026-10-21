@@ -23,6 +23,7 @@ import { BOLD_TYPE_PACK } from "./bold-type";
 import { NEON_NIGHT_PACK } from "./neon-night";
 import { SUNSET_PACK } from "./sunset";
 import { CLUB_KIT_PACK } from "./club-kit";
+import { DUOTONE_PACK } from "./duotone";
 
 /**
  * The pack used when a caller supplies no `packId`, or supplies one that is not
@@ -39,6 +40,7 @@ const MANIFESTS: readonly PackManifest[] = [
   NEON_NIGHT_PACK,
   SUNSET_PACK,
   CLUB_KIT_PACK,
+  DUOTONE_PACK,
 ];
 
 const BY_ID: ReadonlyMap<string, PackManifest> = new Map(MANIFESTS.map((p) => [p.packId, p]));

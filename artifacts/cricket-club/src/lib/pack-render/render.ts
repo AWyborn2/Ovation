@@ -321,6 +321,9 @@ export function renderPackCard(
   html = fitNames(html);
   html = cleanupEmptyRoles(html);
   html = cleanupEmptyBadges(html);
+  const manifest = getPackManifest(packId);
+  const packCtx = { tokens, brand: data?.brand, junior };
+  if (manifest.finish) html = manifest.finish(html, packCtx);
 
   const layers = renderFreeLayers(adj, size, opts, withMonogram(values), {
     tokens,
@@ -328,8 +331,7 @@ export function renderPackCard(
     junior,
     rows: rowValues(bound.rows),
   });
-  const manifest = getPackManifest(packId);
-  const extra = manifest.rootVars?.({ tokens, brand: data?.brand, junior });
+  const extra = manifest.rootVars?.(packCtx);
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, manifest.inkTint, mode)}${extra ? `;${extra}` : ""}">${html}${layers}</div>`;
 }
 
