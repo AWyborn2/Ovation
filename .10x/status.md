@@ -106,4 +106,5 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
   - Slice PRs merge into the integration branch on green; Ash tests at milestones M1–M5.
 
   Found while planning: #412 took migration 0057 on `main`, so the library's is 0058; `ensure-constraints.ts` re-creates `card_templates_kind_unique` after every migrate, so L3-A swaps that entry; publishing's schema sync doesn't run 0058's `UPDATE`, so Ash runs 0058 by hand right before the republish; the local dev stack has no object storage, so L3-A adds a dev-only filesystem store. Handed to the SDE.
+
 - 2026-10-21 SDE: crest override follow-up. The crosswalk seed in `central-projector.sql` also pairs central home with PlayHQ home; it survives by majority vote, but a club with few matches could still be mis-seeded (worth a review).
