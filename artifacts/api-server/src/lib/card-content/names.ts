@@ -14,7 +14,13 @@
  */
 
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { competitionLabelOverridesTable, db, teamNameOverridesTable } from "@workspace/db";
+import {
+  competitionLabelOverridesTable,
+  db,
+  teamCrestOverridesTable,
+  teamNameOverridesTable,
+  type CrestSource,
+} from "@workspace/db";
 import type { CentralCardClub, CentralCardTeamName } from "@workspace/db/central-queries";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
@@ -38,10 +44,40 @@ export interface ResolvedTeamName {
   /** What a card prints. */
   name: string;
   source: NameSource;
+  /** The crest cards show: the club's choice, else the automatic one. Null → the monogram. */
   crestUrl: string | null;
+  crestSource: CrestChoiceSource;
+  /** The automatic crest (the PlayHQ organisation logo), whatever the club chose. */
+  autoCrestUrl: string | null;
   /** Stands in for a missing crest. */
   monogram: string;
 }
+
+/** Where a team's crest comes from: automatic, or the club's own choice. */
+export type CrestChoiceSource = "auto" | CrestSource;
+
+/** A club's own crest choice, as stored. */
+export interface CrestChoice {
+  crestSource: CrestSource;
+  crestUrl: string | null;
+}
+
+/** The crest a card shows, given the automatic crest and the club's choice (if any). */
+export function crestOf(
+  autoCrestUrl: string | null,
+  choice: CrestChoice | null | undefined,
+): { crestUrl: string | null; crestSource: CrestChoiceSource; autoCrestUrl: string | null } {
+  if (!choice) return { crestUrl: autoCrestUrl, crestSource: "auto", autoCrestUrl };
+  return {
+    crestUrl: choice.crestSource === "initials" ? null : choice.crestUrl,
+    crestSource: choice.crestSource,
+    autoCrestUrl,
+  };
+}
+
+/** A club's choice as the render map carries it: the image url, or "" for the initials badge. */
+export const crestChoiceValue = (choice: CrestChoice): string =>
+  choice.crestSource === "initials" ? "" : (choice.crestUrl ?? "");
 
 export interface ResolvedCompetitionLabel {
   gradeKey: string;
@@ -77,6 +113,43 @@ export async function loadTeamNameOverrides(tenantId: number) {
     .from(teamNameOverridesTable)
     .where(eq(teamNameOverridesTable.tenantId, tenantId))
     .orderBy(teamNameOverridesTable.id);
+}
+
+/** The tenant's crest choices, oldest first. */
+export async function loadTeamCrestOverrides(tenantId: number) {
+  return db
+    .select()
+    .from(teamCrestOverridesTable)
+    .where(eq(teamCrestOverridesTable.tenantId, tenantId))
+    .orderBy(teamCrestOverridesTable.id);
+}
+
+/**
+ * Set the tenant's crest for a central club (every grade): an uploaded image
+ * or a known crest (`crestUrl`), or the initials badge. A null source resets
+ * to the automatic crest. The route validates the url.
+ */
+export async function setTeamCrestOverride(
+  tenantId: number,
+  centralClubId: number,
+  choice: CrestChoice | null,
+): Promise<void> {
+  const match = and(
+    eq(teamCrestOverridesTable.tenantId, tenantId),
+    eq(teamCrestOverridesTable.centralClubId, centralClubId),
+  );
+  if (choice === null) {
+    await db.delete(teamCrestOverridesTable).where(match);
+    return;
+  }
+  const crestUrl = choice.crestSource === "initials" ? null : choice.crestUrl;
+  await db
+    .insert(teamCrestOverridesTable)
+    .values({ tenantId, centralClubId, crestSource: choice.crestSource, crestUrl })
+    .onConflictDoUpdate({
+      target: [teamCrestOverridesTable.tenantId, teamCrestOverridesTable.centralClubId],
+      set: { crestSource: choice.crestSource, crestUrl, updatedAt: sql`now()` },
+    });
 }
 
 /** The tenant's competition label overrides, oldest first. */
@@ -166,8 +239,9 @@ export async function resolveTeamName(
   gradeKey?: string | null,
   opts: { rawName?: string | null } = {},
 ): Promise<ResolvedTeamName> {
-  const [overrides, clubs] = await Promise.all([
+  const [overrides, crests, clubs] = await Promise.all([
     loadTeamNameOverrides(tenantId),
+    loadTeamCrestOverrides(tenantId),
     (async () => (await centralQueries()).centralCardClubs([centralClubId]))(),
   ]);
   const club = clubs[0];
@@ -183,6 +257,7 @@ export async function resolveTeamName(
     tidy(opts.rawName) ?? club?.name ?? "",
     overrideName,
     club,
+    crests.find((c) => c.centralClubId === centralClubId),
   );
 }
 
@@ -192,6 +267,7 @@ function teamNameOf(
   rawName: string,
   overrideName: string | null,
   club: CentralCardClub | undefined,
+  crestChoice?: CrestChoice | null,
 ): ResolvedTeamName {
   const autoName = autoShortTeamName(rawName);
   const name = overrideName ?? (autoName || rawName);
@@ -203,7 +279,7 @@ function teamNameOf(
     overrideName,
     name,
     source: source(overrideName, autoName, rawName),
-    crestUrl: club?.crestUrl ?? null,
+    ...crestOf(club?.crestUrl ?? null, crestChoice),
     monogram: teamMonogram(name),
   };
 }
@@ -284,13 +360,14 @@ export async function listCardNames(
   tenantId: number,
   now: Date = new Date(),
 ): Promise<CardNamesListing> {
-  const [teamOverrides, compOverrides] = await Promise.all([
+  const [teamOverrides, crestOverrides, compOverrides] = await Promise.all([
     loadTeamNameOverrides(tenantId),
+    loadTeamCrestOverrides(tenantId),
     loadCompetitionLabelOverrides(tenantId),
   ]);
   const central = await loadCentralNameData(
     tenantId,
-    teamOverrides.map((o) => o.centralClubId),
+    [...teamOverrides, ...crestOverrides].map((o) => o.centralClubId),
     now,
   );
   if (!central) return { available: false, teams: [], competitions: [] };
@@ -302,7 +379,8 @@ export async function listCardNames(
   const teams: TeamNameListingRow[] = [...central.clubs.values()].map((club) => {
     const sides = central.teamNames.filter((t) => t.clubId === club.clubId);
     const clubOverride = overrideFor(club.clubId, null);
-    const base = teamNameOf(club.clubId, null, club.name ?? "", clubOverride, club);
+    const crestChoice = crestOverrides.find((c) => c.centralClubId === club.clubId);
+    const base = teamNameOf(club.clubId, null, club.name ?? "", clubOverride, club, crestChoice);
     const gradeKeys = new Set<string>(
       [
         ...sides.map((t) => t.gradeKey),
@@ -311,7 +389,14 @@ export async function listCardNames(
     );
     const grades = [...gradeKeys].sort().map((grade) => {
       const gradeOverride = overrideFor(club.clubId, grade);
-      const resolved = teamNameOf(club.clubId, grade, club.name ?? "", gradeOverride, club);
+      const resolved = teamNameOf(
+        club.clubId,
+        grade,
+        club.name ?? "",
+        gradeOverride,
+        club,
+        crestChoice,
+      );
       // A grade with no name of its own prints the club's.
       return gradeOverride ? resolved : { ...resolved, name: base.name, monogram: base.monogram };
     });
@@ -362,15 +447,16 @@ export async function loadCardNames(
   tenantId: number,
   opts: { now?: Date; onCentralError?: (err: unknown) => void } = {},
 ): Promise<CardNames> {
-  const [teamOverrides, compOverrides] = await Promise.all([
+  const [teamOverrides, crestOverrides, compOverrides] = await Promise.all([
     loadTeamNameOverrides(tenantId),
+    loadTeamCrestOverrides(tenantId),
     loadCompetitionLabelOverrides(tenantId),
   ]);
   let central: CentralNameData | null = null;
   try {
     central = await loadCentralNameData(
       tenantId,
-      teamOverrides.map((o) => o.centralClubId),
+      [...teamOverrides, ...crestOverrides].map((o) => o.centralClubId),
       opts.now ?? new Date(),
     );
   } catch (err) {
@@ -410,6 +496,20 @@ export async function loadCardNames(
     }
   }
 
+  // The club's own crest choices win over any crest a card input carries:
+  // every spelling of the club (as the team names above) maps to it.
+  const crestChoices: Record<string, string> = {};
+  for (const o of crestOverrides) {
+    const value = crestChoiceValue(o);
+    const club = central?.clubs.get(o.centralClubId);
+    for (const n of [club?.name, club?.shortName, ...(club?.otherNames ?? [])]) {
+      put(crestChoices, n, value);
+    }
+    for (const t of central?.teamNames ?? []) {
+      if (t.clubId === o.centralClubId) put(crestChoices, t.teamName, value);
+    }
+  }
+
   const competitions: Record<string, string> = {};
   for (const o of compOverrides) {
     put(competitions, o.gradeKey, o.label);
@@ -423,6 +523,7 @@ export async function loadCardNames(
   return {
     ...(Object.keys(teams).length ? { teams } : {}),
     ...(Object.keys(crests).length ? { crests } : {}),
+    ...(Object.keys(crestChoices).length ? { crestOverrides: crestChoices } : {}),
     ...(Object.keys(competitions).length ? { competitions } : {}),
   };
 }

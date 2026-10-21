@@ -25,6 +25,7 @@ import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { resultDraftInput } from "@workspace/scorecard/card-content";
 import { buildMatchSummaryContent } from "./card-content/results";
+import { contentJuniorNames } from "./card-content/junior-names";
 import { contentNames } from "./card-content/match-day";
 import { contentVisibleFields } from "./card-content/visible-fields";
 import { draftingGates, loadDraftingGates } from "./posting-plan";
@@ -547,12 +548,12 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   // Club-wide naming loaded once for the batch (KTD12), the per-team publishing map,
-  // the allowed players' own photos (ADR-007), and the club's names and content choices.
-  const [naming, publishing, photos, names, visible] = await Promise.all([
+  // the allowed players' own photos (ADR-007), and the club's junior names and content choices.
+  const [naming, publishing, photos, juniorNames, visible] = await Promise.all([
     loadJuniorNaming(tenantId),
     loadJuniorTeamPublishing(tenantId),
     loadJuniorPhotos(tenantId),
-    contentNames(tenantId),
+    contentJuniorNames(tenantId),
     contentVisibleFields(tenantId, "matchSummary"),
   ]);
 
@@ -581,7 +582,7 @@ export async function generateJuniorMatchSummaryDrafts(
         const [content] = await buildMatchSummaryContent(
           tenantId,
           [{ junior: true, matchId, detail: detail as JuniorMatchDetail }],
-          { names },
+          { juniorNames },
         );
         const cardInput = {
           ...resultDraftInput(content!, visible),

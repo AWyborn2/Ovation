@@ -4,6 +4,7 @@ import {
   autoShortTeamName,
   cardNameKey,
   cardTeamCrest,
+  resolveCardCrest,
   resolveCardCompetition,
   resolveCardTeamName,
   teamMonogram,
@@ -142,6 +143,30 @@ describe("resolving with the club's names", () => {
   it("crests come from the map only", () => {
     expect(cardTeamCrest(names, "MCC Senior Men A Grade")).toBe("https://example.test/mcc.png");
     expect(cardTeamCrest(names, "Pinjarra")).toBeNull();
+  });
+
+  it("the club's own crest choice wins over the input and the map", () => {
+    const chosen = {
+      crests: { [cardNameKey("Rockingham Hornets")]: "https://example.test/hornets.png" },
+      crestOverrides: {
+        [cardNameKey("Murdoch University Melville")]: "/api/storage/objects/uploads/mumcc",
+        [cardNameKey("Rockingham Hornets")]: "",
+      },
+    };
+    // An uploaded or picked crest replaces whatever the input carried.
+    expect(
+      resolveCardCrest(chosen, "Murdoch University Melville", "https://example.test/wrong.png"),
+    ).toBe("/api/storage/objects/uploads/mumcc");
+    // "Use initials badge": no crest at all, even with one in the input or the map.
+    expect(resolveCardCrest(chosen, "Rockingham Hornets", "https://example.test/x.png")).toBeNull();
+    // No choice: the input's crest, else the map's.
+    expect(resolveCardCrest(names, "Pinjarra", "https://example.test/p.png")).toBe(
+      "https://example.test/p.png",
+    );
+    expect(resolveCardCrest(names, "MCC Senior Men A Grade", null)).toBe(
+      "https://example.test/mcc.png",
+    );
+    expect(resolveCardCrest(null, "Pinjarra")).toBeNull();
   });
 });
 

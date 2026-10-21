@@ -7,16 +7,22 @@
  * CI only: needs DATABASE_URL (central lives in the same local database). The
  * suite seeds its own central clubs and match (ids 978xx) and removes them.
  */
+import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import {
   db,
   tenantsTable,
   teamNameOverridesTable,
+  teamCrestOverridesTable,
   competitionLabelOverridesTable,
 } from "@workspace/db";
 import { clearCentralQueriesCache } from "@workspace/db/central-queries";
-import { cardNameKey, resolveCardTeamName } from "@workspace/scorecard/card-names";
+import {
+  cardNameKey,
+  resolveCardCrest,
+  resolveCardTeamName,
+} from "@workspace/scorecard/card-names";
 import { purgeTestTenants } from "../tenant-purge.test-helpers";
 import { invalidateTenantConfigCache } from "../tenant";
 import {
@@ -25,6 +31,7 @@ import {
   resolveCompetitionLabel,
   resolveTeamName,
   setCompetitionLabelOverride,
+  setTeamCrestOverride,
   setTeamNameOverride,
 } from "./names";
 
@@ -33,6 +40,14 @@ const OWN = 97_801;
 const OPP = 97_802;
 const OTHER = 97_803;
 const MATCH = 97_801_001;
+// The Murdoch case: a club with no crosswalk row whose only PlayHQ side met a
+// club that has one. Central stores the lower club id as home.
+const HORNETS = 97_805;
+const MURDOCH = 97_806;
+const ORG_HORNETS = "0" + randomUUID().slice(1);
+const ORG_MURDOCH = "f" + randomUUID().slice(1);
+const PHQ_GRADE = randomUUID();
+const PHQ_MATCH = randomUUID();
 const ORG = `9780${STAMP % 10_000}`.padEnd(8, "0") + "-0000-4000-8000-000000000001";
 // The fixture match is in 2024/25; the listing looks one season back from here.
 const NOW = new Date("2025-11-01T00:00:00Z");
@@ -45,7 +60,9 @@ async function seedCentral(): Promise<void> {
     insert into central.clubs (club_id, name, short_name) values
       (${OWN}, 'Testville Cricket Club Inc', 'TCC'),
       (${OPP}, 'SJ Blues Cricket Club', 'SJBCC'),
-      (${OTHER}, 'Melville', 'Melville')
+      (${OTHER}, 'Melville', 'Melville'),
+      (${HORNETS}, 'Rockingham Hornets Cricket Club', 'RHCC'),
+      (${MURDOCH}, 'Murdoch University Melville Cricket Club', 'MUMCC')
     on conflict (club_id) do nothing
   `);
   await db.execute(sql`
@@ -71,6 +88,33 @@ async function seedCentral(): Promise<void> {
   await db.execute(sql`
     insert into playhq.organisations (id, name, logo_url)
     values (${ORG}::uuid, 'SJ Blues Cricket Club', 'https://img.test/sjblues.png')
+  `);
+  // Murdoch's U21 side at home in PlayHQ, so central (lower id = home) has
+  // the Hornets as home: home ↔ home pairs Murdoch with the Hornets' org.
+  await db.execute(sql`
+    insert into central.matches (match_id, season, grade, round, status, home_club_id, away_club_id,
+      home_team, away_team, playhq_match_id)
+    values (${MATCH + 3}, '2024/25', 'U21 Mixed', '1', 'Completed', ${HORNETS}, ${MURDOCH},
+      'Hornets U21 Mixed Colts', 'MUMCC U21 Mixed', ${PHQ_MATCH})
+  `);
+  await db.execute(sql`
+    insert into central.club_playhq_orgs (playhq_org_id, club_id, source)
+    values (${ORG_HORNETS}, ${HORNETS}, 'history')
+  `);
+  await db.execute(sql`
+    insert into playhq.organisations (id, name, logo_url) values
+      (${ORG_HORNETS}::uuid, 'Rockingham Hornets Cricket Club', 'https://img.test/hornets.png'),
+      (${ORG_MURDOCH}::uuid, 'Murdoch University Melville Cricket Club', 'https://img.test/mumcc.png')
+  `);
+  await db.execute(sql`
+    insert into playhq.grades (id, name, season_name, is_junior)
+    values (${PHQ_GRADE}::uuid, 'U21 Mixed', '2024/25', false)
+  `);
+  await db.execute(sql`
+    insert into playhq.matches (id, grade_id, status, home_team_name, home_org_id,
+      away_team_name, away_org_id, raw, fetched_at)
+    values (${PHQ_MATCH}::uuid, ${PHQ_GRADE}::uuid, 'COMPLETED', 'MUMCC U21 Mixed',
+      ${ORG_MURDOCH}::uuid, 'Hornets U21 Mixed Colts', ${ORG_HORNETS}::uuid, '{}'::jsonb, now())
   `);
 }
 
@@ -98,9 +142,17 @@ async function cleanCentral(): Promise<void> {
   await db.execute(
     sql`delete from central.club_name_history where club_id in (${OWN}, ${OPP}, ${OTHER})`,
   );
-  await db.execute(sql`delete from central.club_playhq_orgs where playhq_org_id = ${ORG}`);
-  await db.execute(sql`delete from playhq.organisations where id = ${ORG}::uuid`);
-  await db.execute(sql`delete from central.clubs where club_id in (${OWN}, ${OPP}, ${OTHER})`);
+  await db.execute(
+    sql`delete from central.club_playhq_orgs where playhq_org_id in (${ORG}, ${ORG_HORNETS})`,
+  );
+  await db.execute(sql`delete from playhq.matches where id = ${PHQ_MATCH}::uuid`);
+  await db.execute(sql`delete from playhq.grades where id = ${PHQ_GRADE}::uuid`);
+  await db.execute(
+    sql`delete from playhq.organisations where id in (${ORG}::uuid, ${ORG_HORNETS}::uuid, ${ORG_MURDOCH}::uuid)`,
+  );
+  await db.execute(
+    sql`delete from central.clubs where club_id in (${OWN}, ${OPP}, ${OTHER}, ${HORNETS}, ${MURDOCH})`,
+  );
 }
 
 beforeAll(async () => {
@@ -129,6 +181,7 @@ beforeEach(async () => {
   clearCentralQueriesCache();
   for (const t of [tenantA, tenantB]) {
     await db.delete(teamNameOverridesTable).where(eq(teamNameOverridesTable.tenantId, t));
+    await db.delete(teamCrestOverridesTable).where(eq(teamCrestOverridesTable.tenantId, t));
     await db
       .delete(competitionLabelOverridesTable)
       .where(eq(competitionLabelOverridesTable.tenantId, t));
@@ -267,5 +320,63 @@ describe("tenant isolation", () => {
     await setTeamNameOverride(tenantB, OPP, null, null);
     expect((await resolveTeamName(tenantA, OPP)).name).toBe("A's Blues");
     expect((await resolveTeamName(tenantB, OPP)).source).toBe("auto");
+  });
+});
+
+describe("automatic crests", () => {
+  it("Murdoch University Melville gets its own crest, never the Rockingham Hornets'", async () => {
+    const murdoch = await resolveTeamName(tenantA, MURDOCH);
+    expect(murdoch.crestUrl).toBe("https://img.test/mumcc.png");
+    expect(murdoch.crestSource).toBe("auto");
+    // The Hornets keep their crosswalk crest.
+    expect((await resolveTeamName(tenantA, HORNETS)).crestUrl).toBe("https://img.test/hornets.png");
+  });
+});
+
+describe("crest overrides", () => {
+  const UPLOAD = "/api/storage/objects/uploads/sjblues-crest";
+
+  it("an uploaded or picked crest replaces the automatic one, everywhere", async () => {
+    await setTeamCrestOverride(tenantA, OPP, { crestSource: "upload", crestUrl: UPLOAD });
+    const r = await resolveTeamName(tenantA, OPP);
+    expect(r).toMatchObject({
+      crestUrl: UPLOAD,
+      crestSource: "upload",
+      autoCrestUrl: "https://img.test/sjblues.png",
+    });
+    const listing = await listCardNames(tenantA, NOW);
+    const row = listing.teams.find((t) => t.centralClubId === OPP)!;
+    expect([row.crestUrl, row.crestSource]).toEqual([UPLOAD, "upload"]);
+    expect(row.grades.every((g) => g.crestUrl === UPLOAD)).toBe(true);
+    // The render map: the choice wins over a crest the card input carries.
+    const names = await loadCardNames(tenantA, { now: NOW });
+    expect(resolveCardCrest(names, "SJ Blues Senior Women", "https://img.test/other.png")).toBe(
+      UPLOAD,
+    );
+    expect(resolveCardCrest(names, "SJ Blues Cricket Club", null)).toBe(UPLOAD);
+  });
+
+  it("the initials badge shows no crest at all; reset goes back to automatic", async () => {
+    await setTeamCrestOverride(tenantA, MURDOCH, { crestSource: "initials", crestUrl: "x" });
+    const r = await resolveTeamName(tenantA, MURDOCH);
+    expect([r.crestUrl, r.crestSource, r.monogram]).toEqual([null, "initials", "MU"]);
+    const names = await loadCardNames(tenantA, { now: NOW });
+    expect(names.crestOverrides?.[cardNameKey("Murdoch University Melville Cricket Club")]).toBe(
+      "",
+    );
+    expect(
+      resolveCardCrest(names, "Murdoch University Melville Cricket Club", "https://img.test/x"),
+    ).toBeNull();
+    await setTeamCrestOverride(tenantA, MURDOCH, null);
+    expect((await resolveTeamName(tenantA, MURDOCH)).crestSource).toBe("auto");
+  });
+
+  it("one club's crest never reaches another club's cards", async () => {
+    await setTeamCrestOverride(tenantB, OPP, { crestSource: "upload", crestUrl: UPLOAD });
+    expect((await resolveTeamName(tenantA, OPP)).crestUrl).toBe("https://img.test/sjblues.png");
+    const mapA = await loadCardNames(tenantA, { now: NOW });
+    expect(mapA.crestOverrides).toBeUndefined();
+    expect(JSON.stringify(await listCardNames(tenantA, NOW))).not.toContain(UPLOAD);
+    expect((await resolveTeamName(tenantB, OPP)).crestUrl).toBe(UPLOAD);
   });
 });

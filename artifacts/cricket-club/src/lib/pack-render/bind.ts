@@ -15,7 +15,7 @@ import type {
 } from "../share-card";
 import type { BoundInput, PackCardData, PackRow } from "./types";
 import {
-  cardTeamCrest,
+  resolveCardCrest,
   resolveCardCompetition,
   resolveCardTeamName,
   teamMonogram,
@@ -82,9 +82,11 @@ export function bindInput(
       set(values, "opposition.name", oppName);
       // A crest the input lacks comes from the club's names map (PlayHQ logos).
       // Content-built inputs carry their crests final: none means hidden or none.
-      const crest = (name: string) => (resolved ? null : cardTeamCrest(names, name));
-      const clubLogo = input.club.logoUrl || crest(input.club.name);
-      const oppLogo = input.opposition.logoUrl || crest(input.opposition.name);
+      // The club's own crest choice (an image, or the initials badge) wins over the input's.
+      const crest = (name: string, logoUrl: string | null | undefined) =>
+        resolved ? logoUrl || null : resolveCardCrest(names, name, logoUrl);
+      const clubLogo = crest(input.club.name, input.club.logoUrl);
+      const oppLogo = crest(input.opposition.name, input.opposition.logoUrl);
       if (clubLogo) images["club.logo"] = clubLogo;
       if (oppLogo) images["opposition.logo"] = oppLogo;
       set(values, "club.monogram", teamMonogram(clubName));
@@ -156,7 +158,7 @@ export function bindInput(
           values[`day${i}.word`] = r.resultWord;
           values[`day${i}.clubScore`] = r.clubScore;
           values[`day${i}.oppScore`] = r.oppositionScore;
-          const rowCrest = r.crestUrl || crest(r.opposition);
+          const rowCrest = crest(r.opposition, r.crestUrl);
           if (rowCrest) images[`day${i}.crest`] = rowCrest;
         });
       }
@@ -297,8 +299,9 @@ export function bindInput(
       set(values, "note.title", input.noteTitle);
       set(values, "note.body", input.noteBody);
       // A content-built slide already chose its crest (or hid it): no map fallback.
-      const oppositionLogo =
-        input.oppositionLogoUrl || (resolved ? null : cardTeamCrest(names, input.oppositionName));
+      const oppositionLogo = resolved
+        ? input.oppositionLogoUrl || null
+        : resolveCardCrest(names, input.oppositionName, input.oppositionLogoUrl);
       if (oppositionLogo) images["opposition.logo"] = oppositionLogo;
       break;
     }

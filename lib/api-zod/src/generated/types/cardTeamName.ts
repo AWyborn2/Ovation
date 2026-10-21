@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardCrestSource } from './cardCrestSource';
 import type { CardNameSource } from './cardNameSource';
 
 export interface CardTeamName {
@@ -21,8 +22,17 @@ export interface CardTeamName {
   /** What a card prints. */
   name: string;
   source: CardNameSource;
-  /** @nullable */
+  /**
+     * The crest cards show; null shows the monogram.
+     * @nullable
+     */
   crestUrl: string | null;
+  crestSource: CardCrestSource;
+  /**
+     * The automatic crest (PlayHQ), whatever the club chose.
+     * @nullable
+     */
+  autoCrestUrl: string | null;
   /** Stands in for a missing crest. */
   monogram: string;
 }
