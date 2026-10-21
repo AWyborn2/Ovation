@@ -35,6 +35,8 @@ describe("pack registry", () => {
   it("offers only the active packs, keeping the hidden legacy ones registered (P9)", () => {
     const offered = listPackManifests().map((p) => p.packId);
     expect(offered).toEqual([...ACTIVE_PACK_IDS]);
+    expect(offered).toContain("duotone-v1");
+    expect(renderablePackId("duotone-v1")).toBe("duotone-v1");
     for (const id of LEGACY_PACK_IDS) {
       expect(offered).not.toContain(id);
       expect(listAllPackManifests().some((p) => p.packId === id)).toBe(true);

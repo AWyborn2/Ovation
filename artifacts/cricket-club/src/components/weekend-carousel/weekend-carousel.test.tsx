@@ -405,6 +405,7 @@ describe("WeekendCarousel", () => {
         ...screen.getByTestId("select-carousel-pack").querySelectorAll("option"),
       ].map((o) => (o as HTMLOptionElement).value);
       expect(offered).toEqual([...ACTIVE_PACK_IDS]);
+      expect(offered).toEqual(["broadcast-dark-v1", "club-kit-v1", "duotone-v1"]);
       for (const id of LEGACY_PACK_IDS) expect(offered).not.toContain(id);
       for (const packId of ACTIVE_PACK_IDS) {
         fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: packId } });

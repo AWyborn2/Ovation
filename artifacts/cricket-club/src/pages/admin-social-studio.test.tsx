@@ -365,7 +365,11 @@ describe("admin social studio — legacy packs are hidden (P9)", () => {
     const legacy = LEGACY_PACK_IDS.map((id, i) =>
       packRow(id, `Legacy ${i} — Square (1080×1080)`, "square", i === 0 ? ["century"] : []),
     );
-    await renderStudio([...f.all, ...legacy]);
+    const duotone = {
+      ...packRow("duotone-v1", "Duotone — Square (1080×1080)", "square"),
+      cardKinds: ["matchDay", "matchSummary", "teamList"],
+    } as CardTemplate;
+    await renderStudio([...f.all, ...legacy, duotone]);
 
     for (const id of LEGACY_PACK_IDS) {
       const name = packName(id);
@@ -374,6 +378,10 @@ describe("admin social studio — legacy packs are hidden (P9)", () => {
     }
     expect(screen.getByLabelText("Use Club Kit for every card")).toBeInTheDocument();
     expect(selectorFor("Century").value).toBe("club-kit-v1");
+    // The new pack (P8) stays offered for the kinds it designs.
+    expect(
+      within(packGroup("Match Summary")).getByRole("radio", { name: packName("duotone-v1") }),
+    ).toBeInTheDocument();
   });
 });
 

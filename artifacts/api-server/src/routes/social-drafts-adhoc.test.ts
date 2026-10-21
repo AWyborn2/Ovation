@@ -320,7 +320,19 @@ describe("POST /social-drafts (ad-hoc)", () => {
         size: "square",
         slides: [
           v2Slide("title", matchDayTitleContent(opts)),
-          v2Slide("sponsors-a", matchDaySponsorsContent({ ...opts, sponsors: [] })),
+          v2Slide(
+            "fixture-12",
+            matchDayFixtureContent({
+              id: 12,
+              grade: "A Grade",
+              roundLabel: "1",
+              opponentName: "Visitors Cricket Club",
+              opponentLogoUrl: "https://crest.test/v.png",
+              venue: "Oval",
+              startAt: new Date("2026-10-10T02:00:00Z"),
+              isHome: true,
+            }),
+          ),
           v2Slide("sponsors", matchDaySponsorsContent({ ...opts, sponsors: [] })),
         ],
       };

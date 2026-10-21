@@ -90,7 +90,7 @@ describe("legacy design packs are hidden (P9)", () => {
       expect(ACTIVE_PACKS.some((p) => p.id === id)).toBe(false);
     }
     expect(ACTIVE_PACKS.map((p) => p.id)).toEqual(
-      expect.arrayContaining(["broadcast-dark-v1", "club-kit-v1"]),
+      expect.arrayContaining(["broadcast-dark-v1", "club-kit-v1", "duotone-v1"]),
     );
   });
 
@@ -99,6 +99,7 @@ describe("legacy design packs are hidden (P9)", () => {
     expect(res.status).toBe(200);
     const packIds = new Set((res.body as Listed[]).map((r) => r.packId));
     expect(packIds.has("club-kit-v1")).toBe(true);
+    expect(packIds.has("duotone-v1")).toBe(true);
     for (const id of LEGACY_PACK_IDS) expect(packIds.has(id)).toBe(false);
   });
 

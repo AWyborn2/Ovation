@@ -155,6 +155,13 @@ export interface PackManifest {
    * packs that declare it get them, so other packs' output is unchanged.
    */
   rootVars?(ctx: PackRootVarsContext): string;
+  /**
+   * Optional last pass over a card's bound markup (fields substituted, names
+   * fitted), for a pack whose look needs per-render markup that CSS cannot
+   * express — e.g. Duotone's gradient-map filter, built from the club's colours.
+   * Only packs that declare it are touched, so other packs' output is unchanged.
+   */
+  finish?(html: string, ctx: PackRootVarsContext): string;
 }
 
 /** What {@link PackManifest.rootVars} is computed from. */

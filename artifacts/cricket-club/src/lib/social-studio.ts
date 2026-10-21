@@ -77,6 +77,8 @@ export const PACK_SWATCH: Record<string, string> = {
   // Club Kit wears the club's colours; its swatch is the jumper trim.
   "club-kit-v1":
     "linear-gradient(120deg, #10151B 50%, #333F48 50% 58%, #F2F5F8 58% 62%, #FBAC27 62%)",
+  // Duotone: a photo's tones mapped ink → secondary → primary, under a white sheet.
+  "duotone-v1": "linear-gradient(160deg, #10151B 25%, #333F48 55%, #FBAC27 85%, #FFFFFF 85%)",
 };
 
 /**

@@ -26,6 +26,13 @@ import {
 } from "../pack-templates/carousel";
 import { dayFixturesTemplate, dayResultsTemplate } from "../pack-templates/club-kit/day-slides";
 import { matchDetailTemplate } from "../pack-templates/club-kit/match-detail";
+import { DUOTONE_PACK_ID } from "../pack-templates/duotone";
+import {
+  duotoneDayFixturesTemplate,
+  duotoneDayResultsTemplate,
+  duotoneMatchDetailTemplate,
+  duotoneWeekendTemplate,
+} from "../pack-templates/duotone/carousel";
 
 /**
  * Slot keys the generic per-slot override PANEL hides — the tenant-branding
@@ -150,6 +157,7 @@ function resolveTemplateBase(
   if (isCarousel) {
     const id = packId == null ? CAROUSEL_CLUB_KIT : packId;
     if (!isCarouselPack(id)) throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
+    if (id === DUOTONE_PACK_ID) return duotoneCarouselTemplate(input);
     const look = carouselLook(id);
     // A junior day slide (ADR-010 P3): the day's matches as compact rows.
     if (input.kind === "matchDay" && input.carouselDay) {
@@ -213,6 +221,21 @@ function resolveTemplateBase(
       d.categoryPreset !== "Dismissals",
   );
   return (match ?? designs[0]).template;
+}
+
+/** Duotone's own carousel slides (title, sponsors, junior day slides, match detail). */
+function duotoneCarouselTemplate(input: ShareCardInput): PackCardTemplate | null {
+  if (input.kind === "matchDay" && input.carouselDay)
+    return duotoneDayFixturesTemplate(input.carouselDay.fixtures.length);
+  if (input.kind === "matchSummary" && input.carouselDay)
+    return duotoneDayResultsTemplate(input.carouselDay.results.length);
+  if (input.kind === "matchDay" && input.carouselPage) {
+    const c = input.carouselPage;
+    const { count, ...page } = sponsorsPageLayout(c);
+    return duotoneWeekendTemplate(c.page, count, c.title.length, c.hasCoverPhoto, page);
+  }
+  if (input.kind === "matchSummary") return duotoneMatchDetailTemplate(input.innings.length);
+  return null;
 }
 
 /** Whether a design has its own landscape layout (otherwise it is letterboxed). */

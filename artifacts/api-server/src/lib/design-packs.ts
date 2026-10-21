@@ -294,6 +294,17 @@ export const PACKS: DesignPack[] = [
     ],
     variants: STANDARD_PACK_VARIANTS,
   },
+  {
+    id: "duotone-v1",
+    name: "Duotone",
+    description:
+      "Photo-led and modern — the photo full bleed and mapped to your club's colours, a one-line ROUND headline and a white info sheet, with your logo as a zoomed silhouette when there's no photo. Match day, results, match summaries and team lists, in square, portrait, story and 1200×630 landscape.",
+    // COVERAGE CONTRACT: must match pack-templates/duotone/index.ts (enforced
+    // by pack-coverage-parity.test.ts). Duotone designs the carousel kinds
+    // only (ADR-010 P8); other kinds come from the club's default pack.
+    cardKinds: ["matchDay", "matchSummary", "teamList"],
+    variants: STANDARD_PACK_VARIANTS,
+  },
 ];
 
 export function getPackById(id: string): DesignPack | undefined {

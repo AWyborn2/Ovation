@@ -295,6 +295,7 @@ describe("legacy packs (P9)", () => {
     }
     expect(ACTIVE_PACK_IDS).toContain("club-kit-v1");
     expect(ACTIVE_PACK_IDS).toContain("broadcast-dark-v1");
+    expect(ACTIVE_PACK_IDS).toContain("duotone-v1");
   });
 
   it("resolveActivePackId maps legacy and unknown ids to Club Kit, and nothing else", () => {

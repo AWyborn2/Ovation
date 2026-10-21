@@ -10,6 +10,7 @@ export const CAROUSEL_PACK_IDS = [
   "neon-night-v1",
   "sunset-v1",
   "club-kit-v1",
+  "duotone-v1",
 ] as const;
 export const LEGACY_CAROUSEL_PACK_ID = "club-kit-v1";
 
