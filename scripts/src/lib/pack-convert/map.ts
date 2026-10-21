@@ -32,8 +32,10 @@ import type {
   TemplateTextShadow,
   TemplateBoxShadow,
   TemplateFill,
+  TemplateFilter,
   BlendMode,
 } from "@workspace/scorecard/kind-templates";
+import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
   parseGradient,
@@ -73,6 +75,11 @@ export interface MapResult {
   untokenised: string[];
   /** Animations found: name → what it became (or "unmapped"). */
   motion: Record<string, string>;
+  /**
+   * With a worst-case capture: the share of this capture's text elements that
+   * found a twin there. Low means the worst case drew another design.
+   */
+  geometryCoverage?: number;
 }
 
 const PHOTO_SLOTS = new Set(["photo", "squadPhoto", "teamPhoto", "cardPhoto"]);
@@ -85,7 +92,7 @@ const MOTION: Record<string, { preset: "pulse" | "shine"; periodMs: number }> = 
   hhShine: { preset: "shine", periodMs: 5500 },
 };
 
-class Tree {
+export class Tree {
   readonly byId = new Map<number, CapturedElement>();
   readonly children = new Map<number, CapturedElement[]>();
   constructor(readonly capture: PackCapture) {
@@ -158,18 +165,92 @@ export interface MapOptions {
   geometry?: PackCapture | null;
 }
 
-/** Each element's path in the DOM (`0/3/1`): stable between two renders of one template. */
-function elementPaths(tree: Tree): Map<number, string> {
-  const paths = new Map<number, string>();
-  for (const el of tree.capture.elements) {
-    if (el.parent === null) {
-      paths.set(el.id, "0");
-      continue;
+const normText = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+/**
+ * Each element of the sentinel capture → its twin in the worst-case capture.
+ * The two renders don't always hold the same elements (a chip one of them
+ * fills and the other leaves empty), so children are aligned by how alike
+ * they are, not by position: tag, the text they hold (a sentinel's markers
+ * read as the worst-case values of their fields) and their data attributes.
+ * An element only one render has stays unmatched.
+ */
+export function alignTrees(a: Tree, b: Tree): Map<number, CapturedElement> {
+  const worstFields = new Map(
+    Object.entries(b.capture.fields).map(([k, v]) => [k.toLowerCase(), v]),
+  );
+  const resolve = (text: string) =>
+    normText(
+      text.replace(
+        TOKEN_IN_TEXT,
+        (_m, key: string) => worstFields.get(key.toLowerCase()) ?? `[[${key}]]`,
+      ),
+    );
+  const memo = new Map<CapturedElement, Set<string>>();
+  const textsOf = (tree: Tree, el: CapturedElement, own: (t: string) => string): Set<string> => {
+    let set = memo.get(el);
+    if (!set) {
+      set = new Set(
+        [el, ...tree.descendants(el)].flatMap((e) => (e.text ?? []).map((t) => own(t.text))),
+      );
+      set.delete("");
+      memo.set(el, set);
     }
-    const siblings = tree.children.get(el.parent) ?? [];
-    paths.set(el.id, `${paths.get(el.parent)}/${siblings.indexOf(el)}`);
-  }
-  return paths;
+    return set;
+  };
+  const dataKeys = (el: CapturedElement) =>
+    Object.keys(el.data ?? {})
+      .sort()
+      .join(",");
+  const sim = (x: CapturedElement, y: CapturedElement): number => {
+    if (x.tag !== y.tag) return 0;
+    let score = 1;
+    const tx = textsOf(a, x, resolve);
+    const ty = textsOf(b, y, normText);
+    for (const t of tx) if (ty.has(t)) score += 3;
+    const ownX = (x.text ?? []).map((t) => resolve(t.text)).join(" ");
+    const ownY = (y.text ?? []).map((t) => normText(t.text)).join(" ");
+    if (ownX && ownY && ownX !== ownY && !ownY.includes(ownX) && !ownX.includes(ownY)) score -= 2;
+    if (!!ownX !== !!ownY) score -= 1;
+    score += dataKeys(x) === dataKeys(y) ? 1 : -1;
+    if ((x.className ?? "") === (y.className ?? "")) score += 0.5;
+    if ((x.src ?? "").replace("worst.", "") === (y.src ?? "").replace("worst.", "")) score += 0.5;
+    return score;
+  };
+  const out = new Map<number, CapturedElement>();
+  const align = (x: CapturedElement, y: CapturedElement) => {
+    out.set(x.id, y);
+    const xs = a.children.get(x.id) ?? [];
+    const ys = b.children.get(y.id) ?? [];
+    // Needleman–Wunsch, gaps free: the pairing with the most similarity.
+    const score: number[][] = Array.from({ length: xs.length + 1 }, () =>
+      new Array<number>(ys.length + 1).fill(0),
+    );
+    for (let i = 1; i <= xs.length; i++)
+      for (let j = 1; j <= ys.length; j++) {
+        const s = sim(xs[i - 1]!, ys[j - 1]!);
+        score[i]![j] = Math.max(
+          score[i - 1]![j]!,
+          score[i]![j - 1]!,
+          s > 0 ? score[i - 1]![j - 1]! + s : -Infinity,
+        );
+      }
+    const pairs: Array<[CapturedElement, CapturedElement]> = [];
+    for (let i = xs.length, j = ys.length; i > 0 && j > 0;) {
+      const s = sim(xs[i - 1]!, ys[j - 1]!);
+      if (s > 0 && score[i]![j] === score[i - 1]![j - 1]! + s) {
+        pairs.push([xs[i - 1]!, ys[j - 1]!]);
+        i--;
+        j--;
+      } else if (score[i]![j] === score[i - 1]![j]) i--;
+      else j--;
+    }
+    for (const [cx, cy] of pairs.reverse()) align(cx, cy);
+  };
+  const ra = a.capture.elements.find((e) => e.parent === null);
+  const rb = b.capture.elements.find((e) => e.parent === null);
+  if (ra && rb) align(ra, rb);
+  return out;
 }
 
 /**
@@ -222,14 +303,11 @@ function boundRows(
 
 export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
   const tree = new Tree(cap);
-  // Boxes from the worst-case capture where its element is found by path.
+  // Boxes from the worst-case capture, its elements aligned with this one's.
   const gTree = opts.geometry ? new Tree(opts.geometry) : null;
-  const ownPaths = gTree ? elementPaths(tree) : null;
-  const gByPath = gTree
-    ? new Map([...elementPaths(gTree)].map(([id, path]) => [path, gTree.byId.get(id)!]))
-    : null;
+  const twins = gTree ? alignTrees(tree, gTree) : null;
   const twin = (el: CapturedElement): CapturedElement => {
-    const t = gByPath?.get(ownPaths?.get(el.id) ?? "");
+    const t = twins?.get(el.id);
     return t && t.tag === el.tag ? t : el;
   };
   /** A repeat's box: its rows in the worst-case capture (filled to capacity), else the rows found. */
@@ -281,6 +359,21 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     if (!match) return undefined;
     if (match.moved && !match.token) untokenised.add(`${prop} ${a} (element ${el.id})`);
     return match.value;
+  };
+  /** A token at partial alpha, for a layer that paints only it (no longer untokenised once used). */
+  const translucent = (el: CapturedElement, prop: string) => {
+    const a = tree.style(el, prop);
+    const bEl = bById.get(el.id);
+    const inB = bEl && bTree ? bTree.style(bEl, prop) : undefined;
+    const t = tokeniseColour(a, inB, palette)?.translucent;
+    if (!t) return undefined;
+    return {
+      ...t,
+      use: () => {
+        untokenised.delete(`${prop} ${a} (element ${el.id})`);
+        return `var(${t.token})`;
+      },
+    };
   };
   const shadowColour = (raw: string, el: CapturedElement, prop: string, i: number) => {
     const bShadow = bById.get(el.id)?.style[prop];
@@ -358,10 +451,12 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     if (tree.ancestors(el).some((a) => a.tag === "svg")) continue;
     const drop = dropField(el);
     const g = twin(el);
+    // An ancestor's opacity fades everything inside it: each flat layer carries it.
+    const inherited = tree.ancestors(el).reduce((o, a) => o * num(a.style.opacity), 1);
     const add = (base: string, layer: MappedLayer["layer"], box = pct(g.box)) =>
       layers.push({
         sig: sigOf(base),
-        layer,
+        layer: inherited < 1 ? withOpacity(layer, inherited) : layer,
         box,
         element: el.id,
         ...(drop ? { dropIfField: drop } : {}),
@@ -409,6 +504,8 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       if (radius) style.radius = radius;
       const opacity = num(el.style.opacity);
       if (opacity < 1) style.opacity = r2(opacity);
+      const filters = imageFilters(tree, el, polish);
+      if (filters.length) style.filter = filters;
       if (!PHOTO_SLOTS.has(slot) && slot !== "groundPhoto" && el.style["object-fit"] === "cover")
         polish.push({
           element: el.id,
@@ -429,10 +526,10 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     }
 
     // The element's own paint: a shape behind its text and children.
-    const paint = shapeStyle(tree, el, { colour, shadowColour, wPct, polish, cap });
+    const paint = shapeStyle(tree, el, { colour, translucent, shadowColour, wPct, polish, cap });
     const text = el.text ?? [];
     const textStyle = text.length
-      ? textStyleOf(tree, el, { colour, shadowColour, wPct, polish, cap })
+      ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
       : null;
     if (paint && skewed && typeof paint.style.fill === "string" && !text.length) {
       // A skewed panel (Broadcast Dark's slashes): its transformed box as a polygon.
@@ -447,7 +544,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
         element: el.id,
         what: `transform ${el.style.transform} (skew or scale) drawn untransformed`,
       });
-    if (paint) {
+    if (paint && (paint.style.fill || paint.style.border || paint.style.boxShadow)) {
       const m = motionFor();
       add(
         `shape:${paint.key}`,
@@ -457,6 +554,25 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
           ...(m && !text.length ? { motion: m } : {}),
         } as MappedLayer["layer"],
         withRotate(pct(g.box)),
+      );
+    }
+    for (const edge of paint?.edges ?? []) {
+      const b = g.box;
+      const strip =
+        edge.side === "top"
+          ? { x: b.x, y: b.y, w: b.w, h: edge.px }
+          : edge.side === "bottom"
+            ? { x: b.x, y: b.y + b.h - edge.px, w: b.w, h: edge.px }
+            : edge.side === "left"
+              ? { x: b.x, y: b.y, w: edge.px, h: b.h }
+              : { x: b.x + b.w - edge.px, y: b.y, w: edge.px, h: b.h };
+      const style: TemplateStyleV2 = { fill: edge.color };
+      const edgeOpacity = num(el.style.opacity) * (edge.alpha ?? 1);
+      if (edgeOpacity < 1) style.opacity = r2(edgeOpacity);
+      add(
+        `shape:edge:${edge.side}:${edge.color}`,
+        { kind: "shape", style } as MappedLayer["layer"],
+        pct(strip),
       );
     }
     // Background images that name a slot (a ground photo behind a panel).
@@ -484,23 +600,55 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     }
 
     if (!text.length || !textStyle) continue;
-    const content = text.map((t) => resolveTokens(t.text)).join(" ");
-    const hasChildren = (tree.children.get(el.id) ?? []).some(
-      (c) => c.text?.length || c.tag === "br",
-    );
-    // With element children the runs' own box; else the content box (padding removed).
-    const box = hasChildren
-      ? unionBox((g.text?.length ? g.text : text).map((t) => t.box))
-      : contentBox(g);
-    const fit = el.data?.fit !== undefined || el.data?.fitRow !== undefined;
+    const kids = tree.children.get(el.id) ?? [];
+    // Text with inline runs inside it (`{{grade}} · vs {{opponent}}`, `({{balls}})`) is one
+    // layer: its runs in reading order, in the element's box.
+    const inline = kids.length > 0 && kids.every((k) => isInlineRun(k));
+    if (inline) {
+      for (const k of kids) consumed.add(k.id);
+      if (kids.some((k) => TEXT_LOOK.some((p) => k.style[p] !== undefined)))
+        polish.push({
+          element: el.id,
+          what: "inline runs styled apart, merged into one text style",
+        });
+    }
+    const runs = inline ? [...text, ...kids.flatMap((k) => k.text ?? [])] : text;
+    const content = resolveTokens(joinRuns(readingOrder(runs).map((t) => t.text)));
+    const hasChildren = !inline && kids.some((c) => c.text?.length || c.tag === "br");
+    // The worst-case runs (the text's real extent), else this capture's.
+    const runsOf = (e: CapturedElement) => {
+      const t = twin(e);
+      return (t.text?.length ? t.text : e.text) ?? [];
+    };
+    const extent = unionBox((inline ? [el, ...kids] : [el]).flatMap(runsOf).map((t) => t.box));
+    // With element children the runs' own box. Else the content box across (so the
+    // alignment holds) and the runs' glyph box down: a tight line height draws glyphs
+    // past the element's box, and the template's box must hold them or fit shrinks them.
+    const across = contentBox(g, el);
+    // Text its element clips (`overflow: hidden`, often with an ellipsis) keeps the
+    // element's width: the runs run on past it.
+    const clips = el.style["overflow-x"] === "hidden" || el.style["overflow-x"] === "clip";
+    const nowrap = tree.style(el, "white-space") === "nowrap";
+    const ellipsis = el.style["text-overflow"] === "ellipsis";
+    const left = clips ? across.x : Math.min(across.x, extent.x);
+    const right = clips ? across.x + across.w : Math.max(across.x + across.w, extent.x + extent.w);
+    const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
+    const box = clips ? raw : textBox(raw, textStyle.align, W);
+    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis.
+    const fit =
+      el.data?.fit !== undefined || el.data?.fitRow !== undefined
+        ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
+        : clips && ellipsis
+          ? { minScale: 1, maxLines: 1, ellipsis: true }
+          : null;
     const m = motionFor();
     add(
       `text:${content}`,
       {
         kind: "text",
         content,
-        style: textStyle,
-        ...(fit ? { fit: { minScale: 0.6, maxLines: 2, ellipsis: true } } : {}),
+        style: fillOverBox(textStyle, g.box, raw),
+        ...(fit ? { fit } : {}),
         ...(m ? { motion: m } : {}),
       } as MappedLayer["layer"],
       withRotate(pct(box)),
@@ -509,10 +657,145 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
 
   // Back to front in document order: a repeat sits where its first row is (the sort is stable).
   layers.sort((a, b) => a.element - b.element);
-  return { layers, polish, untokenised: [...untokenised], motion };
+  const texts = cap.elements.filter((e) => e.text?.length && e.hidden !== "display");
+  const geometryCoverage = twins
+    ? texts.filter((e) => twins.get(e.id)?.text?.length).length / Math.max(1, texts.length)
+    : undefined;
+  return {
+    layers,
+    polish,
+    untokenised: [...untokenised],
+    motion,
+    ...(geometryCoverage !== undefined ? { geometryCoverage } : {}),
+  };
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
+
+/**
+ * A text fill gradient painted over the element's box, as the pack paints it,
+ * when the text layer's box is taller (it holds the glyphs): a vertical
+ * gradient's stops move into the element's band of the layer box.
+ */
+export function fillOverBox(
+  style: TemplateStyleV2,
+  element: { y: number; h: number },
+  box: { y: number; h: number },
+): TemplateStyleV2 {
+  const fill = style.textFill;
+  if (!fill || typeof fill !== "object" || fill.type !== "linear" || box.h <= 0) return style;
+  const angle = fill.angle ?? 180;
+  if (angle !== 180 && angle !== 0) return style;
+  if (fill.stops.some((s) => s.at === undefined)) return style;
+  const start = angle === 180 ? element.y - box.y : box.y + box.h - (element.y + element.h);
+  if (Math.abs(start) < 0.5 && Math.abs(element.h - box.h) < 0.5) return style;
+  const span = element.h / box.h;
+  return {
+    ...style,
+    textFill: {
+      ...fill,
+      stops: fill.stops.map((s) => ({
+        ...s,
+        at: Math.min(100, Math.max(0, r2((start / box.h + (s.at! / 100) * span) * 100))),
+      })),
+    },
+  };
+}
+
+/** One side of a border drawn on fewer than four sides. */
+type Edge = {
+  side: "top" | "right" | "bottom" | "left";
+  px: number;
+  color: string;
+  alpha?: number;
+};
+
+/** A layer with `factor` multiplied into its opacity. */
+function withOpacity(layer: MappedLayer["layer"], factor: number): MappedLayer["layer"] {
+  const style = (layer as { style?: TemplateStyleV2 }).style ?? {};
+  return {
+    ...layer,
+    style: { ...style, opacity: r2((style.opacity ?? 1) * factor) },
+  } as MappedLayer["layer"];
+}
+
+/**
+ * An image's filters, its ancestors' included (a filter on a wrapper filters
+ * the photo inside it): grayscale and blur map; the rest are reported.
+ */
+function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): TemplateFilter[] {
+  const out: TemplateFilter[] = [];
+  for (const e of [el, ...tree.ancestors(el)]) {
+    const value = e.style.filter;
+    if (!value || value === "none") continue;
+    for (const [, name, arg] of value.matchAll(/([a-z-]+)\(([^)]*)\)/g)) {
+      const n = parseFloat(arg!);
+      if (name === "grayscale" && Number.isFinite(n))
+        out.push({ preset: "grayscale", amount: r2(arg!.endsWith("%") ? n / 100 : n) });
+      else if (name === "blur" && Number.isFinite(n))
+        out.push({ preset: "blur", px: Math.min(MAX_BLUR_PX, r2(n)) });
+      else polish.push({ element: el.id, what: `filter ${name}(${arg}) not mapped` });
+    }
+  }
+  return out;
+}
+
+const INLINE_TAGS = new Set(["span", "b", "strong", "em", "i", "small", "a", "sup", "sub", "u"]);
+/** Text props a run may set apart from its parent's (reported when merged). */
+const TEXT_LOOK = ["color", "font-family", "font-size", "font-weight", "letter-spacing"];
+const NO_PAINT = /^(none|0px|transparent|rgba\(0, 0, 0, 0\))$/;
+
+/** A text-only inline child with no paint of its own: part of its parent's text. */
+function isInlineRun(k: CapturedElement): boolean {
+  if (!k.text?.length) return false;
+  const display = k.style.display ?? (INLINE_TAGS.has(k.tag) ? "inline" : "block");
+  if (display !== "inline") return false;
+  return ["background-color", "background-image", "border-top-width", "box-shadow"].every(
+    (p) => k.style[p] === undefined || NO_PAINT.test(k.style[p]!),
+  );
+}
+
+/** Text runs in reading order: lines top to bottom, each left to right. */
+export function readingOrder<T extends { box: { x: number; y: number; w: number; h: number } }>(
+  runs: readonly T[],
+): T[] {
+  const mid = (r: T) => r.box.y + r.box.h / 2;
+  const lines: T[][] = [];
+  for (const r of [...runs].sort((p, q) => mid(p) - mid(q))) {
+    const line = lines.find(
+      (l) => Math.abs(mid(l[0]!) - mid(r)) < Math.min(l[0]!.box.h, r.box.h) / 2,
+    );
+    if (line) line.push(r);
+    else lines.push([r]);
+  }
+  return lines.flatMap((l) => l.sort((p, q) => p.box.x - q.box.x));
+}
+
+/** Runs joined with spaces, except inside brackets and before punctuation (`(199)`, `12,`). */
+export function joinRuns(texts: readonly string[]): string {
+  return texts.reduce((acc, raw) => {
+    const t = raw.trim();
+    if (!t) return acc;
+    if (!acc) return t;
+    return /[([{#@/]$/.test(acc) || /^[)\]},.:;!?%/]/.test(t) ? acc + t : `${acc} ${t}`;
+  }, "");
+}
+
+/**
+ * A text box with room to spare: the pack's box is exactly as wide as its
+ * text, and the template's metrics (rounded size and spacing) can need a
+ * hair more, which would wrap the line. It grows away from the alignment.
+ */
+function textBox(
+  box: { x: number; y: number; w: number; h: number },
+  align: TemplateStyleV2["align"],
+  W: number,
+) {
+  const extra = Math.max(W * 0.01, box.w * 0.03);
+  if (align === "right") return { ...box, x: box.x - extra, w: box.w + extra };
+  if (align === "center") return { ...box, x: box.x - extra / 2, w: box.w + extra };
+  return { ...box, w: box.w + extra };
+}
 
 /** A skewed box as SVG: its transformed corners, filled with the box's colour. */
 function skewPolygon(
@@ -565,13 +848,14 @@ function unionBox(boxes: Array<{ x: number; y: number; w: number; h: number }>) 
   return { x, y, w: right - x, h: bottom - y };
 }
 
-function contentBox(el: CapturedElement) {
+/** `el`'s box less its padding and border, read from `styled` (a worst-case twin keeps no styles). */
+function contentBox(el: CapturedElement, styled: CapturedElement = el) {
   const p = (side: string) => {
-    const v = px(el.style[`padding-${side}`]);
+    const v = px(styled.style[`padding-${side}`]);
     return Number.isFinite(v) ? v : 0;
   };
   const b = (side: string) => {
-    const v = px(el.style[`border-${side}-width`]);
+    const v = px(styled.style[`border-${side}-width`]);
     return Number.isFinite(v) ? v : 0;
   };
   const left = p("left") + b("left");
@@ -607,6 +891,10 @@ function radiusOf(tree: Tree, el: CapturedElement): number | undefined {
 
 interface StyleContext {
   colour: (el: CapturedElement, prop: string) => string | undefined;
+  translucent: (
+    el: CapturedElement,
+    prop: string,
+  ) => { token: string; alpha: number; use: () => string } | undefined;
   shadowColour: (raw: string, el: CapturedElement, prop: string, i: number) => string;
   wPct: (n: number) => number;
   polish: PolishItem[];
@@ -637,7 +925,7 @@ function shapeStyle(
   tree: Tree,
   el: CapturedElement,
   ctx: StyleContext,
-): { style: TemplateStyleV2; key: string } | null {
+): { style: TemplateStyleV2; key: string; edges: Edge[] } | null {
   const style: TemplateStyleV2 = {};
   const fill = ctx.colour(el, "background-color");
   if (el.style["background-color"] && fill) style.fill = fill;
@@ -662,10 +950,15 @@ function shapeStyle(
     w: px(el.style[`border-${s}-width`]),
     style: el.style[`border-${s}-style`],
   }));
+  // The app's base styles (Tailwind's preflight) make every border solid, so the
+  // capture's diff leaves a solid border's style out: missing means solid.
   const drawn = sides.filter(
-    (d) => Number.isFinite(d.w) && d.w > 0 && d.style && d.style !== "none",
+    (d) => Number.isFinite(d.w) && d.w > 0 && d.style !== "none" && d.style !== "hidden",
   );
-  if (drawn.length) {
+  // A border all round is the box's border; one on some sides only (a divider
+  // above a footer) is a thin strip per side, drawn as its own shape.
+  const edges: Edge[] = [];
+  if (drawn.length === 4) {
     const first = drawn[0]!;
     const col = ctx.colour(el, `border-${first.s}-color`) ?? "#000000";
     style.border = {
@@ -673,12 +966,18 @@ function shapeStyle(
       color: col,
       ...(first.style === "dashed" || first.style === "dotted" ? { style: first.style } : {}),
     };
-    if (drawn.length < 4)
-      ctx.polish.push({
-        element: el.id,
-        what: `border on ${drawn.map((d) => d.s).join("+")} only, drawn all round`,
+  } else
+    for (const d of drawn) {
+      const t = ctx.translucent(el, `border-${d.s}-color`);
+      edges.push({
+        side: d.s as Edge["side"],
+        px: d.w,
+        color: t ? t.use() : (ctx.colour(el, `border-${d.s}-color`) ?? "#000000"),
+        ...(t ? { alpha: t.alpha } : {}),
       });
-  }
+      if (d.style === "dashed" || d.style === "dotted")
+        ctx.polish.push({ element: el.id, what: `${d.style} ${d.s} border drawn solid` });
+    }
   const radius = radiusOf(tree, el);
   if (radius && (style.fill || style.border)) style.radius = radius;
   const shadows = parseShadows(el.style["box-shadow"]);
@@ -691,8 +990,23 @@ function shapeStyle(
       color: ctx.shadowColour(s.colour, el, "box-shadow", i),
       ...(s.inset ? { inset: true } : {}),
     }));
-  if (!style.fill && !style.border && !style.boxShadow) return null;
-  const opacity = num(el.style.opacity);
+  if (!style.fill && !style.border && !style.boxShadow && !edges.length) return null;
+  let opacity = num(el.style.opacity);
+  // A box that paints one translucent token (a frame line at 45 % accent) draws the token,
+  // its alpha moved to the layer.
+  if (style.border && !style.fill && !style.boxShadow) {
+    const t = ctx.translucent(el, `border-${drawn[0]!.s}-color`);
+    if (t) {
+      style.border = { ...style.border, color: t.use() };
+      opacity *= t.alpha;
+    }
+  } else if (typeof style.fill === "string" && !style.border && !style.boxShadow) {
+    const t = ctx.translucent(el, "background-color");
+    if (t) {
+      style.fill = t.use();
+      opacity *= t.alpha;
+    }
+  }
   if (opacity < 1) style.opacity = r2(opacity);
   const blend = el.style["mix-blend-mode"];
   if (blend && blend !== "normal") style.blend = blend as BlendMode;
@@ -702,7 +1016,7 @@ function shapeStyle(
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
       });
-  return { style, key: JSON.stringify(style) };
+  return { style, key: JSON.stringify(style), edges };
 }
 
 const FONT_GENERIC =
@@ -745,9 +1059,15 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
         : "left";
   const lineHeight = px(tree.style(el, "line-height")) * scale;
   if (Number.isFinite(lineHeight)) style.lineHeight = r2(lineHeight / fontPx);
-  const opacity = num(el.style.opacity);
-  if (opacity < 1) style.opacity = r2(opacity);
+  let opacity = num(el.style.opacity);
   const shadows = parseShadows(tree.style(el, "text-shadow"));
+  // Text in a translucent token (the accent at 70 %) draws the token, its alpha on the layer.
+  const see = !shadows.length ? ctx.translucent(el, "color") : undefined;
+  if (see) {
+    style.color = see.use();
+    opacity *= see.alpha;
+  }
+  if (opacity < 1) style.opacity = r2(opacity);
   if (shadows.length)
     style.textShadow = shadows.map((s, i): TemplateTextShadow => ({
       x: ctx.wPct(s.x),

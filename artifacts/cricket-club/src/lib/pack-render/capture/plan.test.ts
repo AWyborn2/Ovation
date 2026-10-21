@@ -8,7 +8,7 @@ import {
 } from "@workspace/scorecard/pack-capture";
 import { WORST_CASE_NAMES } from "@workspace/scorecard/kind-templates";
 import { listAllPackManifests } from "../../pack-templates/registry";
-import { captureRender, captureVariants, prepareCard } from "./plan";
+import { captureRender, captureVariants, fillEmpty, prepareCard } from "./plan";
 import { sentinelImage } from "./sentinels";
 import { shortenUrls } from "./dom";
 
@@ -126,6 +126,33 @@ describe("converter capture plan (L4-A1)", () => {
     const ta = tokens("A");
     const tb = tokens("B");
     for (const key of ["accent", "panel", "ink"] as const) expect(ta[key], key).not.toBe(tb[key]);
+  });
+
+  it("fills what the sample leaves empty from the worst case, so optional blocks get markers", () => {
+    expect(
+      fillEmpty(
+        { a: "", b: { c: null, d: "x" }, list: [], design: "x" },
+        { a: "1", b: { c: 2, d: "y" }, list: [1], design: "y", setRole: "cover" },
+      ),
+    ).toEqual({ a: "1", b: { c: 2, d: "x" }, list: [], design: "x" });
+    // Century's shirt-number chip only draws with a shirt number.
+    const v = captureVariants("gold-foil-v1").find((x) => x.id === "century.card")!;
+    const card = prepareCard(
+      "gold-foil-v1",
+      captureRender("gold-foil-v1", v, v.renders[0]!, "square"),
+      "square",
+    );
+    expect(card.markers.shirtNumber).toBe("[[shirtNumber]]");
+  });
+
+  it("a single card's worst case is the card, not Match Summary's innings-detail slide", () => {
+    const v = captureVariants("gold-foil-v1").find((x) => x.id === "matchSummary.result.full")!;
+    const worst = v.renders.find((r) => r.content === "worst")!;
+    const input = captureRender("gold-foil-v1", v, worst, "square").input as Record<
+      string,
+      unknown
+    >;
+    expect(input.carouselDetail).toBeUndefined();
   });
 
   it("names sentinel images by slot, so a captured src says where it came from", () => {

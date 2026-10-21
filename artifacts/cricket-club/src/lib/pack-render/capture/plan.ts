@@ -190,7 +190,48 @@ function sentinelInput(packId: string, spec: SpecFields): Record<string, unknown
     return spec.named ? { ...input, design: spec.design } : input;
   }
   const sample = revoicedSample(spec.kind as ShareCardInput["kind"], texts, { photo: spec.photo });
-  return firstPlannedSlide(withRole(sample, spec), spec.role === "cover");
+  // Optional blocks the sample leaves empty (Century's shirt-number chip) take the
+  // worst-case value, so they render and get their marker too.
+  const worst = worstCaseCard(
+    spec.kind,
+    {
+      page: spec.page as PageKey,
+      contentKind: spec.kind,
+      photo: spec.photo,
+      sponsors: "none",
+      junior: spec.junior,
+    },
+    { image: (name) => sentinelImage(name) },
+  ).input;
+  return firstPlannedSlide(withRole(fillEmpty(sample, worst), spec), spec.role === "cover");
+}
+
+/** Input keys that choose a design or slide: never filled from the worst case. */
+const PLAN_KEYS = new Set([
+  "setRole",
+  "setPage",
+  "density",
+  "category",
+  "design",
+  "carouselContent",
+]);
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+/** `sample` with its missing or empty values taken from `fill` (objects merged, lists kept). */
+export function fillEmpty(
+  sample: Record<string, unknown>,
+  fill: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...sample };
+  for (const [key, value] of Object.entries(fill)) {
+    if (PLAN_KEYS.has(key)) continue;
+    const own = out[key];
+    if (own === undefined || own === null || own === "") out[key] = value;
+    else if (isPlainObject(own) && isPlainObject(value)) out[key] = fillEmpty(own, value);
+  }
+  return out;
 }
 
 /** The most rows each of a design's repeats lays out at a size: worst case fills them. */
@@ -231,8 +272,8 @@ function worstRender(
     },
     { rows: worstRows(packId, spec, size), image: (name) => sentinelImage(`worst.${name}`) },
   );
-  // A single card is not a carousel slide.
-  const { carouselContent: _slide, ...single } = card.input;
+  // A single card is not a carousel slide (nor Match Summary's innings-detail slide).
+  const { carouselContent: _slide, carouselDetail: _detail, ...single } = card.input;
   let input = spec.slide ? card.input : single;
   if (isContentKind(spec.kind)) input = spec.named ? { ...input, design: spec.design } : input;
   else input = firstPlannedSlide(withRole(input, spec), spec.role === "cover");
