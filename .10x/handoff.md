@@ -1,5 +1,25 @@
 # Handoff
 
+**From:** Senior Engineer
+**To:** SDE / reviewer
+**Feature:** studio-editor-multiselect
+
+## Context
+
+- Decisions: `.10x/decisions/senior-engineer/studio-editor-multiselect.md`. Client only (no API, no migration), on `wyborn21/studio-editor-multiselect`.
+- Pure helpers: `components/studio-editor/arrange.ts` (`matchSize`, `align`, `distribute`, `resizeBounds`, `resizeGroup`, `scaleLayerType`, `unitCount`, `selectAll`, `contains`) and `components/studio-editor/clipboard.ts` (`copyLayers`, `pasteLayers(doc, clip, size, { kind, onlyOnSize })`, `readClipboard`/`writeClipboard` keyed by `"template" | "draft"` in session storage).
+- Wiring: both pages (`admin-kind-template-editor.tsx`, `admin-studio-editor.tsx`) pass `onCopy`/`onPaste`/`canPaste`/`arrange` to `EditorToolbar`, `onSelectMany` + `marqueeArea` (the page's `<main>` ref) to `EditorCanvas`, and the new `onSelect(ids, mode)` to `LayersDrawer`.
+- Gotchas:
+  - Font size is one value for every size, so a corner group resize changes text on every size (Ash's choice); boxes change on the current size only.
+  - The marquee picks layers wholly inside it, because starters have a full-card background layer.
+  - "Align left" is the text style bar's label; Arrange uses "Align left edges".
+  - jsdom has no layout, so interaction tests stub `getBoundingClientRect` (`sizedBoard()` in `template-mode.test.tsx`).
+- Follow-ups: a shared `useEditorSelection` hook once the template library adds a third editor surface; snapping during group resize; group-aware rotation.
+
+## Handoff History
+
+### Previous (EM → SDE, selection-hub-redesign)
+
 **From:** Engineering Manager
 **To:** SDE
 **Feature:** selection-hub-redesign
@@ -10,8 +30,6 @@
 - Start PR 1 (T1.1 to T1.7) on `wyborn21/ovation-selection-hub-redesign-9ab7a5`. Verify drag from the sidebar pool in the browser right after T1.3, before T1.4.
 - PR 2 (T2.1 to T2.7) stacks on PR 1. Retarget it to main before PR 1 merges with --delete-branch.
 - Client only: no API change and no migration. Every move goes through the existing `act()` → `applyMove`.
-
-## Handoff History
 
 ### Previous (Architect → EM, selection-hub-redesign)
 
