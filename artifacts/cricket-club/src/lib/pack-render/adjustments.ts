@@ -11,21 +11,33 @@
  */
 
 import {
+  documentPageLayers,
+  isDocumentV2,
+  layerDropped,
+  normaliseDocument,
+  PHOTO_TOKEN,
+  primaryPage,
   rowsColumns,
+  type DerivedPalette,
+  type GroupLayerV2,
+  type PageKey,
   type RowsSpec,
+  type TemplateDocumentV2,
+  type TemplateLayerV2,
   type TemplateTextStyle,
+  type TemplateTimeline,
+  type TextLayerV2,
+  type VectorLayerV2,
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
-import { FIT_ATTR } from "./layer-fit";
+import { FIT_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
+import { layerShows, renderGroup, type DrawnLayer, type LayoutContext } from "./layer-layout";
+import { MOTION_KEYFRAMES, motionCss } from "./layer-motion";
+import { layerBoxCss, paletteVars, textStyleCss } from "./layer-style";
+import { renderVector } from "./layer-vector";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
-import {
-  clubKitPaletteFor,
-  clubKitVars,
-  clubStageVars,
-  type ClubKitPalette,
-} from "./club-kit-vars";
 import type { PackCardData, PackTokens } from "./types";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
@@ -113,6 +125,15 @@ export type CardAdjustments = {
   set?: { cover?: boolean; grouping?: "auto" | "none" };
   /** Per-slide edits for a set, by slide key (`cover`, `detail:<section>:<row>`). */
   slides?: Record<string, CardAdjustments>;
+  /**
+   * Format v2 (ADR-011): a v2 document's pages, in place of `layers`. The
+   * renderer reads every document through `normaliseDocument`, so a v1
+   * `layers` list is the kind's primary page.
+   */
+  formatVersion?: TemplateDocumentV2["formatVersion"];
+  pages?: TemplateDocumentV2["pages"];
+  timeline?: TemplateTimeline;
+  palettes?: DerivedPalette[];
 };
 
 /**
@@ -184,6 +205,11 @@ export function inheritedFormats(
   });
 }
 
+/** Whether a v2 document has a layer on any page. */
+const hasPageLayers = (adj: CardAdjustments): boolean =>
+  isDocumentV2(adj) &&
+  Object.values(adj.pages).some((page) => Array.isArray(page?.layers) && page.layers.length > 0);
+
 /** True when the adjustments change nothing, so the render stays byte-identical. */
 export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boolean {
   if (!adj) return true;
@@ -192,7 +218,8 @@ export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boo
     (adj.hidden ?? []).length === 0 &&
     Object.keys(adj.photo ?? {}).length === 0 &&
     Object.keys(adj.images ?? {}).length === 0 &&
-    (adj.layers ?? []).length === 0
+    (adj.layers ?? []).length === 0 &&
+    !hasPageLayers(adj)
   );
 }
 
@@ -245,18 +272,8 @@ export function hideFields(html: string, adj: CardAdjustments | null | undefined
   );
 }
 
-const ANIMATION: Record<LayerAnimation["kind"], string | null> = {
-  none: null,
-  rise: "packLayerRise .7s cubic-bezier(.2,.8,.2,1) both",
-  fade: "packLayerFade .6s ease-out both",
-  pop: "packLayerPop .5s cubic-bezier(.2,1.4,.4,1) both",
-};
-
 /** CSS a card needs for free-layer animations (inlined so exports carry it). */
-export const LAYER_KEYFRAMES =
-  "@keyframes packLayerRise{from{opacity:0;transform:translateY(8%)}to{opacity:1;transform:none}}" +
-  "@keyframes packLayerFade{from{opacity:0}to{opacity:1}}" +
-  "@keyframes packLayerPop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}";
+export const LAYER_KEYFRAMES = MOTION_KEYFRAMES;
 
 /** A style value safe to place inside a style attribute. */
 const cssValue = (v: string | undefined): string | undefined =>
@@ -276,9 +293,6 @@ const ALIGN = new Set(["left", "center", "right"]);
 const alignOf = (v: unknown): "left" | "center" | "right" =>
   typeof v === "string" && ALIGN.has(v) ? (v as "left" | "center" | "right") : "center";
 
-/** The palette a template overlay carries: Club Kit's, plus the club stage. */
-const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStageVars(p)}`;
-
 /** Per-render context for library elements (club colours, crest, live rows). */
 export interface FreeLayerContext {
   tokens?: PackTokens;
@@ -295,6 +309,11 @@ export interface FreeLayerContext {
   rowVariants?: Record<string, Array<string | undefined>>;
   /** The card photo for `photo` layers; null/absent draws nothing. */
   photoUrl?: string | null;
+  /** The card's kind and the page to draw (format v2); absent → the kind's primary page. */
+  kind?: string;
+  page?: PageKey;
+  /** The format of the document being drawn; v2-only rules apply to 2. Set by `renderFreeLayers`. */
+  formatVersion?: 1 | 2;
 }
 
 const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
@@ -311,8 +330,15 @@ export function substituteTokens(text: string, values: Record<string, string>): 
 /** A fittable element's designed size in cqw, for `FIT_ATTR`. */
 const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
 
-/** Inline CSS for a text box (text layers and list-row cells). */
-function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
+/**
+ * Inline CSS for a text box (text layers and list-row cells): `extra` before
+ * the text settings, `after` once they are set (v2 style additions).
+ */
+function textCss(
+  raw: TemplateTextStyle | undefined,
+  extra: string[] = [],
+  after: string[] = [],
+): string {
   const s = {
     ...(raw ?? {}),
     color: cssValue(raw?.color),
@@ -335,6 +361,7 @@ function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): stri
     s.uppercase === true ? "text-transform:uppercase" : "",
     s.background ? `background:${s.background}` : "",
     s.radius != null ? `border-radius:${num(s.radius)}px` : "",
+    ...after,
   ]
     .filter(Boolean)
     .join(";");
@@ -445,7 +472,11 @@ function layerInner(
       if (tokens && text.trim() === "") return null;
       // Live-field text shrinks to fit (KTD9); other text renders as before.
       const fit = tokens ? ` ${FIT_ATTR}="${fitBase(raw)}"` : "";
-      return `<div${fit} style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
+      // Format v2 text: its fit rule and its style additions (L1-C, L1-D).
+      const v2 = ctx.formatVersion === 2;
+      const fitMore = v2 ? textFitAttrs((layer as unknown as TextLayerV2).fit) : "";
+      const after = v2 ? textStyleCss(layer.style) : [];
+      return `<div${fit}${fitMore} style="${textCss(raw, ["width:100%", "height:100%"], after)}">${escapeHtml(text)}</div>`;
     }
     case "photo":
       return renderPhoto(layer, size, ctx);
@@ -493,10 +524,27 @@ function layerInner(
   }
 }
 
+/** Whether a free-layer context has a value for a token: text, an image or rows. */
+function hasToken(token: string, values: Record<string, string>, ctx: FreeLayerContext): boolean {
+  if ((values[token] ?? "").trim()) return true;
+  if (token === "clubLogo") return !!ctx.brand?.logoUrl;
+  if (token === "groundPhoto") return !!ctx.brand?.groundPhotoUrl;
+  if (token === PHOTO_TOKEN) return !!ctx.photoUrl && !(ctx.junior && !ctx.juniorPhotoAllowed);
+  const rows =
+    ctx.rows && Object.prototype.hasOwnProperty.call(ctx.rows, token) ? ctx.rows[token] : null;
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 /**
  * The free-layer overlay for `size`: an absolutely positioned layer above the
  * template, each layer boxed in percent of the artboard. Returns "" when there
  * are no layers, so unadjusted cards are unchanged.
+ *
+ * Every document is read through `normaliseDocument` (format v2) and the
+ * requested page drawn (`ctx.page`, default the kind's primary page, where a
+ * v1 document's layers are). A v1 document draws exactly as it always has;
+ * the drop rule, conditions, groups, vectors and v2 styles apply to v2
+ * documents only.
  */
 export function renderFreeLayers(
   adj: CardAdjustments | null | undefined,
@@ -507,28 +555,49 @@ export function renderFreeLayers(
   /** Club colours / crest / live rows for library elements. */
   ctx: FreeLayerContext = {},
 ): string {
-  const layers = adj?.layers ?? [];
+  const kind = ctx.kind ?? "";
+  const page = ctx.page ?? primaryPage(kind);
+  const doc = normaliseDocument(adj, kind);
+  const layers = documentPageLayers(doc, page);
   if (layers.length === 0) return "";
+  const v2 = doc.sourceFormat === 2;
+  const drawCtx: FreeLayerContext = { ...ctx, formatVersion: doc.sourceFormat };
   // Library elements read the Club Kit palette, derived from the club's
   // brand; only an overlay that uses it gets the extra declarations.
   // Template styles may name the palette directly (`var(--ck-stage)`), with
   // or without an element on the card.
-  const hasElement =
-    layers.some((l) => l.kind === "element" && !l.hidden) ||
-    JSON.stringify(layers).includes("var(--ck-");
-  const palette =
-    hasElement && ctx.tokens
-      ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}`
-      : "";
-  const parts = layers.map((layer) => {
-    if (layer.hidden) return "";
-    if (layer.sizes && !layer.sizes.includes(size)) return "";
+  const palette = paletteVars(doc, layers, ctx);
+  const has = (token: string) => hasToken(token, values, ctx);
+  const layout: LayoutContext = {
+    kind,
+    page,
+    size,
+    junior: ctx.junior === true,
+    has,
+    hasPhoto: has(PHOTO_TOKEN),
+    hasSponsors: ["sponsor1", "sponsor2", "sponsor3", "sponsors"].some(has),
+  };
+
+  /** One layer, positioned on the artboard; null when it isn't drawn on this card. */
+  const draw = (layer: TemplateLayerV2): DrawnLayer | null => {
+    if (layer.hidden) return null;
+    if (layer.sizes && !layer.sizes.includes(size)) return null;
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
-    if (!box) return "";
-    const inner = layerInner(layer, values, ctx, size);
-    if (inner === null) return "";
+    if (!box) return null;
+    if (v2 && (!layerShows(layer, layout) || layerDropped(layer, { kind, page, has }))) return null;
+    let inner: string | null;
+    if (layer.kind === "group") {
+      const children = (Array.isArray(layer.children) ? layer.children : [])
+        .map(draw)
+        .filter((child): child is DrawnLayer => child !== null);
+      inner = renderGroup(layer as GroupLayerV2, box.value, children, layout);
+    } else if (layer.kind === "vector") {
+      inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
+    } else {
+      inner = layerInner(layer as unknown as FreeLayer, values, drawCtx, size);
+    }
+    if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;
-    const anim = opts.animate ? ANIMATION[layer.animation?.kind ?? "none"] : null;
     const css = [
       "position:absolute",
       `left:${num(x)}%`,
@@ -537,11 +606,14 @@ export function renderFreeLayers(
       `height:${num(h)}%`,
       rotate ? `transform:rotate(${num(rotate)}deg)` : "",
       layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
-      anim ? `animation:${anim}` : "",
-      anim && layer.animation?.delayMs ? `animation-delay:${num(layer.animation.delayMs)}ms` : "",
+      ...motionCss(layer.motion, opts.animate === true),
+      ...(v2 ? layerBoxCss(layer) : []),
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
-  });
-  const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
+    const html = `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
+    return { layer, box: box.value, html };
+  };
+
+  const parts = layers.map((layer) => draw(layer)?.html ?? "");
+  const style = opts.animate ? `<style>${MOTION_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
 }

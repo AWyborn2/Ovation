@@ -12,6 +12,7 @@ import {
   group,
   nudge,
   removeLayers,
+  selectMany,
   selectionFor,
   toggleSelection,
   type EditorDoc,
@@ -103,6 +104,14 @@ describe("shortcuts", () => {
     expect(key("g", { metaKey: true, shiftKey: true })?.type).toBe("ungroup");
     expect(key("a")).toBeNull();
   });
+
+  it("maps copy, cut, paste and select all", () => {
+    expect(key("c", { ctrlKey: true })?.type).toBe("copy");
+    expect(key("x", { metaKey: true })?.type).toBe("cut");
+    expect(key("v", { ctrlKey: true })?.type).toBe("paste");
+    expect(key("a", { metaKey: true })?.type).toBe("selectAll");
+    expect(key("c")).toBeNull();
+  });
 });
 
 describe("document operations", () => {
@@ -126,6 +135,13 @@ describe("document operations", () => {
     expect(selectionFor(g.doc, "a", null).sort()).toEqual(["a", "b"]);
     // Inside the group, a click selects just that member.
     expect(selectionFor(g.doc, "a", g.group)).toEqual(["a"]);
+  });
+
+  it("a marquee adds whole groups to (or replaces) the selection, first-selected first", () => {
+    const g = group(doc, ["b", "c"]);
+    expect(selectMany(g.doc, ["a"], ["b"], null, true)).toEqual(["a", "b", "c"]);
+    expect(selectMany(g.doc, ["a"], ["b"], null, false)).toEqual(["b", "c"]);
+    expect(selectMany(g.doc, [], ["b"], g.group, false)).toEqual(["b"]);
   });
 
   it("duplicating offsets the copy and gives grouped copies a fresh group", () => {

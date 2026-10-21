@@ -75,6 +75,7 @@ import {
   nudge,
   removeLayers,
   reorderLayers,
+  selectMany,
   selectionFor,
   setElementProp,
   setField,
@@ -87,6 +88,20 @@ import {
   type EditorDoc,
 } from "@/components/studio-editor/document";
 import { actionForKey, isTypingTarget } from "@/components/studio-editor/shortcuts";
+import {
+  align,
+  distribute,
+  matchSize,
+  selectAll,
+  unitCount,
+} from "@/components/studio-editor/arrange";
+import {
+  copyLayers,
+  pasteLayers,
+  readClipboard,
+  writeClipboard,
+  type ClipboardMode,
+} from "@/components/studio-editor/clipboard";
 import {
   inheritedFormats,
   packFieldValues,
@@ -303,16 +318,51 @@ function EditorApp({ draftId }: { draftId: number }) {
   const isGroup =
     selected.length > 1 && selected.every((l) => l.group && l.group === selected[0].group);
 
+  // Copy and paste (studio-editor-multiselect). A draft made from a template
+  // shares the template clipboard (same layers, same fields); other drafts
+  // have their own.
+  const clipMode: ClipboardMode = templated ? "template" : "draft";
+  const [canPaste, setCanPaste] = useState(() => readClipboard(clipMode) !== null);
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
+
   // Keyboard shortcuts (ignored while typing in an input).
+  // The canvas around the card, where a drag starts a marquee.
+  const canvasArea = useRef<HTMLElement>(null);
   const stateRef = useRef({ doc, selection, format, inside });
   stateRef.current = { doc, selection, format, inside };
+  const copySelection = () => {
+    const s = stateRef.current;
+    const clip = copyLayers(s.doc, s.format, s.selection, clipMode);
+    if (!clip) return false;
+    writeClipboard(clip);
+    setCanPaste(true);
+    return true;
+  };
+  const pasteClipboard = () => {
+    const clip = readClipboard(clipMode);
+    const s = stateRef.current;
+    if (!clip) return;
+    const r = pasteLayers(s.doc, clip, s.format, templated ? { kind: input.kind } : {});
+    if (r.ids.length) {
+      edit(r.doc);
+      setSelection(r.ids);
+    }
+    setPasteNote(
+      r.skipped
+        ? `${r.skipped} copied ${r.skipped === 1 ? "layer uses" : "layers use"} fields this card doesn't have, so ${r.skipped === 1 ? "it wasn't" : "they weren't"} pasted.`
+        : null,
+    );
+  };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target)) return;
       const action = actionForKey(e);
       if (!action) return;
-      e.preventDefault();
       const s = stateRef.current;
+      // With nothing to copy or paste, the browser's own copy and paste still work.
+      if ((action.type === "copy" || action.type === "cut") && !s.selection.length) return;
+      if (action.type === "paste" && !readClipboard(clipMode)) return;
+      e.preventDefault();
       switch (action.type) {
         case "undo":
           setHistory((h) => undo(h));
@@ -347,10 +397,27 @@ function EditorApp({ draftId }: { draftId: number }) {
         case "ungroup":
           if (s.selection.length) edit(ungroup(s.doc, s.selection));
           break;
+        case "copy":
+          copySelection();
+          break;
+        case "cut":
+          if (copySelection()) {
+            edit(removeLayers(s.doc, s.selection));
+            setSelection([]);
+          }
+          break;
+        case "paste":
+          pasteClipboard();
+          break;
+        case "selectAll":
+          setSelection(selectAll(s.doc, s.format));
+          setInside(null);
+          break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads live state through stateRef
   }, [edit]);
 
   const addFreeLayer = (layer: FreeLayer) => {
@@ -525,6 +592,7 @@ function EditorApp({ draftId }: { draftId: number }) {
           </EditorPanel>
         )}
         <main
+          ref={canvasArea}
           className="relative flex min-w-0 flex-1 flex-col items-center overflow-auto bg-[var(--ed-canvas)] p-6"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px)",
@@ -562,7 +630,21 @@ function EditorApp({ draftId }: { draftId: number }) {
               onGroup={() => edit(groupLayers(doc, selection).doc)}
               onUngroup={() => edit(ungroup(doc, selection))}
               onReorder={(move) => edit(reorderLayers(doc, selection, move))}
+              onCopy={copySelection}
+              onPaste={pasteClipboard}
+              canPaste={canPaste}
+              arrange={{
+                count: unitCount(doc, format, selection, inside),
+                onAlign: (to) => edit(align(doc, format, selection, to, inside)),
+                onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
+                onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
+              }}
             />
+            {pasteNote && (
+              <p role="status" className="mt-2 text-sm text-amber-300">
+                {pasteNote}
+              </p>
+            )}
             {selected.length === 1 && selected[0].kind === "element" && (
               <ElementPropsEditor
                 layer={selected[0]}
@@ -588,6 +670,10 @@ function EditorApp({ draftId }: { draftId: number }) {
               } else setSelection(selectionFor(doc, lid, inside));
             }}
             onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
+            marqueeArea={canvasArea}
+            onSelectMany={(ids, additive) =>
+              setSelection((s) => selectMany(doc, s, ids, inside, additive))
+            }
             onEnterGroup={(lid) => {
               const g = layers.find((l) => l.id === lid)?.group ?? null;
               setInside(g);
@@ -649,7 +735,15 @@ function EditorApp({ draftId }: { draftId: number }) {
             <LayersDrawer
               layers={layers}
               selection={selection}
-              onSelect={(lid) => setSelection([lid])}
+              onSelect={(ids, mode) =>
+                setSelection((s) =>
+                  mode === "replace"
+                    ? ids
+                    : mode === "toggle"
+                      ? toggleSelection(doc, s, ids[0], inside)
+                      : [...new Set([...s, ...ids])],
+                )
+              }
               onToggleHidden={(lid) => {
                 const l = layers.find((x) => x.id === lid);
                 // A locked sponsor strip stays visible.

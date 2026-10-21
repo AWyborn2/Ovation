@@ -1,5 +1,25 @@
 # Handoff
 
+**From:** Senior Engineer
+**To:** SDE / reviewer
+**Feature:** studio-editor-multiselect
+
+## Context
+
+- Decisions: `.10x/decisions/senior-engineer/studio-editor-multiselect.md`. Client only (no API, no migration), on `wyborn21/studio-editor-multiselect`.
+- Pure helpers: `components/studio-editor/arrange.ts` (`matchSize`, `align`, `distribute`, `resizeBounds`, `resizeGroup`, `scaleLayerType`, `unitCount`, `selectAll`, `contains`) and `components/studio-editor/clipboard.ts` (`copyLayers`, `pasteLayers(doc, clip, size, { kind, onlyOnSize })`, `readClipboard`/`writeClipboard` keyed by `"template" | "draft"` in session storage).
+- Wiring: both pages (`admin-kind-template-editor.tsx`, `admin-studio-editor.tsx`) pass `onCopy`/`onPaste`/`canPaste`/`arrange` to `EditorToolbar`, `onSelectMany` + `marqueeArea` (the page's `<main>` ref) to `EditorCanvas`, and the new `onSelect(ids, mode)` to `LayersDrawer`.
+- Gotchas:
+  - Font size is one value for every size, so a corner group resize changes text on every size (Ash's choice); boxes change on the current size only.
+  - The marquee picks layers wholly inside it, because starters have a full-card background layer.
+  - "Align left" is the text style bar's label; Arrange uses "Align left edges".
+  - jsdom has no layout, so interaction tests stub `getBoundingClientRect` (`sizedBoard()` in `template-mode.test.tsx`).
+- Follow-ups: a shared `useEditorSelection` hook once the template library adds a third editor surface; snapping during group resize; group-aware rotation.
+
+## Handoff History
+
+### Previous (EM → SDE, selection-hub-redesign)
+
 **From:** Engineering Manager
 **To:** SDE (and Senior Engineer for review)
 **Feature:** social-template-library
