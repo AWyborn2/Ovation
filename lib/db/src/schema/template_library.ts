@@ -65,10 +65,7 @@ export const templateLooksTable = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   () => ({
-    chkOrigin: check(
-      "template_looks_origin_check",
-      sql`"origin" IN ('bundle', 'console', 'club')`,
-    ),
+    chkOrigin: check("template_looks_origin_check", sql`"origin" IN ('bundle', 'console', 'club')`),
   }),
 );
 
@@ -154,7 +151,10 @@ export const templateGenerationsTable = pgTable(
     adminId: integer("admin_id"),
     kind: text("kind").notNull(),
     model: text("model").notNull(),
-    status: text("status").$type<"queued" | "running" | "done" | "failed">().notNull().default("queued"),
+    status: text("status")
+      .$type<"queued" | "running" | "done" | "failed">()
+      .notNull()
+      .default("queued"),
     inputTokens: integer("input_tokens"),
     cacheReadTokens: integer("cache_read_tokens"),
     cacheWriteTokens: integer("cache_write_tokens"),

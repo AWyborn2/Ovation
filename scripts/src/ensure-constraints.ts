@@ -608,7 +608,8 @@ const ABSENT_INDEXES: { name: string; why: string }[] = [
 async function verify(): Promise<string[]> {
   const missing: string[] = [];
   for (const ix of ABSENT_INDEXES) {
-    if (await indexExists(ix.name)) missing.push(`superseded index ${ix.name} still present (${ix.why})`);
+    if (await indexExists(ix.name))
+      missing.push(`superseded index ${ix.name} still present (${ix.why})`);
   }
   for (const c of CONSTRAINTS) {
     if (!(await constraintExists(c.table, c.name, "u")))
