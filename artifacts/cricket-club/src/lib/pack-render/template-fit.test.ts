@@ -2,7 +2,7 @@
  * The template fit check (L2-B, T2.4–T2.5): the variant loop, the page rules
  * (core fields, list capacity) and the DOM rules. jsdom does no layout, so
  * the DOM rules are checked with stubbed boxes; real overflow is measured in
- * the browser (harness `fitCheck`, `check-template-bundles`).
+ * the browser (the harness `fitCheck`, and the bundle check script).
  */
 import { describe, expect, it } from "vitest";
 import {
