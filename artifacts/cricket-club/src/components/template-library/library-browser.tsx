@@ -28,7 +28,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
-import { TemplateThumb, useLibraryPreviewData, usePreviewInput } from "./previews";
+import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
 
 const SIZE_LABELS: Record<CardSize, string> = {
   square: "Square",
@@ -50,7 +50,7 @@ const PAGE_LABELS: Record<string, string> = {
 export const pageLabel = (page: string) => PAGE_LABELS[page] ?? page;
 export const sizeLabel = (size: string) => SIZE_LABELS[size as CardSize] ?? size;
 
-type Preview = ReturnType<typeof useLibraryPreviewData>;
+type Preview = LibraryPreview;
 
 function TemplateTile({
   template,
