@@ -20,6 +20,8 @@ export function useWeekendNav(shown: SelectionWeekends | undefined) {
   return { weekend, home, go, goHome: () => setWeekend(undefined) };
 }
 
+const navButton = "h-[34px] rounded-[10px] border-primary text-[13px] font-semibold";
+
 /**
  * Previous / next weekend buttons around the weekend shown, a way back to this
  * weekend, and a view-only badge on a past weekend. Back goes to the nearest
@@ -46,6 +48,7 @@ export function WeekendSwitcher({
       <Button
         variant="outline"
         size="sm"
+        className={navButton}
         disabled={!previous}
         aria-label={previous ? `Previous: ${weekendLabel(previous)}` : "No earlier weekend"}
         title={previous ? undefined : "No earlier weekend was picked in the Hub."}
@@ -54,12 +57,13 @@ export function WeekendSwitcher({
         <ChevronLeft className="h-4 w-4" aria-hidden />
         Previous
       </Button>
-      <span className="text-sm font-semibold" aria-live="polite">
+      <span className="text-[15px] font-bold text-primary-text" aria-live="polite">
         {weekendLabel(weekends.current)}
       </span>
       <Button
         variant="outline"
         size="sm"
+        className={navButton}
         disabled={!next}
         aria-label={next ? `Next: ${weekendLabel(next)}` : "No later weekend"}
         title={next ? undefined : "No later weekend has fixtures yet."}

@@ -53,7 +53,10 @@ describe("landscape renders", () => {
   it("letterboxes the square design when a design has no landscape layout", () => {
     const input = sampleCardInput("century");
     flags.noLandscape = true;
-    for (const { packId } of listPackManifests()) {
+    // Packs that design the kind (Duotone designs the carousel kinds only).
+    for (const { packId } of listPackManifests().filter((m) =>
+      m.designs.some((d) => d.kind === input.kind),
+    )) {
       const html = renderPackCard(
         input,
         "landscape",

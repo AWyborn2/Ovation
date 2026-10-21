@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetSelectionBoardQueryKey,
@@ -12,6 +21,7 @@ import {
   type SquadSection,
 } from "@workspace/api-client-react";
 import { AddActivePlayer } from "@/components/add-active-player";
+import { NAV_QUERY, useAdminSidebarSlot, useMediaQuery } from "@/components/admin-sidebar-slot";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { SelectionCompareLink } from "@/components/selection/compare-link";
@@ -27,6 +37,7 @@ import {
   type Location,
 } from "@/components/selection/apply-move";
 import { weekendLabel } from "@/components/selection/labels";
+import { GradeChipBar } from "@/components/selection/grade-chip-bar";
 import { MoveDialog } from "@/components/selection/move-dialog";
 import { MemberStatusControl } from "@/components/selection/member-status-control";
 import { PlayerMatches } from "@/components/selection/player-matches";
@@ -34,6 +45,7 @@ import { PlayerPool } from "@/components/selection/player-pool";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
 import { usePointerDrag } from "@/components/selection/use-pointer-drag";
+import { useHubView } from "@/components/selection/use-hub-view";
 import { AvailabilityContext } from "@/components/selection/availability-context";
 import { StatusTierLegend } from "@/components/selection/status-tier";
 import { WeekendSwitcher, useWeekendNav } from "@/components/selection/weekend-switcher";
@@ -384,7 +396,54 @@ export default function SelectionHub() {
 
   const data = board.data;
   const junior = section === "junior";
+
+  // Focus shows up to three sides side by side; Board shows them all.
+  const wide = useMediaQuery(NAV_QUERY);
+  const sideIds = (view?.selections ?? []).map((s) => s.id);
+  const hubView = useHubView(section, sideIds, !wide);
+  const shownSides =
+    hubView.view === "focus"
+      ? (view?.selections ?? []).filter((s) => hubView.focused.includes(s.id))
+      : (view?.selections ?? []);
+
+  // On desktop the pool lives in the admin side panel; the Pool toggle shows
+  // how many of this section's players aren't in a side yet.
+  const slot = useAdminSidebarSlot();
+  const unpicked = useMemo(() => {
+    if (!view) return null;
+    const placed = new Set(view.selections.flatMap((s) => s.slots.map((x) => x.memberId)));
+    return view.pool.filter((m) => !placed.has(m.id) && (junior || m.section !== "junior")).length;
+  }, [view, junior]);
+  const { setCount } = slot;
+  useEffect(() => {
+    setCount(unpicked);
+  }, [setCount, unpicked]);
+  useEffect(() => () => setCount(null), [setCount]);
   const roundLabel = data?.selections.find((s) => s.fixture.roundLabel)?.fixture.roundLabel;
+
+  const pool = (variant: "inline" | "sidebar") =>
+    view && data ? (
+      <PlayerPool
+        variant={variant}
+        pool={view.pool}
+        junior={junior}
+        busy={save.isPending}
+        draggingId={drag.draggingId}
+        draggingFromSide={drag.draggingId != null && sourceRef.current?.kind === "side"}
+        scrollRef={poolRef}
+        sides={view.selections}
+        canRemind={
+          data.availability &&
+          data.actor.canRemind &&
+          data.round != null &&
+          nav.weekend === undefined
+        }
+        reminding={remind.isPending}
+        onRemind={doRemind}
+        onOpenMember={openMember}
+        onChipPointerDown={startDrag}
+      />
+    ) : null;
 
   return (
     <AvailabilityContext.Provider value={data?.availability ?? true}>
@@ -512,10 +571,32 @@ export default function SelectionHub() {
                 onFail={fail}
               />
             )}
-            <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            {view.selections.length > 0 && (
+              <GradeChipBar
+                sides={view.selections}
+                view={hubView.view}
+                focused={hubView.focused}
+                onToggle={hubView.toggle}
+                onFocusOnly={hubView.focusOnly}
+                onView={hubView.setView}
+              />
+            )}
+            {slot.node && createPortal(pool("sidebar"), slot.node)}
+            <div
+              className={cn(
+                "grid items-stretch gap-4",
+                !slot.node && "lg:grid-cols-[minmax(0,1fr)_340px]",
+              )}
+            >
               <main
                 aria-label="Teams"
-                className="grid min-w-0 content-start gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))]"
+                style={{ "--cols": Math.max(1, shownSides.length) } as CSSProperties}
+                className={cn(
+                  "grid min-w-0 content-start gap-3.5",
+                  hubView.view === "focus"
+                    ? "grid-cols-1 nav:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+                    : "[grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))]",
+                )}
               >
                 {view.selections.length === 0 ? (
                   <EmptyState
@@ -528,7 +609,7 @@ export default function SelectionHub() {
                     }
                   />
                 ) : (
-                  view.selections.map((side) => (
+                  shownSides.map((side) => (
                     <TeamCard
                       key={side.id}
                       side={side}
@@ -547,26 +628,11 @@ export default function SelectionHub() {
                   ))
                 )}
               </main>
-              <div className="relative order-first min-w-0 lg:order-none lg:min-h-[420px]">
-                <PlayerPool
-                  pool={view.pool}
-                  junior={junior}
-                  busy={save.isPending}
-                  draggingId={drag.draggingId}
-                  scrollRef={poolRef}
-                  sides={view.selections}
-                  canRemind={
-                    data.availability &&
-                    data.actor.canRemind &&
-                    data.round != null &&
-                    nav.weekend === undefined
-                  }
-                  reminding={remind.isPending}
-                  onRemind={doRemind}
-                  onOpenMember={openMember}
-                  onChipPointerDown={startDrag}
-                />
-              </div>
+              {!slot.node && (
+                <div className="relative order-first min-w-0 lg:order-none lg:min-h-[420px]">
+                  {pool("inline")}
+                </div>
+              )}
             </div>
             <ChangeLog events={data.events} />
           </>

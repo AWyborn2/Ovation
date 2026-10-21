@@ -4,6 +4,8 @@ import type {
   SelectionEvent,
   SelectionRound,
 } from "@workspace/api-client-react";
+import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { STATUS, STATUS_ORDER, eventText, perthDateTime, perthTime } from "./labels";
 
@@ -25,9 +27,10 @@ const RULE_TEXT: Record<AvailabilitySelectionRule, { admin: string; captain: str
 };
 
 /**
- * The round header: the four stages with their Perth times, the club's
- * selection rule as it applies to the viewer, and the section's response rate
- * with its Yes / Maybe / No / No-reply breakdown.
+ * The round strip: the four stages with their Perth times, the section's
+ * response rate and its Yes / Maybe / No / No-reply bar, on one line. The
+ * club's selection rule, as it applies to the viewer, sits behind the info
+ * button.
  */
 export function RoundHeader({
   round,
@@ -52,73 +55,79 @@ export function RoundHeader({
   const replied = c.total - c.none;
   const pct = c.total > 0 ? Math.round((replied / c.total) * 100) : 0;
   const rule = RULE_TEXT[actor.selectionRule] ?? RULE_TEXT.captains_own_grade;
+  const ruleText =
+    actor.kind === "admin"
+      ? `Club rule: ${rule.admin}`
+      : `Signed in as ${actor.name}: ${rule.captain}`;
+  const breakdown = STATUS_ORDER.map((k) => `${STATUS[k].label} ${c[k]}`).join(", ");
   return (
     <section
       aria-label="This round"
-      className="grid gap-x-7 gap-y-3.5 rounded-lg border border-border bg-card px-4 py-3.5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
+      className="flex flex-wrap items-center gap-x-6 gap-y-2.5 rounded-xl border border-border bg-card px-3.5 py-2.5 text-[12.5px] text-muted-foreground"
     >
-      <div>
-        <ol className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {stages.map((s, i) => {
-            return (
-              <li
-                key={s.label}
-                className="flex items-center gap-2 text-[13px] text-muted-foreground"
-              >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "grid h-[18px] w-[18px] place-items-center rounded-full text-[11px] font-bold",
-                    s.done
-                      ? "bg-[var(--win-bg)] text-[var(--win-fg)]"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  {s.done ? "✓" : i + 1}
-                </span>
-                <span>
-                  <b className="font-semibold text-foreground">{s.label}</b> {perthDateTime(s.at)}
-                  {s.after ? ` · ${s.after}` : ""}
-                  <span className="sr-only">{s.done ? " (done)" : " (to come)"}</span>
-                </span>
-              </li>
-            );
-          })}
-          <li className="flex items-center gap-2 text-[13px] text-muted-foreground">
+      <ol className="contents">
+        {stages.map((s, i) => (
+          <li key={s.label} className="flex items-center gap-2">
             <span
               aria-hidden
-              className="grid h-[18px] w-[18px] place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
+              className={cn(
+                "grid h-[18px] w-[18px] place-items-center rounded-full text-[11px] font-bold",
+                s.done
+                  ? "bg-[var(--win-bg)] text-[var(--win-fg)]"
+                  : "bg-muted text-muted-foreground",
+              )}
             >
-              4
+              {s.done ? "✓" : i + 1}
             </span>
             <span>
-              <b className="font-semibold text-foreground">Finalise</b> by{" "}
-              {perthDateTime(round.finaliseAt)}
+              <b className="font-semibold text-primary-text">{s.label}</b> {perthDateTime(s.at)}
+              {s.after ? ` · ${s.after}` : ""}
+              <span className="sr-only">{s.done ? " (done)" : " (to come)"}</span>
             </span>
           </li>
-        </ol>
-        <p className="mt-2.5 text-[12.5px] text-muted-foreground">
-          {actor.kind === "admin" ? (
-            <>
-              <b className="font-semibold text-foreground">Club rule:</b> {rule.admin}
-            </>
-          ) : (
-            <>
-              <b className="font-semibold text-foreground">Signed in as {actor.name}:</b>{" "}
-              {rule.captain}
-            </>
-          )}
-        </p>
-      </div>
-      <div>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <strong className="font-serif text-[26px] font-bold leading-none">{pct}% replied</strong>
-          <span className="text-[12.5px] text-muted-foreground">
-            {replied} of {c.total} {junior ? "junior families" : "senior players"}
-            {c.late > 0 ? ` · ${c.late} after cut-off` : ""}
+        ))}
+        <li className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="grid h-[18px] w-[18px] place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
+          >
+            4
           </span>
-        </div>
-        <div className="my-2 flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+          <span>
+            <b className="font-semibold text-primary-text">Finalise</b> by{" "}
+            {perthDateTime(round.finaliseAt)}
+          </span>
+        </li>
+      </ol>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={ruleText}
+              className="grid h-6 w-6 place-items-center rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <Info className="h-4 w-4" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">{ruleText}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <span className="flex-1" />
+      <div className="flex items-center gap-3">
+        <strong className="font-serif text-[22px] font-extrabold leading-none text-primary-text">
+          {pct}% replied
+        </strong>
+        <span>
+          {replied} of {c.total} {junior ? "junior families" : "senior players"}
+          {c.late > 0 ? ` · ${c.late} after cut-off` : ""}
+        </span>
+        <div
+          className="flex h-2 w-[200px] overflow-hidden rounded-full bg-muted"
+          role="img"
+          aria-label={breakdown}
+          title={breakdown}
+        >
           {STATUS_ORDER.map((k) => (
             <i
               key={k}
@@ -127,15 +136,6 @@ export function RoundHeader({
             />
           ))}
         </div>
-        <ul className="flex flex-wrap gap-x-3.5 gap-y-1 text-[12.5px] text-muted-foreground">
-          {STATUS_ORDER.map((k) => (
-            <li key={k} className="flex items-center gap-1.5">
-              <span className={cn("inline-block h-2.5 w-2.5 rounded-[3px]", STATUS[k].bar)} />
-              {STATUS[k].label}{" "}
-              <b className="font-mono font-semibold tabular-nums text-foreground">{c[k]}</b>
-            </li>
-          ))}
-        </ul>
       </div>
     </section>
   );

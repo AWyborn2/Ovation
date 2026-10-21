@@ -22,7 +22,7 @@ P1 names ───────┼─> P2 content contract + Match Day ─┬─>
                                                      ├─> P4 auto photos
                                                      ├─> P5 optional data fields
                                                      ├─> P6 sponsors page
-                                                     └─> P7 other kinds -> P8 new pack -> P9 retire packs
+                                                     └─> P7 other kinds -> P8 new pack -> P9 hide legacy packs
 ```
 
 - P0 and P1 can start now, in parallel.
@@ -105,9 +105,13 @@ P1 names ───────┼─> P2 content contract + Match Day ─┬─>
 
 ### P8 — new pack (about 3 hd, after a design brief agreed with Ash)
 
-### P9 — retire Gold Foil, Bold Type, Neon Night and Sunset (about 1 hd)
+### P9 — hide Gold Foil, Bold Type, Neon Night and Sunset (about 1 hd; revised 21 Oct 2026)
 
-- Remove the templates. Saved choices fall back to Club Kit.
+- Hide them everywhere: the new-carousel and Create a Card pickers, the editor's pack switcher,
+  the club default pack setting and the auto-queue pack resolution (`resolvePackIdForKind`).
+- Saved drafts, carousels and defaults that name one render as Club Kit (read-time fallback, one
+  helper, tested). Keep the template code; do not delete it.
+- Gate them behind a single `LEGACY_PACK_IDS` list, so the template library can bring them back.
 
 ## Definition of done (every PR)
 

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   useLogout,
@@ -17,6 +17,7 @@ import {
   Plus,
   Search,
   Sun,
+  Users,
 } from "lucide-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import { useEntitlements } from "@/lib/entitlements";
@@ -35,6 +36,14 @@ import { AdminJumpTo } from "@/components/admin-ui/admin-jump-to";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { InitialsAvatar } from "@/components/broadcast";
+import {
+  AdminSidebarSlotContext,
+  NAV_QUERY,
+  readSidebarMode,
+  useMediaQuery,
+  writeSidebarMode,
+  type SidebarMode,
+} from "@/components/admin-sidebar-slot";
 
 function ago(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -57,6 +66,20 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
   const [jumpOpen, setJumpOpen] = useState(false);
   const [menuCollapsed, setMenuCollapsed] = useState(false);
   const isSelectionHub = location === "/admin/selection";
+  // The hub can swap the desktop menu for its player pool (Menu / Pool toggle).
+  const [sidebarMode, setSidebarModeState] = useState<SidebarMode>(readSidebarMode);
+  const setSidebarMode = (m: SidebarMode) => {
+    setSidebarModeState(m);
+    writeSidebarMode(m);
+  };
+  const [slotNode, setSlotNode] = useState<HTMLElement | null>(null);
+  const [poolCount, setPoolCount] = useState<number | null>(null);
+  const wide = useMediaQuery(NAV_QUERY);
+  const poolShown = isSelectionHub && sidebarMode === "pool" && !menuCollapsed && wide;
+  const slot = useMemo(
+    () => ({ node: poolShown ? slotNode : null, setCount: setPoolCount }),
+    [poolShown, slotNode],
+  );
   const entitlements = useEntitlements();
   const nav = visibleNav(entitlements);
   const pendingQ = useGetPendingSocialDraftCount({
@@ -79,6 +102,12 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
   const sidebar = (tour: boolean, onNavigate?: () => void) => (
     <AdminSidebar
       admin={admin}
+      hub={
+        // Only the desktop copy hosts the pool; the sheet is always the menu.
+        tour && isSelectionHub
+          ? { mode: sidebarMode, onMode: setSidebarMode, count: poolCount, slotRef: setSlotNode }
+          : undefined
+      }
       nav={nav}
       location={location}
       pendingCount={pendingCount}
@@ -92,111 +121,122 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
   );
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside
-        id="admin-desktop-menu"
-        className={cn(
-          "sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-card",
-          !menuCollapsed && "nav:flex",
-        )}
-      >
-        {sidebar(true)}
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[var(--glass)] px-4 backdrop-blur-xl sm:px-8">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="hidden nav:inline-flex"
-            aria-label={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
-            title={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
-            aria-expanded={!menuCollapsed}
-            aria-controls="admin-desktop-menu"
-            onClick={() => setMenuCollapsed((v) => !v)}
-          >
-            {menuCollapsed ? (
-              <PanelLeftOpen className="h-5 w-5" />
-            ) : (
-              <PanelLeftClose className="h-5 w-5" />
-            )}
-          </Button>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="nav:hidden"
-                aria-label="Open admin menu"
-                data-testid="admin-menu-trigger"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex w-64 flex-col p-0">
-              <SheetTitle className="sr-only">Admin menu</SheetTitle>
-              {sidebar(false, () => setSheetOpen(false))}
-            </SheetContent>
-          </Sheet>
-
-          <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
-            <ol className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground">
-              {crumbs.map((c, i) => (
-                <li key={`${c}-${i}`} className="flex min-w-0 items-center gap-2">
-                  {i > 0 && <span aria-hidden>/</span>}
-                  <span
-                    className={cn(
-                      "truncate",
-                      i === crumbs.length - 1 && "font-semibold text-foreground",
-                    )}
-                    aria-current={i === crumbs.length - 1 ? "page" : undefined}
-                  >
-                    {c}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </nav>
-
-          {lastImport && (
-            <p className="hidden items-center gap-2 text-xs text-muted-foreground lg:flex">
-              <span className="h-[7px] w-[7px] rounded-full bg-[var(--win-fg)]" aria-hidden />
-              Site live · last import {ago(lastImport)}
-            </p>
-          )}
-          <NotificationBell />
-          {canCreate && (
-            <Button
-              asChild
-              className="h-10 rounded-full px-4 font-semibold transition-transform hover:-translate-y-px"
-            >
-              <Link href="/admin/social/create">
-                <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden />
-                <span className="hidden sm:inline">Create a card</span>
-                <span className="sr-only sm:hidden">Create a card</span>
-              </Link>
-            </Button>
-          )}
-        </header>
-
-        <main
+    <AdminSidebarSlotContext.Provider value={slot}>
+      <div className="flex min-h-screen bg-background text-foreground">
+        <aside
+          id="admin-desktop-menu"
           className={cn(
-            "mx-auto w-full min-w-0 flex-1 p-4 sm:p-8",
-            !isSelectionHub && "max-w-[1360px]",
+            "sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-card",
+            !menuCollapsed && "nav:flex",
           )}
         >
-          {children}
-        </main>
-      </div>
+          {sidebar(true)}
+        </aside>
 
-      <AdminJumpTo nav={nav} open={jumpOpen} onOpenChange={setJumpOpen} />
-    </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[var(--glass)] px-4 backdrop-blur-xl sm:px-8">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="hidden nav:inline-flex"
+              aria-label={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
+              title={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
+              aria-expanded={!menuCollapsed}
+              aria-controls="admin-desktop-menu"
+              onClick={() => setMenuCollapsed((v) => !v)}
+            >
+              {menuCollapsed ? (
+                <PanelLeftOpen className="h-5 w-5" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" />
+              )}
+            </Button>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="nav:hidden"
+                  aria-label="Open admin menu"
+                  data-testid="admin-menu-trigger"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex w-64 flex-col p-0">
+                <SheetTitle className="sr-only">Admin menu</SheetTitle>
+                {sidebar(false, () => setSheetOpen(false))}
+              </SheetContent>
+            </Sheet>
+
+            <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+              <ol className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground">
+                {crumbs.map((c, i) => (
+                  <li key={`${c}-${i}`} className="flex min-w-0 items-center gap-2">
+                    {i > 0 && <span aria-hidden>/</span>}
+                    <span
+                      className={cn(
+                        "truncate",
+                        i === crumbs.length - 1 && "font-semibold text-foreground",
+                      )}
+                      aria-current={i === crumbs.length - 1 ? "page" : undefined}
+                    >
+                      {c}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+
+            {lastImport && (
+              <p className="hidden items-center gap-2 text-xs text-muted-foreground lg:flex">
+                <span className="h-[7px] w-[7px] rounded-full bg-[var(--win-fg)]" aria-hidden />
+                Site live · last import {ago(lastImport)}
+              </p>
+            )}
+            <NotificationBell />
+            {canCreate && (
+              <Button
+                asChild
+                className="h-10 rounded-full px-4 font-semibold transition-transform hover:-translate-y-px"
+              >
+                <Link href="/admin/social/create">
+                  <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                  <span className="hidden sm:inline">Create a card</span>
+                  <span className="sr-only sm:hidden">Create a card</span>
+                </Link>
+              </Button>
+            )}
+          </header>
+
+          <main
+            className={cn(
+              "mx-auto w-full min-w-0 flex-1 p-4",
+              isSelectionHub ? "sm:px-6 sm:pb-8 sm:pt-4" : "max-w-[1360px] sm:p-8",
+            )}
+          >
+            {children}
+          </main>
+        </div>
+
+        <AdminJumpTo nav={nav} open={jumpOpen} onOpenChange={setJumpOpen} />
+      </div>
+    </AdminSidebarSlotContext.Provider>
   );
 }
 
+type HubSidebar = {
+  mode: SidebarMode;
+  onMode: (m: SidebarMode) => void;
+  count: number | null;
+  /** Where the hub's pool is portalled while the sidebar is in pool mode. */
+  slotRef: (node: HTMLElement | null) => void;
+};
+
 function AdminSidebar({
   admin,
+  hub,
   nav,
   location,
   pendingCount,
@@ -205,6 +245,8 @@ function AdminSidebar({
   onJump,
 }: {
   admin: Admin;
+  /** On the Selection Hub (desktop copy only): the Menu / Pool toggle. */
+  hub?: HubSidebar;
   nav: AdminNavGroup[];
   location: string;
   pendingCount: number;
@@ -234,121 +276,164 @@ function AdminSidebar({
         </div>
       </div>
 
-      <div className="px-4">
-        <button
-          type="button"
-          onClick={onJump}
-          className="flex h-[38px] w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      {hub && (
+        <div
+          role="group"
+          aria-label="Side panel"
+          className="mx-4 mb-2.5 grid grid-cols-2 gap-1 rounded-[10px] border border-border bg-muted p-1"
         >
-          <Search className="h-4 w-4" aria-hidden />
-          <span className="flex-1 text-left">Jump to…</span>
-          <kbd className="rounded-[5px] border border-border px-1.5 font-mono text-[11px]">⌘K</kbd>
-        </button>
-      </div>
-
-      <nav
-        aria-label="Admin"
-        data-tour={tour ? "admin-nav" : undefined}
-        className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3 pb-4"
-      >
-        {nav.map((group) => {
-          const active = groupIsActive(location, group);
-          const tab = active ? activeTab(location, group) : undefined;
-          const showBadge = group.badge === "social-queue" && pendingCount > 0;
-          return (
-            <div key={group.key}>
-              <Link
-                href={group.href}
-                onClick={onNavigate}
-                aria-current={active && group.tabs.length === 0 ? "page" : undefined}
-                data-tour={tour ? `admin-nav-${group.href}` : undefined}
+          {(["menu", "pool"] as const).map((m) => {
+            const on = hub.mode === m;
+            const Icon = m === "menu" ? Menu : Users;
+            return (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={on}
+                onClick={() => hub.onMode(m)}
                 className={cn(
-                  "flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
-                  active
-                    ? "bg-muted font-semibold text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  "flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] text-[13px] font-semibold transition-colors",
+                  on
+                    ? m === "pool"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <group.icon
-                  className={cn("h-[17px] w-[17px] shrink-0", active && "text-primary-text")}
-                />
-                <span className="flex-1 truncate">{group.label}</span>
-                {showBadge && (
-                  <span
-                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground"
-                    aria-label={`${pendingCount} drafts awaiting review`}
-                  >
-                    {pendingCount > 99 ? "99+" : pendingCount}
-                  </span>
+                <Icon className="h-[15px] w-[15px]" aria-hidden />
+                {m === "menu" ? "Menu" : "Pool"}
+                {m === "pool" && hub.count != null && (
+                  <span className="font-mono text-[11px] opacity-80">{hub.count}</span>
                 )}
-              </Link>
-              {active && group.tabs.length > 0 && (
-                <ul className="my-1 ml-[18px] space-y-0.5 border-l border-border pl-2">
-                  {group.tabs.map((t) => {
-                    const current = t.path === tab?.path;
-                    return (
-                      <li key={t.path}>
-                        <Link
-                          href={t.path}
-                          onClick={onNavigate}
-                          aria-current={current ? "page" : undefined}
-                          className={cn(
-                            "flex h-8 items-center justify-between rounded-md px-2.5 text-[13px] transition-colors",
-                            current
-                              ? "bg-primary/15 font-semibold text-primary-text"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          <span className="truncate">{t.label}</span>
-                          {t.value === "queue" && pendingCount > 0 && (
-                            <span className="text-xs font-semibold text-primary-text">
-                              {pendingCount}
-                            </span>
-                          )}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </nav>
-
-      <div className="space-y-3 border-t border-border p-4">
-        <a
-          href="/"
-          className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground"
-        >
-          <ExternalLink className="h-4 w-4" aria-hidden /> View public site
-        </a>
-        <div className="flex items-center gap-3">
-          <InitialsAvatar name={admin.displayName} size={34} />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{admin.displayName}</div>
-            <div className="truncate text-xs text-muted-foreground">@{admin.username}</div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full border border-border"
-            onClick={toggle}
-            aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+              </button>
+            );
+          })}
         </div>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-        >
-          Sign out
-        </Button>
-      </div>
+      )}
+
+      {hub?.mode === "pool" ? (
+        <div ref={hub.slotRef} className="flex min-h-0 flex-1 flex-col" />
+      ) : (
+        <>
+          <div className="px-4">
+            <button
+              type="button"
+              onClick={onJump}
+              className="flex h-[38px] w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Search className="h-4 w-4" aria-hidden />
+              <span className="flex-1 text-left">Jump to…</span>
+              <kbd className="rounded-[5px] border border-border px-1.5 font-mono text-[11px]">
+                ⌘K
+              </kbd>
+            </button>
+          </div>
+
+          <nav
+            aria-label="Admin"
+            data-tour={tour ? "admin-nav" : undefined}
+            className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3 pb-4"
+          >
+            {nav.map((group) => {
+              const active = groupIsActive(location, group);
+              const tab = active ? activeTab(location, group) : undefined;
+              const showBadge = group.badge === "social-queue" && pendingCount > 0;
+              return (
+                <div key={group.key}>
+                  <Link
+                    href={group.href}
+                    onClick={onNavigate}
+                    aria-current={active && group.tabs.length === 0 ? "page" : undefined}
+                    data-tour={tour ? `admin-nav-${group.href}` : undefined}
+                    className={cn(
+                      "flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+                      active
+                        ? "bg-muted font-semibold text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <group.icon
+                      className={cn("h-[17px] w-[17px] shrink-0", active && "text-primary-text")}
+                    />
+                    <span className="flex-1 truncate">{group.label}</span>
+                    {showBadge && (
+                      <span
+                        className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground"
+                        aria-label={`${pendingCount} drafts awaiting review`}
+                      >
+                        {pendingCount > 99 ? "99+" : pendingCount}
+                      </span>
+                    )}
+                  </Link>
+                  {active && group.tabs.length > 0 && (
+                    <ul className="my-1 ml-[18px] space-y-0.5 border-l border-border pl-2">
+                      {group.tabs.map((t) => {
+                        const current = t.path === tab?.path;
+                        return (
+                          <li key={t.path}>
+                            <Link
+                              href={t.path}
+                              onClick={onNavigate}
+                              aria-current={current ? "page" : undefined}
+                              className={cn(
+                                "flex h-8 items-center justify-between rounded-md px-2.5 text-[13px] transition-colors",
+                                current
+                                  ? "bg-primary/15 font-semibold text-primary-text"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              <span className="truncate">{t.label}</span>
+                              {t.value === "queue" && pendingCount > 0 && (
+                                <span className="text-xs font-semibold text-primary-text">
+                                  {pendingCount}
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          <div className="space-y-3 border-t border-border p-4">
+            <a
+              href="/"
+              className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden /> View public site
+            </a>
+            <div className="flex items-center gap-3">
+              <InitialsAvatar name={admin.displayName} size={34} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{admin.displayName}</div>
+                <div className="truncate text-xs text-muted-foreground">@{admin.username}</div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full border border-border"
+                onClick={toggle}
+                aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              Sign out
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

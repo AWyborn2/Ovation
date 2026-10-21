@@ -21,6 +21,7 @@ const PACK_MARKERS: Record<string, string> = {
   "neon-night-v1": "0 0/5cqmin 5cqmin",
   "sunset-v1": "font-family:'Kaushan Script',cursive",
   "club-kit-v1": 'data-ck-rule="1"',
+  "duotone-v1": 'data-dt-card="1"',
 };
 
 const BRAND = {
@@ -48,7 +49,11 @@ describe("switching a draft's pack (U13)", () => {
     it(`re-renders the same ${kind} input in each pack with the brand accent`, () => {
       const input = sampleCardInput(kind);
       const outputs = new Map<string, string>();
-      for (const packId of Object.keys(PACK_MARKERS)) {
+      // Packs that design the kind (Duotone designs the carousel kinds only).
+      const packs = Object.keys(PACK_MARKERS).filter((id) =>
+        listPackManifests().some((m) => m.packId === id && m.designs.some((d) => d.kind === kind)),
+      );
+      for (const packId of packs) {
         for (const size of ["square", "landscape"] as CardSize[]) {
           const html = renderDraft(input, packId, size);
           const ctx = `${packId}/${kind}/${size}`;

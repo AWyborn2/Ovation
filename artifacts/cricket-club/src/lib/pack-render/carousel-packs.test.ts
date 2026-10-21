@@ -7,9 +7,13 @@ import {
   packColourModeFor,
 } from "@/lib/pack-render";
 import { resolveTemplate } from "./templates";
-import { listPackManifests } from "../pack-templates/registry";
+import { getPackManifest, listPackManifests } from "../pack-templates/registry";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type { ShareCardInput, MatchSummaryInnings, CardSize } from "@/lib/share-card";
+
+/** The title page's swipe cue: Duotone shows none on story (brief §4.1). */
+const swipeCue = (packId: string, size: CardSize) =>
+  packId === "duotone-v1" && size === "story" ? "" : "SWIPE";
 
 const tokens = resolvePackTokens({ brand: brandDefaultTokens(null), theme: null, junior: false });
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
@@ -129,8 +133,10 @@ describe("carousel templates across packs", () => {
         for (const v of ["201", "180", "150", "131", "Batclub1", "Bowlopposition2"])
           expect(d).toContain(v);
         const t = renderPackCard(weekend("title"), size, false, tokens, false, null, pack.packId);
+        const tText = new DOMParser().parseFromString(t, "text/html").body.textContent;
         expect(t).toContain("Big Weekend");
-        expect(t).toContain("ROUND 5");
+        // As read (Duotone sets the round's number in its own colour span).
+        expect(tText).toContain("ROUND 5");
         expect(t).not.toContain("ROUND 1");
         const s = renderPackCard(
           weekend("sponsors"),
@@ -170,14 +176,14 @@ describe("carousel templates across packs", () => {
           if (!roundLabel) {
             expect(label).toBeNull();
             expect(html).not.toContain("data-drop-if-field");
-            expect(text).toContain("SWIPE");
+            expect(text).toContain(swipeCue(pack.packId, size));
             continue;
           }
           expect(label).not.toBeNull();
           expect(label?.textContent).toBe(roundLabel);
           expect(label?.getAttribute("style")).toContain("max-width:100%");
           expect(label?.getAttribute("style")).toContain("overflow-wrap:anywhere");
-          expect(text).toContain("SWIPE");
+          expect(text).toContain(swipeCue(pack.packId, size));
         }
       }
     });
@@ -195,7 +201,9 @@ describe("carousel templates across packs", () => {
           photoUrl: null,
         };
         const before = JSON.stringify(data);
-        expect(packColourModeFor(data, packId)).toBe(packId === "club-kit-v1" ? "club" : mode);
+        // A club-only pack (Club Kit, Duotone) is always the club's colours.
+        const clubOnly = getPackManifest(packId).colourMode === "club-only";
+        expect(packColourModeFor(data, packId)).toBe(clubOnly ? "club" : mode);
         for (const junior of [false, true]) {
           const resolved = resolveCardTokens({ data, packId, junior });
           // Junior cards wear the club's own look (R18): identical tokens.
