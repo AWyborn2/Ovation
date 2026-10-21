@@ -69,6 +69,12 @@ export interface ColourMatch {
   value: string;
   token?: string;
   moved: boolean;
+  /**
+   * A token's colour at partial alpha (the accent at 45 %): v2 colours can't
+   * carry alpha on a token, so a layer that paints only this can draw
+   * `var(token)` at `alpha` opacity instead of a fixed hex.
+   */
+  translucent?: { token: string; alpha: number };
 }
 
 export interface PaletteColours {
@@ -93,6 +99,17 @@ export function tokeniseColour(
       if (!sameColour(b, parseColour(palette.b[token]))) continue;
     } else if (palette.b) continue;
     return { value: `var(${token})`, token, moved };
+  }
+  if (a.a < 1) {
+    const solid = (c: NonNullable<ReturnType<typeof parseColour>>) => ({ ...c, a: 1 });
+    for (const [token, resolved] of Object.entries(palette.a)) {
+      if (!sameColour(solid(a), parseColour(resolved))) continue;
+      if (palette.b && b) {
+        if (!sameColour(solid(b), parseColour(palette.b[token])) || Math.abs(a.a - b.a) > 0.01)
+          continue;
+      } else if (palette.b) continue;
+      return { value: toHex(a), moved, translucent: { token, alpha: Math.round(a.a * 100) / 100 } };
+    }
   }
   return { value: toHex(a), moved };
 }

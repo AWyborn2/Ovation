@@ -27,7 +27,14 @@ import { assembleCarouselDocument, designFromRef } from "./draw";
 import { documentCoverage } from "./coverage";
 
 const STAMP = Date.now();
-const LOOKS = ["club-kit", "broadcast-dark", "duotone", "broadcast-classic", `pl-${STAMP}`];
+const LOOKS = [
+  "club-kit",
+  "broadcast-dark",
+  "duotone",
+  "broadcast-classic",
+  "club-kit-classic",
+  `pl-${STAMP}`,
+];
 const tenants: number[] = [];
 const ids: Record<string, number> = {};
 
@@ -52,7 +59,12 @@ async function look(slug: string): Promise<number> {
   return row!.id;
 }
 
-async function libraryTemplate(lookSlug: string, kind: string, document: unknown): Promise<number> {
+async function libraryTemplate(
+  lookSlug: string,
+  kind: string,
+  document: unknown,
+  listed = true,
+): Promise<number> {
   const lookId = await look(lookSlug);
   const [t] = await db
     .insert(libraryTemplatesTable)
@@ -62,7 +74,7 @@ async function libraryTemplate(lookSlug: string, kind: string, document: unknown
       kind,
       name: `${lookSlug} ${kind}`,
       origin: "bundle",
-      listed: true,
+      listed,
     })
     .returning();
   await db.insert(libraryTemplateVersionsTable).values({
@@ -96,7 +108,9 @@ beforeAll(async () => {
     inArray(
       libraryTemplatesTable.slug,
       LOOKS.flatMap((l) =>
-        ["milestone", "matchDay", "matchSummary", "teamList", "player"].map((k) => `${l}/${k}`),
+        ["milestone", "matchDay", "matchSummary", "teamList", "player", "premiership"].map(
+          (k) => `${l}/${k}`,
+        ),
       ),
     ),
   );
@@ -170,6 +184,19 @@ describe("lazy defaults from the club's pack look (T3.14, T3.23)", () => {
     const t = await tenant("starter-look");
     const row = await ensureKindTemplate(t, "player", "gold-foil-v1");
     expect(row.originTemplateId).toBe(ids["broadcast-classic/player"]);
+  });
+
+  it("skips a converted look that isn't listed yet, for the starter look", async () => {
+    await libraryTemplate("club-kit", "premiership", placeholderDocument("premiership"), false);
+    await libraryTemplate(
+      "club-kit-classic",
+      "premiership",
+      placeholderDocument("premiership"),
+      false,
+    );
+    const t = await tenant("raw-look");
+    const row = await ensureKindTemplate(t, "premiership", "club-kit-v1");
+    expect(row.originTemplateId).toBe(ids["club-kit-classic/premiership"]);
   });
 
   it("falls back to the starter when the library has no look for the kind", async () => {
