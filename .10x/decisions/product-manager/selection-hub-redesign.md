@@ -1,6 +1,6 @@
 # Selection Hub layout redesign — PM decision (20 Oct 2026)
 
-Design source: `docs/design/selection-hub-redesign/` (handoff README + hi-fi prototype + wireframes;
+Design source: `docs/design-handoffs/selection-hub-redesign/` (handoff README + hi-fi prototype + wireframes;
 Ash chose wireframe 2a "pool rail + focus + tap-to-fill").
 
 ## Problem statement

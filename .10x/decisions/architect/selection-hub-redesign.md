@@ -1,6 +1,6 @@
 # Selection Hub redesign: architecture (21 Oct 2026)
 
-Inputs: `decisions/product-manager/selection-hub-redesign.md`, `docs/design/selection-hub-redesign/README.md`.
+Inputs: `decisions/product-manager/selection-hub-redesign.md`, `docs/design-handoffs/selection-hub-redesign/README.md`.
 Level: component (client only). No API, schema or migration change.
 
 ## Findings in the code (verified 21 Oct 2026)

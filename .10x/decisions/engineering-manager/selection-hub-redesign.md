@@ -1,7 +1,7 @@
 # Selection Hub redesign: delivery plan (21 Oct 2026)
 
 Inputs: `decisions/product-manager/selection-hub-redesign.md`,
-`decisions/architect/selection-hub-redesign.md`, `docs/design/selection-hub-redesign/README.md`.
+`decisions/architect/selection-hub-redesign.md`, `docs/design-handoffs/selection-hub-redesign/README.md`.
 Client only, no migration, no production SQL for Ash.
 
 ## Sequencing
