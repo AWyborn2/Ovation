@@ -11,6 +11,8 @@ import { slidesForSize } from "@/lib/card-sets/plan";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { CreateHero } from "@/components/social-studio/create-hero";
 import { EditorStarters } from "@/components/social-studio/editor-starters";
+import { TemplatePicker, type PickedTemplate } from "@/components/template-library/template-picker";
+import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import {
   CardFormRouter,
   PrefillPanel,
@@ -83,6 +85,9 @@ export default function AdminSocialCreate() {
   const [size, setSize] = useState<CardSize>("portrait");
   const [sponsorsOn, setSponsorsOn] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  // The template this one card is drawn with (ADR-011): the kind's default,
+  // preselected, or any of the club's or the library's. The default stays.
+  const [picked, setPicked] = useState<PickedTemplate | null>(null);
 
   const juniorCapable = JUNIOR_CAPABLE.has(kind);
 
@@ -90,6 +95,7 @@ export default function AdminSocialCreate() {
     setKind(next);
     setState(seedState(next, brand));
     setJunior(false);
+    setPicked(null);
   };
 
   const patchState = (patch: CardFormState) => setState((s) => ({ ...s, ...patch }));
@@ -184,6 +190,21 @@ export default function AdminSocialCreate() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Design</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TemplatePicker
+            kind={kind}
+            value={picked}
+            onChange={setPicked}
+            input={input}
+            data={packData}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Editor + prefill */}
         <div className="space-y-6">
@@ -226,7 +247,21 @@ export default function AdminSocialCreate() {
                 </div>
               </div>
 
-              {slidesForSize(input, size).length > 1 ? (
+              {picked ? (
+                // A picked template draws on the blank base with its own document.
+                <div className="mx-auto w-full max-w-[380px] rounded-lg overflow-hidden border">
+                  <PackCard
+                    input={input}
+                    size={size}
+                    sponsorsOn={sponsorsOn}
+                    junior={isJunior}
+                    theme={previewTheme}
+                    data={packData}
+                    packId={BLANK_PACK_ID}
+                    adjustments={picked.document as CardAdjustments}
+                  />
+                </div>
+              ) : slidesForSize(input, size).length > 1 ? (
                 // A big round posts as a balanced card set: cover + detail slides.
                 <CardSetStrip
                   input={input}
@@ -261,6 +296,7 @@ export default function AdminSocialCreate() {
           <EditorStarters
             input={input}
             packId={previewPackId}
+            templateRef={picked?.ref ?? null}
             inputFor={(k) => buildCardInput(k, seedState(k, brand), false)}
             data={packData}
             theme={previewTheme}

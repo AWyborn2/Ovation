@@ -8710,6 +8710,13 @@ export interface ClubTemplateOrigin {
   look: LibraryLookRef | null;
 }
 
+/**
+ * A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise.
+ */
+export type ClubTemplateSummaryUpdateAvailable = {
+  version: number;
+} | null;
+
 export interface ClubTemplateSummary {
   id: number;
   kind: string;
@@ -8721,6 +8728,8 @@ export interface ClubTemplateSummary {
   basedOn: ClubTemplateOrigin | null;
   /** The club saved changes to it, so it is its own (no update prompts). */
   edited: boolean;
+  /** A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise. */
+  updateAvailable: ClubTemplateSummaryUpdateAvailable;
   fitStatus: TemplateFitStatus;
   fitReport: TemplateFitReport | null;
   coverage: TemplateCoverage;
@@ -8746,6 +8755,11 @@ export interface CreateClubTemplateRequest {
   version?: number;
   /** Also make the copy its kind's default (Use as default). */
   makeDefault?: boolean;
+}
+
+export interface TakeTemplateUpdateRequest {
+  /** The template version the admin was looking at. */
+  baseVersion: number;
 }
 
 export interface SaveClubTemplateRequest {

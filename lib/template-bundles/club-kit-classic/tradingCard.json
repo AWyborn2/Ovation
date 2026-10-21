@@ -1,0 +1,1278 @@
+{
+  "name": "Club Kit trading card",
+  "version": 1,
+  "listed": false,
+  "document": {
+    "layers": [
+      {
+        "id": "background",
+        "kind": "element",
+        "name": "Club background",
+        "element": {
+          "id": "ck.background"
+        },
+        "geometry": {
+          "square": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "story": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100
+          }
+        }
+      },
+      {
+        "id": "watermark",
+        "kind": "element",
+        "name": "Crest watermark",
+        "element": {
+          "id": "ck.watermark"
+        },
+        "geometry": {
+          "square": {
+            "x": 0,
+            "y": 30,
+            "w": 70,
+            "h": 70
+          },
+          "portrait": {
+            "x": 0,
+            "y": 44,
+            "w": 70,
+            "h": 56
+          },
+          "story": {
+            "x": 0,
+            "y": 60.63,
+            "w": 70,
+            "h": 39.37
+          },
+          "landscape": {
+            "x": 0,
+            "y": 30,
+            "w": 36.75,
+            "h": 70
+          }
+        }
+      },
+      {
+        "id": "photo-frame-side",
+        "kind": "element",
+        "name": "Photo frame",
+        "element": {
+          "id": "ck.frame-side",
+          "props": {
+            "photo": "{{photo}}"
+          }
+        },
+        "geometry": {
+          "square": {
+            "x": 50,
+            "y": 0,
+            "w": 50,
+            "h": 100
+          },
+          "landscape": {
+            "x": 52.24,
+            "y": 0,
+            "w": 47.77,
+            "h": 100
+          }
+        },
+        "sizes": ["square", "landscape"]
+      },
+      {
+        "id": "photo-frame-top",
+        "kind": "element",
+        "name": "Photo frame",
+        "element": {
+          "id": "ck.frame-top",
+          "props": {
+            "photo": "{{photo}}"
+          }
+        },
+        "geometry": {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 47.3
+          },
+          "story": {
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 62.94
+          }
+        },
+        "sizes": ["portrait", "story"]
+      },
+      {
+        "id": "crest",
+        "kind": "element",
+        "name": "Crest",
+        "element": {
+          "id": "ck.crest"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 6,
+            "w": 10,
+            "h": 10
+          },
+          "portrait": {
+            "x": 6,
+            "y": 4.8,
+            "w": 10,
+            "h": 8
+          },
+          "story": {
+            "x": 6,
+            "y": 3.37,
+            "w": 10,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 6,
+            "w": 5.25,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "club-name-1",
+        "kind": "text",
+        "name": "Club name",
+        "content": "{{clubName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 4,
+          "fontWeight": 900,
+          "letterSpacing": 0.02,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18,
+            "y": 6.4,
+            "w": 58,
+            "h": 5.2
+          },
+          "portrait": {
+            "x": 18,
+            "y": 5.12,
+            "w": 58,
+            "h": 4.16
+          },
+          "story": {
+            "x": 18,
+            "y": 3.6,
+            "w": 58,
+            "h": 2.92
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "club-name-2",
+        "kind": "text",
+        "name": "Club name",
+        "content": "{{clubName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.1,
+          "fontWeight": 900,
+          "letterSpacing": 0.02,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 9.45,
+            "y": 6.4,
+            "w": 77.95,
+            "h": 5.2
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "club-tagline-1",
+        "kind": "text",
+        "name": "Club tagline",
+        "content": "{{clubTagline}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.18,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18,
+            "y": 11.8,
+            "w": 58,
+            "h": 3
+          },
+          "portrait": {
+            "x": 18,
+            "y": 9.44,
+            "w": 58,
+            "h": 2.4
+          },
+          "story": {
+            "x": 18,
+            "y": 6.64,
+            "w": 58,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "club-tagline-2",
+        "kind": "text",
+        "name": "Club tagline",
+        "content": "{{clubTagline}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.18,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 9.45,
+            "y": 11.8,
+            "w": 77.95,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "chip",
+        "kind": "element",
+        "name": "Card-type chip",
+        "element": {
+          "id": "ck.kind-chip",
+          "props": {
+            "label": "COLLECTABLE"
+          }
+        },
+        "geometry": {
+          "square": {
+            "x": 78,
+            "y": 8.5,
+            "w": 16,
+            "h": 5
+          },
+          "portrait": {
+            "x": 78,
+            "y": 6.8,
+            "w": 16,
+            "h": 4
+          },
+          "story": {
+            "x": 78,
+            "y": 4.78,
+            "w": 16,
+            "h": 2.81
+          },
+          "landscape": {
+            "x": 88.45,
+            "y": 8.5,
+            "w": 8.4,
+            "h": 5
+          }
+        }
+      },
+      {
+        "id": "rule",
+        "kind": "element",
+        "name": "Tricolour rule",
+        "element": {
+          "id": "ck.tricolour-rule"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 87,
+            "w": 88,
+            "h": 0.8
+          },
+          "portrait": {
+            "x": 6,
+            "y": 89.6,
+            "w": 88,
+            "h": 0.64
+          },
+          "story": {
+            "x": 6,
+            "y": 92.69,
+            "w": 88,
+            "h": 0.45
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 87,
+            "w": 93.7,
+            "h": 0.8
+          }
+        }
+      },
+      {
+        "id": "sponsor-1",
+        "kind": "text",
+        "name": "Sponsor",
+        "content": "{{sponsorPresentedBy}}",
+        "style": {
+          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+          "fontSize": 2,
+          "fontWeight": 700,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 89.6,
+            "w": 51.04,
+            "h": 4.4
+          },
+          "portrait": {
+            "x": 6,
+            "y": 91.68,
+            "w": 51.04,
+            "h": 3.52
+          },
+          "story": {
+            "x": 6,
+            "y": 94.15,
+            "w": 51.04,
+            "h": 2.47
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "sponsor-2",
+        "kind": "text",
+        "name": "Sponsor",
+        "content": "{{sponsorPresentedBy}}",
+        "style": {
+          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+          "fontSize": 1.05,
+          "fontWeight": 700,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 89.6,
+            "w": 54.35,
+            "h": 4.4
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "hashtag-1",
+        "kind": "text",
+        "name": "Hashtag",
+        "content": "{{clubHashtag}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.8,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "right"
+        },
+        "geometry": {
+          "square": {
+            "x": 60,
+            "y": 89.6,
+            "w": 34,
+            "h": 4.4
+          },
+          "portrait": {
+            "x": 60,
+            "y": 91.68,
+            "w": 34,
+            "h": 3.52
+          },
+          "story": {
+            "x": 60,
+            "y": 94.15,
+            "w": 34,
+            "h": 2.47
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "hashtag-2",
+        "kind": "text",
+        "name": "Hashtag",
+        "content": "{{clubHashtag}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 1.47,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "right"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 79,
+            "y": 89.6,
+            "w": 17.85,
+            "h": 4.4
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "cap-1",
+        "kind": "text",
+        "name": "Eyebrow",
+        "content": "CAP {{capNumber}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.8,
+          "fontWeight": 600,
+          "letterSpacing": 0.22,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 29.36,
+            "w": 44,
+            "h": 5.6
+          },
+          "portrait": {
+            "x": 6,
+            "y": 51.3,
+            "w": 88,
+            "h": 2.56
+          },
+          "story": {
+            "x": 6,
+            "y": 65.76,
+            "w": 88,
+            "h": 1.8
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "cap-2",
+        "kind": "text",
+        "name": "Eyebrow",
+        "content": "CAP {{capNumber}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.94,
+          "fontWeight": 600,
+          "letterSpacing": 0.22,
+          "uppercase": true,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 30.56,
+            "w": 48.3,
+            "h": 3.2
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "player-1",
+        "kind": "text",
+        "name": "Player name",
+        "content": "{{playerName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 9,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 36.16,
+            "w": 44,
+            "h": 19.08
+          },
+          "portrait": {
+            "x": 6,
+            "y": 54.82,
+            "w": 88,
+            "h": 15.26
+          },
+          "story": {
+            "x": 6,
+            "y": 68.23,
+            "w": 88,
+            "h": 10.73
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "player-2",
+        "kind": "text",
+        "name": "Player name",
+        "content": "{{playerName}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 4.72,
+          "fontWeight": 900,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.15,
+            "y": 34.96,
+            "w": 48.3,
+            "h": 19.08
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "role-dash",
+        "kind": "element",
+        "name": "Tricolour dash",
+        "element": {
+          "id": "ck.tricolour-rule"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 59.54,
+            "w": 9,
+            "h": 0.8
+          },
+          "portrait": {
+            "x": 6,
+            "y": 73.52,
+            "w": 9,
+            "h": 0.64
+          },
+          "story": {
+            "x": 6,
+            "y": 81.38,
+            "w": 9,
+            "h": 0.45
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 58.34,
+            "w": 4.72,
+            "h": 0.8
+          }
+        }
+      },
+      {
+        "id": "role-1",
+        "kind": "text",
+        "name": "Label",
+        "content": "{{role}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 4.4,
+          "fontWeight": 800,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 17,
+            "y": 56.64,
+            "w": 33,
+            "h": 6.6
+          },
+          "portrait": {
+            "x": 17,
+            "y": 71.2,
+            "w": 77,
+            "h": 5.28
+          },
+          "story": {
+            "x": 17,
+            "y": 79.75,
+            "w": 77,
+            "h": 3.71
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "role-2",
+        "kind": "text",
+        "name": "Label",
+        "content": "{{role}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.31,
+          "fontWeight": 800,
+          "uppercase": true,
+          "color": "var(--ck-chalk,#F2F5F8)",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 8.92,
+            "y": 55.44,
+            "w": 42.52,
+            "h": 6.6
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-1-panel",
+        "kind": "shape",
+        "name": "Stat 1 panel",
+        "style": {
+          "background": "var(--ck-panel,rgba(242,245,248,.07))"
+        },
+        "geometry": {
+          "square": {
+            "x": 6,
+            "y": 65.64,
+            "w": 10.4,
+            "h": 10
+          },
+          "portrait": {
+            "x": 6,
+            "y": 78.4,
+            "w": 21.4,
+            "h": 8
+          },
+          "story": {
+            "x": 6,
+            "y": 84.81,
+            "w": 21.4,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 3.15,
+            "y": 64.44,
+            "w": 11.76,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "stats-1-value-1",
+        "kind": "text",
+        "name": "Stat 1 value",
+        "content": "{{stat1Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 5.6,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 7,
+            "y": 66.64,
+            "w": 8.4,
+            "h": 5.8
+          },
+          "portrait": {
+            "x": 7,
+            "y": 79.2,
+            "w": 19.4,
+            "h": 4.64
+          },
+          "story": {
+            "x": 7,
+            "y": 85.38,
+            "w": 19.4,
+            "h": 3.26
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-1-value-2",
+        "kind": "text",
+        "name": "Stat 1 value",
+        "content": "{{stat1Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.94,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.67,
+            "y": 65.44,
+            "w": 10.71,
+            "h": 5.8
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-1-label-1",
+        "kind": "text",
+        "name": "Stat 1 label",
+        "content": "{{stat1Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 7,
+            "y": 71.84,
+            "w": 8.4,
+            "h": 3
+          },
+          "portrait": {
+            "x": 7,
+            "y": 83.36,
+            "w": 19.4,
+            "h": 2.4
+          },
+          "story": {
+            "x": 7,
+            "y": 88.3,
+            "w": 19.4,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-1-label-2",
+        "kind": "text",
+        "name": "Stat 1 label",
+        "content": "{{stat1Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 3.67,
+            "y": 70.64,
+            "w": 10.71,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-2-panel",
+        "kind": "shape",
+        "name": "Stat 2 panel",
+        "style": {
+          "background": "var(--ck-panel,rgba(242,245,248,.07))"
+        },
+        "geometry": {
+          "square": {
+            "x": 17.2,
+            "y": 65.64,
+            "w": 10.4,
+            "h": 10
+          },
+          "portrait": {
+            "x": 28.2,
+            "y": 78.4,
+            "w": 21.4,
+            "h": 8
+          },
+          "story": {
+            "x": 28.2,
+            "y": 84.81,
+            "w": 21.4,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 15.33,
+            "y": 64.44,
+            "w": 11.76,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "stats-2-value-1",
+        "kind": "text",
+        "name": "Stat 2 value",
+        "content": "{{stat2Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 5.6,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18.2,
+            "y": 66.64,
+            "w": 8.4,
+            "h": 5.8
+          },
+          "portrait": {
+            "x": 29.2,
+            "y": 79.2,
+            "w": 19.4,
+            "h": 4.64
+          },
+          "story": {
+            "x": 29.2,
+            "y": 85.38,
+            "w": 19.4,
+            "h": 3.26
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-2-value-2",
+        "kind": "text",
+        "name": "Stat 2 value",
+        "content": "{{stat2Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.94,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 15.85,
+            "y": 65.44,
+            "w": 10.71,
+            "h": 5.8
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-2-label-1",
+        "kind": "text",
+        "name": "Stat 2 label",
+        "content": "{{stat2Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 18.2,
+            "y": 71.84,
+            "w": 8.4,
+            "h": 3
+          },
+          "portrait": {
+            "x": 29.2,
+            "y": 83.36,
+            "w": 19.4,
+            "h": 2.4
+          },
+          "story": {
+            "x": 29.2,
+            "y": 88.3,
+            "w": 19.4,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-2-label-2",
+        "kind": "text",
+        "name": "Stat 2 label",
+        "content": "{{stat2Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 15.85,
+            "y": 70.64,
+            "w": 10.71,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-3-panel",
+        "kind": "shape",
+        "name": "Stat 3 panel",
+        "style": {
+          "background": "var(--ck-panel,rgba(242,245,248,.07))"
+        },
+        "geometry": {
+          "square": {
+            "x": 28.4,
+            "y": 65.64,
+            "w": 10.4,
+            "h": 10
+          },
+          "portrait": {
+            "x": 50.4,
+            "y": 78.4,
+            "w": 21.4,
+            "h": 8
+          },
+          "story": {
+            "x": 50.4,
+            "y": 84.81,
+            "w": 21.4,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 27.51,
+            "y": 64.44,
+            "w": 11.76,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "stats-3-value-1",
+        "kind": "text",
+        "name": "Stat 3 value",
+        "content": "{{stat3Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 5.6,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 29.4,
+            "y": 66.64,
+            "w": 8.4,
+            "h": 5.8
+          },
+          "portrait": {
+            "x": 51.4,
+            "y": 79.2,
+            "w": 19.4,
+            "h": 4.64
+          },
+          "story": {
+            "x": 51.4,
+            "y": 85.38,
+            "w": 19.4,
+            "h": 3.26
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-3-value-2",
+        "kind": "text",
+        "name": "Stat 3 value",
+        "content": "{{stat3Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.94,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 28.03,
+            "y": 65.44,
+            "w": 10.71,
+            "h": 5.8
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-3-label-1",
+        "kind": "text",
+        "name": "Stat 3 label",
+        "content": "{{stat3Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 29.4,
+            "y": 71.84,
+            "w": 8.4,
+            "h": 3
+          },
+          "portrait": {
+            "x": 51.4,
+            "y": 83.36,
+            "w": 19.4,
+            "h": 2.4
+          },
+          "story": {
+            "x": 51.4,
+            "y": 88.3,
+            "w": 19.4,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-3-label-2",
+        "kind": "text",
+        "name": "Stat 3 label",
+        "content": "{{stat3Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 28.03,
+            "y": 70.64,
+            "w": 10.71,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-4-panel",
+        "kind": "shape",
+        "name": "Stat 4 panel",
+        "style": {
+          "background": "var(--ck-panel,rgba(242,245,248,.07))"
+        },
+        "geometry": {
+          "square": {
+            "x": 39.6,
+            "y": 65.64,
+            "w": 10.4,
+            "h": 10
+          },
+          "portrait": {
+            "x": 72.6,
+            "y": 78.4,
+            "w": 21.4,
+            "h": 8
+          },
+          "story": {
+            "x": 72.6,
+            "y": 84.81,
+            "w": 21.4,
+            "h": 5.62
+          },
+          "landscape": {
+            "x": 39.69,
+            "y": 64.44,
+            "w": 11.76,
+            "h": 10
+          }
+        }
+      },
+      {
+        "id": "stats-4-value-1",
+        "kind": "text",
+        "name": "Stat 4 value",
+        "content": "{{stat4Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 5.6,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 40.6,
+            "y": 66.64,
+            "w": 8.4,
+            "h": 5.8
+          },
+          "portrait": {
+            "x": 73.6,
+            "y": 79.2,
+            "w": 19.4,
+            "h": 4.64
+          },
+          "story": {
+            "x": 73.6,
+            "y": 85.38,
+            "w": 19.4,
+            "h": 3.26
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-4-value-2",
+        "kind": "text",
+        "name": "Stat 4 value",
+        "content": "{{stat4Value}}",
+        "style": {
+          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+          "fontSize": 2.94,
+          "fontWeight": 900,
+          "color": "var(--ck-pt,var(--gold,#FBAC27))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 40.21,
+            "y": 65.44,
+            "w": 10.71,
+            "h": 5.8
+          }
+        },
+        "sizes": ["landscape"]
+      },
+      {
+        "id": "stats-4-label-1",
+        "kind": "text",
+        "name": "Stat 4 label",
+        "content": "{{stat4Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 1.5,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "square": {
+            "x": 40.6,
+            "y": 71.84,
+            "w": 8.4,
+            "h": 3
+          },
+          "portrait": {
+            "x": 73.6,
+            "y": 83.36,
+            "w": 19.4,
+            "h": 2.4
+          },
+          "story": {
+            "x": 73.6,
+            "y": 88.3,
+            "w": 19.4,
+            "h": 1.69
+          }
+        },
+        "sizes": ["square", "portrait", "story"]
+      },
+      {
+        "id": "stats-4-label-2",
+        "kind": "text",
+        "name": "Stat 4 label",
+        "content": "{{stat4Label}}",
+        "style": {
+          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+          "fontSize": 0.79,
+          "fontWeight": 600,
+          "letterSpacing": 0.14,
+          "uppercase": true,
+          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+          "align": "left"
+        },
+        "geometry": {
+          "landscape": {
+            "x": 40.21,
+            "y": 70.64,
+            "w": 10.71,
+            "h": 3
+          }
+        },
+        "sizes": ["landscape"]
+      }
+    ]
+  }
+}

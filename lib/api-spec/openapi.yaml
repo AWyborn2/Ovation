@@ -6742,6 +6742,38 @@ paths:
         "409":
           description: Its fit check is still pending
 
+  /club-templates/{id}/update:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: takeClubTemplateUpdate
+      tags: [socialCards]
+      summary: Take the library's newer version into an unedited club template
+      description: >-
+        Replaces the template's document with the library template's current
+        version. The template stays unedited. Refused for a template the club has
+        changed (it is the club's own) and when there is no newer version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TakeTemplateUpdateRequest"
+      responses:
+        "200":
+          description: The template, at the new version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+        "409":
+          description: Edited, no newer version, or saved since `baseVersion`
+
   /club-templates/{id}/apply:
     parameters:
       - name: id
@@ -22502,7 +22534,21 @@ components:
     ClubTemplateSummary:
       type: object
       required:
-        [id, kind, name, version, isDefault, basedOn, edited, fitStatus, fitReport, coverage, updatedAt, waitingDrafts]
+        [
+          id,
+          kind,
+          name,
+          version,
+          isDefault,
+          basedOn,
+          edited,
+          updateAvailable,
+          fitStatus,
+          fitReport,
+          coverage,
+          updatedAt,
+          waitingDrafts,
+        ]
       properties:
         id: { type: integer }
         kind: { type: string }
@@ -22520,6 +22566,16 @@ components:
         edited:
           type: boolean
           description: The club saved changes to it, so it is its own (no update prompts).
+        updateAvailable:
+          description: >-
+            A newer version of the library template it came from, for a copy the
+            club hasn't edited; null otherwise.
+          oneOf:
+            - type: object
+              required: [version]
+              properties:
+                version: { type: integer }
+            - type: "null"
         fitStatus:
           $ref: "#/components/schemas/TemplateFitStatus"
         fitReport:
@@ -22562,6 +22618,14 @@ components:
         makeDefault:
           type: boolean
           description: Also make the copy its kind's default (Use as default).
+
+    TakeTemplateUpdateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion:
+          type: integer
+          description: The template version the admin was looking at.
 
     SaveClubTemplateRequest:
       type: object

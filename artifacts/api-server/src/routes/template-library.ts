@@ -14,6 +14,7 @@ import {
   ListClubTemplatesQueryParams,
   ListLibraryTemplatesQueryParams,
   SaveClubTemplateBody,
+  TakeClubTemplateUpdateBody,
 } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
@@ -30,6 +31,7 @@ import {
   presentCopy,
   saveCopy,
   setDefaultCopy,
+  takeUpdate,
 } from "../lib/template-library/copies";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { previewInputFor } from "../lib/template-library/preview";
@@ -200,6 +202,22 @@ router.post("/club-templates/:id/default", ...writes, async (req, res): Promise<
   if (id === null) return;
   try {
     res.json(await presentCopy(await setDefaultCopy(getTenantId(req), id)));
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+router.post("/club-templates/:id/update", ...writes, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  const parsed = TakeClubTemplateUpdateBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  try {
+    const row = await takeUpdate(getTenantId(req), id, parsed.data.baseVersion, adminId(req));
+    res.json(await presentCopy(row));
   } catch (err) {
     fail(res, err);
   }
