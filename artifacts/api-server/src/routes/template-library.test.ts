@@ -385,6 +385,11 @@ describe("preview input (T3.10)", () => {
         engine: "matchday",
         cardInput: { kind: "matchSummary", slides: [{ junior: true, headline: "Junior slide" }] },
       },
+      {
+        tenantId,
+        engine: "ondemand",
+        cardInput: { kind: "matchSummary", weekendCarousel: { version: 2, slides: [] } },
+      },
     ]);
     const res = await me().get("/template-library/preview-input?kind=matchSummary");
     expect(res.status).toBe(200);
