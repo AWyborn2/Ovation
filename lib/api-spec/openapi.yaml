@@ -6332,10 +6332,12 @@ paths:
     get:
       operationId: listKindTemplates
       tags: [socialCards]
-      summary: The club's card kind templates and whether the feature is on
+      summary: The club's default card kind templates, one per kind
       description: >-
-        Card kind templates (plan 2026-10-07-002). `enabled` is false until the
-        KIND_TEMPLATES release switch includes this club; the list is then empty.
+        Card kind templates (plan 2026-10-07-002): each kind's default club
+        template (ADR-011). `enabled` is always true since the library shipped to
+        every club; this route and the field go with the Studio's move to
+        `/club-templates`.
       responses:
         "200":
           description: Kind templates
@@ -22247,7 +22249,7 @@ components:
       properties:
         enabled:
           type: boolean
-          description: Whether card kind templates are switched on for this club.
+          description: Always true (kept for today's Studio until `/club-templates` replaces this list).
         templates:
           type: array
           items:

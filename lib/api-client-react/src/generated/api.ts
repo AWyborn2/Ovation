@@ -20840,8 +20840,8 @@ export const getListKindTemplatesUrl = () => {
 }
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Card kind templates (plan 2026-10-07-002): each kind's default club template (ADR-011). `enabled` is always true since the library shipped to every club; this route and the field go with the Studio's move to `/club-templates`.
+ * @summary The club's default card kind templates, one per kind
  */
 export const listKindTemplates = async ( options?: RequestInit): Promise<KindTemplateList> => {
 
@@ -20888,7 +20888,7 @@ export type ListKindTemplatesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary The club's card kind templates and whether the feature is on
+ * @summary The club's default card kind templates, one per kind
  */
 
 export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>(

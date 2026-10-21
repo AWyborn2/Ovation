@@ -11064,11 +11064,11 @@ export const DeleteEditorTemplateParams = zod.object({
 
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Card kind templates (plan 2026-10-07-002): each kind's default club template (ADR-011). `enabled` is always true since the library shipped to every club; this route and the field go with the Studio's move to `/club-templates`.
+ * @summary The club's default card kind templates, one per kind
  */
 export const ListKindTemplatesResponse = zod.object({
-  "enabled": zod.boolean().describe('Whether card kind templates are switched on for this club.'),
+  "enabled": zod.boolean().describe('Always true (kept for today\'s Studio until `\/club-templates` replaces this list).'),
   "templates": zod.array(zod.object({
   "kind": zod.string(),
   "version": zod.number(),
