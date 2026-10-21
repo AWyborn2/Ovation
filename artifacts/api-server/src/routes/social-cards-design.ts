@@ -18,6 +18,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 
 import { ensurePackTemplates } from "../lib/design-packs";
+import { hideLegacyPackRows, isLegacyPackRow } from "../lib/legacy-packs";
 import { clearDefaultKinds } from "../lib/social-cards-helpers";
 
 /**
@@ -56,7 +57,8 @@ router.get("/card-templates", async (req, res): Promise<void> => {
       ),
     )
     .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
-  res.json(rows);
+  // The four legacy packs are hidden (P9); their claims read as Club Kit.
+  res.json(hideLegacyPackRows(rows));
 });
 
 router.post(
@@ -125,6 +127,17 @@ router.patch(
       return;
     }
     const tenantId = getTenantId(req);
+    // A hidden legacy pack row (P9) can't be chosen: it isn't listed, so it isn't found.
+    const [target] = await db
+      .select({ source: cardTemplatesTable.source, packId: cardTemplatesTable.packId })
+      .from(cardTemplatesTable)
+      .where(
+        and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, tenantId)),
+      );
+    if (target && isLegacyPackRow(target)) {
+      res.status(404).json({ error: "Card template not found" });
+      return;
+    }
     const row = await db.transaction(async (tx) => {
       if (body.data.isDefault === true) {
         await tx

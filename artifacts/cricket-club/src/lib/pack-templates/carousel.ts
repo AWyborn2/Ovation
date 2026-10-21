@@ -40,6 +40,7 @@ import { SUNSET_LOOK } from "./sunset/fragments";
  */
 export const CAROUSEL_CLUB_KIT = LEGACY_CAROUSEL_PACK_ID;
 
+// The four legacy looks stay for the social template library; their packs are hidden (P9).
 const LOOKS: Record<string, PackLook> = {
   "broadcast-dark-v1": BD_LOOK,
   "gold-foil-v1": FOIL_LOOK,

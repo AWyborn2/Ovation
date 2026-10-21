@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderPackCard, resolveCardTokens } from "../pack-render";
-import { listPackManifests } from "../pack-templates/registry";
+import { listAllPackManifests } from "../pack-templates/registry";
 import { sampleCardInput } from "../sample-card-inputs";
 import type { CardSize, ShareCardInput } from "../share-card";
 
@@ -8,7 +8,7 @@ const sizes: CardSize[] = ["square", "portrait", "story", "landscape"];
 const base = sampleCardInput("teamList") as Extract<ShareCardInput, { kind: "teamList" }>;
 
 describe("built-in team grade headings and attached roles", () => {
-  for (const { packId } of listPackManifests())
+  for (const { packId } of listAllPackManifests())
     for (const size of sizes) {
       it(`${packId} / ${size}: binds only this team's grade and preserves roles/order/names`, () => {
         for (const grade of [

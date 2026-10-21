@@ -10,22 +10,24 @@ import { contentInput } from "./card-content/render-input";
 import { readCardContent } from "./card-content/validate";
 import { readContentOverride, type ContentOverride } from "./card-content/settings";
 import type { CardContent } from "./card-content/types";
-import { RETIRED_PACK_IDS, livePackId } from "./pack-resolve";
+import {
+  LEGACY_CAROUSEL_PACK_ID,
+  isCarouselPackId,
+  isLegacyPackId,
+  resolveActivePackId,
+} from "./pack-ids";
 
 export type CarouselSize = "square" | "portrait" | "story" | "landscape";
-/** Built-in identities only; never uploaded backgrounds or layer templates. */
-export const CAROUSEL_PACK_IDS = [
-  "broadcast-dark-v1",
-  "gold-foil-v1",
-  "bold-type-v1",
-  "neon-night-v1",
-  "sunset-v1",
-  "club-kit-v1",
-] as const;
-export const LEGACY_CAROUSEL_PACK_ID = "club-kit-v1";
-export function isCarouselPackId(value: unknown): value is (typeof CAROUSEL_PACK_IDS)[number] {
-  return typeof value === "string" && (CAROUSEL_PACK_IDS as readonly string[]).includes(value);
-}
+export {
+  CAROUSEL_PACK_IDS,
+  LEGACY_CAROUSEL_PACK_ID,
+  LEGACY_PACK_IDS,
+  FALLBACK_PACK_ID,
+  ACTIVE_PACK_IDS,
+  isCarouselPackId,
+  isLegacyPackId,
+  resolveActivePackId,
+} from "./pack-ids";
 /** Only absence means legacy. Explicit invalid selections must not fall back. */
 export function carouselPackId(carousel: { packId?: unknown }): string {
   if (carousel.packId === undefined) return LEGACY_CAROUSEL_PACK_ID;
@@ -132,16 +134,13 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
 
 /**
  * Invalid persisted payloads must never fall through to a single-card export.
- * A retired pack id (`RETIRED_PACK_IDS`) reads as Club Kit.
+ * A legacy pack id (`LEGACY_PACK_IDS`) reads as Club Kit; the stored payload is
+ * left as saved.
  */
-export function readQueuedCarousel(
-  input: unknown,
-  retiredPackIds: readonly string[] = RETIRED_PACK_IDS,
-): QueuedCarousel | null {
+export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
   if (!object(input) || !object(input.weekendCarousel)) return null;
   let c = input.weekendCarousel;
-  if (typeof c.packId === "string" && retiredPackIds.includes(c.packId))
-    c = { ...c, packId: livePackId(c.packId, retiredPackIds) };
+  if (isLegacyPackId(c.packId)) c = { ...c, packId: resolveActivePackId(c.packId as string) };
   if (c.version === 2) {
     if (!Array.isArray(c.slides) || (c.contentOverride !== undefined && !object(c.contentOverride)))
       return null;

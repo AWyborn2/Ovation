@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_PACK_ID, getPackManifest, isRegisteredPack, listPackManifests } from "./registry";
+import {
+  DEFAULT_PACK_ID,
+  getPackManifest,
+  isRegisteredPack,
+  listAllPackManifests,
+  listPackManifests,
+  renderablePackId,
+} from "./registry";
+import { ACTIVE_PACK_IDS, LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import { BROADCAST_DARK_PACK } from "./broadcast-dark";
 import { renderPackCard, packSupportsKind, PACK_DEFAULT_TOKENS } from "../pack-render";
 import { sampleCardInput } from "../sample-card-inputs";
@@ -22,6 +30,21 @@ describe("pack registry", () => {
     const ids = listPackManifests().map((p) => p.packId);
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("offers only the active packs, keeping the hidden legacy ones registered (P9)", () => {
+    const offered = listPackManifests().map((p) => p.packId);
+    expect(offered).toEqual([...ACTIVE_PACK_IDS]);
+    for (const id of LEGACY_PACK_IDS) {
+      expect(offered).not.toContain(id);
+      expect(listAllPackManifests().some((p) => p.packId === id)).toBe(true);
+      expect(isRegisteredPack(id)).toBe(true);
+      expect(renderablePackId(id)).toBe("club-kit-v1");
+    }
+    expect(renderablePackId("no-such-pack-v9")).toBe("club-kit-v1");
+    expect(renderablePackId(DEFAULT_PACK_ID)).toBe(DEFAULT_PACK_ID);
+    expect(renderablePackId(null)).toBeNull();
+    expect(renderablePackId("blank")).toBe("blank");
   });
 
   it("resolves a missing or unknown id to the default pack", () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cardNameKey, type CardNames } from "@workspace/scorecard/card-names";
 import { applyPackData, bindInput } from "./bind";
 import { renderPackCard, PACK_DEFAULT_TOKENS } from "../pack-render";
-import { listPackManifests } from "../pack-templates/registry";
+import { listAllPackManifests } from "../pack-templates/registry";
 import type { ShareCardInput } from "../share-card";
 
 /**
@@ -148,7 +148,7 @@ const NAME_SLOT =
   /<(div|span)\b([^>]*)>(?:v |vs )?\{\{(opposition\.name|club\.name|row\.team|row\.clubName|row\.oppName|row\.opponent|inn\d\.team|opponent|oppositionName)\}\}<\/\1>/g;
 
 describe("every pack fits its team names the same way", () => {
-  for (const pack of listPackManifests()) {
+  for (const pack of listAllPackManifests()) {
     it(`${pack.name}: every team-name box is fit-marked`, () => {
       const unmarked: string[] = [];
       for (const entry of pack.designs) {

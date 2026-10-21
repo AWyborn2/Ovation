@@ -1,5 +1,5 @@
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
-import { listPackManifests, DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
+import { listAllPackManifests, DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 
 /**
@@ -30,7 +30,7 @@ export const ALL_CARD_KINDS: CardKind[] = CARD_KIND_OPTIONS.map((o) => o.value);
 
 /** A pack's catalogue name, falling back to its id for a withdrawn pack. */
 export const packName = (packId: string): string =>
-  listPackManifests().find((m) => m.packId === packId)?.name ?? packId;
+  listAllPackManifests().find((m) => m.packId === packId)?.name ?? packId;
 
 export const DEFAULT_PACK_NAME = packName(DEFAULT_PACK_ID);
 

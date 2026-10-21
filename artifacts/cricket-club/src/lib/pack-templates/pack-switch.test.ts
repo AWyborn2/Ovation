@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listPackManifests } from "./registry";
+import { listAllPackManifests } from "./registry";
 import { renderPackCard } from "../pack-render";
 import { brandDefaultTokens, resolvePackTokens } from "../pack-render/tokens";
 import { buildPackData } from "../pack-card-data";
@@ -38,7 +38,7 @@ function renderDraft(input: ShareCardInput, packId: string, size: CardSize = "sq
 describe("switching a draft's pack (U13)", () => {
   it("covers every registered pack", () => {
     expect(Object.keys(PACK_MARKERS).sort()).toEqual(
-      listPackManifests()
+      listAllPackManifests()
         .map((p) => p.packId)
         .sort(),
     );

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
-import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { ACTIVE_PACK_IDS, LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type * as Model from "./model";
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 import { sourcesFor } from "@/test/carousel-sources";
@@ -400,10 +400,13 @@ describe("WeekendCarousel", () => {
         target: { value: "Keep my caption" },
       });
       const before = screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-card"));
-      expect(screen.getByTestId("select-carousel-pack").querySelectorAll("option")).toHaveLength(
-        CAROUSEL_PACK_IDS.length,
-      );
-      for (const packId of CAROUSEL_PACK_IDS) {
+      // The picker offers exactly the active packs; the hidden legacy ones (P9) never.
+      const offered = [
+        ...screen.getByTestId("select-carousel-pack").querySelectorAll("option"),
+      ].map((o) => (o as HTMLOptionElement).value);
+      expect(offered).toEqual([...ACTIVE_PACK_IDS]);
+      for (const id of LEGACY_PACK_IDS) expect(offered).not.toContain(id);
+      for (const packId of ACTIVE_PACK_IDS) {
         fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: packId } });
         expect(
           screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-pack")),
@@ -415,12 +418,12 @@ describe("WeekendCarousel", () => {
         expect(screen.queryByTestId("text-weekend-stale")).toBeNull();
       }
       fireEvent.change(screen.getByTestId("select-carousel-pack"), {
-        target: { value: "neon-night-v1" },
+        target: { value: "broadcast-dark-v1" },
       });
       fireEvent.click(screen.getByTestId("button-queue-weekend"));
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-      expect(queuedRequest().data.packId).toBe("neon-night-v1");
-      expect(queuedRequest().data.cardInput.weekendCarousel.packId).toBe("neon-night-v1");
+      expect(queuedRequest().data.packId).toBe("broadcast-dark-v1");
+      expect(queuedRequest().data.cardInput.weekendCarousel.packId).toBe("broadcast-dark-v1");
       expect(queuedRequest().data.cardInput.weekendCarousel.slides.map((s) => s.id)).toEqual([
         "title",
         "fixture-2",
@@ -437,7 +440,7 @@ describe("WeekendCarousel", () => {
       });
       expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).not.toHaveProperty("input");
       fireEvent.change(screen.getByTestId("select-carousel-pack"), {
-        target: { value: "sunset-v1" },
+        target: { value: "club-kit-v1" },
       });
       expect(screen.getByTestId("button-queue-weekend")).not.toBeDisabled();
     },

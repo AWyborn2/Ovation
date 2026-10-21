@@ -22,7 +22,7 @@ vi.mock("../pack-render/templates", async (importOriginal) => {
 
 import { renderPackCard, PACK_DEFAULT_TOKENS, packNativeSize } from "../pack-render";
 import { selectFormatHtml, hasLandscapeFormat } from "../pack-render/templates";
-import { listPackManifests } from "../pack-templates/registry";
+import { listAllPackManifests } from "../pack-templates/registry";
 import { sampleCardInput } from "../sample-card-inputs";
 import { SIZES } from "./types";
 
@@ -53,7 +53,7 @@ describe("landscape renders", () => {
   it("letterboxes the square design when a design has no landscape layout", () => {
     const input = sampleCardInput("century");
     flags.noLandscape = true;
-    for (const { packId } of listPackManifests()) {
+    for (const { packId } of listAllPackManifests()) {
       const html = renderPackCard(
         input,
         "landscape",
@@ -73,7 +73,7 @@ describe("landscape renders", () => {
   });
 
   it("every registered pack ships a landscape layout for every design (U12/U13)", () => {
-    for (const pack of listPackManifests()) {
+    for (const pack of listAllPackManifests()) {
       for (const d of pack.designs) {
         expect(hasLandscapeFormat(d.template.formats), `${pack.packId}/${d.designKey}`).toBe(true);
       }

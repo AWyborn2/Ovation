@@ -16,6 +16,7 @@
  * (see {@link getPackManifest}). Change both together.
  */
 
+import { isLegacyPackId, resolveActivePackId } from "@workspace/scorecard/queued-carousel";
 import type { PackManifest } from "./types";
 import { BROADCAST_DARK_PACK } from "./broadcast-dark";
 import { GOLD_FOIL_PACK } from "./gold-foil";
@@ -32,6 +33,13 @@ import { CLUB_KIT_PACK } from "./club-kit";
  */
 export const DEFAULT_PACK_ID = BROADCAST_DARK_PACK.packId;
 
+/**
+ * Gold Foil, Bold Type, Neon Night and Sunset stay registered so their
+ * templates keep building and linting, but they are hidden (`LEGACY_PACK_IDS`,
+ * match-day carousel content P9): no picker offers them and a saved choice of
+ * one renders as Club Kit. The planned social template library will convert
+ * them and bring them back.
+ */
 const MANIFESTS: readonly PackManifest[] = [
   BROADCAST_DARK_PACK,
   GOLD_FOIL_PACK,
@@ -41,12 +49,28 @@ const MANIFESTS: readonly PackManifest[] = [
   CLUB_KIT_PACK,
 ];
 
+const ACTIVE_MANIFESTS: readonly PackManifest[] = MANIFESTS.filter(
+  (p) => !isLegacyPackId(p.packId),
+);
+
 const BY_ID: ReadonlyMap<string, PackManifest> = new Map(MANIFESTS.map((p) => [p.packId, p]));
 
-/** Every registered pack, in registration order. */
+/** The packs a club can choose, in registration order (hidden legacy packs left out). */
 export function listPackManifests(): readonly PackManifest[] {
+  return ACTIVE_MANIFESTS;
+}
+
+/** Every registered pack, hidden legacy ones included: template checks and names only. */
+export function listAllPackManifests(): readonly PackManifest[] {
   return MANIFESTS;
 }
+
+/**
+ * The pack a saved choice renders with: a hidden legacy pack or an unknown id
+ * renders as Club Kit; no choice (and the blank canvas) passes through. Every
+ * render surface reads its pack id through this.
+ */
+export const renderablePackId = resolveActivePackId;
 
 /** True when `packId` names a registered pack. */
 export function isRegisteredPack(packId?: string | null): boolean {
