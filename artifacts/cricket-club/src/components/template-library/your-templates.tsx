@@ -193,11 +193,12 @@ function CopyRow({
             />
           </>
         )}
-        {template.isDefault ? (
-          <Button size="sm" variant="outline" asChild>
-            <Link href={`/admin/social/templates/${template.kind}`}>Edit</Link>
-          </Button>
-        ) : (
+        <Button size="sm" variant="outline" asChild>
+          <Link href={`/admin/social/template/${template.id}`} aria-label={`Edit ${template.name}`}>
+            Edit
+          </Link>
+        </Button>
+        {!template.isDefault && (
           <Button
             size="sm"
             variant="outline"
