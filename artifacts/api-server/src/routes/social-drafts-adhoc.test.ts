@@ -16,6 +16,7 @@ import {
   socialDraftsTable,
   socialSettingsTable,
   cardTemplatesTable,
+  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { randomUUID } from "node:crypto";
@@ -70,6 +71,8 @@ afterAll(async () => {
   await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenantIds));
   await db.delete(cardTemplatesTable).where(inArray(cardTemplatesTable.tenantId, tenantIds));
   await db.delete(socialSettingsTable).where(inArray(socialSettingsTable.tenantId, tenantIds));
+  // Rendering a single draft seeds the club's caption templates (ensureSettings).
+  await db.delete(captionTemplatesTable).where(inArray(captionTemplatesTable.tenantId, tenantIds));
   await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, tenantIds));
 });
