@@ -1,15 +1,23 @@
-import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import { layerOnSize, type LayoutWarning } from "@workspace/scorecard/kind-templates";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
-import type { LayerBox, PackCardData } from "@/lib/pack-render";
+import type { FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
 import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
 import { boundsOf, snapMove, snapRotation, type Guide } from "./guides";
+import { contains, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
 
-type Handle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+type Handle = ResizeHandle;
 const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 const HANDLE_POS: Record<Handle, { left: string; top: string; cursor: string }> = {
   nw: { left: "0%", top: "0%", cursor: "nwse-resize" },
@@ -35,14 +43,30 @@ function capturePointer(e: ReactPointerEvent): void {
 type Drag =
   | { kind: "move"; x0: number; y0: number; start: Record<string, LayerBox> }
   | { kind: "resize"; handle: Handle; x0: number; y0: number; start: LayerBox; id: string }
-  | { kind: "rotate"; id: string; cx: number; cy: number };
+  | { kind: "rotate"; id: string; cx: number; cy: number }
+  | {
+      kind: "group";
+      handle: Handle;
+      x0: number;
+      y0: number;
+      from: { x: number; y: number; w: number; h: number };
+      start: FreeLayer[];
+    }
+  | { kind: "marquee"; x0: number; y0: number; additive: boolean };
+
+type Rect = { x: number; y: number; w: number; h: number };
+type ModifierKeys = { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean };
+const isCorner = (h: Handle) => h.length === 2;
 
 /**
  * The editor artboard (Social Studio U16): the real pack render of the
  * document underneath, and an interactive overlay for free layers — click to
- * select (the whole group unless inside it), shift-click to multi-select,
- * drag to move with smart guides, handles to resize, and a rotate handle that
- * snaps to 0/±90/180. Changes stream to `onChange(doc, false)` while dragging
+ * select (the whole group unless inside it), shift- or ctrl-click to
+ * multi-select, drag from the canvas around the card (or an empty card) to
+ * select by marquee, drag to move
+ * with smart guides, handles to resize (several layers together from their
+ * bounds; a corner keeps proportions and scales the type), and a rotate
+ * handle that snaps to 0/±90/180. Changes stream to `onChange(doc, false)` while dragging
  * and commit with `onChange(doc, true)` on release.
  *
  * Pointer events cover mouse, pen and touch alike; on a coarse pointer (a
@@ -63,6 +87,8 @@ export function EditorCanvas({
   selection,
   onSelect,
   onToggle,
+  onSelectMany,
+  marqueeArea,
   onEnterGroup,
   onChange,
   onLayout,
@@ -82,6 +108,10 @@ export function EditorCanvas({
   selection: string[];
   onSelect: (id: string | null) => void;
   onToggle: (id: string) => void;
+  /** Marquee selection: the layers inside the box, added to the selection or replacing it. */
+  onSelectMany?: (ids: string[], additive: boolean) => void;
+  /** The canvas around the card: a drag that starts on it draws a marquee too. */
+  marqueeArea?: RefObject<HTMLElement | null>;
   onEnterGroup: (id: string) => void;
   onChange: (doc: EditorDoc, commit: boolean) => void;
   /** Run the shrink-to-fit step after each render and report what still overflows. */
@@ -94,6 +124,8 @@ export function EditorCanvas({
   const boardRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
+  const [marquee, setMarquee] = useState<Rect | null>(null);
+  const [scalingType, setScalingType] = useState(false);
 
   const layers = layersOf(doc).filter((l) => !l.hidden && layerOnSize(l, size));
 
@@ -125,10 +157,26 @@ export function EditorCanvas({
     const r = rect();
     return r ? { dx: (dxPx / r.width) * 100, dy: (dyPx / r.height) * 100 } : { dx: 0, dy: 0 };
   };
+  const pointPct = (clientX: number, clientY: number) => {
+    const r = rect();
+    return r && r.width > 0 && r.height > 0
+      ? { x: ((clientX - r.left) / r.width) * 100, y: ((clientY - r.top) / r.height) * 100 }
+      : { x: 0, y: 0 };
+  };
+  const marqueeRect = (d: { x0: number; y0: number }, clientX: number, clientY: number): Rect => {
+    const a = pointPct(d.x0, d.y0);
+    const b = pointPct(clientX, clientY);
+    return {
+      x: Math.min(a.x, b.x),
+      y: Math.min(a.y, b.y),
+      w: Math.abs(a.x - b.x),
+      h: Math.abs(a.y - b.y),
+    };
+  };
 
   const onLayerPointerDown = (e: ReactPointerEvent, id: string) => {
     e.stopPropagation();
-    if (e.shiftKey) {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
       onToggle(id);
       return;
     }
@@ -152,6 +200,13 @@ export function EditorCanvas({
   const onPointerMove = (e: ReactPointerEvent) => {
     const d = drag.current;
     if (!d) return;
+    if (d.kind === "marquee") return;
+    if (d.kind === "group") {
+      const { dx, dy } = toPct(e.clientX - d.x0, e.clientY - d.y0);
+      const to = resizeBounds(d.from, d.handle, dx, dy, MIN_SIZE);
+      onChange(resizeGroup(doc, size, d.start, d.from, to, isCorner(d.handle)), false);
+      return;
+    }
     if (d.kind === "move") {
       const { dx, dy } = toPct(e.clientX - d.x0, e.clientY - d.y0);
       const ids = Object.keys(d.start);
@@ -193,9 +248,98 @@ export function EditorCanvas({
   };
 
   const onPointerUp = () => {
-    if (drag.current) onChange(doc, true);
+    const d = drag.current;
+    if (d?.kind === "marquee") return;
     drag.current = null;
     setGuides([]);
+    setScalingType(false);
+    if (d) onChange(doc, true);
+  };
+
+  // The marquee follows the pointer through window listeners, so it can start
+  // on the canvas around the card and end anywhere.
+  const finishMarquee = useRef<(x: number, y: number) => void>(() => {});
+  finishMarquee.current = (clientX, clientY) => {
+    const d = drag.current;
+    if (d?.kind !== "marquee") return;
+    drag.current = null;
+    setMarquee(null);
+    const m = marqueeRect(d, clientX, clientY);
+    // A click (no real drag) clears the selection. A drag picks the layers
+    // wholly inside it, so a full-card background isn't swept up as well.
+    const hit =
+      m.w < 0.5 && m.h < 0.5
+        ? []
+        : layers
+            .filter((l) => !l.locked)
+            .filter((l) => {
+              const b = boxOf(l, size);
+              return !!b && contains(m, b);
+            })
+            .map((l) => l.id);
+    if (hit.length) onSelectMany?.(hit, d.additive);
+    else if (!d.additive) onSelect(null);
+  };
+  const moveMarquee = useRef<(x: number, y: number) => void>(() => {});
+  moveMarquee.current = (clientX, clientY) => {
+    const d = drag.current;
+    if (d?.kind === "marquee") setMarquee(marqueeRect(d, clientX, clientY));
+  };
+  const startMarquee = (e: { clientX: number; clientY: number } & ModifierKeys) => {
+    drag.current = {
+      kind: "marquee",
+      x0: e.clientX,
+      y0: e.clientY,
+      additive: e.shiftKey || e.ctrlKey || e.metaKey,
+    };
+    const move = (ev: PointerEvent) => moveMarquee.current(ev.clientX, ev.clientY);
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      finishMarquee.current(ev.clientX, ev.clientY);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const startMarqueeRef = useRef(startMarquee);
+  startMarqueeRef.current = startMarquee;
+
+  const onBoardPointerDown = (e: ReactPointerEvent) => {
+    if (!onSelectMany) {
+      onSelect(null);
+      return;
+    }
+    startMarquee(e);
+  };
+
+  // A drag on the empty canvas around the card (the area itself, not its
+  // toolbars or notes) starts a marquee as well.
+  const marqueeOn = !!onSelectMany;
+  useEffect(() => {
+    const area = marqueeArea?.current;
+    if (!area || !marqueeOn) return;
+    const down = (e: PointerEvent) => {
+      if (e.target === area && e.button === 0) startMarqueeRef.current(e);
+    };
+    area.addEventListener("pointerdown", down);
+    return () => area.removeEventListener("pointerdown", down);
+  }, [marqueeArea, marqueeOn]);
+
+  const movable = selected.filter((l) => !l.locked && boxOf(l, size));
+  const startGroupResize = (e: ReactPointerEvent, handle: Handle) => {
+    e.stopPropagation();
+    if (movable.length < 2) return;
+    const from = boundsOf(movable.map((l) => boxOf(l, size)!));
+    drag.current = {
+      kind: "group",
+      handle,
+      x0: e.clientX,
+      y0: e.clientY,
+      from,
+      start: structuredClone(movable),
+    };
+    setScalingType(isCorner(handle) && movable.some((l) => l.style?.fontSize || l.rows));
+    capturePointer(e);
   };
 
   const startResize = (e: ReactPointerEvent, handle: Handle) => {
@@ -242,7 +386,7 @@ export function EditorCanvas({
         touch && "touch-none",
       )}
       style={{ width }}
-      onPointerDown={() => onSelect(null)}
+      onPointerDown={onBoardPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
@@ -351,9 +495,40 @@ export function EditorCanvas({
             }}
           >
             <span className="absolute -top-6 left-0 whitespace-nowrap rounded bg-[var(--ed-accent)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-on-accent)]">
-              {groupLabel}
+              {scalingType ? "Text size applies to all sizes" : groupLabel}
             </span>
+            {movable.length > 1 &&
+              HANDLES.map((h) => (
+                <span
+                  key={h}
+                  aria-label={`Resize selection ${h}`}
+                  className={cn(
+                    "pointer-events-auto absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-[var(--ed-accent)] bg-white",
+                    touch &&
+                      "[@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6 [@media(pointer:coarse)]:rounded-full",
+                  )}
+                  style={{
+                    left: HANDLE_POS[h].left,
+                    top: HANDLE_POS[h].top,
+                    cursor: HANDLE_POS[h].cursor,
+                  }}
+                  onPointerDown={(e) => startGroupResize(e, h)}
+                />
+              ))}
           </div>
+        )}
+
+        {marquee && (
+          <div
+            data-testid="marquee"
+            className="pointer-events-none absolute border border-[var(--ed-accent)] bg-[var(--ed-accent)]/10"
+            style={{
+              left: `${marquee.x}%`,
+              top: `${marquee.y}%`,
+              width: `${marquee.w}%`,
+              height: `${marquee.h}%`,
+            }}
+          />
         )}
 
         {guides.map((g, i) => (

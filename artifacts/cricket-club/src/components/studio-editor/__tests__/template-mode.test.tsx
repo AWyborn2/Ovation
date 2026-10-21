@@ -322,3 +322,197 @@ describe("template editor", () => {
     expect(await screen.findByTestId("editor-artboard")).toBeTruthy();
   });
 });
+
+/** A heading and a badge, on every size. */
+const TWO_DOC = {
+  layers: [
+    FULL_DOC.layers[0],
+    {
+      id: "badge",
+      kind: "shape",
+      name: "Badge",
+      geometry: {
+        square: { x: 60, y: 60, w: 20, h: 10 },
+        portrait: { x: 60, y: 60, w: 20, h: 10 },
+        story: { x: 60, y: 60, w: 20, h: 10 },
+        landscape: { x: 60, y: 60, w: 20, h: 10 },
+      },
+    },
+  ],
+};
+
+type SavedLayer = {
+  id: string;
+  style?: { fontSize?: number };
+  sizes?: string[];
+  geometry: Record<string, { x: number; y: number; w: number; h: number }>;
+};
+const savedLayers = async (requests: Req[]) => {
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(saved(requests)).toHaveLength(1));
+  return (saved(requests)[0].body as { document: { layers: SavedLayer[] } }).document.layers;
+};
+const click = (el: Element, mods: { shiftKey?: boolean; ctrlKey?: boolean } = {}) => {
+  fireEvent.pointerDown(el, mods);
+  fireEvent.pointerUp(el, mods);
+};
+const layerEl = (id: string) => document.querySelector(`[data-testid="layer-${id}"]`)!;
+/** jsdom lays nothing out: give the artboard a 1000 × 1000 px box. */
+const sizedBoard = () =>
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    left: 0,
+    top: 0,
+    right: 1000,
+    bottom: 1000,
+    width: 1000,
+    height: 1000,
+    toJSON: () => ({}),
+  } as DOMRect);
+
+describe("template editor: copy, multi-select and arrange", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.sessionStorage.clear();
+  });
+
+  it("pastes into another template on this size only, offering the others, in one undo", async () => {
+    open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    click(layerEl("badge"));
+    fireEvent.keyDown(window, { key: "c", ctrlKey: true });
+    cleanup();
+    vi.unstubAllGlobals();
+
+    // Another template in the same tab: the copy is still there.
+    open();
+    await screen.findByRole("combobox", { name: "Format" });
+    format("story");
+    fireEvent.keyDown(window, { key: "v", ctrlKey: true });
+    expect(layerBoxes()).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Add to all sizes" })).toBeTruthy();
+    format("square");
+    expect(layerBoxes()).toHaveLength(1);
+    format("story");
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(layerBoxes()).toHaveLength(1);
+  });
+
+  it("ctrl-click selects two layers; Match size gives them the first one's size", async () => {
+    const requests = open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    click(layerEl("title"));
+    click(layerEl("badge"), { ctrlKey: true });
+    expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
+    fireEvent.click(screen.getByRole("button", { name: "Arrange" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Match size" }));
+    const layers = await savedLayers(requests);
+    const badge = layers.find((l) => l.id === "badge")!;
+    // The title's 80 × 20, around the badge's own centre (70, 65); square only.
+    expect(badge.geometry.square).toEqual({ x: 30, y: 55, w: 80, h: 20 });
+    expect(badge.geometry.story).toEqual({ x: 60, y: 60, w: 20, h: 10 });
+  });
+
+  it("selects the layers wholly inside a marquee drag", async () => {
+    open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    sizedBoard();
+    const board = screen.getByTestId("editor-artboard");
+    // Round the badge only: the title sticks out, so it isn't picked.
+    fireEvent.pointerDown(board, { clientX: 550, clientY: 550 });
+    fireEvent.pointerMove(board, { clientX: 850, clientY: 750 });
+    expect(screen.getByTestId("marquee")).toBeTruthy();
+    fireEvent.pointerUp(board, { clientX: 850, clientY: 750 });
+    expect(screen.queryByTestId("marquee")).toBeNull();
+    expect(screen.getByTestId("selection-box")).toBeTruthy();
+    // Started on the canvas around the card, a marquee round both picks both.
+    const area = board.closest("main")!;
+    fireEvent.pointerDown(area, { clientX: -20, clientY: -20 });
+    fireEvent.pointerMove(area, { clientX: 950, clientY: 950 });
+    fireEvent.pointerUp(area, { clientX: 950, clientY: 950 });
+    expect(screen.queryByTestId("marquee")).toBeNull();
+    expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
+    // A plain click on the empty card clears it.
+    fireEvent.pointerDown(board, { clientX: 950, clientY: 950 });
+    fireEvent.pointerUp(board, { clientX: 950, clientY: 950 });
+    expect(screen.queryByTestId("multi-bounds")).toBeNull();
+  });
+
+  it("resizes a selection together from a corner, scaling its text", async () => {
+    const requests = open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    click(layerEl("title"));
+    click(layerEl("badge"), { shiftKey: true });
+    sizedBoard();
+    // Bounds are (10, 10, 80, 60): drag the bottom-right corner 400 px left.
+    const handle = screen.getByLabelText("Resize selection se");
+    fireEvent.pointerDown(handle, { clientX: 900, clientY: 700 });
+    fireEvent.pointerMove(handle, { clientX: 500, clientY: 700 });
+    expect(screen.getByTestId("multi-bounds").textContent).toContain(
+      "Text size applies to all sizes",
+    );
+    fireEvent.pointerUp(handle, { clientX: 500, clientY: 700 });
+    const layers = await savedLayers(requests);
+    const title = layers.find((l) => l.id === "title")!;
+    const badge = layers.find((l) => l.id === "badge")!;
+    expect(title.geometry.square).toEqual({ x: 10, y: 10, w: 40, h: 10 });
+    expect(title.style?.fontSize).toBe(4);
+    expect(badge.geometry.square).toEqual({ x: 35, y: 35, w: 10, h: 5 });
+    expect(title.geometry.story).toEqual(box);
+  });
+
+  it("undoes a group resize in one step", async () => {
+    open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    click(layerEl("title"));
+    click(layerEl("badge"), { shiftKey: true });
+    sizedBoard();
+    const handle = screen.getByLabelText("Resize selection e");
+    fireEvent.pointerDown(handle, { clientX: 900, clientY: 400 });
+    fireEvent.pointerMove(handle, { clientX: 800, clientY: 400 });
+    fireEvent.pointerMove(handle, { clientX: 700, clientY: 400 });
+    fireEvent.pointerUp(handle, { clientX: 700, clientY: 400 });
+    expect((layerEl("title") as HTMLElement).style.width).toBe("60%");
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect((layerEl("title") as HTMLElement).style.width).toBe("80%");
+  });
+
+  it("multi-selects in the Layers drawer with ctrl-click and shift-click", async () => {
+    open({ template: template({ document: TWO_DOC }) });
+    await screen.findByRole("combobox", { name: "Format" });
+    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
+    const drawer = screen.getByRole("complementary", { name: "Layers" });
+    fireEvent.click(within(drawer).getByRole("button", { name: "Badge" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Title" }), { ctrlKey: true });
+    expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
+    fireEvent.click(within(drawer).getByRole("button", { name: "Title" }), { ctrlKey: true });
+    expect(screen.getByTestId("selection-box")).toBeTruthy();
+    fireEvent.click(within(drawer).getByRole("button", { name: "Badge" }));
+    fireEvent.click(within(drawer).getByRole("button", { name: "Title" }), { shiftKey: true });
+    expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
+  });
+
+  it("notes that pasted card photos all show the one photo", async () => {
+    open({
+      template: template({
+        document: {
+          layers: [
+            ...FULL_DOC.layers,
+            {
+              id: "pic",
+              kind: "photo",
+              name: "Card photo",
+              geometry: { square: box, portrait: box, story: box, landscape: box },
+            },
+          ],
+        },
+      }),
+    });
+    await screen.findByRole("combobox", { name: "Format" });
+    click(layerEl("pic"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+    fireEvent.click(screen.getByRole("button", { name: "Paste" }));
+    expect(screen.getByText(/Every Card photo shows the same photo/)).toBeTruthy();
+  });
+});
