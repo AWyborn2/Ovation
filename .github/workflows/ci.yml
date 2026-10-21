@@ -96,6 +96,16 @@ jobs:
         run: pnpm run typecheck:libs
       - name: Build api-server and website
         run: pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build
+      - name: Production website has no converter capture
+        # The pack converter's capture (social template library, L4-A1) is for
+        # the dev server and `vite build --mode capture` only: the render
+        # harness imports it behind a build-time constant. Its format id and
+        # mount id must never reach the bundle that ships.
+        run: |
+          if grep -rlE "ovation-pack-capture|pack-capture-root" artifacts/cricket-club/dist/public; then
+            echo "The production website bundle contains the converter capture." >&2
+            exit 1
+          fi
 
   # ───────────────────────────────────────────────────────────────────────────
   # Library unit tests (lib/db, lib/scorecard, scripts). Hermetic — every
