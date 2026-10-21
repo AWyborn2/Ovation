@@ -81,7 +81,7 @@ async function tenant(name: string): Promise<number> {
     .insert(tenantsTable)
     .values({
       slug: `pl-${name}-${STAMP}`,
-      centralClubId: 9990 + tenants.length,
+      centralClubId: 1_000_000 + (STAMP % 100_000) * 20 + tenants.length,
       name,
       plan: "pro",
     })

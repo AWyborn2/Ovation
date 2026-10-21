@@ -73,7 +73,12 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-templated-drafts";
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `td-${STAMP}`, centralClubId: 9931, name: "Draft Club", plan: "pro" })
+    .values({
+      slug: `td-${STAMP}`,
+      centralClubId: 4_000_000 + (STAMP % 100_000),
+      name: "Draft Club",
+      plan: "pro",
+    })
     .returning();
   tenantId = t!.id;
   const [a] = await db

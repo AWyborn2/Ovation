@@ -1,6 +1,7 @@
 export * from "./document";
 export * from "./drop-rule";
 export * from "./fields";
+export * from "./fit-matrix";
 export * from "./format";
 export * from "./looks";
 export * from "./normalise";
@@ -10,3 +11,5 @@ export * from "./slides";
 export * from "./starters";
 export * from "./warnings";
 export * from "./validate";
+export * from "./worst-case";
+export * from "./worst-case-names";

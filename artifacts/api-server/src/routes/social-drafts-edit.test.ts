@@ -115,6 +115,17 @@ describe("PATCH /social-drafts/:id", () => {
       cardInput: card(12),
       appPath: "/records",
     });
+    // A pack draft from before the template library: its editor overlay still saves.
+    await db
+      .update(socialDraftsTable)
+      .set({
+        packId: "club-kit-v1",
+        adjustments: null,
+        templateVersion: null,
+        templateRef: null,
+        layoutCheckPending: false,
+      })
+      .where(eq(socialDraftsTable.id, draft.id));
     const adjustments = {
       fields: { headline: "Century maker" },
       hidden: ["slot:photo"],
