@@ -20,6 +20,7 @@ import {
 } from "@workspace/db";
 import { enrichDraft, isGrandFinalWin, photoRuleKinds, pickDraftPhoto } from "./draft-enrich";
 import { upsertDraftByKey } from "./draft-upsert";
+import { startingDocument } from "@workspace/scorecard/kind-templates";
 
 const STAMP = Date.now();
 let tenantId: number;
@@ -142,7 +143,10 @@ describe("photo pick (R5, AE2)", () => {
 });
 
 describe("pack and caption", () => {
-  it("uses the club's default pack; changing the default leaves existing drafts alone", async () => {
+  // Every draft is templated since the template library (ADR-011): the club's
+  // pack picks where its default template comes from (Broadcast Dark's look,
+  // its starter until the looks are in the library), once.
+  it("the club's pack seeds its default template; changing the pack leaves drafts and the default alone", async () => {
     const [broadcast] = await db
       .insert(cardTemplatesTable)
       .values({
@@ -171,7 +175,8 @@ describe("pack and caption", () => {
       appPath: "/matches/77",
       grade: "A Grade",
     });
-    expect(first.draft.packId).toBe("broadcast-dark-v1");
+    expect(first.draft.packId).toBe("blank");
+    expect(first.draft.adjustments).toEqual(startingDocument("broadcast", "matchSummary"));
     expect(first.draft.caption).toContain("enrich.example/matches/77");
 
     await db
@@ -193,7 +198,8 @@ describe("pack and caption", () => {
       grade: "A Grade",
     });
     expect(refreshed.action).toBe("refreshed");
-    expect(refreshed.draft.packId).toBe("broadcast-dark-v1");
+    expect(refreshed.draft.packId).toBe("blank");
+    expect(refreshed.draft.adjustments).toEqual(first.draft.adjustments);
 
     const fresh = await upsertDraftByKey({
       tenantId,
@@ -203,7 +209,8 @@ describe("pack and caption", () => {
       cardInput: { kind: "matchSummary", result: "Lost", matchTitle: "A Grade R3" },
       appPath: "/matches/78",
     });
-    expect(fresh.draft.packId).toBe("club-kit-v1");
+    expect(fresh.draft.packId).toBe("blank");
+    expect(fresh.draft.adjustments).toEqual(first.draft.adjustments);
   });
 });
 

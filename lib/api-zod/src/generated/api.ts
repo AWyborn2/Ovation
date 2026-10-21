@@ -10966,6 +10966,11 @@ export const ListSocialDraftsResponseItem = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -11021,7 +11026,12 @@ export const CreateSocialDraftBody = zod.object({
   "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
   "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 }).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional(),
-  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).')
+  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
 })
 
 
@@ -11064,11 +11074,11 @@ export const DeleteEditorTemplateParams = zod.object({
 
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Card kind templates (plan 2026-10-07-002): each kind's default club template (ADR-011). `enabled` is always true since the library shipped to every club; this route and the field go with the Studio's move to `/club-templates`.
+ * @summary The club's default card kind templates, one per kind
  */
 export const ListKindTemplatesResponse = zod.object({
-  "enabled": zod.boolean().describe('Whether card kind templates are switched on for this club.'),
+  "enabled": zod.boolean().describe('Always true (kept for today\'s Studio until `\/club-templates` replaces this list).'),
   "templates": zod.array(zod.object({
   "kind": zod.string(),
   "version": zod.number(),
@@ -12155,6 +12165,11 @@ export const ApproveSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12235,6 +12250,11 @@ export const UpdateSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12436,6 +12456,11 @@ export const GetSocialCalendarResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12499,6 +12524,11 @@ export const GetSocialCalendarResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12584,6 +12614,11 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12661,6 +12696,11 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12732,6 +12772,11 @@ export const SendBackSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12799,6 +12844,11 @@ export const ReopenSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12888,6 +12938,11 @@ export const RevertSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12955,6 +13010,11 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -13031,6 +13091,11 @@ export const GenerateRecapsResponseItem = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),

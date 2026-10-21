@@ -77,6 +77,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     tabs: [
       { value: "studio", label: "Studio", path: "/admin/social", feature: "socialStudio" },
       {
+        value: "template-library",
+        label: "Templates",
+        path: "/admin/social/template-library",
+        feature: "socialStudio",
+      },
+      {
         value: "plan",
         label: "Posting Plan",
         path: "/admin/social/plan",

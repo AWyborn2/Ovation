@@ -25,7 +25,12 @@ let tenantId: number;
 beforeAll(async () => {
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `mig-0059-${STAMP}`, centralClubId: 9971, name: "Pilot Club", plan: "pro" })
+    .values({
+      slug: `mig-0059-${STAMP}`,
+      centralClubId: 800_000 + (STAMP % 100_000),
+      name: "Pilot Club",
+      plan: "pro",
+    })
     .returning();
   tenantId = t!.id;
 });

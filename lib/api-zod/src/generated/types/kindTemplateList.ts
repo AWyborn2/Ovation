@@ -8,7 +8,7 @@
 import type { KindTemplateSummary } from './kindTemplateSummary';
 
 export interface KindTemplateList {
-  /** Whether card kind templates are switched on for this club. */
+  /** Always true (kept for today's Studio until `/club-templates` replaces this list). */
   enabled: boolean;
   templates: KindTemplateSummary[];
 }

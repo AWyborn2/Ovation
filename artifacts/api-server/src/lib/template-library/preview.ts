@@ -4,7 +4,8 @@
  * The club's latest SENIOR draft input of the kind, so a club browsing
  * templates sees its own cards. Juniors never feed previews: a draft from a
  * junior match, or whose input carries any junior flag (a junior day slide,
- * a junior row), is skipped. With no such draft the client draws the kind's
+ * a junior row), is skipped, and so is a saved carousel (its input is the
+ * whole set). With no such draft the client draws the kind's
  * sample in the club's identity (`sampleCardInput(kind, clubName)`), so the
  * server answers `source: "sample"` with no input.
  */
@@ -29,6 +30,8 @@ export async function previewInputFor(tenantId: number, kind: string): Promise<P
         eq(socialDraftsTable.sourceMatchIsJunior, false),
         inArray(sql`${socialDraftsTable.cardInput}->>'kind'`, kinds),
         sql`not jsonb_path_exists(${socialDraftsTable.cardInput}, '$.** ? (@.junior == true)')`,
+        // A saved carousel's input is the whole set, not one card.
+        sql`not (${socialDraftsTable.cardInput} ? 'weekendCarousel')`,
       ),
     )
     .orderBy(desc(socialDraftsTable.createdAt), desc(socialDraftsTable.id))

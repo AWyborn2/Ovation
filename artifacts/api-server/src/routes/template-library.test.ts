@@ -52,13 +52,18 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-template-library";
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `tpl-lib-${STAMP}`, centralClubId: 9981, name: "Library Club", plan: "pro" })
+    .values({
+      slug: `tpl-lib-${STAMP}`,
+      centralClubId: 3_000_000 + (STAMP % 100_000) * 2,
+      name: "Library Club",
+      plan: "pro",
+    })
     .returning();
   const [o] = await db
     .insert(tenantsTable)
     .values({
       slug: `tpl-lib-other-${STAMP}`,
-      centralClubId: 9982,
+      centralClubId: 3_000_001 + (STAMP % 100_000) * 2,
       name: "Other Club",
       plan: "pro",
     })
@@ -384,6 +389,11 @@ describe("preview input (T3.10)", () => {
         tenantId,
         engine: "matchday",
         cardInput: { kind: "matchSummary", slides: [{ junior: true, headline: "Junior slide" }] },
+      },
+      {
+        tenantId,
+        engine: "ondemand",
+        cardInput: { kind: "matchSummary", weekendCarousel: { version: 2, slides: [] } },
       },
     ]);
     const res = await me().get("/template-library/preview-input?kind=matchSummary");
