@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useApplyKindTemplate, type ApplyKindTemplateResult } from "@workspace/api-client-react";
+import {
+  useApplyClubTemplate,
+  useApplyKindTemplate,
+  type ApplyKindTemplateResult,
+} from "@workspace/api-client-react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +32,7 @@ export function ApplyTemplateDialog({
   open,
   onClose,
   onApplied,
+  clubTemplateId,
 }: {
   kind: string;
   /** The card kind's display name. */
@@ -39,21 +44,26 @@ export function ApplyTemplateDialog({
   open: boolean;
   onClose: () => void;
   onApplied?: (result: ApplyKindTemplateResult) => void;
+  /** A club template (the library, L5-B): applied through `/club-templates/:id/apply`. */
+  clubTemplateId?: number;
 }) {
-  const apply = useApplyKindTemplate();
+  const applyKind = useApplyKindTemplate();
+  const applyClub = useApplyClubTemplate();
+  const apply = clubTemplateId === undefined ? applyKind : applyClub;
   const [result, setResult] = useState<ApplyKindTemplateResult | null>(null);
   const dontApplyRef = useRef<HTMLButtonElement>(null);
 
+  const done = {
+    onSuccess: (r: ApplyKindTemplateResult) => {
+      setResult(r);
+      onApplied?.(r);
+    },
+  };
+  const data = { version, expectedDrafts: waiting };
   const run = () =>
-    apply.mutate(
-      { kind, data: { version, expectedDrafts: waiting } },
-      {
-        onSuccess: (r) => {
-          setResult(r);
-          onApplied?.(r);
-        },
-      },
-    );
+    clubTemplateId === undefined
+      ? applyKind.mutate({ kind, data }, done)
+      : applyClub.mutate({ id: clubTemplateId, data }, done);
   const close = () => {
     setResult(null);
     apply.reset();

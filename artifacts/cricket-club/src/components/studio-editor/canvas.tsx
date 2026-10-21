@@ -6,10 +6,10 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
-import { layerOnSize, type LayoutWarning } from "@workspace/scorecard/kind-templates";
+import { layerOnSize, type LayoutWarning, type PageKey } from "@workspace/scorecard/kind-templates";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
-import type { FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
+import type { CardAdjustments, FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
@@ -94,6 +94,8 @@ export function EditorCanvas({
   onLayout,
   flagged = [],
   touch = false,
+  render,
+  animate = false,
 }: {
   doc: EditorDoc;
   size: CardSize;
@@ -120,6 +122,14 @@ export function EditorCanvas({
   flagged?: string[];
   /** Tablet editing: drags never scroll the page, and handles grow on touch screens. */
   touch?: boolean;
+  /**
+   * Format v2 (L5-B): the whole template document and the page to draw. The
+   * card underneath renders it, while the overlay edits `doc` (that page's
+   * layers).
+   */
+  render?: { adjustments: CardAdjustments; page: PageKey };
+  /** Play layer motion in the card underneath. */
+  animate?: boolean;
 }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -398,7 +408,9 @@ export function EditorCanvas({
         theme={theme}
         data={data}
         packId={packId}
-        adjustments={doc}
+        adjustments={render?.adjustments ?? doc}
+        page={render?.page}
+        animate={animate}
         width={width}
       />
 

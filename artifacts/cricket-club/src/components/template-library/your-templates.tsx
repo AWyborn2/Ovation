@@ -195,7 +195,7 @@ function CopyRow({
         )}
         {template.isDefault ? (
           <Button size="sm" variant="outline" asChild>
-            <Link href={`/admin/social/templates/${template.kind}`}>Edit</Link>
+            <Link href={`/admin/social/templates/edit/${template.id}`}>Edit</Link>
           </Button>
         ) : (
           <Button

@@ -1,5 +1,5 @@
 import { Image as ImageIcon, List, Plus, Type } from "lucide-react";
-import { kindFields } from "@workspace/scorecard/kind-templates";
+import { kindFields, pageTokens, type PageKey } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
 import { fieldTextLayer, logoLayer, photoLayer, rowsLayer, templateFields } from "./template-ops";
@@ -20,6 +20,7 @@ export function FieldsPanel({
   textSelected,
   onInsert,
   onAdd,
+  page,
 }: {
   kind: string;
   size: CardSize;
@@ -29,9 +30,15 @@ export function FieldsPanel({
   textSelected: boolean;
   onInsert: (key: string) => void;
   onAdd: (layer: FreeLayer) => void;
+  /** A format v2 page: its own fields and lists (a carousel page binds its own). */
+  page?: PageKey;
 }) {
   const cat = kindFields(kind);
-  if (!cat) return <p className="text-sm text-[var(--ed-ink2)]">This card has no live fields.</p>;
+  const pageCat = page ? pageTokens(kind, page) : null;
+  const fields = pageCat ? pageCat.fields : templateFields(kind);
+  const repeats = pageCat ? pageCat.repeats : (cat?.repeats ?? []);
+  if (!cat && !pageCat)
+    return <p className="text-sm text-[var(--ed-ink2)]">This card has no live fields.</p>;
   return (
     <div className="flex flex-col gap-5">
       <section>
@@ -44,7 +51,7 @@ export function FieldsPanel({
             : "Click a field to add it as a text box, or select a text box first to insert it."}
         </p>
         <ul className="flex flex-col gap-1.5">
-          {templateFields(kind).map((f) => (
+          {fields.map((f) => (
             <li key={f.key}>
               <button
                 type="button"
@@ -88,13 +95,13 @@ export function FieldsPanel({
           Junior cards never show the photo, whatever the template holds.
         </p>
       </section>
-      {cat.repeats.length > 0 && (
+      {repeats.length > 0 && (
         <section>
           <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--ed-ink2)]">
             Lists
           </h3>
           <div className="flex flex-col gap-1.5">
-            {cat.repeats.map((r) => (
+            {repeats.map((r) => (
               <button
                 key={r.key}
                 type="button"
