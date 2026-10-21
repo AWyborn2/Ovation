@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CapturedElement, PackCapture } from "@workspace/scorecard/pack-capture";
 import type { TemplateLayerV2 } from "@workspace/scorecard/kind-templates";
-import { mapCapture } from "./map";
+import { Tree, alignTrees, fillOverBox, joinRuns, mapCapture, readingOrder } from "./map";
 import { mergePage, mergeSizes } from "./merge";
 
 const TEXT = {
@@ -143,7 +143,8 @@ describe("mapCapture", () => {
       lineHeight: 1,
       color: "#F5F2E8",
     });
-    expect(t.box).toEqual({ x: 5.56, y: 18.52, w: 55.56, h: 5.56 });
+    // The pack's box, with room to spare on the right (left-aligned text).
+    expect(t.box).toEqual({ x: 5.56, y: 18.52, w: 57.22, h: 5.56 });
   });
 
   it("maps sentinel images to the photo and to token image layers", () => {
@@ -213,5 +214,82 @@ describe("merging", () => {
       (l) => l.kind === "text" && (l as { content?: string }).content === "NO PHOTO ART",
     );
     expect(art?.showWhen).toEqual({ photo: false });
+  });
+});
+
+describe("text runs and twins", () => {
+  it("joins runs with spaces, except inside brackets", () => {
+    expect(joinRuns(["(", "[[balls]]", ")"])).toBe("([[balls]])");
+    expect(joinRuns(["[[grade]]", "· vs", "[[opponent]]", "· RD", "[[round]]"])).toBe(
+      "[[grade]] · vs [[opponent]] · RD [[round]]",
+    );
+  });
+
+  it("reads runs line by line, left to right", () => {
+    const run = (t: string, x: number, y: number) => ({ text: t, box: { x, y, w: 10, h: 24 } });
+    // A wrapped meta line: the parent's own runs sit between its child spans.
+    const order = readingOrder([
+      run("· vs", 824, 801),
+      run("· RD", 733, 825),
+      run("[[grade]]", 64, 801),
+      run("[[opponent]]", 64, 825),
+      run("[[round]]", 824, 825),
+    ]).map((r) => r.text);
+    expect(order).toEqual(["[[grade]]", "· vs", "[[opponent]]", "· RD", "[[round]]"]);
+  });
+
+  it("finds each element's worst-case twin by content, when one render has an extra element", () => {
+    const cap = (elements: CapturedElement[], fields: Record<string, string>) =>
+      ({ elements, fields }) as unknown as PackCapture;
+    id = 0;
+    const sentinel = cap(
+      [
+        el(null, "div", [0, 0, 1080, 1080]),
+        el(0, "div", [60, 260, 200, 24], { text: text("RAISED THE BAT", [60, 260, 200, 24]) }),
+        el(0, "div", [60, 690, 300, 50], { text: text("[[playerName]]", [60, 690, 300, 50]) }),
+      ],
+      { playerName: "QC ZC" },
+    );
+    id = 0;
+    const worst = cap(
+      [
+        el(null, "div", [0, 0, 1080, 1080]),
+        el(0, "div", [60, 260, 212, 24], { text: text("RAISED THE BAT", [60, 260, 212, 24]) }),
+        // The shirt-number chip only the worst case fills.
+        el(0, "div", [60, 640, 83, 42], {
+          data: { shirtNumber: "1" },
+          text: text("#100", [70, 640, 60, 37]),
+        }),
+        el(0, "div", [60, 690, 884, 100], { text: text("Marton Dacalgusr", [60, 690, 660, 110]) }),
+      ],
+      { playerName: "Marton Dacalgusr" },
+    );
+    const twins = alignTrees(new Tree(sentinel), new Tree(worst));
+    expect(twins.get(1)?.box.w).toBe(212);
+    expect(twins.get(2)?.box.w).toBe(884);
+  });
+});
+
+describe("text fill over a taller box", () => {
+  it("moves a vertical gradient's stops into the element's band", () => {
+    const style = {
+      textFill: {
+        type: "linear" as const,
+        stops: [
+          { color: "#ffffff", at: 0 },
+          { color: "#000000", at: 100 },
+        ],
+      },
+    };
+    // The element is 215 px tall at 297; the layer holds the glyphs, 386 px from 211.
+    const out = fillOverBox(style, { y: 297, h: 215 }, { y: 211, h: 386 });
+    expect(out.textFill).toEqual({
+      type: "linear",
+      stops: [
+        { color: "#ffffff", at: 22.28 },
+        { color: "#000000", at: 77.98 },
+      ],
+    });
+    expect(fillOverBox(style, { y: 0, h: 100 }, { y: 0, h: 100 })).toBe(style);
   });
 });

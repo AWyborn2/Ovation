@@ -50,6 +50,24 @@ describe("colours", () => {
     );
     expect(tokeniseColour("rgba(0, 0, 0, 0)", undefined, palette)).toBeNull();
   });
+
+  it("finds a token at partial alpha, when it moved with the palette at the same alpha", () => {
+    const palette = {
+      a: { "--gold": "rgb(211, 23, 90)" },
+      b: { "--gold": "rgb(123, 201, 67)" },
+    };
+    expect(
+      tokeniseColour(
+        "color(srgb 0.827451 0.0901961 0.352941 / 0.45)",
+        "color(srgb 0.482353 0.788235 0.262745 / 0.45)",
+        palette,
+      ),
+    ).toEqual({ value: "#D3175A73", moved: true, translucent: { token: "--gold", alpha: 0.45 } });
+    // A different alpha in palette B isn't the same paint.
+    expect(
+      tokeniseColour("rgba(211, 23, 90, 0.45)", "rgba(123, 201, 67, 0.2)", palette)?.translucent,
+    ).toBeUndefined();
+  });
 });
 
 describe("gradients, shadows and transforms", () => {

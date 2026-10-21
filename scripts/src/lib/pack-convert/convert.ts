@@ -115,6 +115,9 @@ const pick = (
   );
 
 /** Convert one template kind of a pack. Null when the pack draws none of its pages. */
+/** Below this share of text elements twinned, a worst-case capture is another design. */
+const GEOMETRY_COVERAGE = 0.6;
+
 export function convertKind(packFiles: VariantCaptures[], kind: string): KindConversion | null {
   const templateKind = templateKindFor(kind);
   const pages: PageReport[] = [];
@@ -161,8 +164,22 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
       const baseB = pick(base, size, { content: "sentinel", palette: "B" });
       const aliases = aliasesFor(templateKind, page);
       // Boxes from the worst-case render of the same variant and size.
-      const geometry = pick(base, size, { content: "worst", palette: "A" })?.capture ?? null;
-      const mapped = mapCapture(a.capture, { paletteB: baseB?.capture, aliases, geometry });
+      const worstCap = pick(base, size, { content: "worst", palette: "A" });
+      let mapped = mapCapture(a.capture, {
+        paletteB: baseB?.capture,
+        aliases,
+        geometry: worstCap?.capture ?? null,
+      });
+      // A worst case that draws another design (its content flips the pack's layout) has
+      // no boxes for this one: the sentinel render's boxes are used instead.
+      const otherDesign = (mapped.geometryCoverage ?? 1) < GEOMETRY_COVERAGE;
+      if (otherDesign) {
+        mapped = mapCapture(a.capture, { paletteB: baseB?.capture, aliases });
+        mapped.polish.push({
+          element: -1,
+          what: "the worst-case render draws another design: boxes sized from the sentinel render",
+        });
+      }
       // Colour checks need the aligned palette-B twin, captured at the standard preset.
       const stdA = pick(standard, size, { content: "sentinel", palette: "A" });
       const stdB = pick(standard, size, { content: "sentinel", palette: "B" });
@@ -190,8 +207,7 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
         ...(noPhoto ? { photo: pair(standard, noPhoto) } : {}),
         ...(noSponsors ? { sponsors: pair(standard, noSponsors) } : {}),
       });
-      const worst = pick(base, size, { content: "worst", palette: "A" }) ?? a;
-      renders[size] = worst.render;
+      renders[size] = (!otherDesign && worstCap ? worstCap : a).render;
     }
     if (!maps.length) continue;
     const merged = mergePage(maps, `${page}-`);
