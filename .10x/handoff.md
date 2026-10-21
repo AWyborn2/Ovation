@@ -1,5 +1,58 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** SDE (and Senior Engineer for review)
+**Feature:** social-template-library
+
+## Context
+
+- **Plan:** `.10x/decisions/engineering-manager/social-template-library.md`, with every task, its estimate, the dependencies, the four streams and the file ownership rules.
+- **Design:** `.10x/decisions/architect/social-template-library.md` and ADR-011. **Requirements:** `.10x/decisions/product-manager/social-template-library.md`.
+- **Delivery rule (Ash):** every PR branches off `wyborn21/social-template-library-pm` and targets it. A session merges its own slice PR into that branch once CI is green. Never target `main`, and never merge #411: Ash merges it after his final pass.
+- **Decided with Ash on 21 Oct 2026:**
+  - All seven converted looks gate the single merge, each signed off by Ash.
+  - At most four sessions at once; each stream keeps one PR open.
+  - The structured-output spike runs now, alongside L1-A (about US$20 approved).
+  - Ash tests at milestones M1–M5 on the local dev stack, not PR by PR. Every PR body still carries a "Test on the dev stack" script.
+
+## Start here, in order
+
+1. **Sync `main` into the integration branch.** It's 2 commits behind (#412).
+2. **Start three sessions together:**
+   - **Stream 1, L1-A format foundation (T1.1–T1.6).** Push T1.1's types early: the spike lines up with them.
+   - **Stream 2, the spike (S.0–S.4).** S.0 needs Ash to put `ANTHROPIC_API_KEY` in `.local/dev-stack/secrets.json` (in the `player-stats-pre-post-digital-96e790` worktree). The session makes `run.mjs` pass it and `FIGMA_ACCESS_TOKEN` through. Never print or commit either. Then L1-B, whose T1.11 uses the spike's decision.
+   - **Stream 4, L4-A1 converter capture (T4.1–T4.3).** It needs nothing new. It builds `scripts/src/lib/harness-browser.ts`, which L2-B reuses.
+3. **Stream 3 starts when L1-A merges:** L3-A store, then L3-B pipeline switch.
+4. Then follow each stream's sequence in the plan. Stream 1 frees up first and takes whatever is behind.
+
+## Traps
+
+- **The migration is 0058, not 0057.** #412 took 0057. Take the next free number when L3-A opens and renumber at each `main` sync.
+- **`scripts/src/ensure-constraints.ts` re-creates `card_templates_kind_unique`** after every migrate, in CI and in `post-merge.sh`. L3-A (T3.1) must swap it for `card_templates_kind_default_unique`, or a second copy of any kind fails.
+- **Bundles must be imported**, not read from disk at runtime: the API ships as one esbuild file.
+- **The dev stack has no object storage.** T3.12 adds the dev-only filesystem store behind `LOCAL_OBJECT_STORAGE_DIR`; `run.mjs` sets it.
+- **Structured outputs reject recursive schemas.** Nested stacks are unrolled, flattened or left to the prompt, as the spike decides.
+- **Shared files:** follow the ownership table in the plan. Regenerate codegen at rebase; never hand-merge generated files.
+- **Don't edit `.10x/status.md` in slice PRs.** Four sessions would collide; the milestone sync PRs update it.
+
+## Required tests
+
+- v1 documents render byte-identically (T1.6, T3.22)
+- tenant isolation for copies, defaults, adopt, updates and previews (T3.5, T3.11, T6.1)
+- no junior content in previews (T3.10, T1.15) or AI input (T7.9, T7.10)
+- the bundle fit job in CI as a required check (T2.8, T2.9)
+- the pilot carry-over (T3.2, T3.15, T3.22)
+
+## For the release (L9, Ash)
+
+- 0058 runs in Production SQL **right before** the republish, not earlier: today's code relies on the index it drops, and the publish's schema sync doesn't run its `UPDATE`.
+- New secrets: `ANTHROPIC_API_KEY` and `FIGMA_ACCESS_TOKEN`.
+- The runbook (T9.2) and the checks in `apply-production-sql.mjs` (T9.3) carry the steps.
+
+## Handoff History
+
+### Previous (Architect → Engineering Manager, social-template-library)
+
 **From:** Principal Architect
 **To:** Engineering Manager
 **Feature:** social-template-library
@@ -54,8 +107,6 @@ L1 format and renderer → L2 fit check → L3 store and pipeline (0057, bundles
   - no junior content in previews or AI input
   - the bundle fit job in CI
   - the pilot carry-over
-
-## Handoff History
 
 ### Previous (PM → Architect, social-template-library)
 
