@@ -16,6 +16,7 @@ import {
   type StarterId,
 } from "@workspace/scorecard/kind-templates";
 import { PackCard } from "@/components/pack-card";
+import { FitCheckButton } from "@/components/template-library/fit-check-button";
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import type { ShareCardInput } from "@/lib/share-card";
 import { previewSample, stressSample } from "@/lib/kind-templates/samples";
@@ -49,6 +50,10 @@ function KindRow({
           </span>
         )}
       </h3>
+      {/* The fit check every template passes before it's listed (L2-B). */}
+      <div className="mb-2">
+        <FitCheckButton key={`${starter}/${kind}`} document={doc} kind={kind} />
+      </div>
       <div className="flex flex-wrap items-end gap-3">
         {TEMPLATE_SIZE_ORDER.map((size) => (
           <figure key={size} className="m-0">

@@ -34,6 +34,7 @@ import type { CardContent, MatchDayFixtureContent, ResultContent } from "../card
 import type { MatchSummaryInput } from "../match-summary-types";
 import type { FitVariant } from "./fit-matrix";
 import type { PageKey } from "./format";
+import { PHOTO_TOKEN, tokenContentField } from "./page-tokens";
 import { templateKindFor } from "./pages";
 import { WORST_CASE_NAMES } from "./worst-case-names";
 
@@ -675,6 +676,10 @@ export function worstCaseCard(
   const content = contentFor(contentKind, variant.page, variant.junior, rows, image);
   const visible = presetFields(contentKind, variant.preset ?? "full");
   const input = contentInput(content, visible, { hasCoverPhoto: photo });
+  // The card's photo is attached only while its field shows, as the drafts and
+  // the Weekend Carousel attach it (`<page>.photo`, the cover, the background).
+  const photoField = tokenContentField(templateKindFor(contentKind), variant.page, PHOTO_TOKEN);
+  if (photoField && !visible.has(photoField)) data.photoUrl = null;
   return {
     kind: templateKindFor(contentKind),
     page: variant.page,

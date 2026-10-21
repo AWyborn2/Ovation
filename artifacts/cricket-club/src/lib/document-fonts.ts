@@ -9,6 +9,7 @@
  *
  * The curated card fonts (`card-fonts.ts`) still load as before.
  */
+import { flattenLayers, normaliseDocument } from "@workspace/scorecard/kind-templates";
 import type { CardAdjustments } from "@/lib/pack-render";
 
 export type CatalogueEntry = { family: string; category: string; weights: number[] };
@@ -56,7 +57,12 @@ export function documentFontUsage(
     weights.add(style?.fontWeight ?? DEFAULT_WEIGHT);
     usage.set(family, weights);
   };
-  for (const layer of adj?.layers ?? []) {
+  // Every page of the document (format v2), groups' children included.
+  const doc = normaliseDocument(adj, "");
+  const layers = Object.values(doc.pages).flatMap((page) =>
+    flattenLayers(page?.layers ?? []),
+  ) as unknown as NonNullable<CardAdjustments["layers"]>;
+  for (const layer of layers) {
     if (layer.hidden) continue;
     add(layer.style);
     for (const cell of layer.rows?.cells ?? []) add({ ...layer.style, ...cell.style });
