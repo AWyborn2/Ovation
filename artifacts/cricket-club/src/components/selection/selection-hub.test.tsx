@@ -942,3 +942,114 @@ describe("pool in the admin side panel (selection hub redesign)", () => {
     expect(pool.className).toMatch(/rounded-lg/);
   });
 });
+
+describe("tap-to-fill (selection hub redesign)", () => {
+  const putSlots = (requests: { method: string; body: unknown }[], sideId: number) => {
+    const put = requests.find((r) => r.method === "PUT");
+    const change = (
+      put?.body as {
+        changes: { selectionId: number; slots: { memberId: number | null }[] }[];
+      }
+    )?.changes.find((c) => c.selectionId === sideId);
+    return change?.slots.map((s) => s.memberId);
+  };
+
+  it("an open slot opens a ranked search; arrows and Enter fill it", async () => {
+    const requests = stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    fireEvent.click(screen.getByRole("button", { name: "Fill A Grade slot 10" }));
+    const pop = await screen.findByTestId("fill-popover");
+    const input = within(pop).getByRole("combobox", { name: "Find a player" });
+    await waitFor(() => expect(document.activeElement).toBe(input));
+    // Available first, then no reply, then unavailable.
+    expect(
+      within(pop)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual([
+      expect.stringContaining("Pool Player"),
+      expect.stringContaining("Quiet Q"),
+      expect.stringContaining("R. Pike"),
+    ]);
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(within(pop).getAllByRole("option")[1].getAttribute("aria-selected")).toBe("true");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(putSlots(requests, 1)?.[9]).toBe(902));
+    expect(screen.queryByTestId("fill-popover")).toBeNull();
+  });
+
+  it("typing narrows the list; Escape closes without a change", async () => {
+    const requests = stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    fireEvent.click(screen.getByRole("button", { name: "Fill A Grade slot 10" }));
+    const pop = await screen.findByTestId("fill-popover");
+    const input = within(pop).getByRole("combobox", { name: "Find a player" });
+    fireEvent.change(input, { target: { value: "pike" } });
+    expect(within(pop).getAllByRole("option")).toHaveLength(1);
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("fill-popover")).toBeNull());
+    expect(requests.some((r) => r.method === "PUT")).toBe(false);
+  });
+
+  it("finalised and read-only sides offer no Find player", async () => {
+    stubApi(makeBoard());
+    renderHub();
+    const final = await screen.findByTestId("side-3");
+    expect(within(final).queryByRole("button", { name: /^Fill / })).toBeNull();
+    expect(
+      within(screen.getByTestId("side-4")).queryByRole("button", { name: /^Fill / }),
+    ).toBeNull();
+  });
+
+  it("on desktop a pool player opens Add to…, with full and finalised sides disabled", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string) =>
+        ({
+          matches: true,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    const requests = stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    const pool = screen.getByRole("complementary", { name: "Player pool" });
+    fireEvent.click(within(pool).getByTestId("chip-900"));
+    const pop = await screen.findByTestId("fill-popover");
+    const options = within(pop).getAllByRole("option");
+    const row = (grade: string) => options.find((o) => o.textContent?.startsWith(grade))!;
+    expect(row("B Grade").getAttribute("aria-disabled")).toBe("true");
+    expect(row("B Grade").textContent).toMatch(/Full/);
+    expect(row("C Grade").textContent).toMatch(/Finalised/);
+    // A side the caller can't edit isn't offered.
+    expect(row("D Grade")).toBeUndefined();
+    expect(row("A Grade").textContent).toMatch(/Into slot 10/);
+    fireEvent.click(row("A Grade"));
+    await waitFor(() => expect(putSlots(requests, 1)?.[9]).toBe(900));
+  });
+
+  it("Add to…'s More options opens the full Move dialog", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string) =>
+        ({
+          matches: true,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("side-1");
+    const pool = screen.getByRole("complementary", { name: "Player pool" });
+    fireEvent.click(within(pool).getByTestId("chip-900"));
+    const pop = await screen.findByTestId("fill-popover");
+    fireEvent.click(within(pop).getByRole("button", { name: "More options…" }));
+    expect(await screen.findByRole("dialog", { name: "Pool Player" })).toBeTruthy();
+  });
+});
