@@ -18,6 +18,8 @@
  *   --map-only               map the captures already in --out (no new capture)
  *   --no-check               skip the fit and pixel-diff renders
  *   --shots                  save each pack / template screenshot pair (`<look>/shots/`)
+ *   --style-preview          the harness build carries a local preview of L1-D's styles: the
+ *                            report says pixel match was measured with it
  *   --base-url=<url>         use a running web app (the dev server) instead of a build
  *   --skip-build             reuse the last `vite build --mode capture`
  *   --concurrency=<n>        pages capturing at once (default 3)
@@ -95,6 +97,7 @@ export interface ConvertOptions {
   concurrency: number;
   list: boolean;
   shots: boolean;
+  stylePreview: boolean;
 }
 
 const list = (v: string | undefined) =>
@@ -122,6 +125,7 @@ const KNOWN = [
   "concurrency",
   "list",
   "shots",
+  "style-preview",
 ];
 
 export function parseArgs(argv: readonly string[]): ConvertOptions {
@@ -165,6 +169,7 @@ export function parseArgs(argv: readonly string[]): ConvertOptions {
     concurrency,
     list: args.has("list"),
     shots: args.has("shots"),
+    stylePreview: args.has("style-preview"),
   };
 }
 
@@ -539,9 +544,12 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
         generatedAt,
         results: compareResults(files),
         validation,
-        rendererNote:
-          "Pixel match reflects the v2 renderer as it stands: until L1-C (stacks, conditions) and L1-D " +
-          "(fills, borders, shadows, vectors, motion) land, styled shapes and vectors don't draw, so scores are low.",
+        rendererNote: opts.stylePreview
+          ? "Pixel match was measured with a local preview of L1-D's style seam (fills, borders, " +
+            "shadows, text fills and vectors as format v2 defines them). Until L1-D lands, the " +
+            "integration renderer paints every shape in the accent."
+          : "Pixel match reflects the v2 renderer as it stands: until L1-D (fills, borders, " +
+            "shadows, vectors, motion) lands, styled shapes and vectors don't draw, so scores are low.",
       })}\n`,
     );
     const pages = conversions.reduce((n, c) => n + c.pages.length, 0);
