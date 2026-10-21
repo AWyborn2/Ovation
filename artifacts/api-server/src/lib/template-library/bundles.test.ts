@@ -88,7 +88,7 @@ describe("syncBundles", () => {
     const v2 = fixtureTemplate("milestone", { version: 2, name: "Milestone v2" });
     const s = await syncBundles([fixtureBundle(LOOK, [v2, fixtureTemplate("matchDay")])]);
     expect(s.versionsAdded).toBe(1);
-    let { template, versions } = await rowsFor(`${LOOK}/milestone`);
+    const { template, versions } = await rowsFor(`${LOOK}/milestone`);
     expect(template?.currentVersion).toBe(2);
     expect(template?.name).toBe("Milestone v2");
     expect(versions.map((v) => v.version).sort()).toEqual([1, 2]);
@@ -101,8 +101,8 @@ describe("syncBundles", () => {
         reason: expect.stringContaining("version bump"),
       }),
     ]);
-    ({ versions } = await rowsFor(`${LOOK}/milestone`));
-    expect(versions.find((v) => v.version === 2)!.bundleHash).toBe(v2.hash);
+    const after = (await rowsFor(`${LOOK}/milestone`)).versions;
+    expect(after.find((v) => v.version === 2)!.bundleHash).toBe(v2.hash);
   });
 
   it("skips an invalid template and unlists one removed from the bundles", async () => {
