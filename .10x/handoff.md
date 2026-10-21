@@ -1,5 +1,60 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Architect
+**Feature:** social-template-library
+
+## Context
+
+- Requirements: `.10x/decisions/product-manager/social-template-library.md`, approved by Ash on
+  21 Oct 2026. It follows the 21 Oct revision of `match-day-carousel-content.md`, which hides the
+  four legacy packs pending this library, and builds on card-kind-templates (ADR-001..003).
+- Two template systems exist today: code-built packs on the ADR-010 content contract (every
+  carousel, presets, capacity, CI fit grid), and kind-template layer documents (editor, starters,
+  warnings gate). The `KIND_TEMPLATES` switch is on for one pilot club in production. The
+  library ends with one format, layer documents bound to `CardContent` slots, and the code packs
+  retire.
+
+## Requirements in priority order
+
+1. P0, release 1:
+   - One template format with preset visibility, declared capacity per size and preset, and
+     carousel page types.
+   - A per-template fit check that does the CI fit grid's job on data.
+   - Library store: many templates per kind, looks, versions, Ovation or club authorship,
+     listed or unlisted.
+   - Converter plus designer polish for Club Kit, Broadcast Dark, Duotone, Gold Foil, Bold Type,
+     Neon Night and Sunset; the three layer starters added as they are.
+   - Browse with kind and size filters and previews in the club's own data.
+   - Use as is or edit a copy; one default per kind; adopt a look; any template for a single
+     manual post.
+   - Pilot club's kind templates carried over with no visible change. Warnings gate unchanged.
+2. P1, release 1: "update available" on copies; motion mapped to per-layer animations where
+   possible.
+3. P1, release 2: design from scratch and publish to every club. Publishing requires the
+   automatic checks (fit, identity swapped for slots, flagged literal names, image rights);
+   author and Ovation can unlist; club credit and use count; style tags.
+4. P2, release 2: sorting, favourites, reporting.
+
+## Acceptance (from the success criteria)
+
+- New and converted templates go live with no app code change. Polish averages 5 half-days or
+  less per converted pack.
+- Zero auto-posts with a layout warning. Zero truncation or overflow across every listed
+  template, preset and size.
+- Saved carousels and drafts render as before, or as Club Kit for a hidden pack.
+- A club's private copies never show to another club. A published template carries no
+  author data and no junior or private-player data.
+
+## Open questions for the architect
+
+These are listed at the end of the requirements file: carousel page types in one template,
+shared and private storage against `card_templates` and its one-per-kind index, converter input
+and mapping, where the fit check runs, and what becomes of `KIND_TEMPLATES`, `PACK_TO_STARTER`
+and `LEGACY_PACK_IDS`. Next ADR is 011.
+
+## Previous handoff
+
 **From:** SDE (P7, remaining kinds on builders)
 **To:** SDE session for P8 (new pack), then P9 (retire four packs)
 **Feature:** match-day-carousel-content
