@@ -15,6 +15,9 @@ import { TextStyleBar } from "./text-style-bar";
 const input =
   "h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm text-[var(--ed-ink)]";
 
+/** Row fields that hold an image address (a player's photo), so a cell can show the image. */
+export const isImageRowField = (key: string): boolean => /photo$/i.test(key);
+
 const VARIANT_LABEL: Record<string, string> = {
   club: "Your club's row",
   junior: "Junior rows",
@@ -24,6 +27,8 @@ const VARIANT_LABEL: Record<string, string> = {
  * The list element's settings (R8): the row height and gap, the cells across
  * the row (which field, where, how wide, styled), and per-variant styles such
  * as the club's own row on a ladder. One row is styled; it repeats per row.
+ * A cell can show its field as text, as the row's photo (a photo per player)
+ * or as a plain panel behind other cells.
  */
 export function RowsPanel({
   doc,
@@ -118,9 +123,16 @@ export function RowsPanel({
           className="grid h-7 w-7 place-items-center rounded-full border border-[var(--ed-line)]"
           onClick={() => {
             const unused = fields.find((f) => !spec.cells.some((c) => c.field === f.key));
+            const field = (unused ?? fields[0])?.key ?? "";
             const cells = [
               ...spec.cells,
-              { field: (unused ?? fields[0])?.key ?? "", x: 80, w: 20, style: { fontSize: 3.6 } },
+              {
+                field,
+                x: 80,
+                w: 20,
+                ...(isImageRowField(field) ? { show: "image" as const } : {}),
+                style: { fontSize: 3.6 },
+              },
             ];
             onEdit(setRows(doc, layer.id, { cells }));
             setCellIndex(cells.length - 1);
@@ -135,9 +147,16 @@ export function RowsPanel({
           <select
             aria-label="Cell field"
             value={cell.field}
-            onChange={(e) =>
-              onEdit(setRowsCell(doc, layer.id, cellIndex, { field: e.target.value }))
-            }
+            onChange={(e) => {
+              const field = e.target.value;
+              // A photo field shows as the photo; another field can't.
+              const show = isImageRowField(field)
+                ? "image"
+                : cell.show === "image"
+                  ? undefined
+                  : cell.show;
+              onEdit(setRowsCell(doc, layer.id, cellIndex, { field, show }));
+            }}
             className={input}
           >
             {fields.map((f) => (
@@ -176,6 +195,66 @@ export function RowsPanel({
             />
             %
           </label>
+          <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+            Show as
+            <select
+              aria-label="Cell shows"
+              value={cell.show ?? "text"}
+              onChange={(e) =>
+                onEdit(
+                  setRowsCell(doc, layer.id, cellIndex, {
+                    show:
+                      e.target.value === "text"
+                        ? undefined
+                        : (e.target.value as "image" | "backdrop"),
+                  }),
+                )
+              }
+              className={input}
+            >
+              <option value="text">Text</option>
+              {isImageRowField(cell.field) && <option value="image">Photo</option>}
+              <option value="backdrop">Panel</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+            Top
+            <input
+              type="number"
+              aria-label="Cell top"
+              min={0}
+              max={100}
+              value={cell.y ?? 0}
+              onChange={(e) =>
+                onEdit(
+                  setRowsCell(doc, layer.id, cellIndex, {
+                    y: Math.min(100, Math.max(0, num(e.target.value, cell.y ?? 0))),
+                  }),
+                )
+              }
+              className={cn(input, "w-16")}
+            />
+            %
+          </label>
+          <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+            Height
+            <input
+              type="number"
+              aria-label="Cell height"
+              min={1}
+              max={100}
+              value={cell.h ?? 100}
+              onChange={(e) =>
+                onEdit(
+                  setRowsCell(doc, layer.id, cellIndex, {
+                    h: Math.min(100, Math.max(1, num(e.target.value, cell.h ?? 100))),
+                  }),
+                )
+              }
+              className={cn(input, "w-16")}
+            />
+            %
+          </label>
           <button
             type="button"
             aria-label="Remove this cell"
@@ -191,6 +270,12 @@ export function RowsPanel({
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
+      )}
+
+      {cell?.show === "image" && (
+        <p className="mt-2 text-xs text-[var(--ed-ink2)]">
+          Each row shows its own photo here (a junior card only where the family has allowed it).
+        </p>
       )}
 
       {variants.length > 0 && cell && (

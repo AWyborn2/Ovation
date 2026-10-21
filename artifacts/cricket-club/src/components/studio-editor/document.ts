@@ -180,6 +180,21 @@ export function selectionFor(doc: EditorDoc, id: string, inside: string | null):
     .map((l) => l.id);
 }
 
+/**
+ * Add `ids` (each with its whole group, unless editing inside it) to the
+ * selection, or replace it; keeps first-selected order for "match to first".
+ */
+export function selectMany(
+  doc: EditorDoc,
+  selection: string[],
+  ids: string[],
+  inside: string | null,
+  additive: boolean,
+): string[] {
+  const picked = ids.flatMap((id) => selectionFor(doc, id, inside));
+  return [...new Set([...(additive ? selection : []), ...picked])];
+}
+
 /** Shift-click: toggle `id` (and its group) in the selection. */
 export function toggleSelection(
   doc: EditorDoc,

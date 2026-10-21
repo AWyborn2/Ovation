@@ -128,6 +128,52 @@ describe("editor page", () => {
     expect(screen.getByTestId("multi-bounds").textContent).toContain("Group · 2 layers");
   });
 
+  it("Ctrl+C / Ctrl+V pastes an offset copy, one undo step each", async () => {
+    window.sessionStorage.clear();
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Elements" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add square" }));
+    const x0 = parseFloat((layerBoxes()[0] as HTMLElement).style.left);
+    ctrl("c");
+    ctrl("v");
+    expect(layerBoxes()).toHaveLength(2);
+    expect(parseFloat((layerBoxes()[1] as HTMLElement).style.left)).toBeCloseTo(x0 + 2);
+    // The paste is selected, so a second paste cascades from the first.
+    ctrl("v");
+    expect(parseFloat((layerBoxes()[2] as HTMLElement).style.left)).toBeCloseTo(x0 + 4);
+    ctrl("z");
+    expect(layerBoxes()).toHaveLength(2);
+    // Cut takes the selection off and keeps it on the clipboard.
+    fireEvent.pointerDown(layerBoxes()[1] as HTMLElement);
+    fireEvent.pointerUp(layerBoxes()[1] as HTMLElement);
+    ctrl("x");
+    expect(layerBoxes()).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Paste" }));
+    expect(layerBoxes()).toHaveLength(2);
+  });
+
+  it("ctrl-click multi-selects and Arrange aligns the layers in one undo step", async () => {
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Elements" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add square" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add pill" }));
+    fireEvent.keyDown(window, { key: "ArrowDown", shiftKey: true });
+    const [a, b] = Array.from(layerBoxes()) as HTMLElement[];
+    expect(a.style.top).not.toBe(b.style.top);
+    fireEvent.pointerDown(a);
+    fireEvent.pointerUp(a);
+    fireEvent.pointerDown(b, { ctrlKey: true });
+    fireEvent.pointerUp(b);
+    expect(screen.getByTestId("multi-bounds").textContent).toContain("2 selected");
+    fireEvent.click(screen.getByRole("button", { name: "Arrange" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Align top edges" }));
+    const [a2, b2] = Array.from(layerBoxes()) as HTMLElement[];
+    expect(a2.style.top).toBe(b2.style.top);
+    ctrl("z");
+    const [a3, b3] = Array.from(layerBoxes()) as HTMLElement[];
+    expect(a3.style.top).not.toBe(b3.style.top);
+  });
+
   it("overriding a field and saving writes the adjustments once", async () => {
     const requests = open();
     fireEvent.change(await screen.findByRole("textbox", { name: /Player name/i }), {

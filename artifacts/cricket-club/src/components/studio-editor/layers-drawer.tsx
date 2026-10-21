@@ -15,6 +15,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { useRef } from "react";
 import type { FreeLayer } from "@/lib/pack-render";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,9 @@ const ICON: Record<FreeLayer["kind"], LucideIcon> = {
 
 /**
  * The layers drawer (Social Studio U16): free layers top-most first, each with
- * its type icon, name, and eye and lock buttons. Clicking a row selects it.
+ * its type icon, name, and eye and lock buttons. Clicking a row selects it;
+ * ctrl- (or cmd-) click adds or removes it, shift-click selects the run of
+ * rows from the last one clicked.
  */
 export function LayersDrawer({
   layers,
@@ -44,12 +47,28 @@ export function LayersDrawer({
 }: {
   layers: FreeLayer[];
   selection: string[];
-  onSelect: (id: string) => void;
+  /** `replace` for a plain click, `toggle` for ctrl/cmd, `add` for a shift range. */
+  onSelect: (ids: string[], mode: "replace" | "toggle" | "add") => void;
   onToggleHidden: (id: string) => void;
   onToggleLocked: (id: string) => void;
   onClose: () => void;
 }) {
   const rows = [...layers].reverse();
+  const anchor = useRef<string | null>(null);
+  const pick = (id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }) => {
+    const from = anchor.current ? rows.findIndex((r) => r.id === anchor.current) : -1;
+    if (e.shiftKey && from >= 0) {
+      const to = rows.findIndex((r) => r.id === id);
+      const [a, b] = from < to ? [from, to] : [to, from];
+      onSelect(
+        rows.slice(a, b + 1).map((r) => r.id),
+        "add",
+      );
+      return;
+    }
+    anchor.current = id;
+    onSelect([id], e.ctrlKey || e.metaKey || e.shiftKey ? "toggle" : "replace");
+  };
   return (
     <aside
       aria-label="Layers"
@@ -86,7 +105,8 @@ export function LayersDrawer({
                 <button
                   type="button"
                   className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
-                  onClick={() => onSelect(l.id)}
+                  aria-pressed={on}
+                  onClick={(e) => pick(l.id, e)}
                 >
                   <Icon className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
                   <span className={cn("truncate", l.hidden && "opacity-50")}>

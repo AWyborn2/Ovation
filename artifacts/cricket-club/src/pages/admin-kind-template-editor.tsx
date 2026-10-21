@@ -55,6 +55,7 @@ import {
   layersOf,
   nudge,
   reorderLayers,
+  selectMany,
   selectionFor,
   setElementProp,
   toggleSelection,
@@ -75,6 +76,20 @@ import {
   SIZE_LABEL,
   starterExport,
 } from "@/components/studio-editor/template-ops";
+import {
+  align,
+  distribute,
+  matchSize,
+  selectAll,
+  unitCount,
+} from "@/components/studio-editor/arrange";
+import {
+  copyLayers,
+  pasteLayers,
+  readClipboard,
+  writeClipboard,
+} from "@/components/studio-editor/clipboard";
+import { isImageRowField } from "@/components/studio-editor/rows-panel";
 import { usePlatformAdmin } from "@/lib/platform-admin-auth";
 import { actionForKey, isTypingTarget } from "@/components/studio-editor/shortcuts";
 import { BLANK_PACK_ID, packFieldValues, packNativeSize, type FreeLayer } from "@/lib/pack-render";
@@ -238,6 +253,8 @@ function TemplateEditor({
   const [conflict, setConflict] = useState<KindTemplateConflict | null>(null);
   const [applyFor, setApplyFor] = useState<{ version: number; waiting: number } | null>(null);
   const [fontFailures, setFontFailures] = useState<string[]>([]);
+  const [canPaste, setCanPaste] = useState(() => readClipboard("template") !== null);
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
   // Platform admins author the starter designs here (T6.2).
   const platformAdmin = !!usePlatformAdmin().data;
   const exportStarter = () => {
@@ -290,6 +307,7 @@ function TemplateEditor({
   const edit = useCallback((next: EditorDoc) => {
     setHistory((h) => commit(h, next));
     setAddPrompt(null);
+    setPasteNote(null);
   }, []);
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
     if (!done) {
@@ -330,16 +348,49 @@ function TemplateEditor({
     setSelection([]);
   };
 
+  // Copy and paste (studio-editor-multiselect): the clipboard survives other
+  // sizes and other templates in this tab; a paste lands on this size and
+  // offers the others, like an add.
+  // The canvas around the card, where a drag starts a marquee.
+  const canvasArea = useRef<HTMLElement>(null);
+  const stateRef = useRef({ doc, selection, format, inside });
+  stateRef.current = { doc, selection, format, inside };
+  const copySelection = () => {
+    const s = stateRef.current;
+    const clip = copyLayers(s.doc, s.format, s.selection, "template");
+    if (!clip) return false;
+    writeClipboard(clip);
+    setCanPaste(true);
+    return true;
+  };
+  const pasteClipboard = () => {
+    const clip = readClipboard("template");
+    const s = stateRef.current;
+    if (!clip) return;
+    const r = pasteLayers(s.doc, clip, s.format, { kind, onlyOnSize: true });
+    if (r.ids.length) {
+      edit(r.doc);
+      setSelection(r.ids);
+      setAddPrompt({ ids: r.ids, from: s.format });
+    }
+    setPasteNote(
+      r.skipped
+        ? `${r.skipped} copied ${r.skipped === 1 ? "layer uses" : "layers use"} fields this card doesn't have, so ${r.skipped === 1 ? "it wasn't" : "they weren't"} pasted.`
+        : null,
+    );
+  };
+
   // Keyboard shortcuts (ignored while typing).
-  const stateRef = useRef({ doc, selection, format });
-  stateRef.current = { doc, selection, format };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target)) return;
       const action = actionForKey(e);
       if (!action) return;
-      e.preventDefault();
       const s = stateRef.current;
+      // With nothing to copy or paste, the browser's own copy and paste still work.
+      if ((action.type === "copy" || action.type === "cut") && !s.selection.length) return;
+      if (action.type === "paste" && !readClipboard("template")) return;
+      e.preventDefault();
       switch (action.type) {
         case "undo":
           setHistory((h) => undo(h));
@@ -381,10 +432,27 @@ function TemplateEditor({
         case "ungroup":
           if (s.selection.length) edit(ungroup(s.doc, s.selection));
           break;
+        case "copy":
+          copySelection();
+          break;
+        case "cut":
+          if (copySelection()) {
+            edit(removeFromSize(s.doc, s.selection, s.format));
+            setSelection([]);
+          }
+          break;
+        case "paste":
+          pasteClipboard();
+          break;
+        case "selectAll":
+          setSelection(selectAll(s.doc, s.format));
+          setInside(null);
+          break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads live state through stateRef
   }, [edit]);
 
   const save = useSaveKindTemplate();
@@ -461,6 +529,9 @@ function TemplateEditor({
   const layerName = (id: string | undefined) =>
     layersOf(doc).find((l) => l.id === id)?.name ?? "a text box";
   const keyField = keyFieldOf(kind);
+  const listPhotoField = (kindFields(kind)?.repeats ?? []).some((r) =>
+    r.fields.some((f) => isImageRowField(f.key)),
+  );
 
   const native = packNativeSize(format);
   const panelW = panel ? 340 : 0;
@@ -569,6 +640,7 @@ function TemplateEditor({
           </EditorPanel>
         )}
         <main
+          ref={canvasArea}
           className="relative flex min-w-0 flex-1 flex-col items-center overflow-auto bg-[var(--ed-canvas)] p-6 [align-items:safe_center]"
           style={{
             backgroundImage: "radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px)",
@@ -607,6 +679,15 @@ function TemplateEditor({
               onGroup={() => edit(groupLayers(doc, selection).doc)}
               onUngroup={() => edit(ungroup(doc, selection))}
               onReorder={(move) => edit(reorderLayers(doc, selection, move))}
+              onCopy={copySelection}
+              onPaste={pasteClipboard}
+              canPaste={canPaste}
+              arrange={{
+                count: unitCount(doc, format, selection, inside),
+                onAlign: (to) => edit(align(doc, format, selection, to, inside)),
+                onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
+                onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
+              }}
             />
             {single?.kind === "text" && (
               <TextStyleBar
@@ -666,6 +747,10 @@ function TemplateEditor({
               } else setSelection(selectionFor(doc, lid, inside));
             }}
             onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
+            marqueeArea={canvasArea}
+            onSelectMany={(ids, additive) =>
+              setSelection((s) => selectMany(doc, s, ids, inside, additive))
+            }
             onEnterGroup={(lid) => {
               setInside(layers.find((l) => l.id === lid)?.group ?? null);
               setSelection([lid]);
@@ -685,6 +770,19 @@ function TemplateEditor({
             )}
             {!latest && !stress && (
               <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
+            )}
+            {pasteNote && (
+              <p role="status" className="text-amber-300">
+                {pasteNote}
+              </p>
+            )}
+            {layers.filter((l) => l.kind === "photo").length > 1 && (
+              <p role="status" className="text-[var(--ed-ink2)]">
+                Every Card photo shows the same photo.
+                {listPhotoField
+                  ? " For a photo per player, select the list and set a cell to show Photo in its settings."
+                  : ""}
+              </p>
             )}
             {shownWarnings.length > 0 && (
               <ul role="status" aria-label="Needs a look" className="flex flex-col gap-1">
@@ -742,7 +840,15 @@ function TemplateEditor({
             <LayersDrawer
               layers={layers}
               selection={selection}
-              onSelect={(lid) => setSelection([lid])}
+              onSelect={(ids, mode) =>
+                setSelection((s) =>
+                  mode === "replace"
+                    ? ids
+                    : mode === "toggle"
+                      ? toggleSelection(doc, s, ids[0], inside)
+                      : [...new Set([...s, ...ids])],
+                )
+              }
               onToggleHidden={(lid) => {
                 const l = layers.find((x) => x.id === lid);
                 if (l) edit(updateLayer(doc, lid, { hidden: !l.hidden }));
