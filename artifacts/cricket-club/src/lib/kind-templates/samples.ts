@@ -2,9 +2,12 @@
  * Preview data for the template editor (plan KTD17, U3): the kind's sample
  * card, and a "stress test" variant that shows overflow and spill before a
  * template is saved — long names, emptied optional lines, and nine-row lists.
+ * List rows without a photo (Team of the Week's players) get the stand-in
+ * photo, so a list's photo cell shows where it sits while designing.
  */
 import type { ShareCardInput } from "@/lib/share-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
+import { PREVIEW_PHOTO } from "./use-template-data";
 
 /** A name long enough to overflow most name boxes. */
 export const STRESS_NAME = "Christopher Van Der Merwe-Abercrombie";
@@ -46,12 +49,27 @@ function stress(value: unknown, key: string | null): unknown {
   return value;
 }
 
+/** List rows that carry an empty photo get the stand-in one (a new object; the sample is shared). */
+function withRowPhotos(input: ShareCardInput): ShareCardInput {
+  let changed = false;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (Array.isArray(v) && v.some((r) => isRecord(r) && "photoUrl" in r && !r.photoUrl)) {
+      changed = true;
+      out[k] = v.map((r) =>
+        isRecord(r) && "photoUrl" in r && !r.photoUrl ? { ...r, photoUrl: PREVIEW_PHOTO } : r,
+      );
+    } else out[k] = v;
+  }
+  return changed ? (out as ShareCardInput) : input;
+}
+
 /** The sample card for a kind, speaking as the club when a name is given. */
 export function previewSample(
   kind: ShareCardInput["kind"],
   clubName?: string | null,
 ): ShareCardInput {
-  return sampleCardInput(kind, clubName);
+  return withRowPhotos(sampleCardInput(kind, clubName));
 }
 
 /** The kind's sample with long names, empty optional lines and nine-row lists. */
@@ -59,5 +77,7 @@ export function stressSample(
   kind: ShareCardInput["kind"],
   clubName?: string | null,
 ): ShareCardInput {
-  return stress(structuredClone(sampleCardInput(kind, clubName)), null) as ShareCardInput;
+  return withRowPhotos(
+    stress(structuredClone(sampleCardInput(kind, clubName)), null) as ShareCardInput,
+  );
 }
