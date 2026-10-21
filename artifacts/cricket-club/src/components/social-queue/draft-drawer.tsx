@@ -275,7 +275,9 @@ export function DraftDrawer({
           </div>
         )}
 
-        {carousel && <CarouselPreview key={current.id} carousel={carousel} />}
+        {carousel && (
+          <CarouselPreview key={current.id} carousel={carousel} document={current.adjustments} />
+        )}
         {invalidCarousel && (
           <p role="alert" className="text-sm text-destructive">
             This saved carousel has an invalid composition or unknown built-in design pack. It

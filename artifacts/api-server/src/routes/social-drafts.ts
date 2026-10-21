@@ -58,7 +58,14 @@ import {
   draftPublishing,
   publicationsByDraft,
 } from "../lib/publishing/publications";
-import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
+import { BLANK_PACK_ID, templatedDesignFor, type TemplatedDesign } from "../lib/kind-templates";
+import {
+  assembleCarouselDocument,
+  designFromRef,
+  setTemplateKind,
+} from "../lib/template-library/draw";
+import { TemplateLibraryError } from "../lib/template-library/errors";
+import { resolveDraftPack } from "../lib/draft-enrich";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
@@ -447,7 +454,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { cardInput, templateId } = parsed.data;
+    const { cardInput, templateId, templateRef } = parsed.data;
     if (typeof cardInput.kind !== "string" || !cardInput.kind) {
       res.status(400).json({ error: "cardInput.kind is required" });
       return;
@@ -496,7 +503,8 @@ router.post(
       }
       // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
       // Set on the saved payload itself: a version 2 read returns a normalised copy.
-      if (carousel.packId === undefined && packId !== null) {
+      // A templated (version 3) carousel names a template, never a pack.
+      if (carousel.version !== 3 && carousel.packId === undefined && packId !== null) {
         carousel.packId = packId;
         (cardInput.weekendCarousel as Record<string, unknown>).packId = packId;
       }
@@ -519,6 +527,15 @@ router.post(
         return;
       }
     }
+    if (
+      templateRef !== undefined &&
+      (carousel || templateId !== undefined || parsed.data.adjustments)
+    ) {
+      res.status(400).json({
+        error: "A picked template can't be combined with a saved layout or a carousel payload.",
+      });
+      return;
+    }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {
       const template = await loadEditorTemplate(tenantId, templateId);
@@ -532,10 +549,42 @@ router.post(
     // With card kind templates on, a card started from the club's design
     // (not a blank canvas, a saved template or a supplied layout) copies the
     // kind's template (ADR-002).
-    const templated =
-      !carousel && templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
-        ? await templatedDesignFor(tenantId, cardInput.kind, packId)
-        : null;
+    // A template picked for this one post (ADR-011) is copied as it is; the
+    // club's default doesn't change. A templated (version 3) carousel stores
+    // its assembled document.
+    let templated: TemplatedDesign | null = null;
+    try {
+      if (templateRef !== undefined) {
+        templated = await designFromRef(tenantId, cardInput.kind, templateRef);
+      } else if (carousel?.version === 3) {
+        const assembled = await assembleCarouselDocument(tenantId, carousel, {
+          templateRef: carousel.templateRef,
+          packId: await resolveDraftPack(tenantId, setTemplateKind(carousel.setType)),
+        });
+        // The set may have fallen back to the pack look; the payload names what drew it.
+        (cardInput.weekendCarousel as Record<string, unknown>).templateRef = assembled.templateRef;
+        templated = {
+          packId: BLANK_PACK_ID,
+          adjustments: assembled.document,
+          templateVersion: assembled.templateRef.version,
+          templateRef: assembled.templateRef,
+          layoutCheckPending: true,
+        };
+      } else if (
+        !carousel &&
+        templateId === undefined &&
+        adjustments === null &&
+        packId !== BLANK_PACK_ID
+      ) {
+        templated = await templatedDesignFor(tenantId, cardInput.kind, packId);
+      }
+    } catch (err) {
+      if (err instanceof TemplateLibraryError) {
+        res.status(err.status).json(err.body);
+        return;
+      }
+      throw err;
+    }
     const [row] = await db
       .insert(socialDraftsTable)
       .values({

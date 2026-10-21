@@ -1,6 +1,6 @@
 /**
  * Templated drafts (plan 2026-10-07-002, U7; ADR-002, ADR-003): automated
- * drafts copy their kind's template when the switch is on, render on the blank
+ * drafts copy their kind's default template (every club, ADR-011), render on the blank
  * base with lists split by row capacity, owe a layout check before automation
  * can touch them, and an automatic post that now needs a look is stopped.
  * Real-DB integration test (needs DATABASE_URL); the still renderer and object
@@ -153,16 +153,7 @@ const upsert = (key: string, cardInput: Record<string, unknown>) =>
   });
 
 describe("automated drafts copy the kind template (T7.1)", () => {
-  it("with the switch off, a new draft keeps its pack", async () => {
-    delete process.env.KIND_TEMPLATES;
-    const { draft: d } = await upsert("off", { kind: "milestone", playerName: "Sam", value: 100 });
-    expect(d.templateVersion).toBeNull();
-    expect(d.packId).not.toBe("blank");
-    expect(d.layoutCheckPending).toBe(false);
-  });
-
-  it("with the switch on, a new draft copies the template and owes a layout check", async () => {
-    process.env.KIND_TEMPLATES = String(tenantId);
+  it("a new draft copies the default template, records it, and owes a layout check", async () => {
     const { action, draft: d } = await upsert("on", {
       kind: "milestone",
       playerName: "Sam",
@@ -177,11 +168,12 @@ describe("automated drafts copy the kind template (T7.1)", () => {
       .from(cardTemplatesTable)
       .where(and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, "kind")));
     expect(template.baseKind).toBe("milestone");
+    expect(template.isKindDefault).toBe(true);
     expect(d.adjustments).toEqual(template.adjustments);
+    expect(d.templateRef).toEqual({ copyId: template.id, version: 1 });
   });
 
   it("a data refresh keeps the copy and asks for a new layout check", async () => {
-    process.env.KIND_TEMPLATES = "all";
     const first = await upsert("refresh", { kind: "milestone", playerName: "Sam", value: 100 });
     await db
       .update(socialDraftsTable)
@@ -193,8 +185,7 @@ describe("automated drafts copy the kind template (T7.1)", () => {
     expect(second.draft.adjustments).toEqual(ROWS_DOC);
   });
 
-  it("a kind with no template keeps its pack even with the switch on", async () => {
-    process.env.KIND_TEMPLATES = "all";
+  it("a kind templates don't cover keeps its pack", async () => {
     const { draft: d } = await upsert("unknown", { kind: "notAKind" });
     expect(d.templateVersion).toBeNull();
   });

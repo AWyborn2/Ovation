@@ -215,6 +215,9 @@ importers:
       '@workspace/scorecard':
         specifier: workspace:*
         version: link:../../lib/scorecard
+      '@workspace/template-bundles':
+        specifier: workspace:*
+        version: link:../../lib/template-bundles
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -657,6 +660,8 @@ importers:
         specifier: ^4.1.7
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@25.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.23.13)(yaml@2.8.4)
 
+  lib/template-bundles: {}
+
   scripts:
     dependencies:
       '@workspace/db':
@@ -671,6 +676,9 @@ importers:
       pg:
         specifier: 'catalog:'
         version: 8.23.0
+      puppeteer-core:
+        specifier: ^25.10.0
+        version: 25.10.0
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5

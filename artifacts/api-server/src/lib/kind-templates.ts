@@ -1,8 +1,11 @@
 /**
  * Card kind templates (plan 2026-10-07-002, U5; ADR-002, ADR-003).
  *
- * One versioned template per tenant and card kind, stored as a
- * `card_templates` row with `source = 'kind'`. Templates are created lazily —
+ * One versioned DEFAULT template per tenant and card kind, stored as a
+ * `card_templates` row with `source = 'kind'` and `is_kind_default` (the
+ * template library, ADR-011, lets a club hold other copies of a kind; these
+ * routes and the draft pipeline read and write only the default until L3-B and
+ * L5-C replace them). Templates are created lazily —
  * from the starter the club's current pack maps to — the first time a draft
  * of the kind needs one, or explicitly from a starter in the editor. Saves are
  * rejected when another admin saved first. Applying a version copies it into
@@ -11,19 +14,27 @@
  * Kind template rows never set `defaultForKinds`: that column carries the
  * club's pack choice, and `clearDefaultKinds` ignores `source` (KTD5).
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   db,
   adminsTable,
   cardTemplatesTable,
+  libraryTemplatesTable,
+  libraryTemplateVersionsTable,
   socialDraftsTable,
   type CardTemplateRow,
+  type DraftTemplateRefColumn,
   type SocialDraftRow,
+  type TemplateFitReportColumn,
+  type TemplateFitStatus,
 } from "@workspace/db";
 import {
+  CLUB_KIT_LOOK,
   emptySizes,
   isRetiredPack,
   kindFields,
+  lookForPack,
+  lookTemplateSlug,
   startingDocument,
   starterForPack,
   templateDocumentErrors,
@@ -31,7 +42,6 @@ import {
   type StarterDocument,
 } from "@workspace/scorecard/kind-templates";
 import { recordDraftRevision } from "./draft-revisions";
-import { kindTemplatesEnabled } from "./kind-templates-switch";
 
 export const KIND_SOURCE = "kind";
 
@@ -109,17 +119,21 @@ export function presentKindTemplate(
   return view;
 }
 
-/** A tenant's kind templates. */
+/** A tenant's default kind templates, one per kind. */
 export async function listKindTemplates(tenantId: number): Promise<CardTemplateRow[]> {
   return db
     .select()
     .from(cardTemplatesTable)
     .where(
-      and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, KIND_SOURCE)),
+      and(
+        eq(cardTemplatesTable.tenantId, tenantId),
+        eq(cardTemplatesTable.source, KIND_SOURCE),
+        eq(cardTemplatesTable.isKindDefault, true),
+      ),
     );
 }
 
-/** A tenant's template for a kind, or null when it has none yet. */
+/** A tenant's default template for a kind, or null when it has none yet. */
 export async function loadKindTemplate(
   tenantId: number,
   kind: string,
@@ -133,6 +147,7 @@ export async function loadKindTemplate(
         eq(cardTemplatesTable.tenantId, tenantId),
         eq(cardTemplatesTable.source, KIND_SOURCE),
         eq(cardTemplatesTable.baseKind, kind),
+        eq(cardTemplatesTable.isKindDefault, true),
       ),
     );
   return row ?? null;
@@ -182,10 +197,73 @@ const conflict = async (row: CardTemplateRow) =>
   });
 
 /**
- * The tenant's template for a kind, created from the starter its current pack
- * maps to when it has none (KTD11). Insert-or-ignore on the partial unique
- * index makes concurrent callers converge on one row. A template replacing a
- * retired pack records it so the Studio can say so (R19).
+ * What a club's lazy default for a kind is copied from: its pack's look's
+ * template for the kind (Club Kit's when that look lacks the kind), at the
+ * template's current version. Until the converted looks are in the library
+ * (L4-B), the TypeScript starter its pack maps to stands in, with no origin.
+ */
+async function lazyDefaultSource(
+  kind: string,
+  currentPackId: string | null,
+): Promise<{
+  name: string;
+  document: unknown;
+  originTemplateId: number | null;
+  originVersion: number | null;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReportColumn | null;
+}> {
+  const look = lookForPack(currentPackId, kind);
+  const slugs = [...new Set([lookTemplateSlug(look, kind), lookTemplateSlug(CLUB_KIT_LOOK, kind)])];
+  const found = await db
+    .select({
+      id: libraryTemplatesTable.id,
+      slug: libraryTemplatesTable.slug,
+      name: libraryTemplatesTable.name,
+      version: libraryTemplateVersionsTable.version,
+      document: libraryTemplateVersionsTable.document,
+      fitStatus: libraryTemplateVersionsTable.fitStatus,
+      fitReport: libraryTemplateVersionsTable.fitReport,
+    })
+    .from(libraryTemplatesTable)
+    .innerJoin(
+      libraryTemplateVersionsTable,
+      and(
+        eq(libraryTemplateVersionsTable.templateId, libraryTemplatesTable.id),
+        eq(libraryTemplateVersionsTable.version, libraryTemplatesTable.currentVersion),
+      ),
+    )
+    .where(inArray(libraryTemplatesTable.slug, slugs));
+  const pick = slugs.map((slug) => found.find((f) => f.slug === slug)).find(Boolean);
+  if (pick) {
+    return {
+      name: pick.name,
+      document: structuredClone(pick.document),
+      originTemplateId: pick.id,
+      originVersion: pick.version,
+      fitStatus: pick.fitStatus,
+      fitReport: pick.fitReport,
+    };
+  }
+  return {
+    name: `${kind} template`,
+    document: startingDocument(starterForPack(currentPackId), kind),
+    originTemplateId: null,
+    originVersion: null,
+    fitStatus: "pass",
+    fitReport: null,
+  };
+}
+
+/**
+ * The tenant's default template for a kind (ADR-011 §3 "Lazy default"),
+ * created when it has none by copying its pack's look (`PACK_TO_LOOK`).
+ *
+ * A kind with pre-library rows (no origin) but no default promotes the oldest
+ * of them instead of seeding a new one, so the pilot keeps its own designs
+ * even if the release's data step was missed (T3.15). Insert-or-ignore on the
+ * one-default-per-kind index makes concurrent callers converge on one row. A
+ * template replacing a retired pack records it so the Studio can say so (R19).
  */
 export async function ensureKindTemplate(
   tenantId: number,
@@ -194,21 +272,51 @@ export async function ensureKindTemplate(
 ): Promise<CardTemplateRow> {
   const existing = await loadKindTemplate(tenantId, kind);
   if (existing) return existing;
-  const starter = starterForPack(currentPackId);
-  await db
-    .insert(cardTemplatesTable)
-    .values({
-      tenantId,
-      name: `${kind} template`,
-      source: KIND_SOURCE,
-      baseKind: kind,
-      cardKinds: [kind],
-      adjustments: startingDocument(starter, kind),
-      version: 1,
-      updatedAt: new Date(),
-      replacedPackId: isRetiredPack(currentPackId) ? currentPackId : null,
-    })
-    .onConflictDoNothing();
+  const [orphan] = await db
+    .select({ id: cardTemplatesTable.id })
+    .from(cardTemplatesTable)
+    .where(
+      and(
+        eq(cardTemplatesTable.tenantId, tenantId),
+        eq(cardTemplatesTable.source, KIND_SOURCE),
+        eq(cardTemplatesTable.baseKind, kind),
+        isNull(cardTemplatesTable.originTemplateId),
+      ),
+    )
+    .orderBy(asc(cardTemplatesTable.id))
+    .limit(1);
+  if (orphan) {
+    try {
+      await db
+        .update(cardTemplatesTable)
+        .set({ isKindDefault: true })
+        .where(eq(cardTemplatesTable.id, orphan.id));
+    } catch (err) {
+      // Another caller made a default first.
+      if ((err as { code?: string }).code !== "23505") throw err;
+    }
+  } else {
+    const source = await lazyDefaultSource(kind, currentPackId);
+    await db
+      .insert(cardTemplatesTable)
+      .values({
+        tenantId,
+        name: source.name,
+        source: KIND_SOURCE,
+        baseKind: kind,
+        cardKinds: [kind],
+        isKindDefault: true,
+        adjustments: source.document,
+        version: 1,
+        updatedAt: new Date(),
+        replacedPackId: isRetiredPack(currentPackId) ? currentPackId : null,
+        originTemplateId: source.originTemplateId,
+        originVersion: source.originVersion,
+        fitStatus: source.fitStatus,
+        fitReport: source.fitReport,
+      })
+      .onConflictDoNothing();
+  }
   const row = await loadKindTemplate(tenantId, kind);
   if (!row) throw new Error(`kind template for ${kind} vanished after insert`);
   return row;
@@ -236,6 +344,7 @@ export async function startKindTemplate(
         source: KIND_SOURCE,
         baseKind: kind,
         cardKinds: [kind],
+        isKindDefault: true,
         adjustments: document,
         version: 1,
         updatedAt: new Date(),
@@ -321,70 +430,89 @@ export async function applyKindTemplate(
     const template = await loadKindTemplate(tenantId, kind, tx);
     if (!template) throw notFound("This card kind has no template yet.");
     if (template.version !== version) throw await conflict(template);
-    // Lock the unposted drafts: a publish racing this apply waits for it, and
-    // a draft already posted is simply not selected (R18).
-    const candidates = await tx
-      .select()
-      .from(socialDraftsTable)
-      .where(
-        and(
-          eq(socialDraftsTable.tenantId, tenantId),
-          inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
-          sql`${socialDraftsTable.cardInput}->>'kind' = ${kind}`,
-        ),
-      )
-      .for("update");
-    let changed = 0;
-    for (const draft of candidates) {
-      if (draftKind(draft) !== kind) continue;
-      await recordDraftRevision(draft, "template", tx);
-      await tx
-        .update(socialDraftsTable)
-        .set({
-          adjustments: structuredClone(template.adjustments ?? { layers: [] }),
-          packId: "blank",
-          templateVersion: template.version,
-          designEditedAt: null,
-          layoutWarnings: null,
-          layoutCheckPending: true,
-        })
-        .where(eq(socialDraftsTable.id, draft.id));
-      changed += 1;
-    }
-    const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
-    return { changed, skipped };
+    return applyTemplateToDrafts(tx, template, expectedDrafts);
   });
 }
 
-/** The design columns a new draft takes from its kind's template. */
+/**
+ * Copy a club template's current document into the unposted drafts of its
+ * kind, inside `tx` (the caller has checked the version the admin saw). Each
+ * draft records the template it came from (`template_ref`, ADR-011).
+ */
+export async function applyTemplateToDrafts(
+  tx: Tx,
+  template: CardTemplateRow,
+  expectedDrafts?: number,
+): Promise<{ changed: number; skipped: number }> {
+  const tenantId = template.tenantId;
+  const kind = template.baseKind ?? "";
+  // Lock the unposted drafts: a publish racing this apply waits for it, and
+  // a draft already posted is simply not selected (R18).
+  const candidates = await tx
+    .select()
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
+        sql`${socialDraftsTable.cardInput}->>'kind' = ${kind}`,
+      ),
+    )
+    .for("update");
+  let changed = 0;
+  for (const draft of candidates) {
+    if (draftKind(draft) !== kind) continue;
+    await recordDraftRevision(draft, "template", tx);
+    await tx
+      .update(socialDraftsTable)
+      .set({
+        adjustments: structuredClone(template.adjustments ?? { layers: [] }),
+        packId: "blank",
+        templateVersion: template.version,
+        templateRef: { copyId: template.id, version: template.version },
+        designEditedAt: null,
+        layoutWarnings: null,
+        layoutCheckPending: true,
+      })
+      .where(eq(socialDraftsTable.id, draft.id));
+    changed += 1;
+  }
+  const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
+  return { changed, skipped };
+}
+
+/** The design columns a new draft takes from a template. */
 export type TemplatedDesign = {
   packId: typeof BLANK_PACK_ID;
   adjustments: unknown;
   templateVersion: number;
+  templateRef: DraftTemplateRefColumn;
   layoutCheckPending: true;
 };
 
+/** A draft's design copied from one of the club's templates (ADR-002). */
+export function designFromCopy(template: CardTemplateRow): TemplatedDesign {
+  return {
+    packId: BLANK_PACK_ID,
+    adjustments: structuredClone(template.adjustments ?? { layers: [] }),
+    templateVersion: template.version,
+    templateRef: { copyId: template.id, version: template.version },
+    layoutCheckPending: true,
+  };
+}
+
 /**
- * The design a new draft of `kind` starts with when card kind templates are
- * on for the club (KTD18): a copy of the kind's template, created from the
- * starter its current pack maps to if it doesn't exist yet (ADR-002). The
- * draft owes a layout check before automation can touch it (ADR-003). Null
- * when the switch is off or the kind has no template — the draft keeps its
- * pack.
+ * The design a new draft of `kind` starts with (ADR-011: every club, no
+ * switch): a copy of the kind's default template, created from the club's
+ * pack look if it doesn't exist yet. The draft owes a layout check before
+ * automation can touch it (ADR-003). Null for a kind templates don't cover —
+ * the draft keeps its pack.
  */
 export async function templatedDesignFor(
   tenantId: number,
   kind: unknown,
   currentPackId: string | null,
 ): Promise<TemplatedDesign | null> {
-  if (typeof kind !== "string" || !isTemplateKind(kind) || !kindTemplatesEnabled(tenantId)) {
-    return null;
-  }
-  const template = await ensureKindTemplate(tenantId, kind, currentPackId);
-  return {
-    packId: BLANK_PACK_ID,
-    adjustments: structuredClone(template.adjustments ?? { layers: [] }),
-    templateVersion: template.version,
-    layoutCheckPending: true,
-  };
+  if (typeof kind !== "string" || !isTemplateKind(kind)) return null;
+  return designFromCopy(await ensureKindTemplate(tenantId, kind, currentPackId));
 }

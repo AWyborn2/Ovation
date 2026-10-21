@@ -1,8 +1,9 @@
 /**
  * Card kind template API (plan 2026-10-07-002, U5). Admin-only and
- * tenant-scoped. Every route answers 404 "not enabled" until the
- * KIND_TEMPLATES release switch includes the club, except the list, which
- * reports `enabled: false` so the Studio can keep showing design packs.
+ * tenant-scoped. Since the template library (ADR-011) every club uses kind
+ * templates, and these routes are a thin wrapper over each kind's DEFAULT
+ * club template until the Studio moves to `/club-templates` (L5-C), which
+ * removes them. The list still reports `enabled: true` for today's Studio.
  */
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -13,7 +14,6 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
-import { kindTemplatesEnabled } from "../lib/kind-templates-switch";
 import {
   applyKindTemplate,
   dismissKindTemplateNotice,
@@ -34,10 +34,6 @@ const router: IRouter = Router();
 /** The tenant and kind for a kind route, or null after answering 404. */
 function scope(req: RequestWithAdmin, res: Response): { tenantId: number; kind: string } | null {
   const tenantId = getTenantId(req);
-  if (!kindTemplatesEnabled(tenantId)) {
-    res.status(404).json({ error: "Card kind templates aren't switched on for this club." });
-    return null;
-  }
   const kind = String(req.params.kind ?? "");
   if (!isTemplateKind(kind)) {
     res.status(404).json({ error: "Unknown card kind." });
@@ -72,10 +68,6 @@ async function present(tenantId: number, kind: string, res: Response): Promise<v
 
 router.get("/kind-templates", requireAdmin, async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  if (!kindTemplatesEnabled(tenantId)) {
-    res.json({ enabled: false, templates: [] });
-    return;
-  }
   const [rows, counts] = await Promise.all([
     listKindTemplates(tenantId),
     waitingDraftCounts(tenantId),

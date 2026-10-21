@@ -79,6 +79,25 @@ describe("EditorStarters", () => {
     expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "broadcast-dark" });
   });
 
+  it("Open in editor makes the draft from a picked template instead of the pack (ADR-011)", async () => {
+    const requests = stubApi();
+    renderAt(
+      <EditorStarters
+        input={century}
+        packId="broadcast-dark"
+        templateRef={{ libraryTemplateId: 7, version: 2 }}
+        inputFor={() => signing}
+      />,
+      "/admin/social/create",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    expect(posted(requests)[0].body).toEqual({
+      cardInput: century,
+      templateRef: { libraryTemplateId: 7, version: 2 },
+    });
+  });
+
   it("Blank canvas starts a card with the blank pack", async () => {
     const { requests } = mount();
     fireEvent.click(screen.getByRole("button", { name: /blank canvas/i }));

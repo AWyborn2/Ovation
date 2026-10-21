@@ -7,6 +7,7 @@
  */
 import type { CardAdjustments } from './cardAdjustments';
 import type { CreateSocialDraftRequestCardInput } from './createSocialDraftRequestCardInput';
+import type { TemplateRef } from './templateRef';
 
 export interface CreateSocialDraftRequest {
   /**
@@ -24,4 +25,5 @@ export interface CreateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
+  templateRef?: TemplateRef;
 }

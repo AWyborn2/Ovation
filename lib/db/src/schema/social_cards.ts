@@ -13,8 +13,14 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
+import { tenantsTable } from "./tenants";
 import { adminsTable } from "./admins";
 import { clubPhotosTable } from "./club_photos";
+import {
+  libraryTemplatesTable,
+  type TemplateFitReportColumn,
+  type TemplateFitStatus,
+} from "./template_library";
 
 /**
  * Layout warnings per card size from a draft's last check render (card kind
@@ -170,7 +176,12 @@ export const cardTemplatesTable = pgTable(
   "card_templates",
   {
     id: serial("id").primaryKey(),
-    tenantId: tenantIdColumn(),
+    // A club's templates go with the club (migration 0060): every new draft now
+    // creates its kind's default template, so the rows are the club's own config.
+    tenantId: integer("tenant_id")
+      .notNull()
+      .default(1)
+      .references(() => tenantsTable.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     // Which ShareCardInput["kind"] values this template is ASSIGNED to (the asset
     // types it may be used for). Empty = applies to every card kind.
@@ -226,19 +237,46 @@ export const cardTemplatesTable = pgTable(
     // until an admin dismisses it.
     replacedPackId: text("replaced_pack_id"),
     noticeDismissedAt: timestamp("notice_dismissed_at", { withTimezone: true }),
+    // Template library (ADR-011, migration 0059). A club may hold many kind
+    // templates ("copies") per kind; exactly one per kind is its default. Kind
+    // rows never use `isDefault` / `defaultForKinds`, which carry the pack choice.
+    isKindDefault: boolean("is_kind_default").notNull().default(false),
+    // The library template and version a copy came from; null for the club's
+    // own designs (the pilot's rows, and copies whose origin was deleted).
+    originTemplateId: integer("origin_template_id").references(() => libraryTemplatesTable.id, {
+      onDelete: "set null",
+    }),
+    originVersion: integer("origin_version"),
+    // Set by the first saved edit to the document: the copy is then standalone
+    // and never offered an update. Using, taking an update or setting it as the
+    // default never sets it.
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    // The fit check on this copy. Defaults to 'pass' only so rows from before the
+    // library read correctly; the app always sets it when it writes.
+    fitStatus: text("fit_status").$type<TemplateFitStatus>().notNull().default("pass"),
+    fitReport: jsonb("fit_report").$type<TemplateFitReportColumn>(),
   },
   (t) => ({
     uniqPack: uniqueIndex("card_templates_pack_unique")
       .on(t.tenantId, t.source, t.packId, t.packVariant)
       .where(sql`source = 'pack'`),
-    // One kind template per tenant and card kind; lazy creation inserts or ignores.
-    uniqKind: uniqueIndex("card_templates_kind_unique")
+    // One DEFAULT kind template per tenant and card kind (ADR-011; it replaced
+    // the one-row-per-kind `card_templates_kind_unique`). Lazy default creation
+    // inserts or ignores on it.
+    uniqKindDefault: uniqueIndex("card_templates_kind_default_unique")
       .on(t.tenantId, t.baseKind)
-      .where(sql`source = 'kind'`),
+      .where(sql`source = 'kind' and is_kind_default`),
   }),
 );
 
 export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
+
+/** `social_drafts.template_ref`: a club copy or a library template, at a version. */
+export type DraftTemplateRefColumn = {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
+};
 
 // --- Layer-based card design studio ----------------------------------------
 // A single layer in a custom layout for a BUILT-IN card kind. Unlike template
@@ -727,6 +765,10 @@ export const socialDraftsTable = pgTable(
     layoutWarnings: jsonb("layout_warnings").$type<DraftLayoutWarningsColumn>(),
     layoutCheckPending: boolean("layout_check_pending").notNull().default(false),
     designEditedAt: timestamp("design_edited_at", { withTimezone: true }),
+    // Template library (ADR-011): which template this draft's design was copied
+    // from — a club copy or a library version. Null for pack drafts and for
+    // templated drafts made before the library.
+    templateRef: jsonb("template_ref").$type<DraftTemplateRefColumn>(),
     // Posting calendar (plan 2026-10-07-003). plannedAt: when the card goes out;
     // plannedBy: "auto" (placement may move it) or "admin" (pinned — a drag, or a
     // removal to the Unscheduled tray when plannedAt is null). rollCount: times it

@@ -11,3 +11,4 @@ lib/db/migrations/
 docs/design-handoffs/
 scripts/exports/
 artifacts/cricket-club/src/lib/google-fonts-catalogue.json
+lib/template-bundles/index.ts

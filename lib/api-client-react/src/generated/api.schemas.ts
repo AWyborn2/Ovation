@@ -8455,6 +8455,15 @@ export interface UpdateSocialDraftRequest {
  */
 export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
 
+/**
+ * A template a draft or carousel is drawn with (ADR-011): one of the club's templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.
+ */
+export interface TemplateRef {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
+}
+
 export interface CreateSocialDraftRequest {
   /**
      * Optional caption supplied with a manually queued card or carousel.
@@ -8471,6 +8480,7 @@ export interface CreateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
+  templateRef?: TemplateRef;
 }
 
 export interface SaveDraftTemplateRequest {
@@ -8511,7 +8521,7 @@ export interface KindTemplateSummary {
 }
 
 export interface KindTemplateList {
-  /** Whether card kind templates are switched on for this club. */
+  /** Always true (kept for today's Studio until `/club-templates` replaces this list). */
   enabled: boolean;
   templates: KindTemplateSummary[];
 }
@@ -8565,6 +8575,188 @@ export interface KindTemplateConflict {
   updatedAt?: string | null;
   /** @nullable */
   updatedByName?: string | null;
+}
+
+/**
+ * A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.
+ */
+export interface TemplateDocument { [key: string]: unknown }
+
+export type TemplateFitStatus = typeof TemplateFitStatus[keyof typeof TemplateFitStatus];
+
+
+export const TemplateFitStatus = {
+  pending: 'pending',
+  pass: 'pass',
+  fail: 'fail',
+} as const;
+
+/**
+ * The fit check's warnings per page, size and preset; null until a check has run.
+ * @nullable
+ */
+export type TemplateFitReport = { [key: string]: unknown } | null;
+
+export interface TemplateCoverage {
+  pages: string[];
+  sizes: string[];
+}
+
+export interface LibraryLookRef {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+export type LibraryTemplateOrigin = typeof LibraryTemplateOrigin[keyof typeof LibraryTemplateOrigin];
+
+
+export const LibraryTemplateOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface LibraryTemplate {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  kind: string;
+  name: string;
+  origin: LibraryTemplateOrigin;
+  /** Ovation, or the club that published it. */
+  authorName: string;
+  look: LibraryLookRef | null;
+  /** The template's current version. */
+  version: number;
+  coverage: TemplateCoverage;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReport | null;
+  listed: boolean;
+  document: TemplateDocument;
+}
+
+export interface LibraryTemplatePage {
+  templates: LibraryTemplate[];
+  /**
+     * Pass as `cursor` for the next page; null on the last page.
+     * @nullable
+     */
+  nextCursor: number | null;
+}
+
+export interface LibraryLookTemplate {
+  id: number;
+  kind: string;
+  name: string;
+  version: number;
+  coverage: TemplateCoverage;
+}
+
+export interface LibraryLook {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  authorName: string;
+  templates: LibraryLookTemplate[];
+}
+
+export interface LibraryLookList {
+  looks: LibraryLook[];
+}
+
+export interface AdoptLookChange {
+  kind: string;
+  copyId: number;
+  /** Whether a new copy was made (else an unedited one was reused). */
+  created: boolean;
+}
+
+export type AdoptLookResultUnchangedItem = {
+  kind: string;
+  copyId: number;
+};
+
+export interface AdoptLookResult {
+  look: LibraryLookRef;
+  changed: AdoptLookChange[];
+  unchanged: AdoptLookResultUnchangedItem[];
+}
+
+export type TemplatePreviewInputSource = typeof TemplatePreviewInputSource[keyof typeof TemplatePreviewInputSource];
+
+
+export const TemplatePreviewInputSource = {
+  draft: 'draft',
+  sample: 'sample',
+} as const;
+
+export interface TemplatePreviewInput {
+  kind: string;
+  source: TemplatePreviewInputSource;
+  draftId?: number;
+  /** The draft's card input (ShareCardInput JSON); null for `sample`. */
+  input: unknown;
+}
+
+export interface ClubTemplateOrigin {
+  templateId: number;
+  /** The library version this copy was taken from. */
+  version: number;
+  name: string;
+  authorName: string;
+  look: LibraryLookRef | null;
+}
+
+export interface ClubTemplateSummary {
+  id: number;
+  kind: string;
+  name: string;
+  /** The copy's own save counter. */
+  version: number;
+  /** New drafts of this kind copy this template. */
+  isDefault: boolean;
+  basedOn: ClubTemplateOrigin | null;
+  /** The club saved changes to it, so it is its own (no update prompts). */
+  edited: boolean;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReport | null;
+  coverage: TemplateCoverage;
+  /** @nullable */
+  updatedAt: string | null;
+  /** For a default, the unposted drafts of its kind an apply would change; else 0. */
+  waitingDrafts: number;
+}
+
+export type ClubTemplate = ClubTemplateSummary & ({
+  document: TemplateDocument;
+  /** @nullable */
+  updatedByName?: string | null;
+});
+
+export interface ClubTemplateList {
+  templates: ClubTemplateSummary[];
+}
+
+export interface CreateClubTemplateRequest {
+  libraryTemplateId: number;
+  /** A library version; the current one when absent. */
+  version?: number;
+  /** Also make the copy its kind's default (Use as default). */
+  makeDefault?: boolean;
+}
+
+export interface SaveClubTemplateRequest {
+  /** The version this edit started from. */
+  baseVersion: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  document?: TemplateDocument;
 }
 
 export type LayoutWarningReason = typeof LayoutWarningReason[keyof typeof LayoutWarningReason];
@@ -8719,6 +8911,8 @@ export interface SocialDraft {
      * @nullable
      */
   templateVersion?: number | null;
+  /** The template this draft's design was copied from; null for a pack draft. */
+  templateRef?: TemplateRef | null;
   /**
      * When an admin last edited this templated draft's design by hand.
      * @nullable
@@ -11327,6 +11521,37 @@ export type ListSocialDraftsParams = {
 status?: SocialDraftStatus;
 family?: string;
 grade?: string;
+};
+
+export type ListLibraryTemplatesParams = {
+kind?: string;
+size?: ListLibraryTemplatesSize;
+/**
+ * A look's slug.
+ */
+look?: string;
+/**
+ * The previous page's `nextCursor`.
+ */
+cursor?: number;
+};
+
+export type ListLibraryTemplatesSize = typeof ListLibraryTemplatesSize[keyof typeof ListLibraryTemplatesSize];
+
+
+export const ListLibraryTemplatesSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export type GetTemplatePreviewInputParams = {
+kind: string;
+};
+
+export type ListClubTemplatesParams = {
+kind?: string;
 };
 
 export type ListClubPhotosParams = {

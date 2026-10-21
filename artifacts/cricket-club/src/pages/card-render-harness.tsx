@@ -16,6 +16,17 @@ import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
 import { ensureDocumentFonts } from "@/lib/document-fonts";
 import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
+import type { CaptureApi } from "@/lib/pack-render/capture";
+
+// The pack converter's capture (social template library, L4-A1) exists on the
+// dev server, in tests and in `vite build --mode capture` (CI) only. The mode
+// is a build-time constant, so a production build drops the capture module
+// entirely. Not `import.meta.env.DEV`: a dev server started with
+// NODE_ENV=production reports DEV false.
+const CAPTURE_ENABLED =
+  import.meta.env.MODE === "development" ||
+  import.meta.env.MODE === "test" ||
+  import.meta.env.MODE === "capture";
 
 // Metrics returned by init() so the server knows how many frames to capture.
 type HarnessMeta = {
@@ -70,7 +81,7 @@ type HarnessApi = {
   seek: (t: number) => Promise<void>;
   renderStill: (payload: { input: ShareCardInput; options: StillOptions }) => Promise<StillMeta>;
   dispose: () => void;
-};
+} & Partial<CaptureApi>; // capture: dev and CI builds only, installed just after `ready`
 
 declare global {
   interface Window {
@@ -313,6 +324,10 @@ export default function CardRenderHarness() {
     }
 
     window.__cardRenderHarness = api;
+    if (CAPTURE_ENABLED)
+      void import("@/lib/pack-render/capture").then(({ captureApi }) => {
+        if (window.__cardRenderHarness === api) Object.assign(api, captureApi());
+      });
     return () => {
       api.dispose();
       if (window.__cardRenderHarness === api) {
