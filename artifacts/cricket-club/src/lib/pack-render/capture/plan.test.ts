@@ -107,9 +107,9 @@ describe("converter capture plan (L4-A1)", () => {
     expect(card.html).not.toMatch(FIELD_MARKER_RE);
     const players = (card.input as unknown as { players: unknown[] }).players;
     expect(players).toHaveLength(12);
-    // The longest surname in the names fixture (a stand-in), as the card prints it.
-    const surname = WORST_CASE_NAMES.players[0].split(" ").slice(1).join(" ").toUpperCase();
-    expect(card.html).toContain(surname.split(" ")[0]);
+    // The longest one-word surname in the names fixture (a stand-in), as the card prints it.
+    const surname = WORST_CASE_NAMES.playersLongWord[0].split(" ").slice(-1)[0]!.toUpperCase();
+    expect(card.html).toContain(surname);
   });
 
   it("the two sentinel palettes move every brand token", () => {

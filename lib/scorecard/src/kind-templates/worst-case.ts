@@ -227,12 +227,21 @@ function result(
   });
 }
 
+/**
+ * A team list's surnames: the longest single-word surnames, and one
+ * two-word surname ("Van Der" style) on the second row. A team list prints
+ * the surname, not the whole name.
+ */
+function teamSurname(i: number): string {
+  const lastWord = (name: string) => name.split(" ").slice(-1)[0] ?? name;
+  if (i === 1) return pick(N.players, 0).split(" ").slice(-2).join(" ");
+  return i % 2 === 0 ? lastWord(pick(N.playersLongWord, i / 2)) : lastWord(pick(N.players, i));
+}
+
 function teamPlayers(n: number, junior: boolean) {
   return Array.from({ length: n }, (_, i) => {
     const privateRow = junior && i % 3 === 1;
-    const surname = privateRow
-      ? WORST.privatePlayer
-      : pick(N.players, i).split(" ").slice(1).join(" ");
+    const surname = privateRow ? WORST.privatePlayer : teamSurname(i);
     return {
       order: i === n - 1 && n >= 12 ? 12 : i + 1,
       surname: surname.toUpperCase(),
