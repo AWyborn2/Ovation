@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  emailAllTeamSheets,
   getGetSelectionBoardQueryKey,
   useFinaliseSelection,
   useGetSelectionBoard,
@@ -112,6 +113,7 @@ export default function SelectionHub() {
   const remind = useRemindSelectionNonResponders();
   const [syncingAll, setSyncingAll] = useState(false);
   const [finalisingAll, setFinalisingAll] = useState(false);
+  const [emailingAll, setEmailingAll] = useState(false);
   const confirm = useConfirm();
   const busy =
     save.isPending ||
@@ -390,6 +392,35 @@ export default function SelectionHub() {
     }
   };
 
+  /** Finalised sides on the board: what "Email all" sends. */
+  const emailReady = (view?.selections ?? []).filter((s) => s.state === "final");
+
+  // One batch for the whole board: each contact gets one email with every sheet
+  // they're due as pages of one PDF (Admin → Email lists has the send log).
+  const doEmailAll = async () => {
+    const sides = emailReady;
+    if (sides.length === 0 || emailingAll) return;
+    const ok = await confirm({
+      title: `Email ${sides.length} team ${sides.length === 1 ? "sheet" : "sheets"}?`,
+      description: `${sides.map((s) => sideLabel(s)).join(", ")}. Everyone on your ${
+        section === "junior" ? "junior" : "senior"
+      } email lists gets one email with the sheets for their teams in one PDF.`,
+      confirmText: "Email team sheets",
+    });
+    if (!ok) return;
+    setEmailingAll(true);
+    try {
+      const r = await emailAllTeamSheets({ selectionIds: sides.map((s) => s.id) });
+      const msg = `Emailing ${r.sides} team ${r.sides === 1 ? "sheet" : "sheets"} to your email lists.`;
+      say(msg);
+      toast({ description: msg });
+    } catch (e) {
+      fail(errorText(e));
+    } finally {
+      setEmailingAll(false);
+    }
+  };
+
   const doRemind = () => {
     remind.mutate(
       { data: { section } },
@@ -515,6 +546,18 @@ export default function SelectionHub() {
                 : finaliseReady.length > 0
                   ? `Finalise all (${finaliseReady.length})`
                   : "Finalise all"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy || emailingAll || emailReady.length === 0}
+              title={emailReady.length === 0 ? "No finalised side to email yet." : undefined}
+              onClick={() => void doEmailAll()}
+            >
+              {emailingAll
+                ? "Emailing…"
+                : emailReady.length > 0
+                  ? `Email all (${emailReady.length})`
+                  : "Email all"}
             </Button>
             <AddActivePlayer section={section} />
             <div

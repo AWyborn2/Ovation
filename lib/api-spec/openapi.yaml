@@ -2949,6 +2949,38 @@ paths:
         "409":
           description: The side is not finalised
 
+  /selection/email-all:
+    post:
+      operationId: emailAllTeamSheets
+      tags: [selection]
+      summary: Email every finalised side on the board to the lists covering it, one email per contact (admin or captain)
+      description: |
+        Queues the finalised sides given (the ones shown on the Selection Hub
+        board; drafts are ignored) as one batch. Each contact on a list that
+        isn't switched off and covers one of them gets a single email with all
+        the sheets they are due as pages of one PDF; contacts due the same
+        sheets share one bcc'd email. Senior and junior sheets never share an
+        email. Sending happens in the background; the send log shows it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailAllTeamSheetsBody"
+      responses:
+        "200":
+          description: How many sides were queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailAllTeamSheetsResult"
+        "400":
+          description: Invalid side ids
+        "401":
+          description: Not signed in as this club's admin or captain
+        "409":
+          description: None of the sides is finalised, or no list covers them
+
   /selection/{id}/email:
     post:
       operationId: emailTeamSheet
@@ -15917,6 +15949,25 @@ components:
           type: string
           format: date-time
 
+    EmailAllTeamSheetsBody:
+      type: object
+      required: [selectionIds]
+      properties:
+        selectionIds:
+          type: array
+          minItems: 1
+          maxItems: 60
+          items:
+            type: integer
+
+    EmailAllTeamSheetsResult:
+      type: object
+      required: [sides]
+      properties:
+        sides:
+          type: integer
+          description: Finalised sides queued
+
     EmailSend:
       type: object
       required:
@@ -15926,8 +15977,11 @@ components:
           type: integer
         listId:
           type: integer
+          nullable: true
+          description: The list sent to; null for a batch (Email all, scheduled), which spans lists
         listName:
           type: string
+          description: The list's name, or what sent a batch ("Email all team sheets (4 sides)")
         kind:
           type: string
         subjectType:

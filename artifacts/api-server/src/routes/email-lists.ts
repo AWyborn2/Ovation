@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Response } from "express";
 import {
   CreateEmailListBody,
+  EmailAllTeamSheetsBody,
   DeleteEmailListParams,
   EmailTeamSheetParams,
   ListEmailSendsQueryParams,
@@ -19,6 +20,7 @@ import {
 } from "../lib/email-lists";
 import {
   EmailOutboxError,
+  enqueueTeamSheetBatch,
   enqueueTeamSheetManual,
   kickOutbox,
   listSends,
@@ -115,10 +117,33 @@ router.post("/admin/email-sends/:id/resend", requireAdmin, async (req, res): Pro
   try {
     const row = await requeueSend(tenantId, params.data.id);
     kickOutbox(tenantId, req.log);
-    const [view] = (await listSends(tenantId, { listId: row.listId })).filter(
+    const [view] = (await listSends(tenantId, { listId: row.listId ?? undefined })).filter(
       (s) => s.id === row.id,
     );
     res.json(view);
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
+  }
+});
+
+// "Email all" on the Selection Hub: the board's finalised sides as one batch,
+// so each contact gets one email with every sheet they're due in one PDF.
+router.post("/selection/email-all", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const body = EmailAllTeamSheetsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Send the sides to email." });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  try {
+    const { sides } = await enqueueTeamSheetBatch({
+      tenantId,
+      selectionIds: body.data.selectionIds,
+      origin: harnessOriginFromHeaders(req.headers),
+    });
+    kickOutbox(tenantId, req.log);
+    req.log?.info({ tenantId, sides }, "team sheets email-all queued");
+    res.json({ sides });
   } catch (err) {
     if (!refuse(res, err)) throw err;
   }

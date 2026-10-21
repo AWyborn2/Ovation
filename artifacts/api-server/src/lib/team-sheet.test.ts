@@ -4,6 +4,7 @@ import {
   formatSheetDate,
   normaliseOvers,
   renderTeamSheetHtml,
+  renderTeamSheetsHtml,
   teamSheetPlayers,
   type TeamSheet,
 } from "./team-sheet";
@@ -349,5 +350,42 @@ describe("team sheet side size (ADR-009)", () => {
     });
     expect(players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
     expect(players[12].name).toBe("P14 Lee");
+  });
+});
+
+describe("renderTeamSheetsHtml", () => {
+  const sheet: TeamSheet = {
+    section: "senior",
+    clubName: "Halls Head",
+    logoUrl: null,
+    homeTeam: "Halls Head A Grade",
+    awayTeam: "SBCC A Grade",
+    grade: "A Grade",
+    round: "Round 2",
+    date: "Saturday 17 October 2026",
+    startTime: "12:00 pm",
+    format: null,
+    overs: null,
+    venue: null,
+    competition: null,
+    bowlingRulesSource: null,
+    ruleNotes: [],
+    players: [{ order: 1, name: "Ava Hill", role: "C", shirtNumber: "9", junior: null }],
+    generatedAt: "Wednesday 14 October 2026",
+  };
+
+  it("puts each sheet on its own page with its own row height, in one document", () => {
+    const base = renderTeamSheetHtml(sheet, null);
+    const html = renderTeamSheetsHtml([
+      { sheet, logoSrc: null },
+      { sheet: { ...sheet, sideSize: 14 }, logoSrc: null },
+    ]);
+    expect(html.match(/<!doctype html>/g)).toHaveLength(1);
+    expect(html.match(/<section class="page /g)).toHaveLength(2);
+    expect(html).toContain(".page + .page { break-before: page; }");
+    expect(html).toContain(".p0 .players td { height: 9.2mm; }");
+    expect(html).toContain(".p1 .players td { height: 7.9mm; }");
+    expect(html).toContain("<title>Team sheets</title>");
+    expect(base).toContain("<title>Team sheet</title>");
   });
 });

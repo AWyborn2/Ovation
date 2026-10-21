@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
+  groupRecipients,
   resendOnChangeOf,
   scheduleDueAt,
   sendModeOf,
   teamSheetEmail,
   teamSheetKey,
+  teamSheetsEmail,
+  teamSheetsFileName,
 } from "./team-sheet-email";
 import type { TeamSheet } from "./team-sheet";
 
@@ -102,5 +105,36 @@ describe("scheduled sends (Australia/Perth, UTC+8)", () => {
     expect(scheduleDueAt(null, new Date())).toBeNull();
     expect(scheduleDueAt({ dow: 9, time: "18:00" }, new Date())).toBeNull();
     expect(scheduleDueAt({ dow: 1, time: "6pm" }, new Date())).toBeNull();
+  });
+});
+
+describe("combined sheets", () => {
+  it("one sheet reads like a single send; several list every side", () => {
+    expect(teamSheetsEmail([sheet()])).toEqual(teamSheetEmail(sheet(), false));
+    const both = teamSheetsEmail([sheet(), sheet({ grade: "B Grade", homeTeam: "Halls Head B" })]);
+    expect(both.subject).toBe("Halls Head team sheets — Round 3 (2 sides)");
+    expect(both.text).toContain("A Grade Round 3: Halls Head A v Mandurah A");
+    expect(both.text).toContain("B Grade Round 3: Halls Head B v Mandurah A");
+  });
+
+  it("names the attachment for the side or the round", () => {
+    expect(teamSheetsFileName([sheet()])).toBe("team-sheet-a-grade-round-3.pdf");
+    expect(teamSheetsFileName([sheet(), sheet({ grade: "B Grade" })])).toBe(
+      "team-sheets-round-3.pdf",
+    );
+  });
+
+  it("groups recipients by the exact set of sheets they get", () => {
+    const groups = groupRecipients(
+      new Map([
+        ["sam", [1, 2]],
+        ["jo", [1]],
+        ["lee", [1, 2]],
+      ]),
+    );
+    expect(groups).toEqual([
+      { ids: [1, 2], to: ["sam", "lee"] },
+      { ids: [1], to: ["jo"] },
+    ]);
   });
 });

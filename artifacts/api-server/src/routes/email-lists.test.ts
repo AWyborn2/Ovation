@@ -18,6 +18,7 @@ import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { finaliseSelection, reopenSelection } from "../lib/selection-board";
 import {
+  BATCH_KIND,
   drainOutbox,
   enqueueScheduledTeamSheets,
   enqueueSocialDigests,
@@ -340,8 +341,12 @@ describe("team-sheet extras (PR2)", () => {
     expect(await sendsOf(created.body.id)).toHaveLength(0);
     expect(await at("2034-10-05T10:20:00Z")).toBe(1);
     expect(await at("2034-10-05T10:40:00Z")).toBe(0);
-    const [row] = await sendsOf(created.body.id);
-    expect(row.subjectId).toBe(selectionId);
+    // Scheduled sends go out as one batch for the club's due lists.
+    const [row] = (await sendsFor()).filter(
+      (r) => r.kind === BATCH_KIND && (r.payload.listIds as number[]).includes(created.body.id),
+    );
+    expect(row).toMatchObject({ listId: null, subjectId: selectionId });
+    expect(row.payload.selectionIds).toEqual([selectionId]);
     await drainOutbox({ tenantId: tenant });
     expect(sent.some((m) => m.subject.includes("A Grade"))).toBe(true);
   });
