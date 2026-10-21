@@ -29,12 +29,10 @@ import {
   type TemplateFitStatus,
 } from "@workspace/db";
 import {
-  CLUB_KIT_LOOK,
   emptySizes,
   isRetiredPack,
   kindFields,
-  lookForPack,
-  lookTemplateSlug,
+  lazyDefaultSlugs,
   startingDocument,
   starterForPack,
   templateDocumentErrors,
@@ -198,9 +196,10 @@ const conflict = async (row: CardTemplateRow) =>
 
 /**
  * What a club's lazy default for a kind is copied from: its pack's look's
- * template for the kind (Club Kit's when that look lacks the kind), at the
- * template's current version. Until the converted looks are in the library
- * (L4-B), the TypeScript starter its pack maps to stands in, with no origin.
+ * template for the kind (Club Kit's when that look lacks the kind), else its
+ * pack's starter look (L4-B's starter bundles), at the template's current
+ * version. With none of those in the library, the TypeScript starter its pack
+ * maps to stands in, with no origin (until L5-C deletes the starters).
  */
 async function lazyDefaultSource(
   kind: string,
@@ -213,8 +212,7 @@ async function lazyDefaultSource(
   fitStatus: TemplateFitStatus;
   fitReport: TemplateFitReportColumn | null;
 }> {
-  const look = lookForPack(currentPackId, kind);
-  const slugs = [...new Set([lookTemplateSlug(look, kind), lookTemplateSlug(CLUB_KIT_LOOK, kind)])];
+  const slugs = lazyDefaultSlugs(currentPackId, kind);
   const found = await db
     .select({
       id: libraryTemplatesTable.id,
