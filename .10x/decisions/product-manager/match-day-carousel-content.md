@@ -26,8 +26,8 @@ Secondary: followers (consistent, readable, informative slides).
 3. Presets Minimal / Standard / Full set the toggles; admins can still adjust single fields.
    Each layout must fit every preset at every size (square, portrait, story, landscape).
 4. Packs: keep Club Kit and Broadcast Dark; design one brand-new, distinct pack. Gold Foil,
-   Bold Type, Neon Night, Sunset are retired (existing queued carousels must still render or
-   fall back to Club Kit).
+   Bold Type, Neon Night, Sunset are **hidden, not deleted** (revised by Ash 21 Oct 2026, see
+   below).
 5. Names come from social-tile-short-names (club-set short name, auto fallback); one fitting
    rule for all packs (shrink, then wrap to 2 lines; never mid-word ellipsis).
 
@@ -67,7 +67,7 @@ Sponsors page
 - P1 Optional data fields: ladder, last meeting, milestone watch, livestream link.
 - P1 Sponsors page options (tiers, background image, CTA, next home game / socials).
 - P1 New third pack (design brief first; must use the same slots).
-- P2 Retire the four other packs (migration of saved pack choices to Club Kit).
+- P1 Hide the four legacy packs everywhere (P9); keep their code as seed content for the template library.
 
 ## User stories
 
@@ -101,3 +101,19 @@ Sponsors page
   (senior-only, fill-ins excluded, juniors isolated).
 - Retiring packs breaks saved carousels -> read-time fallback to Club Kit.
 - Depends on social-tile-short-names for names and crests.
+
+## Revision 21 Oct 2026: legacy packs hidden, not retired (Ash)
+
+Ash's long-term plan is a Canva-style template library for social assets. Deleting Gold Foil,
+Bold Type, Neon Night and Sunset would throw away seed content. Hand-porting them onto the
+content model is the per-pack work a library must avoid.
+
+- Until the library is scoped and built, the four packs are hidden completely. They can't be
+  picked for new posts, in the editor's pack switcher or as the club default. A saved card,
+  carousel or default that uses one renders as Club Kit (read-time fallback).
+- Their template code stays in the repo, and their looks are reused when the library converts
+  them.
+- Follow-up feature: `social-template-library`. Templates become data (layer documents bound
+  to the card-content slots, building on card-kind-templates ADR-001..003), fit is checked
+  automatically, and there's a browsable library. Its first job is converting Club Kit,
+  Broadcast Dark, the new pack and the four legacy packs.

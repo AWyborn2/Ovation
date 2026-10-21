@@ -110,4 +110,4 @@ what posts). v1 still read and rendered unchanged.
 5. Optional data fields (ladder, last meeting, milestone watch, livestream link).
 6. Sponsors page options (tier, background, CTA, next home game / socials).
 7. Migrate remaining kinds (teamList, results, matchSummary, single cards / Create a Card) to builders.
-8. New pack (design brief first), then retire four packs.
+8. New pack (design brief first), then hide the four legacy packs (revised 21 Oct 2026: hidden, code kept for the future template library; they render as Club Kit).
