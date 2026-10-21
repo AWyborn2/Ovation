@@ -124,8 +124,11 @@ export function missingCoreFields(
   return core.filter((field) => !covered.has(field));
 }
 
-/** How many rows a page's first list bound to `repeat` holds on `size`, or null without one. */
-export function pageRowsCapacity(
+/**
+ * How many rows a page's first list bound to `repeat` holds on `size`, or null
+ * without one. Private: L1-B's `capacity.ts` exports the page capacity rule.
+ */
+function listCapacity(
   doc: TemplateDocumentV2,
   page: PageKey,
   size: TemplateSize,
@@ -143,7 +146,7 @@ export function pageRepeatCapacities(
   const out: Record<string, number> = {};
   for (const layer of pageLayersOnSize(doc, page, size)) {
     if (layer.kind !== "rows" || !layer.rows?.repeat || layer.rows.repeat in out) continue;
-    out[layer.rows.repeat] = pageRowsCapacity(doc, page, size, layer.rows.repeat) ?? 0;
+    out[layer.rows.repeat] = listCapacity(doc, page, size, layer.rows.repeat) ?? 0;
   }
   return out;
 }
