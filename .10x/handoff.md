@@ -1,5 +1,20 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** SDE
+**Feature:** selection-hub-redesign
+
+## Context
+
+- Plan: `.10x/decisions/engineering-manager/selection-hub-redesign.md`. Architecture: `.10x/decisions/architect/selection-hub-redesign.md`. Visual spec: `docs/design/selection-hub-redesign/README.md`.
+- Start PR 1 (T1.1 to T1.7) on `wyborn21/ovation-selection-hub-redesign-9ab7a5`. Verify drag from the sidebar pool in the browser right after T1.3, before T1.4.
+- PR 2 (T2.1 to T2.7) stacks on PR 1. Retarget it to main before PR 1 merges with --delete-branch.
+- Client only: no API change and no migration. Every move goes through the existing `act()` → `applyMove`.
+
+## Handoff History
+
+### Previous (Architect → EM, selection-hub-redesign)
+
 **From:** Principal Architect
 **To:** Engineering Manager / SDE
 **Feature:** selection-hub-redesign
@@ -12,8 +27,6 @@
 - Every move goes through the existing `act()` → `applyMove` → save mutation. No API, schema or migration change.
 - Delivery: PR 1 is layout (slot, toggle, pool, chip bar, Focus/Board, compact strip). PR 2 is interaction (popovers, Find-player, attention dots, toasts), stacked on PR 1. Retarget it to main before merging PR 1.
 - Lands before selection-hub-decoupling PR1–PR3.
-
-## Handoff History
 
 ### Previous (PM → Architect, selection-hub-redesign)
 
