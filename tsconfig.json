@@ -17,6 +17,9 @@
     },
     {
       "path": "./lib/scorecard"
+    },
+    {
+      "path": "./lib/template-bundles"
     }
   ]
 }

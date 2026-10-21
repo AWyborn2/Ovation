@@ -1,8 +1,11 @@
 /**
  * Card kind templates (plan 2026-10-07-002, U5; ADR-002, ADR-003).
  *
- * One versioned template per tenant and card kind, stored as a
- * `card_templates` row with `source = 'kind'`. Templates are created lazily —
+ * One versioned DEFAULT template per tenant and card kind, stored as a
+ * `card_templates` row with `source = 'kind'` and `is_kind_default` (the
+ * template library, ADR-011, lets a club hold other copies of a kind; these
+ * routes and the draft pipeline read and write only the default until L3-B and
+ * L5-C replace them). Templates are created lazily —
  * from the starter the club's current pack maps to — the first time a draft
  * of the kind needs one, or explicitly from a starter in the editor. Saves are
  * rejected when another admin saved first. Applying a version copies it into
@@ -109,17 +112,21 @@ export function presentKindTemplate(
   return view;
 }
 
-/** A tenant's kind templates. */
+/** A tenant's default kind templates, one per kind. */
 export async function listKindTemplates(tenantId: number): Promise<CardTemplateRow[]> {
   return db
     .select()
     .from(cardTemplatesTable)
     .where(
-      and(eq(cardTemplatesTable.tenantId, tenantId), eq(cardTemplatesTable.source, KIND_SOURCE)),
+      and(
+        eq(cardTemplatesTable.tenantId, tenantId),
+        eq(cardTemplatesTable.source, KIND_SOURCE),
+        eq(cardTemplatesTable.isKindDefault, true),
+      ),
     );
 }
 
-/** A tenant's template for a kind, or null when it has none yet. */
+/** A tenant's default template for a kind, or null when it has none yet. */
 export async function loadKindTemplate(
   tenantId: number,
   kind: string,
@@ -133,6 +140,7 @@ export async function loadKindTemplate(
         eq(cardTemplatesTable.tenantId, tenantId),
         eq(cardTemplatesTable.source, KIND_SOURCE),
         eq(cardTemplatesTable.baseKind, kind),
+        eq(cardTemplatesTable.isKindDefault, true),
       ),
     );
   return row ?? null;
@@ -203,6 +211,7 @@ export async function ensureKindTemplate(
       source: KIND_SOURCE,
       baseKind: kind,
       cardKinds: [kind],
+        isKindDefault: true,
       adjustments: startingDocument(starter, kind),
       version: 1,
       updatedAt: new Date(),
@@ -236,6 +245,7 @@ export async function startKindTemplate(
         source: KIND_SOURCE,
         baseKind: kind,
         cardKinds: [kind],
+        isKindDefault: true,
         adjustments: document,
         version: 1,
         updatedAt: new Date(),
