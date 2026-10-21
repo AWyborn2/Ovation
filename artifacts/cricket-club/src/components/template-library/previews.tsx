@@ -31,11 +31,14 @@ import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { useHeroImage } from "@/lib/use-hero-image";
 import type { CardKind } from "@/lib/social-studio";
 
-/** The club's preview payload for each kind (brand, sponsors, photo, names). */
-export function useLibraryPreviewData(): {
+/** What library thumbnails draw with: the club's payload per kind, and its short name. */
+export type LibraryPreview = {
   dataFor: (kind: string) => PackCardData;
   clubName: string | undefined;
-} {
+};
+
+/** The club's preview payload for each kind (brand, sponsors, photo, names). */
+export function useLibraryPreviewData(): LibraryPreview {
   const settingsQ = useGetSocialSettings();
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
   const heroImage = useHeroImage("home");

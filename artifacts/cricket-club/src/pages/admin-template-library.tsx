@@ -10,8 +10,7 @@ import { LooksPanel } from "@/components/template-library/looks-panel";
 import { useLibraryPreviewData } from "@/components/template-library/previews";
 import { YourTemplates } from "@/components/template-library/your-templates";
 
-const SECTIONS = ["library", "looks", "yours"] as const;
-type Section = (typeof SECTIONS)[number];
+type Section = "library" | "looks" | "yours";
 
 export default function AdminTemplateLibrary() {
   const preview = useLibraryPreviewData();

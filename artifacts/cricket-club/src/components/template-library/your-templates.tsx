@@ -23,9 +23,9 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
-import { TemplateThumb, useLibraryPreviewData, usePreviewInput } from "./previews";
+import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
 
-type Preview = ReturnType<typeof useLibraryPreviewData>;
+type Preview = LibraryPreview;
 
 /** "Based on Club Kit Match Day by Ovation", for a copy taken from the library. */
 export function basedOnLabel(t: ClubTemplateSummary): string | null {

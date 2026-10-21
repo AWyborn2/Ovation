@@ -22,9 +22,9 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
-import { TemplateThumb, useLibraryPreviewData, usePreviewInput } from "./previews";
+import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
 
-type Preview = ReturnType<typeof useLibraryPreviewData>;
+type Preview = LibraryPreview;
 
 /** The kinds whose default adopting `look` would change, given the club's templates. */
 export function defaultsAdoptionChanges(
