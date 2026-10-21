@@ -8,7 +8,11 @@
  * is unit-tested without layout (jsdom does none). `fitLayersInDom` is the
  * thin browser adapter used by the render harness and the editor.
  */
-import { MIN_TEXT_FIT, type LayoutWarning } from "@workspace/scorecard/kind-templates";
+import {
+  MIN_TEXT_FIT,
+  type LayoutWarning,
+  type TextFit,
+} from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 
 /** One fittable text element: its designed size and how to apply a scale. */
@@ -49,6 +53,15 @@ export function fitTarget(
 export const FIT_ATTR = "data-layer-fit";
 /** Attribute recording the scale the fit step settled on (1 = designed size). */
 export const FIT_SCALE_ATTR = "data-fit-scale";
+
+/**
+ * The attributes a v2 text layer's `fit` adds for the fit step (seam for
+ * L1-C, T1.17: the minimum scale, then two lines, then an ellipsis). None
+ * yet, so v2 live text fits as v1's does.
+ */
+export function textFitAttrs(_fit: TextFit | undefined): string {
+  return "";
+}
 
 const overflowsBox = (el: HTMLElement) =>
   el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1;
