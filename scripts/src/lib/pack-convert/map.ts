@@ -407,7 +407,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const found = boundRows(tree, cap, bound);
     if (!found) continue;
     for (const id of found.consumed) consumed.add(id);
-    const spec = rowsSpec(tree, found.rows, bound, { repeat, W, colour, fit: true });
+    const spec = rowsSpec(tree, found.rows, bound, { repeat, W, colour, fit: true, twin });
     if (!spec) {
       polish.push({
         element: found.rows[0]!.id,
@@ -433,6 +433,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       colour,
       fit: true,
       cellField: indexed.cellField,
+      twin,
     });
     if (!spec) continue;
     const first = indexed.rows[0]!;
@@ -1121,6 +1122,11 @@ interface RowsOptions {
   fit: boolean;
   /** Indexed rows: an element's own field key → the row field. */
   cellField?: (el: CapturedElement) => string | null;
+  /**
+   * An element's worst-case twin: rows, gaps and cells are measured there, where
+   * real content lays the row out (short sentinel markers lay it out differently).
+   */
+  twin?: (el: CapturedElement) => CapturedElement;
 }
 
 /** A rows spec from captured rows: the base row's cells, its height and the pitch. */
@@ -1137,14 +1143,19 @@ function rowsSpec(
   );
   const first = rows[baseIndex] ?? rows[0];
   if (!first || first.box.h <= 0) return null;
-  const top = rows[0]!;
-  const below = rows.find((r) => r.box.y > top.box.y + 0.5 && Math.abs(r.box.x - top.box.x) < 1);
-  const columnsX = [...new Set(rows.map((r) => Math.round(r.box.x)))];
+  // Geometry from the worst-case twins when every row has one.
+  const twinned = rows.map((r) => opts.twin?.(r));
+  const geo = twinned.every((t, i) => t && t !== rows[i] && t.box.h > 0)
+    ? (twinned as CapturedElement[])
+    : rows;
+  const top = geo[0]!;
+  const below = geo.find((r) => r.box.y > top.box.y + 0.5 && Math.abs(r.box.x - top.box.x) < 1);
+  const columnsX = [...new Set(geo.map((r) => Math.round(r.box.x)))];
   const columns = Math.max(1, Math.min(6, columnsX.length));
-  const rowH = first.box.h;
+  const rowH = geo[rows.indexOf(first)]!.box.h;
   const pitch = below ? below.box.y - top.box.y : rowH;
   const cellsOf = (row: CapturedElement, values: Record<string, string>) =>
-    rowCells(tree, row, values, opts);
+    rowCells(tree, row, values, geo === rows ? { ...opts, twin: undefined } : opts);
   const cells = cellsOf(first, bound[baseIndex]?.values ?? {});
   if (!cells.some((c) => c.show !== "backdrop")) return null;
   // Variant rows (the club's ladder row, a lost result): their cell styles that differ.
@@ -1190,7 +1201,10 @@ function rowCells(
   values: Record<string, string>,
   opts: RowsOptions,
 ): RowsCell[] {
-  const rowH = row.box.h;
+  // Cells sit where the worst case puts them in its twin row (else in this one).
+  const rowTwin = opts.twin?.(row);
+  const useTwin = !!rowTwin && rowTwin !== row && rowTwin.box.h > 0;
+  const rowBox = useTwin ? rowTwin!.box : row.box;
   const fieldFor = (el: CapturedElement, text: string): string | null => {
     if (opts.cellField) return opts.cellField(el);
     const t = text.trim().toLowerCase();
@@ -1203,12 +1217,17 @@ function rowCells(
       .sort((a, b) => b[1].length - a[1].length)[0];
     return inside ? inside[0] : null;
   };
-  const at = (el: CapturedElement) => ({
-    x: r2(((el.box.x - row.box.x) / row.box.w) * 100),
-    w: r2((el.box.w / row.box.w) * 100),
-    y: r2(((el.box.y - row.box.y) / rowH) * 100),
-    h: r2((el.box.h / rowH) * 100),
-  });
+  const at = (el: CapturedElement) => {
+    const t = useTwin ? opts.twin!(el) : el;
+    const box = t !== el || !useTwin ? t.box : el.box;
+    const from = t !== el || !useTwin ? rowBox : row.box;
+    return {
+      x: r2(((box.x - from.x) / from.w) * 100),
+      w: r2((box.w / from.w) * 100),
+      y: r2(((box.y - from.y) / from.h) * 100),
+      h: r2((box.h / from.h) * 100),
+    };
+  };
   const textStyle = (el: CapturedElement): NonNullable<RowsCell["style"]> => {
     const scale = scaleOf(tree, el);
     const fontPx = (px(tree.style(el, "font-size")) || 16) * scale;
