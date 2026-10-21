@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import {
   checkFailed,
+  gateFailures,
   readBundleTargets,
   renderReport,
   selectChanged,
@@ -131,5 +132,51 @@ describe("the report", () => {
     expect(renderReport([], { selection: "changed since origin/main" })).toContain(
       "0 templates checked (changed since origin/main); 0 failed.",
     );
+  });
+});
+
+describe("what fails the check", () => {
+  const pass: TemplateFitReport = {
+    kind: "player",
+    status: "pass",
+    variants: 8,
+    issues: [],
+    renderer: "r",
+    fonts: "f",
+    checkedAt: "t",
+  };
+  const fail: TemplateFitReport = { ...pass, status: "fail" };
+  const t = (id: string, listed?: boolean): FitTarget => ({
+    id,
+    kind: "player",
+    document: {},
+    listed,
+  });
+
+  it("blocks on a listed bundle that fails, unless it's a known failure", () => {
+    const gate = gateFailures(
+      [
+        { target: t("a/player", true), report: fail },
+        { target: t("b/player", true), report: fail },
+        { target: t("c/player", false), report: fail },
+        { target: t("d/player", true), report: pass },
+        { target: t("e/player", true), report: null, error: "timeout" },
+        { target: t("starter:x/player"), report: fail },
+      ],
+      { "b/player": "known", "d/player": "fixed since" },
+    );
+    expect(gate.blocking.map((c) => c.target.id)).toEqual([
+      "a/player",
+      "e/player",
+      "starter:x/player",
+    ]);
+    expect(gate.known.map((c) => c.target.id)).toEqual(["b/player"]);
+    expect(gate.unlisted.map((c) => c.target.id)).toEqual(["c/player"]);
+    expect(gate.nowPassing).toEqual(["d/player"]);
+  });
+
+  it("reads each bundle's listed flag", () => {
+    bundle("neon-night", "player", { layers: [] });
+    expect(readBundleTargets(root).find((x) => x.id === "neon-night/player")?.listed).toBe(true);
   });
 });

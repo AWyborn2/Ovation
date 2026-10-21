@@ -139,3 +139,36 @@ describe("worstCaseCard (T2.2)", () => {
         );
   });
 });
+
+describe("the card's photo follows its field", () => {
+  const card = (
+    contentKind: string,
+    page: "result" | "fixture" | "title",
+    preset: "minimal" | "standard",
+  ) =>
+    worstCaseCard(contentKind === "results" ? "matchSummary" : contentKind, {
+      page,
+      contentKind,
+      preset,
+      photo: true,
+      junior: false,
+    });
+
+  it("attaches the photo only at presets that show it, as drafts and carousels do", () => {
+    expect(card("matchSummary", "result", "minimal").data.photoUrl).toBeNull();
+    expect(card("matchSummary", "result", "standard").data.photoUrl).toBeTruthy();
+    expect(card("results", "result", "minimal").data.photoUrl).toBeNull();
+    expect(card("matchDay", "fixture", "minimal").data.photoUrl).toBeNull();
+    expect(card("matchDay", "fixture", "standard").data.photoUrl).toBeTruthy();
+    // The title page's cover photo is its own field (Standard and up).
+    expect(card("matchDay", "title", "minimal").data.photoUrl).toBeNull();
+    expect(card("matchDay", "title", "standard").data.photoUrl).toBeTruthy();
+  });
+
+  it("keeps the photo on kinds without content presets", () => {
+    expect(
+      worstCaseCard("player", { page: "card", contentKind: "player", photo: true, junior: false })
+        .data.photoUrl,
+    ).toBeTruthy();
+  });
+});

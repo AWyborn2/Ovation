@@ -18,6 +18,8 @@ export type FitTarget = {
   hash?: string;
   /** The bundle file, relative to the repo root (bundles only). */
   file?: string;
+  /** Whether the bundle asks to be listed; an unlisted bundle is work in progress. */
+  listed?: boolean;
 };
 
 /**
@@ -57,10 +59,11 @@ export function readBundleTargets(root: string): FitTarget[] {
       const file = path.join(BUNDLES_DIR, look, `${kind}.json`);
       // Line endings normalised, so a Windows checkout hashes as CI does (as generate-index).
       const text = readFileSync(path.join(root, file), "utf8").replace(/\r\n/g, "\n");
-      const parsed = JSON.parse(text) as { document?: unknown };
+      const parsed = JSON.parse(text) as { document?: unknown; listed?: unknown };
       out.push({
         id: `${look}/${kind}`,
         kind,
+        listed: parsed.listed === true,
         document: parsed.document,
         hash: createHash("sha256").update(text).digest("hex"),
         file: file.split(path.sep).join("/"),
@@ -93,17 +96,63 @@ export type CheckedTemplate = {
 /** Whether a check failed: a report that didn't pass, or no report at all. */
 export const checkFailed = (c: CheckedTemplate) => !c.report || c.report.status !== "pass";
 
+/**
+ * Listed bundles known to fail today, by id, with why (`check-template-bundles.known-failures.json`).
+ * Polish takes each one off; the list only ever shrinks.
+ */
+export type KnownFailures = Record<string, string>;
+
+export type Gate = {
+  /** Failures that fail the check: listed (or starter) templates not on the known list. */
+  blocking: CheckedTemplate[];
+  /** Listed templates on the known list that still fail. */
+  known: CheckedTemplate[];
+  /** Unlisted templates that fail: work in progress, reported only. */
+  unlisted: CheckedTemplate[];
+  /** Templates on the known list that now pass: take them off it. */
+  nowPassing: string[];
+};
+
+/**
+ * Which failures fail the check (L2-B). A listed bundle must pass, unless it's
+ * on the known-failures list; an unlisted one (a raw conversion, a starter
+ * page in progress) is reported but never blocks. The server lists a template
+ * only once it passes either way.
+ */
+export function gateFailures(checked: readonly CheckedTemplate[], known: KnownFailures): Gate {
+  const gate: Gate = { blocking: [], known: [], unlisted: [], nowPassing: [] };
+  for (const c of checked) {
+    if (!checkFailed(c)) {
+      if (Object.prototype.hasOwnProperty.call(known, c.target.id))
+        gate.nowPassing.push(c.target.id);
+      continue;
+    }
+    if (c.target.listed === false) gate.unlisted.push(c);
+    else if (Object.prototype.hasOwnProperty.call(known, c.target.id)) gate.known.push(c);
+    else gate.blocking.push(c);
+  }
+  return gate;
+}
+
 /** The Markdown report: a line per template, then each failure's issues. */
 export function renderReport(
   checked: readonly CheckedTemplate[],
-  meta: { selection: string },
+  meta: { selection: string; known?: KnownFailures },
 ): string {
   const failed = checked.filter(checkFailed);
+  const gate = gateFailures(checked, meta.known ?? {});
   const lines = [
     "# Template bundle fit check",
     "",
     `${checked.length} template${checked.length === 1 ? "" : "s"} checked (${meta.selection}); ` +
       `${failed.length} failed.`,
+    "",
+    `- Blocking (listed, not a known failure): ${gate.blocking.length}`,
+    `- Known failures still failing: ${gate.known.length}`,
+    `- Unlisted, reported only: ${gate.unlisted.length}`,
+    ...(gate.nowPassing.length
+      ? [`- Now passing, take off the known-failures list: ${gate.nowPassing.join(", ")}`]
+      : []),
     "",
   ];
   if (checked.length > 0) {

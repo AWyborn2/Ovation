@@ -17,7 +17,7 @@
  * Chrome: `CHROME_PATH` (CI), else an installed Chrome or Edge (`harness-browser.ts`).
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -29,13 +29,26 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import { REPO_ROOT, callHarness, withHarness } from "./lib/harness-browser";
 import {
-  checkFailed,
+  gateFailures,
   readBundleTargets,
   renderReport,
   selectChanged,
   type CheckedTemplate,
   type FitTarget,
+  type KnownFailures,
 } from "./check-template-bundles-core";
+
+/** Listed bundles known to fail today, with why; polish takes them off. */
+const KNOWN_FAILURES = path.join(
+  REPO_ROOT,
+  "scripts",
+  "src",
+  "check-template-bundles.known-failures.json",
+);
+
+export function readKnownFailures(file = KNOWN_FAILURES): KnownFailures {
+  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as KnownFailures) : {};
+}
 
 export interface CheckOptions {
   changedSince: string | null;
@@ -138,7 +151,10 @@ export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedT
   }
 
   mkdirSync(opts.out, { recursive: true });
-  writeFileSync(path.join(opts.out, "report.md"), renderReport(checked, { selection }));
+  writeFileSync(
+    path.join(opts.out, "report.md"),
+    renderReport(checked, { selection, known: readKnownFailures() }),
+  );
   writeFileSync(
     path.join(opts.out, "report.json"),
     `${JSON.stringify(
@@ -161,11 +177,18 @@ export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedT
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   checkTemplateBundles(parseArgs(process.argv.slice(2))).then(
     (checked) => {
-      const failed = checked.filter(checkFailed);
+      const gate = gateFailures(checked, readKnownFailures());
+      const failed = gate.blocking.length + gate.known.length + gate.unlisted.length;
       process.stderr.write(
-        `[fit] ${checked.length - failed.length} passed, ${failed.length} failed\n`,
+        `[fit] ${checked.length - failed} passed, ${failed} failed: ${gate.blocking.length} blocking, ` +
+          `${gate.known.length} known, ${gate.unlisted.length} unlisted\n`,
       );
-      process.exit(failed.length > 0 ? 1 : 0);
+      for (const c of gate.blocking) process.stderr.write(`[fit] blocking: ${c.target.id}\n`);
+      if (gate.nowPassing.length)
+        process.stderr.write(
+          `[fit] now passing, take off the known-failures list: ${gate.nowPassing.join(", ")}\n`,
+        );
+      process.exit(gate.blocking.length > 0 ? 1 : 0);
     },
     (err) => {
       process.stderr.write(`[fit] ${String(err instanceof Error ? err.stack : err)}\n`);

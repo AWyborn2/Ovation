@@ -113,7 +113,10 @@ jobs:
   # worst-case content in headless Chrome, and fails on text that doesn't fit,
   # a core field with no box, rows that spill and the other fit rules. A pull
   # request checks the bundles it changed, or every bundle when it changes the
-  # renderer, the format or the check; a push to main checks them all.
+  # renderer, the format or the check; a push to main checks them all. Only a
+  # listed bundle can fail the job, and not one on the known-failures list
+  # (scripts/src/check-template-bundles.known-failures.json), which polish
+  # shrinks; unlisted bundles (raw conversions, work in progress) are reported.
   # ───────────────────────────────────────────────────────────────────────────
   template-bundles:
     name: Template bundles
