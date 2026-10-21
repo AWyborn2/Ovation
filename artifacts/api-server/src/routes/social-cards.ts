@@ -16,6 +16,7 @@ import {
   CreateCardRenderStillBody,
   SetCardTeamNameBody,
   SetCardCompetitionLabelBody,
+  SetCardTeamCrestBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
@@ -53,8 +54,10 @@ import {
   listCardNames,
   loadCardNames,
   setCompetitionLabelOverride,
+  setTeamCrestOverride,
   setTeamNameOverride,
 } from "../lib/card-content/names";
+import { checkCrestChoice } from "../lib/card-content/crest-choice";
 
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -150,6 +153,39 @@ router.put(
     const { centralClubId, gradeKey, shortName } = parsed.data;
     await setTeamNameOverride(tenantId, centralClubId, gradeKey ?? null, shortName ?? null);
     res.json(await listCardNames(tenantId));
+  },
+);
+
+router.put(
+  "/social-settings/card-names/crests",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = SetCardTeamCrestBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const checked = await checkCrestChoice(parsed.data.crestSource, parsed.data.crestUrl);
+    if (!checked.ok) {
+      res.status(400).json({ error: checked.error });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    await setTeamCrestOverride(tenantId, parsed.data.centralClubId, checked.choice);
+    res.json(await listCardNames(tenantId));
+  },
+);
+
+// Crests Ovation already knows (PlayHQ organisation logos): neutral reference
+// data the senior and junior name settings both pick from.
+router.get(
+  "/social-settings/card-names/known-crests",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (_req, res): Promise<void> => {
+    const { centralKnownCrests } = await import("@workspace/db/central-queries");
+    res.json({ crests: await centralKnownCrests() });
   },
 );
 

@@ -28,6 +28,7 @@ import type {
 } from "@workspace/db";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardNames } from "@workspace/scorecard/card-names";
+import { contentJuniorNames } from "./junior-names";
 import {
   teamListContent,
   type TeamListContent,
@@ -58,6 +59,11 @@ export interface TeamListSide {
 
 export interface BuildTeamListOptions {
   names?: CardNames;
+  /**
+   * The club's junior names (junior override tables only), when the caller
+   * already has them. A junior side never takes the senior names.
+   */
+  juniorNames?: CardNames;
   onNamesError?: (err: unknown) => void;
   /** A side the builder could only partly verify (the carousel shows it). */
   onWarning?: (fixture: FixtureRow, warning: string) => void;
@@ -73,7 +79,13 @@ export async function buildTeamListContent(
   opts: BuildTeamListOptions = {},
 ): Promise<TeamListContent[]> {
   if (!sides.length) return [];
-  const names = opts.names ?? (await contentNames(tenantId, opts.onNamesError));
+  const anyJunior = sides.some((s) => isJuniorGradeLabel(s.fixture.grade));
+  const names = sides.some((s) => !isJuniorGradeLabel(s.fixture.grade))
+    ? (opts.names ?? (await contentNames(tenantId, opts.onNamesError)))
+    : {};
+  const juniorNames = anyJunior
+    ? (opts.juniorNames ?? (await contentJuniorNames(tenantId, opts.onNamesError)))
+    : {};
   const numbers = teamListShirtNumberLoader(tenantId);
   let privateIds: Set<string> | null = null;
   const out: TeamListContent[] = [];
@@ -110,7 +122,7 @@ export async function buildTeamListContent(
       ),
       ...(junior ? { junior: true } : {}),
     } as TeamListSource;
-    out.push(teamListContent(fixture, source, { names, junior }));
+    out.push(teamListContent(fixture, source, { names: junior ? juniorNames : names, junior }));
   }
   return out;
 }
@@ -122,7 +134,8 @@ export interface JuniorTeamListSide {
 }
 
 export interface BuildJuniorTeamListOptions {
-  names?: CardNames;
+  /** The club's junior names (junior override tables), when the caller already has them. */
+  juniorNames?: CardNames;
   onNamesError?: (err: unknown) => void;
   /** The club's junior naming, when the caller loaded it for these players. */
   naming?: JuniorNaming;
@@ -175,7 +188,8 @@ export async function buildJuniorTeamListContent(
   opts: BuildJuniorTeamListOptions = {},
 ): Promise<TeamListContent[]> {
   if (!sides.length) return [];
-  const names = opts.names ?? (await contentNames(tenantId, opts.onNamesError));
+  // Junior names only: a junior side never takes the senior names.
+  const names = opts.juniorNames ?? (await contentJuniorNames(tenantId, opts.onNamesError));
   const naming =
     opts.naming ??
     (await loadJuniorNaming(

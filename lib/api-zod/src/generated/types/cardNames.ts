@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardNamesCompetitions } from './cardNamesCompetitions';
+import type { CardNamesCrestOverrides } from './cardNamesCrestOverrides';
 import type { CardNamesCrests } from './cardNamesCrests';
 import type { CardNamesTeams } from './cardNamesTeams';
 
@@ -17,6 +18,8 @@ export interface CardNames {
   teams?: CardNamesTeams;
   /** Raw team or club name key to a crest url, for inputs with none. */
   crests?: CardNamesCrests;
+  /** Raw team or club name key to the club's own crest choice, which wins over any crest a card input carries: an image url, or "" for the initials badge. */
+  crestOverrides?: CardNamesCrestOverrides;
   /** Raw competition or grade key to the club's label. */
   competitions?: CardNamesCompetitions;
 }

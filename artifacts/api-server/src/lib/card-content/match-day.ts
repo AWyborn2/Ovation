@@ -18,6 +18,7 @@
  */
 
 import type { FixtureRow } from "@workspace/db";
+import { isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardNames } from "@workspace/scorecard/card-names";
 import {
   ladderContent,
@@ -28,6 +29,7 @@ import {
   type MatchDayFixtureContent,
 } from "@workspace/scorecard/card-content";
 import { loadCardNames } from "./names";
+import { contentJuniorNames } from "./junior-names";
 import {
   loadFixtureLadder,
   loadLastMeeting,
@@ -49,6 +51,11 @@ export interface BuildMatchDayOptions {
   junior?: ReadonlyMap<number, JuniorFixtureMeta>;
   /** The club's names, when the caller already has them. */
   names?: CardNames;
+  /**
+   * The club's junior names (junior override tables only), when the caller
+   * already has them. A junior side never takes the senior names.
+   */
+  juniorNames?: CardNames;
   onNamesError?: (err: unknown) => void;
   /** The optional data fields to load: the visible ones. Absent → none (core only). */
   fields?: ReadonlySet<MatchDayDataField>;
@@ -92,15 +99,22 @@ export async function buildMatchDayContent(
 ): Promise<Map<number, MatchDayFixtureContent>> {
   const out = new Map<number, MatchDayFixtureContent>();
   if (!fixtures.length) return out;
-  const names = opts.names ?? (await contentNames(tenantId, opts.onNamesError));
+  const isJunior = (f: FixtureRow) =>
+    opts.junior?.has(f.id) === true || isJuniorGradeLabel(f.grade);
+  const names = fixtures.some((f) => !isJunior(f))
+    ? (opts.names ?? (await contentNames(tenantId, opts.onNamesError)))
+    : {};
+  const juniorNames = fixtures.some(isJunior)
+    ? (opts.juniorNames ?? (await contentJuniorNames(tenantId, opts.onNamesError)))
+    : {};
   for (const fixture of fixtures) {
     const junior = opts.junior?.get(fixture.id);
     out.set(
       fixture.id,
       matchDayFixtureContent(fixture, {
-        // Club names only, never player data: junior slides shorten the
-        // opposing club the same way the Studio always has.
-        names,
+        // Club names only, never player data. A junior slide takes the
+        // club's junior names, never the senior ones (juniors isolation).
+        names: isJunior(fixture) ? juniorNames : names,
         ...(junior
           ? { junior: true, juniorTeamName: junior.juniorTeamName, gradeLabel: junior.gradeLabel }
           : {}),

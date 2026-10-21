@@ -97,6 +97,7 @@ import type {
   CardRenderStillInput,
   CardSet,
   CardSetInput,
+  CardTeamCrestUpdate,
   CardTeamNameUpdate,
   CardTemplate,
   CardTemplateInput,
@@ -211,6 +212,10 @@ import type {
   JuniorAdminParticipant,
   JuniorAdminRosterEntry,
   JuniorAdminTeamList,
+  JuniorCardCompetitionLabelUpdate,
+  JuniorCardNamesListing,
+  JuniorCardTeamCrestUpdate,
+  JuniorCardTeamNameUpdate,
   JuniorFilters,
   JuniorFixture,
   JuniorFixtureDetail,
@@ -244,6 +249,7 @@ import type {
   KindTemplateList,
   KioskTokenInput,
   KioskTokenResponse,
+  KnownCardCrestList,
   LadderCardRow,
   LifeMember,
   LifeMemberInput,
@@ -17581,6 +17587,156 @@ export const useSetCardCompetitionLabel = <TError = ErrorType<unknown>,
       return useMutation(getSetCardCompetitionLabelMutationOptions(options));
     }
 
+export const getSetCardTeamCrestUrl = () => {
+
+
+
+
+  return `/api/social-settings/card-names/crests`
+}
+
+/**
+ * Admin. Keyed on the central club id, for every grade. crestSource "upload" takes an image uploaded to the club's storage, "known" a crest from the known-crests list, "initials" the initials badge (no crestUrl); null resets to the automatic crest. Tenant-scoped; never written to the central database.
+ * @summary Set or reset the club's crest for a team on cards
+ */
+export const setCardTeamCrest = async (cardTeamCrestUpdate: CardTeamCrestUpdate, options?: RequestInit): Promise<CardNamesListing> => {
+
+  return customFetch<CardNamesListing>(getSetCardTeamCrestUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardTeamCrestUpdate,)
+  }
+);}
+
+
+
+
+export const getSetCardTeamCrestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardTeamCrest>>, TError,{data: BodyType<CardTeamCrestUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setCardTeamCrest>>, TError,{data: BodyType<CardTeamCrestUpdate>}, TContext> => {
+
+const mutationKey = ['setCardTeamCrest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setCardTeamCrest>>, {data: BodyType<CardTeamCrestUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setCardTeamCrest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetCardTeamCrestMutationResult = NonNullable<Awaited<ReturnType<typeof setCardTeamCrest>>>
+    export type SetCardTeamCrestMutationBody = BodyType<CardTeamCrestUpdate>
+    export type SetCardTeamCrestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or reset the club's crest for a team on cards
+ */
+export const useSetCardTeamCrest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardTeamCrest>>, TError,{data: BodyType<CardTeamCrestUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setCardTeamCrest>>,
+        TError,
+        {data: BodyType<CardTeamCrestUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetCardTeamCrestMutationOptions(options));
+    }
+
+export const getListKnownCardCrestsUrl = () => {
+
+
+
+
+  return `/api/social-settings/card-names/known-crests`
+}
+
+/**
+ * Admin. Every PlayHQ organisation with a logo, by name. Neutral reference data (no player or match data), shared by the senior and junior name settings. Empty when the PlayHQ tables are unavailable.
+ * @summary Crests Ovation already knows, to pick one for a team
+ */
+export const listKnownCardCrests = async ( options?: RequestInit): Promise<KnownCardCrestList> => {
+
+  return customFetch<KnownCardCrestList>(getListKnownCardCrestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListKnownCardCrestsQueryKey = () => {
+    return [
+    `/api/social-settings/card-names/known-crests`
+    ] as const;
+    }
+
+
+export const getListKnownCardCrestsQueryOptions = <TData = Awaited<ReturnType<typeof listKnownCardCrests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKnownCardCrests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListKnownCardCrestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKnownCardCrests>>> = ({ signal }) => listKnownCardCrests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKnownCardCrests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListKnownCardCrestsQueryResult = NonNullable<Awaited<ReturnType<typeof listKnownCardCrests>>>
+export type ListKnownCardCrestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Crests Ovation already knows, to pick one for a team
+ */
+
+export function useListKnownCardCrests<TData = Awaited<ReturnType<typeof listKnownCardCrests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKnownCardCrests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListKnownCardCrestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetMetaConnectionUrl = () => {
 
 
@@ -25779,6 +25935,300 @@ export function useGetStorageObject<TData = Awaited<ReturnType<typeof getStorage
 
 
 
+
+export const getGetJuniorCardNamesUrl = () => {
+
+
+
+
+  return `/api/juniors/card-names`
+}
+
+/**
+ * Admin. Every junior opponent (grouped by its automatic short name, so each age group of one club is one row) and every junior grade, from the junior tables only, each with its automatic and club-set name and crest. Junior names are stored apart from senior names and never mix with them. Tenant-scoped.
+ * @summary The club's junior opponent and grade names for junior cards
+ */
+export const getJuniorCardNames = async ( options?: RequestInit): Promise<JuniorCardNamesListing> => {
+
+  return customFetch<JuniorCardNamesListing>(getGetJuniorCardNamesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorCardNamesQueryKey = () => {
+    return [
+    `/api/juniors/card-names`
+    ] as const;
+    }
+
+
+export const getGetJuniorCardNamesQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorCardNames>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorCardNames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorCardNamesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorCardNames>>> = ({ signal }) => getJuniorCardNames({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorCardNames>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorCardNamesQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorCardNames>>>
+export type GetJuniorCardNamesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's junior opponent and grade names for junior cards
+ */
+
+export function useGetJuniorCardNames<TData = Awaited<ReturnType<typeof getJuniorCardNames>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorCardNames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorCardNamesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetJuniorCardTeamNameUrl = () => {
+
+
+
+
+  return `/api/juniors/card-names/teams`
+}
+
+/**
+ * Admin. An empty or null shortName clears it, so junior cards fall back to the automatic short name. Tenant-scoped.
+ * @summary Set or clear the club's short name for a junior opponent
+ */
+export const setJuniorCardTeamName = async (juniorCardTeamNameUpdate: JuniorCardTeamNameUpdate, options?: RequestInit): Promise<JuniorCardNamesListing> => {
+
+  return customFetch<JuniorCardNamesListing>(getSetJuniorCardTeamNameUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorCardTeamNameUpdate,)
+  }
+);}
+
+
+
+
+export const getSetJuniorCardTeamNameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamName>>, TError,{data: BodyType<JuniorCardTeamNameUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamName>>, TError,{data: BodyType<JuniorCardTeamNameUpdate>}, TContext> => {
+
+const mutationKey = ['setJuniorCardTeamName'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setJuniorCardTeamName>>, {data: BodyType<JuniorCardTeamNameUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setJuniorCardTeamName(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetJuniorCardTeamNameMutationResult = NonNullable<Awaited<ReturnType<typeof setJuniorCardTeamName>>>
+    export type SetJuniorCardTeamNameMutationBody = BodyType<JuniorCardTeamNameUpdate>
+    export type SetJuniorCardTeamNameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or clear the club's short name for a junior opponent
+ */
+export const useSetJuniorCardTeamName = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamName>>, TError,{data: BodyType<JuniorCardTeamNameUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setJuniorCardTeamName>>,
+        TError,
+        {data: BodyType<JuniorCardTeamNameUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetJuniorCardTeamNameMutationOptions(options));
+    }
+
+export const getSetJuniorCardTeamCrestUrl = () => {
+
+
+
+
+  return `/api/juniors/card-names/crests`
+}
+
+/**
+ * Admin. As the senior crest: "upload", "known", "initials", or null to reset to the automatic crest. Tenant-scoped.
+ * @summary Set or reset the club's crest for a junior opponent
+ */
+export const setJuniorCardTeamCrest = async (juniorCardTeamCrestUpdate: JuniorCardTeamCrestUpdate, options?: RequestInit): Promise<JuniorCardNamesListing> => {
+
+  return customFetch<JuniorCardNamesListing>(getSetJuniorCardTeamCrestUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorCardTeamCrestUpdate,)
+  }
+);}
+
+
+
+
+export const getSetJuniorCardTeamCrestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamCrest>>, TError,{data: BodyType<JuniorCardTeamCrestUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamCrest>>, TError,{data: BodyType<JuniorCardTeamCrestUpdate>}, TContext> => {
+
+const mutationKey = ['setJuniorCardTeamCrest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setJuniorCardTeamCrest>>, {data: BodyType<JuniorCardTeamCrestUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setJuniorCardTeamCrest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetJuniorCardTeamCrestMutationResult = NonNullable<Awaited<ReturnType<typeof setJuniorCardTeamCrest>>>
+    export type SetJuniorCardTeamCrestMutationBody = BodyType<JuniorCardTeamCrestUpdate>
+    export type SetJuniorCardTeamCrestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or reset the club's crest for a junior opponent
+ */
+export const useSetJuniorCardTeamCrest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardTeamCrest>>, TError,{data: BodyType<JuniorCardTeamCrestUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setJuniorCardTeamCrest>>,
+        TError,
+        {data: BodyType<JuniorCardTeamCrestUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetJuniorCardTeamCrestMutationOptions(options));
+    }
+
+export const getSetJuniorCardCompetitionLabelUrl = () => {
+
+
+
+
+  return `/api/juniors/card-names/competitions`
+}
+
+/**
+ * Admin. An empty or null label clears it, so junior cards fall back to the automatic label. Tenant-scoped.
+ * @summary Set or clear the club's card label for a junior grade
+ */
+export const setJuniorCardCompetitionLabel = async (juniorCardCompetitionLabelUpdate: JuniorCardCompetitionLabelUpdate, options?: RequestInit): Promise<JuniorCardNamesListing> => {
+
+  return customFetch<JuniorCardNamesListing>(getSetJuniorCardCompetitionLabelUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorCardCompetitionLabelUpdate,)
+  }
+);}
+
+
+
+
+export const getSetJuniorCardCompetitionLabelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>, TError,{data: BodyType<JuniorCardCompetitionLabelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>, TError,{data: BodyType<JuniorCardCompetitionLabelUpdate>}, TContext> => {
+
+const mutationKey = ['setJuniorCardCompetitionLabel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>, {data: BodyType<JuniorCardCompetitionLabelUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setJuniorCardCompetitionLabel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetJuniorCardCompetitionLabelMutationResult = NonNullable<Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>>
+    export type SetJuniorCardCompetitionLabelMutationBody = BodyType<JuniorCardCompetitionLabelUpdate>
+    export type SetJuniorCardCompetitionLabelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or clear the club's card label for a junior grade
+ */
+export const useSetJuniorCardCompetitionLabel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>, TError,{data: BodyType<JuniorCardCompetitionLabelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setJuniorCardCompetitionLabel>>,
+        TError,
+        {data: BodyType<JuniorCardCompetitionLabelUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetJuniorCardCompetitionLabelMutationOptions(options));
+    }
 
 export const getGetJuniorsOverviewUrl = () => {
 

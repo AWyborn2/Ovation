@@ -21,6 +21,7 @@ import { resultContent, type ResultContent } from "@workspace/scorecard/card-con
 import { parseMatchDate } from "../match-date";
 import { getTenantBrand } from "../tenant-brand";
 import { contentNames } from "./match-day";
+import { contentJuniorNames } from "./junior-names";
 
 /** A scorecard to build a result from: the club's or central's, or a junior match's. */
 export type ResultSource =
@@ -30,6 +31,11 @@ export type ResultSource =
 export interface BuildResultsOptions {
   /** The club's names, when the caller already has them. */
   names?: CardNames;
+  /**
+   * The club's junior names (junior override tables only), when the caller
+   * already has them. A junior side never takes the senior names.
+   */
+  juniorNames?: CardNames;
   onNamesError?: (err: unknown) => void;
 }
 
@@ -63,7 +69,13 @@ async function build(
   opts: BuildResultsOptions,
 ): Promise<ResultContent[]> {
   if (!sources.length) return [];
-  const names = opts.names ?? (await contentNames(tenantId, opts.onNamesError));
+  const names = sources.some((s) => !s.junior)
+    ? (opts.names ?? (await contentNames(tenantId, opts.onNamesError)))
+    : {};
+  // A junior result takes the club's junior names only (juniors isolation).
+  const juniorNames = sources.some((s) => s.junior)
+    ? (opts.juniorNames ?? (await contentJuniorNames(tenantId, opts.onNamesError)))
+    : {};
   const brand = sources.some((s) => s.junior) ? await getTenantBrand(tenantId) : null;
   return sources.map((s) =>
     s.junior
@@ -73,7 +85,7 @@ async function build(
           junior: true,
           grade: juniorResultGrade(s.detail),
           day: resultDay(s.detail.matchDate),
-          names,
+          names: juniorNames,
         })
       : resultContent(matchToSummaryInput(s.detail), {
           kind,

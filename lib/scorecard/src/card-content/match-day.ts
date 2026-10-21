@@ -8,7 +8,7 @@
  */
 
 import {
-  cardTeamCrest,
+  resolveCardCrest,
   resolveCardCompetition,
   resolveCardTeamName,
   teamMonogram,
@@ -127,7 +127,7 @@ export function matchDayFixtureContent(
     opposition: {
       name,
       rawName,
-      crestUrl: fixture.opponentLogoUrl || cardTeamCrest(names, rawName),
+      crestUrl: resolveCardCrest(names, rawName, fixture.opponentLogoUrl),
       monogram: teamMonogram(name),
     },
     homeAway: fixture.isHome ? "HOME" : "AWAY",
