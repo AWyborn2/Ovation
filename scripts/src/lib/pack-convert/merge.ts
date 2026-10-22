@@ -173,7 +173,11 @@ export function paintOrder(lists: string[][]): string[] {
   return order;
 }
 
-/** Layers across sizes: one per signature and style, a box per size. */
+/**
+ * Layers across sizes: one per signature and style, a box per size. Where a
+ * signature splits by style, its layers share a `link` (the first one's id),
+ * so the editor treats them as one element (C2).
+ */
 export function mergeSizes(
   perSize: Array<{ size: TemplateSize; layers: Placed[] }>,
   /** Layer ids are unique in a document: each page's are prefixed with it. */
@@ -196,13 +200,17 @@ export function mergeSizes(
       list.push(entry);
       groups.set(key, list);
     }
+    let link: string | undefined;
     for (const entries of groups.values()) {
       const sizes = SIZES.filter((s) => entries.some((e) => e.size === s));
       const geometry: Partial<Record<TemplateSize, LayerBox>> = {};
       for (const e of entries) geometry[e.size] = e.p.box;
+      const id = `${prefix}l${++n}`;
+      link ??= id;
       out.push({
         ...(entries[0]!.p.layer as object),
-        id: `${prefix}l${++n}`,
+        id,
+        ...(groups.size > 1 ? { link } : {}),
         ...(sizes.length < SIZES.length ? { sizes } : {}),
         geometry,
       } as TemplateLayerV2);

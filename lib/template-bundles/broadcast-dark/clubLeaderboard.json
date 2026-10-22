@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark clubLeaderboard",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -38,7 +38,8 @@
                 "w": 100,
                 "h": 100
               }
-            }
+            },
+            "sig": "shape:1n943401b7btsl"
           },
           {
             "kind": "shape",
@@ -74,7 +75,8 @@
                   [0, 100]
                 ]
               }
-            }
+            },
+            "sig": "shape:0lhq7me1wvk7c3"
           },
           {
             "kind": "shape",
@@ -98,7 +100,8 @@
                   [0, 100]
                 ]
               }
-            }
+            },
+            "sig": "shape:1uyqsbu1a6q0fj"
           },
           {
             "kind": "shape",
@@ -135,7 +138,8 @@
                 ]
               },
               "opacity": 0.55
-            }
+            },
+            "sig": "shape:00yo5sn017lnbc"
           },
           {
             "kind": "shape",
@@ -160,7 +164,8 @@
                 ]
               },
               "opacity": 0.55
-            }
+            },
+            "sig": "shape:08b4nlf0o2hlr0"
           },
           {
             "kind": "image",
@@ -191,7 +196,8 @@
                 "w": 4.99,
                 "h": 9.5
               }
-            }
+            },
+            "sig": "image:194ijcq0drv4o1"
           },
           {
             "kind": "text",
@@ -232,7 +238,8 @@
                 "w": 59.66,
                 "h": 2.71
               }
-            }
+            },
+            "sig": "text:1buompc0sc3crf"
           },
           {
             "kind": "text",
@@ -261,7 +268,8 @@
                 "w": 34.87,
                 "h": 4.76
               }
-            }
+            },
+            "sig": "text:0u33pug0fmv9it"
           },
           {
             "kind": "text",
@@ -302,7 +310,8 @@
                 "w": 59.66,
                 "h": 1.09
               }
-            }
+            },
+            "sig": "text:1it0x4703n5gse"
           },
           {
             "kind": "text",
@@ -331,7 +340,8 @@
                 "w": 34.87,
                 "h": 2.06
               }
-            }
+            },
+            "sig": "text:0tw6gw31bjo76o"
           },
           {
             "kind": "shape",
@@ -360,7 +370,8 @@
                 "w": 14.84,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:1ylxks013d5njn"
           },
           {
             "kind": "shape",
@@ -377,7 +388,8 @@
                 "w": 7.79,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:0d1afa60t1lqvh"
           },
           {
             "kind": "text",
@@ -418,7 +430,8 @@
                 "w": 11.84,
                 "h": 1.61
               }
-            }
+            },
+            "sig": "text:1ugj5wr1lbt9g4"
           },
           {
             "kind": "text",
@@ -447,7 +460,8 @@
                 "w": 6.69,
                 "h": 2.86
               }
-            }
+            },
+            "sig": "text:0mqfr1s09mxde5"
           },
           {
             "kind": "text",
@@ -496,7 +510,8 @@
                 "w": 8.64,
                 "h": 0.99
               }
-            }
+            },
+            "sig": "text:0xu5ya11odxt72"
           },
           {
             "kind": "text",
@@ -533,7 +548,8 @@
                 "w": 5.01,
                 "h": 1.75
               }
-            }
+            },
+            "sig": "text:0i2nu1j1myd6ge"
           },
           {
             "kind": "text",
@@ -562,7 +578,8 @@
                 "w": 63.77,
                 "h": 2.22
               }
-            }
+            },
+            "sig": "text:001cwwa15dvq1n"
           },
           {
             "kind": "text",
@@ -597,7 +614,8 @@
                 "w": 85.03,
                 "h": 1.67
               }
-            }
+            },
+            "sig": "text:109j6x11vz2mrw"
           },
           {
             "kind": "text",
@@ -621,7 +639,8 @@
                 "w": 27.09,
                 "h": 4.45
               }
-            }
+            },
+            "sig": "text:1re108f0ahg4c8"
           },
           {
             "kind": "text",
@@ -644,7 +663,8 @@
                 "w": 48.53,
                 "h": 10.46
               }
-            }
+            },
+            "sig": "text:0bbjfv50yuvb0s"
           },
           {
             "kind": "text",
@@ -673,7 +693,8 @@
                 "w": 64.67,
                 "h": 7.81
               }
-            }
+            },
+            "sig": "text:1i79vy018jinct"
           },
           {
             "kind": "text",
@@ -696,7 +717,8 @@
                 "w": 25.49,
                 "h": 10.32
               }
-            }
+            },
+            "sig": "text:11x54py0wr87zn"
           },
           {
             "kind": "rows",
@@ -826,7 +848,8 @@
                 "w": 81.85,
                 "h": 44.89
               }
-            }
+            },
+            "sig": "rows:0na0wk41mapvsj"
           },
           {
             "kind": "rows",
@@ -962,7 +985,8 @@
                 "w": 88,
                 "h": 33.53
               }
-            }
+            },
+            "sig": "rows:16lir0x1kknnbs"
           },
           {
             "kind": "rows",
@@ -1092,7 +1116,8 @@
                 "w": 51.93,
                 "h": 45.37
               }
-            }
+            },
+            "sig": "rows:10uurfk0d2ck2j"
           },
           {
             "kind": "text",
@@ -1135,7 +1160,8 @@
                 "w": 41.12,
                 "h": 1.88
               }
-            }
+            },
+            "sig": "text:0iyzkfg0hi15kp"
           },
           {
             "kind": "text",
@@ -1166,7 +1192,8 @@
                 "w": 21.96,
                 "h": 3.49
               }
-            }
+            },
+            "sig": "text:0z3zhna0rwkcjx"
           },
           {
             "kind": "shape",
@@ -1199,7 +1226,8 @@
                 "w": 93.7,
                 "h": 0.16
               }
-            }
+            },
+            "sig": "shape:0lm21nz1xfg9qg"
           },
           {
             "kind": "text",
@@ -1237,7 +1265,8 @@
                 "w": 10.36,
                 "h": 1.09
               }
-            }
+            },
+            "sig": "text:13usy4u0zxs1rb"
           },
           {
             "kind": "text",
@@ -1263,7 +1292,8 @@
                 "w": 5.91,
                 "h": 2.06
               }
-            }
+            },
+            "sig": "text:08l65ms1one11n"
           },
           {
             "kind": "shape",
@@ -1292,7 +1322,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:13krhdw14wnb4v"
           },
           {
             "kind": "shape",
@@ -1309,7 +1340,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:1pbrx6y035mfgx"
           },
           {
             "kind": "image",
@@ -1338,7 +1370,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "image:047j3h50otvmqq"
           },
           {
             "kind": "image",
@@ -1355,7 +1388,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "image:18qemif1fyp00c"
           },
           {
             "kind": "shape",
@@ -1384,7 +1418,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:13krhdw14wnb4v"
           },
           {
             "kind": "shape",
@@ -1401,7 +1436,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:1pbrx6y035mfgx"
           },
           {
             "kind": "image",
@@ -1430,7 +1466,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "image:0wa3pc6084xput"
           },
           {
             "kind": "image",
@@ -1447,7 +1484,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "image:10vnp3s1tzck23"
           },
           {
             "kind": "shape",
@@ -1476,7 +1514,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:13krhdw14wnb4v"
           },
           {
             "kind": "shape",
@@ -1493,7 +1532,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:1pbrx6y035mfgx"
           },
           {
             "kind": "image",
@@ -1522,7 +1562,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "image:1dc2s8j1fjjl7s"
           },
           {
             "kind": "image",
@@ -1539,7 +1580,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "image:130ivkd072f9rq"
           },
           {
             "kind": "text",
@@ -1582,7 +1624,8 @@
                 "w": 41.12,
                 "h": 1.88
               }
-            }
+            },
+            "sig": "text:1jq5z970ot45cw"
           },
           {
             "kind": "text",
@@ -1613,7 +1656,8 @@
                 "w": 21.96,
                 "h": 3.49
               }
-            }
+            },
+            "sig": "text:1c044jn0p7sthe"
           }
         ]
       }

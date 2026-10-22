@@ -51,7 +51,11 @@ import {
   type ColourMode,
   type PackCapture,
 } from "@workspace/scorecard/pack-capture";
-import { templateDocumentErrors, type TemplateSize } from "@workspace/scorecard/kind-templates";
+import {
+  signDocument,
+  templateDocumentErrors,
+  type TemplateSize,
+} from "@workspace/scorecard/kind-templates";
 import type { Page } from "puppeteer-core";
 import { REPO_ROOT, callHarness, withHarness, type HarnessSession } from "./lib/harness-browser";
 import { LOOK_POLISH } from "./lib/pack-convert/polish";
@@ -559,6 +563,8 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     if (polish)
       for (const conv of conversions)
         polishNotes[conv.kind] = polish.apply(conv.document, conv.kind);
+    // Every layer's design signature, for the element library (C2).
+    if (!opts.recheck) for (const conv of conversions) signDocument(conv.document);
     const checks: Checks = {};
     const validation = validatorReadsV2()
       ? Object.fromEntries(

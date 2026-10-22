@@ -227,9 +227,12 @@ describe("merging", () => {
     const texts = merged.filter((l) => l.kind === "text");
     expect(texts).toHaveLength(2);
     expect(texts.map((t) => t.sizes)).toEqual([["square"], ["story"]]);
+    // The split copies are one element: they share a link, the first one's id (C2).
+    expect(texts.map((t) => t.link)).toEqual([texts[0]!.id, texts[0]!.id]);
     const photo = merged.filter((l) => l.kind === "photo");
     expect(photo).toHaveLength(1);
     expect(Object.keys(photo[0]!.geometry)).toEqual(["square", "story"]);
+    expect(photo[0]!.link).toBeUndefined();
   });
 
   it("a layer only drawn without the photo shows when there is none", () => {
