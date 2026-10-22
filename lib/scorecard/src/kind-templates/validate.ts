@@ -165,10 +165,14 @@ const V2_LAYER_KEYS = new Set([
   "stack",
   "children",
   "svg",
+  "link",
+  "sig",
 ]);
 /** Characters that could close a style attribute or open markup. */
 const UNSAFE = /["<>;{}\\]/;
 const ID = /^[\w.-]{1,64}$/;
+/** A design signature: `<kind>:<hash>` (`layerSignature`). */
+const SIG = /^[a-z]+:[0-9a-z]{1,32}$/;
 const KEY = /^\w{1,64}$/;
 const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
@@ -715,6 +719,10 @@ function checkLayerV2(
     return;
   }
   checkLayerBody(errors, layer, where, scope);
+  if (layer.link !== undefined && (typeof layer.link !== "string" || !ID.test(layer.link)))
+    errors.push(`${where}.link needs a simple id.`);
+  if (layer.sig !== undefined && (typeof layer.sig !== "string" || !SIG.test(layer.sig)))
+    errors.push(`${where}.sig must be a design signature (kind:hash).`);
   if (layer.showWhen !== undefined) {
     const s = layer.showWhen;
     if (!isObject(s)) errors.push(`${where}.showWhen must be { field, photo, sponsors, junior }.`);

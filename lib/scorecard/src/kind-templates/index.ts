@@ -12,6 +12,7 @@ export * from "./pages";
 export * from "./page-tokens";
 export * from "./slides";
 export * from "./placeholder";
+export * from "./signature";
 export * from "./svg";
 export * from "./warnings";
 export * from "./validate";
