@@ -66,6 +66,6 @@ for (const file of files) {
   );
 }
 console.log(
-  `decorations ${summary.candidates}, too faint ${summary.faint}, distinct ${summary.distinct}, kept ${summary.kept}, invalid ${summary.invalid.length}`,
+  `decorations ${summary.candidates}, drawing nothing ${summary.blank}, distinct ${summary.distinct}, kept ${summary.kept}, invalid ${summary.invalid.length}`,
 );
 for (const i of summary.invalid.slice(0, 10)) console.log(`  invalid ${i.slug}: ${i.error}`);

@@ -450,7 +450,7 @@
       "name": "Accent chip",
       "category": "badges",
       "tags": ["club-kit", "badges", "accent", "chip", "shape"],
-      "signature": "e2d5c298f6143c5b",
+      "signature": "c54a7a339f78b99a",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -1345,7 +1345,7 @@
       "name": "Stack",
       "category": "sponsor-strips",
       "tags": ["club-kit", "sponsor-strips", "stack", "group"],
-      "signature": "2fb01bf791a19a63",
+      "signature": "ebafefac7bcae759",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -3455,7 +3455,7 @@
       "name": "Crest watermark",
       "category": "crest-frames",
       "tags": ["club-kit", "crest-frames", "club kit", "crest", "logo", "watermark", "faint"],
-      "signature": "f516b158d74cb421",
+      "signature": "9e67f8accc3bab86",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -4928,7 +4928,7 @@
         "away",
         "innings"
       ],
-      "signature": "7d65e3bc70f8e0dd",
+      "signature": "451de30dd27ccf89",
       "document": {
         "formatVersion": 2,
         "layers": [

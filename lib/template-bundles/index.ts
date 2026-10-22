@@ -462,14 +462,14 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
 ];
 
 export const ELEMENT_BUNDLES: ElementBundle[] = [
-  { look: "bold-type", hash: "e80e63325fa57436ba4ecc7cf97184e418e697410ffa6bc8934a6faef8d426df", file: elements0 },
-  { look: "broadcast-classic", hash: "3788fd939c66f291e7ea471692b7de7e9b4b4676a1e54c784cec1f7ae2ccf7f2", file: elements1 },
-  { look: "broadcast-dark", hash: "299815e52ab1bf1b43f15ed4d369f1538084be2f72d4a1371b6a9e1d0c0309c4", file: elements2 },
-  { look: "club-kit-classic", hash: "e94e1977e4d09d19eaebcdc663a6f74d5f8dde087514465188bba0f3d21b391c", file: elements3 },
-  { look: "club-kit", hash: "c500ddd7f6fb3a644b93709ae187ef9e299a90f854d4df520e1c160358e79087", file: elements4 },
-  { look: "clubhouse", hash: "1eaf6ad121c06013f0da75faee96e32808c94197b6bc1234b3aa236b6f5df2e0", file: elements5 },
+  { look: "bold-type", hash: "5ab11395fdf94a7552dc1584382237a0e5de579d7b4ca11e8d2f0b18a59bf44a", file: elements0 },
+  { look: "broadcast-classic", hash: "5c99c1025b9bd9c33e7280ea67a8db22d0d062fe7bec5dc22c03b331be2634d5", file: elements1 },
+  { look: "broadcast-dark", hash: "1199f381bfc4b4e6a0d2c5a24185d1ef175da0cd43d69f6bd8381895230137bd", file: elements2 },
+  { look: "club-kit-classic", hash: "289909d02ceb567c7f4f453dbc66317693012fcc29d9a0b5bcc7934384d68fdc", file: elements3 },
+  { look: "club-kit", hash: "ca9d3f2fc2a4cb128d9d561f25c887af482ab099304c2c7b5ef2fe2d3a8406fc", file: elements4 },
+  { look: "clubhouse", hash: "1873e72f0be75b2fb7fb77efb3f973e5705d93e8c543b9ec1700474b72e9c251", file: elements5 },
   { look: "duotone", hash: "68a332f3f26456c321fa4fe8c47a272e1bf1c9496b70af9371617eca7a3e09c5", file: elements6 },
-  { look: "gold-foil", hash: "68368e7559e8cba040d49f02ef4390db457ab154084cf0efef75cbce29989b16", file: elements7 },
-  { look: "neon-night", hash: "a7b216737b7d529313f25c139caad4fbe02dd0a5afc8437ea32ac4d03cb352e6", file: elements8 },
-  { look: "sunset", hash: "b920dd213c7beaf4d7e5df5d6a41ba79022a51f031990fd6515aff14033c415b", file: elements9 },
+  { look: "gold-foil", hash: "d42a61a8ca3482b23c5ac72ebd890da441eff25a293a0941e917ad26750864cc", file: elements7 },
+  { look: "neon-night", hash: "750c7883e15486d85fcb35941261b9909f9d7eeecb2d02858c3d6819d0e05981", file: elements8 },
+  { look: "sunset", hash: "be5bd0ed1aba653dc7a37174414d1a695b1d2429b0e039836fb7f224621a1fe2", file: elements9 },
 ];

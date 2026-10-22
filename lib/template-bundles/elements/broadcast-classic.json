@@ -139,7 +139,7 @@
       "name": "Gold chip",
       "category": "badges",
       "tags": ["broadcast-classic", "badges", "gold", "chip", "shape", "angled"],
-      "signature": "5888717b6eff2606",
+      "signature": "1ad5070c3e9e5a93",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -176,7 +176,7 @@
       "name": "Gold chip 2",
       "category": "badges",
       "tags": ["broadcast-classic", "badges", "gold", "chip", "2", "shape", "angled"],
-      "signature": "8059f18cb0e4aca0",
+      "signature": "9e864338f069b7a0",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -221,11 +221,56 @@
       }
     },
     {
+      "slug": "broadcast-classic/badges/stat-1-panel",
+      "name": "Stat 1 panel",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "stat", "1", "panel", "shape", "subtle"],
+      "signature": "cdb32ff5f6d876af",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "rgba(255,255,255,.07)"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64,
+                "w": 18.13,
+                "h": 11
+              },
+              "portrait": {
+                "x": 6,
+                "y": 71.2,
+                "w": 18.13,
+                "h": 8.8
+              },
+              "story": {
+                "x": 6,
+                "y": 79.75,
+                "w": 28.8,
+                "h": 6.19
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 64,
+                "w": 11.69,
+                "h": 11
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "slug": "broadcast-classic/rules/accent-slash-2",
       "name": "Accent slash 2",
       "category": "rules",
       "tags": ["broadcast-classic", "rules", "accent", "slash", "2", "shape"],
-      "signature": "df6a57fb5cb46a49",
+      "signature": "0e214ea3c2571749",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -271,10 +316,10 @@
       }
     },
     {
-      "slug": "broadcast-classic/rules/accent-bar",
-      "name": "Accent bar",
+      "slug": "broadcast-classic/rules/footer-rule",
+      "name": "Footer rule",
       "category": "rules",
-      "tags": ["broadcast-classic", "rules", "accent", "bar", "shape"],
+      "tags": ["broadcast-classic", "rules", "footer", "rule", "shape", "subtle"],
       "signature": "8ac823c19a6084d6",
       "document": {
         "formatVersion": 2,
@@ -283,32 +328,32 @@
             "id": "e1",
             "kind": "shape",
             "style": {
-              "background": "var(--gold,#FBAC27)"
+              "background": "rgba(255,255,255,.14)"
             },
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 54.23,
-                "w": 9,
-                "h": 0.8
+                "y": 87.4,
+                "w": 88,
+                "h": 0.25
               },
               "portrait": {
                 "x": 6,
-                "y": 65.3,
-                "w": 9,
-                "h": 0.64
+                "y": 89.92,
+                "w": 88,
+                "h": 0.2
               },
               "story": {
                 "x": 6,
-                "y": 75.61,
-                "w": 9,
-                "h": 0.45
+                "y": 92.91,
+                "w": 88,
+                "h": 0.14
               },
               "landscape": {
                 "x": 3.15,
-                "y": 56.63,
-                "w": 4.72,
-                "h": 0.8
+                "y": 87.4,
+                "w": 93.7,
+                "h": 0.25
               }
             }
           }

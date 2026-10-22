@@ -145,7 +145,7 @@
       "name": "Accent pill",
       "category": "badges",
       "tags": ["bold-type", "badges", "accent", "pill", "shape", "rounded"],
-      "signature": "17a929c9e8a8a325",
+      "signature": "26db730437aea671",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -216,10 +216,40 @@
       }
     },
     {
-      "slug": "bold-type/badges/white-chip",
-      "name": "White chip",
+      "slug": "bold-type/badges/ink-pill",
+      "name": "Ink pill",
       "category": "badges",
-      "tags": ["bold-type", "badges", "white", "chip", "shape"],
+      "tags": ["bold-type", "badges", "ink", "pill", "shape", "rounded"],
+      "signature": "14f0ab834e571e83",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)",
+              "radius": 7.13,
+              "opacity": 0.74
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 34.19,
+                "w": 5.28,
+                "h": 5.28
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bold-type/badges/glass-chip",
+      "name": "Glass chip",
+      "category": "badges",
+      "tags": ["bold-type", "badges", "glass", "chip", "shape", "subtle"],
       "signature": "0b31e5390338263f",
       "document": {
         "formatVersion": 2,
@@ -229,24 +259,63 @@
             "style": {
               "fill": "#FFFFFF29",
               "border": {
-                "width": 0.19,
+                "width": 0.09,
                 "color": "#FFFFFF8C"
               }
             },
             "id": "e1",
-            "sizes": ["portrait", "story"],
+            "sizes": ["square"],
             "geometry": {
-              "portrait": {
+              "square": {
                 "x": 6,
-                "y": 59.45,
-                "w": 23.92,
-                "h": 11.52
+                "y": 64.28,
+                "w": 17.85,
+                "h": 10.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bold-type/badges/hairline-chip",
+      "name": "Hairline chip",
+      "category": "badges",
+      "tags": ["bold-type", "badges", "hairline", "chip", "shape", "outline", "subtle"],
+      "signature": "62865a48d42f8da1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)"
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 82.08,
+                "y": 61.99,
+                "w": 5.77,
+                "h": 3.35
+              },
+              "portrait": {
+                "x": 86.37,
+                "y": 61.05,
+                "w": 7.63,
+                "h": 3.53
               },
               "story": {
-                "x": 6,
-                "y": 41.8,
-                "w": 23.92,
-                "h": 8.1
+                "x": 86.37,
+                "y": 57.77,
+                "w": 7.63,
+                "h": 2.48
               }
             }
           }
@@ -303,7 +372,7 @@
       "name": "Accent rule",
       "category": "rules",
       "tags": ["bold-type", "rules", "accent", "rule", "shape"],
-      "signature": "99d744cf3de0178e",
+      "signature": "d8afdc87c5d2982f",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -338,6 +407,98 @@
                 "y": 47.86,
                 "w": 40.37,
                 "h": 0.13
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bold-type/rules/hairline-rule",
+      "name": "Hairline rule",
+      "category": "rules",
+      "tags": ["bold-type", "rules", "hairline", "rule", "shape", "outline", "subtle"],
+      "signature": "6cceadeca08590e6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 6.49
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 5.19
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 3.65
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bold-type/rules/hairline-rule-2",
+      "name": "Hairline rule 2",
+      "category": "rules",
+      "tags": ["bold-type", "rules", "hairline", "rule", "2", "shape", "outline", "subtle"],
+      "signature": "81b81a3543a937eb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 44.58,
+                "w": 81.85,
+                "h": 2.37
+              },
+              "portrait": {
+                "x": 6,
+                "y": 45.18,
+                "w": 88,
+                "h": 2.5
+              },
+              "story": {
+                "x": 6,
+                "y": 46.61,
+                "w": 88,
+                "h": 1.76
               }
             }
           }

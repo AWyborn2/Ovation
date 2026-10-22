@@ -1,7 +1,7 @@
 /**
  * Every library element draws when inserted (editable-elements plan, D2–D3):
  * on a neutral v2 template and on a v1 Studio draft, with no look's palette
- * declared, it paints something you can see, every palette colour it names
+ * declared, it paints something (subtle pieces included), every palette colour it names
  * is defined, and the draft draws it exactly as the template does.
  *
  * Reads the committed element files from disk (the web app never imports the
@@ -10,7 +10,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { MIN_ELEMENT_PAINT, paintStrength } from "@workspace/scorecard/kind-templates";
+import { paintStrength } from "@workspace/scorecard/kind-templates";
 import { buildPackData } from "@/lib/pack-card-data";
 import { renderFreeLayers } from "@/lib/pack-render/adjustments";
 import {
@@ -68,11 +68,8 @@ describe("every library element, inserted", () => {
       for (const size of ["square", "story"] as CardSize[]) {
         const layers: FreeLayer[] = elementLayers(element.document, size);
         expect(layers.length).toBeGreaterThan(0);
-        // Something you can see. The Club Kit panel pieces are curated (each
-        // matched its old drawing by pixels), and the crest watermark is faint by design.
-        const strength = paintStrength(layers);
-        if (element.tags.includes("club kit")) expect(strength).toBeGreaterThan(0);
-        else expect(strength).toBeGreaterThanOrEqual(MIN_ELEMENT_PAINT);
+        // It draws something: subtle pieces (glass, hairlines) count, nothing doesn't.
+        expect(paintStrength(layers)).toBeGreaterThan(0);
 
         const template = draw({ formatVersion: 2, pages: { card: { layers } } }, size);
         const draft = draw({ layers }, size);

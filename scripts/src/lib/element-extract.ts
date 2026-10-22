@@ -22,8 +22,11 @@
  *   slashes, boxes around the club crest crest frames, anything on the
  *   sponsors page sponsor strips, a clear box drawn by one or two border
  *   sides a rule. A plain full-card fill is the card's background, not a
- *   decoration, and is left out, as is anything too faint to see
- *   (`paintStrength` under `MIN_ELEMENT_PAINT`).
+ *   decoration, and is left out, as is anything that draws nothing at all.
+ * - **Subtle decorations stay**: glass panels, hairlines and soft glows are
+ *   design pieces too. One painting under `MIN_ELEMENT_PAINT` is named for
+ *   what it is ("Hairline rule", "Glass panel"), tagged `subtle` and listed
+ *   after the strong pieces.
  * - Signatures are per look: a decoration in two looks is two elements,
  *   since each look draws it in its own colours. An exact copy of an earlier
  *   look's decoration is that look's, and converted looks come first (the
@@ -85,8 +88,8 @@ export type ElementFile = { look: string; elements: ExtractedElement[] };
 
 export type ExtractSummary = {
   candidates: number;
-  /** Decorations left out as too faint to see (`paintStrength`). */
-  faint: number;
+  /** Decorations left out as drawing nothing at all (`paintStrength` 0). */
+  blank: number;
   distinct: number;
   kept: number;
   invalid: Array<{ slug: string; error: string }>;
@@ -166,8 +169,10 @@ function lookOf(value: unknown, key = ""): unknown {
     return out;
   }
   if (typeof value === "number") {
-    // Angles, gradient stops and opacity keep their meaning across sizes.
-    if (["angle", "at", "opacity", "amount"].includes(key)) return grid(value, 5);
+    // Angles, gradient stops and opacity keep their meaning across sizes:
+    // degrees and percent to 5, opacity and filter amounts (0–1) to a tenth.
+    if (["angle", "at"].includes(key)) return grid(value, 5);
+    if (["opacity", "amount"].includes(key)) return grid(value, 0.1);
     return value > 0 ? "n" : value;
   }
   // Colours are brand tokens or the look's own: a club recolours either, so
@@ -212,6 +217,20 @@ function mainColour(layer: Layer): string | null {
     if (found) return found;
   }
   return null;
+}
+
+/**
+ * What a faint decoration is, honestly: a hairline (drawn only by a thin
+ * border), glass (a see-through fill) or soft (a faint glow, fade or picture).
+ */
+export function subtleWord(layer: Layer): string {
+  const s = layer.style ?? {};
+  const fill = s.fill ?? s.background;
+  const border = s.border as { width?: number } | undefined;
+  if (border && colourAlpha(fill) <= 0.1 && typeof fill !== "object") return "Hairline";
+  if (typeof fill === "string" && !/gradient\(/i.test(fill) && colourAlpha(fill) > 0)
+    return "Glass";
+  return "Soft";
 }
 
 /** A plain word for a colour: the brand token it uses, or light, dark or tinted. */
@@ -394,7 +413,7 @@ export function extractElements(looks: LookInput[]): {
 } {
   const summary: ExtractSummary = {
     candidates: 0,
-    faint: 0,
+    blank: 0,
     distinct: 0,
     kept: 0,
     invalid: [],
@@ -420,9 +439,9 @@ export function extractElements(looks: LookInput[]): {
           const sorted = categorise(layer, page, crests);
           if (!sorted) continue;
           summary.candidates += 1;
-          // Too faint to see anywhere (a 35%-opacity hairline, a clear box).
-          if (paintStrength([layer]) < MIN_ELEMENT_PAINT) {
-            summary.faint += 1;
+          // Draws nothing at all: clear, zero opacity, no border or shadow.
+          if (paintStrength([layer]) <= 0) {
+            summary.blank += 1;
             continue;
           }
           const key = exactStyle(layer);
@@ -451,20 +470,30 @@ export function extractElements(looks: LookInput[]): {
   for (const look of ordered) {
     const mine = bySignature.get(look.slug)!;
     // Most used first.
+    // Strong pieces first, then the subtle ones; most used first within each.
     const candidates = [...mine]
-      .map(([sig, occ]) => ({ sig, uses: occ.length, first: occ[0]! }))
-      .sort((a, b) => b.uses - a.uses || a.sig.localeCompare(b.sig));
+      .map(([sig, occ]) => ({
+        sig,
+        uses: occ.length,
+        first: occ[0]!,
+        subtle: paintStrength([occ[0]!.layer]) < MIN_ELEMENT_PAINT,
+      }))
+      .sort(
+        (a, b) =>
+          Number(a.subtle) - Number(b.subtle) || b.uses - a.uses || a.sig.localeCompare(b.sig),
+      );
     const names = new Set<string>();
     const slugs = new Set<string>();
     const kept: ExtractedElement[] = [];
     for (const category of ELEMENT_CATEGORIES) {
       const inCategory = candidates.filter((c) => c.first.category === category);
       let n = 0;
-      for (const { sig, first } of inCategory) {
+      for (const { sig, first, subtle } of inCategory) {
         if (n >= PER_CATEGORY) break;
         const merged = mergeSizes(first, mine.get(sig)!);
         let name =
-          ownName(first.layer) ?? `${colourWord(mainColour(first.layer))} ${first.noun}`.trim();
+          ownName(first.layer) ??
+          `${subtle ? subtleWord(first.layer) : colourWord(mainColour(first.layer))} ${first.noun}`.trim();
         for (let i = 2; names.has(name.toLowerCase()); i++)
           name = `${name.replace(/ \d+$/, "")} ${i}`;
         let slug = `${look.slug}/${category}/${slugify(name)}`;
@@ -486,7 +515,7 @@ export function extractElements(looks: LookInput[]): {
           slug,
           name,
           category,
-          tags: tagsFor(look.slug, category, first, name),
+          tags: tagsFor(look.slug, category, first, name, subtle),
           signature: sig,
           document,
         });
@@ -520,7 +549,13 @@ function mergeSizes(first: Occurrence, all: Occurrence[]): Layer {
   return merged;
 }
 
-function tagsFor(look: string, category: ElementCategory, o: Occurrence, name: string): string[] {
+function tagsFor(
+  look: string,
+  category: ElementCategory,
+  o: Occurrence,
+  name: string,
+  subtle: boolean,
+): string[] {
   const box = refBox(o.layer)![1];
   const f = featuresOf(o.layer, box);
   const tags = [
@@ -532,6 +567,8 @@ function tagsFor(look: string, category: ElementCategory, o: Occurrence, name: s
     f.clip ? "angled" : "",
     f.outline ? "outline" : "",
     f.rounded ? "rounded" : "",
+    // Faint by design (glass, hairlines, soft glows): findable as such.
+    subtle ? "subtle" : "",
   ];
   return [...new Set(tags.filter((t) => t && t.length <= 24))].slice(0, 12);
 }

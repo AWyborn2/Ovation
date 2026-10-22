@@ -45,6 +45,7 @@ function setup(onAdd = vi.fn()) {
         element(7, "Gold band", KIT),
         element(8, "Seaview strip", null),
         { ...element(9, "Our chip", null), authorName: "Demo CC", mine: true },
+        { ...element(10, "Glass panel", KIT), tags: ["glass", "subtle"] },
       ],
       nextCursor: 8,
     },
@@ -144,5 +145,12 @@ describe("LibraryElements", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send report" }));
     expect(await screen.findByText(/Ovation will review it/)).toBeTruthy();
     expect(api.calls.some((u) => u.includes("/template-library/elements/8/report"))).toBe(true);
+  });
+
+  it("marks a subtle element so it's findable as such", async () => {
+    setup();
+    const tile = (await screen.findByRole("button", { name: "Add Glass panel" })) as HTMLElement;
+    expect(tile.textContent).toMatch(/Subtle/);
+    expect(screen.getByRole("button", { name: "Add Gold band" }).textContent).not.toMatch(/Subtle/);
   });
 });

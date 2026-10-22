@@ -6,7 +6,7 @@
       "name": "Gold frame",
       "category": "frames",
       "tags": ["gold-foil", "frames", "gold", "frame", "shape", "outline"],
-      "signature": "86216af4f442a762",
+      "signature": "eb518dd754d174e9",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -40,6 +40,51 @@
                 "y": 1.46,
                 "w": 94.8,
                 "h": 97.08
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "gold-foil/frames/hairline-frame",
+      "name": "Hairline frame",
+      "category": "frames",
+      "tags": ["gold-foil", "frames", "hairline", "frame", "shape", "outline", "subtle"],
+      "signature": "6847420a7e3613db",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)"
+              },
+              "opacity": 0.45,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 3.6,
+                "y": 3.6,
+                "w": 92.8,
+                "h": 92.8
+              },
+              "portrait": {
+                "x": 3.6,
+                "y": 2.88,
+                "w": 92.8,
+                "h": 94.24
+              },
+              "story": {
+                "x": 3.6,
+                "y": 2.03,
+                "w": 92.8,
+                "h": 95.95
               }
             }
           }
@@ -238,7 +283,7 @@
       "name": "Dark pill",
       "category": "badges",
       "tags": ["gold-foil", "badges", "dark", "pill", "shape", "rounded"],
-      "signature": "17a929c9e8a8a325",
+      "signature": "14f0ab834e571e83",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -459,11 +504,56 @@
       }
     },
     {
+      "slug": "gold-foil/badges/hairline-chip",
+      "name": "Hairline chip",
+      "category": "badges",
+      "tags": ["gold-foil", "badges", "hairline", "chip", "shape", "outline", "subtle"],
+      "signature": "c5408b037f85fa1d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)"
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 82.08,
+                "y": 61.99,
+                "w": 5.77,
+                "h": 3.35
+              },
+              "portrait": {
+                "x": 86.37,
+                "y": 61.05,
+                "w": 7.63,
+                "h": 3.53
+              },
+              "story": {
+                "x": 86.37,
+                "y": 57.77,
+                "w": 7.63,
+                "h": 2.48
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "slug": "gold-foil/rules/gold-rule",
       "name": "Gold rule",
       "category": "rules",
       "tags": ["gold-foil", "rules", "gold", "rule", "shape"],
-      "signature": "99d744cf3de0178e",
+      "signature": "0a4a2c1c9b9fd55b",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -509,7 +599,7 @@
       "name": "Gold divider",
       "category": "rules",
       "tags": ["gold-foil", "rules", "gold", "divider", "shape"],
-      "signature": "b0f1dea936f1be38",
+      "signature": "ab130cf4a9fe53cd",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -544,6 +634,98 @@
                 "y": 39.88,
                 "w": 0.08,
                 "h": 23.18
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "gold-foil/rules/hairline-rule",
+      "name": "Hairline rule",
+      "category": "rules",
+      "tags": ["gold-foil", "rules", "hairline", "rule", "shape", "outline", "subtle"],
+      "signature": "62e95f5154efe37a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 6.49
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 5.19
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 3.65
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "gold-foil/rules/hairline-rule-2",
+      "name": "Hairline rule 2",
+      "category": "rules",
+      "tags": ["gold-foil", "rules", "hairline", "rule", "2", "shape", "outline", "subtle"],
+      "signature": "a52fd2842fa790db",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 44.58,
+                "w": 81.85,
+                "h": 2.37
+              },
+              "portrait": {
+                "x": 6,
+                "y": 45.18,
+                "w": 88,
+                "h": 2.5
+              },
+              "story": {
+                "x": 6,
+                "y": 46.61,
+                "w": 88,
+                "h": 1.76
               }
             }
           }
