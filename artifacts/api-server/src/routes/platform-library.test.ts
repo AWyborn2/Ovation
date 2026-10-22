@@ -31,10 +31,7 @@ let cookie: string;
 let platformAdminId: number;
 const bundleIds: Record<string, number> = {};
 const bundles = () => [
-  fixtureBundle(LOOK, [
-    fixtureTemplate("milestone"),
-    fixtureTemplate("record", { listed: false }),
-  ]),
+  fixtureBundle(LOOK, [fixtureTemplate("milestone"), fixtureTemplate("record", { listed: false })]),
 ];
 
 // The fit job's stand-in: each new version gets `verdict` (null leaves it pending).
@@ -85,9 +82,9 @@ afterAll(async () => {
     like(libraryTemplatesTable.slug, `${LOOK}/%`),
     like(libraryTemplatesTable.name, `${NAME_PREFIX}%`),
   );
-  const ids = (await db.select({ id: libraryTemplatesTable.id }).from(libraryTemplatesTable).where(mine)).map(
-    (r) => r.id,
-  );
+  const ids = (
+    await db.select({ id: libraryTemplatesTable.id }).from(libraryTemplatesTable).where(mine)
+  ).map((r) => r.id);
   if (ids.length) {
     await db
       .delete(libraryTemplateVersionsTable)
@@ -303,7 +300,8 @@ describe("console library: looks", () => {
     expect((await api.post("/looks", { slug, name: "Again" })).status).toBe(409);
     expect((await api.post("/looks", { slug: "Not A Slug", name: "x" })).status).toBe(400);
     const bundleSlug = TEMPLATE_BUNDLES[0]?.slug;
-    if (bundleSlug) expect((await api.post("/looks", { slug: bundleSlug, name: "x" })).status).toBe(409);
+    if (bundleSlug)
+      expect((await api.post("/looks", { slug: bundleSlug, name: "x" })).status).toBe(409);
   });
 
   it("lists every look with its template count, and files a template under one", async () => {
