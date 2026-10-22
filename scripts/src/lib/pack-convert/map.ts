@@ -1478,6 +1478,25 @@ function rowCells(
       cells.push({ field, ...lineTall(at(el), style), style });
     }
   }
+  // A left-aligned text cell runs to the next cell on its line, as the pack's flex row lets
+  // it grow: its captured width is only as wide as that row's own text.
+  for (const c of cells) {
+    if (c.show || (c.style?.align ?? "left") !== "left") continue;
+    const top = c.y ?? 0;
+    const bottom = top + (c.h ?? 100);
+    const next = cells
+      .filter(
+        (o) =>
+          o !== c &&
+          o.show !== "backdrop" &&
+          o.x > c.x + 0.5 &&
+          (o.y ?? 0) < bottom &&
+          (o.y ?? 0) + (o.h ?? 100) > top,
+      )
+      .map((o) => o.x);
+    const edge = next.length ? Math.min(...next) - 1 : 98;
+    if (edge > c.x + c.w) c.w = r2(edge - c.x);
+  }
   const firstField = cells.find((c) => c.field)?.field ?? "";
   // A backdrop cell needs a field key; it draws whatever the field holds.
   for (const c of cells) if (!c.field) c.field = firstField;
