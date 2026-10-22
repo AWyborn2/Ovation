@@ -52,11 +52,12 @@
   .rows { overflow: hidden; min-height: 0;
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 2.2cqw, #000 calc(100% - 2.2cqw), transparent 100%);
             mask-image: linear-gradient(180deg, transparent 0, #000 2.2cqw, #000 calc(100% - 2.2cqw), transparent 100%); }
-  .cols-head { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3cqw; position: relative; z-index: 2;
+  .tv { --cols: 4; --season-w: 7.2cqw; }
+  .cols-head { display: grid; grid-template-columns: var(--season-w) repeat(var(--cols), 1fr); gap: 2.4cqw; position: relative; z-index: 2;
     font: 600 1.05cqw Cinzel, serif; letter-spacing: .2em; color: var(--gold); padding: 0 0 .7cqw; }
   .cols-head span { border-bottom: 1px solid rgba(216,178,94,.35); padding-bottom: .5cqw; }
-  .scroller { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 3cqw; will-change: transform; }
-  .row { display: grid; grid-template-columns: 5.2cqw 1fr; align-items: baseline; padding: .55cqw 0;
+  .scroller { display: grid; grid-template-columns: 1fr; will-change: transform; }
+  .row { display: grid; grid-template-columns: var(--season-w) repeat(var(--cols), 1fr); gap: 0 2.4cqw; align-items: baseline; padding: .55cqw 0;
     border-bottom: 1px dotted rgba(216,178,94,.18); }
   .yr { font: 600 1.45cqw Cormorant Garamond, serif; color: var(--gold); }
   .nm { font: 600 1.7cqw Cormorant Garamond, serif; color: var(--engrave); letter-spacing: .01em; }
@@ -132,7 +133,7 @@
   .now { font-size: 12px; color: var(--muted); }
   .now b { color: var(--ink); }
   #tv3 .rows { position: relative; }
-  #tv3 .page { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 3cqw; align-content: start; backface-visibility: hidden; }
+  #tv3 .page { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; align-content: start; backface-visibility: hidden; }
   #tv3 .page.fit .row { padding: .2cqw 0; }
   #tv3 .page.fit .yr { font-size: 1cqw; }
   #tv3 .page.fit .nm { font-size: 1.15cqw; }
@@ -160,7 +161,7 @@
         <div class="page-dots"><i class="on"></i><i></i><i></i></div>
       </div>
       <div class="viewport">
-        <div class="cols-head"><span>FIRST GRADE</span><span>SECOND GRADE</span><span>THIRD GRADE</span></div>
+        <div class="cols-head"><span>SEASON</span><span>FIRST GRADE</span><span>SECOND GRADE</span><span>THIRD GRADE</span><span>FOURTH GRADE</span></div>
         <div class="rows"><div class="scroller" id="scroller"></div></div>
       </div>
       <div class="footer"><span>EST. <b>1983</b></span><span>PROUDLY SUPPORTED BY <b>LOCAL SPONSORS</b></span><span>BOARD <b>3</b> OF <b>12</b></span></div>
@@ -168,7 +169,7 @@
   </div>
   <div class="tv-caption">
     <div class="chip"><b>Header stays put</b>The title plate and column headings are fixed. Names scroll behind them and fade out under the gold rule. They never draw on top.</div>
-    <div class="chip"><b>Columns and rows per board</b>This board shows 3 columns. Every board type can be set to 1–4 columns, and to scroll or turn pages.</div>
+    <div class="chip"><b>Columns and rows per board</b>The season is shown once per row, so this board fits 4 grades. Every board type can be set to 1–5 columns, and to scroll or turn pages.</div>
     <div class="chip"><b>Readable at distance</b>One type scale for every board. Each board gets a single text-size setting (S / M / L / XL), not separate settings per element.</div>
     <div class="chip"><b>Calmer motion</b>The board fades in, then scrolls slowly. Rows no longer bounce in one at a time.</div>
   </div>
@@ -189,7 +190,7 @@
         <h3>Rotation · drag to reorder</h3>
         <div class="item"><span class="grip">⋮⋮</span><span class="thumb"></span><div><div class="t">Premierships</div><div class="k">Board · 2 columns · scroll</div></div><span class="d">auto</span></div>
         <div class="item"><span class="grip">⋮⋮</span><span class="thumb"></span><div><div class="t">Life members</div><div class="k">Board · 4 columns · pages</div></div><span class="d">auto</span></div>
-        <div class="item sel"><span class="grip">⋮⋮</span><span class="thumb"></span><div><div class="t">Club champions</div><div class="k">Board · 3 columns · scroll</div></div><span class="d">auto</span></div>
+        <div class="item sel"><span class="grip">⋮⋮</span><span class="thumb"></span><div><div class="t">Club champions</div><div class="k">Board · season + 4 grades · scroll</div></div><span class="d">auto</span></div>
         <div class="item"><span class="grip">⋮⋮</span><span class="thumb sp"></span><div><div class="t">Sponsor wall</div><div class="k">Sponsors · grid</div></div><span class="d">10 s</span></div>
         <div class="item"><span class="grip">⋮⋮</span><span class="thumb ph"></span><div><div class="t">Season highlights</div><div class="k">Photo slideshow · random · 12 photos</div></div><span class="d">6 s each</span></div>
         <div class="item"><span class="grip">⋮⋮</span><span class="thumb"></span><div><div class="t">Batting records</div><div class="k">Board · 1 column · pages</div></div><span class="d">auto</span></div>
@@ -204,7 +205,7 @@
         <div>
           <h3>Club champions · display</h3>
           <div class="fields">
-            <div class="f"><label>Columns</label><div class="seg"><span>1</span><span>2</span><span class="on">3</span><span>4</span></div></div>
+            <div class="f"><label>Grade columns</label><div class="seg"><span>1</span><span>2</span><span>3</span><span class="on">4</span><span>5</span></div></div>
             <div class="f"><label>Long boards</label><div class="seg"><span class="on">Scroll</span><span>Turn pages</span></div></div>
             <div class="f"><label>Text size</label><div class="seg"><span>S</span><span class="on">M</span><span>L</span><span>XL</span></div></div>
             <div class="f"><label>Rows per page</label><div class="sel-box"><span>Fit to screen</span><span>▾</span></div></div>
@@ -267,9 +268,11 @@
   const notes = ["412 runs · 31 wkts","Captain","38 wkts","506 runs","","Wicketkeeper · 44 dismissals","","29 wkts · 301 runs"];
   function fill(el) {
     let h = "";
-    for (let i = 0; i < 16; i++) for (let c = 0; c < 3; c++) {
-      const y = 2025 - i; const n = names[(i * 3 + c * 5) % names.length]; const note = notes[(i + c) % notes.length];
-      h += `<div class="row"><span class="yr">${y}/${String((y + 1) % 100).padStart(2, "0")}</span><span class="nm">${n}${note ? `<small>${note}</small>` : ""}</span></div>`;
+    for (let i = 0; i < 16; i++) {
+      const y = 2025 - i;
+      let cells = "";
+      for (let c = 0; c < 4; c++) { const n = names[(i * 3 + c * 5) % names.length], note = notes[(i + c) % notes.length]; cells += `<span class="nm">${n}${note ? `<small>${note}</small>` : ""}</span>`; }
+      h += `<div class="row"><span class="yr">${y}/${String((y + 1) % 100).padStart(2, "0")}</span>${cells}</div>`;
     }
     el.innerHTML = h;
   }
@@ -299,9 +302,10 @@
   const names = ["J. Whitfield","M. Harrington","D. O'Connell","S. Pemberton","R. Castellano","T. Ashworth","L. Brennan","K. Morrissey","A. Fairbanks","P. Delaney","G. Holloway","C. Rutherford","B. Kingsley","N. Galloway","F. Lindqvist","H. Prendergast"];
   const notes = ["412 runs · 31 wkts","Captain","38 wkts","506 runs","","Wicketkeeper · 44 dismissals","","29 wkts · 301 runs"];
   const YEARS = 21, PER = 7, PAGES = Math.ceil(YEARS / PER);
-  const row = (i, c) => { const y = 2025 - i, n = names[(i * 3 + c * 5) % names.length], note = notes[(i + c) % notes.length];
-    return `<div class="row"><span class="yr">${y}/${String((y + 1) % 100).padStart(2, "0")}</span><span class="nm">${n}${note ? `<small>${note}</small>` : ""}</span></div>`; };
-  const pageHtml = (from, to) => { let h = ""; for (let i = from; i < to; i++) for (let c = 0; c < 3; c++) h += row(i, c); return h; };
+  const row = (i) => { const y = 2025 - i; let cells = "";
+    for (let c = 0; c < 4; c++) { const n = names[(i * 3 + c * 5) % names.length], note = notes[(i + c) % notes.length]; cells += `<span class="nm">${n}${note ? `<small>${note}</small>` : ""}</span>`; }
+    return `<div class="row"><span class="yr">${y}/${String((y + 1) % 100).padStart(2, "0")}</span>${cells}</div>`; };
+  const pageHtml = (from, to) => { let h = ""; for (let i = from; i < to; i++) h += row(i); return h; };
   const state = { move: "pages", tr: "fade", dur: 800, auto: true, page: 0 };
   const TRS = ["fade","up","down","left","right","pop","zoom","flip","wipe","rows"];
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -342,7 +346,7 @@
       await old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d / 2, fill: "forwards" }).finished;
       old.remove(); next.style.visibility = "";
       const rs = [...next.querySelectorAll(".row")];
-      await Promise.all(rs.map((r, i) => r.animate([{ opacity: 0, transform: "translateY(.8cqw)" }, { opacity: 1, transform: "none" }], { duration: d, delay: Math.floor(i / 3) * (d / 6), easing: ease, fill: "backwards" }).finished));
+      await Promise.all(rs.map((r, i) => r.animate([{ opacity: 0, transform: "translateY(.8cqw)" }, { opacity: 1, transform: "none" }], { duration: d, delay: i * (d / 6), easing: ease, fill: "backwards" }).finished));
       return;
     }
     if (t === "wipe") {

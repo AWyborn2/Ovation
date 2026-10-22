@@ -67,3 +67,9 @@ Two separate settings per board, each inheriting a club default from Look:
 Constraints: transform/opacity/clip-path only (cheap on TV browsers); header plate never moves
 during a page transition; Flip/Wipe are classic-board flourishes; honour
 prefers-reduced-motion → Fade/Cut.
+
+## Layout: shared season column (Ash, 23 Oct 2026)
+
+Season-keyed boards show the season once per row in a leading Season column; grade columns
+carry names (+ note) only. Frees width for more grades (mockup shows 4; settings allow 1–5).
+Rows (one per season) are the unit for paging, scrolling and the Rows reveal transition.
