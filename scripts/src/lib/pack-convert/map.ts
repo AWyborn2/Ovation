@@ -515,9 +515,6 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
         .map((e) => e.style["mix-blend-mode"])
         .find((b) => b && b !== "normal");
       if (blend) style.blend = blend as BlendMode;
-      // A clip on a wrapper cuts the image inside it (Bold Type's slanted photo panel).
-      const clip = inheritedClip(tree, el);
-      if (clip) style.clip = clip;
       if (!PHOTO_SLOTS.has(slot) && slot !== "groundPhoto" && el.style["object-fit"] === "cover")
         polish.push({
           element: el.id,
@@ -538,7 +535,17 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     }
 
     // The element's own paint: a shape behind its text and children.
-    const paint = shapeStyle(tree, el, { colour, translucent, shadowColour, wPct, polish, cap });
+    // A clip resolves against the box the layer takes (the worst-case twin's), as its children's do.
+    const clipBox = g.size ?? { w: g.box.w, h: g.box.h };
+    const paint = shapeStyle(tree, el, {
+      colour,
+      translucent,
+      shadowColour,
+      wPct,
+      polish,
+      cap,
+      clipBox,
+    });
     const text = el.text ?? [];
     const textStyle = text.length
       ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
@@ -662,7 +669,11 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const left = clips ? across.x : Math.min(across.x, extent.x);
     const right = clips ? across.x + across.w : Math.max(across.x + across.w, extent.x + extent.w);
     const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
-    const box = clips ? raw : textBox(raw, textStyle.align, W);
+    // Text that wraps keeps the pack's width, so its lines break where the pack's do;
+    // one line gets room for font rendering differences.
+    const wraps =
+      !nowrap && (inline ? [el, ...kids] : [el]).flatMap(runsOf).some((t) => (t.lines ?? 1) > 1);
+    const box = clips ? raw : wraps ? { ...raw, w: raw.w + 1 } : textBox(raw, textStyle.align, W);
     // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
     // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
     // shrinks, then ends in an ellipsis on as many lines as the worst case takes (at most
@@ -693,8 +704,39 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     );
   }
 
-  // Back to front in document order: a repeat sits where its first row is (the sort is stable).
-  layers.sort((a, b) => a.element - b.element);
+  // An ancestor's polygon clip cuts what's inside it too (the photo in Club Kit's angled band).
+  for (const l of layers) {
+    const kind = l.layer.kind;
+    if (kind !== "shape" && kind !== "photo" && kind !== "image") continue;
+    const style = (l.layer as { style?: TemplateStyleV2 }).style;
+    if (style?.clip || l.box.rotate) continue;
+    const el = tree.byId.get(l.element);
+    const clipper =
+      el && tree.ancestors(el).find((a) => (a.style["clip-path"] ?? "none") !== "none");
+    if (!clipper) continue;
+    const c = twin(clipper);
+    const polygon = parseClipPolygon(clipper.style["clip-path"]!, c.box.w, c.box.h);
+    if (!polygon) continue;
+    const [lx, ly, lw, lh] = [
+      (l.box.x / 100) * W,
+      (l.box.y / 100) * H,
+      (l.box.w / 100) * W,
+      (l.box.h / 100) * H,
+    ];
+    const inLayer = polygon.map(([x, y]): [number, number] => [
+      r2(((c.box.x + (x / 100) * c.box.w - lx) / lw) * 100),
+      r2(((c.box.y + (y / 100) * c.box.h - ly) / lh) * 100),
+    ]);
+    if (inLayer.some((p) => p.some((v) => v < -100 || v > 200))) continue;
+    l.layer = {
+      ...l.layer,
+      style: { ...style, clip: { polygon: inLayer } },
+    } as MappedLayer["layer"];
+  }
+
+  // Back to front in paint order: a repeat sits where its first row is (the sort is stable).
+  const paint = paintKeys(tree);
+  layers.sort((a, b) => comparePaint(paint.get(a.element), paint.get(b.element)));
   const texts = cap.elements.filter((e) => e.text?.length && e.hidden !== "display");
   const geometryCoverage = twins
     ? texts.filter((e) => twins.get(e.id)?.text?.length).length / Math.max(1, texts.length)
@@ -709,6 +751,41 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
+
+/** An element's z-index where it applies (a positioned element or a flex or grid item), else null. */
+function zIndex(tree: Tree, el: CapturedElement): number | null {
+  const z = Number(el.style["z-index"]);
+  if (el.style["z-index"] === undefined || !Number.isFinite(z)) return null;
+  const parent = el.parent === null ? undefined : tree.byId.get(el.parent);
+  const positioned = (el.style.position ?? "static") !== "static";
+  return positioned || /flex|grid/.test(parent?.style.display ?? "") ? z : null;
+}
+
+/**
+ * Each element's place in the paint order: `[z, document order]` for every
+ * stacking context it sits in, then its own. A header the pack lifts with
+ * `z-index: 1` paints over the art after it in the document, as in CSS.
+ * (Positioned versus in-flow order within a context isn't modelled: the
+ * packs lift what must sit on top with a z-index.)
+ */
+export function paintKeys(tree: Tree): Map<number, number[]> {
+  const keys = new Map<number, number[]>();
+  const contexts = new Map<number, number[]>();
+  for (const el of tree.capture.elements) {
+    const ctx = el.parent === null ? [] : (contexts.get(el.parent) ?? []);
+    const z = zIndex(tree, el);
+    const key = [...ctx, z ?? 0, el.id];
+    keys.set(el.id, key);
+    contexts.set(el.id, z === null ? ctx : key);
+  }
+  return keys;
+}
+
+export function comparePaint(a: number[] | undefined, b: number[] | undefined): number {
+  if (!a || !b) return 0;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
+  return a.length - b.length;
+}
 
 /**
  * A text fill gradient painted over the element's box, as the pack paints it,
@@ -796,29 +873,6 @@ function mixHex(a: string, b: string, t: number): string {
     b: pa.b + (pb.b - pa.b) * k,
     a: pa.a + (pb.a - pa.a) * k,
   });
-}
-
-/**
- * The polygon a clipping ancestor cuts an image to, in percent of the image's
- * own box (the ancestor's points moved into it), or undefined.
- */
-function inheritedClip(tree: Tree, el: CapturedElement): TemplateStyleV2["clip"] | undefined {
-  const clipper = tree
-    .ancestors(el)
-    .find((a) => a.style["clip-path"] && a.style["clip-path"] !== "none");
-  if (!clipper || !(el.box.w > 0) || !(el.box.h > 0)) return undefined;
-  const size = clipper.size ?? { w: clipper.box.w, h: clipper.box.h };
-  const polygon = parseClipPolygon(clipper.style["clip-path"], size.w, size.h);
-  if (!polygon) return undefined;
-  const a = clipper.box;
-  const b = el.box;
-  const inBox = (v: number) => Math.min(200, Math.max(-100, r2(v)));
-  return {
-    polygon: polygon.map(([px, py]): [number, number] => [
-      inBox(((a.x + (px / 100) * a.w - b.x) / b.w) * 100),
-      inBox(((a.y + (py / 100) * a.h - b.y) / b.h) * 100),
-    ]),
-  };
 }
 
 /** One side of a border drawn on fewer than four sides. */
@@ -1024,6 +1078,8 @@ interface StyleContext {
   wPct: (n: number) => number;
   polish: PolishItem[];
   cap: PackCapture;
+  /** The box a polygon clip's lengths resolve against, when not the element's own. */
+  clipBox?: { w: number; h: number };
 }
 
 /** A gradient as the format's fill, its colours tokenised where the twin capture allows. */
@@ -1147,7 +1203,7 @@ function shapeStyle(
   const clipValue = el.style["clip-path"];
   let clipped = false;
   if (clipValue && clipValue !== "none") {
-    const size = el.size ?? { w: el.box.w, h: el.box.h };
+    const size = ctx.clipBox ?? el.size ?? { w: el.box.w, h: el.box.h };
     const polygon = parseClipPolygon(clipValue, size.w, size.h);
     if (polygon) {
       style.clip = { polygon };

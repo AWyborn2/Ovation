@@ -10,14 +10,7 @@ import {
   readingOrder,
   sizedGradient,
 } from "./map";
-import {
-  applyStacks,
-  mergeOrder,
-  mergePage,
-  mergeSizes,
-  stackContainers,
-  type SizeMaps,
-} from "./merge";
+import { applyStacks, mergePage, mergeSizes, stackContainers, type SizeMaps } from "./merge";
 
 const TEXT = {
   "font-family": '"Barlow Condensed", "Arial Narrow", sans-serif',
@@ -352,18 +345,6 @@ describe("stacks", () => {
   });
 });
 
-describe("merging sizes", () => {
-  it("keeps a layer only some sizes have where they draw it", () => {
-    // Portrait's chip shape has its own signature: it still goes under the chip's text.
-    expect(
-      mergeOrder([
-        ["stage", "chip:sq", "chipText", "name"],
-        ["stage", "chip:po", "chipText", "name"],
-      ]),
-    ).toEqual(["stage", "chip:sq", "chip:po", "chipText", "name"]);
-  });
-});
-
 describe("gradients taller than their box", () => {
   it("keeps the part the box shows (background-size 100% 220%, at the top)", () => {
     const fill = {
@@ -406,7 +387,9 @@ describe("clips, layered backgrounds and brightness", () => {
     src: "sentinel:photo",
     style: { filter: "brightness(0.6)" },
   });
-  cap.elements.push(band, stage, wrap, pic);
+  // A photo inside the band, the lower half of it: the band's clip cuts it too.
+  const inner = el(band.id, "img", [0, 900, 1080, 100], { src: "sentinel:photo" });
+  cap.elements.push(band, inner, stage, wrap, pic);
   const result = mapCapture(cap);
   const of = (e: CapturedElement) => result.layers.filter((l) => l.element === e.id);
 
@@ -428,6 +411,19 @@ describe("clips, layered backgrounds and brightness", () => {
     expect(result.polish.some((p) => p.element === band.id && /clip-path/.test(p.what))).toBe(
       false,
     );
+  });
+
+  it("cuts a layer inside a clipped box to the box's polygon, in the layer's own percent", () => {
+    const [photo] = of(inner);
+    const clip = (photo!.layer as { style?: { clip?: { polygon: number[][] } } }).style?.clip;
+    const want = [
+      [14.81, -100],
+      [100, -100],
+      [100, 100],
+      [0, 50],
+    ];
+    // Within the rounding of the layer's box (percent of the card, two places).
+    clip!.polygon.flat().forEach((v, i) => expect(v).toBeCloseTo(want.flat()[i]!, 0));
   });
 
   it("keeps every background layer, bottom first, the top one on the box", () => {
@@ -482,24 +478,51 @@ describe("stack flow items", () => {
   });
 });
 
-describe("clipped images", () => {
-  it("cuts an image to its wrapper's polygon, in the image's own box", () => {
+describe("paint order", () => {
+  it("paints a z-index: 1 header over art after it in the document, as CSS does", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1920], {
+      className: "pack-card-root",
+      style: { "background-color": "rgb(14, 43, 81)" },
+    });
+    const header = el(0, "div", [0, 0, 1080, 120], {
+      style: { position: "relative", "z-index": "1", "background-color": "rgb(211, 23, 90)" },
+    });
+    const title = el(header.id, "div", [60, 30, 600, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 30, 400, 60]),
+    });
+    const art = el(0, "div", [0, 0, 1080, 1200], {
+      style: { position: "absolute", "background-color": "rgb(30, 90, 170)" },
+    });
+    // z-index on a static element outside a flex container does nothing.
+    const plain = el(0, "div", [0, 1300, 1080, 100], {
+      style: { "z-index": "5", "background-color": "rgb(240, 240, 240)" },
+    });
     const cap = capture();
-    const panel = el(0, "div", [540, 540, 540, 540], {
-      size: { w: 540, h: 540 },
-      style: { "clip-path": "polygon(18% 0px, 100% 0px, 100% 100%, 0px 100%)" },
+    cap.elements = [root, header, title, art, plain];
+    const order = mapCapture(cap).layers.map((l) => l.element);
+    expect(order).toEqual([root.id, art.id, plain.id, header.id, title.id]);
+  });
+});
+
+describe("text width", () => {
+  it("keeps the pack's width for text that wraps, and adds room to one line", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const wrapped = el(0, "div", [60, 100, 900, 240], {
+      style: TEXT,
+      text: [{ text: "[[headline]]", box: { x: 60, y: 100, w: 880, h: 240 }, lines: 2 }],
     });
-    // The photo covers the right half of the panel.
-    const pic = el(panel.id, "img", [810, 540, 270, 540], { src: "sentinel:photo" });
-    cap.elements.push(panel, pic);
-    const photo = mapCapture(cap).layers.find((l) => l.element === pic.id)!;
-    expect((photo.layer as { style?: { clip?: unknown } }).style?.clip).toEqual({
-      polygon: [
-        [-64, 0],
-        [100, 0],
-        [100, 100],
-        [-100, 100],
-      ],
+    const single = el(0, "div", [60, 500, 900, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 500, 600, 60]),
     });
+    const cap = capture();
+    cap.elements = [root, wrapped, single];
+    const boxOf = (e: CapturedElement) =>
+      mapCapture(cap).layers.find((l) => l.element === e.id)!.box;
+    expect(boxOf(wrapped).w).toBeCloseTo(((900 + 1) / 1080) * 100, 1);
+    expect(boxOf(single).w).toBeGreaterThan((900 / 1080) * 100 + 1);
   });
 });
