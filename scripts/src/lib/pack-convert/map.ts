@@ -681,26 +681,33 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const left = clips ? across.x : Math.min(across.x, extent.x);
     const right = clips ? across.x + across.w : Math.max(across.x + across.w, extent.x + extent.w);
     const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
-    // Text that wraps keeps the pack's width, so its lines break where the pack's do;
-    // one line gets room for font rendering differences.
-    const wraps =
-      !nowrap && (inline ? [el, ...kids] : [el]).flatMap(runsOf).some((t) => (t.lines ?? 1) > 1);
-    const box = clips ? raw : wraps ? { ...raw, w: raw.w + 1 } : textBox(raw, textStyle.align, W);
-    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
-    // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
-    // shrinks, then ends in an ellipsis on as many lines as the worst case takes (at most
-    // two): content longer than the worst case still fits its box.
+    // The lines the worst case takes: from its height, as several runs (a label, a field,
+    // a separator) each report one line while together they wrap onto two.
+    const scale = scaleOf(tree, el);
+    const fontPx = (px(tree.style(el, "font-size")) || 16) * scale;
+    const linePx = (px(tree.style(el, "line-height")) || (fontPx * 1.2) / scale) * scale;
     const worstLines = Math.max(
       1,
       ...(inline ? [el, ...kids] : [el]).flatMap(runsOf).map((t) => t.lines ?? 1),
+      Math.round(extent.h / Math.max(1, linePx)),
     );
+    // Text that wraps keeps the pack's width, so its lines break where the pack's do;
+    // one line gets room for font rendering differences.
+    const wraps = !nowrap && worstLines > 1;
+    const box = clips ? raw : wraps ? { ...raw, w: raw.w + 1 } : textBox(raw, textStyle.align, W);
+    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
+    // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
+    // the worst case keeps to one line shrinks, then ends in an ellipsis, so content longer
+    // than the worst case still fits. Text the worst case wraps keeps live text's own fit
+    // (it wraps as the pack does, and shrinks only to fit its box): the v2 fit would try
+    // it on one line first and draw fewer, smaller lines than the pack.
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
         ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
         : clips && ellipsis
           ? { minScale: 1, maxLines: nowrap ? 1 : 2, ellipsis: true }
-          : /\{\{/.test(content)
-            ? { minScale: 0.6, maxLines: nowrap || worstLines < 2 ? 1 : 2, ellipsis: true }
+          : /\{\{/.test(content) && (nowrap || worstLines < 2)
+            ? { minScale: 0.6, maxLines: 1 as const, ellipsis: true }
             : null;
     const m = motionFor();
     add(

@@ -727,3 +727,28 @@ describe("row cells", () => {
     expect(layer.rows).toMatchObject({ columns: 2, flow: "across", columnGap: 6.38 });
   });
 });
+
+describe("live text fit", () => {
+  it("fits one-line text to one line, and lets text the worst case wraps wrap as the pack does", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    // A label, a field and a separator: three one-line runs that wrap onto two lines.
+    const eyebrow = el(0, "div", [60, 100, 600, 60], {
+      style: { ...TEXT, "font-size": "24px", "line-height": "30px" },
+      text: [
+        { text: "FIRST GRADE DEBUT ·", box: { x: 60, y: 100, w: 580, h: 30 }, lines: 1 },
+        { text: "[[grade]]", box: { x: 60, y: 130, w: 300, h: 30 }, lines: 1 },
+      ],
+    });
+    const name = el(0, "div", [60, 300, 900, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 300, 600, 60]),
+    });
+    const cap = capture();
+    cap.elements = [root, eyebrow, name];
+    const fitOf = (e: CapturedElement) =>
+      (mapCapture(cap).layers.find((l) => l.element === e.id)!.layer as { fit?: unknown }).fit;
+    expect(fitOf(eyebrow)).toBeUndefined();
+    expect(fitOf(name)).toEqual({ minScale: 0.6, maxLines: 1, ellipsis: true });
+  });
+});
