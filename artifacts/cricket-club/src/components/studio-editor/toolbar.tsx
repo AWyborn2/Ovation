@@ -1,5 +1,6 @@
 import {
   ArrowDown,
+  BookmarkPlus,
   ArrowDownToLine,
   ArrowUp,
   ArrowUpToLine,
@@ -49,6 +50,7 @@ export function EditorToolbar({
   onCopy,
   onPaste,
   canPaste = false,
+  onSaveElement,
   arrange,
 }: {
   selected: FreeLayer[];
@@ -67,6 +69,8 @@ export function EditorToolbar({
   /** Paste the editor clipboard (Ctrl/Cmd+V). */
   onPaste?: () => void;
   canPaste?: boolean;
+  /** Publish the selection to the element library (editable-elements plan, D4). */
+  onSaveElement?: () => void;
   /** Align, distribute and match size; `count` is how many units can move. */
   arrange?: {
     count: number;
@@ -230,6 +234,17 @@ export function EditorToolbar({
         </button>
       )}
       {pasteBtn}
+      {onSaveElement && (
+        <button
+          type="button"
+          className={btn}
+          onClick={onSaveElement}
+          aria-label="Save as element"
+          title="Save as element"
+        >
+          <BookmarkPlus className="h-4 w-4" />
+        </button>
+      )}
       <button
         type="button"
         className={btn}

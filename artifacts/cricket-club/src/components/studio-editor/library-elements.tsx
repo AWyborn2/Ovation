@@ -6,20 +6,34 @@
  * Each tile draws the element on the blank card in the club's own colours,
  * crest and sample data, zoomed to the element. Choosing one adds its layers
  * to the card as native layers (`element-insert.ts`), at the size being
- * edited.
+ * edited. A club finds the elements it saved under "Your club's elements" and
+ * can take them out of the library; another club's element can be reported
+ * to Ovation (decision E1).
  */
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import {
   getListLibraryElementsQueryKey,
   useListLibraryElements,
   useListLibraryLooks,
+  useReportLibraryElement,
+  useUnlistLibraryElement,
   type LibraryElement,
   type LibraryElementCategory,
   type ListLibraryElementsParams,
 } from "@workspace/api-client-react";
 import { ELEMENT_CATEGORIES, ELEMENT_CATEGORY_LABELS } from "@workspace/scorecard/kind-templates";
 import { PackCard } from "@/components/pack-card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { WhenVisible, useLibraryPreviewData } from "@/components/template-library/previews";
 import {
   BLANK_PACK_ID,
@@ -31,6 +45,9 @@ import { sampleCardInput } from "@/lib/sample-card-inputs";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { elementBounds, elementLayers, type ElementDocumentLike } from "./element-insert";
+
+/** The look select's value for the club's own elements, listed or not. */
+const MINE = "__mine";
 
 /** A tile's drawing area, in px. */
 const TILE = { w: 128, h: 80 };
@@ -99,6 +116,8 @@ function ElementPage({
   last,
   onMore,
   onAdd,
+  onUnlist,
+  onReport,
 }: {
   params: ListLibraryElementsParams;
   size: CardSize;
@@ -106,6 +125,8 @@ function ElementPage({
   last: boolean;
   onMore: (cursor: number) => void;
   onAdd: (layers: FreeLayer[]) => void;
+  onUnlist: (element: LibraryElement) => void;
+  onReport: (element: LibraryElement) => void;
 }) {
   const q = useListLibraryElements(params, {
     query: { queryKey: getListLibraryElementsQueryKey(params), staleTime: 5 * 60_000 },
@@ -121,20 +142,41 @@ function ElementPage({
   return (
     <>
       {elements.map((element) => (
-        <button
-          key={element.id}
-          type="button"
-          aria-label={`Add ${element.name}`}
-          title={`${element.name} · ${element.look?.name ?? element.authorName}`}
-          onClick={() => onAdd(layersOfElement(element, size))}
-          className="flex flex-col gap-1.5 rounded-lg bg-[var(--ed-card)] p-1.5 text-left text-[11px] font-semibold text-[var(--ed-ink2)] hover:ring-1 hover:ring-[var(--ed-accent)]"
-        >
-          <ElementThumb element={element} size={size} thumb={thumb} />
-          <span className="truncate">{element.name}</span>
-          <span className="-mt-1 truncate text-[10px] font-normal opacity-70">
-            {element.look?.name ?? element.authorName}
-          </span>
-        </button>
+        <div key={element.id} className="flex flex-col rounded-lg bg-[var(--ed-card)]">
+          <button
+            type="button"
+            aria-label={`Add ${element.name}`}
+            title={`${element.name} · ${element.look?.name ?? element.authorName}`}
+            onClick={() => onAdd(layersOfElement(element, size))}
+            className="flex flex-col gap-1.5 rounded-lg p-1.5 text-left text-[11px] font-semibold text-[var(--ed-ink2)] hover:ring-1 hover:ring-[var(--ed-accent)]"
+          >
+            <ElementThumb element={element} size={size} thumb={thumb} />
+            <span className="truncate">{element.name}</span>
+            <span className="-mt-1 truncate text-[10px] font-normal opacity-70">
+              {element.look?.name ?? element.authorName}
+              {!element.listed && " · unlisted"}
+            </span>
+          </button>
+          {element.mine && element.listed && (
+            <button
+              type="button"
+              onClick={() => onUnlist(element)}
+              className="px-1.5 pb-1 text-left text-[10px] text-[var(--ed-ink2)] underline"
+            >
+              Take out of the library
+            </button>
+          )}
+          {!element.mine && element.origin === "club" && (
+            <button
+              type="button"
+              aria-label={`Report ${element.name}`}
+              onClick={() => onReport(element)}
+              className="px-1.5 pb-1 text-left text-[10px] text-[var(--ed-ink2)] underline"
+            >
+              Report
+            </button>
+          )}
+        </div>
       ))}
       {params.cursor === undefined && elements.length === 0 && (
         <p className="col-span-2 text-xs text-[var(--ed-ink2)]">No elements match.</p>
@@ -149,6 +191,81 @@ function ElementPage({
         </button>
       )}
     </>
+  );
+}
+
+/** Report another club's element to Ovation (decision E1). */
+function ReportElementDialog({
+  element,
+  onClose,
+}: {
+  element: LibraryElement | null;
+  onClose: () => void;
+}) {
+  const report = useReportLibraryElement();
+  const [reason, setReason] = useState("");
+  const [sent, setSent] = useState(false);
+  const close = () => {
+    setReason("");
+    setSent(false);
+    report.reset();
+    onClose();
+  };
+  return (
+    <Dialog open={element !== null} onOpenChange={(o) => !o && close()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Report &ldquo;{element?.name}&rdquo;</DialogTitle>
+          <DialogDescription>
+            Saved by {element?.authorName}. Ovation reviews reports and can take an element out of
+            the library.
+          </DialogDescription>
+        </DialogHeader>
+        {sent ? (
+          <p role="status" className="text-sm">
+            Thanks, Ovation will review it.
+          </p>
+        ) : (
+          <label className="flex flex-col gap-1 text-sm">
+            What&apos;s wrong with it?
+            <textarea
+              aria-label="Reason"
+              value={reason}
+              maxLength={500}
+              rows={3}
+              onChange={(e) => setReason(e.target.value)}
+              className="rounded-md border border-input bg-background px-2 py-1"
+            />
+          </label>
+        )}
+        {report.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            The report didn&apos;t send. Try again.
+          </p>
+        )}
+        <DialogFooter>
+          {sent ? (
+            <Button onClick={close}>Done</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={close}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!reason.trim() || report.isPending}
+                onClick={async () => {
+                  if (!element) return;
+                  await report.mutateAsync({ id: element.id, data: { reason: reason.trim() } });
+                  setSent(true);
+                }}
+              >
+                Send report
+              </Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -182,8 +299,15 @@ export function LibraryElements({
 
   const base: ListLibraryElementsParams = {
     ...(search ? { q: search } : {}),
-    ...(look ? { look } : {}),
+    ...(look === MINE ? { mine: true } : look ? { look } : {}),
     ...(category ? { category } : {}),
+  };
+  const queryClient = useQueryClient();
+  const unlist = useUnlistLibraryElement();
+  const [reporting, setReporting] = useState<LibraryElement | null>(null);
+  const onUnlist = async (element: LibraryElement) => {
+    await unlist.mutateAsync({ id: element.id });
+    await queryClient.invalidateQueries({ queryKey: getListLibraryElementsQueryKey() });
   };
   const looks = looksQ.data?.looks ?? [];
 
@@ -209,6 +333,7 @@ export function LibraryElements({
         className="mt-2 h-8 w-full rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm text-[var(--ed-ink)]"
       >
         <option value="">Every look</option>
+        <option value={MINE}>Your club&apos;s elements</option>
         {looks.map((l) => (
           <option key={l.id} value={l.slug}>
             {l.name}
@@ -250,9 +375,12 @@ export function LibraryElements({
             last={i === cursors.length - 1}
             onMore={(next) => setCursors((c) => [...c, next])}
             onAdd={onAdd}
+            onUnlist={onUnlist}
+            onReport={setReporting}
           />
         ))}
       </div>
+      <ReportElementDialog element={reporting} onClose={() => setReporting(null)} />
     </section>
   );
 }

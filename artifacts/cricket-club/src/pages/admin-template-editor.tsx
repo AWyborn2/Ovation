@@ -45,6 +45,8 @@ import {
 } from "@/components/studio-editor/editor-shell";
 import { ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
+import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { FieldsPanel } from "@/components/studio-editor/fields-panel";
@@ -135,7 +137,13 @@ import {
   withScope,
 } from "@/components/studio-editor/scope";
 import { actionForKey, isTypingTarget } from "@/components/studio-editor/shortcuts";
-import { BLANK_PACK_ID, packFieldValues, packNativeSize, type FreeLayer } from "@/lib/pack-render";
+import {
+  BLANK_PACK_ID,
+  packFieldValues,
+  packNativeSize,
+  resolveCardTokens,
+  type FreeLayer,
+} from "@/lib/pack-render";
 import { previewSample, stressSample } from "@/lib/kind-templates/samples";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { draftInput } from "@/components/social-queue/draft-meta";
@@ -398,6 +406,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   }, [scope, scopeGroup]);
 
   const [selection, setSelection] = useState<string[]>([]);
+  const [savingElement, setSavingElement] = useState(false);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>(viewport.w >= 1024 ? "fields" : null);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -936,6 +945,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               onCopy={copySelection}
               onPaste={pasteClipboard}
               canPaste={canPaste}
+              // A club's save is credited to it; the console has no club to credit.
+              onSaveElement={host.club ? () => setSavingElement(true) : undefined}
               arrange={{
                 count: unitCount(doc, format, selection, inside),
                 onAlign: (to) => edit(align(doc, format, selection, to, inside)),
@@ -943,6 +954,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
               }}
             />
+            {host.club && (
+              <SaveElementDialog
+                layers={selected}
+                context={elementSaveContext(
+                  data,
+                  resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
+                )}
+                clubName={data.brand?.name || clubName || "your club"}
+                open={savingElement}
+                onClose={() => setSavingElement(false)}
+              />
+            )}
             {single?.kind === "text" && (
               <TextStyleBar
                 style={single.style}
