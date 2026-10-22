@@ -532,6 +532,7 @@ function EditorApp({ draftId }: { draftId: number }) {
               <ElementsPanel
                 size={format}
                 onAdd={addFreeLayer}
+                onAddLayers={addGroup}
                 paletteVars={elementPalette}
                 crestUrl={(bundle?.brand ?? brand).logoUrl ?? null}
               />

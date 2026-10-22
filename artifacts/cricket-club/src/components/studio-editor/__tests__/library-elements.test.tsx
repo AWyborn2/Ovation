@@ -1,0 +1,115 @@
+/** The Elements panel's element library (editable-elements plan, D3). */
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderAt } from "../../../test/render";
+import { installApiMock } from "../../../test/mock-api";
+import type { FreeLayer } from "@/lib/pack-render";
+import { LibraryElements } from "../library-elements";
+
+const element = (
+  id: number,
+  name: string,
+  look: { id: number; slug: string; name: string } | null,
+) => ({
+  id,
+  slug: look ? `${look.slug}/bands/${id}` : null,
+  name,
+  category: "bands",
+  tags: ["band"],
+  origin: look ? "bundle" : "club",
+  authorName: look ? "Ovation" : "Seaview CC",
+  mine: false,
+  look,
+  listed: true,
+  document: {
+    formatVersion: 2,
+    layers: [
+      {
+        id: "e1",
+        kind: "shape",
+        geometry: { square: { x: 0, y: 80, w: 100, h: 10 } },
+        style: { fill: "var(--gold)" },
+      },
+    ],
+  },
+  thumbnailUrl: null,
+  createdAt: "2026-10-22T00:00:00.000Z",
+});
+
+const KIT = { id: 1, slug: "club-kit", name: "Club Kit" };
+
+function setup(onAdd = vi.fn()) {
+  const api = installApiMock({
+    "/template-library/elements": {
+      elements: [element(7, "Gold band", KIT), element(8, "Seaview strip", null)],
+      nextCursor: 8,
+    },
+    "/template-library/looks": {
+      looks: [
+        {
+          id: 1,
+          slug: "club-kit",
+          name: "Club Kit",
+          description: null,
+          authorName: "Ovation",
+          templates: [],
+        },
+      ],
+    },
+  });
+  renderAt(<LibraryElements size="story" onAdd={onAdd} />);
+  return { api, onAdd };
+}
+
+const elementCalls = (calls: string[]) =>
+  calls.filter((u) => u.includes("/template-library/elements")).map((u) => new URL(u, "http://x"));
+
+describe("LibraryElements", () => {
+  it("lists elements with their look or the club that saved them", async () => {
+    setup();
+    expect(await screen.findByRole("button", { name: "Add Gold band" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add Seaview strip" })).toBeTruthy();
+    expect(screen.getByText("Seaview CC")).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Club Kit" })).toBeTruthy();
+  });
+
+  it("adds an element's layers as fresh native layers at the size being edited", async () => {
+    const { onAdd } = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Add Gold band" }));
+    const layers = onAdd.mock.calls[0]![0] as FreeLayer[];
+    expect(layers).toHaveLength(1);
+    expect(layers[0]!.kind).toBe("shape");
+    expect(layers[0]!.id).not.toBe("e1");
+    expect(layers[0]!.geometry.story).toEqual({ x: 0, y: 80, w: 100, h: 10 });
+  });
+
+  it("filters by look and category, and searches as you type", async () => {
+    const { api } = setup();
+    await screen.findByRole("button", { name: "Add Gold band" });
+    fireEvent.change(screen.getByRole("combobox", { name: "Look" }), {
+      target: { value: "club-kit" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Rules and dividers" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search the element library" }), {
+      target: { value: "gold" },
+    });
+    await waitFor(() =>
+      expect(
+        elementCalls(api.calls).some(
+          (u) =>
+            u.searchParams.get("look") === "club-kit" &&
+            u.searchParams.get("category") === "rules" &&
+            u.searchParams.get("q") === "gold",
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it("loads the next page on request", async () => {
+    const { api } = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "More elements" }));
+    await waitFor(() =>
+      expect(elementCalls(api.calls).some((u) => u.searchParams.get("cursor") === "8")).toBe(true),
+    );
+  });
+});

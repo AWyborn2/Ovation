@@ -111,7 +111,7 @@ export function pageView(
 }
 
 /** Mounts its children once the box scrolls near the viewport. */
-function WhenVisible({ children, aspect }: { children: ReactNode; aspect: string }) {
+export function WhenVisible({ children, aspect }: { children: ReactNode; aspect: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
