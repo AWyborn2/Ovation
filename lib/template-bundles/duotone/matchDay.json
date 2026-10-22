@@ -1,7 +1,7 @@
 {
   "name": "Duotone matchDay",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -179,6 +179,15 @@
           },
           {
             "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "duotone",
+                  "dark": "var(--dt-ink)",
+                  "light": "var(--dt-p)"
+                }
+              ]
+            },
             "id": "fixture-l5",
             "geometry": {
               "square": {
@@ -840,302 +849,35 @@
             }
           },
           {
-            "id": "fixture-stack1",
-            "kind": "group",
-            "name": "Stack",
-            "stack": {
-              "direction": "row",
-              "gap": 1.23,
-              "align": "start",
-              "justify": "start"
-            },
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "fixture-l28",
             "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 58.54,
+                "w": 5.49,
+                "h": 5.49
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 63.28,
+                "w": 6.41,
+                "h": 5.13
+              },
+              "story": {
+                "x": 8.79,
+                "y": 49.86,
+                "w": 7.41,
+                "h": 4.17
+              },
               "landscape": {
                 "x": 54.76,
                 "y": 21.49,
-                "w": 39.75,
-                "h": 7
+                "w": 3.37,
+                "h": 6.41
               }
-            },
-            "children": [
-              {
-                "kind": "image",
-                "content": "{{clubLogo}}",
-                "id": "fixture-l28",
-                "geometry": {
-                  "square": {
-                    "x": 8.2,
-                    "y": 58.54,
-                    "w": 5.49,
-                    "h": 5.49
-                  },
-                  "portrait": {
-                    "x": 8.45,
-                    "y": 63.28,
-                    "w": 6.41,
-                    "h": 5.13
-                  },
-                  "story": {
-                    "x": 8.79,
-                    "y": 49.86,
-                    "w": 7.41,
-                    "h": 4.17
-                  },
-                  "landscape": {
-                    "x": 54.76,
-                    "y": 21.49,
-                    "w": 3.37,
-                    "h": 6.41
-                  }
-                }
-              },
-              {
-                "id": "fixture-stack1-item2",
-                "kind": "group",
-                "name": "Stack item",
-                "geometry": {
-                  "landscape": {
-                    "x": 59.35,
-                    "y": 21.49,
-                    "w": 30.04,
-                    "h": 7
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "{{clubName}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.64,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l30",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 15.49,
-                        "y": 58.44,
-                        "w": 68.82,
-                        "h": 3.33
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{clubName}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.51,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l31",
-                    "sizes": ["portrait"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 16.77,
-                        "y": 63.13,
-                        "w": 66.85,
-                        "h": 6.03
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{clubName}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.18,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l32",
-                    "sizes": ["story"],
-                    "geometry": {
-                      "story": {
-                        "x": 18.25,
-                        "y": 49.75,
-                        "w": 64.43,
-                        "h": 4.72
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{clubName}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.05,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l33",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 59.35,
-                        "y": 21.33,
-                        "w": 30.04,
-                        "h": 7.31
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "fixture-stack1-item3",
-                "kind": "group",
-                "name": "Stack item",
-                "geometry": {
-                  "landscape": {
-                    "x": 90.63,
-                    "y": 22.84,
-                    "w": 3.88,
-                    "h": 4.29
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.club}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.2,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l34",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 86.11,
-                        "y": 60,
-                        "w": 6.69,
-                        "h": 2.41
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.club}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.33,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l35",
-                    "sizes": ["portrait"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 85.53,
-                        "y": 65.16,
-                        "w": 7.03,
-                        "h": 2
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.club}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.51,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l36",
-                    "sizes": ["story"],
-                    "geometry": {
-                      "story": {
-                        "x": 84.72,
-                        "y": 51.33,
-                        "w": 7.49,
-                        "h": 1.56
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.club}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 1.5,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l37",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 90.63,
-                        "y": 23.32,
-                        "w": 4.88,
-                        "h": 3.17
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
+            }
           },
           {
             "kind": "shape",
@@ -1185,405 +927,555 @@
             }
           },
           {
-            "id": "fixture-stack2",
-            "kind": "group",
-            "name": "Stack",
-            "stack": {
-              "direction": "row",
-              "gap": 1.23,
-              "align": "start",
-              "justify": "start"
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.64,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l30",
+            "sizes": ["square"],
             "geometry": {
+              "square": {
+                "x": 15.49,
+                "y": 58.44,
+                "w": 68.82,
+                "h": 3.33
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.51,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l31",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.77,
+                "y": 63.13,
+                "w": 66.85,
+                "h": 6.03
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.18,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l32",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 18.25,
+                "y": 49.75,
+                "w": 64.43,
+                "h": 4.72
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.05,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l33",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 59.35,
+                "y": 21.33,
+                "w": 30.04,
+                "h": 7.31
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.club}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l34",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 86.11,
+                "y": 60,
+                "w": 6.69,
+                "h": 2.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.club}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.33,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l35",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 85.53,
+                "y": 65.16,
+                "w": 7.03,
+                "h": 2
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.club}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.51,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l36",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 84.72,
+                "y": 51.33,
+                "w": 7.49,
+                "h": 1.56
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.club}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.5,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l37",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 90.63,
+                "y": 23.32,
+                "w": 4.88,
+                "h": 3.17
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{opposition.logo}}",
+            "id": "fixture-l38",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 65.03,
+                "w": 5.49,
+                "h": 5.49
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 69.96,
+                "w": 6.41,
+                "h": 5.13
+              },
+              "story": {
+                "x": 8.79,
+                "y": 55.05,
+                "w": 7.41,
+                "h": 4.17
+              },
               "landscape": {
                 "x": 54.76,
                 "y": 29.78,
-                "w": 39.75,
+                "w": 3.37,
+                "h": 6.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "v",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.9,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "id": "fixture-l39",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 15.49,
+                "y": 64.93,
+                "w": 4.32,
+                "h": 5.28
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "v",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 5.72,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "id": "fixture-l40",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.77,
+                "y": 69.88,
+                "w": 4.88,
+                "h": 4.96
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "v",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.61,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "id": "fixture-l41",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 18.25,
+                "y": 54.94,
+                "w": 5.48,
+                "h": 4.06
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "v",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "id": "fixture-l42",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 59.35,
+                "y": 29.63,
+                "w": 3.04,
+                "h": 6.35
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.64,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l43",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 20.61,
+                "y": 64.84,
+                "w": 63.7,
+                "h": 6.44
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.51,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l44",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 22.55,
+                "y": 69.81,
+                "w": 61.06,
+                "h": 6.03
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 4.18,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l45",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 24.78,
+                "y": 54.94,
+                "w": 57.9,
                 "h": 7
               }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.05,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
             },
-            "children": [
-              {
-                "kind": "image",
-                "content": "{{opposition.logo}}",
-                "id": "fixture-l38",
-                "geometry": {
-                  "square": {
-                    "x": 8.2,
-                    "y": 65.03,
-                    "w": 5.49,
-                    "h": 5.49
-                  },
-                  "portrait": {
-                    "x": 8.45,
-                    "y": 69.96,
-                    "w": 6.41,
-                    "h": 5.13
-                  },
-                  "story": {
-                    "x": 8.79,
-                    "y": 55.05,
-                    "w": 7.41,
-                    "h": 4.17
-                  },
-                  "landscape": {
-                    "x": 54.76,
-                    "y": 29.78,
-                    "w": 3.37,
-                    "h": 6.41
-                  }
-                }
-              },
-              {
-                "id": "fixture-stack2-item2",
-                "kind": "group",
-                "name": "Stack item",
-                "geometry": {
-                  "landscape": {
-                    "x": 59.35,
-                    "y": 29.78,
-                    "w": 2.04,
-                    "h": 6.06
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "v",
-                    "style": {
-                      "color": "var(--gold)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.9,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "id": "fixture-l39",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 15.49,
-                        "y": 64.93,
-                        "w": 4.32,
-                        "h": 5.28
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "v",
-                    "style": {
-                      "color": "var(--gold)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 5.72,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "id": "fixture-l40",
-                    "sizes": ["portrait"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 16.77,
-                        "y": 69.88,
-                        "w": 4.88,
-                        "h": 4.96
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "v",
-                    "style": {
-                      "color": "var(--gold)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 6.61,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "id": "fixture-l41",
-                    "sizes": ["story"],
-                    "geometry": {
-                      "story": {
-                        "x": 18.25,
-                        "y": 54.94,
-                        "w": 5.48,
-                        "h": 4.06
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "v",
-                    "style": {
-                      "color": "var(--gold)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 3,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "id": "fixture-l42",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 59.35,
-                        "y": 29.63,
-                        "w": 3.04,
-                        "h": 6.35
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "fixture-stack2-item3",
-                "kind": "group",
-                "name": "Stack item",
-                "geometry": {
-                  "landscape": {
-                    "x": 62.62,
-                    "y": 29.78,
-                    "w": 26.78,
-                    "h": 7
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.name}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.64,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 1,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l43",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 20.61,
-                        "y": 64.84,
-                        "w": 63.7,
-                        "h": 6.44
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.name}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.51,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 1,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l44",
-                    "sizes": ["portrait"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 22.55,
-                        "y": 69.81,
-                        "w": 61.06,
-                        "h": 6.03
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.name}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 4.18,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 1,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l45",
-                    "sizes": ["story"],
-                    "geometry": {
-                      "story": {
-                        "x": 24.78,
-                        "y": 54.94,
-                        "w": 57.9,
-                        "h": 7
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.name}}",
-                    "style": {
-                      "color": "var(--ink)",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.05,
-                      "fontWeight": 900,
-                      "align": "left",
-                      "lineHeight": 1.06
-                    },
-                    "fit": {
-                      "minScale": 1,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l46",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 62.62,
-                        "y": 29.63,
-                        "w": 26.78,
-                        "h": 10.81
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "fixture-stack2-item4",
-                "kind": "group",
-                "name": "Stack item",
-                "geometry": {
-                  "landscape": {
-                    "x": 90.63,
-                    "y": 31.14,
-                    "w": 3.88,
-                    "h": 4.29
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.opposition}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.2,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l47",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 86.11,
-                        "y": 66.85,
-                        "w": 6.69,
-                        "h": 2.41
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.opposition}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.33,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l48",
-                    "sizes": ["portrait"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 85.53,
-                        "y": 71.85,
-                        "w": 7.03,
-                        "h": 2
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.opposition}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 2.51,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l49",
-                    "sizes": ["story"],
-                    "geometry": {
-                      "story": {
-                        "x": 84.72,
-                        "y": 56.52,
-                        "w": 7.49,
-                        "h": 1.56
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{ladder.opposition}}",
-                    "style": {
-                      "color": "#5B656E",
-                      "fontFamily": "'Archivo',sans-serif",
-                      "fontSize": 1.5,
-                      "fontWeight": 700,
-                      "align": "left",
-                      "lineHeight": 1.5
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "fixture-l50",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 90.63,
-                        "y": 31.61,
-                        "w": 4.88,
-                        "h": 3.17
-                      }
-                    }
-                  }
-                ]
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l46",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 62.62,
+                "y": 29.63,
+                "w": 26.78,
+                "h": 10.81
               }
-            ]
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.opposition}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l47",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 86.11,
+                "y": 66.85,
+                "w": 6.69,
+                "h": 2.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.opposition}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.33,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l48",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 85.53,
+                "y": 71.85,
+                "w": 7.03,
+                "h": 2
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.opposition}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.51,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l49",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 84.72,
+                "y": 56.52,
+                "w": 7.49,
+                "h": 1.56
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{ladder.opposition}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.5,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "fixture-l50",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 90.63,
+                "y": 31.61,
+                "w": 4.88,
+                "h": 3.17
+              }
+            }
           },
           {
             "kind": "text",
@@ -2501,6 +2393,15 @@
           },
           {
             "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "duotone",
+                  "dark": "var(--dt-ink)",
+                  "light": "var(--dt-p)"
+                }
+              ]
+            },
             "id": "title-l5",
             "geometry": {
               "square": {
@@ -4789,6 +4690,15 @@
           },
           {
             "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "duotone",
+                  "dark": "var(--dt-ink)",
+                  "light": "var(--dt-p)"
+                }
+              ]
+            },
             "id": "sponsors-l3",
             "geometry": {
               "square": {
@@ -5164,334 +5074,854 @@
             }
           },
           {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 7.55,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--accent-ink)"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 0.61,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 99.39,
-                  "w": 0.61,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 1.23,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 98.77,
-                  "h": 1.23,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 6.57,
-                  "w": 86.86,
-                  "y": 13.14,
-                  "h": 73.73,
-                  "show": "image"
-                }
-              ],
-              "columns": 4,
-              "columnGap": 4.72,
-              "flow": "across"
+            "id": "sponsors-tile0",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor0"
             },
-            "id": "sponsors-l15",
-            "sizes": ["square"],
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
             "geometry": {
               "square": {
                 "x": 25.84,
                 "y": 42.08,
                 "w": 15.11,
                 "h": 7.55
-              }
-            }
-          },
-          {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 12.48,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--accent-ink)"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 0.37,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 99.63,
-                  "w": 0.37,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 0.74,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 99.26,
-                  "h": 0.74,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 3.98,
-                  "w": 92.05,
-                  "y": 7.95,
-                  "h": 84.09,
-                  "show": "image"
-                }
-              ],
-              "columns": 4,
-              "columnGap": 2.92,
-              "flow": "across"
-            },
-            "id": "sponsors-l16",
-            "sizes": ["portrait"],
-            "geometry": {
+              },
               "portrait": {
                 "x": 11.06,
                 "y": 43.63,
                 "w": 24.96,
                 "h": 9.98
-              }
-            }
-          },
-          {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 13.24,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--accent-ink)"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 0.35,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 99.65,
-                  "w": 0.35,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 0.7,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 99.3,
-                  "h": 0.7,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 3.75,
-                  "w": 92.5,
-                  "y": 7.5,
-                  "h": 85.01,
-                  "show": "image"
-                }
-              ],
-              "columns": 4,
-              "columnGap": 2.75,
-              "flow": "across"
-            },
-            "id": "sponsors-l17",
-            "sizes": ["story"],
-            "geometry": {
+              },
               "story": {
                 "x": 8.79,
                 "y": 36.16,
                 "w": 26.47,
                 "h": 7.45
-              }
-            }
-          },
-          {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 6.56,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "var(--accent-ink)"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 0.64,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 99.36,
-                  "w": 0.64,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 1.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 98.73,
-                  "h": 1.27,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#DADDE0"
-                  }
-                },
-                {
-                  "field": "logo",
-                  "x": 4.23,
-                  "w": 91.55,
-                  "y": 8.46,
-                  "h": 83.09,
-                  "show": "image"
-                }
-              ],
-              "columns": 4,
-              "columnGap": 2.91,
-              "flow": "across"
-            },
-            "id": "sponsors-l18",
-            "sizes": ["landscape"],
-            "geometry": {
+              },
               "landscape": {
                 "x": 53.22,
                 "y": 29,
                 "w": 13.12,
                 "h": 12.5
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo0",
+            "kind": "image",
+            "content": "{{weekendSponsor0}}",
+            "geometry": {
+              "square": {
+                "x": 26.74,
+                "y": 42.98,
+                "w": 13.31,
+                "h": 5.75
+              },
+              "portrait": {
+                "x": 11.96,
+                "y": 44.35,
+                "w": 23.16,
+                "h": 8.54
+              },
+              "story": {
+                "x": 9.69,
+                "y": 36.67,
+                "w": 24.67,
+                "h": 6.44
+              },
+              "landscape": {
+                "x": 53.69,
+                "y": 29.9,
+                "w": 12.18,
+                "h": 10.7
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile1",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor1"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 42.45,
+                "y": 42.08,
+                "w": 15.11,
+                "h": 7.55
+              },
+              "portrait": {
+                "x": 37.52,
+                "y": 43.63,
+                "w": 24.96,
+                "h": 9.98
+              },
+              "story": {
+                "x": 36.76,
+                "y": 36.16,
+                "w": 26.47,
+                "h": 7.45
+              },
+              "landscape": {
+                "x": 67.13,
+                "y": 29,
+                "w": 13.12,
+                "h": 12.5
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo1",
+            "kind": "image",
+            "content": "{{weekendSponsor1}}",
+            "geometry": {
+              "square": {
+                "x": 43.35,
+                "y": 42.98,
+                "w": 13.31,
+                "h": 5.75
+              },
+              "portrait": {
+                "x": 38.42,
+                "y": 44.35,
+                "w": 23.16,
+                "h": 8.54
+              },
+              "story": {
+                "x": 37.66,
+                "y": 36.67,
+                "w": 24.67,
+                "h": 6.44
+              },
+              "landscape": {
+                "x": 67.6,
+                "y": 29.9,
+                "w": 12.18,
+                "h": 10.7
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile2",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor2"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 59.05,
+                "y": 42.08,
+                "w": 15.11,
+                "h": 7.55
+              },
+              "portrait": {
+                "x": 63.98,
+                "y": 43.63,
+                "w": 24.96,
+                "h": 9.98
+              },
+              "story": {
+                "x": 64.74,
+                "y": 36.16,
+                "w": 26.47,
+                "h": 7.45
+              },
+              "landscape": {
+                "x": 81.04,
+                "y": 29,
+                "w": 13.12,
+                "h": 12.5
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo2",
+            "kind": "image",
+            "content": "{{weekendSponsor2}}",
+            "geometry": {
+              "square": {
+                "x": 59.95,
+                "y": 42.98,
+                "w": 13.31,
+                "h": 5.75
+              },
+              "portrait": {
+                "x": 64.88,
+                "y": 44.35,
+                "w": 23.16,
+                "h": 8.54
+              },
+              "story": {
+                "x": 65.64,
+                "y": 36.67,
+                "w": 24.67,
+                "h": 6.44
+              },
+              "landscape": {
+                "x": 81.51,
+                "y": 29.9,
+                "w": 12.18,
+                "h": 10.7
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile3",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor3"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 23.39,
+                "y": 51.14,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 54.81,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 23.19,
+                "y": 44.45,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 60.6,
+                "y": 43,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo3",
+            "kind": "image",
+            "content": "{{weekendSponsor3}}",
+            "geometry": {
+              "square": {
+                "x": 24.29,
+                "y": 52.04,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 9.35,
+                "y": 55.53,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 24.09,
+                "y": 44.96,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 61.07,
+                "y": 43.9,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile4",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor4"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 34.34,
+                "y": 51.14,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 25.37,
+                "y": 54.81,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 41.56,
+                "y": 44.45,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 69.59,
+                "y": 43,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo4",
+            "kind": "image",
+            "content": "{{weekendSponsor4}}",
+            "geometry": {
+              "square": {
+                "x": 35.24,
+                "y": 52.04,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 26.27,
+                "y": 55.53,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 42.46,
+                "y": 44.96,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 70.06,
+                "y": 43.9,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile5",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor5"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 45.28,
+                "y": 51.14,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 42.29,
+                "y": 54.81,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 59.94,
+                "y": 44.45,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 78.57,
+                "y": 43,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo5",
+            "kind": "image",
+            "content": "{{weekendSponsor5}}",
+            "geometry": {
+              "square": {
+                "x": 46.18,
+                "y": 52.04,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 43.19,
+                "y": 55.53,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 60.84,
+                "y": 44.96,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 79.04,
+                "y": 43.9,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile6",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor6"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 56.22,
+                "y": 51.14,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 59.21,
+                "y": 54.81,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 23.19,
+                "y": 50.04,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 60.6,
+                "y": 52.3,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo6",
+            "kind": "image",
+            "content": "{{weekendSponsor6}}",
+            "geometry": {
+              "square": {
+                "x": 57.12,
+                "y": 52.04,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 60.11,
+                "y": 55.53,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 24.09,
+                "y": 50.55,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 61.07,
+                "y": 53.2,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile7",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor7"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 67.16,
+                "y": 51.14,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 76.13,
+                "y": 54.81,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 41.56,
+                "y": 50.04,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 69.59,
+                "y": 52.3,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo7",
+            "kind": "image",
+            "content": "{{weekendSponsor7}}",
+            "geometry": {
+              "square": {
+                "x": 68.06,
+                "y": 52.04,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 77.03,
+                "y": 55.53,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 42.46,
+                "y": 50.55,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 70.06,
+                "y": 53.2,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile8",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor8"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 28.86,
+                "y": 57.36,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 16.91,
+                "y": 62.18,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 59.94,
+                "y": 50.04,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 78.57,
+                "y": 52.3,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo8",
+            "kind": "image",
+            "content": "{{weekendSponsor8}}",
+            "geometry": {
+              "square": {
+                "x": 29.76,
+                "y": 58.26,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 17.81,
+                "y": 62.9,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 60.84,
+                "y": 50.55,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 79.04,
+                "y": 53.2,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile9",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor9"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 39.81,
+                "y": 57.36,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 33.83,
+                "y": 62.18,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 23.19,
+                "y": 55.63,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 60.6,
+                "y": 61.61,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo9",
+            "kind": "image",
+            "content": "{{weekendSponsor9}}",
+            "geometry": {
+              "square": {
+                "x": 40.71,
+                "y": 58.26,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 34.73,
+                "y": 62.9,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 24.09,
+                "y": 56.14,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 61.07,
+                "y": 62.51,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile10",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor10"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 50.75,
+                "y": 57.36,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 50.75,
+                "y": 62.18,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 41.56,
+                "y": 55.63,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 69.59,
+                "y": 61.61,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo10",
+            "kind": "image",
+            "content": "{{weekendSponsor10}}",
+            "geometry": {
+              "square": {
+                "x": 51.65,
+                "y": 58.26,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 51.65,
+                "y": 62.9,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 42.46,
+                "y": 56.14,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 70.06,
+                "y": 62.51,
+                "w": 7.25,
+                "h": 6.01
+              }
+            }
+          },
+          {
+            "id": "sponsors-tile11",
+            "kind": "shape",
+            "showWhen": {
+              "field": "weekendSponsor11"
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 61.69,
+                "y": 57.36,
+                "w": 9.44,
+                "h": 4.72
+              },
+              "portrait": {
+                "x": 67.67,
+                "y": 62.18,
+                "w": 15.42,
+                "h": 6.17
+              },
+              "story": {
+                "x": 59.94,
+                "y": 55.63,
+                "w": 16.87,
+                "h": 4.75
+              },
+              "landscape": {
+                "x": 78.57,
+                "y": 61.61,
+                "w": 8.2,
+                "h": 7.81
+              }
+            }
+          },
+          {
+            "id": "sponsors-logo11",
+            "kind": "image",
+            "content": "{{weekendSponsor11}}",
+            "geometry": {
+              "square": {
+                "x": 62.59,
+                "y": 58.26,
+                "w": 7.64,
+                "h": 2.92
+              },
+              "portrait": {
+                "x": 68.57,
+                "y": 62.9,
+                "w": 13.62,
+                "h": 4.73
+              },
+              "story": {
+                "x": 60.84,
+                "y": 56.14,
+                "w": 15.07,
+                "h": 3.74
+              },
+              "landscape": {
+                "x": 79.04,
+                "y": 62.51,
+                "w": 7.25,
+                "h": 6.01
               }
             }
           },

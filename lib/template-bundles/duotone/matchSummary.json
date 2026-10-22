@@ -179,6 +179,15 @@
           },
           {
             "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "duotone",
+                  "dark": "var(--dt-ink)",
+                  "light": "var(--dt-p)"
+                }
+              ]
+            },
             "id": "result-l5",
             "geometry": {
               "square": {
