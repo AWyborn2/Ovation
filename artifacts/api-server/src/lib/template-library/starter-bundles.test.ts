@@ -3,7 +3,7 @@
  * with T5.18, so the bundles are the starters now: every starter look holds a
  * template for every kind it had, listed except Team List and retired kinds.
  * Its Match Day and Match Summary templates carry the carousel pages from the
- * nearest polished look (L4-D) at version 2; the rest are the original v1
+ * nearest polished look (L4-D), at version 2 or later; the rest are the original v1
  * documents at version 1. (The web's render tests pin those originals.) And
  * every committed bundle syncs without a problem: a real-DB test that removes
  * what it loaded.
@@ -37,7 +37,9 @@ describe("starter bundles", () => {
           if (!isDocumentV2(doc)) continue;
           const primary = primaryPage(t.kind);
           expect(Object.keys(doc.pages).sort()).toEqual([primary, ...BORROWED[t.kind]!].sort());
-          expect(t.file).toMatchObject({ version: 2, listed: true });
+          // Version 2 or later: a bundle file that changes takes the next version.
+          expect(t.file.version).toBeGreaterThanOrEqual(2);
+          expect(t.file.listed).toBe(true);
           continue;
         }
         expect(isDocumentV2(doc)).toBe(false);
