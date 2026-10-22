@@ -21,12 +21,12 @@ Converted from the `neon-night-v1` pack by `scripts/src/convert-pack.ts` on 2026
 - Layers: 26 shape, 7 image, 33 text.
 - Motion: `hhPulse` → loop: pulse, 1400 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 85% | none |
-| portrait | 80% | none |
-| story | 86% | none |
-| landscape | 91% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 85%         | none         |
+| portrait  | 80%         | none         |
+| story     | 86%         | none         |
+| landscape | 91%         | none         |
 
 Polish:
 
@@ -50,12 +50,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 23 shape, 1 photo, 7 image, 31 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 94% | none |
-| story | 96% | none |
-| landscape | 96% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 94%         | none         |
+| story     | 96%         | none         |
+| landscape | 96%         | none         |
 
 Polish:
 
@@ -83,12 +83,12 @@ Polish applied:
 - From `card.Runs`; not used: `card.Wickets`.
 - Layers: 17 shape, 7 image, 20 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 89% | none |
-| portrait | 88% | none |
-| story | 91% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 89%         | none         |
+| portrait  | 88%         | none         |
+| story     | 91%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -108,12 +108,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 20 shape, 7 image, 31 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 94% | none |
-| portrait | 89% | none |
-| story | 92% | none |
-| landscape | 94% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 94%         | none         |
+| portrait  | 89%         | none         |
+| story     | 92%         | none         |
+| landscape | 94%         | none         |
 
 Polish:
 
@@ -135,12 +135,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 20 shape, 1 photo, 7 image, 24 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 86% | none |
-| portrait | 81% | none |
-| story | 86% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 86%         | none         |
+| portrait  | 81%         | none         |
+| story     | 86%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -164,12 +164,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 23 shape, 1 photo, 7 image, 33 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 94% | none |
-| story | 96% | none |
-| landscape | 96% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 94%         | none         |
+| story     | 96%         | none         |
+| landscape | 96%         | none         |
 
 Polish:
 
@@ -193,12 +193,12 @@ Colours not tokenised:
 - From `card.Runs`; not used: `card.Wickets`.
 - Layers: 20 shape, 1 photo, 7 image, 29 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 94% | none |
-| story | 96% | none |
-| landscape | 96% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 94%         | none         |
+| story     | 96%         | none         |
+| landscape | 96%         | none         |
 
 Polish:
 
@@ -222,12 +222,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 23 shape, 7 image, 68 text, 2 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 84% | none |
-| portrait | 81% | none |
-| story | 87% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 84%         | none         |
+| portrait  | 81%         | none         |
+| story     | 87%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -255,12 +255,12 @@ Polish applied:
 - From `fixture.single`; not used: `fixture.slide`.
 - Layers: 28 shape, 9 image, 46 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 97% | none |
-| portrait | 96% | none |
-| story | 97% | none |
-| landscape | 97% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 97%         | none         |
+| portrait  | 96%         | none         |
+| story     | 97%         | none         |
+| landscape | 97%         | none         |
 
 Polish:
 
@@ -282,12 +282,12 @@ Colours not tokenised:
 - From `title.slide`.
 - Layers: 20 shape, 1 photo, 7 image, 28 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 93% | none |
-| portrait | 90% | none |
-| story | 93% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 93%         | none         |
+| portrait  | 90%         | none         |
+| story     | 93%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -306,12 +306,12 @@ Colours not tokenised:
 - From `day.slide`.
 - Layers: 17 shape, 7 image, 16 text, 4 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 85% | none |
-| story | 86% | none |
-| landscape | 87% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 85%         | none         |
+| story     | 86%         | none         |
+| landscape | 87%         | none         |
 
 Polish:
 
@@ -329,12 +329,12 @@ Colours not tokenised:
 - From `sponsors.slide`.
 - Layers: 23 shape, 1 photo, 7 image, 31 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 86% | none |
-| portrait | 80% | none |
-| story | 86% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 86%         | none         |
+| portrait  | 80%         | none         |
+| story     | 86%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -356,12 +356,12 @@ Colours not tokenised:
 - From `result.single`; not used: `result.slide`.
 - Layers: 23 shape, 1 photo, 9 image, 38 text, 3 group; 1 stack group(s).
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 89% | none |
-| story | 93% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 89%         | none         |
+| story     | 93%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -385,12 +385,12 @@ Colours not tokenised:
 - From `day.slide`.
 - Layers: 13 shape, 3 image, 16 text, 4 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 89% | none |
-| portrait | 85% | none |
-| story | 85% | none |
-| landscape | 85% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 89%         | none         |
+| portrait  | 85%         | none         |
+| story     | 85%         | none         |
+| landscape | 85%         | none         |
 
 Polish:
 
@@ -410,12 +410,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 23 shape, 1 photo, 7 image, 28 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 91% | none |
-| story | 94% | none |
-| landscape | 97% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 91%         | none         |
+| story     | 94%         | none         |
+| landscape | 97%         | none         |
 
 Polish:
 
@@ -438,12 +438,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 23 shape, 1 photo, 7 image, 27 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 85% | none |
-| portrait | 79% | none |
-| story | 85% | none |
-| landscape | 91% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 85%         | none         |
+| portrait  | 79%         | none         |
+| story     | 85%         | none         |
+| landscape | 91%         | none         |
 
 Polish:
 
@@ -467,12 +467,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 29 shape, 1 photo, 7 image, 42 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 88% | none |
-| portrait | 84% | none |
-| story | 89% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 88%         | none         |
+| portrait  | 84%         | none         |
+| story     | 89%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -498,12 +498,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 14 shape, 1 photo, 1 image, 27 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 94% | none |
-| story | 96% | none |
-| landscape | 96% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 94%         | none         |
+| story     | 96%         | none         |
+| landscape | 96%         | none         |
 
 Polish:
 
@@ -527,12 +527,12 @@ Colours not tokenised:
 - From `card.single`.
 - Layers: 20 shape, 1 photo, 7 image, 29 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 91% | none |
-| story | 94% | none |
-| landscape | 97% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 91%         | none         |
+| story     | 94%         | none         |
+| landscape | 97%         | none         |
 
 Polish:
 
@@ -555,12 +555,12 @@ Colours not tokenised:
 - From `team.single`; not used: `team.slide`.
 - Layers: 13 shape, 1 photo, 3 image, 21 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 92% | none |
-| portrait | 92% | none |
-| story | 94% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 92%         | none         |
+| portrait  | 92%         | none         |
+| story     | 94%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -586,12 +586,12 @@ Polish applied:
 - From `card.weekend-wrap`.
 - Layers: 17 shape, 7 image, 18 text, 4 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 91% | overflow; overflow |
-| portrait | 89% | overflow; overflow |
-| story | 92% | overflow; overflow |
-| landscape | 94% | overflow |
+| Size      | Pixel match | Fit warnings       |
+| --------- | ----------- | ------------------ |
+| square    | 91%         | overflow; overflow |
+| portrait  | 89%         | overflow; overflow |
+| story     | 92%         | overflow; overflow |
+| landscape | 94%         | overflow           |
 
 Polish:
 
@@ -606,4 +606,3 @@ Colours not tokenised:
 - text-shadow color(srgb 0.827451 0.0901961 0.352941 / 0.6)
 - text-shadow color(srgb 0.827451 0.0901961 0.352941 / 0.95)
 - text-shadow color(srgb 0.827451 0.0901961 0.352941 / 0.55)
-

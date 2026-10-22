@@ -320,11 +320,7 @@
               ]
             },
             "id": "card-l8",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 0,
@@ -366,9 +362,7 @@
               ]
             },
             "id": "card-l9",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 0,
@@ -436,11 +430,7 @@
               "ellipsis": true
             },
             "id": "card-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 17.5,
@@ -489,9 +479,7 @@
               "ellipsis": true
             },
             "id": "card-l12",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 9.19,
@@ -520,11 +508,7 @@
               "ellipsis": true
             },
             "id": "card-l13",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 17.5,
@@ -565,9 +549,7 @@
               "ellipsis": true
             },
             "id": "card-l14",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 9.19,
@@ -596,11 +578,7 @@
               ]
             },
             "id": "card-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 82.52,
@@ -641,9 +619,7 @@
               ]
             },
             "id": "card-l16",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 90.85,
@@ -667,11 +643,7 @@
               "lineHeight": 1
             },
             "id": "card-l17",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 84.71,
@@ -707,9 +679,7 @@
               "lineHeight": 1
             },
             "id": "card-l18",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 91.98,
@@ -746,11 +716,7 @@
               "ellipsis": true
             },
             "id": "card-l19",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 86.36,
@@ -799,9 +765,7 @@
               "ellipsis": true
             },
             "id": "card-l20",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 92.84,
@@ -830,9 +794,7 @@
               "ellipsis": true
             },
             "id": "card-l21",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -861,10 +823,7 @@
               "ellipsis": true
             },
             "id": "card-l22",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -899,9 +858,7 @@
               "ellipsis": true
             },
             "id": "card-l23",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -943,9 +900,7 @@
               "ellipsis": true
             },
             "id": "card-l24",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -987,10 +942,7 @@
               "ellipsis": true
             },
             "id": "card-l25",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -1038,9 +990,7 @@
               "ellipsis": true
             },
             "id": "card-l26",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1067,9 +1017,7 @@
               "ellipsis": true
             },
             "id": "card-l27",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -1096,10 +1044,7 @@
               "ellipsis": true
             },
             "id": "card-l28",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -1132,9 +1077,7 @@
               "ellipsis": true
             },
             "id": "card-l29",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1159,9 +1102,7 @@
               ]
             },
             "id": "card-l30",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -1186,10 +1127,7 @@
               ]
             },
             "id": "card-l31",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -1220,9 +1158,7 @@
               ]
             },
             "id": "card-l32",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1251,9 +1187,7 @@
               "ellipsis": true
             },
             "id": "card-l33",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 8.11,
@@ -1282,10 +1216,7 @@
               "ellipsis": true
             },
             "id": "card-l34",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 8.81,
@@ -1320,9 +1251,7 @@
               "ellipsis": true
             },
             "id": "card-l35",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 4.26,
@@ -1382,11 +1311,7 @@
               "sponsors": true
             },
             "id": "card-l37",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -1424,9 +1349,7 @@
               "sponsors": true
             },
             "id": "card-l38",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1443,11 +1366,7 @@
               "radius": 6.48
             },
             "id": "card-l39",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 21.44,
@@ -1476,9 +1395,7 @@
               "radius": 3.78
             },
             "id": "card-l40",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 11.26,
@@ -1495,11 +1412,7 @@
               "radius": 6.48
             },
             "id": "card-l41",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 21.44,
@@ -1528,9 +1441,7 @@
               "radius": 3.78
             },
             "id": "card-l42",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 11.26,
@@ -1547,11 +1458,7 @@
               "radius": 6.48
             },
             "id": "card-l43",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 32.84,
@@ -1580,9 +1487,7 @@
               "radius": 3.78
             },
             "id": "card-l44",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 17.24,
@@ -1599,11 +1504,7 @@
               "radius": 6.48
             },
             "id": "card-l45",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 32.84,
@@ -1632,9 +1533,7 @@
               "radius": 3.78
             },
             "id": "card-l46",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 17.24,
@@ -1651,11 +1550,7 @@
               "radius": 6.48
             },
             "id": "card-l47",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 44.24,
@@ -1684,9 +1579,7 @@
               "radius": 3.78
             },
             "id": "card-l48",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 23.22,
@@ -1703,11 +1596,7 @@
               "radius": 6.48
             },
             "id": "card-l49",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 44.24,
@@ -1736,9 +1625,7 @@
               "radius": 3.78
             },
             "id": "card-l50",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 23.22,
@@ -1774,11 +1661,7 @@
               "ellipsis": true
             },
             "id": "card-l51",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 54.08,
@@ -1826,9 +1709,7 @@
               "ellipsis": true
             },
             "id": "card-l52",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 75.89,

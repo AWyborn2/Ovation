@@ -136,9 +136,7 @@
             "id": "team-stripes1",
             "kind": "vector",
             "name": "Stripes",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 0,
@@ -153,9 +151,7 @@
             "id": "team-stripes2",
             "kind": "vector",
             "name": "Stripes",
-            "sizes": [
-              "portrait"
-            ],
+            "sizes": ["portrait"],
             "geometry": {
               "portrait": {
                 "x": 0,
@@ -170,9 +166,7 @@
             "id": "team-stripes3",
             "kind": "vector",
             "name": "Stripes",
-            "sizes": [
-              "story"
-            ],
+            "sizes": ["story"],
             "geometry": {
               "story": {
                 "x": 0,
@@ -187,9 +181,7 @@
             "id": "team-stripes4",
             "kind": "vector",
             "name": "Stripes",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 0,
@@ -211,11 +203,7 @@
               "fill": "#00000000"
             },
             "id": "team-l4",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 2.6,
@@ -248,9 +236,7 @@
               "fill": "#00000000"
             },
             "id": "team-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 1.37,
@@ -271,11 +257,7 @@
               "fill": "#00000000"
             },
             "id": "team-l6",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 3.6,
@@ -308,9 +290,7 @@
               "fill": "#00000000"
             },
             "id": "team-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 1.89,
@@ -370,11 +350,7 @@
               "ellipsis": true
             },
             "id": "team-l9",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 17.5,
@@ -415,9 +391,7 @@
               "ellipsis": true
             },
             "id": "team-l10",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 9.19,
@@ -446,11 +420,7 @@
               "ellipsis": true
             },
             "id": "team-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 17.5,
@@ -491,9 +461,7 @@
               "ellipsis": true
             },
             "id": "team-l12",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 9.19,
@@ -513,11 +481,7 @@
               }
             },
             "id": "team-l13",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 77.89,
@@ -549,9 +513,7 @@
               }
             },
             "id": "team-l14",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 88.42,
@@ -575,11 +537,7 @@
               "lineHeight": 1
             },
             "id": "team-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 80.07,
@@ -615,9 +573,7 @@
               "lineHeight": 1
             },
             "id": "team-l16",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 89.55,
@@ -654,11 +610,7 @@
               "ellipsis": true
             },
             "id": "team-l17",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 27.39,
@@ -707,9 +659,7 @@
               "ellipsis": true
             },
             "id": "team-l18",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 61.88,
@@ -738,9 +688,7 @@
               "ellipsis": true
             },
             "id": "team-l19",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -769,10 +717,7 @@
               "ellipsis": true
             },
             "id": "team-l20",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -807,9 +752,7 @@
               "ellipsis": true
             },
             "id": "team-l21",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -837,9 +780,7 @@
               "ellipsis": true
             },
             "id": "team-l22",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -867,10 +808,7 @@
               "ellipsis": true
             },
             "id": "team-l23",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -904,9 +842,7 @@
               "ellipsis": true
             },
             "id": "team-l24",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -934,9 +870,7 @@
               "ellipsis": true
             },
             "id": "team-l25",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -964,10 +898,7 @@
               "ellipsis": true
             },
             "id": "team-l26",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -1001,9 +932,7 @@
               "ellipsis": true
             },
             "id": "team-l27",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1051,9 +980,7 @@
               "columns": 2
             },
             "id": "team-l28",
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -1101,10 +1028,7 @@
               "columns": 2
             },
             "id": "team-l29",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
@@ -1159,9 +1083,7 @@
               "columns": 2
             },
             "id": "team-l30",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1221,11 +1143,7 @@
               "sponsors": true
             },
             "id": "team-l32",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -1263,9 +1181,7 @@
               "sponsors": true
             },
             "id": "team-l33",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
@@ -1286,11 +1202,7 @@
               "sponsors": true
             },
             "id": "team-l34",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 21.44,
@@ -1323,9 +1235,7 @@
               "sponsors": true
             },
             "id": "team-l35",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 11.26,
@@ -1342,11 +1252,7 @@
               "radius": 6.48
             },
             "id": "team-l36",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 21.44,
@@ -1375,9 +1281,7 @@
               "radius": 3.78
             },
             "id": "team-l37",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 11.26,
@@ -1405,11 +1309,7 @@
               "ellipsis": true
             },
             "id": "team-l38",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 54.08,
@@ -1449,9 +1349,7 @@
               "ellipsis": true
             },
             "id": "team-l39",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 75.89,
