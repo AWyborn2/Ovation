@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parseColour,
+  parseClipPolygon,
   parseGradient,
   parseMatrix,
   parseShadows,
@@ -114,5 +115,37 @@ describe("gradients, shadows and transforms", () => {
     // A leftward skew: the top edge shifts right of the bottom edge.
     expect(corners[0]!.x).toBeGreaterThan(corners[3]!.x);
     expect(Math.min(...corners.map((c) => c.x))).toBe(0);
+  });
+});
+
+describe("clip polygons", () => {
+  it("reads px, percent and calc() against the box, as percent", () => {
+    expect(
+      parseClipPolygon("polygon(160px 0px, 100% 0px, 100% 100%, 0px calc(100% - 50px))", 1080, 200),
+    ).toEqual([
+      [14.81, 0],
+      [100, 0],
+      [100, 100],
+      [0, 75],
+    ]);
+    expect(parseClipPolygon("polygon(evenodd, 0 0, 50% 0, 25% 100%)", 400, 100)).toEqual([
+      [0, 0],
+      [50, 0],
+      [25, 100],
+    ]);
+    expect(parseClipPolygon("polygon(0px 0px, calc(50% + 10px) 0px, 0px 100%)", 200, 100)).toEqual([
+      [0, 0],
+      [55, 0],
+      [0, 100],
+    ]);
+  });
+
+  it("reads nothing else", () => {
+    expect(parseClipPolygon("inset(10px)", 100, 100)).toBeNull();
+    expect(parseClipPolygon("circle(50%)", 100, 100)).toBeNull();
+    expect(parseClipPolygon("polygon(0 0, 10em 0, 0 100%)", 100, 100)).toBeNull();
+    expect(parseClipPolygon("polygon(0 0, 100% 0)", 100, 100)).toBeNull();
+    expect(parseClipPolygon("polygon(0 0, 1 0, 0 1)", 0, 100)).toBeNull();
+    expect(parseClipPolygon(undefined, 100, 100)).toBeNull();
   });
 });

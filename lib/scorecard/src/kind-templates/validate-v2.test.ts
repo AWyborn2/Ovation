@@ -363,3 +363,92 @@ describe("format v2 validation", () => {
     ]);
   });
 });
+
+describe("clips and brightness (converter fidelity)", () => {
+  const shape = (style: Record<string, unknown>) =>
+    doc({ card: [{ id: "s", kind: "shape", geometry, style }] });
+
+  it("accepts a clip polygon and a brightness filter", () => {
+    expect(
+      templateDocumentErrors(
+        shape({
+          fill: "var(--gold)",
+          clip: {
+            polygon: [
+              [14.81, 0],
+              [100, 0],
+              [100, 100],
+              [0, 75],
+            ],
+          },
+        }),
+        "player",
+      ),
+    ).toEqual([]);
+    expect(
+      templateDocumentErrors(
+        doc({
+          card: [
+            {
+              id: "p",
+              kind: "photo",
+              geometry,
+              style: { filter: [{ preset: "brightness", amount: 0.6 }] },
+            },
+          ],
+        }),
+        "player",
+      ),
+    ).toEqual([]);
+  });
+
+  it("refuses a clip that isn't 3 to 32 points of numbers in range", () => {
+    for (const clip of [
+      {
+        polygon: [
+          [0, 0],
+          [100, 0],
+        ],
+      },
+      { polygon: Array.from({ length: 33 }, (_, i) => [i, i]) },
+      {
+        polygon: [
+          [0, 0],
+          [100, 0],
+          [100, "x"],
+        ],
+      },
+      {
+        polygon: [
+          [0, 0],
+          [100, 0],
+          [500, 100],
+        ],
+      },
+      { path: "M0 0" },
+      "polygon(0 0, 1 0, 0 1)",
+    ])
+      expect(
+        templateDocumentErrors(shape({ clip }), "player").length,
+        JSON.stringify(clip),
+      ).toBeGreaterThan(0);
+  });
+
+  it("refuses a brightness outside 0 to 3", () => {
+    expect(
+      templateDocumentErrors(
+        doc({
+          card: [
+            {
+              id: "p",
+              kind: "photo",
+              geometry,
+              style: { filter: [{ preset: "brightness", amount: 4 }] },
+            },
+          ],
+        }),
+        "player",
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+});

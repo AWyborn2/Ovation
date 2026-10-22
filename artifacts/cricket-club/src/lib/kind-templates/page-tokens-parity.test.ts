@@ -141,7 +141,12 @@ describe("carousel page tokens are what the renderer binds", () => {
       if (DERIVED.has(field.key)) continue;
       expect(Object.keys(bound.values), `${page}: {{${field.key}}}`).toContain(field.key);
     }
+    // Positional sponsor logos are bound for the sponsors the page has, as sponsor1–3 are.
+    const sponsorCount =
+      (input as { carouselPage?: { sponsors?: unknown[] } }).carouselPage?.sponsors?.length ?? 0;
     for (const image of cat.images) {
+      const position = /^weekendSponsor(\d+)$/.exec(image.key);
+      if (position && Number(position[1]) >= sponsorCount) continue;
       expect(Object.keys(bound.images), `${page}: image ${image.key}`).toContain(image.key);
     }
     for (const repeat of cat.repeats) {

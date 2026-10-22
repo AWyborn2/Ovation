@@ -14,14 +14,16 @@ describe("withinCatalogue", () => {
       [
         text("a", "{{playerName}} · CENTURY"),
         image("b", "{{clubLogo}}"),
+        // Every page can show the club's first three sponsors (decision O8).
         image("c", "{{sponsor1}}"),
+        image("e", "{{weekendSponsor0}}"),
         text("d", "STATIC LABEL"),
       ],
       "century",
       "card",
     );
-    expect(layers.map((l) => l.id)).toEqual(["a", "b", "d"]);
-    expect(dropped).toEqual(["image {{sponsor1}} dropped: not in the page's catalogue"]);
+    expect(layers.map((l) => l.id)).toEqual(["a", "b", "c", "d"]);
+    expect(dropped).toEqual(["image {{weekendSponsor0}} dropped: not in the page's catalogue"]);
   });
 
   it("checks a rows layer's repeat and cell fields, inside groups too", () => {

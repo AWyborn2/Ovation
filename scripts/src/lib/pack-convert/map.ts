@@ -38,6 +38,7 @@ import type {
 import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
+  parseClipPolygon,
   parseGradient,
   parseMatrix,
   parseShadows,
@@ -526,7 +527,17 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     }
 
     // The element's own paint: a shape behind its text and children.
-    const paint = shapeStyle(tree, el, { colour, translucent, shadowColour, wPct, polish, cap });
+    // A clip resolves against the box the layer takes (the worst-case twin's), as its children's do.
+    const clipBox = g.size ?? { w: g.box.w, h: g.box.h };
+    const paint = shapeStyle(tree, el, {
+      colour,
+      translucent,
+      shadowColour,
+      wPct,
+      polish,
+      cap,
+      clipBox,
+    });
     const text = el.text ?? [];
     const textStyle = text.length
       ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
@@ -545,6 +556,23 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
         what: `transform ${el.style.transform} (skew or scale) drawn untransformed`,
       });
     if (paint && (paint.style.fill || paint.style.border || paint.style.boxShadow)) {
+      // The box's other background layers, beneath it: same box, corners, clip and opacity.
+      paint.under.forEach((fill, i) => {
+        const s = paint.style;
+        add(
+          `shape:under:${i}:${paint.key}`,
+          {
+            kind: "shape",
+            style: {
+              fill,
+              ...(s.radius !== undefined ? { radius: s.radius } : {}),
+              ...(s.clip ? { clip: s.clip } : {}),
+              ...(s.opacity !== undefined ? { opacity: s.opacity } : {}),
+            },
+          } as MappedLayer["layer"],
+          withRotate(pct(g.box)),
+        );
+      });
       const m = motionFor();
       add(
         `shape:${paint.key}`,
@@ -633,7 +661,11 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const left = clips ? across.x : Math.min(across.x, extent.x);
     const right = clips ? across.x + across.w : Math.max(across.x + across.w, extent.x + extent.w);
     const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
-    const box = clips ? raw : textBox(raw, textStyle.align, W);
+    // Text that wraps keeps the pack's width, so its lines break where the pack's do;
+    // one line gets room for font rendering differences.
+    const wraps =
+      !nowrap && (inline ? [el, ...kids] : [el]).flatMap(runsOf).some((t) => (t.lines ?? 1) > 1);
+    const box = clips ? raw : wraps ? { ...raw, w: raw.w + 1 } : textBox(raw, textStyle.align, W);
     // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis.
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
@@ -655,8 +687,39 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     );
   }
 
-  // Back to front in document order: a repeat sits where its first row is (the sort is stable).
-  layers.sort((a, b) => a.element - b.element);
+  // An ancestor's polygon clip cuts what's inside it too (the photo in Club Kit's angled band).
+  for (const l of layers) {
+    const kind = l.layer.kind;
+    if (kind !== "shape" && kind !== "photo" && kind !== "image") continue;
+    const style = (l.layer as { style?: TemplateStyleV2 }).style;
+    if (style?.clip || l.box.rotate) continue;
+    const el = tree.byId.get(l.element);
+    const clipper =
+      el && tree.ancestors(el).find((a) => (a.style["clip-path"] ?? "none") !== "none");
+    if (!clipper) continue;
+    const c = twin(clipper);
+    const polygon = parseClipPolygon(clipper.style["clip-path"]!, c.box.w, c.box.h);
+    if (!polygon) continue;
+    const [lx, ly, lw, lh] = [
+      (l.box.x / 100) * W,
+      (l.box.y / 100) * H,
+      (l.box.w / 100) * W,
+      (l.box.h / 100) * H,
+    ];
+    const inLayer = polygon.map(([x, y]): [number, number] => [
+      r2(((c.box.x + (x / 100) * c.box.w - lx) / lw) * 100),
+      r2(((c.box.y + (y / 100) * c.box.h - ly) / lh) * 100),
+    ]);
+    if (inLayer.some((p) => p.some((v) => v < -100 || v > 200))) continue;
+    l.layer = {
+      ...l.layer,
+      style: { ...style, clip: { polygon: inLayer } },
+    } as MappedLayer["layer"];
+  }
+
+  // Back to front in paint order: a repeat sits where its first row is (the sort is stable).
+  const paint = paintKeys(tree);
+  layers.sort((a, b) => comparePaint(paint.get(a.element), paint.get(b.element)));
   const texts = cap.elements.filter((e) => e.text?.length && e.hidden !== "display");
   const geometryCoverage = twins
     ? texts.filter((e) => twins.get(e.id)?.text?.length).length / Math.max(1, texts.length)
@@ -671,6 +734,41 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
+
+/** An element's z-index where it applies (a positioned element or a flex or grid item), else null. */
+function zIndex(tree: Tree, el: CapturedElement): number | null {
+  const z = Number(el.style["z-index"]);
+  if (el.style["z-index"] === undefined || !Number.isFinite(z)) return null;
+  const parent = el.parent === null ? undefined : tree.byId.get(el.parent);
+  const positioned = (el.style.position ?? "static") !== "static";
+  return positioned || /flex|grid/.test(parent?.style.display ?? "") ? z : null;
+}
+
+/**
+ * Each element's place in the paint order: `[z, document order]` for every
+ * stacking context it sits in, then its own. A header the pack lifts with
+ * `z-index: 1` paints over the art after it in the document, as in CSS.
+ * (Positioned versus in-flow order within a context isn't modelled: the
+ * packs lift what must sit on top with a z-index.)
+ */
+export function paintKeys(tree: Tree): Map<number, number[]> {
+  const keys = new Map<number, number[]>();
+  const contexts = new Map<number, number[]>();
+  for (const el of tree.capture.elements) {
+    const ctx = el.parent === null ? [] : (contexts.get(el.parent) ?? []);
+    const z = zIndex(tree, el);
+    const key = [...ctx, z ?? 0, el.id];
+    keys.set(el.id, key);
+    contexts.set(el.id, z === null ? ctx : key);
+  }
+  return keys;
+}
+
+export function comparePaint(a: number[] | undefined, b: number[] | undefined): number {
+  if (!a || !b) return 0;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
+  return a.length - b.length;
+}
 
 /**
  * A text fill gradient painted over the element's box, as the pack paints it,
@@ -725,18 +823,24 @@ function withOpacity(layer: MappedLayer["layer"], factor: number): MappedLayer["
  */
 function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): TemplateFilter[] {
   const out: TemplateFilter[] = [];
+  let brightness: number | null = null;
   for (const e of [el, ...tree.ancestors(el)]) {
     const value = e.style.filter;
     if (!value || value === "none") continue;
     for (const [, name, arg] of value.matchAll(/([a-z-]+)\(([^)]*)\)/g)) {
       const n = parseFloat(arg!);
+      const amount = arg!.endsWith("%") ? n / 100 : n;
       if (name === "grayscale" && Number.isFinite(n))
-        out.push({ preset: "grayscale", amount: r2(arg!.endsWith("%") ? n / 100 : n) });
+        out.push({ preset: "grayscale", amount: r2(amount) });
       else if (name === "blur" && Number.isFinite(n))
         out.push({ preset: "blur", px: Math.min(MAX_BLUR_PX, r2(n)) });
+      // A darkened photo (a scrimmed hero): nested brightness() filters multiply.
+      else if (name === "brightness" && Number.isFinite(n)) brightness = (brightness ?? 1) * amount;
       else polish.push({ element: el.id, what: `filter ${name}(${arg}) not mapped` });
     }
   }
+  if (brightness !== null)
+    out.push({ preset: "brightness", amount: r2(Math.min(3, Math.max(0, brightness))) });
   return out;
 }
 
@@ -899,6 +1003,8 @@ interface StyleContext {
   wPct: (n: number) => number;
   polish: PolishItem[];
   cap: PackCapture;
+  /** The box a polygon clip's lengths resolve against, when not the element's own. */
+  clipBox?: { w: number; h: number };
 }
 
 /** A gradient as the format's fill, its colours tokenised where the twin capture allows. */
@@ -925,25 +1031,30 @@ function shapeStyle(
   tree: Tree,
   el: CapturedElement,
   ctx: StyleContext,
-): { style: TemplateStyleV2; key: string; edges: Edge[] } | null {
+): { style: TemplateStyleV2; key: string; edges: Edge[]; under: TemplateFill[] } | null {
   const style: TemplateStyleV2 = {};
-  const fill = ctx.colour(el, "background-color");
-  if (el.style["background-color"] && fill) style.fill = fill;
+  // CSS paints its background images top first, over the background colour.
+  // The top one is the box's fill; the others are drawn beneath as shapes of
+  // their own (`under`, bottom first), so layered stages keep every layer.
+  const fills: TemplateFill[] = [];
   const image = el.style["background-image"];
   if (image && image !== "none") {
-    const layers = splitTopLevel(image).filter((p) => !p.startsWith("url("));
-    const gradient = layers.length ? gradientFill(layers[0]!, ctx, el) : null;
-    if (gradient) style.fill = gradient;
-    if (layers.length > 1)
-      ctx.polish.push({
-        element: el.id,
-        what: `${layers.length} layered backgrounds; the first is kept`,
-      });
-    if (layers.length && !gradient)
-      ctx.polish.push({ element: el.id, what: `background ${layers[0]!.slice(0, 50)} not mapped` });
+    for (const layer of splitTopLevel(image).filter((p) => !p.startsWith("url("))) {
+      const gradient = gradientFill(layer, ctx, el);
+      if (gradient) fills.push(gradient);
+      else ctx.polish.push({ element: el.id, what: `background ${layer.slice(0, 50)} not mapped` });
+    }
+  }
+  const colour = ctx.colour(el, "background-color");
+  if (el.style["background-color"] && colour) fills.push(colour);
+  let under: TemplateFill[] = [];
+  if (fills.length) {
+    style.fill = fills[0]!;
+    under = fills.slice(1).reverse();
   }
   if (el.style["background-clip"] === "text" || el.style["-webkit-background-clip"] === "text") {
     delete style.fill; // a text fill, handled with the text style
+    under = [];
   }
   const sides = ["top", "right", "bottom", "left"].map((s) => ({
     s,
@@ -1010,13 +1121,24 @@ function shapeStyle(
   if (opacity < 1) style.opacity = r2(opacity);
   const blend = el.style["mix-blend-mode"];
   if (blend && blend !== "normal") style.blend = blend as BlendMode;
+  // A polygon clip (Club Kit's angled bands) cuts the box to that shape.
+  const clipValue = el.style["clip-path"];
+  let clipped = false;
+  if (clipValue && clipValue !== "none") {
+    const size = ctx.clipBox ?? el.size ?? { w: el.box.w, h: el.box.h };
+    const polygon = parseClipPolygon(clipValue, size.w, size.h);
+    if (polygon) {
+      style.clip = { polygon };
+      clipped = true;
+    }
+  }
   for (const prop of ["filter", "backdrop-filter", "clip-path", "mask-image"])
-    if (el.style[prop] && el.style[prop] !== "none")
+    if (el.style[prop] && el.style[prop] !== "none" && !(prop === "clip-path" && clipped))
       ctx.polish.push({
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
       });
-  return { style, key: JSON.stringify(style), edges };
+  return { style, key: JSON.stringify(style), edges, under };
 }
 
 const FONT_GENERIC =
