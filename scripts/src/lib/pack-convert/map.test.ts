@@ -456,6 +456,17 @@ describe("row cells", () => {
     expect(cells[0]).toMatchObject({ x: 0, w: 100 });
   });
 
+  it("treats a left-aligned cell pushed to the row's right edge as right-aligned", () => {
+    const cells = [
+      { field: "name", x: 5, w: 30, y: 0, h: 50, style: { align: "left" as const } },
+      { field: "figure", x: 88, w: 10, y: 20, h: 60, style: { align: "left" as const } },
+    ];
+    widenTextCells(cells, { left: 2, right: 98 });
+    // The figure grows leftward to the gap's middle; the name takes the other half.
+    expect(cells[1]).toMatchObject({ x: 61.5, w: 36.5, style: { align: "right" } });
+    expect(cells[0]).toMatchObject({ x: 5, w: 56.5 });
+  });
+
   it("binds the cell a ladder's position and losses share by the other rows, then the free field", () => {
     id = 0;
     const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });

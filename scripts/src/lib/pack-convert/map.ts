@@ -1545,8 +1545,19 @@ export function widenTextCells(cells: RowsCell[], inner: { left: number; right: 
     const [b0, b1] = lineOf(b);
     return Math.min(a1!, b1!) - Math.max(a0!, b0!) > 0;
   };
+  // A cell pushed to the row's right edge (flex-end, an auto margin) with cells
+  // before it reads right to left, whatever its text-align says: it grows leftward.
+  const pushedRight = new Set(
+    text.filter(
+      (c) =>
+        (c.style?.align ?? "left") === "left" &&
+        Math.abs(c.x + c.w - inner.right) < 1.5 &&
+        text.some((o) => o !== c && sameLine(c, o) && o.x + o.w <= c.x + 0.01),
+    ),
+  );
+  const alignOf = (c: RowsCell) => (pushedRight.has(c) ? "right" : (c.style?.align ?? "left"));
   // How a neighbour grows: an image doesn't, so the whole gap is this cell's.
-  const grows = (c: RowsCell) => (c.show === "image" ? "none" : (c.style?.align ?? "left"));
+  const grows = (c: RowsCell) => (c.show === "image" ? "none" : alignOf(c));
   const widened = text.map((c) => {
     const others = cells.filter((o) => o !== c && o.show !== "backdrop" && sameLine(c, o));
     // A gap goes wholly to this cell when the neighbour grows away from it, else half each.
@@ -1564,7 +1575,7 @@ export function widenTextCells(cells: RowsCell[], inner: { left: number; right: 
         .filter((o) => o.x >= c.x + c.w - 0.01)
         .map((o) => (grows(o) === "left" || grows(o) === "none" ? o.x : (c.x + c.w + o.x) / 2)),
     );
-    const align = c.style?.align ?? "left";
+    const align = alignOf(c);
     if (align === "right")
       return { x: r2(Math.min(c.x, leftLimit)), w: r2(c.x + c.w - Math.min(c.x, leftLimit)) };
     if (align === "center") {
@@ -1574,6 +1585,7 @@ export function widenTextCells(cells: RowsCell[], inner: { left: number; right: 
     return { x: c.x, w: r2(Math.max(c.w, rightLimit - c.x)) };
   });
   text.forEach((c, i) => Object.assign(c, widened[i]));
+  for (const c of pushedRight) c.style = { ...c.style, align: "right" };
 }
 
 /** How much an element is scaled by its own and its ancestors' transforms (the letterboxed landscape card). */
