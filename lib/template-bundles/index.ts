@@ -464,7 +464,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
 export const ELEMENT_BUNDLES: ElementBundle[] = [
   { look: "bold-type", hash: "f11fe317e8f6d584baf49ffe45c9d9541347f1ba78eb6d2fe875fb08319c38a8", file: elements0 },
   { look: "broadcast-classic", hash: "ac8eb3d6c4fe2f0de6208486c173e2b5f700ada947bdf225a8d6ed5e95bcfe2d", file: elements1 },
-  { look: "broadcast-dark", hash: "d48f50647853ab8fcaad822e45362a2d620d4c04ef5171ba847d827c39554605", file: elements2 },
+  { look: "broadcast-dark", hash: "7c5a33f4687ae8f12f7b6aa1d0233829c5cedfaa94aa5431d490ae9e27453e66", file: elements2 },
   { look: "club-kit-classic", hash: "20ce4e5858f530d29becb27e5e62ffea081c62eb19eb26d9192095133d5a7756", file: elements3 },
   { look: "club-kit", hash: "d5ef532c3153375aa4decccc41584cd7f0589c2772a01fb09e65fecf31f74672", file: elements4 },
   { look: "clubhouse", hash: "1eaf6ad121c06013f0da75faee96e32808c94197b6bc1234b3aa236b6f5df2e0", file: elements5 },

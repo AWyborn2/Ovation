@@ -11,8 +11,9 @@
  *   size, with slightly different numbers. The signature ignores ids, names,
  *   positions and exact sizes and keeps what you see: kind, fill type (solid,
  *   gradient, see-through stops; not the colour, which a club recolours), the clip's shape rounded to a 25 % grid, borders, effects,
- *   and the box's proportion (wide, tall or squarish). Where the bundles carry
- *   the converter's `sig` (Stream C2), it stands in for the style part. Copies with the same
+ *   and the box's proportion (wide, tall or squarish). The converter's `sig`
+ *   (Stream C2) isn't used: it is exact per size and colour, so it would keep
+ *   every per-size copy apart. Copies with the same
  *   signature in the same template page merge their per-size geometry when
  *   their style is identical, so an element can land at every size.
  * - **Categories** come from the box (in percent of the card) and the style:
@@ -172,9 +173,7 @@ function lookOf(value: unknown, key = ""): unknown {
 /** What makes two decorations the same element. */
 export function decorationSignature(layer: Layer): string {
   const box = refBox(layer)?.[1];
-  // The converter's own signature (Stream C2), where the bundles carry one.
-  const design = typeof layer.sig === "string" ? layer.sig : lookOf(layer);
-  const body = JSON.stringify([design, box ? proportion(box) : "none"]);
+  const body = JSON.stringify([lookOf(layer), box ? proportion(box) : "none"]);
   return createHash("sha256").update(body).digest("hex").slice(0, 16);
 }
 
