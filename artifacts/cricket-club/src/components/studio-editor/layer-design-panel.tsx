@@ -6,15 +6,17 @@
  *   making or undoing a stack (depth limited to `MAX_STACK_DEPTH`).
  * - Show when: the field, photo, sponsors and junior conditions.
  * - Text fit: lines, smallest size and ellipsis.
- * - Style: a colour or gradient fill (`gradient-editor.tsx`), a text fill,
- *   border, shadows, blending, photo filters and the clip (`clip-editor.tsx`),
- *   every colour a hex or a palette token.
+ * - Style: a colour or gradient fill (`gradient-editor.tsx`), a text fill, a
+ *   border (on some sides), box, text and shape shadows (`shadow-editor.tsx`),
+ *   blending, a text outline, slant, a blur behind, photo filters and the
+ *   clip (`clip-editor.tsx`), every colour a hex or a palette token.
  * - Motion: an entrance and a loop, with a preview.
  * - Vector: swap the drawing's colours for tokens or hexes.
  */
 import { ArrowDown, ArrowUp, Play } from "lucide-react";
 import {
   BLEND_MODES,
+  BORDER_SIDES,
   BORDER_STYLES,
   MAX_BLUR_PX,
   MAX_STACK_DEPTH,
@@ -35,8 +37,16 @@ import {
 import { ClipEditor } from "./clip-editor";
 import { btn, ColourField, field, label, NumberField, Section } from "./design-controls";
 import { GradientEditor } from "./gradient-editor";
+import { ShadowListEditor } from "./shadow-editor";
 import { DEFAULT_GRADIENT, isGradient } from "./gradient-ops";
 import { depthOf, type EditorLayer } from "./template-doc";
+
+const SIDE_LABEL: Record<(typeof BORDER_SIDES)[number], string> = {
+  top: "Top",
+  right: "Right",
+  bottom: "Bottom",
+  left: "Left",
+};
 
 const tri = (v: boolean | undefined) => (v === undefined ? "" : v ? "yes" : "no");
 const fromTri = (v: string): boolean | undefined => (v === "" ? undefined : v === "yes");
@@ -115,8 +125,15 @@ export function LayerDesignPanel({
   const textFill = isGradient(style.textFill) ? style.textFill : null;
   const filter = style.filter?.[0];
   const setFilter = (f: TemplateFilter | undefined) => setStyle({ filter: f ? [f] : undefined });
-  const shadow = style.boxShadow?.[0];
-  const textShadow = style.textShadow?.[0];
+  const border = style.border;
+  /** The border's sides with one turned on or off; all four is no `sides`. */
+  const toggleSide = (side: (typeof BORDER_SIDES)[number], on: boolean) => {
+    if (!border) return;
+    const now = border.sides ?? [...BORDER_SIDES];
+    const sides = BORDER_SIDES.filter((x) => (x === side ? on : now.includes(x)));
+    const { sides: _old, ...rest } = border;
+    setStyle({ border: sides.length === BORDER_SIDES.length ? rest : { ...rest, sides } });
+  };
 
   return (
     <div className="space-y-3 text-sm" data-testid="layer-design-panel">
@@ -416,42 +433,46 @@ export function LayerDesignPanel({
                   <option key={b}>{b}</option>
                 ))}
               </select>
+              <span role="group" aria-label="Border sides" className="flex items-center gap-2">
+                {BORDER_SIDES.map((side) => {
+                  const on = !border?.sides || border.sides.includes(side);
+                  return (
+                    <label key={side} className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        // A border keeps at least one side; no border is a width of 0.
+                        disabled={on && border?.sides?.length === 1}
+                        onChange={(e) => toggleSide(side, e.target.checked)}
+                      />
+                      {SIDE_LABEL[side]}
+                    </label>
+                  );
+                })}
+              </span>
             </>
           )}
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <NumberField
-            name="Shadow"
-            value={shadow?.blur}
-            min={0}
-            max={10}
-            step={0.5}
-            onChange={(blur) =>
-              setStyle({
-                boxShadow:
-                  blur === undefined
-                    ? undefined
-                    : [{ x: 0, y: 0.5, color: "#00000080", ...shadow, blur }],
-              })
-            }
+        <ShadowListEditor
+          name="Box shadow"
+          box
+          value={style.boxShadow}
+          onChange={(boxShadow) => setStyle({ boxShadow })}
+        />
+        {isText && (
+          <ShadowListEditor
+            name="Text shadow"
+            value={style.textShadow}
+            onChange={(textShadow) => setStyle({ textShadow })}
           />
-          {isText && (
-            <NumberField
-              name="Glow"
-              value={textShadow?.blur}
-              min={0}
-              max={10}
-              step={0.5}
-              onChange={(blur) =>
-                setStyle({
-                  textShadow:
-                    blur === undefined
-                      ? undefined
-                      : [{ x: 0, y: 0, color: "var(--gold)", ...textShadow, blur }],
-                })
-              }
-            />
-          )}
+        )}
+        {/* Follows what the layer draws (its clip, a drawing, a logo), not its box. */}
+        <ShadowListEditor
+          name="Shape shadow"
+          value={style.dropShadow}
+          onChange={(dropShadow) => setStyle({ dropShadow })}
+        />
+        <div className="flex flex-wrap items-end gap-2">
           <label className={label}>
             Blend
             <select
@@ -472,7 +493,68 @@ export function LayerDesignPanel({
               ))}
             </select>
           </label>
+          <NumberField
+            name="Slant across (°)"
+            value={style.skew?.x}
+            min={-75}
+            max={75}
+            onChange={(x) => setStyle({ skew: compact({ ...style.skew, x: x || undefined }) })}
+          />
+          <NumberField
+            name="Slant down (°)"
+            value={style.skew?.y}
+            min={-75}
+            max={75}
+            onChange={(y) => setStyle({ skew: compact({ ...style.skew, y: y || undefined }) })}
+          />
+          <NumberField
+            name="Blur behind (px)"
+            value={style.backdropBlur}
+            min={0}
+            max={MAX_BLUR_PX}
+            onChange={(px) => setStyle({ backdropBlur: px || undefined })}
+          />
         </div>
+        {isText && (
+          <div className="flex flex-wrap items-end gap-2">
+            <NumberField
+              name="Outline"
+              value={style.textStroke?.width}
+              min={0}
+              max={5}
+              step={0.05}
+              onChange={(width) =>
+                setStyle({
+                  textStroke: width
+                    ? { color: "var(--ink)", ...style.textStroke, width }
+                    : undefined,
+                })
+              }
+            />
+            {style.textStroke && (
+              <>
+                <ColourField
+                  name="Outline"
+                  value={style.textStroke.color}
+                  onChange={(c) =>
+                    style.textStroke &&
+                    setStyle({ textStroke: { ...style.textStroke, color: c ?? "var(--ink)" } })
+                  }
+                />
+                <label className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={style.color === "transparent"}
+                    onChange={(e) =>
+                      setStyle({ color: e.target.checked ? "transparent" : undefined })
+                    }
+                  />
+                  Outline only
+                </label>
+              </>
+            )}
+          </div>
+        )}
         {isPhoto && (
           <div className="flex flex-wrap items-end gap-2">
             <label className={label}>
