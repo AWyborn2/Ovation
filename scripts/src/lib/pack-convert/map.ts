@@ -664,13 +664,21 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const raw = hasChildren ? extent : { x: left, y: extent.y, w: right - left, h: extent.h };
     const box = clips ? raw : textBox(raw, textStyle.align, W);
     // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
-    // after a second line unless it's kept to one (`white-space: nowrap`).
+    // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
+    // shrinks, then ends in an ellipsis on as many lines as the worst case takes (at most
+    // two): content longer than the worst case still fits its box.
+    const worstLines = Math.max(
+      1,
+      ...(inline ? [el, ...kids] : [el]).flatMap(runsOf).map((t) => t.lines ?? 1),
+    );
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
         ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
         : clips && ellipsis
           ? { minScale: 1, maxLines: nowrap ? 1 : 2, ellipsis: true }
-          : null;
+          : /\{\{/.test(content)
+            ? { minScale: 0.6, maxLines: nowrap || worstLines < 2 ? 1 : 2, ellipsis: true }
+            : null;
     const m = motionFor();
     add(
       `text:${content}`,
