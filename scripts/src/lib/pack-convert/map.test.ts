@@ -9,9 +9,17 @@ import {
   mapCapture,
   backdropKeys,
   readingOrder,
+  sizedGradient,
   widenTextCells,
 } from "./map";
-import { mergePage, mergeSizes } from "./merge";
+import {
+  applyStacks,
+  mergePage,
+  mergeSizes,
+  stackContainers,
+  stackUnits,
+  type SizeMaps,
+} from "./merge";
 
 const TEXT = {
   "font-family": '"Barlow Condensed", "Arial Narrow", sans-serif',
@@ -303,6 +311,77 @@ describe("text fill over a taller box", () => {
   });
 });
 
+describe("stacks", () => {
+  // A flex column (1) holding two texts, a text only Full shows, and maybe a nested block.
+  function maps(nested: boolean): SizeMaps {
+    id = 0;
+    const elements = [
+      el(null, "div", [0, 0, 1080, 1080]),
+      el(0, "div", [60, 100, 960, 600], { style: { display: "flex", "flex-direction": "column" } }),
+      el(1, "div", [60, 100, 960, 50]),
+      el(1, "div", [60, 160, 960, 50]),
+      el(1, "div", [60, 220, 960, 50]),
+      el(1, "div", [60, 280, 960, 200], { style: { display: "flex" } }),
+      el(5, "div", [60, 280, 300, 200]),
+    ];
+    const layer = (sig: string, element: number, y: number) => ({
+      sig,
+      layer: { kind: "text", content: sig } as never,
+      box: { x: 5, y, w: 90, h: 5 },
+      element,
+    });
+    const base = [layer("a", 2, 10), layer("b", 3, 15), layer("full", 4, 20)];
+    if (nested) base.push(layer("tile", 6, 26));
+    const result = (layers: typeof base) => ({ layers, polish: [], untokenised: [], motion: {} });
+    return {
+      size: "square",
+      base: result(base),
+      baseCapture: { elements, native: { w: 1080, h: 1080 } } as unknown as PackCapture,
+      // Minimal hides "full" and moves "b" up.
+      minimal: result([layer("a", 2, 10), layer("b", 3, 12)]),
+    };
+  }
+
+  it("stacks a flex container whose members move between presets", () => {
+    const m = maps(false);
+    const stacks = stackContainers(m);
+    expect(stacks).toHaveLength(1);
+    expect(stacks[0]!.stack.direction).toBe("column");
+    const units = stackUnits(m, stacks[0]!.container.id)!.units;
+    expect(units.map((u) => u.sigs)).toEqual([["a"], ["b"], ["full"]]);
+  });
+
+  it("keeps a nested flex block as one item of the stack, so the stack can't overlap it", () => {
+    const m = maps(true);
+    const [stack] = stackContainers(m);
+    const units = stackUnits(m, stack!.container.id)!.units;
+    // The nested block (element 5) is one flow item holding its tile.
+    expect(units.map((u) => u.child.id)).toEqual([2, 3, 4, 5]);
+    expect(units[3]!.sigs).toEqual(["tile"]);
+  });
+});
+
+describe("gradients taller than their box", () => {
+  it("keeps the part the box shows (background-size 100% 220%, at the top)", () => {
+    const fill = {
+      type: "linear" as const,
+      stops: [
+        { color: "#ffffff", at: 0 },
+        { color: "#000000", at: 100 },
+      ],
+    };
+    expect(sizedGradient(fill, "100% 220%", "50% 0%")).toEqual({
+      type: "linear",
+      stops: [
+        { color: "#ffffff", at: 0 },
+        { color: "#8B8B8B", at: 100 },
+      ],
+    });
+    // A gradient the box's own size is left alone.
+    expect(sizedGradient(fill, "auto", undefined)).toBe(fill);
+  });
+});
+
 describe("clips, layered backgrounds and brightness", () => {
   const cap = capture();
   const band = el(0, "div", [0, 800, 1080, 200], {
@@ -377,6 +456,45 @@ describe("clips, layered backgrounds and brightness", () => {
     expect((photo.layer as { style?: { filter?: unknown } }).style?.filter).toEqual([
       { preset: "brightness", amount: 0.3 },
     ]);
+  });
+});
+
+describe("stack flow items", () => {
+  it("keeps a chip's shape and its text together as one flow item", () => {
+    const box = (x: number) => ({ square: { x, y: 10, w: 10, h: 5 } });
+    const layers = [
+      { id: "chip", kind: "shape", geometry: box(5) },
+      {
+        id: "chipText",
+        kind: "text",
+        content: "WATCH LIVE",
+        geometry: { square: { x: 6, y: 11, w: 8, h: 3 } },
+      },
+      { id: "link", kind: "text", content: "{{livestream}}", geometry: box(20) },
+    ] as unknown as TemplateLayerV2[];
+    const sigOf = new Map(layers.map((l) => [l.id, l.id]));
+    const [stack] = applyStacks(
+      layers,
+      sigOf,
+      [
+        {
+          sigs: ["chip", "chipText", "link"],
+          depth: 2,
+          stack: { direction: "row" },
+          geometry: { square: { x: 5, y: 10, w: 40, h: 5 } },
+          units: [
+            { sigs: ["chip", "chipText"], geometry: { square: { x: 5, y: 10, w: 10, h: 5 } } },
+            { sigs: ["link"], geometry: box(20) },
+          ],
+        },
+      ],
+      "title-",
+    ) as Array<TemplateLayerV2 & { children: TemplateLayerV2[] }>;
+    expect(stack!.children.map((c) => c.id)).toEqual(["title-stack1-item1", "link"]);
+    const item = stack!.children[0] as TemplateLayerV2 & { children: TemplateLayerV2[] };
+    expect(item.kind).toBe("group");
+    expect(item.children.map((c) => c.id)).toEqual(["chip", "chipText"]);
+    expect(item.geometry.square).toEqual({ x: 5, y: 10, w: 10, h: 5 });
   });
 });
 

@@ -25,6 +25,10 @@ const server = app.listen(config.PORT, (err) => {
     .catch((err: unknown) => logger.error({ err }, "template fit job didn't start"))
     .then(() => import("./lib/template-library/bundles"))
     .then((m) => m.syncBundlesAtBoot());
+  // AI designer jobs don't survive a restart: mark any left running as failed (L7-B).
+  void import("./lib/template-ai/jobs")
+    .then((m) => m.failInterruptedGenerations())
+    .catch((err: unknown) => logger.error({ err }, "AI designer: couldn't mark interrupted jobs"));
 });
 
 /**
