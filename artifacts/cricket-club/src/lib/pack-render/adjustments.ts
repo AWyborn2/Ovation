@@ -79,7 +79,11 @@ export type FreeLayerKind =
   /** The card's photo (kind templates, ADR-001); never drawn on junior cards. */
   | "photo"
   /** One styled list row repeated per data row (kind templates, ADR-001). */
-  | "rows";
+  | "rows"
+  /** An inline SVG decoration (format v2, ADR-011). */
+  | "vector"
+  /** A group or stack of child layers (format v2, ADR-011). */
+  | "group";
 
 export type FreeLayer = {
   id: string;
@@ -582,6 +586,10 @@ function layerInner(
             photoUrl: ctx.photoUrl ?? null,
           })
         : "";
+    case "vector":
+    case "group":
+      // Drawn by `renderFreeLayers` itself (v2 only): a group from its children, a vector from its SVG.
+      return null;
   }
 }
 
