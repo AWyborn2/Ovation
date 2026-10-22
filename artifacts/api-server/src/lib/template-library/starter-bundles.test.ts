@@ -1,7 +1,10 @@
 /**
  * The starters as bundles (ADR-011 T4.11): every starter × kind exported,
  * byte-identical to the TypeScript starter, listed except carousel and retired
- * kinds, and every committed bundle syncs without a problem. The sync part is
+ * kinds, and every committed bundle syncs without a problem. L4-D gives a
+ * starter's Match Day and Match Summary templates the carousel pages from its
+ * nearest polished look: the starter stays byte-identical as the primary page,
+ * the borrowed pages are added, and the template is listed. The sync part is
  * a real-DB test (needs DATABASE_URL) and removes what it loaded.
  */
 import { afterAll, describe, expect, it } from "vitest";
@@ -10,6 +13,8 @@ import { db, libraryTemplatesTable, templateLooksTable } from "@workspace/db";
 import {
   STARTER_IDS,
   TEMPLATE_CARD_KINDS,
+  isDocumentV2,
+  primaryPage,
   starterDocument,
   type StarterId,
 } from "@workspace/scorecard/kind-templates";
@@ -23,6 +28,11 @@ const STARTER_LOOK: Record<StarterId, string> = {
   clubhouse: "clubhouse",
 };
 const CAROUSEL = new Set(["matchDay", "matchSummary", "teamList"]);
+/** The pages L4-D adds to a starter's carousel templates. */
+const BORROWED: Record<string, readonly string[]> = {
+  matchDay: ["title", "day", "sponsors"],
+  matchSummary: ["day"],
+};
 
 describe("starter bundles", () => {
   for (const starter of STARTER_IDS) {
@@ -36,9 +46,19 @@ describe("starter bundles", () => {
 
     it(`${starter}'s documents are byte-identical to the TypeScript starters`, () => {
       for (const t of bundle?.templates ?? []) {
-        expect(JSON.stringify(t.file.document)).toBe(
-          JSON.stringify(starterDocument(starter, t.kind)),
-        );
+        const original = starterDocument(starter, t.kind)!;
+        const doc = t.file.document;
+        if (isDocumentV2(doc)) {
+          const primary = primaryPage(t.kind);
+          expect(JSON.stringify(doc.pages[primary]!.layers)).toBe(
+            JSON.stringify(original.layers),
+          );
+          expect(Object.keys(doc.pages).sort()).toEqual([primary, ...BORROWED[t.kind]!].sort());
+          expect(t.file.version).toBe(2);
+          expect(t.file.listed).toBe(true);
+          continue;
+        }
+        expect(JSON.stringify(doc)).toBe(JSON.stringify(original));
         expect(t.file.version).toBe(1);
         expect(t.file.listed).toBe(!CAROUSEL.has(t.kind) && !isRetiredCardKind(t.kind));
       }
