@@ -56,6 +56,7 @@ const AdminUsers = lazy(() => import("@/pages/admin-users"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
 const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
 const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
+const AdminTemplateEditor = lazy(() => import("@/pages/admin-template-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -379,7 +380,13 @@ export function Router() {
             <AdminStudioEditor />
           </AdminShell>
         </Route>
-        {/* Card kind template editor (plan U8), full-screen like the Studio editor. */}
+        {/* Template editor v2 (ADR-011 L5-B): one of the club's templates, by id. */}
+        <Route path="/admin/social/template/:id">
+          <AdminShell bare>
+            <AdminTemplateEditor />
+          </AdminShell>
+        </Route>
+        {/* A card kind's default template in the same editor, full-screen like the Studio editor. */}
         <Route path="/admin/social/templates/:kind">
           <AdminShell bare>
             <AdminKindTemplateEditor />
