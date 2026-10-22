@@ -38,20 +38,11 @@ function stubApi(): Req[] {
 }
 
 const century = { kind: "century", playerName: "Sam Keeper", runs: 104 } as ShareCardInput;
-const signing = {
-  kind: "newSigning",
-  playerFirstName: "Sam",
-  playerLastName: "Lee",
-} as ShareCardInput;
 
 function mount() {
   const requests = stubApi();
-  const inputFor = vi.fn(() => signing);
-  renderAt(
-    <EditorStarters input={century} packId="broadcast-dark" inputFor={inputFor} />,
-    "/admin/social/create",
-  );
-  return { requests, inputFor };
+  renderAt(<EditorStarters input={century} packId="broadcast-dark" />, "/admin/social/create");
+  return { requests };
 }
 
 const posted = (requests: Req[]) =>
@@ -72,7 +63,6 @@ describe("EditorStarters", () => {
         input={century}
         packId="broadcast-dark"
         templateRef={{ libraryTemplateId: 7, version: 2 }}
-        inputFor={() => signing}
       />,
       "/admin/social/create",
     );
@@ -106,20 +96,10 @@ describe("EditorStarters", () => {
     });
   });
 
-  it("offers every Club Kit design as a starting point", async () => {
-    const { requests } = mount();
-    fireEvent.click(screen.getByRole("button", { name: "Start from Club Kit Century" }));
-    await waitFor(() => expect(posted(requests)).toHaveLength(1));
-    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "club-kit-v1" });
-    // A design of another kind opens with a card of that kind.
-    fireEvent.click(
-      screen.getByRole("button", { name: "Start from Club Kit Club Leaders — Catches" }),
-    );
-    await waitFor(() => expect(posted(requests)).toHaveLength(2));
-    expect(posted(requests)[1].body).toMatchObject({
-      packId: "club-kit-v1",
-      cardInput: { category: "Catches" },
-    });
+  it("offers no pack designs as starting points: new posts start from templates (T5.19)", () => {
+    mount();
+    expect(screen.queryByRole("button", { name: /Start from Club Kit/ })).toBeNull();
+    expect(screen.queryByText(/Start from a Club Kit design/)).toBeNull();
   });
 });
 
