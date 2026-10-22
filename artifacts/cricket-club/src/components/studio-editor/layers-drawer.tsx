@@ -1,6 +1,7 @@
 import {
   Award,
   BarChart3,
+  ChevronRight,
   Eye,
   EyeOff,
   Group,
@@ -18,9 +19,12 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { layerOnSize } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
+import type { CardSize } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
+import { childrenOf } from "./document";
 
 const ICON: Record<FreeLayer["kind"], LucideIcon> = {
   text: Type,
@@ -48,11 +52,29 @@ const LABEL: Partial<Record<FreeLayer["kind"], string>> = {
 /** A layer's name: its own, or what kind of layer it is. */
 export const layerName = (l: FreeLayer): string => l.name ?? LABEL[l.kind] ?? l.kind;
 
+type Mods = { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean };
+
+/** The groups from the top of `layers` down to the one with `id` (which is included). */
+function pathTo(layers: FreeLayer[], id: string | null): string[] {
+  if (!id) return [];
+  for (const l of layers) {
+    if (l.id === id) return [l.id];
+    const below = pathTo(childrenOf(l), id);
+    if (below.length) return [l.id, ...below];
+  }
+  return [];
+}
+
 /**
  * The layers drawer (Social Studio U16): free layers top-most first, each with
  * its type icon, name, and eye and lock buttons. Clicking a row selects it;
  * ctrl- (or cmd-) click adds or removes it, shift-click selects the run of
  * rows from the last one clicked.
+ *
+ * Groups and stacks open to show their children, indented (editable-elements
+ * A2); the group being edited inside (`scope`) starts open. Selecting a child
+ * reports its group as `parent`, so the editor can go inside it. A shift run
+ * stays within one group.
  */
 export function LayersDrawer({
   layers,
@@ -61,31 +83,128 @@ export function LayersDrawer({
   onToggleHidden,
   onToggleLocked,
   onClose,
+  size,
+  scope = null,
 }: {
   layers: FreeLayer[];
   selection: string[];
-  /** `replace` for a plain click, `toggle` for ctrl/cmd, `add` for a shift range. */
-  onSelect: (ids: string[], mode: "replace" | "toggle" | "add") => void;
+  /**
+   * `replace` for a plain click, `toggle` for ctrl/cmd, `add` for a shift
+   * range; `parent` is the group the rows are in (null at the top).
+   */
+  onSelect: (ids: string[], mode: "replace" | "toggle" | "add", parent: string | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleLocked: (id: string) => void;
   onClose: () => void;
+  /** The size being edited: children not on it are left out, as top-level layers are. */
+  size?: CardSize;
+  /** The group being edited inside, if any. */
+  scope?: string | null;
 }) {
-  const rows = [...layers].reverse();
   const anchor = useRef<string | null>(null);
-  const pick = (id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }) => {
-    const from = anchor.current ? rows.findIndex((r) => r.id === anchor.current) : -1;
+  // Open groups; going inside a group opens it and the groups around it.
+  const [opened, setOpened] = useState<Set<string>>(() => new Set(pathTo(layers, scope)));
+  const scopeKey = pathTo(layers, scope).join(" ");
+  useEffect(() => {
+    if (scopeKey) setOpened((o) => new Set([...o, ...scopeKey.split(" ")]));
+  }, [scopeKey]);
+  const isOpen = (id: string) => opened.has(id);
+  const toggleOpen = (id: string) =>
+    setOpened((o) => {
+      const next = new Set(o);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const shown = (list: FreeLayer[]) =>
+    [...list].reverse().filter((l) => !size || layerOnSize(l, size));
+
+  const pick = (id: string, siblings: FreeLayer[], parent: string | null, e: Mods) => {
+    const from = anchor.current ? siblings.findIndex((r) => r.id === anchor.current) : -1;
     if (e.shiftKey && from >= 0) {
-      const to = rows.findIndex((r) => r.id === id);
+      const to = siblings.findIndex((r) => r.id === id);
       const [a, b] = from < to ? [from, to] : [to, from];
       onSelect(
-        rows.slice(a, b + 1).map((r) => r.id),
+        siblings.slice(a, b + 1).map((r) => r.id),
         "add",
+        parent,
       );
       return;
     }
     anchor.current = id;
-    onSelect([id], e.ctrlKey || e.metaKey || e.shiftKey ? "toggle" : "replace");
+    onSelect([id], e.ctrlKey || e.metaKey || e.shiftKey ? "toggle" : "replace", parent);
   };
+
+  const renderRows = (list: FreeLayer[], parent: string | null, depth: number) => {
+    const rows = shown(list);
+    return rows.map((l) => {
+      const Icon = iconFor(l.kind);
+      const name = layerName(l);
+      const on = selection.includes(l.id);
+      const kids = childrenOf(l);
+      const open = kids.length > 0 && isOpen(l.id);
+      return (
+        <li key={l.id}>
+          <div
+            className={cn(
+              "flex items-center gap-2 rounded-lg py-1.5 pr-2",
+              on ? "bg-[var(--ed-card)]" : "hover:bg-[var(--ed-card)]/60",
+            )}
+            style={{ paddingLeft: 8 + depth * 16 }}
+          >
+            {kids.length > 0 ? (
+              <button
+                type="button"
+                aria-label={open ? `Close ${name}` : `Open ${name}`}
+                aria-expanded={open}
+                className="-ml-1 rounded p-0.5 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+                onClick={() => toggleOpen(l.id)}
+              >
+                <ChevronRight
+                  className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")}
+                />
+              </button>
+            ) : (
+              depth > 0 && <span className="w-3.5 shrink-0" aria-hidden />
+            )}
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
+              aria-pressed={on}
+              onClick={(e) => pick(l.id, rows, parent, e)}
+            >
+              <Icon className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
+              <span className={cn("truncate", l.hidden && "opacity-50")}>
+                {l.name ?? l.content ?? name}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-label={l.hidden ? `Show ${name}` : `Hide ${name}`}
+              className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+              onClick={() => onToggleHidden(l.id)}
+            >
+              {l.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+            <button
+              type="button"
+              aria-label={l.locked ? `Unlock ${name}` : `Lock ${name}`}
+              className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+              onClick={() => onToggleLocked(l.id)}
+            >
+              {l.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+            </button>
+          </div>
+          {open && (
+            <ul role="group" aria-label={`In ${name}`} className="space-y-1 pt-1">
+              {renderRows(kids, l.id, depth + 1)}
+            </ul>
+          )}
+        </li>
+      );
+    });
+  };
+
   return (
     <aside
       aria-label="Layers"
@@ -102,54 +221,13 @@ export function LayersDrawer({
           <X className="h-4 w-4" />
         </button>
       </div>
-      {rows.length === 0 ? (
+      {layers.length === 0 ? (
         <p className="px-4 text-sm text-[var(--ed-ink2)]">
           No added layers yet. The card's own text and images are in the Content panel.
         </p>
       ) : (
         <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
-          {rows.map((l) => {
-            const Icon = iconFor(l.kind);
-            const name = layerName(l);
-            const on = selection.includes(l.id);
-            return (
-              <li
-                key={l.id}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-2 py-1.5",
-                  on ? "bg-[var(--ed-card)]" : "hover:bg-[var(--ed-card)]/60",
-                )}
-              >
-                <button
-                  type="button"
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
-                  aria-pressed={on}
-                  onClick={(e) => pick(l.id, e)}
-                >
-                  <Icon className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
-                  <span className={cn("truncate", l.hidden && "opacity-50")}>
-                    {l.name ?? l.content ?? name}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={l.hidden ? `Show ${name}` : `Hide ${name}`}
-                  className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
-                  onClick={() => onToggleHidden(l.id)}
-                >
-                  {l.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-                <button
-                  type="button"
-                  aria-label={l.locked ? `Unlock ${name}` : `Lock ${name}`}
-                  className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
-                  onClick={() => onToggleLocked(l.id)}
-                >
-                  {l.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                </button>
-              </li>
-            );
-          })}
+          {renderRows(layers, null, 0)}
         </ul>
       )}
     </aside>
