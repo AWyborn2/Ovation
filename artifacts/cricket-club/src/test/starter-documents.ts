@@ -5,9 +5,10 @@
  * The starters' TypeScript was deleted with T5.18, and they lived on as the
  * `club-kit-classic`, `broadcast-classic` and `clubhouse` bundles. Their
  * library elements became native layers in C3 (format v2), so the original
- * documents are kept here, frozen as they were: `__fixtures__/v1-starters/
- * <look>.json` holds each kind's v1 document (for Match Day and Match
- * Summary, their primary page, as the original was).
+ * documents are kept, frozen as they were, in `lib/scorecard`'s
+ * `kind-templates/__fixtures__/v1-starters/<look>.json`: each kind's v1
+ * document (for Match Day and Match Summary, their primary page, as the
+ * original was).
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -22,7 +23,10 @@ const LOOK: Record<StarterId, string> = {
   clubhouse: "clubhouse",
 };
 
-const FIXTURES = path.resolve(__dirname, "__fixtures__", "v1-starters");
+const FIXTURES = path.resolve(
+  __dirname,
+  "../../../../lib/scorecard/src/kind-templates/__fixtures__/v1-starters",
+);
 
 const loaded = new Map<StarterId, Record<string, CardAdjustments>>();
 
