@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -139,7 +139,7 @@ const RAIL: RailItem[] = [
 
 const TEMPLATES = "/admin/social/template-library";
 
-function useViewport(): { w: number; h: number } {
+export function useViewport(): { w: number; h: number } {
   const read = () =>
     typeof window === "undefined"
       ? { w: 1440, h: 900 }
@@ -167,8 +167,32 @@ const errorOf = (err: unknown): string | null => {
   return typeof data?.error === "string" ? data.error : null;
 };
 
+/** What editor v2 needs of a template, wherever it is stored (a club copy or the library). */
+export type EditorTemplate = {
+  id: number;
+  kind: string;
+  name: string;
+  version: number;
+  document: unknown;
+  fitStatus: string;
+  fitReport?: unknown;
+};
+
+/** Where an edited template lives: how it saves and reloads, and what the editor shows about it. */
+export type EditorHost<T extends EditorTemplate = EditorTemplate> = {
+  /** Club previews use the club's brand and latest cards; the console previews samples. */
+  club: boolean;
+  backHref: string;
+  /** Saves the document; rejects as the generated client does (409 carries the conflict). */
+  save: (baseVersion: number, document: Record<string, unknown>) => Promise<T>;
+  /** The stored template again, after a conflict. */
+  reload: () => Promise<T | undefined>;
+  /** Chips beside the title for the saved template at `version`. */
+  status: (version: number) => ReactNode;
+};
+
 /** The layout check's verdict on the saved template, in a line. */
-function fitLine(t: ClubTemplate): { text: string; tone: "ok" | "wait" | "bad" } | null {
+function fitLine(t: EditorTemplate): { text: string; tone: "ok" | "wait" | "bad" } | null {
   if (t.fitStatus === "pending") return { text: "Checking the layout…", tone: "wait" };
   const report = (t.fitReport ?? null) as { issues?: unknown[]; skipped?: boolean } | null;
   if (t.fitStatus === "fail") {
@@ -223,29 +247,99 @@ export default function AdminTemplateEditor({ id: idProp }: { id?: number } = {}
     return centred(<p>There&apos;s no card called &ldquo;{templateQ.data.kind}&rdquo;.</p>);
   }
   return (
-    <TemplateEditorV2
+    <ClubTemplateEditor
       key={templateQ.data.id}
       template={templateQ.data}
       viewport={viewport}
-      onReload={() => templateQ.refetch()}
+      onReload={async () => (await templateQ.refetch()).data}
     />
   );
 }
 
-function TemplateEditorV2({
+/** One of the club's templates in editor v2: saves to `/club-templates/:id`, then offers to apply. */
+function ClubTemplateEditor({
   template,
   viewport,
   onReload,
 }: {
   template: ClubTemplate;
   viewport: { w: number; h: number };
-  onReload: () => Promise<unknown>;
+  onReload: () => Promise<ClubTemplate | undefined>;
 }) {
   const qc = useQueryClient();
+  const save = useSaveClubTemplate();
+  const [current, setCurrent] = useState(template);
+  const [applyFor, setApplyFor] = useState<{ version: number; waiting: number } | null>(null);
+  const host: EditorHost<ClubTemplate> = {
+    club: true,
+    backHref: TEMPLATES,
+    save: async (baseVersion, document) => {
+      const t = await save.mutateAsync({ id: template.id, data: { baseVersion, document } });
+      setCurrent(t);
+      qc.setQueryData(getGetClubTemplateQueryKey(template.id), t);
+      qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
+      if (t.isDefault && t.waitingDrafts > 0) {
+        setApplyFor({ version: t.version, waiting: t.waitingDrafts });
+      }
+      return t;
+    },
+    reload: async () => {
+      const t = await onReload();
+      if (t) setCurrent(t);
+      return t;
+    },
+    status: (version) => (
+      <span className="flex items-center gap-2">
+        <span className="rounded-full bg-[var(--ed-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-ink2)]">
+          {current.isDefault ? "Default" : "Template"} · v{version}
+        </span>
+        {current.updateAvailable && (
+          <Link
+            href={TEMPLATES}
+            className="rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-on-accent)]"
+          >
+            Update available
+          </Link>
+        )}
+      </span>
+    ),
+  };
+  return (
+    <>
+      <TemplateEditorV2 template={template} viewport={viewport} host={host} />
+      <ApplyTemplateDialog
+        kind={template.kind}
+        copyId={template.id}
+        label={kindLabel(template.kind)}
+        version={applyFor?.version ?? current.version}
+        waiting={applyFor?.waiting ?? current.waitingDrafts}
+        open={applyFor !== null}
+        onClose={() => setApplyFor(null)}
+        onApplied={() => {
+          qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
+          qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+        }}
+      />
+    </>
+  );
+}
+
+/**
+ * The editor itself: a template's pages, edited one at a time, previewed at
+ * each content preset, and saved through its `host`.
+ */
+export function TemplateEditorV2<T extends EditorTemplate>({
+  template,
+  viewport,
+  host,
+}: {
+  template: T;
+  viewport: { w: number; h: number };
+  host: EditorHost<T>;
+}) {
   const kind = template.kind;
-  const label = kindLabel(kind);
   const cardKind = kind as ShareCardInput["kind"];
-  const { data, clubName } = useKindTemplateData(cardKind);
+  const { data, clubName } = useKindTemplateData(cardKind, { club: host.club });
 
   const opened = useMemo(() => openTemplate(template.document, kind), [template.document, kind]);
   const [sourceFormat, setSourceFormat] = useState(opened.sourceFormat);
@@ -275,7 +369,7 @@ function TemplateEditorV2({
   const [blocked, setBlocked] = useState<string[]>([]);
   const [conflict, setConflict] = useState<KindTemplateConflict | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [applyFor, setApplyFor] = useState<{ version: number; waiting: number } | null>(null);
+  const [saving, setSaving] = useState(false);
   const [fontFailures, setFontFailures] = useState<string[]>([]);
   const [canPaste, setCanPaste] = useState(() => readClipboard("template") !== null);
   const [pasteNote, setPasteNote] = useState<string | null>(null);
@@ -296,7 +390,7 @@ function TemplateEditorV2({
 
   // Preview data: the latest real card of this kind, else the sample (R11).
   const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+    query: { queryKey: getListSocialDraftsQueryKey(), enabled: host.club },
   });
   const latest = useMemo(() => {
     const mine = (draftsQ.data ?? [])
@@ -481,8 +575,7 @@ function TemplateEditorV2({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reads live state through stateRef
   }, [edit]);
 
-  const save = useSaveClubTemplate();
-  const onSave = () => {
+  const onSave = async () => {
     const v2 = sourceFormat === 2 || needsV2(full, kind);
     // A version 1 template keeps version 1's rule: every size has something on it.
     const blockers = v2 ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
@@ -492,40 +585,29 @@ function TemplateEditorV2({
     setBlocked(blockers);
     if (blockers.length) return;
     setSaveError(null);
-    save.mutate(
-      {
-        id: template.id,
-        data: {
-          baseVersion,
-          document: storedDocument(full, kind, sourceFormat) as Record<string, unknown>,
-        },
-      },
-      {
-        onSuccess: (t) => {
-          setBaseVersion(t.version);
-          setCurrent(t);
-          setSavedJson(JSON.stringify(full));
-          if (v2) setSourceFormat(2);
-          setHistory(createHistory(full));
-          setConflict(null);
-          qc.setQueryData(getGetClubTemplateQueryKey(template.id), t);
-          qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
-          if (t.isDefault && t.waitingDrafts > 0) {
-            setApplyFor({ version: t.version, waiting: t.waitingDrafts });
-          }
-        },
-        onError: (err) => {
-          const c = conflictOf(err);
-          setConflict(c);
-          if (!c) setSaveError(errorOf(err) ?? "Couldn't save. Try again.");
-        },
-      },
-    );
+    setSaving(true);
+    try {
+      const t = await host.save(
+        baseVersion,
+        storedDocument(full, kind, sourceFormat) as Record<string, unknown>,
+      );
+      setBaseVersion(t.version);
+      setCurrent(t);
+      setSavedJson(JSON.stringify(full));
+      if (v2) setSourceFormat(2);
+      setHistory(createHistory(full));
+      setConflict(null);
+    } catch (err) {
+      const c = conflictOf(err);
+      setConflict(c);
+      if (!c) setSaveError(errorOf(err) ?? "Couldn't save. Try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const reloadTheirs = async () => {
-    const res = (await onReload()) as { data?: ClubTemplate };
-    const t = res?.data;
+    const t = await host.reload();
     if (!t) return;
     const next = openTemplate(t.document, kind);
     setHistory(createHistory(next.doc));
@@ -570,21 +652,7 @@ function TemplateEditorV2({
   const fit = Math.min(areaW / native.w, areaH / native.h);
   const boardW = Math.max(160, Math.round(native.w * fit * (zoom / 100)));
   const fitStatus = fitLine(current);
-  const status = (
-    <span className="flex items-center gap-2">
-      <span className="rounded-full bg-[var(--ed-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-ink2)]">
-        {current.isDefault ? "Default" : "Template"} · v{baseVersion}
-      </span>
-      {current.updateAvailable && (
-        <Link
-          href={TEMPLATES}
-          className="rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-on-accent)]"
-        >
-          Update available
-        </Link>
-      )}
-    </span>
-  );
+  const status = host.status(baseVersion);
   const selectCls =
     "h-8 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-xs font-semibold text-[var(--ed-ink)]";
 
@@ -612,9 +680,9 @@ function TemplateEditorV2({
           setAddPrompt(null);
         }}
         dirty={dirty}
-        saving={save.isPending}
+        saving={saving}
         onSave={onSave}
-        backHref={TEMPLATES}
+        backHref={host.backHref}
         actions={
           <>
             {pages.length > 1 && (
@@ -987,19 +1055,6 @@ function TemplateEditorV2({
         onZoom={setZoom}
         layersOpen={layersOpen}
         onToggleLayers={() => setLayersOpen((o) => !o)}
-      />
-      <ApplyTemplateDialog
-        kind={kind}
-        copyId={template.id}
-        label={label}
-        version={applyFor?.version ?? baseVersion}
-        waiting={applyFor?.waiting ?? current.waitingDrafts}
-        open={applyFor !== null}
-        onClose={() => setApplyFor(null)}
-        onApplied={() => {
-          qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
-          qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
-        }}
       />
     </div>
   );
