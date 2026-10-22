@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark teamList",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -182,36 +182,33 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 79.37,
-                "y": -4,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.98,
+                "w": 2.96,
                 "h": 17.96
               },
               "portrait": {
-                "x": 79.37,
-                "y": -3.2,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.18,
+                "w": 2.96,
                 "h": 14.37
               },
               "story": {
-                "x": 79.37,
-                "y": -2.25,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -2.24,
+                "w": 2.96,
                 "h": 10.1
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [71.01, 0],
-                  [100, 0],
-                  [28.99, 100],
-                  [0, 100]
-                ]
+              "skew": {
+                "x": -22,
+                "y": 0
               }
             },
-            "sig": "shape:0lhq7me1wvk7c3"
+            "sig": "shape:1nf8oyk0tvrtg9",
+            "link": "team-l5"
           },
           {
             "kind": "shape",
@@ -219,24 +216,21 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 89.17,
-                "y": -4,
-                "w": 5.39,
+                "x": 91.07,
+                "y": -3.97,
+                "w": 1.58,
                 "h": 17.94
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [70.61, 0],
-                  [100, 0],
-                  [29.39, 100],
-                  [0, 100]
-                ]
+              "skew": {
+                "x": -22,
+                "y": 0
               }
             },
-            "sig": "shape:1uyqsbu1a6q0fj"
+            "sig": "shape:1nf8oyk0tvrtg9",
+            "link": "team-l5"
           },
           {
             "kind": "shape",
@@ -244,37 +238,34 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 86.98,
-                "y": -4,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -3.98,
+                "w": 1.39,
                 "h": 12.96
               },
               "portrait": {
-                "x": 86.98,
-                "y": -3.2,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -3.18,
+                "w": 1.39,
                 "h": 10.37
               },
               "story": {
-                "x": 86.98,
-                "y": -2.25,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -2.24,
+                "w": 1.39,
                 "h": 7.29
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [79.04, 0],
-                  [100, 0],
-                  [20.96, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
+              "opacity": 0.55,
+              "skew": {
+                "x": -22,
+                "y": 0
+              }
             },
-            "sig": "shape:00yo5sn017lnbc"
+            "sig": "shape:0ydwm311srb2aq",
+            "link": "team-l6"
           },
           {
             "kind": "shape",
@@ -282,25 +273,22 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 93.16,
-                "y": -4,
-                "w": 3.51,
+                "x": 94.53,
+                "y": -4.01,
+                "w": 0.75,
                 "h": 13.02
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [78.64, 0],
-                  [100, 0],
-                  [21.36, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
+              "opacity": 0.55,
+              "skew": {
+                "x": -22,
+                "y": 0
+              }
             },
-            "sig": "shape:08b4nlf0o2hlr0"
+            "sig": "shape:0ydwm311srb2aq",
+            "link": "team-l6"
           },
           {
             "kind": "image",
@@ -374,7 +362,8 @@
                 "h": 2.71
               }
             },
-            "sig": "text:1buompc0sc3crf"
+            "sig": "text:1buompc0sc3crf",
+            "link": "team-l8"
           },
           {
             "kind": "text",
@@ -404,7 +393,8 @@
                 "h": 4.76
               }
             },
-            "sig": "text:0u33pug0fmv9it"
+            "sig": "text:0u33pug0fmv9it",
+            "link": "team-l8"
           },
           {
             "kind": "text",
@@ -446,7 +436,8 @@
                 "h": 1.09
               }
             },
-            "sig": "text:1it0x4703n5gse"
+            "sig": "text:1it0x4703n5gse",
+            "link": "team-l10"
           },
           {
             "kind": "text",
@@ -476,7 +467,8 @@
                 "h": 2.06
               }
             },
-            "sig": "text:0tw6gw31bjo76o"
+            "sig": "text:0tw6gw31bjo76o",
+            "link": "team-l10"
           },
           {
             "kind": "shape",
@@ -506,7 +498,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:1ylxks013d5njn"
+            "sig": "shape:1ylxks013d5njn",
+            "link": "team-l12"
           },
           {
             "kind": "shape",
@@ -524,7 +517,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:0d1afa60t1lqvh"
+            "sig": "shape:0d1afa60t1lqvh",
+            "link": "team-l12"
           },
           {
             "kind": "text",
@@ -561,7 +555,8 @@
                 "h": 1.61
               }
             },
-            "sig": "text:1176i9g0i73509"
+            "sig": "text:1176i9g0i73509",
+            "link": "team-l14"
           },
           {
             "kind": "text",
@@ -586,7 +581,8 @@
                 "h": 2.86
               }
             },
-            "sig": "text:1vq4lbh1h9hcj2"
+            "sig": "text:1vq4lbh1h9hcj2",
+            "link": "team-l14"
           },
           {
             "kind": "text",
@@ -636,7 +632,8 @@
                 "h": 0.99
               }
             },
-            "sig": "text:1ccinft0ip5fg2"
+            "sig": "text:1ccinft0ip5fg2",
+            "link": "team-l16"
           },
           {
             "kind": "text",
@@ -674,7 +671,8 @@
                 "h": 1.75
               }
             },
-            "sig": "text:0a3eoxj0l2asxm"
+            "sig": "text:0a3eoxj0l2asxm",
+            "link": "team-l16"
           },
           {
             "kind": "text",
@@ -712,7 +710,8 @@
                 "h": 2.22
               }
             },
-            "sig": "text:0qogzb80snmb2r"
+            "sig": "text:0qogzb80snmb2r",
+            "link": "team-l18"
           },
           {
             "kind": "text",
@@ -756,7 +755,8 @@
                 "h": 1.67
               }
             },
-            "sig": "text:0q0wm9b0kgehho"
+            "sig": "text:0q0wm9b0kgehho",
+            "link": "team-l18"
           },
           {
             "kind": "text",
@@ -794,7 +794,8 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1u5h1m81mhxbzx"
+            "sig": "text:1u5h1m81mhxbzx",
+            "link": "team-l18"
           },
           {
             "kind": "text",
@@ -831,7 +832,8 @@
               "maxLines": 2,
               "ellipsis": true
             },
-            "sig": "text:1fhegue1vooq0t"
+            "sig": "text:1fhegue1vooq0t",
+            "link": "team-l21"
           },
           {
             "kind": "text",
@@ -874,7 +876,8 @@
               "maxLines": 2,
               "ellipsis": true
             },
-            "sig": "text:1p11ts61hncubd"
+            "sig": "text:1p11ts61hncubd",
+            "link": "team-l21"
           },
           {
             "kind": "text",
@@ -911,7 +914,8 @@
                 "h": 4.44
               }
             },
-            "sig": "text:09gk4q80367zo3"
+            "sig": "text:09gk4q80367zo3",
+            "link": "team-l21"
           },
           {
             "kind": "text",
@@ -943,7 +947,8 @@
                 "h": 3.74
               }
             },
-            "sig": "text:1x355gx156qcki"
+            "sig": "text:1x355gx156qcki",
+            "link": "team-l24"
           },
           {
             "kind": "text",
@@ -981,7 +986,8 @@
                 "h": 2.82
               }
             },
-            "sig": "text:1a9hpy70hagazg"
+            "sig": "text:1a9hpy70hagazg",
+            "link": "team-l24"
           },
           {
             "kind": "text",
@@ -1018,7 +1024,8 @@
                 "h": 1.59
               }
             },
-            "sig": "text:0xyde560knvhgp"
+            "sig": "text:0xyde560knvhgp",
+            "link": "team-l24"
           },
           {
             "kind": "rows",
@@ -1078,7 +1085,8 @@
                 "h": 50.04
               }
             },
-            "sig": "rows:0twddb81g6kh81"
+            "sig": "rows:0twddb81g6kh81",
+            "link": "team-l27"
           },
           {
             "kind": "rows",
@@ -1144,7 +1152,8 @@
                 "h": 37.34
               }
             },
-            "sig": "rows:1ao2u840ba111t"
+            "sig": "rows:1ao2u840ba111t",
+            "link": "team-l27"
           },
           {
             "kind": "rows",
@@ -1204,7 +1213,8 @@
                 "h": 38.75
               }
             },
-            "sig": "rows:0tvrs6v164ualu"
+            "sig": "rows:0tvrs6v164ualu",
+            "link": "team-l27"
           },
           {
             "kind": "shape",
@@ -1278,7 +1288,8 @@
                 "h": 1.09
               }
             },
-            "sig": "text:0ycr8vd1k03btw"
+            "sig": "text:0ycr8vd1k03btw",
+            "link": "team-l32"
           },
           {
             "kind": "text",
@@ -1305,7 +1316,8 @@
                 "h": 2.06
               }
             },
-            "sig": "text:19z96od0ke2oyi"
+            "sig": "text:19z96od0ke2oyi",
+            "link": "team-l32"
           },
           {
             "kind": "shape",
@@ -1339,7 +1351,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:0940kyt12rml8w"
+            "sig": "shape:0940kyt12rml8w",
+            "link": "team-l34"
           },
           {
             "kind": "shape",
@@ -1361,7 +1374,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:1uyff631md2upq"
+            "sig": "shape:1uyff631md2upq",
+            "link": "team-l34"
           },
           {
             "kind": "image",
@@ -1391,7 +1405,8 @@
                 "h": 2.48
               }
             },
-            "sig": "image:047j3h50otvmqq"
+            "sig": "image:047j3h50otvmqq",
+            "link": "team-l36"
           },
           {
             "kind": "image",
@@ -1409,7 +1424,8 @@
                 "h": 4.4
               }
             },
-            "sig": "image:18qemif1fyp00c"
+            "sig": "image:18qemif1fyp00c",
+            "link": "team-l36"
           },
           {
             "kind": "text",
@@ -1450,7 +1466,8 @@
                 "h": 1.88
               }
             },
-            "sig": "text:0iyzkfg0hi15kp"
+            "sig": "text:0iyzkfg0hi15kp",
+            "link": "team-l38"
           },
           {
             "kind": "text",
@@ -1479,7 +1496,8 @@
                 "h": 3.49
               }
             },
-            "sig": "text:0z3zhna0rwkcjx"
+            "sig": "text:0z3zhna0rwkcjx",
+            "link": "team-l38"
           }
         ]
       }

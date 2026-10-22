@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark debut",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -182,36 +182,33 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 79.37,
-                "y": -4,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.98,
+                "w": 2.96,
                 "h": 17.96
               },
               "portrait": {
-                "x": 79.37,
-                "y": -3.2,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.18,
+                "w": 2.96,
                 "h": 14.37
               },
               "story": {
-                "x": 79.37,
-                "y": -2.25,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -2.24,
+                "w": 2.96,
                 "h": 10.1
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [71.01, 0],
-                  [100, 0],
-                  [28.99, 100],
-                  [0, 100]
-                ]
+              "skew": {
+                "x": -22,
+                "y": 0
               }
             },
-            "sig": "shape:0lhq7me1wvk7c3"
+            "sig": "shape:1nf8oyk0tvrtg9",
+            "link": "card-l5"
           },
           {
             "kind": "shape",
@@ -219,24 +216,21 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 89.17,
-                "y": -4,
-                "w": 5.39,
+                "x": 91.07,
+                "y": -3.97,
+                "w": 1.58,
                 "h": 17.94
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [70.61, 0],
-                  [100, 0],
-                  [29.39, 100],
-                  [0, 100]
-                ]
+              "skew": {
+                "x": -22,
+                "y": 0
               }
             },
-            "sig": "shape:1uyqsbu1a6q0fj"
+            "sig": "shape:1nf8oyk0tvrtg9",
+            "link": "card-l5"
           },
           {
             "kind": "shape",
@@ -244,37 +238,34 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 86.98,
-                "y": -4,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -3.98,
+                "w": 1.39,
                 "h": 12.96
               },
               "portrait": {
-                "x": 86.98,
-                "y": -3.2,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -3.18,
+                "w": 1.39,
                 "h": 10.37
               },
               "story": {
-                "x": 86.98,
-                "y": -2.25,
-                "w": 6.62,
+                "x": 89.61,
+                "y": -2.24,
+                "w": 1.39,
                 "h": 7.29
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [79.04, 0],
-                  [100, 0],
-                  [20.96, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
+              "opacity": 0.55,
+              "skew": {
+                "x": -22,
+                "y": 0
+              }
             },
-            "sig": "shape:00yo5sn017lnbc"
+            "sig": "shape:0ydwm311srb2aq",
+            "link": "card-l6"
           },
           {
             "kind": "shape",
@@ -282,25 +273,22 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 93.16,
-                "y": -4,
-                "w": 3.51,
+                "x": 94.53,
+                "y": -4.01,
+                "w": 0.75,
                 "h": 13.02
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [78.64, 0],
-                  [100, 0],
-                  [21.36, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
+              "opacity": 0.55,
+              "skew": {
+                "x": -22,
+                "y": 0
+              }
             },
-            "sig": "shape:08b4nlf0o2hlr0"
+            "sig": "shape:0ydwm311srb2aq",
+            "link": "card-l6"
           },
           {
             "kind": "image",
@@ -374,7 +362,8 @@
                 "h": 2.71
               }
             },
-            "sig": "text:1buompc0sc3crf"
+            "sig": "text:1buompc0sc3crf",
+            "link": "card-l8"
           },
           {
             "kind": "text",
@@ -404,7 +393,8 @@
                 "h": 4.76
               }
             },
-            "sig": "text:0u33pug0fmv9it"
+            "sig": "text:0u33pug0fmv9it",
+            "link": "card-l8"
           },
           {
             "kind": "text",
@@ -446,7 +436,8 @@
                 "h": 1.09
               }
             },
-            "sig": "text:1it0x4703n5gse"
+            "sig": "text:1it0x4703n5gse",
+            "link": "card-l10"
           },
           {
             "kind": "text",
@@ -476,7 +467,8 @@
                 "h": 2.06
               }
             },
-            "sig": "text:0tw6gw31bjo76o"
+            "sig": "text:0tw6gw31bjo76o",
+            "link": "card-l10"
           },
           {
             "kind": "shape",
@@ -506,7 +498,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:1ylxks013d5njn"
+            "sig": "shape:1ylxks013d5njn",
+            "link": "card-l12"
           },
           {
             "kind": "shape",
@@ -524,7 +517,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:0d1afa60t1lqvh"
+            "sig": "shape:0d1afa60t1lqvh",
+            "link": "card-l12"
           },
           {
             "kind": "text",
@@ -561,7 +555,8 @@
                 "h": 1.61
               }
             },
-            "sig": "text:1m8kz2b1g83fda"
+            "sig": "text:1m8kz2b1g83fda",
+            "link": "card-l14"
           },
           {
             "kind": "text",
@@ -586,7 +581,8 @@
                 "h": 2.86
               }
             },
-            "sig": "text:14zcj6g00xq9jz"
+            "sig": "text:14zcj6g00xq9jz",
+            "link": "card-l14"
           },
           {
             "kind": "text",
@@ -636,7 +632,8 @@
                 "h": 0.99
               }
             },
-            "sig": "text:0xu5ya11odxt72"
+            "sig": "text:0xu5ya11odxt72",
+            "link": "card-l16"
           },
           {
             "kind": "text",
@@ -674,7 +671,8 @@
                 "h": 1.75
               }
             },
-            "sig": "text:0i2nu1j1myd6ge"
+            "sig": "text:0i2nu1j1myd6ge",
+            "link": "card-l16"
           },
           {
             "kind": "text",
@@ -707,7 +705,8 @@
                 "h": 4.45
               }
             },
-            "sig": "text:19rc0y80glp8c7"
+            "sig": "text:19rc0y80glp8c7",
+            "link": "card-l18"
           },
           {
             "kind": "text",
@@ -746,7 +745,8 @@
                 "h": 3.34
               }
             },
-            "sig": "text:0pqrccj0uy3jaw"
+            "sig": "text:0pqrccj0uy3jaw",
+            "link": "card-l18"
           },
           {
             "kind": "text",
@@ -779,7 +779,8 @@
                 "h": 4.45
               }
             },
-            "sig": "text:186kyxg13u1pw9"
+            "sig": "text:186kyxg13u1pw9",
+            "link": "card-l18"
           },
           {
             "kind": "text",
@@ -811,7 +812,8 @@
                 "h": 38.84
               }
             },
-            "sig": "text:0fp6akd045klxo"
+            "sig": "text:0fp6akd045klxo",
+            "link": "card-l21"
           },
           {
             "kind": "text",
@@ -849,7 +851,8 @@
                 "h": 29.18
               }
             },
-            "sig": "text:1m0gt5k1imkhsf"
+            "sig": "text:1m0gt5k1imkhsf",
+            "link": "card-l21"
           },
           {
             "kind": "text",
@@ -881,7 +884,8 @@
                 "h": 38.73
               }
             },
-            "sig": "text:0p89izq03pft43"
+            "sig": "text:0p89izq03pft43",
+            "link": "card-l21"
           },
           {
             "kind": "text",
@@ -912,7 +916,8 @@
                 "h": 5.55
               }
             },
-            "sig": "text:1k02sgb01akdim"
+            "sig": "text:1k02sgb01akdim",
+            "link": "card-l24"
           },
           {
             "kind": "text",
@@ -949,7 +954,8 @@
                 "h": 4.13
               }
             },
-            "sig": "text:1t1uiie1bfdbiv"
+            "sig": "text:1t1uiie1bfdbiv",
+            "link": "card-l24"
           },
           {
             "kind": "text",
@@ -980,7 +986,8 @@
                 "h": 5.56
               }
             },
-            "sig": "text:15dy1xr1gjmfn6"
+            "sig": "text:15dy1xr1gjmfn6",
+            "link": "card-l24"
           },
           {
             "kind": "shape",
@@ -998,7 +1005,8 @@
                 "h": 5.46
               }
             },
-            "sig": "shape:13zjiua08rl8t9"
+            "sig": "shape:13zjiua08rl8t9",
+            "link": "card-l27"
           },
           {
             "kind": "shape",
@@ -1022,7 +1030,8 @@
                 "h": 4.09
               }
             },
-            "sig": "shape:1odz8kk1jl9s1b"
+            "sig": "shape:1odz8kk1jl9s1b",
+            "link": "card-l27"
           },
           {
             "kind": "shape",
@@ -1040,7 +1049,8 @@
                 "h": 5.45
               }
             },
-            "sig": "shape:0jxs28y1dyolr5"
+            "sig": "shape:0jxs28y1dyolr5",
+            "link": "card-l27"
           },
           {
             "kind": "text",
@@ -1070,7 +1080,8 @@
                 "h": 4.26
               }
             },
-            "sig": "text:0s9rw601pj40bh"
+            "sig": "text:0s9rw601pj40bh",
+            "link": "card-l30"
           },
           {
             "kind": "text",
@@ -1106,7 +1117,8 @@
                 "h": 3.18
               }
             },
-            "sig": "text:07lxryk1070sb9"
+            "sig": "text:07lxryk1070sb9",
+            "link": "card-l30"
           },
           {
             "kind": "text",
@@ -1136,7 +1148,8 @@
                 "h": 4.13
               }
             },
-            "sig": "text:0dx278c19g6r0h"
+            "sig": "text:0dx278c19g6r0h",
+            "link": "card-l30"
           },
           {
             "kind": "text",
@@ -1180,7 +1193,8 @@
                 "h": 1.88
               }
             },
-            "sig": "text:0iyzkfg0hi15kp"
+            "sig": "text:0iyzkfg0hi15kp",
+            "link": "card-l33"
           },
           {
             "kind": "text",
@@ -1212,7 +1226,8 @@
                 "h": 3.49
               }
             },
-            "sig": "text:0z3zhna0rwkcjx"
+            "sig": "text:0z3zhna0rwkcjx",
+            "link": "card-l33"
           },
           {
             "kind": "shape",
@@ -1285,7 +1300,8 @@
                 "h": 1.09
               }
             },
-            "sig": "text:16tbjwl1tdihq0"
+            "sig": "text:16tbjwl1tdihq0",
+            "link": "card-l37"
           },
           {
             "kind": "text",
@@ -1312,7 +1328,8 @@
                 "h": 2.06
               }
             },
-            "sig": "text:08hi7ld0ice1s6"
+            "sig": "text:08hi7ld0ice1s6",
+            "link": "card-l37"
           },
           {
             "kind": "shape",
@@ -1342,7 +1359,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:13krhdw14wnb4v"
+            "sig": "shape:13krhdw14wnb4v",
+            "link": "card-l39"
           },
           {
             "kind": "shape",
@@ -1360,7 +1378,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:1pbrx6y035mfgx"
+            "sig": "shape:1pbrx6y035mfgx",
+            "link": "card-l39"
           },
           {
             "kind": "image",
@@ -1390,7 +1409,8 @@
                 "h": 2.48
               }
             },
-            "sig": "image:047j3h50otvmqq"
+            "sig": "image:047j3h50otvmqq",
+            "link": "card-l41"
           },
           {
             "kind": "image",
@@ -1408,7 +1428,8 @@
                 "h": 4.4
               }
             },
-            "sig": "image:18qemif1fyp00c"
+            "sig": "image:18qemif1fyp00c",
+            "link": "card-l41"
           },
           {
             "kind": "shape",
@@ -1438,7 +1459,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:13krhdw14wnb4v"
+            "sig": "shape:13krhdw14wnb4v",
+            "link": "card-l43"
           },
           {
             "kind": "shape",
@@ -1456,7 +1478,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:1pbrx6y035mfgx"
+            "sig": "shape:1pbrx6y035mfgx",
+            "link": "card-l43"
           },
           {
             "kind": "image",
@@ -1486,7 +1509,8 @@
                 "h": 2.48
               }
             },
-            "sig": "image:0wa3pc6084xput"
+            "sig": "image:0wa3pc6084xput",
+            "link": "card-l45"
           },
           {
             "kind": "image",
@@ -1504,7 +1528,8 @@
                 "h": 4.4
               }
             },
-            "sig": "image:10vnp3s1tzck23"
+            "sig": "image:10vnp3s1tzck23",
+            "link": "card-l45"
           },
           {
             "kind": "shape",
@@ -1534,7 +1559,8 @@
                 "h": 2.48
               }
             },
-            "sig": "shape:13krhdw14wnb4v"
+            "sig": "shape:13krhdw14wnb4v",
+            "link": "card-l47"
           },
           {
             "kind": "shape",
@@ -1552,7 +1578,8 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:1pbrx6y035mfgx"
+            "sig": "shape:1pbrx6y035mfgx",
+            "link": "card-l47"
           },
           {
             "kind": "image",
@@ -1582,7 +1609,8 @@
                 "h": 2.48
               }
             },
-            "sig": "image:1dc2s8j1fjjl7s"
+            "sig": "image:1dc2s8j1fjjl7s",
+            "link": "card-l49"
           },
           {
             "kind": "image",
@@ -1600,7 +1628,8 @@
                 "h": 4.4
               }
             },
-            "sig": "image:130ivkd072f9rq"
+            "sig": "image:130ivkd072f9rq",
+            "link": "card-l49"
           },
           {
             "kind": "text",
@@ -1644,7 +1673,8 @@
                 "h": 1.88
               }
             },
-            "sig": "text:1jq5z970ot45cw"
+            "sig": "text:1jq5z970ot45cw",
+            "link": "card-l51"
           },
           {
             "kind": "text",
@@ -1676,7 +1706,8 @@
                 "h": 3.49
               }
             },
-            "sig": "text:1c044jn0p7sthe"
+            "sig": "text:1c044jn0p7sthe",
+            "link": "card-l51"
           }
         ]
       }

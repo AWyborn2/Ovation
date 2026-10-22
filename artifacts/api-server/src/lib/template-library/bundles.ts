@@ -25,6 +25,7 @@ import { TEMPLATE_BUNDLES, type TemplateBundle } from "@workspace/template-bundl
 import { logger } from "../logger";
 import { libraryAssetPolicyErrors } from "./assets";
 import { documentCoverage } from "./coverage";
+import { syncElementBundles } from "./element-bundles";
 import { initialFit, requestFit } from "./fit";
 
 export type BundleSyncSummary = {
@@ -217,6 +218,19 @@ export async function syncBundlesAtBoot(): Promise<void> {
     );
   } catch (err) {
     logger.error({ err }, "template bundles: sync failed");
+  }
+  // After the looks, which the elements are credited to.
+  try {
+    const summary = await syncElementBundles();
+    if (summary.skipped.length > 0) {
+      logger.warn({ skipped: summary.skipped }, "element bundles: some elements were not synced");
+    }
+    logger.info(
+      { elements: summary.elements, changed: summary.changed, removed: summary.removed },
+      "element bundles synced",
+    );
+  } catch (err) {
+    logger.error({ err }, "element bundles: sync failed");
   }
 }
 
