@@ -20,6 +20,7 @@ import {
   primaryPage,
   tokenContentField,
   isCoreContentField,
+  V2_STYLE_KEYS,
   type LayerMotion,
   type PageKey,
   type ShowWhen,
@@ -111,18 +112,6 @@ export function withPage(doc: TemplateDoc, page: PageKey, next: EditorDoc): Temp
   else delete out.sponsorLock;
   return out;
 }
-
-const V2_STYLE_KEYS = [
-  "fill",
-  "textFill",
-  "border",
-  "boxShadow",
-  "textShadow",
-  "blend",
-  "filter",
-  "overlay",
-  "lineHeight",
-];
 
 /** Whether a layer (or any child) uses something only format v2 can hold. */
 export function layerIsV2Only(layer: EditorLayer): boolean {

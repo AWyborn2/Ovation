@@ -9,11 +9,13 @@
  * - `styles`: gradient and text fills, borders, shadows, a blend mode and a
  *   duotone photo filter from the Duotone palette.
  * - `vector`: Club Kit-style diagonal slashes as token-filled SVG.
+ * - `effects`: what the converter needed next (B4): a clipped slash with a
+ *   glow, a skewed band, a frosted panel, outlined text and a dashed rule.
  * - `motion`: entrances, the LIVE pulse and the foil shine (animated).
  */
 import type { TemplateDocumentV2, TemplateLayerV2 } from "@workspace/scorecard/kind-templates";
 
-export type V2SampleId = "stack" | "photo" | "styles" | "vector" | "motion";
+export type V2SampleId = "stack" | "photo" | "styles" | "vector" | "effects" | "motion";
 
 export type V2Sample = {
   id: V2SampleId;
@@ -199,6 +201,73 @@ export const V2_SAMPLES: V2Sample[] = [
               svg: '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="62,0 100,0 100,100 38,100" fill="var(--gold)" opacity="0.9"/><polygon points="55,0 60,0 36,100 31,100" fill="var(--panel)"/></svg>',
             },
             text("name", "{{playerName}}", all(6, 40, 50, 14), { fontSize: 7, align: "left" }),
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: "effects",
+    label: "Effects: a glow, skew, frosted glass, outlined text and a dashed rule",
+    kind: "player",
+    document: {
+      formatVersion: 2,
+      pages: {
+        card: {
+          layers: [
+            stage,
+            // A static font: a variable font's overlapping contours show through a stroke.
+            text("outline", "{{stat1Value}}", all(40, 4, 58, 50), {
+              fontSize: 30,
+              fontFamily: "'Anton',sans-serif",
+              fontWeight: 400,
+              align: "right",
+              color: "transparent",
+              textStroke: { width: 0.25, color: "#ffffff59" },
+            }),
+            {
+              id: "slash",
+              kind: "shape",
+              geometry: all(54, 0, 30, 100),
+              style: {
+                fill: "var(--gold)",
+                clip: {
+                  polygon: [
+                    [60, 0],
+                    [100, 0],
+                    [40, 100],
+                    [0, 100],
+                  ],
+                },
+                dropShadow: [{ x: 0, y: 0, blur: 2.4, color: "#d3175ab3" }],
+              },
+            },
+            {
+              id: "band",
+              kind: "shape",
+              geometry: all(8, 20, 34, 7),
+              style: { fill: "var(--panel)", skew: { x: -14 } },
+            },
+            {
+              id: "glass",
+              kind: "shape",
+              geometry: all(6, 56, 62, 30),
+              style: {
+                fill: "#ffffff14",
+                radius: 18,
+                backdropBlur: 18,
+                border: { width: 0.2, color: "#ffffff38" },
+              },
+            },
+            {
+              id: "rule",
+              kind: "shape",
+              geometry: all(10, 74, 54, 1),
+              style: {
+                border: { width: 0.2, color: "#ffffff80", style: "dashed", sides: ["top"] },
+              },
+            },
+            text("name", "{{playerName}}", all(10, 60, 54, 12), { fontSize: 5, align: "left" }),
           ],
         },
       },
