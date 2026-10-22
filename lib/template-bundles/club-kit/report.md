@@ -1,6 +1,6 @@
 # Club Kit: conversion report
 
-Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 22 of 24 kinds listed.
+Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 24 of 24 kinds listed.
 
 ## Summary
 
@@ -341,12 +341,12 @@ Converter notes (from the raw conversion):
 - From `card.game-day`.
 - Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings           |
-| --------- | ----------- | ---------------------- |
-| square    | 91%         | overflow: cut mid-word |
-| portrait  | 88%         | overflow: cut mid-word |
-| story     | 93%         | overflow: cut mid-word |
-| landscape | 94%         | overflow: cut mid-word |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 91%         | none         |
+| portrait  | 88%         | none         |
+| story     | 93%         | none         |
+| landscape | 94%         | none         |
 
 ## sponsor
 
