@@ -128,7 +128,13 @@ import type {
   ClubTemplateList,
   CommitImportInput,
   CommitImportResult,
+  ConsoleLibraryLook,
+  ConsoleLibraryLookList,
+  ConsoleLibraryTemplate,
+  ConsoleLibraryTemplateList,
   CreateClubTemplateRequest,
+  CreateConsoleLibraryLookRequest,
+  CreateConsoleLibraryTemplateRequest,
   CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
@@ -142,6 +148,7 @@ import type {
   DirectoryClub,
   DraftSweepRequest,
   DraftSweepResponse,
+  DuplicateConsoleLibraryTemplateRequest,
   DuplicatePair,
   DuplicateReview,
   DuplicateReviewBody,
@@ -264,6 +271,7 @@ import type {
   LifeMemberUpdate,
   ListClubPhotosParams,
   ListClubTemplatesParams,
+  ListConsoleLibraryTemplatesParams,
   ListEmailSendsParams,
   ListFixturesParams,
   ListFixturesResultsParams,
@@ -365,6 +373,7 @@ import type {
   RoundResults,
   SaveCardPhotoRulesRequest,
   SaveClubTemplateRequest,
+  SaveConsoleLibraryTemplateRequest,
   SaveDraftTemplateRequest,
   SaveKindTemplateRequest,
   SchedulePublicationsRequest,
@@ -451,6 +460,7 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UnlistConsoleLibraryTemplateRequest,
   UnscheduleDraftRequest,
   UpdateAdminTenantBrandBody,
   UpdateFixtureBody,
@@ -33016,6 +33026,674 @@ export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
+    }
+
+export const getListConsoleLibraryTemplatesUrl = (params?: ListConsoleLibraryTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/admin/library/templates?${stringifiedParams}` : `/api/platform/admin/library/templates`
+}
+
+/**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+export const listConsoleLibraryTemplates = async (params?: ListConsoleLibraryTemplatesParams, options?: RequestInit): Promise<ConsoleLibraryTemplateList> => {
+
+  return customFetch<ConsoleLibraryTemplateList>(getListConsoleLibraryTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryTemplatesQueryKey = (params?: ListConsoleLibraryTemplatesParams,) => {
+    return [
+    `/api/platform/admin/library/templates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError = ErrorType<void>>(params?: ListConsoleLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>> = ({ signal }) => listConsoleLibraryTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>>
+export type ListConsoleLibraryTemplatesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+
+export function useListConsoleLibraryTemplates<TData = Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError = ErrorType<void>>(
+ params?: ListConsoleLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateConsoleLibraryTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/templates`
+}
+
+/**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const createConsoleLibraryTemplate = async (createConsoleLibraryTemplateRequest: CreateConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getCreateConsoleLibraryTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getCreateConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['createConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, {data: BodyType<CreateConsoleLibraryTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConsoleLibraryTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>>
+    export type CreateConsoleLibraryTemplateMutationBody = BodyType<CreateConsoleLibraryTemplateRequest>
+    export type CreateConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const useCreateConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConsoleLibraryTemplate>>,
+        TError,
+        {data: BodyType<CreateConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getGetConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}`
+}
+
+/**
+ * @summary One library template at its current version
+ */
+export const getConsoleLibraryTemplate = async (id: number, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getGetConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConsoleLibraryTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/templates/${id}`
+    ] as const;
+    }
+
+
+export const getGetConsoleLibraryTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConsoleLibraryTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>> = ({ signal }) => getConsoleLibraryTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConsoleLibraryTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>>
+export type GetConsoleLibraryTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library template at its current version
+ */
+
+export function useGetConsoleLibraryTemplate<TData = Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConsoleLibraryTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}`
+}
+
+/**
+ * A new document becomes the template's next version and starts its fit check; earlier versions stay, so clubs' copies see an update. A name or look alone changes no version. Bundle templates are refused: they change with a deploy, and the console duplicates them instead.
+ * @summary Save a console template; a new document is a new version
+ */
+export const saveConsoleLibraryTemplate = async (id: number,
+    saveConsoleLibraryTemplateRequest: SaveConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getSaveConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, {id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>>
+    export type SaveConsoleLibraryTemplateMutationBody = BodyType<SaveConsoleLibraryTemplateRequest>
+    export type SaveConsoleLibraryTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save a console template; a new document is a new version
+ */
+export const useSaveConsoleLibraryTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getDuplicateConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/duplicate`
+}
+
+/**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const duplicateConsoleLibraryTemplate = async (id: number,
+    duplicateConsoleLibraryTemplateRequest?: DuplicateConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getDuplicateConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      duplicateConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getDuplicateConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['duplicateConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, {id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  duplicateConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>>
+    export type DuplicateConsoleLibraryTemplateMutationBody = BodyType<DuplicateConsoleLibraryTemplateRequest> | undefined
+    export type DuplicateConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const useDuplicateConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getDuplicateConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/list`
+}
+
+/**
+ * Refused unless the current version passed a real fit check (every page, size and preset). A bundle template follows its bundle file, so this only undoes an Ovation unlisting.
+ * @summary List a template in the library
+ */
+export const listConsoleLibraryTemplate = async (id: number, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getListConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getListConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['listConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  listConsoleLibraryTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ListConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>>
+
+    export type ListConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary List a template in the library
+ */
+export const useListConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof listConsoleLibraryTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getListConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getUnlistConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/unlist`
+}
+
+/**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const unlistConsoleLibraryTemplate = async (id: number,
+    unlistConsoleLibraryTemplateRequest?: UnlistConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getUnlistConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unlistConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getUnlistConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['unlistConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, {id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  unlistConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>>
+    export type UnlistConsoleLibraryTemplateMutationBody = BodyType<UnlistConsoleLibraryTemplateRequest> | undefined
+    export type UnlistConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const useUnlistConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getUnlistConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListConsoleLibraryLooksUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/looks`
+}
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+export const listConsoleLibraryLooks = async ( options?: RequestInit): Promise<ConsoleLibraryLookList> => {
+
+  return customFetch<ConsoleLibraryLookList>(getListConsoleLibraryLooksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryLooksQueryKey = () => {
+    return [
+    `/api/platform/admin/library/looks`
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryLooksQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryLooksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryLooks>>> = ({ signal }) => listConsoleLibraryLooks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryLooksQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryLooks>>>
+export type ListConsoleLibraryLooksQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+
+export function useListConsoleLibraryLooks<TData = Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryLooksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateConsoleLibraryLookUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/looks`
+}
+
+/**
+ * @summary A new console look
+ */
+export const createConsoleLibraryLook = async (createConsoleLibraryLookRequest: CreateConsoleLibraryLookRequest, options?: RequestInit): Promise<ConsoleLibraryLook> => {
+
+  return customFetch<ConsoleLibraryLook>(getCreateConsoleLibraryLookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createConsoleLibraryLookRequest,)
+  }
+);}
+
+
+
+
+export const getCreateConsoleLibraryLookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext> => {
+
+const mutationKey = ['createConsoleLibraryLook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConsoleLibraryLook>>, {data: BodyType<CreateConsoleLibraryLookRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConsoleLibraryLook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConsoleLibraryLookMutationResult = NonNullable<Awaited<ReturnType<typeof createConsoleLibraryLook>>>
+    export type CreateConsoleLibraryLookMutationBody = BodyType<CreateConsoleLibraryLookRequest>
+    export type CreateConsoleLibraryLookMutationError = ErrorType<void>
+
+    /**
+ * @summary A new console look
+ */
+export const useCreateConsoleLibraryLook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConsoleLibraryLook>>,
+        TError,
+        {data: BodyType<CreateConsoleLibraryLookRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateConsoleLibraryLookMutationOptions(options));
     }
 
 export const getGetPlatformGradeDecisionsUrl = () => {

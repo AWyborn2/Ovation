@@ -8667,6 +8667,108 @@ export interface LibraryLookList {
   looks: LibraryLook[];
 }
 
+/**
+ * @nullable
+ */
+export type ConsoleLibraryTemplateUnlistedBy = typeof ConsoleLibraryTemplateUnlistedBy[keyof typeof ConsoleLibraryTemplateUnlistedBy] | null;
+
+
+export const ConsoleLibraryTemplateUnlistedBy = {
+  author: 'author',
+  ovation: 'ovation',
+} as const;
+
+export type ConsoleLibraryTemplate = LibraryTemplate & ({
+  /** A bundle template; the console duplicates it to edit. */
+  readOnly: boolean;
+  /** @nullable */
+  unlistedBy: ConsoleLibraryTemplateUnlistedBy;
+  /** @nullable */
+  unlistReason: string | null;
+  updatedAt: string;
+});
+
+export interface ConsoleLibraryTemplateList {
+  templates: ConsoleLibraryTemplate[];
+}
+
+export interface CreateConsoleLibraryTemplateRequest {
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @nullable */
+  lookId?: number | null;
+  document: TemplateDocument;
+}
+
+export interface SaveConsoleLibraryTemplateRequest {
+  baseVersion: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /** @nullable */
+  lookId?: number | null;
+  document?: TemplateDocument;
+}
+
+export interface DuplicateConsoleLibraryTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export interface UnlistConsoleLibraryTemplateRequest {
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export type ConsoleLibraryLookOrigin = typeof ConsoleLibraryLookOrigin[keyof typeof ConsoleLibraryLookOrigin];
+
+
+export const ConsoleLibraryLookOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface ConsoleLibraryLook {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  origin: ConsoleLibraryLookOrigin;
+  displayOrder: number;
+  /** Library templates in this look, listed or not. */
+  templates: number;
+}
+
+export interface ConsoleLibraryLookList {
+  looks: ConsoleLibraryLook[];
+}
+
+export interface CreateConsoleLibraryLookRequest {
+  /** @maxLength 60 */
+  slug: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+}
+
 export interface AdoptLookChange {
   kind: string;
   copyId: number;
@@ -11735,6 +11837,21 @@ ageGroup?: string;
 export type CheckSlugAvailableParams = {
 slug: string;
 };
+
+export type ListConsoleLibraryTemplatesParams = {
+kind?: string;
+origin?: ListConsoleLibraryTemplatesOrigin;
+listed?: boolean;
+};
+
+export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplatesOrigin[keyof typeof ListConsoleLibraryTemplatesOrigin];
+
+
+export const ListConsoleLibraryTemplatesOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
 
 export type GetPlatformPlayerPrivacyParams = {
 q?: string;

@@ -16088,6 +16088,274 @@ export const DeleteProvisioningExclusionParams = zod.object({
 
 
 /**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+export const ListConsoleLibraryTemplatesQueryParams = zod.object({
+  "kind": zod.coerce.string().optional(),
+  "origin": zod.enum(['bundle', 'console', 'club']).optional(),
+  "listed": zod.coerce.boolean().optional()
+})
+
+export const ListConsoleLibraryTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})))
+})
+
+
+/**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const createConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const CreateConsoleLibraryTemplateBody = zod.object({
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(createConsoleLibraryTemplateBodyNameMax),
+  "lookId": zod.number().nullish(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * @summary One library template at its current version
+ */
+export const GetConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * A new document becomes the template's next version and starts its fit check; earlier versions stay, so clubs' copies see an update. A name or look alone changes no version. Bundle templates are refused: they change with a deploy, and the console duplicates them instead.
+ * @summary Save a console template; a new document is a new version
+ */
+export const SaveConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const SaveConsoleLibraryTemplateBody = zod.object({
+  "baseVersion": zod.number(),
+  "name": zod.string().min(1).max(saveConsoleLibraryTemplateBodyNameMax).optional(),
+  "lookId": zod.number().nullish(),
+  "document": zod.record(zod.string(), zod.unknown()).optional().describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+export const SaveConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const DuplicateConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const duplicateConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const DuplicateConsoleLibraryTemplateBody = zod.object({
+  "name": zod.string().min(1).max(duplicateConsoleLibraryTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * Refused unless the current version passed a real fit check (every page, size and preset). A bundle template follows its bundle file, so this only undoes an Ovation unlisting.
+ * @summary List a template in the library
+ */
+export const ListConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const UnlistConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const unlistConsoleLibraryTemplateBodyReasonMax = 300;
+
+
+
+export const UnlistConsoleLibraryTemplateBody = zod.object({
+  "reason": zod.string().max(unlistConsoleLibraryTemplateBodyReasonMax).nullish()
+})
+
+export const UnlistConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+export const ListConsoleLibraryLooksResponse = zod.object({
+  "looks": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "displayOrder": zod.number(),
+  "templates": zod.number().describe('Library templates in this look, listed or not.')
+}))
+})
+
+
+/**
+ * @summary A new console look
+ */
+export const createConsoleLibraryLookBodySlugMax = 60;
+
+export const createConsoleLibraryLookBodyNameMax = 80;
+
+
+
+export const CreateConsoleLibraryLookBody = zod.object({
+  "slug": zod.string().max(createConsoleLibraryLookBodySlugMax),
+  "name": zod.string().min(1).max(createConsoleLibraryLookBodyNameMax),
+  "description": zod.string().nullish()
+})
+
+
+/**
  * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
  */
 export const GetPlatformGradeDecisionsResponse = zod.object({

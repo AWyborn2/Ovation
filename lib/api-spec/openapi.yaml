@@ -10423,6 +10423,239 @@ paths:
         "404":
           description: No such exclusion.
 
+  /platform/admin/library/templates:
+    get:
+      operationId: listConsoleLibraryTemplates
+      tags: [platformAdmin]
+      summary: Every library template, listed or not (ADR-011 L7-A)
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: origin
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [bundle, console, club]
+        - name: listed
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Library templates by kind
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplateList"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: createConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: A new, unlisted console template at version 1; its fit check starts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConsoleLibraryTemplateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Unknown kind, bad name or look, or an invalid document.
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/library/templates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: One library template at its current version
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+    put:
+      operationId: saveConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: Save a console template; a new document is a new version
+      description: >-
+        A new document becomes the template's next version and starts its fit
+        check; earlier versions stay, so clubs' copies see an update. A name
+        or look alone changes no version. Bundle templates are refused: they
+        change with a deploy, and the console duplicates them instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveConsoleLibraryTemplateRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Invalid document, name or look.
+        "401":
+          description: Not authenticated.
+        "403":
+          description: A bundle template.
+        "404":
+          description: No such template.
+        "409":
+          description: Someone saved this template since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /platform/admin/library/templates/{id}/duplicate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: duplicateConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: A console copy of a template's current version (how bundle templates are edited)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DuplicateConsoleLibraryTemplateRequest"
+      responses:
+        "201":
+          description: The new console template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+
+  /platform/admin/library/templates/{id}/list:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: listConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: List a template in the library
+      description: >-
+        Refused unless the current version passed a real fit check (every
+        page, size and preset). A bundle template follows its bundle file, so
+        this only undoes an Ovation unlisting.
+      responses:
+        "200":
+          description: Listed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+        "409":
+          description: The fit check is pending, failed or skipped, or the bundle file unlists it.
+
+  /platform/admin/library/templates/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: Take a template out of the library (clubs' copies are untouched)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlistConsoleLibraryTemplateRequest"
+      responses:
+        "200":
+          description: Unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Reason too long.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+
+  /platform/admin/library/looks:
+    get:
+      operationId: listConsoleLibraryLooks
+      tags: [platformAdmin]
+      summary: Every look, with how many templates each holds
+      responses:
+        "200":
+          description: Looks in display order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryLookList"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: createConsoleLibraryLook
+      tags: [platformAdmin]
+      summary: A new console look
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConsoleLibraryLookRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryLook"
+        "400":
+          description: Bad slug or name.
+        "401":
+          description: Not authenticated.
+        "409":
+          description: The slug is taken.
+
   /platform/admin/grade-decisions:
     get:
       operationId: getPlatformGradeDecisions
@@ -22474,6 +22707,93 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LibraryLook"
+
+    ConsoleLibraryTemplate:
+      allOf:
+        - $ref: "#/components/schemas/LibraryTemplate"
+        - type: object
+          required: [readOnly, unlistedBy, unlistReason, updatedAt]
+          properties:
+            readOnly:
+              type: boolean
+              description: A bundle template; the console duplicates it to edit.
+            unlistedBy:
+              type: ["string", "null"]
+              enum: [author, ovation, null]
+            unlistReason: { type: ["string", "null"] }
+            updatedAt: { type: string, format: date-time }
+
+    ConsoleLibraryTemplateList:
+      type: object
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryTemplate"
+
+    CreateConsoleLibraryTemplateRequest:
+      type: object
+      required: [kind, name, document]
+      properties:
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    SaveConsoleLibraryTemplateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion: { type: integer }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    DuplicateConsoleLibraryTemplateRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+
+    UnlistConsoleLibraryTemplateRequest:
+      type: object
+      properties:
+        reason: { type: ["string", "null"], maxLength: 300 }
+
+    ConsoleLibraryLook:
+      type: object
+      required: [id, slug, name, description, origin, displayOrder, templates]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        displayOrder: { type: integer }
+        templates:
+          type: integer
+          description: Library templates in this look, listed or not.
+
+    ConsoleLibraryLookList:
+      type: object
+      required: [looks]
+      properties:
+        looks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryLook"
+
+    CreateConsoleLibraryLookRequest:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string, maxLength: 60 }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        description: { type: ["string", "null"] }
 
     AdoptLookChange:
       type: object
