@@ -92,10 +92,13 @@ function letters(n: number): string {
 
 class SentinelTexts implements Texts {
   private n = 0;
-  text(kind: TextKind): string {
+  text(kind: TextKind, sample: string): string {
     const id = letters(this.n++);
-    // A person keeps two words, so first-initial and surname cuts stay unique.
-    return kind === "person" ? `Q${id} Z${id}` : `Q${id}`;
+    // A person keeps two words, so first-initial and surname cuts stay unique; so does a
+    // grade of several words, which a list splits into a large first word over the rest
+    // (a weekend wrap's grade label and sub-label).
+    const twoWords = kind === "person" || (kind === "grade" && /\s/.test(sample.trim()));
+    return twoWords ? `Q${id} Z${id}` : `Q${id}`;
   }
 }
 

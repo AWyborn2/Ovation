@@ -1550,7 +1550,8 @@ function rowCells(
   const rowFill = row.style["background-color"] ? opts.colour(row, "background-color") : undefined;
   for (const el of [row, ...tree.descendants(row)]) {
     if (el.hidden === "display" || el.box.w <= 0) continue;
-    if (el !== row && el.style["background-color"] && !(el.text ?? []).length) {
+    // A box behind the row's content, or a text's own (an outcome pill): a backdrop.
+    if (el !== row && el.style["background-color"]) {
       const bg = opts.colour(el, "background-color");
       const r = cornerPx(el);
       if (bg)
@@ -1596,14 +1597,15 @@ function rowCells(
       if (field) cells.push({ field, ...at(el), style: textStyle(el) });
     }
   }
+  const firstField = cells.find((c) => c.field)?.field ?? "";
+  // A backdrop draws whatever its row holds, but needs a field key, and a row style
+  // (a lost result's badge colour) overrides by key: each backdrop takes its own.
+  // Keys from the cells as the pack drew them (before widening, so a pill still holds its text).
+  const keys = backdropKeys(cells, rowFill !== undefined);
   widenTextCells(cells, {
     left: ((px(row.style["padding-left"]) || 0) / row.box.w) * 100,
     right: 100 - ((px(row.style["padding-right"]) || 0) / row.box.w) * 100,
   });
-  const firstField = cells.find((c) => c.field)?.field ?? "";
-  // A backdrop draws whatever its row holds, but needs a field key, and a row style
-  // (a lost result's badge colour) overrides by key: each backdrop takes its own.
-  const keys = backdropKeys(cells, rowFill !== undefined);
   for (const c of cells) if (!c.field) c.field = keys.get(c) ?? firstField;
   if (rowFill)
     cells.unshift({
