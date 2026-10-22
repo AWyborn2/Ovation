@@ -98,13 +98,14 @@ describe("layers drawer", () => {
     );
   });
 
-  it("opens Layers on a Broadcast Dark template with vectors and groups", async () => {
+  // Gold Foil keeps its stripes as vectors (C1 made Broadcast Dark's slashes native shapes).
+  it("opens Layers on a Gold Foil template with vectors", async () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
-    const doc = bundle("broadcast-dark", "ladder").document;
+    const doc = bundle("gold-foil", "ladder").document;
     const template = {
       id: 9,
       kind: "ladder",
-      name: "Broadcast Dark ladder",
+      name: "Gold Foil ladder",
       version: 1,
       isDefault: false,
       basedOn: null,
@@ -144,7 +145,7 @@ describe("layers drawer", () => {
     const card = doc.pages!.card!.layers.filter((l) => layerOnSize(l, "square"));
     expect(card.some((l) => l.kind === "vector")).toBe(true);
     expect(within(list).getAllByRole("listitem")).toHaveLength(card.length);
-    expect(within(list).getAllByRole("button", { name: "Hide Graphic" }).length).toBe(
+    expect(within(list).queryAllByRole("button", { name: "Hide Graphic" }).length).toBe(
       card.filter((l) => l.kind === "vector" && !l.name).length,
     );
   });
