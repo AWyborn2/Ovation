@@ -88,8 +88,21 @@ export type FigmaNode = {
   style?: FigmaTypeStyle;
   characterStyleOverrides?: number[];
   styleOverrideTable?: Record<string, FigmaTypeStyle>;
+  /** Auto layout: `NONE`, `HORIZONTAL` or `VERTICAL`. */
   layoutMode?: string;
   itemSpacing?: number;
+  /** `MIN`, `CENTER`, `MAX` or `SPACE_BETWEEN`. */
+  primaryAxisAlignItems?: string;
+  /** `MIN`, `CENTER`, `MAX` or `BASELINE`. */
+  counterAxisAlignItems?: string;
+  paddingLeft?: number;
+  paddingRight?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  /** `NO_WRAP` or `WRAP`. */
+  layoutWrap?: string;
+  /** `AUTO`, or `ABSOLUTE` for a child placed outside its parent's auto layout. */
+  layoutPositioning?: string;
   clipsContent?: boolean;
   arcData?: FigmaArcData;
 };

@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusPill, type StatusPillTone } from "@/components/ui/stat-badge";
 import { kindLabel } from "@/lib/social-studio";
+import { FigmaImportCard } from "./figma-import-card";
 
 const selectClass =
   "h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -324,6 +325,8 @@ export default function LibraryPage() {
             )}
           </CardContent>
         </Card>
+
+        <FigmaImportCard looks={looks} onImported={refresh} editHref={editHref} />
 
         <Card>
           <CardHeader>
