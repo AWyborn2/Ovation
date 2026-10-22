@@ -1,6 +1,6 @@
-# Sunset: raw conversion report
+# Sunset: conversion and polish report
 
-Converted from the `sunset-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.
+Converted from the `sunset-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **polished, pending Ash sign-off**. The polish is applied by `scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it.
 
 ## Summary
 
@@ -11,7 +11,7 @@ Converted from the `sunset-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-
 - Colours that move with the palette but aren't a token: 5.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 0 hd (raw conversion).
+- Polish time logged: 1 hd.
 
 ## bigMoment
 
@@ -63,6 +63,10 @@ Colours not tokenised:
 - color color(srgb 0.905098 0.499608 0.644118)
 
 ## clubLeaderboard
+
+Polish applied:
+
+- leaders.gradeLabel: left-aligned, so a long grade clips at its end
 
 ### card
 
@@ -207,6 +211,11 @@ Colours not tokenised:
 
 ## matchDay
 
+Polish applied:
+
+- fixture: the round line prints the grade too (a core field the pack's card leaves out)
+- sponsors: one 3-column logo grid (12 logos) in place of the pack's major / other tiers; 9 converted layers replaced
+
 ### fixture
 
 - From `fixture.single`; not used: `fixture.slide`.
@@ -279,9 +288,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 88% | none |
-| portrait | 87% | none |
-| story | 91% | none |
+| square | 90% | none |
+| portrait | 89% | none |
+| story | 92% | none |
 | landscape | 96% | none |
 
 Polish:
@@ -483,6 +492,11 @@ Colours not tokenised:
 - color color(srgb 0.905098 0.499608 0.644118)
 
 ## weekendWrap
+
+Polish applied:
+
+- matches.outcome: drawn as a chip (3 rows layers)
+- matches.gradeLabel: left-aligned, so a long grade clips at its end
 
 ### card
 

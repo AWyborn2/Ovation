@@ -1,7 +1,7 @@
 {
   "name": "Sunset weekendWrap",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -909,7 +909,7 @@
                     "color": "#E77FA4",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -942,17 +942,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 90.45,
-                  "w": 7.55,
-                  "y": 37.97,
-                  "h": 24.06,
+                  "x": 89.65,
+                  "w": 9.15,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 1.4,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -964,7 +965,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
@@ -1009,7 +1011,7 @@
                     "color": "#E77FA4",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -1042,17 +1044,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 88.53,
-                  "w": 9.47,
-                  "y": 38.09,
-                  "h": 23.81,
+                  "x": 87.73,
+                  "w": 11.07,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 1.7,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -1064,7 +1067,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
@@ -1116,7 +1120,7 @@
                     "color": "#E77FA4",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -1149,17 +1153,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 92.07,
-                  "w": 6.13,
-                  "y": 37.52,
-                  "h": 24.96,
+                  "x": 91.27,
+                  "w": 7.73,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 0.74,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -1171,7 +1176,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
