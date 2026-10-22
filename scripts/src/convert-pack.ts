@@ -532,7 +532,9 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     if (shotsDir) await mkdir(shotsDir, { recursive: true });
     if (page)
       for (const conv of conversions) await checkConversion(page, packId, conv, checks, shotsDir);
-    await writeFile(
+    // Bundles are checked in, and CI's lint runs `prettier --check`.
+    const write = opts.bundles ? writeFormatted : writeFile;
+    await write(
       path.join(dir, "look.json"),
       `${JSON.stringify(
         {
@@ -544,11 +546,11 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
       )}\n`,
     );
     for (const conv of conversions)
-      await writeFile(
+      await write(
         path.join(dir, `${conv.kind}.json`),
         `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: !!polish, document: conv.document }, null, 2)}\n`,
       );
-    await writeFile(
+    await write(
       path.join(dir, "report.md"),
       `${lookReport({
         look: look.name,
@@ -570,6 +572,12 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     );
   }
   return failures;
+}
+
+async function writeFormatted(file: string, text: string): Promise<void> {
+  const prettier = await import("prettier");
+  const options = await prettier.resolveConfig(file);
+  await writeFile(file, await prettier.format(text, { ...options, filepath: file }));
 }
 
 export async function convertPacks(opts: ConvertOptions): Promise<number> {
