@@ -7,8 +7,8 @@
  * - Show when: the field, photo, sponsors and junior conditions.
  * - Text fit: lines, smallest size and ellipsis.
  * - Style: a colour or gradient fill (`gradient-editor.tsx`), a text fill,
- *   border, shadows, blending and photo filters, every colour a hex or a
- *   palette token.
+ *   border, shadows, blending, photo filters and the clip (`clip-editor.tsx`),
+ *   every colour a hex or a palette token.
  * - Motion: an entrance and a loop, with a preview.
  * - Vector: swap the drawing's colours for tokens or hexes.
  */
@@ -32,6 +32,7 @@ import {
   type TemplateStyleV2,
   type TextFit,
 } from "@workspace/scorecard/kind-templates";
+import { ClipEditor } from "./clip-editor";
 import { btn, ColourField, field, label, NumberField, Section } from "./design-controls";
 import { GradientEditor } from "./gradient-editor";
 import { DEFAULT_GRADIENT, isGradient } from "./gradient-ops";
@@ -68,7 +69,11 @@ export type LayerDesignPanelProps = {
   layer: EditorLayer;
   kind: string;
   page: PageKey;
-  onPatch: (patch: Partial<EditorLayer>) => void;
+  /**
+   * Change the layer. `done: false` is part of a drag (the clip pad's points):
+   * the editor shows it and records the whole drag as one change when it ends.
+   */
+  onPatch: (patch: Partial<EditorLayer>, done?: boolean) => void;
   /** Select a child of a stack (or any layer) by id. */
   onSelect: (id: string) => void;
   onMoveChild: (childId: string, delta: -1 | 1) => void;
@@ -88,8 +93,8 @@ export function LayerDesignPanel({
   onPlay,
 }: LayerDesignPanelProps) {
   const style = (layer.style ?? {}) as TemplateStyleV2;
-  const setStyle = (patch: Partial<TemplateStyleV2>) =>
-    onPatch({ style: compact({ ...style, ...patch }) as TemplateStyleV2 | undefined });
+  const setStyle = (patch: Partial<TemplateStyleV2>, done?: boolean) =>
+    onPatch({ style: compact({ ...style, ...patch }) as TemplateStyleV2 | undefined }, done);
   const show = layer.showWhen ?? {};
   const setShow = (patch: Partial<ShowWhen>) =>
     onPatch({ showWhen: compact({ ...show, ...patch }) });
@@ -520,6 +525,7 @@ export function LayerDesignPanel({
             )}
           </div>
         )}
+        <ClipEditor value={style.clip} onChange={(clip, done) => setStyle({ clip }, done)} />
       </Section>
 
       <Section title="Motion">
