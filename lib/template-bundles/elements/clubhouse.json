@@ -2,144 +2,6 @@
   "look": "clubhouse",
   "elements": [
     {
-      "slug": "clubhouse/frames/photo-fade",
-      "name": "Photo fade",
-      "category": "frames",
-      "tags": ["clubhouse", "frames", "photo", "fade", "shape"],
-      "signature": "5c4352c760b796bb",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "id": "e1",
-            "kind": "shape",
-            "style": {
-              "background": "linear-gradient(0deg,var(--ck-stage) 0%,var(--ck-stage-0) 30%)"
-            },
-            "geometry": {
-              "square": {
-                "x": 44,
-                "y": 16,
-                "w": 56,
-                "h": 84
-              },
-              "portrait": {
-                "x": 38,
-                "y": 13.6,
-                "w": 62,
-                "h": 86.4
-              },
-              "story": {
-                "x": 38,
-                "y": 9.56,
-                "w": 62,
-                "h": 90.44
-              },
-              "landscape": {
-                "x": 50,
-                "y": 0,
-                "w": 50,
-                "h": 100
-              }
-            }
-          }
-        ],
-        "palettes": ["club-kit"]
-      }
-    },
-    {
-      "slug": "clubhouse/frames/photo-fade-side",
-      "name": "Photo fade (side)",
-      "category": "frames",
-      "tags": ["clubhouse", "frames", "photo", "fade", "(side)", "shape"],
-      "signature": "d9e520f0181a5dbc",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "id": "e1",
-            "kind": "shape",
-            "style": {
-              "background": "linear-gradient(90deg,var(--ck-stage-55) 0%,var(--ck-stage-0) 30%)"
-            },
-            "geometry": {
-              "square": {
-                "x": 44,
-                "y": 16,
-                "w": 56,
-                "h": 84
-              },
-              "portrait": {
-                "x": 38,
-                "y": 13.6,
-                "w": 62,
-                "h": 86.4
-              },
-              "story": {
-                "x": 38,
-                "y": 9.56,
-                "w": 62,
-                "h": 90.44
-              },
-              "landscape": {
-                "x": 50,
-                "y": 0,
-                "w": 50,
-                "h": 100
-              }
-            }
-          }
-        ],
-        "palettes": ["club-kit"]
-      }
-    },
-    {
-      "slug": "clubhouse/frames/ground-tint",
-      "name": "Ground tint",
-      "category": "frames",
-      "tags": ["clubhouse", "frames", "ground", "tint", "shape"],
-      "signature": "e2a4278e777f5d96",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "id": "e1",
-            "kind": "shape",
-            "style": {
-              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-55) 45%,var(--ck-stage) 100%)"
-            },
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 62
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 55
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 46
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            }
-          }
-        ],
-        "palettes": ["club-kit"]
-      }
-    },
-    {
       "slug": "clubhouse/frames/bubble-shadow",
       "name": "Bubble shadow",
       "category": "frames",
@@ -424,6 +286,190 @@
                 "y": 64.42,
                 "w": 0.52,
                 "h": 13
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/ground-tint",
+      "name": "Ground tint",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "ground", "tint", "shape", "gradient"],
+      "signature": "60b94970a98e74a1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 60%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/photo-fade",
+      "name": "Photo fade",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "photo", "fade", "shape", "gradient"],
+      "signature": "5c4352c760b796bb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(0deg,var(--ck-stage) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/photo-fade-side",
+      "name": "Photo fade (side)",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "photo", "fade", "(side)", "shape", "gradient"],
+      "signature": "d9e520f0181a5dbc",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(90deg,var(--ck-stage-55) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/ground-tint-2",
+      "name": "Ground tint 2",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "ground", "tint", "2", "shape", "gradient"],
+      "signature": "e2a4278e777f5d96",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-55) 45%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 62
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 55
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
               }
             }
           }

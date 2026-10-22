@@ -463,11 +463,11 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
 
 export const ELEMENT_BUNDLES: ElementBundle[] = [
   { look: "bold-type", hash: "f11fe317e8f6d584baf49ffe45c9d9541347f1ba78eb6d2fe875fb08319c38a8", file: elements0 },
-  { look: "broadcast-classic", hash: "4a7e91b8be3d70a48b19c4fc5102e07208ac825c8586aee73a6400b132a6d241", file: elements1 },
+  { look: "broadcast-classic", hash: "ac8eb3d6c4fe2f0de6208486c173e2b5f700ada947bdf225a8d6ed5e95bcfe2d", file: elements1 },
   { look: "broadcast-dark", hash: "d48f50647853ab8fcaad822e45362a2d620d4c04ef5171ba847d827c39554605", file: elements2 },
   { look: "club-kit-classic", hash: "20ce4e5858f530d29becb27e5e62ffea081c62eb19eb26d9192095133d5a7756", file: elements3 },
   { look: "club-kit", hash: "d5ef532c3153375aa4decccc41584cd7f0589c2772a01fb09e65fecf31f74672", file: elements4 },
-  { look: "clubhouse", hash: "243ea8e0ce27096c603f0491bef9928e7951460131119a11265f91a2c56a91e4", file: elements5 },
+  { look: "clubhouse", hash: "1eaf6ad121c06013f0da75faee96e32808c94197b6bc1234b3aa236b6f5df2e0", file: elements5 },
   { look: "duotone", hash: "2134720c1616a04255013152cdcacfd6b0468c1a2e3bfb5cbe5475b048c9d3df", file: elements6 },
   { look: "gold-foil", hash: "474a36e8cc2f0da3392537bc95fad20669bd49e27797a1a4672b1c347724089c", file: elements7 },
   { look: "neon-night", hash: "7142a1533b18273bbe40227ac13fa1d56957832f083897563c213fd0b393a187", file: elements8 },

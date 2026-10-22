@@ -11,7 +11,8 @@
  *   size, with slightly different numbers. The signature ignores ids, names,
  *   positions and exact sizes and keeps what you see: kind, fill type (solid,
  *   gradient, see-through stops; not the colour, which a club recolours), the clip's shape rounded to a 25 % grid, borders, effects,
- *   and the box's proportion (wide, tall or squarish). Copies with the same
+ *   and the box's proportion (wide, tall or squarish). Where the bundles carry
+ *   the converter's `sig` (Stream C2), it stands in for the style part. Copies with the same
  *   signature in the same template page merge their per-size geometry when
  *   their style is identical, so an element can land at every size.
  * - **Categories** come from the box (in percent of the card) and the style:
@@ -94,6 +95,9 @@ const PLACEMENT_KEYS = new Set([
   "hidden",
   "motion",
   "showWhen",
+  // Stream C2's design signature and per-size link id.
+  "sig",
+  "link",
 ]);
 
 /** A page's layers, for a v1 (`{ layers }`) or v2 (`{ pages }`) document. */
@@ -168,7 +172,9 @@ function lookOf(value: unknown, key = ""): unknown {
 /** What makes two decorations the same element. */
 export function decorationSignature(layer: Layer): string {
   const box = refBox(layer)?.[1];
-  const body = JSON.stringify([lookOf(layer), box ? proportion(box) : "none"]);
+  // The converter's own signature (Stream C2), where the bundles carry one.
+  const design = typeof layer.sig === "string" ? layer.sig : lookOf(layer);
+  const body = JSON.stringify([design, box ? proportion(box) : "none"]);
   return createHash("sha256").update(body).digest("hex").slice(0, 16);
 }
 
@@ -234,14 +240,18 @@ type Features = {
 function featuresOf(layer: Layer, box: Box): Features {
   const s = layer.style ?? {};
   const fill = s.fill as { type?: string; stops?: Array<{ color?: string }> } | undefined;
-  const gradient = !!fill && typeof fill === "object";
-  const transparentStop = (fill?.stops ?? []).some(
-    (st) => typeof st.color === "string" && /^#[0-9a-f]{6}00$|transparent/i.test(st.color),
-  );
+  // A v1 layer's gradient is CSS text in `background`.
+  const css =
+    typeof s.background === "string" && /gradient\(/i.test(s.background) ? s.background : "";
+  const gradient = (!!fill && typeof fill === "object") || !!css;
+  const transparentStop =
+    (fill?.stops ?? []).some(
+      (st) => typeof st.color === "string" && /^#[0-9a-f]{6}00$|transparent/i.test(st.color),
+    ) || /transparent|#[0-9a-f]{6}00\b|,\s*0(\.0+)?\s*\)/i.test(css);
   const shadows = (s.boxShadow as Array<{ blur?: number }> | undefined) ?? [];
   return {
     box,
-    radial: fill?.type === "radial",
+    radial: fill?.type === "radial" || /radial-gradient\(/i.test(css),
     fade: gradient && transparentStop,
     gradient,
     clip: !!s.clip,
@@ -283,7 +293,9 @@ export function categorise(
   const fullCard = w >= 97 && h >= 97;
   if (f.texture) return { category: "glows", noun: "texture" };
   if (f.radial || (f.effect && !fullCard)) return { category: "glows", noun: "glow" };
-  if (f.fade) return { category: "glows", noun: "fade" };
+  // A starter names its fades ("Photo fade", "Ground tint"), which may blend to a colour.
+  if (f.fade || (f.gradient && /fade|tint|glow|shade/.test(name)))
+    return { category: "glows", noun: "fade" };
   // A whole-card vector is a pattern (Gold Foil's stripes); a plain fill is the background.
   if (fullCard) return layer.kind === "vector" ? { category: "glows", noun: "pattern" } : null;
   if (/sponsor/.test(name) || page === "sponsors")
@@ -327,6 +339,8 @@ function withIds(layer: Layer, id: string): Layer {
   delete out.editedAt;
   delete out.locked;
   delete out.hidden;
+  delete out.sig;
+  delete out.link;
   if (layer.children) out.children = layer.children.map((c, i) => withIds(c, `${id}-${i + 1}`));
   return out;
 }

@@ -111,6 +111,23 @@ describe("decorationSignature", () => {
   });
 });
 
+describe("the converter's own signature (Stream C2)", () => {
+  it("stands in for the style, and leaves the element with sig and link", () => {
+    const a = { ...shape("a", at({ x: 0, y: 80, w: 100, h: 10 })), sig: "band-1", link: "k1" };
+    const b = {
+      ...shape("b", at({ x: 0, y: 70, w: 100, h: 12 }), { radius: 4 }),
+      sig: "band-1",
+      link: "k2",
+    };
+    expect(decorationSignature(a as never)).toBe(decorationSignature(b as never));
+    const { files } = extractElements([look("kit", [a, b])]);
+    const layer = files[0]!.elements[0]!.document.layers[0] as unknown as Record<string, unknown>;
+    expect(files[0]!.elements).toHaveLength(1);
+    expect(layer.sig).toBeUndefined();
+    expect(layer.link).toBeUndefined();
+  });
+});
+
 describe("colourWord", () => {
   it("names brand tokens and plain colours", () => {
     expect(colourWord("var(--gold)")).toBe("Gold");

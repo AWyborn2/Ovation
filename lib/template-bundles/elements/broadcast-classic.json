@@ -2,51 +2,6 @@
   "look": "broadcast-classic",
   "elements": [
     {
-      "slug": "broadcast-classic/frames/photo-fade-side",
-      "name": "Photo fade (side)",
-      "category": "frames",
-      "tags": ["broadcast-classic", "frames", "photo", "fade", "(side)", "shape"],
-      "signature": "d691b3c228d8e02f",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "id": "e1",
-            "kind": "shape",
-            "style": {
-              "background": "linear-gradient(90deg,var(--ink,#101216) 0%,transparent 70%)"
-            },
-            "geometry": {
-              "square": {
-                "x": 38,
-                "y": 0,
-                "w": 62,
-                "h": 100
-              },
-              "portrait": {
-                "x": 38,
-                "y": 0,
-                "w": 62,
-                "h": 100
-              },
-              "story": {
-                "x": 38,
-                "y": 0,
-                "w": 62,
-                "h": 100
-              },
-              "landscape": {
-                "x": 38,
-                "y": 0,
-                "w": 62,
-                "h": 100
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "broadcast-classic/bands/accent-slash",
       "name": "Accent slash",
       "category": "bands",
@@ -229,6 +184,96 @@
                 "w": 0.73,
                 "h": 13,
                 "rotate": 22
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/glows/photo-fade-side",
+      "name": "Photo fade (side)",
+      "category": "glows",
+      "tags": ["broadcast-classic", "glows", "photo", "fade", "(side)", "shape", "gradient"],
+      "signature": "d691b3c228d8e02f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(90deg,var(--ink,#101216) 0%,transparent 70%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "portrait": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "story": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "landscape": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/glows/photo-fade-bottom",
+      "name": "Photo fade (bottom)",
+      "category": "glows",
+      "tags": ["broadcast-classic", "glows", "photo", "fade", "(bottom)", "shape", "gradient"],
+      "signature": "ec910bc873454ceb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(0deg,var(--ink,#101216) 12%,transparent 58%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
               }
             }
           }
