@@ -42,7 +42,7 @@ function fixtureInput() {
 
 const byName = (layers: TemplateLayerV2[], name: string) => layers.filter((l) => l.name === name);
 
-describe("Figma → template v2 (L8-A)", () => {
+describe("Figma → template v2 (L8-A, L8-B)", () => {
   const result = figmaToTemplate(fixtureInput());
   const layers = result.document.pages.card?.layers ?? [];
 
@@ -64,6 +64,7 @@ describe("Figma → template v2 (L8-A)", () => {
       "Label",
       "Badge",
       "Tag",
+      "{{photo}}",
     ]);
     const ids = flattenLayers(layers).map((l) => l.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -170,17 +171,12 @@ describe("Figma → template v2 (L8-A)", () => {
     });
   });
 
-  it("leaves image fills, vectors and auto layout to L8-B, and reports what it skips", () => {
+  it("turns a {{photo}} image into the photo slot, and defers vectors to the import's second pass", () => {
     expect(result.deferred).toEqual([
-      { nodeId: "10:8", page: "card", size: "square", layer: "{{photo}}", what: "image" },
       { nodeId: "10:9", page: "card", size: "square", layer: "Swoosh", what: "vector" },
-      {
-        nodeId: "20:1",
-        page: "card",
-        size: "story",
-        layer: "Century — story",
-        what: "auto-layout",
-      },
+    ]);
+    expect(byName(layers, "{{photo}}")).toMatchObject([
+      { kind: "photo", showWhen: { junior: false }, sizes: ["square", "portrait", "landscape"] },
     ]);
     const messages = result.report.map((l) => `${l.layer ?? ""}: ${l.message}`);
     expect(messages).toContain(

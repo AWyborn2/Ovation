@@ -1,11 +1,13 @@
 /**
  * The platform console's template library (ADR-011 §12 "Platform admin",
  * L7-A, T7.1). Platform admins only: every library template listed or not,
- * console templates and their versions, listing and unlisting, and looks.
+ * console templates and their versions, listing and unlisting, looks, and
+ * the Figma import (L8-B).
  */
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateConsoleLibraryLookBody,
+  ImportFigmaTemplateBody,
   CreateConsoleLibraryTemplateBody,
   DuplicateConsoleLibraryTemplateBody,
   SaveConsoleLibraryTemplateBody,
@@ -27,6 +29,8 @@ import {
   unlistTemplate,
 } from "../lib/template-library/console";
 import { TemplateLibraryError } from "../lib/template-library/errors";
+import { FigmaError } from "../lib/template-import/figma";
+import { figmaErrorStatus, importFromFigma } from "../lib/template-import/figma-import";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -210,6 +214,35 @@ router.post(
       logger.info({ lookId: look.id, slug: look.slug }, "console look created");
       res.status(201).json(look);
     } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+// ── Figma import (L8-B) ─────────────────────────────────────────────────────
+
+router.post(
+  "/platform/admin/library/import/figma",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = ImportFigmaTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    try {
+      const out = await importFromFigma(parsed.data, adminId(req));
+      logger.info(
+        { templateId: out.template.id, kind: out.template.kind, ...out.rendered },
+        "Figma design imported",
+      );
+      res.status(201).json(out);
+    } catch (err) {
+      if (err instanceof FigmaError) {
+        // The message is written for the designer and never holds the token.
+        res.status(figmaErrorStatus(err)).json({ error: err.message, code: err.code });
+        return;
+      }
       fail(res, err);
     }
   },
