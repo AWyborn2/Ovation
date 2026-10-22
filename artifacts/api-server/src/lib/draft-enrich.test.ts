@@ -20,7 +20,7 @@ import {
 } from "@workspace/db";
 import { enrichDraft, isGrandFinalWin, photoRuleKinds, pickDraftPhoto } from "./draft-enrich";
 import { upsertDraftByKey } from "./draft-upsert";
-import { startingDocument } from "@workspace/scorecard/kind-templates";
+import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 
 const STAMP = Date.now();
 let tenantId: number;
@@ -176,7 +176,12 @@ describe("pack and caption", () => {
       grade: "A Grade",
     });
     expect(first.draft.packId).toBe("blank");
-    expect(first.draft.adjustments).toEqual(startingDocument("broadcast", "matchSummary"));
+    // No library rows here: the default falls back to the pack's starter bundle file.
+    expect(first.draft.adjustments).toEqual(
+      TEMPLATE_BUNDLES.find((b) => b.slug === "broadcast-classic")!.templates.find(
+        (t) => t.kind === "matchSummary",
+      )!.file.document,
+    );
     expect(first.draft.caption).toContain("enrich.example/matches/77");
 
     await db
