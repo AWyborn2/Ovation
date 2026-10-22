@@ -1487,6 +1487,19 @@ function rowCells(
   const rowTwin = opts.twin?.(row);
   const useTwin = !!rowTwin && rowTwin !== row && rowTwin.box.h > 0;
   const rowBox = useTwin ? rowTwin!.box : row.box;
+  // A text cell at least one line of its font tall, centred where it was: an inline span's
+  // box is shorter than its line, and the template draws the line (1.05 of the font).
+  const lineTall = <C extends { y?: number; h?: number }>(
+    cell: C,
+    style: NonNullable<RowsCell["style"]>,
+  ): C => {
+    const linePx = ((style.fontSize ?? 0) / 100) * opts.W * 1.15;
+    const minH = Math.min(100, r2((linePx / rowBox.h) * 100));
+    const y = cell.y ?? 0;
+    const h = cell.h ?? 100;
+    if (h >= minH) return cell;
+    return { ...cell, y: Math.min(100 - minH, Math.max(0, r2(y + h / 2 - minH / 2))), h: minH };
+  };
   const flat = [row, ...tree.descendants(row)];
   const norm = (v: string) => v.trim().toLowerCase();
   const fieldFor = (el: CapturedElement, text: string, run: number): string | null => {
@@ -1594,7 +1607,8 @@ function rowCells(
     }
     for (const [i, run] of (el.text ?? []).entries()) {
       const field = fieldFor(el, run.text, i);
-      if (field) cells.push({ field, ...at(el), style: textStyle(el) });
+      if (!field) continue;
+      cells.push({ field, ...at(el), style: textStyle(el) });
     }
   }
   const firstField = cells.find((c) => c.field)?.field ?? "";
@@ -1602,6 +1616,9 @@ function rowCells(
   // (a lost result's badge colour) overrides by key: each backdrop takes its own.
   // Keys from the cells as the pack drew them (before widening, so a pill still holds its text).
   const keys = backdropKeys(cells, rowFill !== undefined);
+  // Then each text cell is at least a line tall (a pill held its text as drawn).
+  for (const [i, c] of cells.entries())
+    if (c.field && c.show === undefined) cells[i] = lineTall(c, c.style ?? {});
   widenTextCells(cells, {
     left: ((px(row.style["padding-left"]) || 0) / row.box.w) * 100,
     right: 100 - ((px(row.style["padding-right"]) || 0) / row.box.w) * 100,

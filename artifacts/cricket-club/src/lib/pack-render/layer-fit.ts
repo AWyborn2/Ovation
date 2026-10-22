@@ -125,6 +125,56 @@ export function fitTextTarget(
   return { scale: fit.minScale, lines: fit.maxLines, ellipsis: false, fits: false };
 }
 
+/** Format v2 list-row cell: past the floor, it ends in "…" after its last whole word. */
+export const FIT_WORDS_ATTR = "data-fit-words";
+/** A cell's whole text, kept while the fit step truncates it (so a re-fit starts from it). */
+const FIT_FULL_ATTR = "data-fit-full";
+
+/** A v2 list-row cell: it shrinks like live text, then truncates at a word. */
+export interface RowCellFitTarget extends FitTarget {
+  /** The cell's words, in order. */
+  readonly words: readonly string[];
+  /** Show the first `n` words ending in "…", or (null) the whole text. */
+  truncate(n: number | null): void;
+  /** Cut the text mid-word, ending in "…": the last resort, when no whole word fits. */
+  clip(): void;
+}
+
+export type RowCellFitResult = {
+  scale: number;
+  fits: boolean;
+  /** Where the text was cut: not at all, after a whole word, or mid-word (which doesn't fit). */
+  cut: "none" | "word" | "mid-word";
+};
+
+/** The first `n` words ending in "…", without a separator ("-", ",", "(") left before it. */
+export function truncateAtWord(words: readonly string[], n: number): string {
+  const kept = words.slice(0, Math.max(1, n));
+  while (kept.length > 1 && !/[\p{L}\p{N}]/u.test(kept[kept.length - 1]!)) kept.pop();
+  return `${kept.join(" ").replace(/[\s,;:&·(–—-]+$/u, "")}…`;
+}
+
+/**
+ * Fit a v2 list-row cell: shrink to `floor` as live text does; past that,
+ * keep the most whole words that fit and end in "…". A cell whose first word
+ * alone doesn't fit is cut mid-word, and that doesn't fit.
+ */
+export function fitRowCellTarget(
+  target: RowCellFitTarget,
+  floor = MIN_TEXT_FIT,
+  step = 0.05,
+): RowCellFitResult {
+  target.truncate(null);
+  const shrunk = fitTarget(target, floor, step);
+  if (shrunk.fits) return { scale: shrunk.scale, fits: true, cut: "none" };
+  for (let n = target.words.length - 1; n >= 1; n--) {
+    target.truncate(n);
+    if (!target.overflows()) return { scale: floor, fits: true, cut: "word" };
+  }
+  target.clip();
+  return { scale: floor, fits: false, cut: "mid-word" };
+}
+
 const overflowsBox = (el: HTMLElement) =>
   el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1;
 
@@ -172,6 +222,35 @@ function domTextTarget(el: HTMLElement, base: number): TextFitTarget {
   };
 }
 
+/** The DOM adapter for a v2 list-row cell. */
+function domRowCellTarget(el: HTMLElement, base: number): RowCellFitTarget {
+  const full = el.getAttribute(FIT_FULL_ATTR) ?? el.textContent ?? "";
+  el.setAttribute(FIT_FULL_ATTR, full);
+  const words = full.trim().split(/\s+/).filter(Boolean);
+  return {
+    base,
+    words,
+    apply: (scale) => {
+      el.style.fontSize = `${(base * scale).toFixed(3)}cqw`;
+      el.setAttribute(FIT_SCALE_ATTR, String(scale));
+    },
+    overflows: () => overflowsBox(el),
+    truncate: (n) => {
+      el.textContent = n === null ? full : truncateAtWord(words, n);
+      if (n === null) el.removeAttribute("data-fit-ellipsis-used");
+      else el.setAttribute("data-fit-ellipsis-used", "word");
+    },
+    clip: () => {
+      const text = el.ownerDocument.createElement("span");
+      text.textContent = full;
+      text.style.cssText =
+        "display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+      el.replaceChildren(text);
+      el.setAttribute("data-fit-ellipsis-used", "mid-word");
+    },
+  };
+}
+
 /**
  * Fit every marked element under `root` and return the overflow warnings for
  * `size`. Elements are text layers with live fields and list-row cells.
@@ -185,23 +264,28 @@ export function fitLayersInDom(
   for (const el of Array.from(root.querySelectorAll<HTMLElement>(`[${FIT_ATTR}]`))) {
     const base = Number(el.getAttribute(FIT_ATTR));
     if (!Number.isFinite(base) || base <= 0) continue;
-    const result = el.hasAttribute(FIT_LINES_ATTR)
-      ? fitTextTarget(domTextTarget(el, base), {
-          minScale: readTextFit({ minScale: Number(el.getAttribute(FIT_MIN_ATTR)) }).minScale,
-          maxLines: el.getAttribute(FIT_LINES_ATTR) === "2" ? 2 : 1,
-          ellipsis: el.hasAttribute(FIT_ELLIPSIS_ATTR),
-        })
-      : fitTarget(
-          {
-            base,
-            apply: (scale) => {
-              el.style.fontSize = `${(base * scale).toFixed(3)}cqw`;
-              el.setAttribute(FIT_SCALE_ATTR, String(scale));
+    const cell = el.hasAttribute(FIT_WORDS_ATTR)
+      ? fitRowCellTarget(domRowCellTarget(el, base), floor)
+      : null;
+    const result = cell
+      ? cell
+      : el.hasAttribute(FIT_LINES_ATTR)
+        ? fitTextTarget(domTextTarget(el, base), {
+            minScale: readTextFit({ minScale: Number(el.getAttribute(FIT_MIN_ATTR)) }).minScale,
+            maxLines: el.getAttribute(FIT_LINES_ATTR) === "2" ? 2 : 1,
+            ellipsis: el.hasAttribute(FIT_ELLIPSIS_ATTR),
+          })
+        : fitTarget(
+            {
+              base,
+              apply: (scale) => {
+                el.style.fontSize = `${(base * scale).toFixed(3)}cqw`;
+                el.setAttribute(FIT_SCALE_ATTR, String(scale));
+              },
+              overflows: () => overflowsBox(el),
             },
-            overflows: () => overflowsBox(el),
-          },
-          floor,
-        );
+            floor,
+          );
     if (result.fits) continue;
     const layer = el.closest<HTMLElement>("[data-layer-id]");
     const row = el.closest<HTMLElement>("[data-row-index]");
@@ -210,6 +294,7 @@ export function fitLayersInDom(
     if (row) warning.row = Number(row.getAttribute("data-row-index"));
     const field = el.getAttribute("data-row-cell");
     if (field) warning.field = field;
+    if (cell?.cut === "mid-word") warning.detail = "cut mid-word";
     warnings.push(warning);
   }
   return warnings;

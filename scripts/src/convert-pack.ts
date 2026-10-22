@@ -13,14 +13,15 @@
  *   --colour-mode=club|pack  the club's colour mode for the pack (default club)
  *   --out=<dir>              captures (default scripts/exports/pack-capture, git-ignored)
  *   --convert-out=<dir>      converted looks (default scripts/exports/pack-convert, git-ignored)
- *   --bundles                write the converted looks to lib/template-bundles instead (L4-B);
- *                            then `prettier --write` the look folder (CI checks it) and
+ *   --bundles                write the converted looks to lib/template-bundles instead (L4-B),
+ *                            in Prettier's format (CI checks it); then
  *                            `pnpm --filter @workspace/template-bundles run generate`
  *   --capture-only           capture, don't map
  *   --map-only               map the captures already in --out (no new capture)
  *   --no-check               skip the fit and pixel-diff renders
  *   --shots                  save each pack / template screenshot pair (`<look>/shots/`;
  *                            with --bundles, under scripts/exports/pack-convert, git-ignored)
+ *   --no-polish              write the raw conversion, without the look's polish (T4.12)
  *   --recheck                re-check the committed (polished) bundles against the pack
  *                            captures in --out: the report is rewritten, the bundle files aren't
  *   --polish-hd=<n>          with --recheck, the polish time logged so far, in half-days
@@ -53,6 +54,7 @@ import {
 import { templateDocumentErrors, type TemplateSize } from "@workspace/scorecard/kind-templates";
 import type { Page } from "puppeteer-core";
 import { REPO_ROOT, callHarness, withHarness, type HarnessSession } from "./lib/harness-browser";
+import { LOOK_POLISH } from "./lib/pack-convert/polish";
 import {
   compareResults,
   convertKind,
@@ -102,6 +104,8 @@ export interface ConvertOptions {
   concurrency: number;
   list: boolean;
   shots: boolean;
+  /** Apply the look's polish (`pack-convert/polish/`); off for a raw conversion. */
+  polish: boolean;
   recheck: boolean;
   polishHd: number | null;
 }
@@ -131,6 +135,7 @@ const KNOWN = [
   "concurrency",
   "list",
   "shots",
+  "no-polish",
   "recheck",
   "polish-hd",
 ];
@@ -185,6 +190,7 @@ export function parseArgs(argv: readonly string[]): ConvertOptions {
     concurrency,
     list: args.has("list"),
     shots: args.has("shots"),
+    polish: !args.has("no-polish"),
     recheck,
     polishHd,
   };
@@ -546,6 +552,13 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
       if (bundle.listed) listed++;
       conversions.push(withDocument(conv, bundle.document));
     }
+    // The look's polish (L4-C), applied before the checks so they measure what ships. A
+    // re-check measures the committed bundles, which are polished already.
+    const polish = opts.polish && !opts.recheck ? LOOK_POLISH[look.slug] : undefined;
+    const polishNotes: Record<string, string[]> = {};
+    if (polish)
+      for (const conv of conversions)
+        polishNotes[conv.kind] = polish.apply(conv.document, conv.kind);
     const checks: Checks = {};
     const validation = validatorReadsV2()
       ? Object.fromEntries(
@@ -565,18 +578,31 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     if (shotsDir) await mkdir(shotsDir, { recursive: true });
     if (page)
       for (const conv of conversions) await checkConversion(page, packId, conv, checks, shotsDir);
+    // Bundles are checked in, and CI's lint runs `prettier --check`.
+    const write = opts.bundles ? writeFormatted : writeFile;
     if (!opts.recheck) {
-      await writeFile(
+      await write(
         path.join(dir, "look.json"),
-        `${JSON.stringify({ name: look.name }, null, 2)}\n`,
+        `${JSON.stringify(
+          {
+            name: look.name,
+            ...(polish
+              ? { description: polish.description, displayOrder: polish.displayOrder }
+              : {}),
+          },
+          null,
+          2,
+        )}
+`,
       );
       for (const conv of conversions)
-        await writeFile(
+        await write(
           path.join(dir, `${conv.kind}.json`),
-          `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: false, document: conv.document }, null, 2)}\n`,
+          `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: !!polish, document: conv.document }, null, 2)}
+`,
         );
     }
-    await writeFile(
+    await write(
       path.join(dir, "report.md"),
       `${lookReport({
         look: look.name,
@@ -586,10 +612,14 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
         generatedAt,
         results: compareResults(files),
         validation,
+        polish: opts.recheck
+          ? { halfDays: opts.polishHd ?? LOOK_POLISH[look.slug]?.halfDays ?? null, listed }
+          : polish
+            ? { halfDays: polish.halfDays, notes: polishNotes }
+            : null,
         rendererNote:
           "Pixel match compares the pack and the converted page drawing the same sample input; " +
           "sample photos and logos are grey placeholders in both.",
-        ...(opts.recheck ? { polish: { halfDays: opts.polishHd, listed } } : {}),
       })}\n`,
     );
     const pages = conversions.reduce((n, c) => n + c.pages.length, 0);
@@ -598,6 +628,12 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     );
   }
   return failures;
+}
+
+async function writeFormatted(file: string, text: string): Promise<void> {
+  const prettier = await import("prettier");
+  const options = await prettier.resolveConfig(file);
+  await writeFile(file, await prettier.format(text, { ...options, filepath: file }));
 }
 
 export async function convertPacks(opts: ConvertOptions): Promise<number> {
