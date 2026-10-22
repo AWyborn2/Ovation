@@ -1,17 +1,17 @@
-# Club Kit: raw conversion report
+# Club Kit: conversion report
 
-Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.
+Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 17 of 24 kinds listed.
 
 ## Summary
 
 - Kinds: 24; pages: 28.
-- Mean pixel match against the pack: 92% over 112 renders.
+- Mean pixel match against the pack: 93% over 112 renders.
 - Pixel match compares the pack and the converted page drawing the same sample input; sample photos and logos are grey placeholders in both.
 - Motion: none in the pack.
 - Colours that move with the palette but aren't a token: 0.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 0 hd (raw conversion).
+- Polish time logged: 9 hd.
 
 ## announcement
 
@@ -69,7 +69,7 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts` on 2026-1
 | story     | 90%         | none                                                                                                                   |
 | landscape | 94%         | none                                                                                                                   |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - rows leaders: row style top dropped (not a style this list has) (×4)
 
@@ -150,30 +150,35 @@ Polish:
 - From `card.single`.
 - Layers: 32 shape, 5 image, 3 photo, 26 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                           |
-| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| square    | 97%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 92%         | none                                                                                                                   |
-| story     | 94%         | none                                                                                                                   |
-| landscape | 96%         | none                                                                                                                   |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 92%         | none         |
+| portrait  | 92%         | none         |
+| story     | 94%         | none         |
+| landscape | 96%         | none         |
+
+Converter notes (from the raw conversion):
+
+- the worst-case render runs off the card: boxes sized from the sentinel render
 
 ## matchDay
 
 ### fixture
 
 - From `fixture.slide`; not used: `fixture.single`.
-- Layers: 34 shape, 6 image, 3 photo, 39 text, 9 group; 3 stack group(s).
+- Layers: 34 shape, 6 image, 3 photo, 39 text, 6 group; 2 stack group(s).
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 82%         | none         |
+| square    | 95%         | none         |
 | portrait  | 94%         | none         |
 | story     | 96%         | none         |
 | landscape | 97%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - opposition.logo: cropped to fill (object-fit: cover), drawn contained (×4)
+- the worst-case render runs off the card: boxes sized from the sentinel render (×2)
 
 ### title
 
@@ -182,9 +187,9 @@ Polish:
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 91%         | overflow     |
-| portrait  | 89%         | overflow     |
-| story     | 93%         | overflow     |
+| square    | 91%         | none         |
+| portrait  | 92%         | none         |
+| story     | 95%         | none         |
 | landscape | 95%         | none         |
 
 ### day
@@ -202,14 +207,14 @@ Polish:
 ### sponsors
 
 - From `sponsors.slide`.
-- Layers: 19 shape, 1 photo, 5 image, 26 text, 4 rows.
+- Layers: 25 shape, 1 photo, 17 image, 26 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 88%         | none         |
-| portrait  | 78%         | none         |
-| story     | 71%         | none         |
-| landscape | 92%         | none         |
+| square    | 95%         | none         |
+| portrait  | 95%         | none         |
+| story     | 96%         | none         |
+| landscape | 96%         | none         |
 
 ## matchSummary
 
@@ -265,7 +270,7 @@ Polish:
 | story     | 99%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
 
@@ -297,7 +302,7 @@ Polish:
 | story     | 98%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
 
@@ -357,7 +362,7 @@ Polish:
 | story     | 92%         | none         |
 | landscape | 92%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - sponsorArt: cropped to fill (object-fit: cover), drawn contained (×4)
 
@@ -408,11 +413,15 @@ Polish:
 ### card
 
 - From `card.weekend-wrap`.
-- Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 18 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                                               |
-| --------- | ----------- | ---------------------------------------------------------- |
-| square    | 90%         | overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 87%         | none                                                       |
-| story     | 91%         | none                                                       |
-| landscape | 92%         | none                                                       |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 99%         | none         |
+| portrait  | 87%         | none         |
+| story     | 91%         | none         |
+| landscape | 92%         | none         |
+
+Converter notes (from the raw conversion):
+
+- the worst-case render runs off the card: boxes sized from the sentinel render
