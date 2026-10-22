@@ -123,6 +123,7 @@ import {
 } from "@/components/studio-editor/clipboard";
 import { isImageRowField } from "@/components/studio-editor/rows-panel";
 import {
+  cellAt,
   isContainer,
   isStack,
   parentOf,
@@ -153,9 +154,18 @@ const RAIL: RailItem[] = [
 
 const TEMPLATES = "/admin/social/template-library";
 
+/** What the breadcrumb calls a group, stack or list being edited. */
+const scopeName = (l: EditorLayer): string =>
+  l.name ?? (l.kind === "rows" ? "List" : isStack(l) ? "Stack" : "Group");
+
 /** The whole template with one level of one page (the page, or a group in it) replaced. */
-const withLevel = (present: TemplateDoc, page: PageKey, scope: string | null, next: EditorDoc) =>
-  withPage(present, page, withScope(pageDoc(present, page), scope, next));
+const withLevel = (
+  present: TemplateDoc,
+  page: PageKey,
+  scope: string | null,
+  next: EditorDoc,
+  size: CardSize,
+) => withPage(present, page, withScope(pageDoc(present, page), scope, next, size));
 
 export function useViewport(): { w: number; h: number } {
   const read = () =>
@@ -372,15 +382,16 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [page, setPage] = useState<PageKey>(primaryPage(kind));
   const [preset, setPreset] = useState<ContentPreset>("standard");
   const pageFull = pageDoc(full, page);
-  // The level being edited: the page, or a group entered by double-click (A2).
+  const [format, setFormat] = useState<CardSize>("square");
+  // The level being edited: the page, or a group or list entered by double-click (A2, A3).
   const [scope, setScope] = useState<string | null>(null);
-  const doc = scopeDoc(pageFull, scope);
+  const doc = scopeDoc(pageFull, scope, format);
   const scopeGroup = scopeLayer(pageFull, scope);
+  const inList = scopeGroup?.kind === "rows";
   useEffect(() => {
     if (scope && !scopeGroup) setScope(null);
   }, [scope, scopeGroup]);
 
-  const [format, setFormat] = useState<CardSize>("square");
   const [selection, setSelection] = useState<string[]>([]);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>(viewport.w >= 1024 ? "fields" : null);
@@ -444,6 +455,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   pageRef.current = page;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
+  const formatRef = useRef(format);
+  formatRef.current = format;
   const editPage = useCallback((next: EditorDoc) => {
     setHistory((h) => commit(h, withPage(h.present, pageRef.current, next)));
     setAddPrompt(null);
@@ -451,13 +464,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     setStackNote(null);
   }, []);
   const edit = useCallback((next: EditorDoc) => {
-    setHistory((h) => commit(h, withLevel(h.present, pageRef.current, scopeRef.current, next)));
+    setHistory((h) =>
+      commit(h, withLevel(h.present, pageRef.current, scopeRef.current, next, formatRef.current)),
+    );
     setAddPrompt(null);
     setPasteNote(null);
     setStackNote(null);
   }, []);
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
-    const nextFull = withLevel(history.present, page, scope, next);
+    const nextFull = withLevel(history.present, page, scope, next, format);
     if (!done) {
       if (!gestureBase.current) gestureBase.current = history.present;
       setHistory((h) => replace(h, nextFull));
@@ -466,7 +481,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     const base = gestureBase.current;
     gestureBase.current = null;
     if (base) {
-      setHistory((h) => commitFrom(h, base, withLevel(h.present, page, scope, next)));
+      setHistory((h) => commitFrom(h, base, withLevel(h.present, page, scope, next, format)));
       setAddPrompt(null);
     }
   };
@@ -500,10 +515,16 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const acceptAddPrompt = () => {
     if (!addPrompt) return;
     setHistory((h) => {
-      const level = scopeDoc(pageDoc(h.present, page), scope);
+      const level = scopeDoc(pageDoc(h.present, page), scope, format);
       return replace(
         h,
-        withLevel(h.present, page, scope, addToOtherSizes(level, addPrompt.ids, addPrompt.from)),
+        withLevel(
+          h.present,
+          page,
+          scope,
+          addToOtherSizes(level, addPrompt.ids, addPrompt.from),
+          format,
+        ),
       );
     });
     setAddPrompt(null);
@@ -515,8 +536,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   };
 
   const canvasArea = useRef<HTMLElement>(null);
-  const stateRef = useRef({ doc, pageFull, scope, selection, format, inside });
-  stateRef.current = { doc, pageFull, scope, selection, format, inside };
+  const stateRef = useRef({ doc, pageFull, scope, inList, selection, format, inside });
+  stateRef.current = { doc, pageFull, scope, inList, selection, format, inside };
   const copySelection = () => {
     const s = stateRef.current;
     const clip = copyLayers(s.doc, s.format, s.selection, "template");
@@ -533,7 +554,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     if (r.ids.length) {
       edit(r.doc);
       setSelection(r.ids);
-      setAddPrompt({ ids: r.ids, from: s.format });
+      // A list's cells are on every size already.
+      if (!s.inList) setAddPrompt({ ids: r.ids, from: s.format });
     }
     setPasteNote(
       r.skipped
@@ -967,19 +989,23 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                       className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
                       onClick={() => enterScope(g.id, [path[i + 1]!.id])}
                     >
-                      {g.name ?? (isStack(g) ? "Stack" : "Group")}
+                      {scopeName(g)}
                     </button>
                   ) : (
                     <span
                       aria-current="location"
                       className="px-1.5 font-semibold text-[var(--ed-ink)]"
                     >
-                      {g.name ?? (isStack(g) ? "Stack" : "Group")}
+                      {scopeName(g)}
                     </span>
                   )}
                 </span>
               ))}
-              <span className="ml-2">Esc goes up a level.</span>
+              <span className="ml-2">
+                {inList
+                  ? "Editing the first row: every row follows. Esc goes up a level."
+                  : "Esc goes up a level."}
+              </span>
             </nav>
           )}
 
@@ -1005,10 +1031,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             onSelectMany={(ids, additive) =>
               setSelection((s) => selectMany(doc, s, ids, inside, additive))
             }
-            onEnterGroup={(lid, child) => {
+            onEnterGroup={(lid, child, at) => {
               const l = layers.find((x) => x.id === lid);
               if (l && isContainer(l)) {
-                enterScope(lid, child ? [child] : []);
+                // In a list, the cell under the pointer in whichever row was clicked.
+                const pick = l.kind === "rows" ? (at ? cellAt(l, format, at) : null) : child;
+                enterScope(lid, pick ? [pick] : []);
                 return;
               }
               setInside(l?.group ?? null);

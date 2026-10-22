@@ -25,6 +25,7 @@ import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { childrenOf } from "./document";
+import { isRowCell, rowCellLayers } from "./scope";
 
 const ICON: Record<FreeLayer["kind"], LucideIcon> = {
   text: Type,
@@ -54,12 +55,16 @@ export const layerName = (l: FreeLayer): string => l.name ?? LABEL[l.kind] ?? l.
 
 type Mods = { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean };
 
+/** What a row opens to: a group's children, or a list's cells. */
+const kidsOf = (l: FreeLayer): FreeLayer[] =>
+  l.kind === "rows" ? rowCellLayers(l) : childrenOf(l);
+
 /** The groups from the top of `layers` down to the one with `id` (which is included). */
 function pathTo(layers: FreeLayer[], id: string | null): string[] {
   if (!id) return [];
   for (const l of layers) {
     if (l.id === id) return [l.id];
-    const below = pathTo(childrenOf(l), id);
+    const below = pathTo(kidsOf(l), id);
     if (below.length) return [l.id, ...below];
   }
   return [];
@@ -72,9 +77,10 @@ function pathTo(layers: FreeLayer[], id: string | null): string[] {
  * rows from the last one clicked.
  *
  * Groups and stacks open to show their children, indented (editable-elements
- * A2); the group being edited inside (`scope`) starts open. Selecting a child
- * reports its group as `parent`, so the editor can go inside it. A shift run
- * stays within one group.
+ * A2), and lists open to their row cells (A3); the group or list being edited
+ * inside (`scope`) starts open. Selecting a child reports its group or list
+ * as `parent`, so the editor can go inside it. A shift run stays within one
+ * group.
  */
 export function LayersDrawer({
   layers,
@@ -141,7 +147,8 @@ export function LayersDrawer({
       const Icon = iconFor(l.kind);
       const name = layerName(l);
       const on = selection.includes(l.id);
-      const kids = childrenOf(l);
+      const kids = kidsOf(l);
+      const cell = isRowCell(l);
       const open = kids.length > 0 && isOpen(l.id);
       return (
         <li key={l.id}>
@@ -178,22 +185,27 @@ export function LayersDrawer({
                 {l.name ?? l.content ?? name}
               </span>
             </button>
-            <button
-              type="button"
-              aria-label={l.hidden ? `Show ${name}` : `Hide ${name}`}
-              className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
-              onClick={() => onToggleHidden(l.id)}
-            >
-              {l.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              aria-label={l.locked ? `Unlock ${name}` : `Lock ${name}`}
-              className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
-              onClick={() => onToggleLocked(l.id)}
-            >
-              {l.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-            </button>
+            {/* A list's cell is part of every row: it's hidden or locked with its list. */}
+            {!cell && (
+              <>
+                <button
+                  type="button"
+                  aria-label={l.hidden ? `Show ${name}` : `Hide ${name}`}
+                  className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+                  onClick={() => onToggleHidden(l.id)}
+                >
+                  {l.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  aria-label={l.locked ? `Unlock ${name}` : `Lock ${name}`}
+                  className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
+                  onClick={() => onToggleLocked(l.id)}
+                >
+                  {l.locked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                </button>
+              </>
+            )}
           </div>
           {open && (
             <ul role="group" aria-label={`In ${name}`} className="space-y-1 pt-1">

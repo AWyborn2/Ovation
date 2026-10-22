@@ -10,7 +10,8 @@ import AdminTemplateEditor from "@/pages/admin-template-editor";
 import type { FreeLayer } from "@/lib/pack-render";
 import { renderAt } from "@/test/render";
 import { duplicate, nudge, setBoxes, type EditorDoc } from "../document";
-import { parentOf, scopeDoc, scopeInStack, scopePath, withScope } from "../scope";
+import { cellAt, cellId, parentOf, scopeDoc, scopeInStack, scopePath, withScope } from "../scope";
+import { removeFromSize, setTextStyle } from "../template-ops";
 import { findLayer } from "../template-doc";
 
 const box = (x: number, y: number, w: number, h: number) => ({ x, y, w, h });
@@ -40,8 +41,25 @@ const PAGE: EditorDoc = {
       [leaf("first", box(0, 0, 80, 8)), leaf("second", box(0, 0, 80, 8))],
       { stack: { direction: "column", gap: 1, align: "stretch" } },
     ),
+    {
+      id: "list",
+      kind: "rows",
+      name: "Ladder",
+      geometry: { square: box(10, 20, 80, 50) },
+      rows: {
+        repeat: "rows",
+        rowHeight: 10,
+        gap: 2,
+        cells: [
+          { field: "pos", x: 0, w: 100, show: "backdrop", style: { background: "#222" } },
+          { field: "team", x: 5, w: 60, style: { fontSize: 3 } },
+          { field: "pts", x: 70, w: 25, y: 10, h: 80, style: { fontSize: 3 } },
+        ],
+      },
+    },
   ],
 };
+const listOf = (doc: EditorDoc) => findLayer(doc, "list")!.layer.rows!;
 
 const geo = (doc: EditorDoc, id: string) => findLayer(doc, id)!.layer.geometry.square!;
 
@@ -96,6 +114,61 @@ describe("groups move their children", () => {
     expect(ca!.link).toBeTruthy();
     expect(ca!.link).not.toBe("k1");
     expect(cb!.link).toBe(ca!.link);
+  });
+});
+
+describe("a list's row cells", () => {
+  it("shows the cells on the first row as layers", () => {
+    const view = scopeDoc(PAGE, "list", "square");
+    expect(view.layers!.map((l) => [l.id, l.kind, l.name])).toEqual([
+      [cellId("list", 0), "shape", "pos backdrop"],
+      [cellId("list", 1), "text", "team"],
+      [cellId("list", 2), "text", "pts"],
+    ]);
+    // Square is 1:1, so a row 10% of the width is 10% of the height.
+    expect(view.layers![1]!.geometry.square).toEqual(box(14, 20, 48, 10));
+    expect(view.layers![2]!.geometry.square).toEqual(box(66, 21, 20, 8));
+  });
+
+  it("writes a moved or restyled cell back to the row, leaving the others exactly as they were", () => {
+    const view = scopeDoc(PAGE, "list", "square");
+    const moved = nudge(view, "square", [cellId("list", 1)], 8, 1);
+    const styled = setTextStyle(moved, cellId("list", 2), { color: "#f00" });
+    const cells = listOf(withScope(PAGE, "list", styled, "square")).cells;
+    expect(cells[0]).toEqual(listOf(PAGE).cells[0]);
+    expect(cells[1]).toEqual({
+      field: "team",
+      x: 15,
+      w: 60,
+      y: 10,
+      h: 100,
+      style: { fontSize: 3 },
+    });
+    expect(cells[2]).toEqual({ ...listOf(PAGE).cells[2], style: { fontSize: 3, color: "#f00" } });
+  });
+
+  it("deletes and duplicates cells in the row template", () => {
+    const view = scopeDoc(PAGE, "list", "square");
+    const gone = withScope(
+      PAGE,
+      "list",
+      removeFromSize(view, [cellId("list", 0)], "square"),
+      "square",
+    );
+    expect(listOf(gone).cells.map((c) => c.field)).toEqual(["team", "pts"]);
+    const r = duplicate(view, "square", [cellId("list", 2)]);
+    const more = listOf(withScope(PAGE, "list", r.doc, "square")).cells;
+    expect(more.map((c) => c.field)).toEqual(["pos", "team", "pts", "pts"]);
+    expect(more[3]!.x).toBe(72.5);
+  });
+
+  it("finds the cell under a point in any row", () => {
+    const list = findLayer(PAGE, "list")!.layer as FreeLayer;
+    // Row 3 starts at 20 + 3 × 12 = 56.
+    expect(cellAt(list, "square", { x: 20, y: 61 })).toBe(cellId("list", 1));
+    expect(cellAt(list, "square", { x: 80, y: 61 })).toBe(cellId("list", 2));
+    expect(cellAt(list, "square", { x: 80, y: 56.2 })).toBe(cellId("list", 0));
+    expect(cellAt(list, "square", { x: 5, y: 61 })).toBeNull();
   });
 });
 
@@ -237,5 +310,23 @@ describe("editing inside a group", () => {
     );
     const page = await savedPage(requests);
     expect(findLayer(page, "panel")!.layer.hidden).toBe(true);
+  });
+
+  it("selects a list's cell from the Layers tree and edits the row template", async () => {
+    const requests = open();
+    await waitFor(() => expect(overlay("list")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Layers" }));
+    const drawer = await screen.findByRole("complementary", { name: "Layers" });
+    fireEvent.click(within(drawer).getByRole("button", { name: "Open Ladder" }));
+    const inList = within(drawer).getByRole("group", { name: "In Ladder" });
+    // Cells have no eye or lock: they show and lock with their list.
+    expect(within(inList).queryByRole("button", { name: /^Hide/ })).toBeNull();
+    fireEvent.click(within(inList).getByRole("button", { name: "team" }));
+    await waitFor(() => expect(overlay(cellId("list", 1))).toBeTruthy());
+    expect(screen.getByText(/every row follows/)).toBeTruthy();
+    fireEvent.keyDown(window, { key: "ArrowRight", shiftKey: true });
+    const page = await savedPage(requests);
+    expect(listOf(page).cells[1]!.x).toBe(7.5);
+    expect(listOf(page).cells[0]).toEqual(listOf(PAGE).cells[0]);
   });
 });
