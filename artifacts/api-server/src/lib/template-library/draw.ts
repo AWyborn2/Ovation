@@ -34,7 +34,11 @@ import {
   type TemplateDocumentV2,
   type TemplatePage,
 } from "@workspace/scorecard/kind-templates";
-import type { CarouselSetType, QueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import {
+  carouselTemplateKind,
+  type CarouselSetType,
+  type QueuedCarousel,
+} from "@workspace/scorecard/queued-carousel";
 import { BLANK_PACK_ID, ensureKindTemplate, type TemplatedDesign } from "../kind-templates";
 import { loadCopy } from "./copies";
 import { TemplateLibraryError } from "./errors";
@@ -110,13 +114,7 @@ export async function designFromRef(
 }
 
 /** The template kind that draws a carousel set. */
-export function setTemplateKind(setType: CarouselSetType | undefined): string {
-  return setType === "teamList"
-    ? "teamList"
-    : setType === "results" || setType === "matchSummary"
-      ? "matchSummary"
-      : "matchDay";
-}
+export const setTemplateKind = carouselTemplateKind;
 
 /** The pages a carousel's slides draw, bookends included. */
 export function carouselPages(carousel: Pick<QueuedCarousel, "slides">): PageKey[] {
@@ -194,14 +192,29 @@ const cannotDraw = (what: string) =>
 export async function assembleCarouselDocument(
   tenantId: number,
   carousel: Pick<QueuedCarousel, "setType" | "slides">,
-  opts: {
-    templateRef?: { copyId?: number; libraryTemplateId?: number; version: number } | null;
-    /** The club's pack for the set's kind: picks the fallback look. */
-    packId: string | null;
-  },
+  opts: AssemblyOptions,
 ): Promise<AssembledCarousel> {
-  const kind = setTemplateKind(carousel.setType);
-  const needed = carouselPages(carousel);
+  return assembleCarouselPages(tenantId, carousel.setType, carouselPages(carousel), opts);
+}
+
+export type AssemblyOptions = {
+  templateRef?: { copyId?: number; libraryTemplateId?: number; version: number } | null;
+  /** The club's pack for the set's kind: picks the fallback look. */
+  packId: string | null;
+};
+
+/**
+ * The same assembly for the pages a set draws, bookends added, so the
+ * Weekend Carousel can preview exactly what it will save (T5.17).
+ */
+export async function assembleCarouselPages(
+  tenantId: number,
+  setType: CarouselSetType | undefined,
+  slidePages: readonly PageKey[],
+  opts: AssemblyOptions,
+): Promise<AssembledCarousel> {
+  const kind = setTemplateKind(setType);
+  const needed = [...new Set<PageKey>([...BOOKEND_PAGES, ...slidePages])];
   // A Match Day set draws its bookends from its own template.
   const required = kind === BOOKEND_KIND ? needed : needed.filter((p) => !isBookendPage(p));
 

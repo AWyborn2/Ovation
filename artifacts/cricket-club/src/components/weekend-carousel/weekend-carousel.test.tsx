@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
-import { ACTIVE_PACK_IDS, LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { CAROUSEL_PICKS } from "@/test/carousel-template-stub";
 import type * as Model from "./model";
 import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 import { sourcesFor } from "@/test/carousel-sources";
@@ -33,11 +33,13 @@ vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQue
 const queuedRequest = () =>
   mutateAsync.mock.calls[0][0] as {
     data: {
-      packId: string;
+      packId?: string;
       caption: string;
       cardInput: {
         weekendCarousel: {
-          packId: string;
+          version: number;
+          templateRef?: object;
+          packId?: string;
           size: string;
           submissionId: string;
           slides: { id: string; data: unknown }[];
@@ -174,6 +176,9 @@ vi.mock("@workspace/api-client-react", () => ({
   getListSocialDraftsQueryKey: () => ["drafts"],
   getGetPendingSocialDraftCountQueryKey: () => ["pending"],
 }));
+vi.mock("./template-choice", async () =>
+  (await import("@/test/carousel-template-stub")).carouselTemplateStub(),
+);
 vi.mock("@/components/pack-card", () => ({
   PackCard: ({ data, packId }: { data: unknown; packId: string }) => (
     <div data-testid="pack-card" data-pack={packId} data-card={JSON.stringify(data)} />
@@ -385,7 +390,7 @@ describe("WeekendCarousel", () => {
     },
   );
   it.each(["matchDay", "teamList", "results", "matchSummary"])(
-    "switches every pack without resetting the %s composition",
+    "switches the template without resetting the %s composition, and queues version 3",
     async (type) => {
       teamPhotos = [{ id: 20, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
       mount();
@@ -400,50 +405,32 @@ describe("WeekendCarousel", () => {
         target: { value: "Keep my caption" },
       });
       const before = screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-card"));
-      // The picker offers exactly the active packs; the hidden legacy ones (P9) never.
-      const offered = [
-        ...screen.getByTestId("select-carousel-pack").querySelectorAll("option"),
-      ].map((o) => (o as HTMLOptionElement).value);
-      expect(offered).toEqual([...ACTIVE_PACK_IDS]);
-      expect(offered).toEqual(["broadcast-dark-v1", "club-kit-v1", "duotone-v1"]);
-      for (const id of LEGACY_PACK_IDS) expect(offered).not.toContain(id);
-      for (const packId of ACTIVE_PACK_IDS) {
-        fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: packId } });
-        expect(
-          screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-pack")),
-        ).toEqual(Array(4).fill(packId));
-        expect(
-          screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-card")),
-        ).toEqual(before);
-        expect(screen.getByTestId("input-weekend-caption")).toHaveValue("Keep my caption");
-        expect(screen.queryByTestId("text-weekend-stale")).toBeNull();
-      }
-      fireEvent.change(screen.getByTestId("select-carousel-pack"), {
-        target: { value: "broadcast-dark-v1" },
-      });
+      // Previews draw the assembled template document on the blank base, never a pack.
+      expect(screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-pack"))).toEqual(
+        Array(4).fill("blank"),
+      );
+      fireEvent.click(screen.getByTestId("pick-template"));
+      expect(screen.getAllByTestId("pack-card").map((el) => el.getAttribute("data-card"))).toEqual(
+        before,
+      );
+      expect(screen.getByTestId("input-weekend-caption")).toHaveValue("Keep my caption");
+      expect(screen.queryByTestId("text-weekend-stale")).toBeNull();
       fireEvent.click(screen.getByTestId("button-queue-weekend"));
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-      expect(queuedRequest().data.packId).toBe("broadcast-dark-v1");
-      expect(queuedRequest().data.cardInput.weekendCarousel.packId).toBe("broadcast-dark-v1");
-      expect(queuedRequest().data.cardInput.weekendCarousel.slides.map((s) => s.id)).toEqual([
+      expect(queuedRequest().data).not.toHaveProperty("packId");
+      const saved = queuedRequest().data.cardInput.weekendCarousel;
+      expect(saved).toMatchObject({ version: 3, templateRef: CAROUSEL_PICKS.other.ref });
+      expect(saved).not.toHaveProperty("packId");
+      expect(saved.slides.map((s) => s.id)).toEqual([
         "title",
         "fixture-2",
         "fixture-1",
         "sponsors",
       ]);
-      expect(queuedRequest().data.cardInput.weekendCarousel.slides[0].data).toMatchObject({
-        photoTransform: { zoom: 1.7 },
-      });
-      // Version 2: the title saves its content snapshot (ADR-010), not a derived input.
-      expect(queuedRequest().data.cardInput.weekendCarousel).toMatchObject({ version: 2 });
-      expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).toMatchObject({
-        content: { page: "title", roundLabel: "ROUND 5" },
-      });
-      expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).not.toHaveProperty("input");
-      fireEvent.change(screen.getByTestId("select-carousel-pack"), {
-        target: { value: "club-kit-v1" },
-      });
-      expect(screen.getByTestId("button-queue-weekend")).not.toBeDisabled();
+      expect(saved.slides[0].data).toMatchObject({ photoTransform: { zoom: 1.7 } });
+      // The title saves its content snapshot (ADR-010), not a derived input.
+      expect(saved.slides[0]).toMatchObject({ content: { page: "title", roundLabel: "ROUND 5" } });
+      expect(saved.slides[0]).not.toHaveProperty("input");
     },
   );
   it.each(["teamList", "results", "matchSummary"])(
@@ -519,7 +506,7 @@ describe("WeekendCarousel", () => {
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     expect(screen.getByTestId("button-generate-weekend")).toHaveTextContent("Refreshing sources");
     expect(screen.getByTestId("button-generate-weekend")).toBeDisabled();
-    expect(screen.getByTestId("select-carousel-pack")).toBeDisabled();
+    expect(screen.getByTestId("pick-template")).toBeDisabled();
     expect(screen.getByTestId("checkbox-fixture-1")).toBeDisabled();
     finish();
     await waitFor(() =>

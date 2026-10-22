@@ -14,13 +14,10 @@ import {
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import type { CardSize } from "@/lib/share-card";
-import type { CardAdjustments } from "@/lib/pack-render";
-import {
-  CAROUSEL_LABELS,
-  isCarouselPackId,
-  isLegacyPackId,
-  type CarouselSetType,
-} from "@workspace/scorecard/queued-carousel";
+import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
+import { CAROUSEL_LABELS, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
+import type { PickedTemplate } from "@/components/template-library/template-picker";
+import { useCarouselAssembly, useCarouselTemplate } from "./template-choice";
 import {
   CLUB_TIME_ZONE,
   weekendRange,
@@ -177,26 +174,30 @@ export function useWeekendCarousel(
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
-  const [packId, setPackId] = useState(WEEKEND_PACK_ID);
-  // Junior same-day slides (ADR-010 P3): the club's switch, split at the layout's
-  // capacity for this pack, size and preset.
+  // The template the set is drawn with (ADR-011 T5.17): the picker preselects the
+  // club's default for the set's kind, and a new kind starts from its default again.
+  const { templateKind, picked, setPicked, dayRowsCapacity } = useCarouselTemplate(setType, size);
+  // Junior same-day slides (ADR-010 P3): the club's switch, split at the day page's
+  // list capacity for this template and size (else the built-in layout's, by preset).
   const grouping = useMemo(
     () => ({
       setType,
       consolidateByDay: clubContent.juniorConsolidateByDay,
-      capacity: dayCapacity(
-        packId,
-        setType,
-        size,
-        kindContent?.preset ?? contentOverride.preset ?? clubContent.preset,
-      ),
+      capacity:
+        dayRowsCapacity ??
+        dayCapacity(
+          WEEKEND_PACK_ID,
+          setType,
+          size,
+          kindContent?.preset ?? contentOverride.preset ?? clubContent.preset,
+        ),
     }),
     [
       setType,
       clubContent.juniorConsolidateByDay,
       clubContent.preset,
       kindContent?.preset,
-      packId,
+      dayRowsCapacity,
       size,
       contentOverride,
     ],
@@ -369,7 +370,8 @@ export function useWeekendCarousel(
   const caption =
     captionEdit ??
     carouselCaption(setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag);
-  const queueKey = JSON.stringify([slides, size, caption, packId]);
+  const assembly = useCarouselAssembly(setType, slides, picked);
+  const queueKey = JSON.stringify([slides, size, caption, picked?.ref ?? null]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
   const togglePick = (id: number) =>
@@ -404,6 +406,8 @@ export function useWeekendCarousel(
     !queuedId &&
     !busy &&
     !coverUnavailable &&
+    picked !== null &&
+    !assembly.error &&
     !sourcesQ.isError &&
     !settingsQ.isError &&
     !sourcesQ.isFetching &&
@@ -485,16 +489,16 @@ export function useWeekendCarousel(
       }
       const draft = await createDraft.mutateAsync({
         data: {
-          packId,
           caption: caption.trim(),
           cardInput: {
             kind: "matchDay",
             headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
             roundLabel: `${generated!.from} – ${generated!.to}`,
-            // Version 2 (ADR-010): Match Day slides save their content snapshot.
+            // Version 3 (ADR-011): drawn with a template, never a pack; the server
+            // assembles and stores the document. Slides keep their content snapshot.
             weekendCarousel: {
-              version: 2,
-              packId,
+              version: 3,
+              templateRef: picked!.ref,
               setType,
               submissionId: submission.current.id,
               size,
@@ -592,15 +596,18 @@ export function useWeekendCarousel(
     title,
     setTitle: (v: string) => !busy && setTitle(v),
     size,
-    packId,
-    setPackId: (value: string) => {
+    templateKind,
+    picked,
+    setPicked: (value: PickedTemplate) => {
       if (busy) return;
-      // A hidden legacy pack (P9) isn't offered, so it isn't accepted either.
-      if (!isCarouselPackId(value) || isLegacyPackId(value))
-        throw new Error("Choose a registered built-in carousel pack.");
-      setPackId(value);
+      setPicked(value);
       setQueueError(null);
     },
+    /** What previews draw: the assembled document on the blank base. */
+    packId: assembly.document ? BLANK_PACK_ID : WEEKEND_PACK_ID,
+    document: assembly.document,
+    assembling: assembly.loading,
+    assemblyError: assembly.error,
     setSize: (v: CardSize) => !busy && setSize(v),
     orderedPicks,
     selected,
