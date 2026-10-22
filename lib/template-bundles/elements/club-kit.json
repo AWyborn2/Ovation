@@ -3554,7 +3554,7 @@
       "name": "Club name lockup",
       "category": "crest-frames",
       "tags": ["club-kit", "crest-frames", "club kit", "club", "name", "tagline", "header"],
-      "signature": "ac80180b294f7512",
+      "signature": "d273170491ea57ce",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -3621,7 +3621,7 @@
               },
               {
                 "kind": "text",
-                "content": "Sentinel",
+                "content": "{{clubName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3661,7 +3661,7 @@
               },
               {
                 "kind": "text",
-                "content": "Sentinel",
+                "content": "{{clubName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3689,7 +3689,7 @@
               },
               {
                 "kind": "text",
-                "content": "QTAGLINE",
+                "content": "{{clubTagline}}",
                 "style": {
                   "color": "var(--ck-chalk2)",
                   "fontFamily": "'IBM Plex Mono',monospace",
@@ -3730,7 +3730,7 @@
               },
               {
                 "kind": "text",
-                "content": "QTAGLINE",
+                "content": "{{clubTagline}}",
                 "style": {
                   "color": "var(--ck-chalk2)",
                   "fontFamily": "'IBM Plex Mono',monospace",
@@ -3768,7 +3768,7 @@
       "name": "Hashtag block",
       "category": "badges",
       "tags": ["club-kit", "badges", "club kit", "hashtag", "tag", "footer"],
-      "signature": "c35a26b5b934fa50",
+      "signature": "76b4e83386f2c771",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -3837,7 +3837,7 @@
               },
               {
                 "kind": "text",
-                "content": "#QHASHTAG",
+                "content": "{{clubHashtag}}",
                 "style": {
                   "color": "var(--accent-ink)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3872,7 +3872,7 @@
               },
               {
                 "kind": "text",
-                "content": "#QHASHTAG",
+                "content": "{{clubHashtag}}",
                 "style": {
                   "color": "var(--accent-ink)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3912,7 +3912,7 @@
         "partners",
         "footer"
       ],
-      "signature": "f5057ca2821971c4",
+      "signature": "a23074f265640af8",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -4006,7 +4006,7 @@
               },
               {
                 "kind": "text",
-                "content": "QPRESENTING",
+                "content": "{{sponsorPresentedBy}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'IBM Plex Sans',sans-serif",
@@ -4040,7 +4040,7 @@
               },
               {
                 "kind": "text",
-                "content": "QPRESENTING",
+                "content": "{{sponsorPresentedBy}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'IBM Plex Sans',sans-serif",
@@ -4714,7 +4714,7 @@
       "name": "Player name",
       "category": "data-blocks",
       "tags": ["club-kit", "data-blocks", "club kit", "player", "name", "big"],
-      "signature": "0bded1f4565968a6",
+      "signature": "4782426742e582be",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -4750,7 +4750,7 @@
             "children": [
               {
                 "kind": "text",
-                "content": "QA ZA",
+                "content": "{{playerName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -4785,7 +4785,7 @@
               },
               {
                 "kind": "text",
-                "content": "QA ZA",
+                "content": "{{playerName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -4928,7 +4928,7 @@
         "away",
         "innings"
       ],
-      "signature": "2443e4da37fd6aee",
+      "signature": "7d65e3bc70f8e0dd",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -5180,9 +5180,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 1.11,
+                    "color": "var(--panel)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-8",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
@@ -5201,44 +5207,26 @@
                     "y": 53.28,
                     "w": 48,
                     "h": 4.83
-                  },
-                  "landscape": {
-                    "x": 6,
-                    "y": 57.4,
-                    "w": 25.2,
-                    "h": 8.6
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.58,
+                    "color": "var(--panel)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-9",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 57.39,
-                    "w": 1.11,
-                    "h": 8.6
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 55.52,
-                    "w": 1.11,
-                    "h": 6.88
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 53.28,
-                    "w": 1.11,
-                    "h": 4.83
-                  },
                   "landscape": {
                     "x": 6,
                     "y": 57.4,
-                    "w": 0.58,
+                    "w": 25.2,
                     "h": 8.6
                   }
                 }
@@ -5604,7 +5592,7 @@
       "name": "Stat cells",
       "category": "data-blocks",
       "tags": ["club-kit", "data-blocks", "club kit", "stats", "cells", "grid", "numbers"],
-      "signature": "6171c9e19d823872",
+      "signature": "c0d114e8e86b5b1b",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -5641,9 +5629,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-1",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
@@ -5662,45 +5656,27 @@
                     "y": 70,
                     "w": 10.9,
                     "h": 4.23
-                  },
-                  "landscape": {
-                    "x": 6,
-                    "y": 70,
-                    "w": 5.72,
-                    "h": 7.46
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-2",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 6,
                     "y": 70,
                     "w": 5.72,
-                    "h": 0.32
+                    "h": 7.46
                   }
                 }
               },
@@ -5823,9 +5799,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-7",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 17.7,
@@ -5844,45 +5826,27 @@
                     "y": 70,
                     "w": 10.9,
                     "h": 4.23
-                  },
-                  "landscape": {
-                    "x": 12.14,
-                    "y": 70,
-                    "w": 5.72,
-                    "h": 7.46
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-8",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 17.7,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 17.7,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 17.7,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 12.14,
                     "y": 70,
                     "w": 5.72,
-                    "h": 0.32
+                    "h": 7.46
                   }
                 }
               },
@@ -6005,9 +5969,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-13",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 29.4,
@@ -6026,45 +5996,27 @@
                     "y": 70,
                     "w": 10.9,
                     "h": 4.23
-                  },
-                  "landscape": {
-                    "x": 18.28,
-                    "y": 70,
-                    "w": 5.72,
-                    "h": 7.46
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-14",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 29.4,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 29.4,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 29.4,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 18.28,
                     "y": 70,
                     "w": 5.72,
-                    "h": 0.32
+                    "h": 7.46
                   }
                 }
               },
@@ -6187,9 +6139,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-19",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 41.1,
@@ -6208,45 +6166,27 @@
                     "y": 70,
                     "w": 10.9,
                     "h": 4.23
-                  },
-                  "landscape": {
-                    "x": 24.42,
-                    "y": 70,
-                    "w": 5.72,
-                    "h": 7.46
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-20",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 41.1,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 41.1,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 41.1,
-                    "y": 70,
-                    "w": 10.9,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 24.42,
                     "y": 70,
                     "w": 5.72,
-                    "h": 0.32
+                    "h": 7.46
                   }
                 }
               },
@@ -8965,7 +8905,7 @@
         "squad",
         "players"
       ],
-      "signature": "6f3d6b9c003103c3",
+      "signature": "8e37bc1a0c47138a",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -8975,60 +8915,81 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 44.66,
+                "y": 44,
                 "w": 49,
-                "h": 32.82
+                "h": 33.49
               },
               "portrait": {
                 "x": 6,
-                "y": 44.53,
+                "y": 44,
                 "w": 49,
-                "h": 26.25
+                "h": 26.79
               },
               "story": {
                 "x": 6,
-                "y": 44.38,
+                "y": 44,
                 "w": 49,
-                "h": 18.45
+                "h": 18.83
               },
               "landscape": {
                 "x": 6,
-                "y": 44.48,
+                "y": 44,
                 "w": 26.2,
-                "h": 33
+                "h": 33.48
               }
             },
             "children": [
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
                 "id": "e1-1",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 48.9,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 47.92,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 46.76,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-2",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 48.84,
+                    "y": 44,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9043,7 +9004,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-2",
+                "id": "e1-3",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9077,7 +9038,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-3",
+                "id": "e1-4",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9104,7 +9065,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-4",
+                "id": "e1-5",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9143,7 +9104,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-5",
+                "id": "e1-6",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9157,33 +9118,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-6",
+                "id": "e1-7",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 54.6,
+                    "y": 49.7,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 52.48,
+                    "y": 48.56,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 49.96,
+                    "y": 47.2,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-8",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 54.53,
+                    "y": 49.7,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9198,7 +9180,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-7",
+                "id": "e1-9",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9232,7 +9214,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-8",
+                "id": "e1-10",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9259,7 +9241,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-9",
+                "id": "e1-11",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9298,7 +9280,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-10",
+                "id": "e1-12",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9320,7 +9302,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-11",
+                "id": "e1-13",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9354,7 +9336,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-12",
+                "id": "e1-14",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9368,33 +9350,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-13",
+                "id": "e1-15",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 60.3,
+                    "y": 55.39,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 57.04,
+                    "y": 53.12,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 53.17,
+                    "y": 50.41,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-16",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 60.23,
+                    "y": 55.39,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9409,7 +9412,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-14",
+                "id": "e1-17",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9443,7 +9446,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-15",
+                "id": "e1-18",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9470,7 +9473,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-16",
+                "id": "e1-19",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9509,7 +9512,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-17",
+                "id": "e1-20",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9523,33 +9526,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-18",
+                "id": "e1-21",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 66,
+                    "y": 61.09,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 61.6,
+                    "y": 57.67,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 56.37,
+                    "y": 53.61,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-22",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 65.93,
+                    "y": 61.09,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9564,7 +9588,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-19",
+                "id": "e1-23",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9598,7 +9622,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-20",
+                "id": "e1-24",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9625,7 +9649,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-21",
+                "id": "e1-25",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9664,7 +9688,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-22",
+                "id": "e1-26",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9678,33 +9702,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-23",
+                "id": "e1-27",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 71.69,
+                    "y": 66.79,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 66.16,
+                    "y": 62.23,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 59.58,
+                    "y": 56.82,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-28",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 71.62,
+                    "y": 66.79,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9719,7 +9764,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-24",
+                "id": "e1-29",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9753,7 +9798,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-25",
+                "id": "e1-30",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9780,7 +9825,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-26",
+                "id": "e1-31",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9819,7 +9864,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-27",
+                "id": "e1-32",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9841,7 +9886,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-28",
+                "id": "e1-33",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9875,7 +9920,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-29",
+                "id": "e1-34",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9889,33 +9934,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-30",
+                "id": "e1-35",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
-                    "y": 77.39,
+                    "y": 72.49,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 6,
-                    "y": 70.71,
+                    "y": 66.79,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 6,
-                    "y": 62.78,
+                    "y": 60.02,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-36",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 6,
-                    "y": 77.32,
+                    "y": 72.48,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -9930,7 +9996,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-31",
+                "id": "e1-37",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -9964,7 +10030,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-32",
+                "id": "e1-38",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -9991,7 +10057,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-33",
+                "id": "e1-39",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10030,7 +10096,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-34",
+                "id": "e1-40",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10044,33 +10110,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-35",
+                "id": "e1-41",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 48.9,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 47.92,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 46.76,
+                    "y": 44,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-42",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 48.84,
+                    "y": 44,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10085,7 +10172,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-36",
+                "id": "e1-43",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10119,7 +10206,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-37",
+                "id": "e1-44",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10146,7 +10233,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-38",
+                "id": "e1-45",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10185,7 +10272,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-39",
+                "id": "e1-46",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10199,33 +10286,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-40",
+                "id": "e1-47",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 54.6,
+                    "y": 49.7,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 52.48,
+                    "y": 48.56,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 49.96,
+                    "y": 47.2,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-48",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 54.53,
+                    "y": 49.7,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10240,7 +10348,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-41",
+                "id": "e1-49",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10274,7 +10382,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-42",
+                "id": "e1-50",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10301,7 +10409,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-43",
+                "id": "e1-51",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10340,7 +10448,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-44",
+                "id": "e1-52",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10354,33 +10462,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-45",
+                "id": "e1-53",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 60.3,
+                    "y": 55.39,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 57.04,
+                    "y": 53.12,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 53.17,
+                    "y": 50.41,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-54",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 60.23,
+                    "y": 55.39,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10395,7 +10524,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-46",
+                "id": "e1-55",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10429,7 +10558,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-47",
+                "id": "e1-56",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10456,7 +10585,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-48",
+                "id": "e1-57",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10495,7 +10624,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-49",
+                "id": "e1-58",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10509,33 +10638,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-50",
+                "id": "e1-59",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 66,
+                    "y": 61.09,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 61.6,
+                    "y": 57.67,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 56.37,
+                    "y": 53.61,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-60",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 65.93,
+                    "y": 61.09,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10550,7 +10700,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-51",
+                "id": "e1-61",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10584,7 +10734,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-52",
+                "id": "e1-62",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10611,7 +10761,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-53",
+                "id": "e1-63",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10650,7 +10800,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-54",
+                "id": "e1-64",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10664,33 +10814,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-55",
+                "id": "e1-65",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 71.69,
+                    "y": 66.79,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 66.16,
+                    "y": 62.23,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 59.58,
+                    "y": 56.82,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-66",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 71.62,
+                    "y": 66.79,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10705,7 +10876,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-56",
+                "id": "e1-67",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10739,7 +10910,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-57",
+                "id": "e1-68",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10766,7 +10937,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-58",
+                "id": "e1-69",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10805,7 +10976,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-59",
+                "id": "e1-70",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10819,33 +10990,54 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-line)"
+                  "border": {
+                    "width": 0.09,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
+                  },
+                  "fill": "#00000000"
                 },
-                "id": "e1-60",
+                "id": "e1-71",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.2,
-                    "y": 77.39,
+                    "y": 72.49,
                     "w": 22.8,
-                    "h": 0.09
+                    "h": 5
                   },
                   "portrait": {
                     "x": 31.2,
-                    "y": 70.71,
+                    "y": 66.79,
                     "w": 22.8,
-                    "h": 0.07
+                    "h": 4
                   },
                   "story": {
                     "x": 31.2,
-                    "y": 62.78,
+                    "y": 60.02,
                     "w": 22.8,
-                    "h": 0.05
+                    "h": 2.81
+                  }
+                }
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "border": {
+                    "width": 0.08,
+                    "color": "var(--ck-line)",
+                    "sides": ["bottom"]
                   },
+                  "fill": "#00000000"
+                },
+                "id": "e1-72",
+                "sizes": ["landscape"],
+                "geometry": {
                   "landscape": {
                     "x": 19.23,
-                    "y": 77.32,
+                    "y": 72.48,
                     "w": 11.97,
-                    "h": 0.16
+                    "h": 5
                   }
                 }
               },
@@ -10860,7 +11052,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-61",
+                "id": "e1-73",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10894,7 +11086,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-62",
+                "id": "e1-74",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10921,7 +11113,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-63",
+                "id": "e1-75",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -10960,7 +11152,7 @@
                   "maxLines": 1,
                   "ellipsis": true
                 },
-                "id": "e1-64",
+                "id": "e1-76",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -10982,7 +11174,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-65",
+                "id": "e1-77",
                 "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
@@ -11016,7 +11208,7 @@
                   "align": "left",
                   "lineHeight": 1.5
                 },
-                "id": "e1-66",
+                "id": "e1-78",
                 "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
@@ -11048,7 +11240,7 @@
         "cap",
         "stats"
       ],
-      "signature": "3f2a15ec97405e24",
+      "signature": "d1432b211b766905",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -11459,7 +11651,7 @@
               },
               {
                 "kind": "text",
-                "content": "QA ZA",
+                "content": "{{playerName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -11494,7 +11686,7 @@
               },
               {
                 "kind": "text",
-                "content": "QA ZA",
+                "content": "{{playerName}}",
                 "style": {
                   "color": "var(--ck-chalk)",
                   "fontFamily": "'Barlow Condensed',sans-serif",
@@ -11578,9 +11770,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-16",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 31.35,
@@ -11599,45 +11797,27 @@
                     "y": 47.49,
                     "w": 9.83,
                     "h": 4.5
-                  },
-                  "landscape": {
-                    "x": 28.33,
-                    "y": 72.05,
-                    "w": 5.16,
-                    "h": 7.94
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-17",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 31.35,
-                    "y": 71.99,
-                    "w": 9.83,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 31.35,
-                    "y": 60.8,
-                    "w": 9.83,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 31.35,
-                    "y": 47.49,
-                    "w": 9.83,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 28.33,
                     "y": 72.05,
                     "w": 5.16,
-                    "h": 0.32
+                    "h": 7.94
                   }
                 }
               },
@@ -11760,9 +11940,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-22",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 41.39,
@@ -11781,45 +11967,27 @@
                     "y": 47.2,
                     "w": 9.83,
                     "h": 4.5
-                  },
-                  "landscape": {
-                    "x": 33.6,
-                    "y": 71.52,
-                    "w": 5.16,
-                    "h": 7.94
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-23",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 41.39,
-                    "y": 71.47,
-                    "w": 9.83,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 41.39,
-                    "y": 60.37,
-                    "w": 9.83,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 41.39,
-                    "y": 47.2,
-                    "w": 9.83,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 33.6,
                     "y": 71.52,
                     "w": 5.16,
-                    "h": 0.32
+                    "h": 7.94
                   }
                 }
               },
@@ -11942,9 +12110,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-28",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 51.42,
@@ -11963,45 +12137,27 @@
                     "y": 46.9,
                     "w": 9.83,
                     "h": 4.5
-                  },
-                  "landscape": {
-                    "x": 38.87,
-                    "y": 71,
-                    "w": 5.16,
-                    "h": 7.94
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-29",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 51.42,
-                    "y": 70.94,
-                    "w": 9.83,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 51.42,
-                    "y": 59.95,
-                    "w": 9.83,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 51.42,
-                    "y": 46.9,
-                    "w": 9.83,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 38.87,
                     "y": 71,
                     "w": 5.16,
-                    "h": 0.32
+                    "h": 7.94
                   }
                 }
               },
@@ -12124,9 +12280,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.37,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-34",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 61.46,
@@ -12145,45 +12307,27 @@
                     "y": 46.61,
                     "w": 9.83,
                     "h": 4.5
-                  },
-                  "landscape": {
-                    "x": 44.14,
-                    "y": 70.47,
-                    "w": 5.16,
-                    "h": 7.94
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.17,
+                    "color": "var(--gold)",
+                    "sides": ["top"]
+                  }
                 },
                 "id": "e1-35",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 61.46,
-                    "y": 70.42,
-                    "w": 9.83,
-                    "h": 0.37
-                  },
-                  "portrait": {
-                    "x": 61.46,
-                    "y": 59.53,
-                    "w": 9.83,
-                    "h": 0.3
-                  },
-                  "story": {
-                    "x": 61.46,
-                    "y": 46.61,
-                    "w": 9.83,
-                    "h": 0.21
-                  },
                   "landscape": {
                     "x": 44.14,
                     "y": 70.47,
                     "w": 5.16,
-                    "h": 0.32
+                    "h": 7.94
                   }
                 }
               },
@@ -12793,7 +12937,7 @@
       "name": "Junior highlight rows",
       "category": "data-blocks",
       "tags": ["club-kit", "data-blocks", "club kit", "juniors", "highlights", "shine", "kids"],
-      "signature": "1551426986e68b31",
+      "signature": "0dff8fe486849b4b",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -12830,9 +12974,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 1.11,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-1",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
@@ -12851,44 +13001,26 @@
                     "y": 48.56,
                     "w": 48,
                     "h": 5.25
-                  },
-                  "landscape": {
-                    "x": 6,
-                    "y": 49,
-                    "w": 25.2,
-                    "h": 9.33
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.58,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-2",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 49,
-                    "w": 1.11,
-                    "h": 9.34
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 48.8,
-                    "w": 1.11,
-                    "h": 7.47
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 48.56,
-                    "w": 1.11,
-                    "h": 5.25
-                  },
                   "landscape": {
                     "x": 6,
                     "y": 49,
-                    "w": 0.58,
+                    "w": 25.2,
                     "h": 9.33
                   }
                 }
@@ -13076,9 +13208,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 1.11,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-9",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
@@ -13097,44 +13235,26 @@
                     "y": 54.38,
                     "w": 48,
                     "h": 5.25
-                  },
-                  "landscape": {
-                    "x": 6,
-                    "y": 59.33,
-                    "w": 25.2,
-                    "h": 9.33
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.58,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-10",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 59.34,
-                    "w": 1.11,
-                    "h": 9.34
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 57.07,
-                    "w": 1.11,
-                    "h": 7.47
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 54.38,
-                    "w": 1.11,
-                    "h": 5.25
-                  },
                   "landscape": {
                     "x": 6,
                     "y": 59.33,
-                    "w": 0.58,
+                    "w": 25.2,
                     "h": 9.33
                   }
                 }
@@ -13322,9 +13442,15 @@
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--ck-panel)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 1.11,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-17",
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 6,
@@ -13343,44 +13469,26 @@
                     "y": 60.19,
                     "w": 48,
                     "h": 5.25
-                  },
-                  "landscape": {
-                    "x": 6,
-                    "y": 69.67,
-                    "w": 25.2,
-                    "h": 9.33
                   }
                 }
               },
               {
                 "kind": "shape",
                 "style": {
-                  "fill": "var(--gold)"
+                  "fill": "var(--ck-panel)",
+                  "border": {
+                    "width": 0.58,
+                    "color": "var(--gold)",
+                    "sides": ["left"]
+                  }
                 },
                 "id": "e1-18",
+                "sizes": ["landscape"],
                 "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 69.67,
-                    "w": 1.11,
-                    "h": 9.34
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 65.34,
-                    "w": 1.11,
-                    "h": 7.47
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 60.19,
-                    "w": 1.11,
-                    "h": 5.25
-                  },
                   "landscape": {
                     "x": 6,
                     "y": 69.67,
-                    "w": 0.58,
+                    "w": 25.2,
                     "h": 9.33
                   }
                 }

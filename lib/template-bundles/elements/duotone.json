@@ -361,10 +361,10 @@
       }
     },
     {
-      "slug": "duotone/glows/dark-fade",
-      "name": "Dark fade",
+      "slug": "duotone/glows/ink-fade",
+      "name": "Ink fade",
       "category": "glows",
-      "tags": ["duotone", "glows", "dark", "fade", "shape", "gradient"],
+      "tags": ["duotone", "glows", "ink", "fade", "shape", "gradient"],
       "signature": "0229bedbabace463",
       "document": {
         "formatVersion": 2,

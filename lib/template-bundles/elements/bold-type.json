@@ -2,52 +2,6 @@
   "look": "bold-type",
   "elements": [
     {
-      "slug": "bold-type/bands/dark-band",
-      "name": "Dark band",
-      "category": "bands",
-      "tags": ["bold-type", "bands", "dark", "band", "shape"],
-      "signature": "4bfb89927f6c884c",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "var(--accent-ink)",
-                "sides": ["top"]
-              },
-              "opacity": 0.22,
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 87.51,
-                "w": 88,
-                "h": 6.49
-              },
-              "portrait": {
-                "x": 6,
-                "y": 90.01,
-                "w": 88,
-                "h": 5.19
-              },
-              "story": {
-                "x": 6,
-                "y": 92.97,
-                "w": 88,
-                "h": 3.65
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "bold-type/bands/ink-slash",
       "name": "Ink slash",
       "category": "bands",
@@ -94,52 +48,6 @@
                 "y": 54,
                 "w": 52,
                 "h": 52
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "bold-type/bands/dark-band-2",
-      "name": "Dark band 2",
-      "category": "bands",
-      "tags": ["bold-type", "bands", "dark", "band", "2", "shape"],
-      "signature": "ec9689410badb01c",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "var(--accent-ink)",
-                "sides": ["bottom"]
-              },
-              "opacity": 0.22,
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 44.58,
-                "w": 81.85,
-                "h": 2.37
-              },
-              "portrait": {
-                "x": 6,
-                "y": 45.18,
-                "w": 88,
-                "h": 2.5
-              },
-              "story": {
-                "x": 6,
-                "y": 46.61,
-                "w": 88,
-                "h": 1.76
               }
             }
           }
@@ -321,63 +229,24 @@
             "style": {
               "fill": "#FFFFFF29",
               "border": {
-                "width": 0.09,
+                "width": 0.19,
                 "color": "#FFFFFF8C"
               }
             },
             "id": "e1",
-            "sizes": ["square"],
+            "sizes": ["portrait", "story"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 64.28,
-                "w": 17.85,
-                "h": 10.71
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "bold-type/badges/dark-chip",
-      "name": "Dark chip",
-      "category": "badges",
-      "tags": ["bold-type", "badges", "dark", "chip", "shape"],
-      "signature": "86216af4f442a762",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "var(--accent-ink)"
-              },
-              "opacity": 0.22,
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 82.08,
-                "y": 61.99,
-                "w": 5.77,
-                "h": 3.35
-              },
               "portrait": {
-                "x": 86.37,
-                "y": 61.05,
-                "w": 7.63,
-                "h": 3.53
+                "x": 6,
+                "y": 59.45,
+                "w": 23.92,
+                "h": 11.52
               },
               "story": {
-                "x": 86.37,
-                "y": 57.77,
-                "w": 7.63,
-                "h": 2.48
+                "x": 6,
+                "y": 41.8,
+                "w": 23.92,
+                "h": 8.1
               }
             }
           }

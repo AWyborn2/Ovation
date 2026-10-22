@@ -216,8 +216,8 @@ describe("extractElements", () => {
         },
       };
       const b = { x: 6, y: 6, w: 4 + i, h: 4 + (i % 3) };
-      layers.push(shape(`b${i}`, at(b), { ...style, opacity: i / 100 }));
-      if (i < 3) layers.push(shape(`c${i}`, at(b), { ...style, opacity: i / 100 }));
+      layers.push(shape(`b${i}`, at(b), { ...style, opacity: 0.5 + i / 100 }));
+      if (i < 3) layers.push(shape(`c${i}`, at(b), { ...style, opacity: 0.5 + i / 100 }));
     }
     const { files } = extractElements([look("kit", layers)]);
     const elements = files[0]!.elements;
@@ -300,5 +300,25 @@ describe("addPieces", () => {
     const r = addPieces(files, [piece("ck.tricolour-rule", "Tricolour rule", rule)], "club-kit");
     expect(r.duplicates).toEqual(["ck.tricolour-rule"]);
     expect(files.find((f) => f.look === "club-kit")?.elements ?? []).toEqual([]);
+  });
+});
+
+describe("faint decorations", () => {
+  const sideRule = (opacity: number, width: number) =>
+    shape("h", at({ x: 6, y: 87, w: 88, h: 6 }), {
+      fill: "#00000000",
+      border: { width, color: "var(--gold)", sides: ["top"] },
+      opacity,
+    });
+
+  it("leaves out what's too faint to see", () => {
+    const { files, summary } = extractElements([look("gold-foil", [sideRule(0.35, 0.09)])]);
+    expect(summary.faint).toBe(1);
+    expect(files).toEqual([]);
+  });
+
+  it("files a clear box drawn by one border side as a rule, named for the border", () => {
+    const { files } = extractElements([look("gold-foil", [sideRule(1, 0.3)])]);
+    expect(files[0]!.elements[0]).toMatchObject({ category: "rules", name: "Gold rule" });
   });
 });

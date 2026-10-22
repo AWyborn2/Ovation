@@ -2,39 +2,6 @@
   "look": "broadcast-dark",
   "elements": [
     {
-      "slug": "broadcast-dark/frames/white-panel",
-      "name": "White panel",
-      "category": "frames",
-      "tags": ["broadcast-dark", "frames", "white", "panel", "shape", "rounded"],
-      "signature": "f82a793169a3ff5d",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF0F",
-              "border": {
-                "width": 0.08,
-                "color": "#FFFFFF1F"
-              },
-              "radius": 4.99
-            },
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 44,
-                "y": 39.88,
-                "w": 47.86,
-                "h": 23.18
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "broadcast-dark/frames/ink-block",
       "name": "Ink block",
       "category": "frames",
@@ -147,39 +114,6 @@
       }
     },
     {
-      "slug": "broadcast-dark/bands/white-band",
-      "name": "White band",
-      "category": "bands",
-      "tags": ["broadcast-dark", "bands", "white", "band", "shape", "rounded"],
-      "signature": "e490868e3a41cbef",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF0F",
-              "border": {
-                "width": 0.09,
-                "color": "#FFFFFF1F"
-              },
-              "radius": 8.56
-            },
-            "id": "e1",
-            "sizes": ["square"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 61.13,
-                "w": 81.85,
-                "h": 25.71
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "broadcast-dark/badges/tinted-pill",
       "name": "Tinted pill",
       "category": "badges",
@@ -202,6 +136,47 @@
                 "y": 7.35,
                 "w": 5.85,
                 "h": 4.4
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-dark/badges/tinted-pill-2",
+      "name": "Tinted pill 2",
+      "category": "badges",
+      "tags": ["broadcast-dark", "badges", "tinted", "pill", "2", "shape", "rounded"],
+      "signature": "650cbad3acba8f9e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#E23B3B",
+              "radius": 6.48
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 82.86,
+                "y": 7.35,
+                "w": 11.14,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 82.86,
+                "y": 5.88,
+                "w": 11.14,
+                "h": 3.52
+              },
+              "story": {
+                "x": 82.86,
+                "y": 4.13,
+                "w": 11.14,
+                "h": 2.48
               }
             }
           }
@@ -251,40 +226,32 @@
       }
     },
     {
-      "slug": "broadcast-dark/badges/tinted-pill-2",
-      "name": "Tinted pill 2",
+      "slug": "broadcast-dark/badges/dark-pill",
+      "name": "Dark pill",
       "category": "badges",
-      "tags": ["broadcast-dark", "badges", "tinted", "pill", "2", "shape", "rounded"],
-      "signature": "650cbad3acba8f9e",
+      "tags": ["broadcast-dark", "badges", "dark", "pill", "shape", "rounded"],
+      "signature": "f82a793169a3ff5d",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "style": {
-              "fill": "#E23B3B",
-              "radius": 6.48
+              "fill": "#0A0C10D1",
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)"
+              },
+              "radius": 3.56
             },
             "id": "e1",
-            "sizes": ["square", "portrait", "story"],
+            "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 82.86,
-                "y": 7.35,
-                "w": 11.14,
-                "h": 4.4
-              },
-              "portrait": {
-                "x": 82.86,
-                "y": 5.88,
-                "w": 11.14,
-                "h": 3.52
-              },
-              "story": {
-                "x": 82.86,
-                "y": 4.13,
-                "w": 11.14,
-                "h": 2.48
+                "x": 6,
+                "y": 58.06,
+                "w": 7.71,
+                "h": 3.9
               }
             }
           }
@@ -343,10 +310,10 @@
       }
     },
     {
-      "slug": "broadcast-dark/rules/white-rule",
-      "name": "White rule",
+      "slug": "broadcast-dark/rules/gold-rule",
+      "name": "Gold rule",
       "category": "rules",
-      "tags": ["broadcast-dark", "rules", "white", "rule", "shape"],
+      "tags": ["broadcast-dark", "rules", "gold", "rule", "shape"],
       "signature": "4528ad44661bf6f3",
       "document": {
         "formatVersion": 2,
@@ -354,79 +321,33 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "#FFFFFF24"
+              "fill": "var(--gold)"
             },
             "id": "e1",
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 87.51,
-                "w": 88,
-                "h": 0.09
+                "y": 54.83,
+                "w": 10.56,
+                "h": 0.59
               },
               "portrait": {
                 "x": 6,
-                "y": 90.01,
-                "w": 88,
-                "h": 0.07
+                "y": 60.94,
+                "w": 14.08,
+                "h": 0.63
               },
               "story": {
                 "x": 6,
-                "y": 92.97,
-                "w": 88,
-                "h": 0.05
+                "y": 72.53,
+                "w": 14.08,
+                "h": 0.45
               },
               "landscape": {
                 "x": 3.15,
-                "y": 87.44,
-                "w": 93.7,
-                "h": 0.16
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "broadcast-dark/rules/accent-rule",
-      "name": "Accent rule",
-      "category": "rules",
-      "tags": ["broadcast-dark", "rules", "accent", "rule", "shape"],
-      "signature": "99d744cf3de0178e",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.14
-            },
-            "id": "e1",
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 51.61,
-                "w": 81.85,
-                "h": 0.09
-              },
-              "portrait": {
-                "x": 6,
-                "y": 50,
-                "w": 88,
-                "h": 0.07
-              },
-              "story": {
-                "x": 6,
-                "y": 50,
-                "w": 88,
-                "h": 0.05
-              },
-              "landscape": {
-                "x": 32.92,
-                "y": 37.54,
-                "w": 51.93,
-                "h": 0.16
+                "y": 53.94,
+                "w": 5.54,
+                "h": 0.59
               }
             }
           }

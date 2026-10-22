@@ -11,10 +11,11 @@
  * cards that already hold a `kind: "element"` piece still draw it.
  *
  *   cd scripts && npx tsx src/native-ck-pieces.ts [--only=<id>[,<id>]] [--skip-build]
+ *   cd scripts && npx tsx src/native-ck-pieces.ts --retokenise   (the file only, no capture)
  *
  * Then run `extract-elements.ts`, Prettier and the bundles index.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Page } from "puppeteer-core";
@@ -64,6 +65,37 @@ export type NativePiece = {
   match: number;
 };
 
+/**
+ * The sentinel club's text, as the capture draws it, back to the fields it
+ * stands for. The converter maps the card's sentinel field values; these are
+ * the club's own names, which a piece reads from the brand.
+ */
+const SENTINEL_TEXT: Record<string, string> = {
+  Sentinel: "{{clubName}}",
+  "Sentinel Cricket Club": "{{clubName}}",
+  QTAGLINE: "{{clubTagline}}",
+  "#QHASHTAG": "{{clubHashtag}}",
+  QPRESENTING: "{{sponsorPresentedBy}}",
+  "QA ZA": "{{playerName}}",
+};
+
+/** Sentinel text that slipped through: an element must never show it. */
+export const SENTINEL_LEFT = /\bSentinel\b|\bQ[A-Z]{2,}\b|\bQ[A-Z] Z[A-Z]\b/;
+
+/** A piece's layers with the sentinel club's text as the fields it stands for. */
+export function retokenise(layers: TemplateLayerV2[]): TemplateLayerV2[] {
+  return layers.map((layer) => {
+    const out = { ...layer } as TemplateLayerV2 & {
+      content?: unknown;
+      children?: TemplateLayerV2[];
+    };
+    const text = typeof out.content === "string" ? out.content.trim() : "";
+    if (SENTINEL_TEXT[text]) out.content = SENTINEL_TEXT[text];
+    if (out.children) out.children = retokenise(out.children);
+    return out;
+  });
+}
+
 /** The registry piece as the element layer a card would hold, at every size. */
 function pieceLayer(def: PieceDef): ElementLayer {
   return {
@@ -76,6 +108,20 @@ function pieceLayer(def: PieceDef): ElementLayer {
 }
 
 async function main(argv: readonly string[]): Promise<number> {
+  if (argv.includes("--retokenise")) {
+    const pieces = JSON.parse(readFileSync(PIECES_FILE, "utf8")) as NativePiece[];
+    for (const p of pieces) p.layers = retokenise(p.layers);
+    writeFileSync(
+      PIECES_FILE,
+      `${JSON.stringify(pieces, null, 2)}
+`,
+    );
+    const left = pieces.filter((p) => SENTINEL_LEFT.test(JSON.stringify(p.layers)));
+    log(
+      `[pieces] retokenised; sentinel text left in: ${left.map((p) => p.id).join(", ") || "none"}`,
+    );
+    return left.length ? 1 : 0;
+  }
   const only =
     argv
       .find((a) => a.startsWith("--only="))
@@ -129,7 +175,12 @@ async function main(argv: readonly string[]): Promise<number> {
             layers: elementLayers(mapCapture(ca, { paletteB: cb }), new Tree(ca), "el"),
           });
         }
-        const layers = nativeElement(layer, perSize);
+        const layers = retokenise(nativeElement(layer, perSize));
+        if (SENTINEL_LEFT.test(JSON.stringify(layers))) {
+          log(`[pieces] ${def.id}: sentinel text left in its layers`);
+          failures++;
+          continue;
+        }
         if (layers.length === 0 || layers.some((l) => (l.kind as string) === "element")) {
           log(`[pieces] ${def.id}: nothing captured`);
           failures++;
