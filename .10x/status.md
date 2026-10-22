@@ -70,3 +70,8 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 - 2026-10-21 SDE: Email all button + one combined PDF per contact (batch outbox rows, migration 0057).
 - 2026-10-21 Senior: studio-editor-multiselect implemented and checked in the browser: Ctrl/Cmd+C/X/V/A, ctrl/shift-click on the canvas and in Layers, marquee (wholly inside, also from the canvas around the card), group resize (a corner scales type), Arrange (align, distribute, match width/height/size to the first-selected or the largest), List settings Show as Photo/Panel with Top/Height, and stand-in player photos in the template preview. No migration.
 - 2026-10-21 SDE: crest override follow-up. The crosswalk seed in `central-projector.sql` also pairs central home with PlayHQ home; it survives by majority vote, but a club with few matches could still be mis-seeded (worth a review).
+
+## PM update 22 Oct 2026
+
+- kiosk-photo-rotation scoped; awaiting alignment, then architect.
+- Architect: kiosk-photo-rotation design proposed (junior library + kiosk slideshows).
