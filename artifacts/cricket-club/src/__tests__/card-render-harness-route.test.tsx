@@ -31,11 +31,14 @@ describe("/__card-render route", () => {
     // a lazy route chunk, so Suspense resolves outside act() and the div can be
     // committed a tick before that effect runs — assert both inside the same
     // waitFor. On a cold transform cache the import alone can exceed waitFor's
-    // default 1s, so allow the lazy load time.
+    // default 1s, so allow the lazy load time. In tests the page also loads the
+    // converter's capture module lazily: wait for it, or the import can land
+    // after the test environment is torn down.
     await waitFor(
       () => {
         expect(screen.getByTestId("card-render-harness")).toBeTruthy();
         expect(window.__cardRenderHarness?.ready).toBe(true);
+        expect("captureRender" in (window.__cardRenderHarness ?? {})).toBe(true);
       },
       { timeout: 10_000 },
     );
