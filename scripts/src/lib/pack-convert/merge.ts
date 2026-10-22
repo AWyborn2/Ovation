@@ -22,7 +22,7 @@ import type {
 } from "@workspace/scorecard/kind-templates";
 import type { CapturedElement, PackCapture } from "@workspace/scorecard/pack-capture";
 import { px, r2 } from "./css";
-import type { MappedLayer, MapResult } from "./map";
+import { Tree, alignTrees, type MappedLayer, type MapResult } from "./map";
 
 export const SIZES: readonly TemplateSize[] = ["square", "portrait", "story", "landscape"];
 
@@ -31,6 +31,8 @@ export interface SizeMaps {
   size: TemplateSize;
   base: MapResult;
   baseCapture: PackCapture;
+  /** The worst-case capture the layers took their boxes from (absent when it draws another design). */
+  geometry?: PackCapture;
   /** The same page at the Minimal preset (content kinds), for stacks. */
   minimal?: MapResult;
   /** Standard preset with and without the photo / sponsors, for conditions. */
@@ -346,13 +348,17 @@ export function mergePage(
     string,
     { sigs: string[]; stack: StackSpec; geometry: Partial<Record<TemplateSize, LayerBox>> }
   >();
-  for (const m of maps)
+  for (const m of maps) {
+    // The container's box from the capture its children's boxes came from, so a
+    // bottom-anchored block holds the worst-case title its children are sized for.
+    const twins = m.geometry ? alignTrees(new Tree(m.baseCapture), new Tree(m.geometry)) : null;
     for (const s of stackContainers(m)) {
       const key = [...s.sigs].sort().join("|");
       const entry = stacks.get(key) ?? { sigs: s.sigs, stack: s.stack, geometry: {} };
       const W = m.baseCapture.native.w;
       const H = m.baseCapture.native.h;
-      const b = s.container.box;
+      const twin = twins?.get(s.container.id);
+      const b = twin && twin.tag === s.container.tag ? twin.box : s.container.box;
       entry.geometry[m.size] = {
         x: r2((b.x / W) * 100),
         y: r2((b.y / H) * 100),
@@ -361,5 +367,6 @@ export function mergePage(
       };
       stacks.set(key, entry);
     }
+  }
   return { layers: applyStacks(layers, sigOf, [...stacks.values()], prefix), stacks: stacks.size };
 }

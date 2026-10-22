@@ -203,6 +203,7 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
         size,
         base: mapped,
         baseCapture: a.capture,
+        ...(!otherDesign && worstCap ? { geometry: worstCap.capture } : {}),
         ...(minA ? { minimal: mapCapture(minA.capture, { aliases }) } : {}),
         ...(noPhoto ? { photo: pair(standard, noPhoto) } : {}),
         ...(noSponsors ? { sponsors: pair(standard, noSponsors) } : {}),

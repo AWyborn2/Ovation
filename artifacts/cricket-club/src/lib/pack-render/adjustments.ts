@@ -453,8 +453,10 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
-    const col = Math.floor(i / perColumn);
-    const top = (i % perColumn) * (rowHeight + gap);
+    // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
+    const acrossFirst = spec.flow === "across";
+    const col = acrossFirst ? i % columns : Math.floor(i / perColumn);
+    const top = (acrossFirst ? Math.floor(i / columns) : i % perColumn) * (rowHeight + gap);
     const across =
       columns > 1
         ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${colW.toFixed(3)}%`

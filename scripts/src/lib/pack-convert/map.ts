@@ -272,13 +272,19 @@ function boundRows(
   const texts = cap.elements
     .filter((e) => e.hidden !== "display")
     .flatMap((e) => (e.text ?? []).map((t) => ({ el: e, text: norm(t.text) })));
+  const matches = (text: string, v: string) => text === v || text.includes(v);
   const anchors = bound.map((r) => {
+    // Values only this row has, that only one text on the card shows: "DEF" is no anchor
+    // when another row's "DEF BY" holds it too.
     const unique = Object.values(r.values)
       .map(norm)
-      .filter((v) => v.length >= 2 && counts.get(v) === 1);
-    return texts
-      .filter((t) => unique.some((v) => t.text === v || t.text.includes(v)))
-      .map((t) => t.el);
+      .filter(
+        (v) =>
+          v.length >= 2 &&
+          counts.get(v) === 1 &&
+          texts.filter((t) => matches(t.text, v)).length === 1,
+      );
+    return texts.filter((t) => unique.some((v) => matches(t.text, v))).map((t) => t.el);
   });
   if (anchors.some((a) => a.length === 0)) return null;
   const rows: CapturedElement[] = [];
@@ -685,6 +691,28 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       } as MappedLayer["layer"],
       withRotate(pct(box)),
     );
+  }
+
+  // A row's own value drawn as fixed text means its repeat wasn't found: the
+  // template would print the sample ("QH") on every card.
+  const rowValues = new Set(
+    Object.values(cap.rows)
+      .flat()
+      .flatMap((r) => Object.values(r.values))
+      .map((v) => v.trim())
+      .filter((v) => /^[A-Z]{2}(?: [A-Z]{2})*$/.test(v)),
+  );
+  for (const l of layers) {
+    if (l.layer.kind !== "text") continue;
+    const content = (l.layer as { content?: string }).content ?? "";
+    const leaked = [...rowValues].find((v) =>
+      new RegExp(`(^|[^A-Za-z])${v}([^A-Za-z]|$)`).test(content),
+    );
+    if (leaked)
+      polish.push({
+        element: l.element,
+        what: `row value "${leaked}" left as fixed text: its repeat wasn't found`,
+      });
   }
 
   // An ancestor's polygon clip cuts what's inside it too (the photo in Club Kit's angled band).
@@ -1216,6 +1244,11 @@ interface RowsOptions {
   fit: boolean;
   /** Indexed rows: an element's own field key → the row field. */
   cellField?: (el: CapturedElement) => string | null;
+  /**
+   * The other rows, to tell apart fields that hold the same value in this one
+   * (a ladder row's position and losses both "2").
+   */
+  others?: Array<{ row: CapturedElement; values: Record<string, string> }>;
 }
 
 /** A rows spec from captured rows: the base row's cells, its height and the pitch. */
@@ -1232,14 +1265,24 @@ function rowsSpec(
   );
   const first = rows[baseIndex] ?? rows[0];
   if (!first || first.box.h <= 0) return null;
-  const top = rows[0]!;
-  const below = rows.find((r) => r.box.y > top.box.y + 0.5 && Math.abs(r.box.x - top.box.x) < 1);
   const columnsX = [...new Set(rows.map((r) => Math.round(r.box.x)))];
   const columns = Math.max(1, Math.min(6, columnsX.length));
   const rowH = first.box.h;
-  const pitch = below ? below.box.y - top.box.y : rowH;
+  // The space between each row and the next one down its column: rows can differ in
+  // height (a no-result row is shorter), so the pitch is the base row's plus that gap.
+  const gaps = rows.flatMap((r) => {
+    const next = rows
+      .filter((n) => n.box.y > r.box.y + 0.5 && Math.abs(n.box.x - r.box.x) < 1)
+      .sort((a, b) => a.box.y - b.box.y)[0];
+    const gap = next ? next.box.y - (r.box.y + r.box.h) : -1;
+    return gap >= 0 ? [gap] : [];
+  });
+  const pitch = rowH + (gaps.length ? Math.min(...gaps) : 0);
+  const others = rows
+    .map((row, i) => ({ row, values: bound[i]?.values ?? {} }))
+    .filter((o) => o.row !== first);
   const cellsOf = (row: CapturedElement, values: Record<string, string>) =>
-    rowCells(tree, row, values, opts);
+    rowCells(tree, row, values, { ...opts, others });
   const cells = cellsOf(first, bound[baseIndex]?.values ?? {});
   if (!cells.some((c) => c.show !== "backdrop")) return null;
   // Variant rows (the club's ladder row, a lost result): their cell styles that differ.
@@ -1250,8 +1293,15 @@ function rowsSpec(
     const overrides: Record<string, NonNullable<RowsCell["style"]>> = {};
     for (const c of own) {
       const baseCell = cells.find((b) => b.field === c.field && b.show === c.show);
-      if (c.style && JSON.stringify(c.style) !== JSON.stringify(baseCell?.style))
-        overrides[c.field] = c.style;
+      if (!c.style || JSON.stringify(c.style) === JSON.stringify(baseCell?.style)) continue;
+      // A backdrop and a text cell can share a field key: merge, so neither's change is lost.
+      overrides[c.field] =
+        c.show === "backdrop"
+          ? {
+              ...overrides[c.field],
+              ...(c.style.background ? { background: c.style.background } : {}),
+            }
+          : { ...c.style, ...overrides[c.field] };
     }
     if (Object.keys(overrides).length) variants[r.variant] = overrides;
   });
@@ -1260,10 +1310,26 @@ function rowsSpec(
     rowHeight: r2((rowH / opts.W) * 100),
     ...(pitch > rowH ? { gap: r2(((pitch - rowH) / opts.W) * 100) } : {}),
     cells,
-    ...(columns > 1 ? { columns } : {}),
+    ...(columns > 1 ? { columns, columnGap: columnGapOf(rows) } : {}),
+    // Tiles that fill a line before the next (the second row beside the first).
+    ...(columns > 1 && rows[1] && Math.abs(rows[1].box.y - rows[0]!.box.y) < 1
+      ? { flow: "across" as const }
+      : {}),
     ...(Object.keys(variants).length ? { variants } : {}),
   };
   return { spec, height: pitch * Math.ceil(rows.length / columns) };
+}
+
+/** The gap between side-by-side rows, in percent of the list's width (the renderer's default is 4). */
+function columnGapOf(rows: CapturedElement[]): number {
+  const left = Math.min(...rows.map((r) => r.box.x));
+  const right = Math.max(...rows.map((r) => r.box.x + r.box.w));
+  const first = rows.filter((r) => Math.abs(r.box.x - left) < 1)[0]!;
+  const next = rows
+    .filter((r) => r.box.x > first.box.x + first.box.w - 1)
+    .sort((a, b) => a.box.x - b.box.x)[0];
+  const gap = next ? next.box.x - (first.box.x + first.box.w) : 0;
+  return r2(Math.min(50, Math.max(0, (gap / Math.max(1, right - left)) * 100)));
 }
 
 /** The row field an image shows: the field whose value is its source (a player's photo). */
@@ -1286,12 +1352,30 @@ function rowCells(
   opts: RowsOptions,
 ): RowsCell[] {
   const rowH = row.box.h;
-  const fieldFor = (el: CapturedElement, text: string): string | null => {
+  const flat = [row, ...tree.descendants(row)];
+  const norm = (v: string) => v.trim().toLowerCase();
+  const fieldFor = (el: CapturedElement, text: string, run: number): string | null => {
     if (opts.cellField) return opts.cellField(el);
-    const t = text.trim().toLowerCase();
+    const t = norm(text);
     const entries = Object.entries(values).filter(([, v]) => v.trim());
-    const exact = entries.find(([, v]) => v.trim().toLowerCase() === t);
-    if (exact) return exact[0];
+    const exact = entries.filter(([, v]) => norm(v) === t);
+    if (exact.length > 1) {
+      // Several fields hold this value here: those that match the same cell in the other
+      // rows, then one no other cell has taken (a ladder's position and losses).
+      const at = flat.indexOf(el);
+      const fits = exact.filter(([k]) =>
+        (opts.others ?? []).every((o) => {
+          const twin = [o.row, ...tree.descendants(o.row)][at];
+          const said = twin?.text?.[run]?.text;
+          return said === undefined || norm(o.values[k] ?? "") === norm(said);
+        }),
+      );
+      const taken = new Set(cells.filter((c) => c.show !== "backdrop").map((c) => c.field));
+      const pick =
+        fits.find(([k]) => !taken.has(k)) ?? fits[0] ?? exact.find(([k]) => !taken.has(k));
+      if (pick) return pick[0];
+    }
+    if (exact[0]) return exact[0][0];
     // A field set inside literal text ("(VC)", "#12"): the longest value the text holds.
     const inside = entries
       .filter(([, v]) => v.trim().length >= 2 && t.includes(v.trim().toLowerCase()))
@@ -1328,30 +1412,162 @@ function rowCells(
     if (el.hidden === "display" || el.box.w <= 0) continue;
     if (el !== row && el.style["background-color"] && !(el.text ?? []).length) {
       const bg = opts.colour(el, "background-color");
-      if (bg) cells.push({ field: "", ...at(el), show: "backdrop", style: { background: bg } });
+      const r = cornerPx(el);
+      if (bg)
+        cells.push({
+          field: "",
+          ...at(el),
+          show: "backdrop",
+          style: { background: bg, ...(r ? { radius: r } : {}) },
+        });
+    }
+    // A solid border edge (a highlight row's accent bar) is a backdrop strip along that side.
+    for (const side of ["left", "right", "top", "bottom"] as const) {
+      const bw = px(el.style[`border-${side}-width`]);
+      if (!(bw > 0)) continue;
+      const bc = opts.colour(el, `border-${side}-color`);
+      if (!bc) continue;
+      const box = at(el);
+      const across = (bw / row.box.w) * 100;
+      const down = (bw / rowH) * 100;
+      const strip =
+        side === "left"
+          ? { ...box, w: r2(across) }
+          : side === "right"
+            ? { ...box, x: r2(box.x + box.w - across), w: r2(across) }
+            : side === "top"
+              ? { ...box, h: r2(down) }
+              : { ...box, y: r2(box.y + box.h - down), h: r2(down) };
+      cells.push({ field: "", ...strip, show: "backdrop", style: { background: bc } });
     }
     if (el.tag === "img") {
       const field = opts.cellField ? opts.cellField(el) : imageField(el, values);
-      if (field) cells.push({ field, ...at(el), show: "image" });
+      // A round photo: its own corners, or a clipping frame's.
+      const frame = el.parent === null ? undefined : tree.byId.get(el.parent);
+      const r =
+        cornerPx(el) ??
+        (frame && frame.style["overflow-x"] === "hidden" ? cornerPx(frame) : undefined);
+      if (field)
+        cells.push({ field, ...at(el), show: "image", ...(r ? { style: { radius: r } } : {}) });
       continue;
     }
-    for (const run of el.text ?? []) {
-      const field = fieldFor(el, run.text);
+    for (const [i, run] of (el.text ?? []).entries()) {
+      const field = fieldFor(el, run.text, i);
       if (field) cells.push({ field, ...at(el), style: textStyle(el) });
     }
   }
+  widenTextCells(cells, {
+    left: ((px(row.style["padding-left"]) || 0) / row.box.w) * 100,
+    right: 100 - ((px(row.style["padding-right"]) || 0) / row.box.w) * 100,
+  });
   const firstField = cells.find((c) => c.field)?.field ?? "";
-  // A backdrop cell needs a field key; it draws whatever the field holds.
-  for (const c of cells) if (!c.field) c.field = firstField;
+  // A backdrop draws whatever its row holds, but needs a field key, and a row style
+  // (a lost result's badge colour) overrides by key: each backdrop takes its own.
+  const keys = backdropKeys(cells, rowFill !== undefined);
+  for (const c of cells) if (!c.field) c.field = keys.get(c) ?? firstField;
   if (rowFill)
     cells.unshift({
-      field: firstField,
+      field: keys.get(null) ?? firstField,
       x: 0,
       w: 100,
       show: "backdrop",
       style: { background: rowFill },
     });
   return cells.filter((c) => c.field);
+}
+
+/**
+ * Field keys for a row's backdrops (`null`: the row's own fill): the field of
+ * the content a backdrop holds (a grade badge holds the grade), else one no
+ * other backdrop has; holders choose first, smallest first; the row's fill last.
+ */
+export function backdropKeys(cells: RowsCell[], rowFill: boolean): Map<RowsCell | null, string> {
+  const content = cells.filter((c) => c.field && c.show !== "backdrop");
+  const fields = [...new Set(content.map((c) => c.field))];
+  const top = (c: RowsCell) => c.y ?? 0;
+  const bottom = (c: RowsCell) => (c.y ?? 0) + (c.h ?? 100);
+  const holds = (outer: RowsCell, inner: RowsCell) =>
+    inner.x >= outer.x - 0.5 &&
+    inner.x + inner.w <= outer.x + outer.w + 0.5 &&
+    top(inner) >= top(outer) - 0.5 &&
+    bottom(inner) <= bottom(outer) + 0.5;
+  const taken = new Set<string>();
+  const out = new Map<RowsCell | null, string>();
+  const area = (c: RowsCell) => c.w * (c.h ?? 100);
+  const heldBy = (b: RowsCell) => content.filter((c) => holds(b, c)).map((c) => c.field);
+  // Backdrops that hold content claim it first; the rest take what's left.
+  const backdrops = cells
+    .filter((c) => !c.field)
+    .sort((a, b) => Number(!heldBy(a).length) - Number(!heldBy(b).length) || area(a) - area(b));
+  for (const b of backdrops) {
+    const key =
+      heldBy(b).find((f) => !taken.has(f)) ?? fields.find((f) => !taken.has(f)) ?? fields[0];
+    if (!key) continue;
+    out.set(b, key);
+    taken.add(key);
+  }
+  if (rowFill) {
+    const key = fields.find((f) => !taken.has(f)) ?? fields[0];
+    if (key) out.set(null, key);
+  }
+  return out;
+}
+
+/** An element's corner radius in px (`50%` of its shorter side for a circle), if it has one. */
+function cornerPx(el: CapturedElement): number | undefined {
+  const raw = el.style["border-top-left-radius"];
+  if (!raw) return undefined;
+  const n = raw.trim().endsWith("%")
+    ? (parseFloat(raw) / 100) * Math.min(el.box.w, el.box.h)
+    : px(raw);
+  return Number.isFinite(n) && n > 0 ? r2(n) : undefined;
+}
+
+/**
+ * Text cells hug the sentinel's short values; a real value ("10/123") is
+ * longer. Each widens away from its alignment edge, up to its neighbour on
+ * the same line or the row's padding, so longer values have room and short
+ * ones sit where they did.
+ */
+export function widenTextCells(cells: RowsCell[], inner: { left: number; right: number }): void {
+  const text = cells.filter(
+    (c) => c.show !== "backdrop" && c.show !== "image" && c.show !== "logo",
+  );
+  const lineOf = (c: RowsCell) => [c.y ?? 0, (c.y ?? 0) + (c.h ?? 100)];
+  const sameLine = (a: RowsCell, b: RowsCell) => {
+    const [a0, a1] = lineOf(a);
+    const [b0, b1] = lineOf(b);
+    return Math.min(a1!, b1!) - Math.max(a0!, b0!) > 0;
+  };
+  // How a neighbour grows: an image doesn't, so the whole gap is this cell's.
+  const grows = (c: RowsCell) => (c.show === "image" ? "none" : (c.style?.align ?? "left"));
+  const widened = text.map((c) => {
+    const others = cells.filter((o) => o !== c && o.show !== "backdrop" && sameLine(c, o));
+    // A gap goes wholly to this cell when the neighbour grows away from it, else half each.
+    const leftLimit = Math.max(
+      inner.left,
+      ...others
+        .filter((o) => o.x + o.w <= c.x + 0.01)
+        .map((o) =>
+          grows(o) === "right" || grows(o) === "none" ? o.x + o.w : (o.x + o.w + c.x) / 2,
+        ),
+    );
+    const rightLimit = Math.min(
+      inner.right,
+      ...others
+        .filter((o) => o.x >= c.x + c.w - 0.01)
+        .map((o) => (grows(o) === "left" || grows(o) === "none" ? o.x : (c.x + c.w + o.x) / 2)),
+    );
+    const align = c.style?.align ?? "left";
+    if (align === "right")
+      return { x: r2(Math.min(c.x, leftLimit)), w: r2(c.x + c.w - Math.min(c.x, leftLimit)) };
+    if (align === "center") {
+      const room = Math.max(0, Math.min(c.x - leftLimit, rightLimit - (c.x + c.w)));
+      return { x: r2(c.x - room), w: r2(c.w + 2 * room) };
+    }
+    return { x: c.x, w: r2(Math.max(c.w, rightLimit - c.x)) };
+  });
+  text.forEach((c, i) => Object.assign(c, widened[i]));
 }
 
 /** How much an element is scaled by its own and its ancestors' transforms (the letterboxed landscape card). */
