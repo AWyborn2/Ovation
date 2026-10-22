@@ -95,6 +95,12 @@ export type RowsSpec = {
   columns?: number;
   /** Gap between columns, in percent of the layer width. */
   columnGap?: number;
+  /**
+   * With columns, how rows fill them (format v2): `down` (default) fills the
+   * first column, then the next; `across` fills each line left to right, as a
+   * grid of tiles reads (Team of the Week).
+   */
+  flow?: "down" | "across";
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
   variants?: Record<string, Partial<Record<string, TemplateTextStyle>>>;
 };

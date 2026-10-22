@@ -21,6 +21,26 @@ const doc = (pages: TemplateDocumentV2["pages"]) =>
   ({ formatVersion: 2, pages }) as TemplateDocumentV2;
 
 describe("core fields", () => {
+  it("counts the sponsors page's positional logos as its sponsor logos", () => {
+    const wall = doc({
+      sponsors: {
+        layers: [
+          { id: "t0", kind: "image", content: "{{weekendSponsor0}}", geometry: at(0, 0, 20, 10) },
+        ] as TemplateLayerV2[],
+      },
+    });
+    expect(missingCoreFields(wall, "matchDay", "matchDay", "sponsors", "square")).toEqual([]);
+    expect(
+      missingCoreFields(
+        doc({ sponsors: { layers: [] } }),
+        "matchDay",
+        "matchDay",
+        "sponsors",
+        "square",
+      ),
+    ).toEqual(["sponsors.logos"]);
+  });
+
   it("lists each content page's core fields", () => {
     expect(pageCoreFields("matchDay", "title")).toEqual(["title.heading", "title.dates"]);
     expect(pageCoreFields("matchDay", "sponsors")).toEqual(["sponsors.logos"]);
