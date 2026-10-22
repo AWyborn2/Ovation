@@ -239,6 +239,30 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
   return { kind: templateKind, document, pages };
 }
 
+/**
+ * A conversion pointed at a polished bundle document (`--recheck`): the
+ * pack's renders stay, the layers counted are the bundle's.
+ */
+export function withDocument(conv: KindConversion, document: TemplateDocumentV2): KindConversion {
+  return {
+    ...conv,
+    document,
+    pages: conv.pages.map((p) => {
+      const layers = document.pages[p.page]?.layers ?? [];
+      let stacks = 0;
+      const walk = (list: TemplateLayerV2[]) => {
+        for (const l of list)
+          if (isGroupLayer(l)) {
+            if (l.stack) stacks++;
+            walk(l.children);
+          }
+      };
+      walk(layers);
+      return { ...p, layers: countKinds(layers), stacks };
+    }),
+  };
+}
+
 function countKinds(layers: TemplateLayerV2[]): Record<string, number> {
   const out: Record<string, number> = {};
   const walk = (list: TemplateLayerV2[]) => {

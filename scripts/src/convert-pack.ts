@@ -17,7 +17,11 @@
  *   --capture-only           capture, don't map
  *   --map-only               map the captures already in --out (no new capture)
  *   --no-check               skip the fit and pixel-diff renders
- *   --shots                  save each pack / template screenshot pair (`<look>/shots/`)
+ *   --shots                  save each pack / template screenshot pair (`<look>/shots/`;
+ *                            with --bundles, under scripts/exports/pack-convert, git-ignored)
+ *   --recheck                re-check the committed (polished) bundles against the pack
+ *                            captures in --out: the report is rewritten, the bundle files aren't
+ *   --polish-hd=<n>          with --recheck, the polish time logged so far, in half-days
  *   --base-url=<url>         use a running web app (the dev server) instead of a build
  *   --skip-build             reuse the last `vite build --mode capture`
  *   --concurrency=<n>        pages capturing at once (default 3)
@@ -51,6 +55,7 @@ import {
   compareResults,
   convertKind,
   packKinds,
+  withDocument,
   type KindConversion,
   type VariantCaptures,
 } from "./lib/pack-convert/convert";
@@ -95,6 +100,8 @@ export interface ConvertOptions {
   concurrency: number;
   list: boolean;
   shots: boolean;
+  recheck: boolean;
+  polishHd: number | null;
 }
 
 const list = (v: string | undefined) =>
@@ -122,6 +129,8 @@ const KNOWN = [
   "concurrency",
   "list",
   "shots",
+  "recheck",
+  "polish-hd",
 ];
 
 export function parseArgs(argv: readonly string[]): ConvertOptions {
@@ -145,6 +154,14 @@ export function parseArgs(argv: readonly string[]): ConvertOptions {
     throw new Error("--concurrency is a whole number from 1 to 8");
   if (args.has("capture-only") && args.has("map-only"))
     throw new Error("--capture-only and --map-only can't be used together");
+  const recheck = args.has("recheck");
+  if (recheck && (args.has("capture-only") || args.has("no-check")))
+    throw new Error(
+      "--recheck renders the bundles, so it can't be used with --capture-only or --no-check",
+    );
+  const polishHd = args.has("polish-hd") ? Number(args.get("polish-hd")) : null;
+  if (polishHd !== null && !(Number.isFinite(polishHd) && polishHd >= 0))
+    throw new Error("--polish-hd is a number of half-days");
   const exports = path.join(REPO_ROOT, "scripts", "exports");
   return {
     packs: list(args.get("pack")) ?? [...CONVERTER_PACKS],
@@ -153,18 +170,21 @@ export function parseArgs(argv: readonly string[]): ConvertOptions {
     sizes,
     colourMode,
     out: path.resolve(args.get("out") ?? path.join(exports, "pack-capture")),
-    convertOut: args.has("bundles")
-      ? path.join(REPO_ROOT, "lib", "template-bundles")
-      : path.resolve(args.get("convert-out") ?? path.join(exports, "pack-convert")),
-    bundles: args.has("bundles"),
+    convertOut:
+      args.has("bundles") || recheck
+        ? path.join(REPO_ROOT, "lib", "template-bundles")
+        : path.resolve(args.get("convert-out") ?? path.join(exports, "pack-convert")),
+    bundles: args.has("bundles") || recheck,
     captureOnly: args.has("capture-only"),
-    mapOnly: args.has("map-only"),
+    mapOnly: args.has("map-only") || recheck,
     check: !args.has("no-check"),
     baseUrl: args.get("base-url") ?? null,
     skipBuild: args.has("skip-build"),
     concurrency,
     list: args.has("list"),
     shots: args.has("shots"),
+    recheck,
+    polishHd,
   };
 }
 
@@ -503,10 +523,26 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
       continue;
     }
     const kinds = packKinds(files).filter((k) => !opts.kinds || opts.kinds.includes(k));
+    const dir = path.join(opts.convertOut, look.slug);
     const conversions: KindConversion[] = [];
+    let listed = 0;
     for (const kind of kinds) {
       const conv = convertKind(files, kind);
-      if (conv) conversions.push(conv);
+      if (!conv) continue;
+      if (!opts.recheck) {
+        conversions.push(conv);
+        continue;
+      }
+      // The committed bundle, polished by hand, drawn from the pack's same renders.
+      const bundle = JSON.parse(
+        await readFile(path.join(dir, `${kind}.json`), "utf8").catch(() => "null"),
+      ) as { listed?: boolean; document?: KindConversion["document"] } | null;
+      if (!bundle?.document) {
+        log(`[convert-pack] ${look.slug}/${kind}: no bundle file to re-check`);
+        continue;
+      }
+      if (bundle.listed) listed++;
+      conversions.push(withDocument(conv, bundle.document));
     }
     const checks: Checks = {};
     const validation = validatorReadsV2()
@@ -514,21 +550,30 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
           conversions.map((c) => [c.kind, templateDocumentErrors(c.document, c.kind)]),
         )
       : null;
-    const dir = path.join(opts.convertOut, look.slug);
     await mkdir(dir, { recursive: true });
-    const shotsDir = opts.shots ? path.join(dir, "shots") : null;
+    // Screenshots never land in lib/template-bundles: they'd be committed with the bundle.
+    const shotsDir = opts.shots
+      ? path.join(
+          opts.bundles
+            ? path.join(REPO_ROOT, "scripts", "exports", "pack-convert", look.slug)
+            : dir,
+          "shots",
+        )
+      : null;
     if (shotsDir) await mkdir(shotsDir, { recursive: true });
     if (page)
       for (const conv of conversions) await checkConversion(page, packId, conv, checks, shotsDir);
-    await writeFile(
-      path.join(dir, "look.json"),
-      `${JSON.stringify({ name: look.name }, null, 2)}\n`,
-    );
-    for (const conv of conversions)
+    if (!opts.recheck) {
       await writeFile(
-        path.join(dir, `${conv.kind}.json`),
-        `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: false, document: conv.document }, null, 2)}\n`,
+        path.join(dir, "look.json"),
+        `${JSON.stringify({ name: look.name }, null, 2)}\n`,
       );
+      for (const conv of conversions)
+        await writeFile(
+          path.join(dir, `${conv.kind}.json`),
+          `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: false, document: conv.document }, null, 2)}\n`,
+        );
+    }
     await writeFile(
       path.join(dir, "report.md"),
       `${lookReport({
@@ -542,6 +587,7 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
         rendererNote:
           "Pixel match compares the pack and the converted page drawing the same sample input; " +
           "sample photos and logos are grey placeholders in both.",
+        ...(opts.recheck ? { polish: { halfDays: opts.polishHd, listed } } : {}),
       })}\n`,
     );
     const pages = conversions.reduce((n, c) => n + c.pages.length, 0);
