@@ -5,8 +5,9 @@
  * with `writeFitResult`. Every variant draws in one harness page.
  *
  * A check that can't run (no harness, a harness error, a restart mid-check)
- * leaves the target `pending`, so automation stays blocked (ADR-003), and the
- * next scheduled sweep asks again (`retryPendingFits`).
+ * is tried again a few times; one that still can't leaves the target
+ * `pending`, so automation stays blocked (ADR-003), and the next scheduled
+ * sweep asks again (`retryPendingFits`).
  *
  * Registered at boot only where headless renders can run; elsewhere the
  * store records `pass` with a "skipped" report (`fit.ts`), as before L2-B.
@@ -48,32 +49,56 @@ const targetKey = (t: FitTarget) =>
     ? `v:${t.templateId}:${t.version}`
     : `c:${t.tenantId}:${t.copyId}:${t.version}`;
 
+/**
+ * How often a check that couldn't run is tried again before it waits for the
+ * sweep, and the first wait (doubled each time). At boot the bundle sync
+ * queues checks before the harness may be up (the local dev stack starts the
+ * web app after the API), and the scheduled sweep is an hour away, or never
+ * comes locally.
+ */
+export const FIT_RUN_RETRIES = 3;
+export const FIT_RETRY_DELAY_MS = 30_000;
+
+export type FitRunnerOptions = { retries?: number; retryDelayMs?: number };
+
 /** The runner the store calls: queue the check, write the result, or leave it pending. */
-export function fitRunner(log: Logger = appLogger): FitRunner {
+export function fitRunner(log: Logger = appLogger, opts: FitRunnerOptions = {}): FitRunner {
+  const retries = opts.retries ?? FIT_RUN_RETRIES;
+  const retryDelayMs = opts.retryDelayMs ?? FIT_RETRY_DELAY_MS;
   return (target, document, kind) => {
     const key = targetKey(target);
     if (inFlight.has(key)) return;
     inFlight.add(key);
-    void serialisedFitCheck(() => check(document, kind))
-      .then(async (report) => {
-        await writeFitResult(target, { status: report.status, report });
-        log.info(
-          {
-            target,
-            status: report.status,
-            variants: report.variants,
-            issues: report.issues.length,
-          },
-          "template fit check",
-        );
-      })
-      .catch((err) =>
-        log.warn(
-          { err, target },
-          "template fit check didn't run; it stays pending for the next sweep",
-        ),
-      )
-      .finally(() => inFlight.delete(key));
+    const attempt = (n: number): void => {
+      void serialisedFitCheck(() => check(document, kind))
+        .then(async (report) => {
+          await writeFitResult(target, { status: report.status, report });
+          log.info(
+            {
+              target,
+              status: report.status,
+              variants: report.variants,
+              issues: report.issues.length,
+            },
+            "template fit check",
+          );
+          inFlight.delete(key);
+        })
+        .catch((err) => {
+          if (n < retries) {
+            const wait = retryDelayMs * 2 ** n;
+            log.info({ err, target, wait }, "template fit check didn't run; trying again");
+            setTimeout(() => attempt(n + 1), wait).unref();
+            return;
+          }
+          log.warn(
+            { err, target },
+            "template fit check didn't run; it stays pending for the next sweep",
+          );
+          inFlight.delete(key);
+        });
+    };
+    attempt(0);
   };
 }
 
