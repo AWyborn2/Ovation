@@ -1,0 +1,1424 @@
+{
+  "name": "Bold Type teamList",
+  "version": 1,
+  "listed": false,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "team": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "team-l1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)"
+            },
+            "id": "team-l2",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "XI",
+            "style": {
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 48,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.8,
+              "color": "#FFFFFF38",
+              "opacity": 0.5
+            },
+            "id": "team-l3",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": -3,
+                "y": 59.97,
+                "w": 35.84,
+                "h": 57.59
+              },
+              "portrait": {
+                "x": -3,
+                "y": 67.98,
+                "w": 35.84,
+                "h": 46.07
+              },
+              "story": {
+                "x": -3,
+                "y": 77.48,
+                "w": 35.84,
+                "h": 32.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "XI",
+            "style": {
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 25.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.8,
+              "color": "#FFFFFF38",
+              "opacity": 0.5
+            },
+            "id": "team-l4",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": -1.57,
+                "y": 59.92,
+                "w": 19.27,
+                "h": 57.46
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [
+                    18,
+                    0
+                  ],
+                  [
+                    100,
+                    0
+                  ],
+                  [
+                    100,
+                    100
+                  ],
+                  [
+                    0,
+                    100
+                  ]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "id": "team-l5",
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              },
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 52,
+                "h": 44.8
+              },
+              "story": {
+                "x": 37.28,
+                "y": 45,
+                "w": 68.72,
+                "h": 58.38
+              },
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [
+                    18,
+                    0
+                  ],
+                  [
+                    100,
+                    0
+                  ],
+                  [
+                    100,
+                    100
+                  ],
+                  [
+                    0,
+                    100
+                  ]
+                ]
+              }
+            },
+            "id": "team-l6",
+            "sizes": [
+              "square",
+              "portrait",
+              "landscape"
+            ],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              },
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 52,
+                "h": 44.8
+              },
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [
+                    18,
+                    0
+                  ],
+                  [
+                    100,
+                    0
+                  ],
+                  [
+                    100,
+                    99.99
+                  ],
+                  [
+                    0,
+                    99.99
+                  ]
+                ]
+              }
+            },
+            "id": "team-l7",
+            "sizes": [
+              "story"
+            ],
+            "geometry": {
+              "story": {
+                "x": 37.28,
+                "y": 45,
+                "w": 68.72,
+                "h": 58.38
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "team-l8",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 9.5,
+                "h": 9.5
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 9.5,
+                "h": 7.6
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 9.5,
+                "h": 5.34
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 4.99,
+                "h": 9.5
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 4.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l9",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 7.01,
+                "w": 7.89,
+                "h": 4.81
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 5.61,
+                "w": 7.89,
+                "h": 3.85
+              },
+              "story": {
+                "x": 17.5,
+                "y": 3.95,
+                "w": 7.89,
+                "h": 2.71
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.31,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l10",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 7,
+                "w": 34.87,
+                "h": 4.76
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l11",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 12.13,
+                "w": 7.89,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 9.7,
+                "w": 7.89,
+                "h": 1.56
+              },
+              "story": {
+                "x": 17.5,
+                "y": 6.82,
+                "w": 7.89,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l12",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 12.06,
+                "w": 34.87,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)"
+            },
+            "id": "team-l13",
+            "geometry": {
+              "square": {
+                "x": 78.26,
+                "y": 7.35,
+                "w": 15.74,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 78.26,
+                "y": 5.88,
+                "w": 15.74,
+                "h": 3.52
+              },
+              "story": {
+                "x": 78.26,
+                "y": 4.13,
+                "w": 15.74,
+                "h": 2.48
+              },
+              "landscape": {
+                "x": 88.59,
+                "y": 7.35,
+                "w": 8.26,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "TEAM LIST",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "team-l14",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 80.26,
+                "y": 8.07,
+                "w": 12.74,
+                "h": 2.87
+              },
+              "portrait": {
+                "x": 80.26,
+                "y": 6.46,
+                "w": 12.74,
+                "h": 2.3
+              },
+              "story": {
+                "x": 80.26,
+                "y": 4.54,
+                "w": 12.74,
+                "h": 1.61
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "TEAM LIST",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.26,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "team-l15",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 89.64,
+                "y": 8.03,
+                "w": 7.17,
+                "h": 2.86
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{gradeRound}}",
+            "style": {
+              "color": "#FFFFFFB3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.4,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.2,
+                  "blur": 0.8,
+                  "color": "#000000D9"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l16",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 27.39,
+                "y": 12.56,
+                "w": 68.61,
+                "h": 1.76
+              },
+              "portrait": {
+                "x": 27.39,
+                "y": 10.05,
+                "w": 68.61,
+                "h": 1.41
+              },
+              "story": {
+                "x": 27.39,
+                "y": 7.07,
+                "w": 68.61,
+                "h": 0.99
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{gradeRound}}",
+            "style": {
+              "color": "#FFFFFFB3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.74,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.11,
+                  "blur": 0.42,
+                  "color": "#000000D9"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l17",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 61.88,
+                "y": 12.43,
+                "w": 36.02,
+                "h": 1.75
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competitionLine}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l18",
+            "sizes": [
+              "square"
+            ],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 25.28,
+                "w": 51.13,
+                "h": 4.45
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competitionLine}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l19",
+            "sizes": [
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 14.8,
+                "w": 51.13,
+                "h": 4.75
+              },
+              "story": {
+                "x": 6,
+                "y": 10.41,
+                "w": 51.13,
+                "h": 3.34
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competitionLine}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l20",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 27,
+                "w": 38.01,
+                "h": 2.22
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{gradeHeading}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 7.57,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l21",
+            "sizes": [
+              "square"
+            ],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 29.46,
+                "w": 51.13,
+                "h": 10.6
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{gradeHeading}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 7.55,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l22",
+            "sizes": [
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 19.5,
+                "w": 51.13,
+                "h": 9.08
+              },
+              "story": {
+                "x": 6,
+                "y": 13.71,
+                "w": 51.13,
+                "h": 6.38
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{gradeHeading}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 4.06,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l23",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 28.72,
+                "w": 55.98,
+                "h": 7.14
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{venueDateTime}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.45,
+              "fontWeight": 500,
+              "letterSpacing": 0.14,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l24",
+            "sizes": [
+              "square"
+            ],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 41.05,
+                "w": 51.13,
+                "h": 4.03
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{venueDateTime}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.94,
+              "fontWeight": 500,
+              "letterSpacing": 0.14,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "team-l25",
+            "sizes": [
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 31.67,
+                "w": 51.13,
+                "h": 4.32
+              },
+              "story": {
+                "x": 6,
+                "y": 22.27,
+                "w": 51.13,
+                "h": 3.04
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{venueDateTime}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.76,
+              "fontWeight": 500,
+              "letterSpacing": 0.14,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l26",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 40.43,
+                "w": 39.48,
+                "h": 1.9
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "players",
+              "rowHeight": 4.91,
+              "gap": 0,
+              "cells": [
+                {
+                  "field": "number",
+                  "x": 0,
+                  "w": 11.06,
+                  "y": 14.77,
+                  "h": 68.57,
+                  "style": {
+                    "fontSize": 2.24,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "surname",
+                  "x": 16.04,
+                  "w": 51.2,
+                  "y": 43.08,
+                  "h": 30.13,
+                  "style": {
+                    "fontSize": 2.11,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ],
+              "columns": 2
+            },
+            "id": "team-l27",
+            "sizes": [
+              "square"
+            ],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 47.3,
+                "w": 51.04,
+                "h": 30.42
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "players",
+              "rowHeight": 7.78,
+              "cells": [
+                {
+                  "field": "number",
+                  "x": 0,
+                  "w": 15.1,
+                  "y": 12.44,
+                  "h": 57.72,
+                  "style": {
+                    "fontSize": 2.99,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "surname",
+                  "x": 21.88,
+                  "w": 34.15,
+                  "y": 37.45,
+                  "h": 48.9,
+                  "style": {
+                    "fontSize": 2.82,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ],
+              "columns": 2
+            },
+            "id": "team-l28",
+            "sizes": [
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 38.28,
+                "w": 51.04,
+                "h": 33.29
+              },
+              "story": {
+                "x": 6,
+                "y": 26.92,
+                "w": 51.04,
+                "h": 23.41
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "players",
+              "rowHeight": 2.61,
+              "gap": 0,
+              "cells": [
+                {
+                  "field": "number",
+                  "x": 0,
+                  "w": 9.19,
+                  "y": 14.56,
+                  "h": 67.68,
+                  "style": {
+                    "fontSize": 1.18,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "surname",
+                  "x": 13.32,
+                  "w": 54.78,
+                  "y": 36.92,
+                  "h": 38.07,
+                  "style": {
+                    "fontSize": 1.11,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ],
+              "columns": 2
+            },
+            "id": "team-l29",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 44.59,
+                "w": 31.85,
+                "h": 31.35
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "opacity": 0.22
+            },
+            "id": "team-l30",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 0.07
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 0.05
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87.44,
+                "w": 93.7,
+                "h": 0.16
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "SUPPORTED BY",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "team-l31",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 90.77,
+                "w": 15.04,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 6,
+                "y": 92.61,
+                "w": 15.04,
+                "h": 1.56
+              },
+              "story": {
+                "x": 6,
+                "y": 94.81,
+                "w": 15.04,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "SUPPORTED BY",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "team-l32",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 90.67,
+                "w": 8.37,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 6.48,
+              "opacity": 0.94
+            },
+            "id": "team-l33",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 21.44,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 21.44,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 21.44,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 3.78,
+              "opacity": 0.94
+            },
+            "id": "team-l34",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 11.26,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "team-l35",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 21.44,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 21.44,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 21.44,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "team-l36",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 11.26,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l37",
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "geometry": {
+              "square": {
+                "x": 54.08,
+                "y": 90.12,
+                "w": 41.12,
+                "h": 3.33
+              },
+              "portrait": {
+                "x": 54.08,
+                "y": 92.1,
+                "w": 41.12,
+                "h": 2.67
+              },
+              "story": {
+                "x": 54.08,
+                "y": 94.44,
+                "w": 41.12,
+                "h": 1.88
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "team-l38",
+            "sizes": [
+              "landscape"
+            ],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 89.92,
+                "w": 21.96,
+                "h": 3.49
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
