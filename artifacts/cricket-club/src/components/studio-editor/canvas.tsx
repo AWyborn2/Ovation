@@ -158,8 +158,11 @@ export function EditorCanvas({
   onSelectMany?: (ids: string[], additive: boolean) => void;
   /** The canvas around the card: a drag that starts on it draws a marquee too. */
   marqueeArea?: RefObject<HTMLElement | null>;
-  /** Double-click on a group: enter it, with the child under the pointer (if any). */
-  onEnterGroup: (id: string, child?: string | null) => void;
+  /**
+   * Double-click on a group or list: enter it, with the child under the
+   * pointer (if any) and the point itself (percent of the artboard).
+   */
+  onEnterGroup: (id: string, child?: string | null, at?: { x: number; y: number }) => void;
   /** The group being edited inside, outlined on the card. */
   scopeId?: string | null;
   /** That group's box, for when the card's drawing of it can't be measured. */
@@ -550,8 +553,13 @@ export function EditorCanvas({
               onPointerDown={(e) => onLayerPointerDown(e, l.id)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                if (isContainer(l)) onEnterGroup(l.id, childAt(l, e.clientX, e.clientY));
-                else if (l.group) onEnterGroup(l.id);
+                if (isContainer(l)) {
+                  onEnterGroup(
+                    l.id,
+                    childAt(l, e.clientX, e.clientY),
+                    pointPct(e.clientX, e.clientY),
+                  );
+                } else if (l.group) onEnterGroup(l.id);
               }}
             />
           );
