@@ -593,7 +593,7 @@
                   }
                 },
                 {
-                  "field": "resultLine",
+                  "field": "gradeSub",
                   "x": 99.89,
                   "w": 0.11,
                   "y": 0,
@@ -604,7 +604,7 @@
                   }
                 },
                 {
-                  "field": "performers",
+                  "field": "resultLine",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -615,7 +615,7 @@
                   }
                 },
                 {
-                  "field": "outcome",
+                  "field": "performers",
                   "x": 0,
                   "w": 100,
                   "y": 99.32,
@@ -636,6 +636,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 1.94,
+                  "w": 9.1,
+                  "y": 35.63,
+                  "h": 54.9,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "center"
                   }
                 },
@@ -669,6 +684,18 @@
                 },
                 {
                   "field": "outcome",
+                  "x": 90.78,
+                  "w": 7.17,
+                  "y": 38.08,
+                  "h": 23.82,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 5.7
+                  }
+                },
+                {
+                  "field": "outcome",
                   "x": 89.73,
                   "w": 8.22,
                   "y": 38.08,
@@ -685,15 +712,6 @@
               ],
               "variants": {
                 "lost": {
-                  "gradeLabel": {
-                    "background": "#FFFFFF24"
-                  },
-                  "resultLine": {
-                    "background": "#FFFFFF24"
-                  },
-                  "performers": {
-                    "background": "#FFFFFF24"
-                  },
                   "outcome": {
                     "fontSize": 1.72,
                     "color": "#F2F5F8A3",
@@ -701,6 +719,18 @@
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
                     "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
                     "background": "#FFFFFF24"
                   }
                 }
@@ -745,7 +775,7 @@
                   }
                 },
                 {
-                  "field": "resultLine",
+                  "field": "gradeSub",
                   "x": 99.89,
                   "w": 0.11,
                   "y": 0,
@@ -756,7 +786,7 @@
                   }
                 },
                 {
-                  "field": "performers",
+                  "field": "resultLine",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -767,7 +797,7 @@
                   }
                 },
                 {
-                  "field": "outcome",
+                  "field": "performers",
                   "x": 0,
                   "w": 100,
                   "y": 99.48,
@@ -788,6 +818,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "center"
                   }
                 },
@@ -821,6 +866,18 @@
                 },
                 {
                   "field": "outcome",
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 7.6
+                  }
+                },
+                {
+                  "field": "outcome",
                   "x": 87.37,
                   "w": 10.12,
                   "y": 38.22,
@@ -837,15 +894,6 @@
               ],
               "variants": {
                 "lost": {
-                  "gradeLabel": {
-                    "background": "#FFFFFF24"
-                  },
-                  "resultLine": {
-                    "background": "#FFFFFF24"
-                  },
-                  "performers": {
-                    "background": "#FFFFFF24"
-                  },
                   "outcome": {
                     "fontSize": 2.29,
                     "color": "#F2F5F8A3",
@@ -853,6 +901,18 @@
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
                     "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
                     "background": "#FFFFFF24"
                   }
                 }
@@ -897,7 +957,7 @@
                   }
                 },
                 {
-                  "field": "resultLine",
+                  "field": "gradeSub",
                   "x": 99.89,
                   "w": 0.11,
                   "y": 0,
@@ -908,7 +968,7 @@
                   }
                 },
                 {
-                  "field": "performers",
+                  "field": "resultLine",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -919,7 +979,7 @@
                   }
                 },
                 {
-                  "field": "outcome",
+                  "field": "performers",
                   "x": 0,
                   "w": 100,
                   "y": 99.48,
@@ -940,6 +1000,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "center"
                   }
                 },
@@ -973,6 +1048,18 @@
                 },
                 {
                   "field": "outcome",
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 7.6
+                  }
+                },
+                {
+                  "field": "outcome",
                   "x": 87.37,
                   "w": 10.12,
                   "y": 38.22,
@@ -989,15 +1076,6 @@
               ],
               "variants": {
                 "lost": {
-                  "gradeLabel": {
-                    "background": "#FFFFFF24"
-                  },
-                  "resultLine": {
-                    "background": "#FFFFFF24"
-                  },
-                  "performers": {
-                    "background": "#FFFFFF24"
-                  },
                   "outcome": {
                     "fontSize": 2.29,
                     "color": "#F2F5F8A3",
@@ -1005,6 +1083,18 @@
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
                     "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
                     "background": "#FFFFFF24"
                   }
                 }
@@ -1049,7 +1139,7 @@
                   }
                 },
                 {
-                  "field": "resultLine",
+                  "field": "gradeSub",
                   "x": 99.84,
                   "w": 0.16,
                   "y": 0,
@@ -1060,7 +1150,7 @@
                   }
                 },
                 {
-                  "field": "performers",
+                  "field": "resultLine",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -1071,7 +1161,7 @@
                   }
                 },
                 {
-                  "field": "outcome",
+                  "field": "performers",
                   "x": 0,
                   "w": 100,
                   "y": 98.84,
@@ -1092,6 +1182,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 1.6,
+                  "w": 7.65,
+                  "y": 35.76,
+                  "h": 54.38,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "center"
                   }
                 },
@@ -1125,6 +1230,18 @@
                 },
                 {
                   "field": "outcome",
+                  "x": 92.18,
+                  "w": 6.06,
+                  "y": 37.73,
+                  "h": 24.54,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 3.32
+                  }
+                },
+                {
+                  "field": "outcome",
                   "x": 91.31,
                   "w": 6.93,
                   "y": 37.73,
@@ -1141,15 +1258,6 @@
               ],
               "variants": {
                 "lost": {
-                  "gradeLabel": {
-                    "background": "#FFFFFF24"
-                  },
-                  "resultLine": {
-                    "background": "#FFFFFF24"
-                  },
-                  "performers": {
-                    "background": "#FFFFFF24"
-                  },
                   "outcome": {
                     "fontSize": 0.9,
                     "color": "#F2F5F8A3",
@@ -1157,6 +1265,18 @@
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
                     "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
                     "background": "#FFFFFF24"
                   }
                 }

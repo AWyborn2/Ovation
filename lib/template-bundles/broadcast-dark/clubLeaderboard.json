@@ -684,7 +684,7 @@
                   }
                 },
                 {
-                  "field": "playerName",
+                  "field": "gradeSub",
                   "x": 99.89,
                   "w": 0.11,
                   "y": 0,
@@ -695,7 +695,7 @@
                   }
                 },
                 {
-                  "field": "value",
+                  "field": "playerName",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -706,7 +706,7 @@
                   }
                 },
                 {
-                  "field": "gradeLabel",
+                  "field": "value",
                   "x": 0,
                   "w": 100,
                   "y": 99.14,
@@ -727,6 +727,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.05,
+                  "w": 11.77,
+                  "y": 36.41,
+                  "h": 55.35,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "left"
                   }
                 },
@@ -799,7 +814,7 @@
                   }
                 },
                 {
-                  "field": "playerName",
+                  "field": "gradeSub",
                   "x": 99.89,
                   "w": 0.11,
                   "y": 0,
@@ -810,7 +825,7 @@
                   }
                 },
                 {
-                  "field": "value",
+                  "field": "playerName",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -821,7 +836,7 @@
                   }
                 },
                 {
-                  "field": "gradeLabel",
+                  "field": "value",
                   "x": 0,
                   "w": 100,
                   "y": 99.35,
@@ -842,6 +857,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.5,
+                  "w": 14.6,
+                  "y": 36.35,
+                  "h": 55.59,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "left"
                   }
                 },
@@ -920,7 +950,7 @@
                   }
                 },
                 {
-                  "field": "playerName",
+                  "field": "gradeSub",
                   "x": 99.84,
                   "w": 0.16,
                   "y": 0,
@@ -931,7 +961,7 @@
                   }
                 },
                 {
-                  "field": "value",
+                  "field": "playerName",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -942,7 +972,7 @@
                   }
                 },
                 {
-                  "field": "gradeLabel",
+                  "field": "value",
                   "x": 0,
                   "w": 100,
                   "y": 98.54,
@@ -963,6 +993,21 @@
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 1.76,
+                  "w": 9.73,
+                  "y": 36.57,
+                  "h": 54.68,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
                     "align": "left"
                   }
                 },

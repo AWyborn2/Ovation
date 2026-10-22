@@ -2473,7 +2473,7 @@
               "gap": 0.92,
               "cells": [
                 {
-                  "field": "clubScore",
+                  "field": "oppScore",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -2482,19 +2482,8 @@
                   }
                 },
                 {
-                  "field": "word",
-                  "x": 0,
-                  "w": 0.11,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#FFFFFF1A"
-                  }
-                },
-                {
                   "field": "grade",
-                  "x": 99.89,
+                  "x": 0,
                   "w": 0.11,
                   "y": 0,
                   "h": 100,
@@ -2505,6 +2494,17 @@
                 },
                 {
                   "field": "opposition",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "result",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -2515,7 +2515,7 @@
                   }
                 },
                 {
-                  "field": "result",
+                  "field": "clubScore",
                   "x": 0,
                   "w": 100,
                   "y": 98.95,
@@ -2523,6 +2523,18 @@
                   "show": "backdrop",
                   "style": {
                     "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 1.73,
+                  "w": 4.92,
+                  "y": 11.54,
+                  "h": 27,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 6.42
                   }
                 },
                 {
@@ -2657,7 +2669,7 @@
               "gap": 1.11,
               "cells": [
                 {
-                  "field": "clubScore",
+                  "field": "oppScore",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -2666,19 +2678,8 @@
                   }
                 },
                 {
-                  "field": "word",
-                  "x": 0,
-                  "w": 0.11,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#FFFFFF1A"
-                  }
-                },
-                {
                   "field": "grade",
-                  "x": 99.89,
+                  "x": 0,
                   "w": 0.11,
                   "y": 0,
                   "h": 100,
@@ -2689,6 +2690,17 @@
                 },
                 {
                   "field": "opposition",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "result",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -2699,7 +2711,7 @@
                   }
                 },
                 {
-                  "field": "result",
+                  "field": "clubScore",
                   "x": 0,
                   "w": 100,
                   "y": 99.12,
@@ -2707,6 +2719,18 @@
                   "show": "backdrop",
                   "style": {
                     "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 1.9,
+                  "w": 5.49,
+                  "y": 11.4,
+                  "h": 27.08,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 8.55
                   }
                 },
                 {
@@ -2841,7 +2865,7 @@
               "gap": 0.86,
               "cells": [
                 {
-                  "field": "clubScore",
+                  "field": "oppScore",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -2850,19 +2874,8 @@
                   }
                 },
                 {
-                  "field": "word",
-                  "x": 0,
-                  "w": 0.11,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#FFFFFF1A"
-                  }
-                },
-                {
                   "field": "grade",
-                  "x": 99.89,
+                  "x": 0,
                   "w": 0.11,
                   "y": 0,
                   "h": 100,
@@ -2873,6 +2886,17 @@
                 },
                 {
                   "field": "opposition",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "result",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -2883,7 +2907,7 @@
                   }
                 },
                 {
-                  "field": "result",
+                  "field": "clubScore",
                   "x": 0,
                   "w": 100,
                   "y": 98.87,
@@ -2891,6 +2915,18 @@
                   "show": "backdrop",
                   "style": {
                     "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 1.5,
+                  "w": 4.27,
+                  "y": 11.62,
+                  "h": 26.95,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 8.55
                   }
                 },
                 {
@@ -3025,7 +3061,7 @@
               "gap": 0.58,
               "cells": [
                 {
-                  "field": "clubScore",
+                  "field": "oppScore",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -3034,19 +3070,8 @@
                   }
                 },
                 {
-                  "field": "word",
-                  "x": 0,
-                  "w": 0.18,
-                  "y": 0,
-                  "h": 100,
-                  "show": "backdrop",
-                  "style": {
-                    "background": "#FFFFFF1A"
-                  }
-                },
-                {
                   "field": "grade",
-                  "x": 99.82,
+                  "x": 0,
                   "w": 0.18,
                   "y": 0,
                   "h": 100,
@@ -3057,6 +3082,17 @@
                 },
                 {
                   "field": "opposition",
+                  "x": 99.82,
+                  "w": 0.18,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "result",
                   "x": 0,
                   "w": 100,
                   "y": 0,
@@ -3067,7 +3103,7 @@
                   }
                 },
                 {
-                  "field": "result",
+                  "field": "clubScore",
                   "x": 0,
                   "w": 100,
                   "y": 98.51,
@@ -3075,6 +3111,18 @@
                   "show": "backdrop",
                   "style": {
                     "background": "#FFFFFF1A"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 1.96,
+                  "w": 5.44,
+                  "y": 11.88,
+                  "h": 26.72,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 3.74
                   }
                 },
                 {

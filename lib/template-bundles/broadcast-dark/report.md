@@ -1,17 +1,17 @@
-# Broadcast Dark: raw conversion report
+# Broadcast Dark: conversion report
 
-Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.
+Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 12 of 17 kinds listed.
 
 ## Summary
 
 - Kinds: 17; pages: 21.
-- Mean pixel match against the pack: 95% over 84 renders.
+- Mean pixel match against the pack: 96% over 84 renders.
 - Pixel match compares the pack and the converted page drawing the same sample input; sample photos and logos are grey placeholders in both.
 - Motion: `hhPulse` → loop: pulse, 1400 ms.
 - Colours that move with the palette but aren't a token: 6.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 0 hd (raw conversion).
+- Polish time logged: 3 hd.
 
 ## bigMoment
 
@@ -28,7 +28,7 @@ Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts` on 
 | story     | 98%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
 
@@ -46,7 +46,7 @@ Polish:
 | story     | 99%         | none         |
 | landscape | 99%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×8)
 
@@ -57,14 +57,14 @@ Polish:
 - From `card.Runs`; not used: `card.Wickets`.
 - Layers: 10 shape, 4 vector, 7 image, 20 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings |
-| --------- | ----------- | ------------ |
-| square    | 94%         | none         |
-| portrait  | 93%         | none         |
-| story     | 95%         | none         |
-| landscape | 95%         | none         |
+| Size      | Pixel match | Fit warnings                           |
+| --------- | ----------- | -------------------------------------- |
+| square    | 94%         | overflow; overflow; overflow; overflow |
+| portrait  | 93%         | overflow; overflow; overflow; overflow |
+| story     | 95%         | overflow; overflow; overflow; overflow |
+| landscape | 95%         | overflow; overflow; overflow; overflow |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - rows leaders: row style top dropped (not a style this list has) (×3)
 
@@ -96,7 +96,7 @@ Polish:
 | story     | 99%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×8)
 
@@ -114,7 +114,7 @@ Polish:
 | story     | 99%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×8)
 
@@ -132,7 +132,7 @@ Polish:
 | story     | 99%         | none         |
 | landscape | 99%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
 
@@ -145,10 +145,10 @@ Polish:
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 94%         | none         |
-| portrait  | 94%         | none         |
-| story     | 96%         | none         |
-| landscape | 96%         | none         |
+| square    | 95%         | none         |
+| portrait  | 95%         | none         |
+| story     | 97%         | none         |
+| landscape | 97%         | none         |
 
 Colours not tokenised:
 
@@ -179,10 +179,10 @@ Colours not tokenised:
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 93%         | overflow     |
-| portrait  | 92%         | overflow     |
-| story     | 94%         | overflow     |
-| landscape | 95%         | overflow     |
+| square    | 93%         | none         |
+| portrait  | 91%         | none         |
+| story     | 94%         | none         |
+| landscape | 95%         | none         |
 
 ### day
 
@@ -199,14 +199,14 @@ Colours not tokenised:
 ### sponsors
 
 - From `sponsors.slide`.
-- Layers: 18 shape, 1 photo, 4 vector, 7 image, 31 text, 3 rows.
+- Layers: 24 shape, 1 photo, 4 vector, 19 image, 31 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 86%         | none         |
-| portrait  | 79%         | none         |
-| story     | 85%         | none         |
-| landscape | 95%         | none         |
+| square    | 97%         | none         |
+| portrait  | 96%         | none         |
+| story     | 97%         | none         |
+| landscape | 98%         | none         |
 
 ## matchSummary
 
@@ -222,7 +222,7 @@ Colours not tokenised:
 | story     | 98%         | none         |
 | landscape | 96%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - opposition.logo: cropped to fill (object-fit: cover), drawn contained (×4)
 - club.logo: cropped to fill (object-fit: cover), drawn contained (×4)
@@ -268,7 +268,7 @@ Polish:
 | story     | 98%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
 
@@ -305,7 +305,7 @@ Colours not tokenised:
 | story     | 98%         | none         |
 | landscape | 98%         | none         |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×12)
 
@@ -344,13 +344,13 @@ Polish:
 - From `card.weekend-wrap`.
 - Layers: 10 shape, 4 vector, 7 image, 18 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings |
-| --------- | ----------- | ------------ |
-| square    | 83%         | overflow     |
-| portrait  | 79%         | overflow     |
-| story     | 86%         | overflow     |
-| landscape | 89%         | overflow     |
+| Size      | Pixel match | Fit warnings                                     |
+| --------- | ----------- | ------------------------------------------------ |
+| square    | 83%         | overflow; overflow; overflow; overflow; overflow |
+| portrait  | 80%         | overflow; overflow; overflow; overflow; overflow |
+| story     | 86%         | overflow; overflow; overflow; overflow; overflow |
+| landscape | 90%         | overflow; overflow; overflow; overflow; overflow |
 
-Polish:
+Converter notes (from the raw conversion):
 
 - inline runs styled apart, merged into one text style (×4)
