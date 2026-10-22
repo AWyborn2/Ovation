@@ -8850,6 +8850,76 @@ export interface CreateConsoleLibraryLookRequest {
   description?: string | null;
 }
 
+export interface ImportFigmaTemplateRequest {
+  /**
+     * A Figma design link (with or without node-id), or a bare file key.
+     * @minLength 1
+     * @maxLength 2000
+     */
+  fileUrl: string;
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /** @nullable */
+  lookId?: number | null;
+}
+
+export type FigmaReportLineLevel = typeof FigmaReportLineLevel[keyof typeof FigmaReportLineLevel];
+
+
+export const FigmaReportLineLevel = {
+  warn: 'warn',
+  info: 'info',
+} as const;
+
+export interface FigmaReportLine {
+  level: FigmaReportLineLevel;
+  page?: string;
+  sizes?: string[];
+  /** The layer's name path in Figma. */
+  layer?: string;
+  message: string;
+}
+
+export type FigmaFrameMatchBy = typeof FigmaFrameMatchBy[keyof typeof FigmaFrameMatchBy];
+
+
+export const FigmaFrameMatchBy = {
+  name: 'name',
+  dimensions: 'dimensions',
+} as const;
+
+export interface FigmaFrameMatch {
+  nodeId: string;
+  name: string;
+  page: string;
+  size: string;
+  by: FigmaFrameMatchBy;
+}
+
+export type FigmaImportResultFontsItem = {
+  from: string;
+  to: string;
+};
+
+export type FigmaImportResultRendered = {
+  vectors: number;
+  images: number;
+};
+
+export interface FigmaImportResult {
+  template: ConsoleLibraryTemplate;
+  fileName: string;
+  frames: FigmaFrameMatch[];
+  report: FigmaReportLine[];
+  /** Figma fonts outside the catalogue and what they became. */
+  fonts: FigmaImportResultFontsItem[];
+  rendered: FigmaImportResultRendered;
+}
+
 export interface AdoptLookChange {
   kind: string;
   copyId: number;

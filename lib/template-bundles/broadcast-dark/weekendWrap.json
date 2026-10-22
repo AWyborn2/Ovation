@@ -1,0 +1,1821 @@
+{
+  "name": "Broadcast Dark weekendWrap",
+  "version": 1,
+  "listed": false,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "card-l1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "vector",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 110.93 194.39\" preserveAspectRatio=\"none\"><polygon points=\"78.38,0 110.38,0 32,194 0,194\" fill=\"var(--gold)\"/></svg>",
+            "id": "card-l2",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 79.37,
+                "y": -4,
+                "w": 10.27,
+                "h": 18
+              },
+              "portrait": {
+                "x": 79.37,
+                "y": -3.2,
+                "w": 10.27,
+                "h": 14.4
+              },
+              "story": {
+                "x": 79.37,
+                "y": -2.25,
+                "w": 10.27,
+                "h": 10.12
+              }
+            }
+          },
+          {
+            "kind": "vector",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64.7 113.39\" preserveAspectRatio=\"none\"><polygon points=\"45.65,0 64.65,0 19,113 0,113\" fill=\"var(--gold)\"/></svg>",
+            "id": "card-l3",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 89.17,
+                "y": -4,
+                "w": 5.39,
+                "h": 18
+              }
+            }
+          },
+          {
+            "kind": "vector",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 71.83 140.39\" preserveAspectRatio=\"none\"><polygon points=\"56.56,0 71.56,0 15,140 0,140\" fill=\"var(--gold)\" fill-opacity=\"0.55\"/></svg>",
+            "id": "card-l4",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 86.98,
+                "y": -4,
+                "w": 6.65,
+                "h": 13
+              },
+              "portrait": {
+                "x": 86.98,
+                "y": -3.2,
+                "w": 6.65,
+                "h": 10.4
+              },
+              "story": {
+                "x": 86.98,
+                "y": -2.25,
+                "w": 6.65,
+                "h": 7.31
+              }
+            }
+          },
+          {
+            "kind": "vector",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 41.9 81.89\" preserveAspectRatio=\"none\"><polygon points=\"33.13,0 42.13,0 9,82 0,82\" fill=\"var(--gold)\" fill-opacity=\"0.55\"/></svg>",
+            "id": "card-l5",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 93.16,
+                "y": -4,
+                "w": 3.49,
+                "h": 13
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "card-l6",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 9.5,
+                "h": 9.5
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 9.5,
+                "h": 7.6
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 9.5,
+                "h": 5.34
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 4.99,
+                "h": 9.5
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 4.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l7",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 7.01,
+                "w": 52.87,
+                "h": 4.81
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 5.61,
+                "w": 52.87,
+                "h": 3.85
+              },
+              "story": {
+                "x": 17.5,
+                "y": 3.95,
+                "w": 52.87,
+                "h": 2.71
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.31,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l8",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 7,
+                "w": 34.87,
+                "h": 4.76
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "#F2F5F8A3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l9",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 12.13,
+                "w": 52.87,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 9.7,
+                "w": 52.87,
+                "h": 1.56
+              },
+              "story": {
+                "x": 17.5,
+                "y": 6.82,
+                "w": 52.87,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "#F2F5F8A3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l10",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 12.06,
+                "w": 34.87,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "radius": 6.48
+            },
+            "id": "card-l11",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 72.37,
+                "y": 8.55,
+                "w": 21.64,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 72.37,
+                "y": 6.84,
+                "w": 21.64,
+                "h": 3.52
+              },
+              "story": {
+                "x": 72.37,
+                "y": 4.81,
+                "w": 21.64,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "radius": 3.78
+            },
+            "id": "card-l12",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 85.49,
+                "y": 8.55,
+                "w": 11.36,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "card-l13",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 74.36,
+                "y": 9.27,
+                "w": 18.64,
+                "h": 2.87
+              },
+              "portrait": {
+                "x": 74.36,
+                "y": 7.42,
+                "w": 18.64,
+                "h": 2.3
+              },
+              "story": {
+                "x": 74.36,
+                "y": 5.22,
+                "w": 18.64,
+                "h": 1.61
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.26,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "card-l14",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 86.54,
+                "y": 9.23,
+                "w": 10.26,
+                "h": 2.86
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{roundLabel}} · {{dateRange}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.72,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l15",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 13.96,
+                "w": 49.28,
+                "h": 2.22
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{roundLabel}} · {{dateRange}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l16",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 11.25,
+                "w": 65.71,
+                "h": 2.37
+              },
+              "story": {
+                "x": 6,
+                "y": 22.76,
+                "w": 65.71,
+                "h": 1.67
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{roundLabel}} · {{dateRange}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.9,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l17",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 42.93,
+                "w": 26.1,
+                "h": 2.22
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 7.92,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.88
+            },
+            "id": "card-l18",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 14.61,
+                "w": 27.11,
+                "h": 18.91
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 10.56,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.88
+            },
+            "id": "card-l19",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 11.95,
+                "w": 36.1,
+                "h": 20.17
+              },
+              "story": {
+                "x": 6,
+                "y": 23.25,
+                "w": 36.1,
+                "h": 14.19
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 4.15,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.88
+            },
+            "id": "card-l20",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 43.54,
+                "w": 14.25,
+                "h": 18.87
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "matches",
+              "rowHeight": 13.52,
+              "gap": 0.79,
+              "cells": [
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF0D"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.32,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.94,
+                  "w": 9.1,
+                  "y": 9.47,
+                  "h": 23.72,
+                  "style": {
+                    "fontSize": 3.56,
+                    "color": "var(--gold)",
+                    "fontFamily": "'Anton',sans-serif",
+                    "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 1.94,
+                  "w": 9.1,
+                  "y": 35.63,
+                  "h": 54.9,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 13.01,
+                  "w": 76.72,
+                  "y": 23.34,
+                  "h": 36.3,
+                  "style": {
+                    "fontSize": 2.05,
+                    "color": "#F5F2E8",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 13.01,
+                  "w": 85.05,
+                  "y": 62.07,
+                  "h": 14.59,
+                  "style": {
+                    "fontSize": 1.52,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 90.78,
+                  "w": 7.17,
+                  "y": 38.08,
+                  "h": 23.82,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 5.7
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 89.73,
+                  "w": 8.22,
+                  "y": 38.08,
+                  "h": 23.82,
+                  "style": {
+                    "fontSize": 1.72,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right"
+                  }
+                }
+              ],
+              "variants": {
+                "lost": {
+                  "outcome": {
+                    "fontSize": 1.72,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF24"
+                  }
+                }
+              }
+            },
+            "id": "card-l21",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 34.08,
+                "w": 81.85,
+                "h": 54.97
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "matches",
+              "rowHeight": 17.96,
+              "gap": 1.05,
+              "cells": [
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF0D"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 9.32,
+                  "h": 23.81,
+                  "style": {
+                    "fontSize": 4.75,
+                    "color": "var(--gold)",
+                    "fontFamily": "'Anton',sans-serif",
+                    "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 16.1,
+                  "w": 71.27,
+                  "y": 15.91,
+                  "h": 36.45,
+                  "style": {
+                    "fontSize": 2.73,
+                    "color": "#F5F2E8",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 16.1,
+                  "w": 71.27,
+                  "y": 54.8,
+                  "h": 29.28,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 7.6
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 87.37,
+                  "w": 10.12,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "style": {
+                    "fontSize": 2.29,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right"
+                  }
+                }
+              ],
+              "variants": {
+                "lost": {
+                  "outcome": {
+                    "fontSize": 2.29,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF24"
+                  }
+                }
+              }
+            },
+            "id": "card-l22",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 32.72,
+                "w": 88,
+                "h": 58.43
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "matches",
+              "rowHeight": 17.96,
+              "gap": 1.05,
+              "cells": [
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF0D"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 9.32,
+                  "h": 23.81,
+                  "style": {
+                    "fontSize": 4.75,
+                    "color": "var(--gold)",
+                    "fontFamily": "'Anton',sans-serif",
+                    "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 16.1,
+                  "w": 71.27,
+                  "y": 15.91,
+                  "h": 36.45,
+                  "style": {
+                    "fontSize": 2.73,
+                    "color": "#F5F2E8",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 16.1,
+                  "w": 71.27,
+                  "y": 54.81,
+                  "h": 29.28,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 7.6
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 87.37,
+                  "w": 10.12,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "style": {
+                    "fontSize": 2.29,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right"
+                  }
+                }
+              ],
+              "variants": {
+                "lost": {
+                  "outcome": {
+                    "fontSize": 2.29,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF24"
+                  }
+                }
+              }
+            },
+            "id": "card-l23",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 6,
+                "y": 37.85,
+                "w": 88,
+                "h": 41.08
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "matches",
+              "rowHeight": 7.16,
+              "gap": 0.41,
+              "cells": [
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF0D"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.84,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.84,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF14"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.6,
+                  "w": 7.65,
+                  "y": 9.86,
+                  "h": 23.5,
+                  "style": {
+                    "fontSize": 1.87,
+                    "color": "var(--gold)",
+                    "fontFamily": "'Anton',sans-serif",
+                    "fontWeight": 400,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 1.6,
+                  "w": 7.65,
+                  "y": 35.76,
+                  "h": 54.38,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 10.82,
+                  "w": 80.49,
+                  "y": 32.58,
+                  "h": 17.97,
+                  "style": {
+                    "fontSize": 1.07,
+                    "color": "#F5F2E8",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 10.82,
+                  "w": 80.49,
+                  "y": 52.95,
+                  "h": 14.46,
+                  "style": {
+                    "fontSize": 0.8,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 92.18,
+                  "w": 6.06,
+                  "y": 37.73,
+                  "h": 24.54,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 3.32
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 91.31,
+                  "w": 6.93,
+                  "y": 37.73,
+                  "h": 24.54,
+                  "style": {
+                    "fontSize": 0.9,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right"
+                  }
+                }
+              ],
+              "variants": {
+                "lost": {
+                  "outcome": {
+                    "fontSize": 0.9,
+                    "color": "#F2F5F8A3",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "letterSpacing": 0.08,
+                    "align": "right",
+                    "background": "#FFFFFF14"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF24"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF24"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF24"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF24"
+                  }
+                }
+              }
+            },
+            "id": "card-l24",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 32.92,
+                "y": 24.15,
+                "w": 51.93,
+                "h": 55.43
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": false
+            },
+            "id": "card-l25",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 54.08,
+                "y": 90.92,
+                "w": 41.12,
+                "h": 3.33
+              },
+              "portrait": {
+                "x": 54.08,
+                "y": 92.74,
+                "w": 41.12,
+                "h": 2.67
+              },
+              "story": {
+                "x": 54.08,
+                "y": 94.89,
+                "w": 41.12,
+                "h": 1.88
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": false
+            },
+            "id": "card-l26",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 90.72,
+                "w": 21.96,
+                "h": 3.49
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF24"
+            },
+            "id": "card-l27",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 0.07
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 0.05
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87.44,
+                "w": 93.7,
+                "h": 0.16
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "SUPPORTED BY",
+            "style": {
+              "color": "#F2F5F8A3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "card-l28",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 90.77,
+                "w": 15.04,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 6,
+                "y": 92.61,
+                "w": 15.04,
+                "h": 1.56
+              },
+              "story": {
+                "x": 6,
+                "y": 94.81,
+                "w": 15.04,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "SUPPORTED BY",
+            "style": {
+              "color": "#F2F5F8A3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "card-l29",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 90.67,
+                "w": 8.37,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 6.48
+            },
+            "id": "card-l30",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 21.44,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 21.44,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 21.44,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 3.78
+            },
+            "id": "card-l31",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 11.26,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "card-l32",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 21.44,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 21.44,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 21.44,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "card-l33",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 11.26,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 6.48
+            },
+            "id": "card-l34",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 32.84,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 32.84,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 32.84,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 3.78
+            },
+            "id": "card-l35",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 17.24,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "card-l36",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 32.84,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 32.84,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 32.84,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "card-l37",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 17.24,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 6.48
+            },
+            "id": "card-l38",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 44.24,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 44.24,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 44.24,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFFEB",
+              "radius": 3.78
+            },
+            "id": "card-l39",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 23.22,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "card-l40",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 44.24,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 44.24,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 44.24,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "card-l41",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 23.22,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "card-l42",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 54.08,
+                "y": 90.12,
+                "w": 41.12,
+                "h": 3.33
+              },
+              "portrait": {
+                "x": 54.08,
+                "y": 92.1,
+                "w": 41.12,
+                "h": 2.67
+              },
+              "story": {
+                "x": 54.08,
+                "y": 94.44,
+                "w": 41.12,
+                "h": 1.88
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "card-l43",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 89.92,
+                "w": 21.96,
+                "h": 3.49
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
