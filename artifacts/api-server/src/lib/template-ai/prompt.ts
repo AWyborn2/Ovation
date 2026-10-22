@@ -36,6 +36,18 @@ const DESIGNER = `You design social media card templates for Ovation, a white-la
 
 Design like a strong sports-brand designer: a clear hierarchy (the one thing the card is about is the biggest), generous margins, condensed or display type for headlines, real contrast, and the club's colour tokens for anything that should feel like the club. Every field can be long or missing: give names a text fit, stack blocks that can lose a line so they close up, and use showWhen for anything optional. Keep junior cards free of player photos.`;
 
+/** A layer's library bookkeeping (design signature, per-size link), which a design doesn't need. */
+function withoutBookkeeping(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutBookkeeping);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([k]) => k !== "sig" && k !== "link")
+        .map(([k, v]) => [k, withoutBookkeeping(v)]),
+    );
+  return value;
+}
+
 /** An example bundle template as format v2, compact. */
 function exampleDocument(slug: string): { slug: string; kind: string; json: string } | null {
   const [look, kind] = slug.split("/");
@@ -44,7 +56,7 @@ function exampleDocument(slug: string): { slug: string; kind: string; json: stri
   );
   if (!template || !kind) return null;
   const { sourceFormat: _source, ...doc } = normaliseDocument(template.file.document, kind);
-  return { slug, kind, json: JSON.stringify(doc) };
+  return { slug, kind, json: JSON.stringify(withoutBookkeeping(doc)) };
 }
 
 /** The cached system block shared by every kind. */
@@ -53,7 +65,7 @@ export function designerSystemText(): string {
     .filter((e): e is NonNullable<typeof e> => e !== null)
     .map((e) => `## Example: ${e.slug} (a ${e.kind} template)\n${e.json}`)
     .join("\n\n");
-  return `${DESIGNER}\n\n${templateFormatGuide()}\n\n# Examples from Ovation's library\nThese use the plain v1 subset of the format; your designs may use everything above.\n\n${examples}`;
+  return `${DESIGNER}\n\n${templateFormatGuide()}\n\n# Examples from Ovation's library\nThese are starter designs; your designs may use everything above.\n\n${examples}`;
 }
 
 /** Image addresses in sample content are only placeholders; the model needs to know an image is there, not its bytes. */

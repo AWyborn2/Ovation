@@ -3,10 +3,11 @@
  * with T5.18, so the bundles are the starters now: every starter look holds a
  * template for every kind it had, listed except Team List and retired kinds.
  * Its Match Day and Match Summary templates carry the carousel pages from the
- * nearest polished look (L4-D), at version 2 or later; the rest are the original v1
- * documents at version 1. (The web's render tests pin those originals.) And
- * every committed bundle syncs without a problem: a real-DB test that removes
- * what it loaded.
+ * nearest polished look (L4-D). Since C3 every template is format v2 with its
+ * Club Kit library elements split into native layers, so nothing on a starter
+ * card is an element the editor can't take apart. (The web's render tests pin
+ * the original v1 documents, kept as fixtures.) And every committed bundle
+ * syncs without a problem: a real-DB test that removes what it loaded.
  */
 import { afterAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
@@ -32,19 +33,18 @@ describe("starter bundles", () => {
       expect(bundle!.templates.length).toBeGreaterThan(20);
       for (const t of bundle!.templates) {
         const doc = t.file.document;
-        if (t.kind in BORROWED) {
-          expect(isDocumentV2(doc)).toBe(true);
-          if (!isDocumentV2(doc)) continue;
-          const primary = primaryPage(t.kind);
-          expect(Object.keys(doc.pages).sort()).toEqual([primary, ...BORROWED[t.kind]!].sort());
-          // Version 2 or later: a bundle file that changes takes the next version.
-          expect(t.file.version).toBeGreaterThanOrEqual(2);
-          expect(t.file.listed).toBe(true);
-          continue;
-        }
-        expect(isDocumentV2(doc)).toBe(false);
-        expect(t.file.version).toBe(1);
-        expect(t.file.listed).toBe(t.kind !== "teamList" && !isRetiredCardKind(t.kind));
+        expect(isDocumentV2(doc)).toBe(true);
+        if (!isDocumentV2(doc)) continue;
+        const primary = primaryPage(t.kind);
+        const borrowed = BORROWED[t.kind] ?? [];
+        expect(Object.keys(doc.pages).sort()).toEqual([primary, ...borrowed].sort());
+        // No library element is left: every piece is a native layer.
+        expect(JSON.stringify(doc)).not.toContain('"kind":"element"');
+        // Version 2 or later: a bundle file that changes takes the next version.
+        expect(t.file.version).toBeGreaterThanOrEqual(2);
+        expect(t.file.listed).toBe(
+          t.kind in BORROWED || (t.kind !== "teamList" && !isRetiredCardKind(t.kind)),
+        );
       }
     });
   }
