@@ -308,7 +308,6 @@ function ClubTemplateEditor({
     <>
       <TemplateEditorV2 template={template} viewport={viewport} host={host} />
       <ApplyTemplateDialog
-        kind={template.kind}
         copyId={template.id}
         label={kindLabel(template.kind)}
         version={applyFor?.version ?? current.version}

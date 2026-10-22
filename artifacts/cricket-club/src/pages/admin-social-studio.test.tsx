@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderAt } from "../test/render";
 import { installApiMock } from "../test/mock-api";
 import { ConfirmProvider } from "@/components/confirm-dialog";
@@ -10,7 +10,8 @@ import { LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import AdminSocialStudio from "./admin-social-studio";
 
 /**
- * U3 — Studio pack switcher (R1, R2, R5, R7).
+ * U3 — Studio pack switcher (R2, R5, R7). The per-kind selector (R1, R6) went with
+ * the template library (ADR-011 T5.18); the design packs bulk action stays.
  *
  * These are state round-trips, not a visual check: what the selector reads,
  * what a selection PATCHes, and what the bulk action tells the admin BEFORE it
@@ -194,168 +195,9 @@ async function renderStudio(templates: CardTemplate[]) {
       <AdminSocialStudio />
     </ConfirmProvider>,
   );
-  await screen.findByText("Pack per card type");
+  await screen.findByRole("heading", { name: "Card designs" });
   return writes;
 }
-
-/**
- * A STATEFUL card-templates API: the PATCH actually lands, and the next GET
- * serves the mutated store.
- *
- * `setupApi` above freezes the template list, so it can only ever assert what
- * the client SENDS. The selector's displayed value comes from
- * `resolvePackIdForKind(templates, kind)` — i.e. from what the refetch brings
- * BACK — so a frozen list makes the round trip unobservable and the control
- * appears to revert no matter what the server did. That gap is why a silent
- * no-op reached production.
- *
- * The PATCH handler mirrors routes/social-cards.ts:499-514 in the order that
- * matters: `clearDefaultKinds` strips the claimed kinds from every OTHER row of
- * the tenant first, then the target row is updated.
- */
-function setupStatefulApi(initial: CardTemplate[]) {
-  const store: CardTemplate[] = initial.map((t) => ({ ...t }));
-  installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
-  const base = globalThis.fetch as unknown as (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ) => Promise<Response>;
-
-  const json = (body: unknown) =>
-    new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
-
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url =
-        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      const method = (init?.method ?? "GET").toUpperCase();
-
-      if (url.includes("/card-templates")) {
-        if (method === "GET") return json(store);
-        const id = Number(url.split("/card-templates/")[1]);
-        const patch = init?.body
-          ? (JSON.parse(String(init.body)) as { defaultForKinds?: string[] })
-          : {};
-        const target = store.find((t) => t.id === id);
-        if (!target) return new Response("{}", { status: 404 });
-        const claimed = patch.defaultForKinds ?? [];
-        if (claimed.length > 0) {
-          for (const t of store) {
-            if (t.id === id) continue;
-            t.defaultForKinds = (t.defaultForKinds ?? []).filter((k) => !claimed.includes(k));
-          }
-        }
-        Object.assign(target, patch);
-        return json(target);
-      }
-      return base(input, init);
-    }),
-  );
-  return store;
-}
-
-async function renderStatefulStudio(templates: CardTemplate[]) {
-  const store = setupStatefulApi(templates);
-  renderAt(
-    <ConfirmProvider>
-      <AdminSocialStudio />
-    </ConfirmProvider>,
-  );
-  await screen.findByText("Pack per card type");
-  return store;
-}
-
-// U14 replaced the per-type <select> with one swatch radio per pack. These
-// helpers keep the old select semantics: value "" = the default pack.
-const PACK_IDS = ["broadcast-dark-v1", "club-kit-v1"];
-const packGroup = (label: string) =>
-  screen.getByRole("radiogroup", { name: `Design pack for ${label}` });
-const selectorFor = (label: string) => {
-  const checked = within(packGroup(label))
-    .getAllByRole("radio")
-    .find((r) => r.getAttribute("aria-checked") === "true");
-  const id = PACK_IDS.find((p) => packName(p) === checked?.getAttribute("aria-label")) ?? "";
-  return { value: id === "broadcast-dark-v1" ? "" : id };
-};
-const pickPack = (label: string, value: string) =>
-  fireEvent.click(
-    within(packGroup(label)).getByRole("radio", { name: packName(value || "broadcast-dark-v1") }),
-  );
-
-describe("admin social studio — per-kind pack selector (R1, R6)", () => {
-  it("changing a kind's selector issues one PATCH to that pack's canonical row", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    pickPack("Century", "club-kit-v1");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].method).toBe("PATCH");
-    // Canonical row = lowest active id for the pack (the square variant here).
-    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining(["record", "century"]));
-  });
-
-  it("selecting a different pack for a claimed kind produces exactly one claim", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    // `matchSummary` is currently claimed by Broadcast Dark. A default-pack
-    // claim presents as the leading "" option — the same option an unclaimed
-    // kind sits on, because both render that pack. The list carries the default
-    // pack once, not twice under two values that do the same thing.
-    expect(selectorFor("Match Summary").value).toBe("");
-    pickPack("Match Summary", "club-kit-v1");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
-    const claimed = writes[0].body?.defaultForKinds as string[];
-    expect(claimed.filter((k) => k === "matchSummary")).toHaveLength(1);
-    // The old owner is NOT patched from the client — the server clears it.
-    expect(writes.some((w) => w.url.includes(`/card-templates/${f.broadcastSquare.id}`))).toBe(
-      false,
-    );
-  });
-
-  it("selecting the leading default option writes an explicit Broadcast Dark claim", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    // `record` is claimed by Club Kit; move it back to the default pack.
-    expect(selectorFor("Record").value).toBe("club-kit-v1");
-    pickPack("Record", "");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].url).toContain(`/card-templates/${f.broadcastSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(
-      expect.arrayContaining(["matchSummary", "record"]),
-    );
-  });
-
-  it("a kind with no claim renders on the default option, not blank", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    // The default pack's swatch is checked and the row names it — never blank.
-    expect(selectorFor("Century").value).toBe("");
-    const row = packGroup("Century").closest("li")!;
-    expect(
-      within(row).getByRole("radio", { name: "Broadcast Dark" }).getAttribute("aria-checked"),
-    ).toBe("true");
-    expect(row.textContent).toMatch(/Broadcast Dark/);
-  });
-
-  it("a kind whose default is a layers template shows the override warning", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
-  });
-});
 
 describe("admin social studio — legacy packs are hidden (P9)", () => {
   it("offers no legacy pack anywhere, and shows a legacy claim as Club Kit", async () => {
@@ -377,104 +219,6 @@ describe("admin social studio — legacy packs are hidden (P9)", () => {
       expect(screen.queryByLabelText(`Use ${name} for every card`)).toBeNull();
     }
     expect(screen.getByLabelText("Use Club Kit for every card")).toBeInTheDocument();
-    expect(selectorFor("Century").value).toBe("club-kit-v1");
-    // The new pack (P8) stays offered for the kinds it designs.
-    expect(
-      within(packGroup("Match Summary")).getByRole("radio", { name: packName("duotone-v1") }),
-    ).toBeInTheDocument();
-  });
-});
-
-describe("admin social studio — the selection survives the round trip", () => {
-  /**
-   * The reported bug: pick a pack, a spinner flashes, the control goes back to
-   * "Broadcast Dark (default)". The write is asserted elsewhere in this file;
-   * what was never asserted is that the choice is still there once the refetch
-   * lands. The selector is controlled off `packIdByKind`, so it ALWAYS snaps
-   * back on the render `setPendingKind` forces — success and failure look
-   * identical until new data arrives. Only this assertion tells them apart.
-   */
-  it("shows the newly chosen pack after the refetch, not the default", async () => {
-    const f = fixtureTemplates();
-    await renderStatefulStudio(f.all);
-
-    expect(selectorFor("Century").value).toBe("");
-    pickPack("Century", "club-kit-v1");
-
-    await waitFor(() => expect(selectorFor("Century").value).toBe("club-kit-v1"));
-  });
-
-  it("persists the claim server-side on the pack's canonical row", async () => {
-    const f = fixtureTemplates();
-    const store = await renderStatefulStudio(f.all);
-
-    pickPack("Century", "club-kit-v1");
-
-    await waitFor(() =>
-      expect(store.find((t) => t.id === f.kitSquare.id)?.defaultForKinds).toContain("century"),
-    );
-  });
-
-  it("shows the admin why a pack write failed instead of silently reverting", async () => {
-    // The regression this guards: `usePackSelection` sets an error and returns
-    // it, and for a release nothing rendered it. A 500 from the server looked
-    // identical to success — spinner, then the selector back on the default —
-    // because the control is driven by server state either way. Silence is the
-    // bug; the assertion is that SOMETHING legible reaches the screen.
-    const f = fixtureTemplates();
-    installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
-    const base = globalThis.fetch as unknown as (
-      input: RequestInfo | URL,
-      init?: RequestInit,
-    ) => Promise<Response>;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url =
-          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        const method = (init?.method ?? "GET").toUpperCase();
-        if (url.includes("/card-templates")) {
-          if (method === "GET")
-            return new Response(JSON.stringify(f.all), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            });
-          return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        return base(input, init);
-      }),
-    );
-    renderAt(
-      <ConfirmProvider>
-        <AdminSocialStudio />
-      </ConfirmProvider>,
-    );
-    await screen.findByText("Pack per card type");
-
-    pickPack("Century", "club-kit-v1");
-
-    const banner = await screen.findByText(/internal server error/i);
-    expect(banner).toBeInTheDocument();
-    // ...and the control is honest about not having changed.
-    expect(selectorFor("Century").value).toBe("");
-  });
-
-  it("moving a claimed kind to another pack leaves it claimed exactly once", async () => {
-    // `record` starts on Gold Foil. Moving it to the default pack must not end
-    // with both rows holding it, nor with neither — the server clears the old
-    // owner, and the control must end up reading the new one back.
-    const f = fixtureTemplates();
-    const store = await renderStatefulStudio(f.all);
-
-    expect(selectorFor("Record").value).toBe("club-kit-v1");
-    pickPack("Record", "");
-
-    await waitFor(() => expect(selectorFor("Record").value).toBe(""));
-    const holders = store.filter((t) => (t.defaultForKinds ?? []).includes("record"));
-    expect(holders.map((t) => t.id)).toEqual([f.broadcastSquare.id]);
   });
 });
 
@@ -494,10 +238,6 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
 
-    // The tenant's own default still gets a caption — a "layers" template
-    // overrides the pack outright, so it reads as the override rather than a
-    // plain default, and it is captioned exactly once (not once per phrasing).
-    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
     expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
     // Pack claims never surface as a "Default template" caption at all.
     expect(screen.queryByText(/Default template: Club Kit/)).toBeNull();
