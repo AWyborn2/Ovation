@@ -11,7 +11,7 @@
 import { layerOnSize } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer, LayerBox } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
-import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
+import { boxOf, clamp, layersOf, placeBox, setBoxes, type EditorDoc } from "./document";
 import { boundsOf } from "./guides";
 
 type Rect = Pick<LayerBox, "x" | "y" | "w" | "h">;
@@ -147,13 +147,13 @@ export function resizeGroup(
       const box = base && boxOf(base, size);
       if (!base || !box) return l;
       const typed = scaleType ? scaleLayerType(base, s) : base;
-      return {
-        ...l,
-        style: typed.style,
-        rows: typed.rows,
-        geometry: { ...l.geometry, [size]: mapBox(box, from, to) },
-        editedAt: { ...l.editedAt, [size]: now },
-      };
+      // From the gesture's start, so a group's children are placed from where they began.
+      return placeBox(
+        { ...base, style: typed.style, rows: typed.rows },
+        size,
+        mapBox(box, from, to),
+        now,
+      );
     }),
   };
 }
