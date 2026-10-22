@@ -186,6 +186,13 @@ export const env = {
    * at most 90 days: renew it before then (runbook).
    */
   FIGMA_ACCESS_TOKEN: () => optional("FIGMA_ACCESS_TOKEN"),
+
+  // ── Template library: AI designer (ADR-011 §8) ───────────────────────────
+  /**
+   * Claude API key for the platform console's AI designer tool. Unset = the
+   * designer says it isn't configured; nothing else needs it.
+   */
+  ANTHROPIC_API_KEY: () => optional("ANTHROPIC_API_KEY"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();
