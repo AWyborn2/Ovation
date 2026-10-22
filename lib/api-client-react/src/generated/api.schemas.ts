@@ -8675,6 +8675,89 @@ export interface LibraryTemplatePage {
   nextCursor: number | null;
 }
 
+/**
+ * The Elements panel's categories (`ELEMENT_CATEGORIES`).
+ */
+export type LibraryElementCategory = typeof LibraryElementCategory[keyof typeof LibraryElementCategory];
+
+
+export const LibraryElementCategory = {
+  frames: 'frames',
+  bands: 'bands',
+  badges: 'badges',
+  rules: 'rules',
+  glows: 'glows',
+  'crest-frames': 'crest-frames',
+  'sponsor-strips': 'sponsor-strips',
+  'data-blocks': 'data-blocks',
+} as const;
+
+/**
+ * A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.
+ */
+export interface LibraryElementDocument { [key: string]: unknown }
+
+export type LibraryElementOrigin = typeof LibraryElementOrigin[keyof typeof LibraryElementOrigin];
+
+
+export const LibraryElementOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface LibraryElement {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  name: string;
+  category: LibraryElementCategory;
+  tags: string[];
+  origin: LibraryElementOrigin;
+  /** Ovation, or the club that saved it. */
+  authorName: string;
+  /** This club saved it, so it can unlist it. */
+  mine: boolean;
+  look: LibraryLookRef | null;
+  listed: boolean;
+  document: LibraryElementDocument;
+  /**
+     * A library image; null when the panel draws the element live.
+     * @nullable
+     */
+  thumbnailUrl: string | null;
+  createdAt: string;
+}
+
+export interface LibraryElementPage {
+  elements: LibraryElement[];
+  /**
+     * Pass as `cursor` for the next page; null on the last page.
+     * @nullable
+     */
+  nextCursor: number | null;
+}
+
+export interface SaveLibraryElementRequest {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  category: LibraryElementCategory;
+  /** @maxItems 12 */
+  tags?: string[];
+  document: LibraryElementDocument;
+}
+
+export interface ReportLibraryElementRequest {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
 export interface LibraryLookTemplate {
   id: number;
   kind: string;
@@ -11790,6 +11873,27 @@ export const ListLibraryTemplatesSize = {
 
 export type GetTemplatePreviewInputParams = {
 kind: string;
+};
+
+export type ListLibraryElementsParams = {
+/**
+ * Words that must each appear in the element's name or tags.
+ * @maxLength 60
+ */
+q?: string;
+category?: LibraryElementCategory;
+/**
+ * A look's slug.
+ */
+look?: string;
+/**
+ * Only the elements this club saved, listed or not.
+ */
+mine?: boolean;
+/**
+ * The previous page's `nextCursor`.
+ */
+cursor?: number;
 };
 
 export type ListClubTemplatesParams = {

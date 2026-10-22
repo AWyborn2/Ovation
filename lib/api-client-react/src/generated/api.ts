@@ -265,6 +265,8 @@ import type {
   KioskTokenResponse,
   KnownCardCrestList,
   LadderCardRow,
+  LibraryElement,
+  LibraryElementPage,
   LibraryLookList,
   LibraryTemplate,
   LibraryTemplatePage,
@@ -283,6 +285,7 @@ import type {
   ListJuniorPlayersParams,
   ListJuniorShirtNumbersParams,
   ListJuniorStatCorrectionsParams,
+  ListLibraryElementsParams,
   ListLibraryTemplatesParams,
   ListMatchesParams,
   ListNavItemsParams,
@@ -371,12 +374,14 @@ import type {
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
+  ReportLibraryElementRequest,
   ReschedulePublicationRequest,
   RoundResults,
   SaveCardPhotoRulesRequest,
   SaveClubTemplateRequest,
   SaveConsoleLibraryTemplateRequest,
   SaveDraftTemplateRequest,
+  SaveLibraryElementRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SearchSquadPlayersParams,
@@ -21312,6 +21317,385 @@ export function useGetLibraryTemplate<TData = Awaited<ReturnType<typeof getLibra
 
 
 
+
+export const getListLibraryElementsUrl = (params?: ListLibraryElementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/template-library/elements?${stringifiedParams}` : `/api/template-library/elements`
+}
+
+/**
+ * Listed library elements (decorations from every look and those clubs saved), 48 a page, optionally for one category or look, or matching a search across names and tags. Every element is shared with every club.
+ * @summary Browse and search the element library
+ */
+export const listLibraryElements = async (params?: ListLibraryElementsParams, options?: RequestInit): Promise<LibraryElementPage> => {
+
+  return customFetch<LibraryElementPage>(getListLibraryElementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryElementsQueryKey = (params?: ListLibraryElementsParams,) => {
+    return [
+    `/api/template-library/elements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLibraryElementsQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryElements>>, TError = ErrorType<unknown>>(params?: ListLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryElementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryElements>>> = ({ signal }) => listLibraryElements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryElementsQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryElements>>>
+export type ListLibraryElementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Browse and search the element library
+ */
+
+export function useListLibraryElements<TData = Awaited<ReturnType<typeof listLibraryElements>>, TError = ErrorType<unknown>>(
+ params?: ListLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryElementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveLibraryElementUrl = () => {
+
+
+
+
+  return `/api/template-library/elements`
+}
+
+/**
+ * Publishes the layers to every club at once (decision E1). The document may only use tokens, slots and library images: no club upload, photo or sponsor art.
+ * @summary Save layers as a public library element
+ */
+export const saveLibraryElement = async (saveLibraryElementRequest: SaveLibraryElementRequest, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getSaveLibraryElementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getSaveLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['saveLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveLibraryElement>>, {data: BodyType<SaveLibraryElementRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveLibraryElement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof saveLibraryElement>>>
+    export type SaveLibraryElementMutationBody = BodyType<SaveLibraryElementRequest>
+    export type SaveLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Save layers as a public library element
+ */
+export const useSaveLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveLibraryElement>>,
+        TError,
+        {data: BodyType<SaveLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveLibraryElementMutationOptions(options));
+    }
+
+export const getGetLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}`
+}
+
+/**
+ * A listed element, or one this club saved (listed or not). Inserting copies its layers into the card; nothing links back to the element.
+ * @summary One library element, to insert
+ */
+export const getLibraryElement = async (id: number, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getGetLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryElementQueryKey = (id: number,) => {
+    return [
+    `/api/template-library/elements/${id}`
+    ] as const;
+    }
+
+
+export const getGetLibraryElementQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryElement>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryElementQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryElement>>> = ({ signal }) => getLibraryElement(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLibraryElementQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryElement>>>
+export type GetLibraryElementQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library element, to insert
+ */
+
+export function useGetLibraryElement<TData = Awaited<ReturnType<typeof getLibraryElement>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLibraryElementQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUnlistLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}/unlist`
+}
+
+/**
+ * Other clubs stop seeing it. Cards it was already inserted into keep their copies of its layers.
+ * @summary Take an element this club saved out of the library
+ */
+export const unlistLibraryElement = async (id: number, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getUnlistLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnlistLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unlistLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistLibraryElement>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unlistLibraryElement(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof unlistLibraryElement>>>
+
+    export type UnlistLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Take an element this club saved out of the library
+ */
+export const useUnlistLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistLibraryElement>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnlistLibraryElementMutationOptions(options));
+    }
+
+export const getReportLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}/report`
+}
+
+/**
+ * One report per club and element; reporting again replaces the reason. A club cannot report its own element (it can unlist it instead).
+ * @summary Report a library element to Ovation
+ */
+export const reportLibraryElement = async (id: number,
+    reportLibraryElementRequest: ReportLibraryElementRequest, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getReportLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reportLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getReportLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['reportLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportLibraryElement>>, {id: number;data: BodyType<ReportLibraryElementRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportLibraryElement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof reportLibraryElement>>>
+    export type ReportLibraryElementMutationBody = BodyType<ReportLibraryElementRequest>
+    export type ReportLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Report a library element to Ovation
+ */
+export const useReportLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportLibraryElement>>,
+        TError,
+        {id: number;data: BodyType<ReportLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getReportLibraryElementMutationOptions(options));
+    }
 
 export const getListClubTemplatesUrl = (params?: ListClubTemplatesParams,) => {
   const normalizedParams = new URLSearchParams();
