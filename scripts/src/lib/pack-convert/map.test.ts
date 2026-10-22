@@ -488,6 +488,8 @@ describe("row cells", () => {
         { variant: "club", values: { pos: "1", team: "QD", lost: "1" } },
         { values: { pos: "2", team: "QE", lost: "2" } },
         { values: { pos: "3", team: "QF", lost: "3" } },
+        // A row past the card's room: bound, but not drawn.
+        { values: { pos: "4", team: "QG", lost: "4" } },
       ],
     };
     const layer = mapCapture(cap).layers.find((l) => l.layer.kind === "rows")!.layer as {

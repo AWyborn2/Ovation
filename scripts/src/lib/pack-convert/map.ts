@@ -286,7 +286,13 @@ function boundRows(
       );
     return texts.filter((t) => unique.some((v) => matches(t.text, v))).map((t) => t.el);
   });
-  if (anchors.some((a) => a.length === 0)) return null;
+  // Rows past the card's room aren't drawn (a landscape ladder shows five of seven):
+  // trailing rows may have no anchor, any other row must.
+  let drawn = anchors.length;
+  while (drawn > 0 && anchors[drawn - 1]!.length === 0) drawn--;
+  if (drawn < Math.min(2, anchors.length) || anchors.slice(0, drawn).some((a) => a.length === 0))
+    return null;
+  anchors.length = drawn;
   const rows: CapturedElement[] = [];
   const consumed: number[] = [];
   anchors.forEach((own, i) => {
