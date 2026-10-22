@@ -1,7 +1,7 @@
 {
   "name": "Club Kit weekendWrap",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -1095,7 +1095,7 @@
                   "y": 29.98,
                   "h": 40,
                   "style": {
-                    "fontSize": 3.2,
+                    "fontSize": 2.15,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1149,7 +1149,7 @@
               "variants": {
                 "lost": {
                   "gradeLabel": {
-                    "fontSize": 3.2,
+                    "fontSize": 2.15,
                     "color": "var(--ck-chalk)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1211,7 +1211,7 @@
                   "y": 4.93,
                   "h": 28.99,
                   "style": {
-                    "fontSize": 3.2,
+                    "fontSize": 2.94,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1265,7 +1265,7 @@
               "variants": {
                 "lost": {
                   "gradeLabel": {
-                    "fontSize": 3.2,
+                    "fontSize": 2.94,
                     "color": "var(--ck-chalk)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1333,7 +1333,7 @@
                   "y": 4.95,
                   "h": 28.99,
                   "style": {
-                    "fontSize": 1.68,
+                    "fontSize": 1.54,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1387,7 +1387,7 @@
               "variants": {
                 "lost": {
                   "gradeLabel": {
-                    "fontSize": 1.68,
+                    "fontSize": 1.54,
                     "color": "var(--ck-chalk)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,

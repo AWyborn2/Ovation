@@ -1,7 +1,7 @@
 {
   "name": "Club Kit roundFixtures",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -1102,7 +1102,7 @@
                   "y": 16.28,
                   "h": 67.42,
                   "style": {
-                    "fontSize": 3.4,
+                    "fontSize": 2.72,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1188,7 +1188,7 @@
                   "y": 12.49,
                   "h": 75.01,
                   "style": {
-                    "fontSize": 3.4,
+                    "fontSize": 2.72,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
@@ -1280,7 +1280,7 @@
                   "y": 12.48,
                   "h": 75.01,
                   "style": {
-                    "fontSize": 1.79,
+                    "fontSize": 1.43,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 900,
