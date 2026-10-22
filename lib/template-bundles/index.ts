@@ -79,6 +79,24 @@ import look2_21 from "./clubhouse/teamListRound.json";
 import look2_22 from "./clubhouse/teamOfWeek.json";
 import look2_23 from "./clubhouse/tradingCard.json";
 import look2_24 from "./clubhouse/weekendWrap.json";
+import look3 from "./gold-foil/look.json";
+import look3_0 from "./gold-foil/bigMoment.json";
+import look3_1 from "./gold-foil/century.json";
+import look3_2 from "./gold-foil/clubLeaderboard.json";
+import look3_3 from "./gold-foil/countdown.json";
+import look3_4 from "./gold-foil/debut.json";
+import look3_5 from "./gold-foil/fiveFor.json";
+import look3_6 from "./gold-foil/gradeLeader.json";
+import look3_7 from "./gold-foil/ladder.json";
+import look3_8 from "./gold-foil/matchDay.json";
+import look3_9 from "./gold-foil/matchSummary.json";
+import look3_10 from "./gold-foil/milestone.json";
+import look3_11 from "./gold-foil/newSigning.json";
+import look3_12 from "./gold-foil/player.json";
+import look3_13 from "./gold-foil/premiership.json";
+import look3_14 from "./gold-foil/record.json";
+import look3_15 from "./gold-foil/teamList.json";
+import look3_16 from "./gold-foil/weekendWrap.json";
 
 export type * from "./types";
 
@@ -174,6 +192,29 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "teamOfWeek", hash: "1f488004d82c59cf9f651c3d6a5b942b5fc25552b7f95392b1ccd9ad57cf1c21", file: look2_22 },
       { kind: "tradingCard", hash: "bb0e6d2556800838611ac195c150f2a2a63972f40dd87ce342c14d783cc82724", file: look2_23 },
       { kind: "weekendWrap", hash: "92ac08bae7735767c2c7c8ea65d099a9248d210dc065a291ce2d55fe5ba9925e", file: look2_24 },
+    ],
+  },
+  {
+    slug: "gold-foil",
+    look: look3,
+    templates: [
+      { kind: "bigMoment", hash: "f774da78476a97f364e944716e70e62708eed6c5e6913106634b57647d71b819", file: look3_0 },
+      { kind: "century", hash: "580c41db780f5418c600960ccbdb4f566adaff3bd71d897b320be32fab12af8c", file: look3_1 },
+      { kind: "clubLeaderboard", hash: "77a90555b4d50f91ff86541548e0dfba4160f4a11b038de03a00bf7974c6a1bc", file: look3_2 },
+      { kind: "countdown", hash: "0cfd3bfda4bca5a94aea0cbd42d5173d02c91eed09e9247de8f65d053c93dc18", file: look3_3 },
+      { kind: "debut", hash: "093738bc605a0a863edeca3b24a4ca6ce793d0711842e12224bb9a73fc0025b9", file: look3_4 },
+      { kind: "fiveFor", hash: "f6c1cc4ab5dcdc64eea159cf9a62dec2897922091207936fb7be1c05113735f0", file: look3_5 },
+      { kind: "gradeLeader", hash: "c3b29fb9d51d29c0ad4c53c36313a5a2e618610b913b7a42b91bf5ce739d706c", file: look3_6 },
+      { kind: "ladder", hash: "a7e94176c6cdd666e8060be570fe1ecb67f505534ce77a785c332ffdbfe7a629", file: look3_7 },
+      { kind: "matchDay", hash: "f36c36a7aaa59713f3f725e3768245829aaf5b75b277035fcabc5e2d9fde22f0", file: look3_8 },
+      { kind: "matchSummary", hash: "3378446fbfd01e3cb2cb4f27b8754bfeff889919ea2eb30bbddf6d87ea415809", file: look3_9 },
+      { kind: "milestone", hash: "dd9bbd2b1d360976b0144781463d21b90117cc80ba6f95948c91ade8d47c0b37", file: look3_10 },
+      { kind: "newSigning", hash: "a547ebefd6bf75dc34915399a484dc1f3df0454b26081b7f65486c688123a5ba", file: look3_11 },
+      { kind: "player", hash: "b350a323ac613b22447b2c2e6d1b6138f24995aed80bf47233e0852b7dc5b9dc", file: look3_12 },
+      { kind: "premiership", hash: "121814866f6a43b23f4ca5d911e82240968049d8a55e821c7d9ac76a088cb8bc", file: look3_13 },
+      { kind: "record", hash: "4c4286ff227d8bcae220167de193e54ad97f30bf8ab1b2d51efb50c83f392bca", file: look3_14 },
+      { kind: "teamList", hash: "7fdb8956ec8dd43ea71f93846084fd95135f835bb38f200cdac4e215eb96ed83", file: look3_15 },
+      { kind: "weekendWrap", hash: "172c862fe0018f19680b972c829c982937b2cc1159687e91e727bc9be9306a91", file: look3_16 },
     ],
   },
 ];
