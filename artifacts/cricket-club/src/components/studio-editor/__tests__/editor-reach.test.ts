@@ -5,7 +5,7 @@
  * the editor can enter (the page, a group, a stack or a list), with a box
  * there for the canvas to draw its handles on.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { layerOnSize } from "@workspace/scorecard/kind-templates";
@@ -15,7 +15,8 @@ import { boxOf, childrenOf, type EditorDoc } from "../document";
 import { isContainer, scopeDoc } from "../scope";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../../lib/template-bundles");
-const LOOKS = readdirSync(BUNDLES).filter((d) => statSync(path.join(BUNDLES, d)).isDirectory());
+// A look folder has a look.json; the element library's `elements/` and build output don't.
+const LOOKS = readdirSync(BUNDLES).filter((d) => existsSync(path.join(BUNDLES, d, "look.json")));
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
 
 type Doc = { layers?: FreeLayer[]; pages?: Record<string, { layers: FreeLayer[] }> };
