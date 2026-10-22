@@ -9,7 +9,7 @@ import {
 import { layerOnSize, type LayoutWarning } from "@workspace/scorecard/kind-templates";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
-import type { FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
+import type { CardAdjustments, FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
@@ -94,8 +94,17 @@ export function EditorCanvas({
   onLayout,
   flagged = [],
   touch = false,
+  renderDoc,
+  animate = false,
 }: {
   doc: EditorDoc;
+  /**
+   * What the card draws when it differs from `doc` (editor v2: the whole
+   * template, while `doc` is the page being edited and the input selects it).
+   */
+  renderDoc?: CardAdjustments;
+  /** Play layer motion in the preview. */
+  animate?: boolean;
   size: CardSize;
   /** Display width of the artboard in px. */
   width: number;
@@ -132,7 +141,7 @@ export function EditorCanvas({
   // Shrink-to-fit runs on the rendered card, so it reflects real fonts and boxes.
   const layoutRef = useRef(onLayout);
   layoutRef.current = onLayout;
-  const docJson = JSON.stringify(doc);
+  const docJson = JSON.stringify(renderDoc ?? doc);
   const inputJson = JSON.stringify(input);
   const fitting = !!onLayout;
   useLayoutEffect(() => {
@@ -398,8 +407,9 @@ export function EditorCanvas({
         theme={theme}
         data={data}
         packId={packId}
-        adjustments={doc}
+        adjustments={renderDoc ?? doc}
         width={width}
+        animate={animate}
       />
 
       <div className="absolute inset-0">
