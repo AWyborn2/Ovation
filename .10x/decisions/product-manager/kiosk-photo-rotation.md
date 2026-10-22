@@ -54,8 +54,13 @@ Video, live social feeds, per-photo scheduling, uploads from the kiosk, photo ed
   withheld never shows. Re-check consent on every kiosk load so a newly withheld photo
   disappears from the TV on its next refresh, with no republish. Display-only: still no
   blending of junior stats/careers into senior reads (juniors isolation holds).
-  Open question for architect: how library photos link to junior participants (player tags are
-  senior-only today), and the default for untagged junior/group photos.
+  **Junior tagging (Ash, 22 Oct 2026):** library photos gain junior participant tags
+  (`junior_participants`, tenant-scoped, kept apart from senior player tags). Tags are how the
+  kiosk decides: a junior photo shows only if it is tagged and none of its tagged juniors has
+  `photo_withheld`. Untagged junior photos do not show (safe default) until tagged. This is a
+  P0 prerequisite for junior photos on the kiosk. Note: this changes the current rule that
+  library player tags are senior-only — architect to design it without blending junior and
+  senior identity.
 - **Tenant isolation:** kiosk reads only the tenant's own library (public kiosk endpoint).
 - Privacy: kiosk is public — only photos the club treats as publicly displayable; consider a
   per-photo "hide from kiosk" flag.
