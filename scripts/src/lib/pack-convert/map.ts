@@ -15,7 +15,10 @@
  * - Shapes: an element with a fill, gradient, border or shadow becomes a
  *   shape with the extended style. A colour equal to a token in both
  *   palettes becomes `var(--token)`.
- * - Vectors: inline SVG becomes a vector layer, `currentColor` resolved.
+ * - Vectors: inline SVG of one simple element (a rect, polygon, line, circle
+ *   or straight path) becomes a native shape, cut to its outline with `clip`;
+ *   anything else a vector layer, `currentColor` resolved and each drawn
+ *   element with its own colour (`svg-shape.ts`).
  * - Motion: `hhPulse` / `hhShine` become `loop` presets.
  *
  * Anything else is listed for polish.
@@ -51,6 +54,7 @@ import {
   transformedCorners,
   type PaletteColours,
 } from "./css";
+import { explicitColours, svgToShape } from "./svg-shape";
 
 /** A layer found in one capture, before geometry is merged across sizes. */
 export interface MappedLayer {
@@ -500,16 +504,34 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       return m ? { loop: { preset: m.preset, periodMs: m.periodMs } } : undefined;
     };
 
-    // Inline SVG: a vector layer.
+    // Inline SVG: one simple element is a native shape (C1); anything else a
+    // vector, each drawn element with its own colour.
     if (el.tag === "svg" && el.svg) {
       const current = colour(el, "color");
       const svg = current ? el.svg.replace(/currentColor/gi, current) : el.svg;
       if (/#[0-9a-f]{3,8}\b|rgb\(/i.test(svg))
         untokenised.add(`literal colours in inline SVG (element ${el.id})`);
+      const box = withRotate(pct(g.box));
+      const native = svgToShape(svg, g.size ?? { w: g.box.w, h: g.box.h }, W);
+      const whole =
+        !!native &&
+        native.box.x === 0 &&
+        native.box.y === 0 &&
+        native.box.w === 100 &&
+        native.box.h === 100;
+      // A rotated box turns about its own centre, so only a shape filling it keeps its place.
+      if (native && (!box.rotate || whole)) {
+        add(
+          `shape:svg:${hash(svg)}`,
+          { kind: "shape", style: native.style } as MappedLayer["layer"],
+          whole ? box : within(box, native.box),
+        );
+        continue;
+      }
       add(
         `vector:${hash(svg)}`,
-        { kind: "vector", svg } as MappedLayer["layer"],
-        withRotate(pct(g.box)),
+        { kind: "vector", svg: explicitColours(svg) } as MappedLayer["layer"],
+        box,
       );
       continue;
     }
@@ -570,10 +592,15 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
       : null;
     if (paint && skewed && typeof paint.style.fill === "string" && !text.length) {
-      // A skewed panel (Broadcast Dark's slashes): its transformed box as a polygon.
-      add(`vector:skew:${paint.key}`, {
-        kind: "vector",
-        svg: skewPolygon(g, transform!, paint.style.fill, paint.style.opacity),
+      // A skewed panel (Broadcast Dark's slashes): its box cut to the transformed corners.
+      const { opacity } = paint.style;
+      add(`shape:skew:${paint.key}`, {
+        kind: "shape",
+        style: {
+          fill: paint.style.fill,
+          ...(opacity !== undefined && opacity < 1 ? { opacity } : {}),
+          clip: { polygon: skewClip(g, transform!) },
+        },
       } as MappedLayer["layer"]);
       continue;
     }
@@ -1028,27 +1055,28 @@ function textBox(
   return { ...box, w: box.w + extra };
 }
 
-/** A skewed box as SVG: its transformed corners, filled with the box's colour. */
-function skewPolygon(
-  el: CapturedElement,
-  m: number[],
-  fill: string,
-  opacity: number | undefined,
-): string {
+/** A skewed box's transformed corners, in percent of the box it takes on the card. */
+export function skewClip(el: CapturedElement, m: number[]): Array<[number, number]> {
   const size = el.size ?? { w: el.box.w, h: el.box.h };
   const [ox, oy] = (el.style["transform-origin"] ?? "").split(/\s+/).map((v) => px(v));
   const origin = {
     x: ox !== undefined && Number.isFinite(ox) ? ox : size.w / 2,
     y: oy !== undefined && Number.isFinite(oy) ? oy : size.h / 2,
   };
-  const points = transformedCorners(size.w, size.h, m, origin)
-    .map((p) => `${p.x},${p.y}`)
-    .join(" ");
-  const alpha = opacity !== undefined && opacity < 1 ? ` fill-opacity="${opacity}"` : "";
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r2(el.box.w)} ${r2(el.box.h)}" ` +
-    `preserveAspectRatio="none"><polygon points="${points}" fill="${fill}"${alpha}/></svg>`
-  );
+  const pts = transformedCorners(size.w, size.h, m, origin);
+  const w = Math.max(...pts.map((p) => p.x)) || 1;
+  const h = Math.max(...pts.map((p) => p.y)) || 1;
+  return pts.map((p) => [r2((p.x / w) * 100), r2((p.y / h) * 100)]);
+}
+
+/** A box given in percent of `outer`, as a box on the artboard. */
+function within(outer: LayerBox, inner: { x: number; y: number; w: number; h: number }): LayerBox {
+  return {
+    x: r2(outer.x + (inner.x / 100) * outer.w),
+    y: r2(outer.y + (inner.y / 100) * outer.h),
+    w: r2((inner.w / 100) * outer.w),
+    h: r2((inner.h / 100) * outer.h),
+  };
 }
 
 const num = (v: string | undefined, fallback = 1) => {
