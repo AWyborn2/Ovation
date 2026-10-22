@@ -8,6 +8,10 @@ import { env } from "../../config";
  */
 export type EmailAttachment = { filename: string; content: Buffer; contentType?: string };
 export type EmailMessage = {
+  /** The sender for this email; unset = EMAIL_FROM. Its domain must be verified in Resend. */
+  from?: string;
+  /** Where replies go, when not to the sender. */
+  replyTo?: string;
   /** One address or several; a list email puts its recipients in `bcc` instead. */
   to: string | string[];
   /** Hidden recipients, so a list's contacts never see each other's addresses. */
@@ -32,8 +36,9 @@ const resendTransport: EmailTransport = async (message) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: env.EMAIL_FROM(),
+      from: message.from ?? env.EMAIL_FROM(),
       to: Array.isArray(message.to) ? message.to : [message.to],
+      ...(message.replyTo ? { reply_to: message.replyTo } : {}),
       ...(message.bcc?.length ? { bcc: message.bcc } : {}),
       subject: message.subject,
       text: message.text,
