@@ -16,7 +16,7 @@ import {
   type TemplateSize,
 } from "@workspace/scorecard/kind-templates";
 import type { CapturedElement } from "@workspace/scorecard/pack-capture";
-import { Tree, type MappedLayer, type MapResult } from "./map";
+import type { MappedLayer, MapResult, Tree } from "./map";
 import { mergeSizes } from "./merge";
 
 const r2 = (v: number) => Math.round(v * 100) / 100;

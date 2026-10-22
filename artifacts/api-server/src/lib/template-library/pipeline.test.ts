@@ -20,7 +20,11 @@ import {
   matchDayTitleContent,
   presetFields,
 } from "@workspace/scorecard/card-content";
-import { placeholderDocument, type PageKey } from "@workspace/scorecard/kind-templates";
+import {
+  placeholderDocument,
+  primaryPage,
+  type PageKey,
+} from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { ensureKindTemplate, templatedDesignFor } from "../kind-templates";
 import { assembleCarouselDocument, assembleCarouselPages, designFromRef } from "./draw";
@@ -204,7 +208,9 @@ describe("lazy defaults from the club's pack look (T3.14, T3.23)", () => {
     const row = await ensureKindTemplate(t, "record", "club-kit-v1");
     expect(row.originTemplateId).toBeNull();
     expect(row.isKindDefault).toBe(true);
-    expect((row.adjustments as { layers: unknown[] }).layers.length).toBeGreaterThan(0);
+    // The starter bundle is format v2 (C3): its layers are on the kind's primary page.
+    const doc = row.adjustments as { pages: Record<string, { layers: unknown[] }> };
+    expect(doc.pages[primaryPage("record")]!.layers.length).toBeGreaterThan(0);
   });
 
   it("concurrent drafts converge on one default", async () => {
