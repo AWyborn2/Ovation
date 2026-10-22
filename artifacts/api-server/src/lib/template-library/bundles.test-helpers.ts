@@ -3,7 +3,7 @@
  * kinds' placeholders) under look slugs unique to one test run.
  */
 import { createHash } from "node:crypto";
-import { placeholderDocument } from "@workspace/scorecard/kind-templates";
+import { placeholderDocument, primaryPage } from "@workspace/scorecard/kind-templates";
 import type { TemplateBundle } from "@workspace/template-bundles";
 
 export function fixtureTemplate(
@@ -29,4 +29,15 @@ export function fixtureBundle(
   name = `Look ${slug}`,
 ): TemplateBundle {
   return { slug, look: { name, description: `${name} (test)` }, templates };
+}
+
+/**
+ * A format v2 document for `kind`: its placeholder's layers on the primary
+ * page, plus each `extraPages` entry holding a copy of the first layer.
+ */
+export function v2Document(kind: string, extraPages: string[] = []): Record<string, unknown> {
+  const layers = (placeholderDocument(kind) as { layers: Array<{ id: string }> }).layers;
+  const pages: Record<string, { layers: unknown[] }> = { [primaryPage(kind)]: { layers } };
+  for (const page of extraPages) pages[page] = { layers: [{ ...layers[0]!, id: `${page}-1` }] };
+  return { formatVersion: 2, pages };
 }

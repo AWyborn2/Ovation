@@ -33,8 +33,11 @@ export function lookReport(opts: {
   validation?: Record<string, string[]> | null;
   generatedAt: string;
   results?: { same: boolean; differences: string[] } | null;
-  /** The look's polish (L4-C): half-days logged and what it did, per kind. */
-  polish?: { halfDays: number; notes: Record<string, string[]> } | null;
+  /**
+   * The look's polish: half-days logged, and either what the converter's polish did per kind
+   * (L4-C) or, for a re-check of hand-polished bundles (`--recheck`), how many kinds are listed.
+   */
+  polish?: { halfDays: number | null; notes?: Record<string, string[]>; listed?: number } | null;
 }): string {
   const { conversions, checks } = opts;
   const lines: string[] = [];
@@ -47,15 +50,24 @@ export function lookReport(opts: {
   const mean = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : undefined;
   const motion = Object.assign({}, ...all.map((p) => p.motion)) as Record<string, string>;
 
-  const polished = !!opts.polish;
-  lines.push(`# ${opts.look}: ${polished ? "conversion and polish" : "raw conversion"} report`);
+  const polished = opts.polish ?? null;
+  const title = !polished
+    ? "raw conversion"
+    : polished.listed !== undefined
+      ? "conversion"
+      : "conversion and polish";
+  lines.push(`# ${opts.look}: ${title} report`);
   lines.push("");
   lines.push(
-    `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\` on ${opts.generatedAt}. ` +
-      (polished
-        ? "Status: **polished, pending Ash sign-off**. The polish is applied by " +
-          "`scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it."
-        : "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off."),
+    polished?.listed !== undefined
+      ? `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\`, polished by hand, ` +
+          `re-checked against the pack on ${opts.generatedAt}. Status: **polished, pending Ash's sign-off**; ` +
+          `${polished.listed} of ${conversions.length} kinds listed.`
+      : `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\` on ${opts.generatedAt}. ` +
+          (polished
+            ? "Status: **polished, pending Ash's sign-off**. The polish is applied by " +
+              "`scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it."
+            : "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off."),
   );
   lines.push("");
   lines.push("## Summary");
@@ -96,7 +108,7 @@ export function lookReport(opts: {
   }
   lines.push(
     polished
-      ? `- Polish time logged: ${opts.polish!.halfDays} hd.`
+      ? `- Polish time logged: ${polished.halfDays ?? "not logged"} hd.`
       : "- Polish time logged: 0 hd (raw conversion).",
   );
   lines.push("");
@@ -104,7 +116,7 @@ export function lookReport(opts: {
   for (const conv of conversions) {
     lines.push(`## ${conv.kind}`);
     lines.push("");
-    const applied = opts.polish?.notes[conv.kind] ?? [];
+    const applied = opts.polish?.notes?.[conv.kind] ?? [];
     if (applied.length) {
       lines.push("Polish applied:");
       lines.push("");
@@ -149,7 +161,7 @@ export function lookReport(opts: {
       }
       lines.push("");
       if (page.polish.length) {
-        lines.push("Polish:");
+        lines.push(polished ? "Converter notes (from the raw conversion):" : "Polish:");
         lines.push("");
         for (const p of page.polish) lines.push(`- ${p}`);
         lines.push("");

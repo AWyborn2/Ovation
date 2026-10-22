@@ -217,3 +217,35 @@ describe("the card's photo on a v2 document", () => {
     ).not.toContain("sam.jpg");
   });
 });
+
+describe("a shape with no fill", () => {
+  const input = { kind: "player", playerName: "Sam Keeper" } as ShareCardInput;
+  const frame = {
+    id: "frame",
+    kind: "shape",
+    geometry: box,
+    style: {
+      border: { width: 0.2, color: "var(--gold)" },
+      shadow: [{ y: 1, blur: 4, color: "#00000080" }],
+    },
+  } as unknown as TemplateLayerV2;
+  const shapeHtml = (html: string) => {
+    const at = html.indexOf('data-layer-id="frame"');
+    return html.slice(at, html.indexOf("</div></div>", at));
+  };
+
+  it("paints nothing behind a v2 border-only shape (a frame line, not a panel)", () => {
+    const html = shapeHtml(
+      render(input, { formatVersion: 2, pages: { card: { layers: [frame] } } } as CardAdjustments),
+    );
+    expect(html).toContain("background:transparent");
+    expect(html).not.toContain("fbac27");
+  });
+
+  it("keeps v1's accent for a v1 shape that sets nothing", () => {
+    const html = shapeHtml(
+      render(input, { layers: [{ id: "frame", kind: "shape", geometry: box }] } as CardAdjustments),
+    );
+    expect(html).toContain("var(--gold,#fbac27)");
+  });
+});

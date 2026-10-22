@@ -52,11 +52,12 @@ export const IMPLICIT_IMAGE_TOKENS = [
 ] as const;
 
 /** A carousel page's sponsor logos by position, as the packs lay them out (`weekendSponsor0…`). */
-const weekendSponsors = (n: number): PageImageToken[] =>
+const weekendSponsors = (n: number, content?: string): PageImageToken[] =>
   Array.from({ length: n }, (_, i) => ({
     key: `weekendSponsor${i}`,
     label: `Sponsor logo ${i + 1}`,
     type: "logo" as const,
+    ...(content ? { content } : {}),
   }));
 
 /** The token photo layers bind: the card's photo. */
@@ -239,8 +240,9 @@ const MATCH_DAY_SPONSORS: Omit<PageTokenCatalogue, "kind" | "page"> = {
   images: [
     CLUB_LOGO,
     { key: "photo", label: "Background photo", type: "photo", content: "sponsors.background" },
-    // The packs' sponsor grid by position; the `sponsors` repeat lays out any number.
-    ...weekendSponsors(12),
+    // The packs' sponsor grid by position (the page's sponsor logos, as the `sponsors`
+    // repeat is); the repeat lays out any number.
+    ...weekendSponsors(12, "sponsors.logos"),
   ],
   repeats: [
     {

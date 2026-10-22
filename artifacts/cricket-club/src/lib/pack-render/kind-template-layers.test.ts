@@ -188,6 +188,29 @@ describe("rows layer", () => {
     expect(html).toMatch(/data-row-index="1"[^>]*left:55\.000%;width:45\.000%;top:0\.000cqw/);
   });
 
+  it("fills each line left to right with flow across (a grid of tiles)", () => {
+    const three = {
+      ...ladder,
+      rows: [
+        ...(ladder as unknown as { rows: object[] }).rows,
+        { pos: 3, team: "Mandurah", played: 5, won: 2, lost: 3, points: 12, isClub: false },
+      ],
+    } as unknown as ShareCardInput;
+    const grid: FreeLayer = {
+      ...rows,
+      rows: { ...rows.rows!, columns: 2, columnGap: 10, flow: "across" },
+    };
+    const html = render(three, { layers: [grid] });
+    const pitch = (rows.rows!.rowHeight + (rows.rows!.gap ?? 0)).toFixed(3);
+    // The second row sits beside the first; the third starts the next line.
+    expect(html).toContain(
+      'data-row-index="1" data-row-variant="club" style="position:absolute;left:55.000%;width:45.000%;top:0.000cqw',
+    );
+    expect(html).toContain(
+      `data-row-index="2" style="position:absolute;left:0.000%;width:45.000%;top:${pitch}cqw`,
+    );
+  });
+
   it("keeps a single-column list's markup as it was", () => {
     expect(render(ladder, { layers: [rows] })).toContain("left:0;right:0;top:0.000cqw");
   });

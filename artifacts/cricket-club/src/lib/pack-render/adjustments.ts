@@ -453,8 +453,10 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
-    const col = Math.floor(i / perColumn);
-    const top = (i % perColumn) * (rowHeight + gap);
+    // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
+    const acrossFirst = spec.flow === "across";
+    const col = acrossFirst ? i % columns : Math.floor(i / perColumn);
+    const top = (acrossFirst ? Math.floor(i / columns) : i % perColumn) * (rowHeight + gap);
     const across =
       columns > 1
         ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${colW.toFixed(3)}%`
@@ -523,9 +525,13 @@ function layerInner(
     case "rows":
       return renderRows(layer, ctx);
     case "shape": {
-      // A v2 shape paints its fill (a colour or gradient) in place of v1's background.
-      const fill = ctx.formatVersion === 2 ? shapeFillCss(layer.style) : null;
-      return `<div style="width:100%;height:100%;background:${fill ?? s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+      // A v2 shape paints its fill (a colour or gradient) in place of v1's background,
+      // and nothing when it sets none (a frame line is a border on no fill); a v1
+      // shape that sets nothing keeps the accent it always had.
+      const v2 = ctx.formatVersion === 2;
+      const fill = v2 ? shapeFillCss(layer.style) : null;
+      const paint = fill ?? s.background ?? (v2 ? "transparent" : "var(--gold,#fbac27)");
+      return `<div style="width:100%;height:100%;background:${paint};border-radius:${num(s.radius)}px"></div>`;
     }
     case "image": {
       // A template's image can be a field token (the club crest, the club's
