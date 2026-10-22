@@ -20,6 +20,8 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - [match-day-carousel-content](match-day-carousel-content.md) — one server content builder + shared field/visibility contract for all social cards (auto, Create a Card, carousel sets); name overrides + crests; junior same-day consolidation; packs cut to 3. ADR-010 proposed 2026-10-20
 - [selection-hub-redesign](selection-hub-redesign.md) — client-only; AdminLayout sidebar slot + portal for the pool, Focus/Board view hook, Radix fill/place popovers over existing applyMove; 2 PRs (Design complete 21 Oct 2026)
 - [social-template-library](social-template-library.md) — one format v2 (pages, stack groups, conditions, richer style, vector, motion presets); library tables (looks, templates, immutable versions) plus club copies in `card_templates` (one default per kind); repo bundles for Ovation looks, database for everything later; one harness fit check (CI, list, save); converter from rendered DOM; everyone moves at once and `KIND_TEMPLATES` goes; Claude Opus 5.5 designer tool; Figma import. ADR-011, migration 0057. Design complete 21 Oct 2026
+- [honours-kiosk-redesign](honours-kiosk-redesign.md) — kiosk settings UX + TV look redesign: per-board display schema, header/scroll layout fix, live preview, drag rotation builder (raised 22 Oct 2026, precedes slideshow UI)
+- [kiosk-photo-rotation](kiosk-photo-rotation.md) — junior photo library (senior parity, multi-child tags, fail-closed consent) + kiosk photo slideshows resolved server-side (design proposed 22 Oct 2026)
 
 ## Cross-cutting principles
 

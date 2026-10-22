@@ -1,5 +1,72 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** kiosk-photo-rotation
+
+## Context
+
+- Architecture: `.10x/decisions/architect/kiosk-photo-rotation.md` (proposed, 22 Oct 2026).
+  Scope: `.10x/decisions/product-manager/kiosk-photo-rotation.md`.
+- Two deliverables, in order:
+  1. **Junior photo library** (senior parity): extend `junior_photos` + new
+     `junior_photo_participants` join (backfill), fail-closed `juniorLibraryPhotoAllowed`, Juniors
+     admin library UI reusing senior components, kiosk-token path on the gated junior image route.
+  2. **Kiosk photo slideshows:** `kiosk_photo_slideshows` jsonb + `"photos:<uuid>"` sequence
+     entries; photos resolved server-side in `GET /honour-display/kiosk`; new `photos` frame kind
+     in `honours-kiosk.tsx`. Senior-only slideshows can ship before (1) lands.
+- Integration points: `honour_display_settings`, `routes/honour-display.ts`,
+  `lib/honour-display/assemble.ts`, `lib/junior-photos.ts`, `routes/juniors-photos.ts`,
+  `lib/api-spec/openapi.yaml` (spec first), production migration SQL by hand.
+
+## Handoff History
+
+### Previous (PM → Architect, kiosk-photo-rotation)
+
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** kiosk-photo-rotation
+
+## Context
+
+- Scope (approved by Ash 22 Oct 2026): `.10x/decisions/product-manager/kiosk-photo-rotation.md`.
+- Today: the honours TV kiosk rotation (`components/honours-display/settings/kiosk-section.tsx`,
+  `board-renderer.tsx`) plays boards + sponsor ads only. Library = `club_photos` (folders, type
+  tags, senior-only player tags). Junior consent = `junior_participants.photo_withheld` (ADR-007).
+
+## P0 — ship first (acceptance criteria)
+
+1. **Photo source model** (shared by all later phases): filter = whole library | folders[] |
+   types[] (+ optional recency: last N days / this season) | hand-picked ids; order = random
+   (reshuffle per loop) | newest | manual. Empty source → item skipped, never a blank frame.
+2. **Slideshow item in the kiosk sequence:** admin adds "Photo slideshow" next to boards; per
+   item: source, photos per pass, seconds per photo, crossfade on/off. Full-bleed 16:9 crop,
+   crest badge, optional caption. Uses display-size renditions and preloads the next photo;
+   a failed image is skipped.
+3. **Junior tagging on library photos:** tag photos with tenant-scoped junior participants,
+   kept separate from senior player tags (no shared identity, no junior/senior blending).
+4. **Junior consent gate (public kiosk read, server-side):** a photo with junior tags shows only
+   if none of the tagged juniors has `photo_withheld`. A junior photo with no junior tags (e.g.
+   junior stock / grade-tagged) does not show. Evaluated on every kiosk fetch, so a withheld
+   photo leaves the TV on the next refresh.
+5. **Isolation tests:** tenant A's kiosk never returns tenant B's photos; a withheld junior's
+   photos are never returned; empty source does not break the loop.
+
+## Architect decisions needed
+
+- How a library photo is known to be "junior" (junior tag present? grade tag? juniorStock?) so
+  untagged junior photos are reliably excluded — fail closed.
+- Where the source config lives (extend the honours-display settings / sequence entries) and
+  the OpenAPI shape (spec first, then codegen).
+- Rendition/preload strategy for TV browsers.
+
+## Later (not P0)
+
+P1: interludes ("1 photo every N boards"), recent-moments preset. P2: per-board photo
+backgrounds with contrast guard.
+
+### Previous (Senior Engineer → SDE, studio-editor-multiselect)
+
 **From:** Senior Engineer
 **To:** SDE / reviewer
 **Feature:** studio-editor-multiselect
@@ -15,8 +82,6 @@
   - "Align left" is the text style bar's label; Arrange uses "Align left edges".
   - jsdom has no layout, so interaction tests stub `getBoundingClientRect` (`sizedBoard()` in `template-mode.test.tsx`).
 - Follow-ups: a shared `useEditorSelection` hook once the template library adds a third editor surface; snapping during group resize; group-aware rotation.
-
-## Handoff History
 
 ### Previous (EM → SDE, selection-hub-redesign)
 

@@ -23,14 +23,22 @@ import {
 } from "@/components/honours-display/use-approaching-board";
 import "@/styles/honour-boards.css";
 
-/** Stagger the row-reveal animation across a freshly shown board. */
+/**
+ * Stagger the row-reveal animation across a freshly shown board.
+ *
+ * Heading rows (`thead tr`) are left alone, and the fill is `backwards`, not
+ * `both`: an animation that stays in effect keeps a transform on the row, which
+ * makes each row its own stacking context. The pinned heading row would then be
+ * trapped in one too, and the body rows after it in the DOM would paint over it
+ * while the board credit-scrolls.
+ */
 function stagger(root: HTMLElement) {
   root
-    .querySelectorAll<HTMLElement>(".row, .hb-flag, .hb-lineup-row, .hb-cell, tr")
+    .querySelectorAll<HTMLElement>(".row, .hb-flag, .hb-lineup-row, .hb-cell, tbody tr")
     .forEach((el, i) => {
       el.style.animation = "none";
       void el.offsetWidth;
-      el.style.animation = "hb-rowin .6s ease both " + Math.min(i * 70, 2200) + "ms";
+      el.style.animation = "hb-rowin .6s ease backwards " + Math.min(i * 70, 2200) + "ms";
     });
 }
 
