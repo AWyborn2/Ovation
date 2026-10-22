@@ -10,7 +10,14 @@ import {
   readingOrder,
   sizedGradient,
 } from "./map";
-import { mergeOrder, mergePage, mergeSizes, stackContainers, type SizeMaps } from "./merge";
+import {
+  applyStacks,
+  mergeOrder,
+  mergePage,
+  mergeSizes,
+  stackContainers,
+  type SizeMaps,
+} from "./merge";
 
 const TEXT = {
   "font-family": '"Barlow Condensed", "Arial Narrow", sans-serif',
@@ -437,5 +444,40 @@ describe("clips, layered backgrounds and brightness", () => {
     expect((photo.layer as { style?: { filter?: unknown } }).style?.filter).toEqual([
       { preset: "brightness", amount: 0.3 },
     ]);
+  });
+});
+
+describe("stack flow items", () => {
+  it("keeps a chip's shape and its text together as one flow item", () => {
+    const box = (x: number) => ({ square: { x, y: 10, w: 10, h: 5 } });
+    const layers = [
+      { id: "chip", kind: "shape", geometry: box(5) },
+      {
+        id: "chipText",
+        kind: "text",
+        content: "WATCH LIVE",
+        geometry: { square: { x: 6, y: 11, w: 8, h: 3 } },
+      },
+      { id: "link", kind: "text", content: "{{livestream}}", geometry: box(20) },
+    ] as unknown as TemplateLayerV2[];
+    const sigOf = new Map(layers.map((l) => [l.id, l.id]));
+    const [stack] = applyStacks(
+      layers,
+      sigOf,
+      [
+        {
+          sigs: ["chip", "chipText", "link"],
+          stack: { direction: "row" },
+          geometry: { square: { x: 5, y: 10, w: 40, h: 5 } },
+          items: { chip: 1, chipText: 1, link: 2 },
+        },
+      ],
+      "title-",
+    ) as Array<TemplateLayerV2 & { children: TemplateLayerV2[] }>;
+    expect(stack!.children.map((c) => c.id)).toEqual(["title-stack1-item1", "link"]);
+    const item = stack!.children[0] as TemplateLayerV2 & { children: TemplateLayerV2[] };
+    expect(item.kind).toBe("group");
+    expect(item.children.map((c) => c.id)).toEqual(["chip", "chipText"]);
+    expect(item.geometry.square).toEqual({ x: 5, y: 10, w: 10, h: 5 });
   });
 });
