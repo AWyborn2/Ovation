@@ -80,3 +80,11 @@ Rows (one per season) are the unit for paging, scrolling and the Rows reveal tra
 (sample data, localStorage only). Defines the intended behaviour for the build: per-item
 overrides with "Use club default", drag/keyboard reorder, Play rotation, fit-to-screen
 readability warning (text scale < 0.7).
+
+## Premierships as plaques (Ash, 23 Oct 2026)
+
+The Premierships board renders one engraved plaque per premiership (like the clubroom board):
+grade, ground, date, every player who played (captain marked), man of the match when recorded,
+and the result line (e.g. "Halls Head 4/191 def Rockingham 185"). Setting "Plaques across"
+(1-5); paging/scrolling moves whole rows of plaques. Data source: premierships honour board +
+the grand final scorecard (central match + rosters) for ground, date, XI and result.

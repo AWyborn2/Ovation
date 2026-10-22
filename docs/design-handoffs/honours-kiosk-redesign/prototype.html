@@ -74,6 +74,7 @@
   select, input[type=text] { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font: 13px Inter; background: #fff; }
   input[type=range] { width: 100%; accent-color: var(--club); }
   .hint { font-size: 11px; color: var(--muted); }
+  .f .hint + .hint, .f .hint + .inherit { margin-left: 6px; }
   .inherit { font-size: 11px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
   .inherit.custom { color: var(--muted); }
   .panel-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -126,6 +127,17 @@
   .nm { font: 600 calc(1.6cqw * var(--ts)) Cormorant Garamond, serif; color: var(--engrave); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nm small { display: block; font: italic 500 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; color: rgba(240,223,180,.65); }
   .fit .row { padding: .15cqw 0; }
+  .pq-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.8cqw; align-items: start; border-bottom: 0; padding: .6cqw .4cqw 1.4cqw; }
+  .plaque { text-align: center; padding: calc(1.2cqw * var(--ts)) 1cqw calc(1.1cqw * var(--ts)); color: var(--engrave); font-family: Cinzel, serif; text-transform: uppercase;
+    background: linear-gradient(180deg, rgba(216,178,94,.10), rgba(216,178,94,.03)); border: 1px solid var(--gold); outline: 1px solid rgba(216,178,94,.45); outline-offset: .35cqw;
+    box-shadow: 0 .4cqw 1.2cqw rgba(0,0,0,.35); margin: .4cqw; }
+  .pq-grade { font: 700 calc(1.75cqw * var(--ts))/1.1 Cinzel, serif; color: var(--gold-hi); letter-spacing: .06em; }
+  .pq-meta { font: 600 calc(1.05cqw * var(--ts))/1.35 Cinzel, serif; color: var(--gold); margin: .5cqw 0 .8cqw; letter-spacing: .05em; }
+  .pq-xi { list-style: none; margin: 0; padding: .7cqw 0; border-top: 1px solid rgba(216,178,94,.35); border-bottom: 1px solid rgba(216,178,94,.35);
+    font: 600 calc(1.08cqw * var(--ts))/1.32 Cormorant Garamond, serif; letter-spacing: .04em; }
+  .pq-mom { font: 600 calc(.85cqw * var(--ts)) Cinzel, serif; color: var(--gold); margin-top: .7cqw; letter-spacing: .05em; }
+  .pq-result { font: 600 calc(.95cqw * var(--ts))/1.35 Cinzel, serif; margin-top: .7cqw; color: var(--engrave); }
+  .fit .pq-xi { padding: .3cqw 0; }
   .footer { display: flex; justify-content: space-between; align-items: center; padding-top: .9cqw; gap: 2cqw;
     font: 500 .9cqw Cinzel, serif; letter-spacing: .22em; color: var(--gold-lo); }
   .footer b { color: var(--gold); font-weight: 500; }
@@ -205,7 +217,7 @@
   const NOTES = ["412 runs · 31 wkts","Captain","38 wkts","506 runs","","Wicketkeeper · 44 dismissals","","29 wkts · 301 runs","Player of the final",""];
   const BOARDS = {
     champions: { title: "Club Champions", sub: "Awarded to the season's outstanding all-round contributor", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade","Colts"], seasons: 24 },
-    premierships: { title: "Premierships", sub: "Peel Cricket Association premiership winning sides", cols: ["Grade","Captain","Player of the Final"], seasons: 9, kind: "prem" },
+    premierships: { title: "Premierships", sub: "Peel Cricket Association premiership winning sides", cols: ["1","2","3","4","5"], seasons: 9, kind: "prem" },
     life: { title: "Life Members", sub: "Honoured for outstanding service to the club", cols: ["Life Member","Elected for"], seasons: 18, kind: "life" },
     batting: { title: "Batting Records", sub: "Highest individual scores, all grades", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 20 },
     bowling: { title: "Bowling Awards", sub: "Leading wicket-taker each season", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 22 },
@@ -270,7 +282,7 @@
     const r = resolved(item);
     if (item.type === "board") {
       const b = BOARDS[item.board];
-      const lead = b.kind ? `${r.cols} col${r.cols > 1 ? "s" : ""}` : `season + ${r.cols} grade${r.cols > 1 ? "s" : ""}`;
+      const lead = b.kind === "prem" ? `${r.cols} plaque${r.cols > 1 ? "s" : ""} across` : b.kind ? `${r.cols} col${r.cols > 1 ? "s" : ""}` : `season + ${r.cols} grade${r.cols > 1 ? "s" : ""}`;
       return `Board · ${lead} · ${MOVES.find((m) => m[0] === r.move)[1].toLowerCase()}`;
     }
     if (item.type === "sponsor") return `Sponsor wall · ${state.sponsors.length} sponsors · ${r.secs}s`;
@@ -286,7 +298,40 @@
   }
 
   // ---------------------------------------------------------------- TV rendering
+  const GROUNDS = ["Rushton Park","Peelwood Reserve","Lakelands Oval","Meadow Springs","Falcon Reserve","Coodanup Oval"];
+  const OPPONENTS = ["Rockingham","Mandurah","Pinjarra","Baldivis","Waroona","Lakelands"];
+  function premiership(i) {
+    const year = 2025 - i * 3, grade = ["A Grade","B Grade","C Grade","Colts"][i % 4];
+    const xi = Array.from({ length: 11 }, (_, k) => NAMES[(i * 5 + k * 7) % NAMES.length].replace(/^(\w)\. /, (m, a) => ["Shane ","Jeff ","Ian ","Paul ","Peter ","Mark ","Ashley ","Wayne ","Jamie ","Roger ","Luke "][(k + i) % 11]));
+    const capt = (i * 3) % 11;
+    const ours = 150 + ((i * 37) % 90), wk = 3 + (i % 6), theirs = ours - 6 - ((i * 13) % 40);
+    return { grade, ground: GROUNDS[i % GROUNDS.length], date: `${String(8 + (i % 20)).padStart(2, "0")}/03/${year}`,
+      xi: xi.map((n, k) => k === capt ? `${n} (Capt)` : n), mom: i % 3 === 2 ? "" : xi[(capt + 4) % 11],
+      result: [`Halls Head ${wk}/${ours}`, "def", `${OPPONENTS[i % OPPONENTS.length]} ${theirs}`] };
+  }
+  function plaque(i) {
+    const p = premiership(i);
+    return `<article class="plaque"><div class="pq-grade">${esc(p.grade)}</div><div class="pq-meta">${esc(p.ground)}<br>${esc(p.date)}</div>
+      <ol class="pq-xi">${p.xi.map((n) => `<li>${esc(n)}</li>`).join("")}</ol>
+      ${p.mom ? `<div class="pq-mom">Man of the match · ${esc(p.mom)}</div>` : ""}
+      <div class="pq-result">${p.result.map(esc).join("<br>")}</div></article>`;
+  }
+  /** Units that page, scroll and reveal: season rows, or rows of plaques. */
+  function rowCount(item) { const b = BOARDS[item.board]; return b.kind === "prem" ? Math.ceil(b.seasons / resolved(item).cols) : b.seasons; }
   function boardRows(item, from, to) {
+    if (BOARDS[item.board].kind === "prem") {
+      const b = BOARDS[item.board], per = resolved(item).cols;
+      let h = "";
+      for (let rI = from; rI < to; rI++) {
+        let cells = "";
+        for (let k = rI * per; k < Math.min(b.seasons, (rI + 1) * per); k++) cells += plaque(k);
+        h += `<div class="row pq-row">${cells}</div>`;
+      }
+      return h;
+    }
+    return seasonRows(item, from, to);
+  }
+  function seasonRows(item, from, to) {
     const b = BOARDS[item.board], r = resolved(item);
     let h = "";
     for (let i = from; i < to; i++) {
@@ -313,7 +358,7 @@
       <div class="plate"><div class="crest">HH</div>
         <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}</div></div>
         <div class="dots"></div></div>
-      <div class="viewport"><div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(0, r.cols).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div><div class="rows"></div></div>
+      <div class="viewport">${b.kind === "prem" ? "<div></div>" : `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(0, r.cols).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`}<div class="rows"></div></div>
       ${state.look.footer ? `<div class="footer"><span>EST. <b>1983</b></span><span>${state.sponsorStrip ? `PROUDLY SUPPORTED BY <b>${esc((state.sponsors[0] || "OUR SPONSORS").toUpperCase())}</b>` : ""}</span><span>${total ? `BOARD <b>${idx + 1}</b> OF <b>${total}</b>` : ""}</span></div>` : ""}
     </div>`;
     return el;
@@ -402,7 +447,7 @@
       await swap(tv, screen, enter ? pickTrans(r.trans) : "cut", r.dur);
       const rowsEl = $(".rows", screen), dots = $(".dots", screen);
       if (r.move === "fit") {
-        const p = document.createElement("div"); p.className = "page fit"; p.innerHTML = boardRows(item, 0, b.seasons); rowsEl.appendChild(p);
+        const p = document.createElement("div"); p.className = "page fit"; p.innerHTML = boardRows(item, 0, rowCount(item)); rowsEl.appendChild(p);
         // Shrink the type until every season fits on one screen.
         let ts = r.size;
         while (p.scrollHeight > rowsEl.clientHeight && ts > 0.35) { ts -= 0.04; screen.style.setProperty("--ts", ts.toFixed(2)); }
@@ -413,7 +458,7 @@
       }
       if (r.move === "credits") {
         rowsEl.classList.add("masked");
-        const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, 0, b.seasons); rowsEl.appendChild(p);
+        const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, 0, rowCount(item)); rowsEl.appendChild(p);
         do {
           p.style.transform = "none";
           await sleep(1500, sig); if (sig.aborted) return;
@@ -432,8 +477,8 @@
       const probe = document.createElement("div"); probe.className = "page"; probe.style.visibility = "hidden"; probe.innerHTML = boardRows(item, 0, 1); rowsEl.appendChild(probe);
       const rowH = probe.firstElementChild.getBoundingClientRect().height || 1; probe.remove();
       const per = r.perPage || Math.max(1, Math.floor(rowsEl.clientHeight / rowH));
-      const pages = Math.ceil(b.seasons / per);
-      const mk = (n) => { const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, n * per, Math.min(b.seasons, (n + 1) * per)); return p; };
+      const nRows = rowCount(item), pages = Math.ceil(nRows / per);
+      const mk = (n) => { const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, n * per, Math.min(nRows, (n + 1) * per)); return p; };
       const setDots = (n) => { dots.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) => `<i class="${i === n ? "on" : ""}"></i>`).join("") : ""; };
       let n = 0; setDots(0); rowsEl.appendChild(mk(0));
       while (!sig.aborted) {
@@ -501,12 +546,12 @@
     const colOpts = Array.from({ length: maxCols }, (_, i) => [i + 1, String(i + 1)]);
     const f = (label, key, html) => `<div class="f"><span class="lbl">${label}</span>${html}${inheritNote(item, key)}</div>`;
     return `<div class="fields">
-      ${f(b && b.kind ? "Columns" : "Grade columns", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
+      ${f(b && b.kind === "prem" ? "Plaques across" : b && b.kind ? "Columns" : "Grade columns", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
       ${f("Long boards", "move", seg("move", MOVES, r.move))}
       ${f("Transition", "trans", `<select data-field="trans">${TRANS.map(([v, l]) => `<option value="${v}" ${v === r.trans ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
       ${f("Transition length", "dur", seg("dur", DURS, r.dur))}
       ${f("Text size", "size", seg("size", SIZES, r.size))}
-      ${f("Seasons per page", "perPage", `<select data-field="perPage">${[[0, "Fit to screen"], [4, "4"], [6, "6"], [8, "8"], [10, "10"], [12, "12"]].map(([v, l]) => `<option value="${v}" ${+v === +r.perPage ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
+      ${f(b && b.kind === "prem" ? "Rows of plaques per page" : "Seasons per page", "perPage", `<select data-field="perPage">${(b && b.kind === "prem" ? [[0, "Fit to screen"], [1, "1"], [2, "2"]] : [[0, "Fit to screen"], [4, "4"], [6, "6"], [8, "8"], [10, "10"], [12, "12"]]).map(([v, l]) => `<option value="${v}" ${+v === +r.perPage ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
       ${f(r.move === "credits" ? "Pause at start" : "Seconds per page", "pageSecs", `<input type="range" min="2" max="15" step="1" value="${r.pageSecs}" data-field="pageSecs" aria-label="Seconds per page"><span class="hint">${r.pageSecs} s</span>`)}
       ${f("Credits speed", "speed", seg("speed", SPEEDS, r.speed))}
       ${f("Hold at end", "hold", `<input type="range" min="0" max="10" step="1" value="${r.hold}" data-field="hold" aria-label="Hold at end"><span class="hint">${r.hold} s</span>`)}
