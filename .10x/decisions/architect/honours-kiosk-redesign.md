@@ -51,3 +51,19 @@ the new design, not the old one.
   (columns 1–4, scroll/turn pages, text size S–XL, rows per page, speed, transition, end hold,
   format), each inheriting a "club default" from Look.
 - Status: awaiting Ash's sign-off on the mockup.
+
+## Motion model (Ash, 22 Oct 2026)
+
+Two separate settings per board, each inheriting a club default from Look:
+
+1. **Movement** (how a long board shows all its rows): Credits roll (continuous scroll, speed +
+   end hold) | Pages (slide-deck style, rows per page, seconds per page) | Fit (shrink to one
+   screen, no movement).
+2. **Transition** (how a board, or the next page, arrives): Fade · Slide up · Slide down ·
+   Slide left · Slide right · Pop (scale-in) · Zoom out · Flip (card turn) · Wipe (gold-rule
+   sweep) · Rows reveal (staggered, the only per-row effect) · Cut (none). Duration S/M/L.
+   Optional "Random from selected" for variety.
+
+Constraints: transform/opacity/clip-path only (cheap on TV browsers); header plate never moves
+during a page transition; Flip/Wipe are classic-board flourishes; honour
+prefers-reduced-motion → Fade/Cut.
