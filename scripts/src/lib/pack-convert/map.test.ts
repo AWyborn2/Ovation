@@ -752,3 +752,54 @@ describe("live text fit", () => {
     expect(fitOf(name)).toEqual({ minScale: 0.6, maxLines: 1, ellipsis: true });
   });
 });
+
+describe("a text's own background in a row", () => {
+  it("draws an outcome pill's fill as a backdrop under its text", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const list = el(0, "div", [60, 100, 900, 200]);
+    const els: CapturedElement[] = [root, list];
+    const row = (y: number, name: string, outcome: string) => {
+      const r = el(list.id, "div", [60, y, 900, 80]);
+      els.push(
+        r,
+        el(r.id, "div", [80, y + 20, 300, 40], {
+          style: TEXT,
+          text: text(name, [80, y + 20, 100, 40]),
+        }),
+        el(r.id, "div", [820, y + 20, 120, 40], {
+          style: {
+            ...TEXT,
+            "background-color": "rgb(211, 23, 90)",
+            "border-top-left-radius": "8px",
+          },
+          text: text(outcome, [840, y + 20, 80, 40]),
+        }),
+      );
+    };
+    row(100, "QA", "WON");
+    row(200, "QB", "LOST");
+    const cap = capture();
+    cap.elements = els;
+    cap.rows = {
+      matches: [
+        { values: { gradeLabel: "QA", outcome: "WON" } },
+        { values: { gradeLabel: "QB", outcome: "LOST" } },
+      ],
+    };
+    const layer = mapCapture(cap).layers.find((l) => l.layer.kind === "rows")!.layer as {
+      rows: {
+        cells: Array<{
+          field: string;
+          show?: string;
+          style?: { background?: string; radius?: number };
+        }>;
+      };
+    };
+    const pill = layer.rows.cells.find((c) => c.show === "backdrop" && c.field === "outcome");
+    expect(pill?.style).toMatchObject({ radius: 8 });
+    expect(pill?.style?.background).toBeTruthy();
+    const order = layer.rows.cells.map((c) => `${c.field}:${c.show ?? "text"}`);
+    expect(order.indexOf("outcome:backdrop")).toBeLessThan(order.indexOf("outcome:text"));
+  });
+});
