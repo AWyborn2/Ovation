@@ -44,11 +44,13 @@ import {
 } from "./layer-layout";
 import { hasLoops, LOOP_KEYFRAMES, MOTION_KEYFRAMES, motionCss } from "./layer-motion";
 import {
+  clippedGlowCss,
   colourResolver,
   layerBoxCss,
   overlayHtml,
   paletteVars,
   shapeFillCss,
+  skewCss,
   textStyleCss,
   type StyleContext,
 } from "./layer-style";
@@ -79,7 +81,11 @@ export type FreeLayerKind =
   /** The card's photo (kind templates, ADR-001); never drawn on junior cards. */
   | "photo"
   /** One styled list row repeated per data row (kind templates, ADR-001). */
-  | "rows";
+  | "rows"
+  /** An inline SVG decoration (format v2, ADR-011). */
+  | "vector"
+  /** A group or stack of child layers (format v2, ADR-011). */
+  | "group";
 
 export type FreeLayer = {
   id: string;
@@ -582,6 +588,10 @@ function layerInner(
             photoUrl: ctx.photoUrl ?? null,
           })
         : "";
+    case "vector":
+    case "group":
+      // Drawn by `renderFreeLayers` itself (v2 only): a group from its children, a vector from its SVG.
+      return null;
   }
 }
 
@@ -677,14 +687,25 @@ export function renderFreeLayers(
     }
     if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;
-    const style = [
-      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
-      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
-      ...motionCss(layer.motion, opts.animate === true),
-      ...(v2 ? layerBoxCss(layer, styleCtx) : []),
-    ].filter(Boolean);
+    // A v2 skew slants the layer after its rotation.
+    const transform = [rotate ? `rotate(${num(rotate)}deg)` : "", v2 ? skewCss(layer.style) : ""]
+      .filter(Boolean)
+      .join(" ");
+    let boxCss = v2 ? layerBoxCss(layer, styleCtx) : [];
     // A grain or halftone texture sits over the layer's content (v2).
     if (v2) inner += overlayHtml(layer.style);
+    // A clipped layer's glow is drawn round it: its box styles move to an inner wrapper.
+    const glow = v2 ? clippedGlowCss(layer) : null;
+    if (glow) {
+      inner = `<div style="position:absolute;inset:0;${boxCss.join(";")}">${inner}</div>`;
+      boxCss = glow;
+    }
+    const style = [
+      transform ? `transform:${transform}` : "",
+      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
+      ...motionCss(layer.motion, opts.animate === true),
+      ...boxCss,
+    ].filter(Boolean);
     const css = [
       "position:absolute",
       `left:${num(x)}%`,

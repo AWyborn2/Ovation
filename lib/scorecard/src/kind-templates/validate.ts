@@ -19,9 +19,11 @@
  * starter and bundle contract tests.
  */
 import { TEMPLATE_SIZE_ORDER } from "./document";
-import { kindFields } from "./fields";
+import { MAX_ELEMENT_LAYERS } from "./elements";
+import { kindFields, TEMPLATE_CARD_KINDS } from "./fields";
 import {
   BLEND_MODES,
+  BORDER_SIDES,
   BORDER_STYLES,
   COLOUR_TOKENS,
   DERIVED_PALETTES,
@@ -35,9 +37,11 @@ import {
   MOTION_IN_PRESETS,
   MOTION_LOOP_PRESETS,
   OVERLAY_KINDS,
+  PAGE_KEYS,
   STACK_ALIGNS,
   STACK_DIRECTIONS,
   STACK_JUSTIFIES,
+  V2_STYLE_KEYS,
   type PageKey,
 } from "./format";
 import { kindHasPage } from "./pages";
@@ -82,6 +86,12 @@ export const V2_RANGES = {
   overlayScale: [0.1, 10],
   /** Line height, a multiple of the font size. */
   lineHeight: [0.5, 3],
+  /** Text stroke width, percent of the artboard width. */
+  textStrokeWidth: [0, 5],
+  /** Skew along each axis, degrees. */
+  skew: [-75, 75],
+  /** Backdrop blur, pixels at native card size. */
+  backdropBlurPx: [0, MAX_BLUR_PX],
   /** Text fit: the smallest share of its designed size text may shrink to. */
   minScale: [0.3, 1],
   /** Stack gap, percent of the artboard width. */
@@ -125,19 +135,7 @@ const STYLE_KEYS = new Set([
   "radius",
   "opacity",
 ]);
-const V2_STYLE_KEYS = new Set([
-  ...STYLE_KEYS,
-  "fill",
-  "textFill",
-  "border",
-  "boxShadow",
-  "textShadow",
-  "blend",
-  "filter",
-  "overlay",
-  "lineHeight",
-  "clip",
-]);
+const V2_STYLE_KEY_SET = new Set<string>([...STYLE_KEYS, ...V2_STYLE_KEYS]);
 const LAYER_KEYS = new Set([
   "id",
   "kind",
@@ -371,7 +369,7 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     errors.push(`${where} must be an object.`);
     return;
   }
-  const keys = v2 ? V2_STYLE_KEYS : STYLE_KEYS;
+  const keys = v2 ? V2_STYLE_KEY_SET : STYLE_KEYS;
   for (const [k, value] of Object.entries(v)) {
     if (value === undefined) continue;
     const at = `${where}.${k}`;
@@ -390,15 +388,31 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     else if (k === "opacity") numberIn(errors, at, value, 0, 1);
     else if (k === "fill" || k === "textFill") checkFill(errors, at, value);
     else if (k === "border") {
-      if (!isObject(value)) errors.push(`${at} must be { width, color, style }.`);
+      if (!isObject(value)) errors.push(`${at} must be { width, color, style, sides }.`);
       else {
-        knownKeys(errors, at, value, new Set(["width", "color", "style"]));
+        knownKeys(errors, at, value, new Set(["width", "color", "style", "sides"]));
         numberIn(errors, `${at}.width`, value.width, ...V2_RANGES.borderWidth);
         checkColour(errors, `${at}.color`, value.color);
         if (value.style !== undefined) oneOf(errors, `${at}.style`, value.style, BORDER_STYLES);
+        if (value.sides !== undefined) checkBorderSides(errors, `${at}.sides`, value.sides);
       }
     } else if (k === "boxShadow") checkShadows(errors, at, value, true);
-    else if (k === "textShadow") checkShadows(errors, at, value, false);
+    else if (k === "textShadow" || k === "dropShadow") checkShadows(errors, at, value, false);
+    else if (k === "textStroke") {
+      if (!isObject(value)) errors.push(`${at} must be { width, color }.`);
+      else {
+        knownKeys(errors, at, value, new Set(["width", "color"]));
+        numberIn(errors, `${at}.width`, value.width, ...V2_RANGES.textStrokeWidth);
+        checkColour(errors, `${at}.color`, value.color);
+      }
+    } else if (k === "skew") {
+      if (!isObject(value)) errors.push(`${at} must be { x, y }.`);
+      else {
+        knownKeys(errors, at, value, new Set(["x", "y"]));
+        inRange(errors, `${at}.x`, value.x, V2_RANGES.skew);
+        inRange(errors, `${at}.y`, value.y, V2_RANGES.skew);
+      }
+    } else if (k === "backdropBlur") numberIn(errors, at, value, ...V2_RANGES.backdropBlurPx);
     else if (k === "blend") oneOf(errors, at, value, BLEND_MODES);
     else if (k === "filter") checkFilters(errors, at, value);
     else if (k === "overlay") {
@@ -412,6 +426,20 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     } else if (k === "lineHeight") numberIn(errors, at, value, ...V2_RANGES.lineHeight);
     else if (k === "clip") checkClip(errors, at, value);
   }
+}
+
+/** A border's sides: one to four of top, right, bottom and left, each once. */
+function checkBorderSides(errors: Errors, where: string, v: unknown): void {
+  if (!Array.isArray(v) || v.length < 1 || v.length > BORDER_SIDES.length)
+    return void errors.push(
+      `${where} must be 1 to ${BORDER_SIDES.length} of ${BORDER_SIDES.join(", ")}.`,
+    );
+  const seen = new Set<unknown>();
+  v.forEach((side, i) => {
+    oneOf(errors, `${where}[${i}]`, side, BORDER_SIDES);
+    if (seen.has(side)) errors.push(`${where} repeats ${String(side).slice(0, 10)}.`);
+    seen.add(side);
+  });
 }
 
 /** A clip: `{ polygon: [[x, y], …] }`, 3 to MAX_CLIP_POINTS points in percent of the box. */
@@ -834,6 +862,70 @@ function v2DocumentErrors(doc: Record<string, unknown>, kind: string): string[] 
   if (total > MAX_V2_DOCUMENT_LAYERS)
     errors.push(
       `A template can hold at most ${MAX_V2_DOCUMENT_LAYERS} layers; this one has ${total}.`,
+    );
+  return errors;
+}
+
+/**
+ * A library element's scope: the tokens and lists of every page of every kind,
+ * since an element can be inserted into any card. A token the card it lands in
+ * lacks is caught when that template is saved.
+ */
+function elementScope(): Scope {
+  const tokens = new Set<string>();
+  const pages: Array<[string, PageKey]> = [];
+  for (const kind of TEMPLATE_CARD_KINDS) {
+    for (const page of PAGE_KEYS) {
+      if (!kindHasPage(kind, page)) continue;
+      pages.push([kind, page]);
+      for (const t of pageTokenKeys(kind, page)) tokens.add(t);
+    }
+  }
+  return {
+    v2: true,
+    tokens,
+    repeat: (key) => {
+      for (const [kind, page] of pages) {
+        const r = pageRepeat(kind, page, key);
+        if (r)
+          return {
+            label: r.label,
+            fields: new Set(r.fields.map((f) => f.key)),
+            variants: r.variants,
+          };
+      }
+      return null;
+    },
+  };
+}
+
+/**
+ * Every problem with a library element's document (`elements.ts`), in plain
+ * language; empty when it is valid. Its layers follow v2's rules.
+ */
+export function elementDocumentErrors(doc: unknown): string[] {
+  const errors: Errors = [];
+  if (!isObject(doc)) return ["An element needs a list of layers."];
+  knownKeys(errors, "The element", doc, new Set(["formatVersion", "layers", "palettes"]));
+  if (doc.formatVersion !== FORMAT_VERSION) errors.push(`formatVersion must be ${FORMAT_VERSION}.`);
+  if (doc.palettes !== undefined) {
+    if (
+      !Array.isArray(doc.palettes) ||
+      doc.palettes.some((p) => !(DERIVED_PALETTES as readonly unknown[]).includes(p)) ||
+      new Set(doc.palettes).size !== doc.palettes.length
+    )
+      errors.push(`palettes must list ${DERIVED_PALETTES.join(" or ")} once each.`);
+  }
+  if (!Array.isArray(doc.layers)) return [...errors, "An element needs a list of layers."];
+  if (doc.layers.length === 0) errors.push("An element needs at least one layer.");
+  if (JSON.stringify(doc).length > MAX_DOCUMENT_BYTES)
+    return [...errors, `An element can be at most ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB.`];
+  const w: Walk = { errors, ids: new Set(), pageLayers: 0 };
+  const scope = elementScope();
+  doc.layers.forEach((layer, i) => checkLayerV2(w, layer, "element", i, scope, 1));
+  if (w.pageLayers > MAX_ELEMENT_LAYERS)
+    errors.push(
+      `An element can hold at most ${MAX_ELEMENT_LAYERS} layers; this one has ${w.pageLayers}.`,
     );
   return errors;
 }

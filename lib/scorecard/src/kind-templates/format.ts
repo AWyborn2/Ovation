@@ -78,8 +78,20 @@ export type TemplateFill = TemplateColour | TemplateGradient;
 export const BORDER_STYLES = ["solid", "dashed", "dotted"] as const;
 export type BorderStyle = (typeof BORDER_STYLES)[number];
 
-/** A border; width in percent of the artboard width, so it scales like text. */
-export type TemplateBorder = { width: number; color: TemplateColour; style?: BorderStyle };
+export const BORDER_SIDES = ["top", "right", "bottom", "left"] as const;
+export type BorderSide = (typeof BORDER_SIDES)[number];
+
+/**
+ * A border; width in percent of the artboard width, so it scales like text.
+ * `sides` draws it on those sides only (a dashed rule above a footer);
+ * absent means all four.
+ */
+export type TemplateBorder = {
+  width: number;
+  color: TemplateColour;
+  style?: BorderStyle;
+  sides?: BorderSide[];
+};
 
 /** A box shadow; offsets, blur and spread in percent of the artboard width. */
 export type TemplateBoxShadow = {
@@ -93,6 +105,23 @@ export type TemplateBoxShadow = {
 
 /** A text shadow (glows, drop shadows); lengths in percent of the artboard width. */
 export type TemplateTextShadow = { x: number; y: number; blur: number; color: TemplateColour };
+
+/**
+ * A drop shadow that follows what the layer draws (a clipped band, an SVG, a
+ * logo's outline), not its box: Neon Night's and Sunset's glows. Lengths in
+ * percent of the artboard width.
+ */
+export type TemplateDropShadow = { x: number; y: number; blur: number; color: TemplateColour };
+
+/**
+ * An outline round the text's glyphs; width in percent of the artboard width.
+ * Outlined text with no fill (Bold Type's watermark numbers) sets
+ * `color: "transparent"`.
+ */
+export type TemplateTextStroke = { width: number; color: TemplateColour };
+
+/** A slant, in degrees along each axis (CSS `skew()`): Broadcast's slashes. */
+export type TemplateSkew = { x?: number; y?: number };
 
 /** The blend modes a layer may use (a closed list: CSS `mix-blend-mode`). */
 export const BLEND_MODES = [
@@ -163,7 +192,37 @@ export type TemplateStyleV2 = TemplateTextStyle & {
   lineHeight?: number;
   /** The polygon the layer's box is cut to. */
   clip?: TemplateClip;
+  /** Text layers: an outline round the glyphs. */
+  textStroke?: TemplateTextStroke;
+  /** The layer slanted about its centre (after its rotation). */
+  skew?: TemplateSkew;
+  /** Blurs what's behind the layer (frosted glass), in pixels at native card size. */
+  backdropBlur?: number;
+  /** Shadows that follow what the layer draws, clip included. */
+  dropShadow?: TemplateDropShadow[];
 };
+
+/**
+ * The style settings only format v2 holds (v1's are `TemplateTextStyle`'s):
+ * the validator accepts them on v2 layers only, and the editor stores a
+ * document that uses any of them as v2.
+ */
+export const V2_STYLE_KEYS = [
+  "fill",
+  "textFill",
+  "border",
+  "boxShadow",
+  "textShadow",
+  "blend",
+  "filter",
+  "overlay",
+  "lineHeight",
+  "clip",
+  "textStroke",
+  "skew",
+  "backdropBlur",
+  "dropShadow",
+] as const satisfies ReadonlyArray<keyof TemplateStyleV2>;
 
 // ── Layout, conditions and fit ──────────────────────────────────────────────
 

@@ -1,6 +1,7 @@
 export * from "./capacity";
 export * from "./document";
 export * from "./drop-rule";
+export * from "./elements";
 export * from "./fields";
 export * from "./fit-matrix";
 export * from "./fit-rules";

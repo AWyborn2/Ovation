@@ -3,12 +3,15 @@ import {
   BarChart3,
   Eye,
   EyeOff,
+  Group,
   Image as ImageIcon,
   ImagePlus,
   LayoutTemplate,
   List,
   Lock,
+  PenTool,
   Shapes,
+  Square,
   Sticker,
   Type,
   Unlock,
@@ -29,7 +32,21 @@ const ICON: Record<FreeLayer["kind"], LucideIcon> = {
   element: LayoutTemplate,
   photo: ImagePlus,
   rows: List,
+  vector: PenTool,
+  group: Group,
 };
+
+/** A layer's icon; a kind this build doesn't know (a newer document) gets a plain square. */
+export const iconFor = (kind: string): LucideIcon =>
+  (ICON as Record<string, LucideIcon | undefined>)[kind] ?? Square;
+
+const LABEL: Partial<Record<FreeLayer["kind"], string>> = {
+  vector: "Graphic",
+  group: "Group",
+};
+
+/** A layer's name: its own, or what kind of layer it is. */
+export const layerName = (l: FreeLayer): string => l.name ?? LABEL[l.kind] ?? l.kind;
 
 /**
  * The layers drawer (Social Studio U16): free layers top-most first, each with
@@ -92,7 +109,8 @@ export function LayersDrawer({
       ) : (
         <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
           {rows.map((l) => {
-            const Icon = ICON[l.kind];
+            const Icon = iconFor(l.kind);
+            const name = layerName(l);
             const on = selection.includes(l.id);
             return (
               <li
@@ -110,12 +128,12 @@ export function LayersDrawer({
                 >
                   <Icon className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
                   <span className={cn("truncate", l.hidden && "opacity-50")}>
-                    {l.name ?? l.content ?? l.kind}
+                    {l.name ?? l.content ?? name}
                   </span>
                 </button>
                 <button
                   type="button"
-                  aria-label={l.hidden ? `Show ${l.name ?? l.kind}` : `Hide ${l.name ?? l.kind}`}
+                  aria-label={l.hidden ? `Show ${name}` : `Hide ${name}`}
                   className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
                   onClick={() => onToggleHidden(l.id)}
                 >
@@ -123,7 +141,7 @@ export function LayersDrawer({
                 </button>
                 <button
                   type="button"
-                  aria-label={l.locked ? `Unlock ${l.name ?? l.kind}` : `Lock ${l.name ?? l.kind}`}
+                  aria-label={l.locked ? `Unlock ${name}` : `Lock ${name}`}
                   className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
                   onClick={() => onToggleLocked(l.id)}
                 >

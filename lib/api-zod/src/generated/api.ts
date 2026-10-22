@@ -11238,6 +11238,141 @@ export const GetLibraryTemplateResponse = zod.object({
 
 
 /**
+ * Listed library elements (decorations from every look and those clubs saved), 48 a page, optionally for one category or look, or matching a search across names and tags. Every element is shared with every club.
+ * @summary Browse and search the element library
+ */
+export const listLibraryElementsQueryQMax = 60;
+
+
+
+export const ListLibraryElementsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listLibraryElementsQueryQMax).optional().describe('Words that must each appear in the element\'s name or tags.'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).optional(),
+  "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "mine": zod.coerce.boolean().optional().describe('Only the elements this club saved, listed or not.'),
+  "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
+})
+
+export const ListLibraryElementsResponse = zod.object({
+  "elements": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})),
+  "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
+})
+
+
+/**
+ * Publishes the layers to every club at once (decision E1). The document may only use tokens, slots and library images: no club upload, photo or sponsor art.
+ * @summary Save layers as a public library element
+ */
+export const saveLibraryElementBodyNameMax = 60;
+
+export const saveLibraryElementBodyTagsItemMax = 24;
+
+export const saveLibraryElementBodyTagsMax = 12;
+
+
+
+export const SaveLibraryElementBody = zod.object({
+  "name": zod.string().min(1).max(saveLibraryElementBodyNameMax),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string().min(1).max(saveLibraryElementBodyTagsItemMax)).max(saveLibraryElementBodyTagsMax).optional(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * A listed element, or one this club saved (listed or not). Inserting copies its layers into the card; nothing links back to the element.
+ * @summary One library element, to insert
+ */
+export const GetLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Other clubs stop seeing it. Cards it was already inserted into keep their copies of its layers.
+ * @summary Take an element this club saved out of the library
+ */
+export const UnlistLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlistLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * One report per club and element; reporting again replaces the reason. A club cannot report its own element (it can unlist it instead).
+ * @summary Report a library element to Ovation
+ */
+export const ReportLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reportLibraryElementBodyReasonMax = 500;
+
+
+
+export const ReportLibraryElementBody = zod.object({
+  "reason": zod.string().min(1).max(reportLibraryElementBodyReasonMax)
+})
+
+
+/**
  * @summary The club's own templates, defaults first within each kind
  */
 export const ListClubTemplatesQueryParams = zod.object({
