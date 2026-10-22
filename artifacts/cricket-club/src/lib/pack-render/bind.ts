@@ -151,7 +151,9 @@ export function bindInput(
       if (input.carouselDetail === true) bindInningsDetail(input, values, team);
       if (input.carouselDay) {
         set(values, "dayHeading", input.carouselDay.heading);
-        input.carouselDay.results.forEach((r, i) => {
+        // A stored day slide without its list draws its heading only.
+        const results = input.carouselDay.results ?? [];
+        results.forEach((r, i) => {
           values[`day${i}.grade`] = comp(r.grade);
           values[`day${i}.opposition`] = team(r.opposition);
           values[`day${i}.result`] = r.result;
@@ -162,7 +164,7 @@ export function bindInput(
           if (rowCrest) images[`day${i}.crest`] = rowCrest;
         });
         // The same results as a repeat, for template rows layers (format v2 `dayRows`).
-        rows["dayRows"] = input.carouselDay.results.map((r) => {
+        rows["dayRows"] = results.map((r) => {
           const opposition = team(r.opposition);
           return {
             variant: r.winner === "club" ? "won" : r.winner === "opposition" ? "lost" : "draw",
@@ -303,7 +305,8 @@ export function bindInput(
       if (input.carouselDay) {
         // A junior day slide (ADR-010 P3): content-built, so names are final.
         set(values, "dayHeading", input.carouselDay.heading);
-        input.carouselDay.fixtures.forEach((r, i) => {
+        const fixtures = input.carouselDay.fixtures ?? [];
+        fixtures.forEach((r, i) => {
           values[`day${i}.grade`] = r.grade;
           values[`day${i}.opposition`] = r.opposition;
           values[`day${i}.time`] = r.startTime;
@@ -311,7 +314,7 @@ export function bindInput(
           if (r.crestUrl) images[`day${i}.crest`] = r.crestUrl;
         });
         // The same fixtures as a repeat, for template rows layers (format v2 `dayRows`).
-        rows["dayRows"] = input.carouselDay.fixtures.map((r) => ({
+        rows["dayRows"] = fixtures.map((r) => ({
           values: {
             grade: r.grade,
             opposition: r.opposition,

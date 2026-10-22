@@ -81,6 +81,40 @@ export function usePreviewInput(kind: string, clubName: string | undefined): Sha
   }, [q.data, kind, clubName]);
 }
 
+/** A day page's sample rows: a few results, or a few fixtures for Match Day. */
+function sampleDay(kind: ShareCardInput["kind"]) {
+  const grades = ["Under 13 Blue", "Under 15", "Under 17"];
+  const opponents = ["Harbour", "Riverside", "Northshore Colts"];
+  if (kind === "matchDay") {
+    return {
+      heading: "Saturday",
+      fixtures: grades.map((grade, i) => ({
+        grade,
+        opposition: opponents[i]!,
+        crestUrl: null,
+        monogram: opponents[i]!.slice(0, 2).toUpperCase(),
+        homeAway: i % 2 ? ("AWAY" as const) : ("HOME" as const),
+        venue: "Main Oval",
+        startTime: ["8:30am", "9:00am", "1:00pm"][i]!,
+        roundLabel: "Round 4",
+      })),
+    };
+  }
+  return {
+    heading: "Saturday",
+    results: grades.map((grade, i) => ({
+      grade,
+      opposition: opponents[i]!,
+      crestUrl: null,
+      clubScore: ["4/132", "87", "6/150"][i]!,
+      oppositionScore: ["98", "3/90", "7/149"][i]!,
+      resultWord: i === 1 ? "RESULT" : "WIN",
+      result: ["Won by 34 runs", "Lost by 7 wickets", "Won by 1 run"][i]!,
+      winner: i === 1 ? ("opposition" as const) : ("club" as const),
+    })),
+  };
+}
+
 /**
  * The input and document that draw one page of a template. A bookend or day
  * page gets the input flag that selects it; the document also carries that
@@ -99,7 +133,7 @@ export function pageView(
     page === "title" || page === "sponsors"
       ? { ...input, carouselPage: { page, title: "This weekend", sponsors: [] } }
       : page === "day"
-        ? { ...input, carouselDay: { heading: "Saturday" } }
+        ? { ...input, carouselDay: sampleDay(input.kind) }
         : input;
   return {
     input: pageInput as ShareCardInput,
