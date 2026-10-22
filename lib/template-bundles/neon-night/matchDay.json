@@ -1,7 +1,7 @@
 {
   "name": "Neon Night matchDay",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -805,7 +805,7 @@
           },
           {
             "kind": "text",
-            "content": "{{roundLabel}}",
+            "content": "{{grade}} · {{roundLabel}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -818,7 +818,7 @@
             },
             "fit": {
               "minScale": 0.6,
-              "maxLines": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "fixture-l21",
@@ -836,7 +836,7 @@
           },
           {
             "kind": "text",
-            "content": "{{roundLabel}}",
+            "content": "{{grade}} · {{roundLabel}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -849,7 +849,7 @@
             },
             "fit": {
               "minScale": 0.6,
-              "maxLines": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "fixture-l22",
@@ -874,7 +874,7 @@
           },
           {
             "kind": "text",
-            "content": "{{roundLabel}}",
+            "content": "{{grade}} · {{roundLabel}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -887,7 +887,7 @@
             },
             "fit": {
               "minScale": 0.6,
-              "maxLines": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "fixture-l23",
@@ -7363,292 +7363,171 @@
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.09,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l25",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
-            "geometry": {
-              "square": {
-                "x": 41.09,
-                "y": 32.05,
-                "w": 17.82,
-                "h": 8.91
-              },
-              "portrait": {
-                "x": 38.12,
-                "y": 31.12,
-                "w": 23.76,
-                "h": 9.5
-              },
-              "story": {
-                "x": 38.12,
-                "y": 51.57,
-                "w": 23.76,
-                "h": 6.68
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.08,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l26",
-            "sizes": [
-              "landscape"
-            ],
-            "geometry": {
-              "landscape": {
-                "x": 46.46,
-                "y": 38.73,
-                "w": 7.08,
-                "h": 6.74
-              }
-            }
-          },
-          {
+            "id": "sponsors-grid1",
             "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 7.54,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 100,
-                  "show": "image"
-                }
-              ],
-              "columns": 4
-            },
-            "id": "sponsors-l27",
+            "name": "Sponsor logos",
             "sizes": [
               "square"
             ],
             "geometry": {
               "square": {
-                "x": 22.96,
-                "y": 36.17,
-                "w": 54.07,
-                "h": 22.43
-              }
-            }
-          },
-          {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 10.11,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 100,
-                  "show": "image"
-                }
-              ],
-              "columns": 4
-            },
-            "id": "sponsors-l28",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
-            "geometry": {
-              "portrait": {
-                "x": 13.92,
-                "y": 44.16,
-                "w": 72.15,
-                "h": 23.94
-              },
-              "story": {
-                "x": 13.92,
-                "y": 60.74,
-                "w": 72.15,
-                "h": 16.83
-              }
-            }
-          },
-          {
-            "kind": "rows",
-            "rows": {
-              "repeat": "sponsors",
-              "rowHeight": 2.75,
-              "cells": [
-                {
-                  "field": "logo",
-                  "x": 0,
-                  "w": 100,
-                  "y": 0,
-                  "h": 100,
-                  "show": "image"
-                }
-              ],
-              "columns": 4
-            },
-            "id": "sponsors-l29",
-            "sizes": [
-              "landscape"
-            ],
-            "geometry": {
-              "landscape": {
-                "x": 39.7,
-                "y": 39.06,
-                "w": 20.61,
-                "h": 16.39
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.09,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l30",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
-            "geometry": {
-              "square": {
-                "x": 59.9,
+                "x": 22.28,
                 "y": 32.05,
-                "w": 17.82,
-                "h": 8.91
-              },
-              "portrait": {
-                "x": 63.2,
-                "y": 31.12,
-                "w": 23.76,
-                "h": 9.5
-              },
-              "story": {
-                "x": 63.2,
-                "y": 51.57,
-                "w": 23.76,
-                "h": 6.68
+                "w": 55.45,
+                "h": 28.58
               }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "rowHeight": 6.36,
+              "gap": 1.04,
+              "columns": 3,
+              "columnGap": 1.88,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 18,
+                  "w": 64,
+                  "y": 12,
+                  "h": 76,
+                  "show": "image"
+                }
+              ]
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.08,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l31",
+            "id": "sponsors-grid2",
+            "kind": "rows",
+            "name": "Sponsor logos",
             "sizes": [
-              "landscape"
+              "portrait"
             ],
             "geometry": {
-              "landscape": {
-                "x": 54.06,
-                "y": 38.73,
-                "w": 7.08,
-                "h": 6.74
+              "portrait": {
+                "x": 13.04,
+                "y": 31.12,
+                "w": 73.91,
+                "h": 30.49
               }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "rowHeight": 8.49,
+              "gap": 1.39,
+              "columns": 3,
+              "columnGap": 1.88,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 18,
+                  "w": 64,
+                  "y": 12,
+                  "h": 76,
+                  "show": "image"
+                }
+              ]
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.09,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l32",
+            "id": "sponsors-grid3",
+            "kind": "rows",
+            "name": "Sponsor logos",
             "sizes": [
-              "square",
-              "portrait",
               "story"
             ],
             "geometry": {
-              "square": {
-                "x": 44.43,
-                "y": 55.06,
-                "w": 11.14,
-                "h": 5.57
-              },
-              "portrait": {
-                "x": 42.57,
-                "y": 55.67,
-                "w": 14.85,
-                "h": 5.94
-              },
               "story": {
-                "x": 42.57,
-                "y": 68.83,
-                "w": 14.85,
-                "h": 4.18
+                "x": 13.04,
+                "y": 51.57,
+                "w": 73.91,
+                "h": 21.44
               }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "rowHeight": 8.49,
+              "gap": 1.39,
+              "columns": 3,
+              "columnGap": 1.88,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 18,
+                  "w": 64,
+                  "y": 12,
+                  "h": 76,
+                  "show": "image"
+                }
+              ]
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "border": {
-                "width": 0.08,
-                "color": "#D3175A59"
-              }
-            },
-            "showWhen": {
-              "sponsors": true
-            },
-            "id": "sponsors-l33",
+            "id": "sponsors-grid4",
+            "kind": "rows",
+            "name": "Sponsor logos",
             "sizes": [
               "landscape"
             ],
             "geometry": {
               "landscape": {
-                "x": 50.26,
-                "y": 51.65,
-                "w": 4.42,
-                "h": 4.21
+                "x": 37.91,
+                "y": 38.73,
+                "w": 24.19,
+                "h": 17.14
               }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "rowHeight": 1.87,
+              "gap": 0.51,
+              "columns": 3,
+              "columnGap": 2.09,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 18,
+                  "w": 64,
+                  "y": 12,
+                  "h": 76,
+                  "show": "image"
+                }
+              ]
             }
           },
           {

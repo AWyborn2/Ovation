@@ -1,7 +1,7 @@
 {
   "name": "Neon Night weekendWrap",
   "version": 1,
-  "listed": false,
+  "listed": true,
   "document": {
     "formatVersion": 2,
     "pages": {
@@ -930,7 +930,7 @@
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -963,17 +963,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 90.78,
-                  "w": 7.22,
-                  "y": 38.08,
-                  "h": 23.82,
+                  "x": 89.98,
+                  "w": 8.82,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 1.72,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -985,7 +986,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
@@ -1030,7 +1032,7 @@
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -1063,17 +1065,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 88.67,
-                  "w": 9.33,
-                  "y": 38.22,
-                  "h": 23.56,
+                  "x": 87.87,
+                  "w": 10.93,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 2.29,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -1085,7 +1088,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
@@ -1130,7 +1134,7 @@
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -1163,17 +1167,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 88.67,
-                  "w": 9.33,
-                  "y": 38.22,
-                  "h": 23.56,
+                  "x": 87.87,
+                  "w": 10.93,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 2.29,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -1185,7 +1190,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
@@ -1230,7 +1236,7 @@
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "center"
+                    "align": "left"
                   }
                 },
                 {
@@ -1263,17 +1269,18 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 92.18,
-                  "w": 6.06,
-                  "y": 37.73,
-                  "h": 24.54,
+                  "x": 91.38,
+                  "w": 7.66,
+                  "y": 37,
+                  "h": 26,
                   "style": {
                     "fontSize": 0.9,
                     "color": "var(--accent-ink)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "var(--gold)"
                   }
                 }
               ],
@@ -1285,7 +1292,8 @@
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
                     "letterSpacing": 0.08,
-                    "align": "left"
+                    "align": "center",
+                    "background": "#00000000"
                   }
                 }
               }
