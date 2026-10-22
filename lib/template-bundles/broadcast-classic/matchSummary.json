@@ -1,6 +1,6 @@
 {
   "name": "Broadcast match summary",
-  "version": 2,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -39,7 +39,8 @@
                 "w": 100,
                 "h": 100
               }
-            }
+            },
+            "sig": "shape:14mols51854b2w"
           },
           {
             "id": "photo",
@@ -70,7 +71,8 @@
                 "w": 62,
                 "h": 100
               }
-            }
+            },
+            "sig": "photo:1a367n51xv5k6w"
           },
           {
             "id": "photo-fade-side",
@@ -104,7 +106,8 @@
                 "w": 62,
                 "h": 100
               }
-            }
+            },
+            "sig": "shape:0m5kbdc12vr2uh"
           },
           {
             "id": "photo-fade-bottom",
@@ -138,7 +141,8 @@
                 "w": 100,
                 "h": 100
               }
-            }
+            },
+            "sig": "shape:18d8yq81vdpc1p"
           },
           {
             "id": "slash-1",
@@ -176,7 +180,8 @@
                 "h": 18,
                 "rotate": 22
               }
-            }
+            },
+            "sig": "shape:1cz580t0thavie"
           },
           {
             "id": "slash-2",
@@ -215,7 +220,8 @@
                 "h": 13,
                 "rotate": 22
               }
-            }
+            },
+            "sig": "shape:1yxvvuc1khj69t"
           },
           {
             "id": "crest",
@@ -249,7 +255,8 @@
                 "w": 5.25,
                 "h": 10
               }
-            }
+            },
+            "sig": "element:0tichnn1hjfrj6"
           },
           {
             "id": "club-name-1",
@@ -285,7 +292,8 @@
                 "h": 2.92
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:12s4mlq0eymojd"
           },
           {
             "id": "club-name-2",
@@ -309,7 +317,8 @@
                 "h": 5.2
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:0teooav03937m4"
           },
           {
             "id": "club-tagline-1",
@@ -345,7 +354,8 @@
                 "h": 1.69
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0vlurfz0ivrmjq"
           },
           {
             "id": "club-tagline-2",
@@ -369,7 +379,8 @@
                 "h": 3
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:16yjek31emcy8k"
           },
           {
             "id": "chip-1",
@@ -407,7 +418,8 @@
                 "h": 2.59
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0dlaatj0li76r2"
           },
           {
             "id": "chip-2",
@@ -433,7 +445,8 @@
                 "h": 4.6
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:0cc41hl0s9vyd6"
           },
           {
             "id": "rule",
@@ -467,7 +480,8 @@
                 "w": 93.7,
                 "h": 0.25
               }
-            }
+            },
+            "sig": "shape:1rh3u1p1bh4mty"
           },
           {
             "id": "sponsor-1",
@@ -503,7 +517,8 @@
                 "h": 2.47
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:180d9v70t00wh8"
           },
           {
             "id": "sponsor-2",
@@ -527,7 +542,8 @@
                 "h": 4.4
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:18ja9yn1cla0ri"
           },
           {
             "id": "hashtag-1",
@@ -562,7 +578,8 @@
                 "h": 2.47
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0bo6rw71qdd3xi"
           },
           {
             "id": "hashtag-2",
@@ -585,7 +602,8 @@
                 "h": 4.4
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:1x6o6e515wbhui"
           },
           {
             "id": "match-title-1",
@@ -621,7 +639,8 @@
                 "h": 1.8
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0gmdl6a0ze673h"
           },
           {
             "id": "match-title-2",
@@ -645,7 +664,8 @@
                 "h": 3.2
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:15jhrce1rlhktf"
           },
           {
             "id": "result-word-1",
@@ -669,7 +689,8 @@
                 "h": 15.32
               }
             },
-            "sizes": ["square"]
+            "sizes": ["square"],
+            "sig": "text:0tf2say0i6cqmh"
           },
           {
             "id": "result-word-2",
@@ -699,7 +720,8 @@
                 "h": 12.93
               }
             },
-            "sizes": ["portrait", "story"]
+            "sizes": ["portrait", "story"],
+            "sig": "text:1yq52lp1vdt55u"
           },
           {
             "id": "result-word-3",
@@ -723,7 +745,8 @@
                 "h": 17.24
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:1trvyna1ak98qf"
           },
           {
             "id": "scores-club-bar",
@@ -757,7 +780,8 @@
                 "w": 35.9,
                 "h": 7
               }
-            }
+            },
+            "sig": "shape:1cz580t0thavie"
           },
           {
             "id": "scores-club-name-1",
@@ -792,7 +816,8 @@
                 "h": 3.94
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:04u6ciz09620km"
           },
           {
             "id": "scores-club-name-2",
@@ -815,7 +840,8 @@
                 "h": 7
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:1gqlnfh1tjlbua"
           },
           {
             "id": "scores-club-score-1",
@@ -849,7 +875,8 @@
                 "h": 3.94
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:04510ss1mjezpt"
           },
           {
             "id": "scores-club-score-2",
@@ -871,7 +898,8 @@
                 "h": 7
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:0vtv0cp03j9jxi"
           },
           {
             "id": "scores-opposition-bar",
@@ -905,7 +933,8 @@
                 "w": 35.9,
                 "h": 7
               }
-            }
+            },
+            "sig": "shape:1qzblv10is1p9e"
           },
           {
             "id": "scores-opposition-name-1",
@@ -940,7 +969,8 @@
                 "h": 3.94
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1g3oblz09rywna"
           },
           {
             "id": "scores-opposition-name-2",
@@ -963,7 +993,8 @@
                 "h": 7
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:0mgt8zt1f1xfyq"
           },
           {
             "id": "scores-opposition-score-1",
@@ -997,7 +1028,8 @@
                 "h": 3.94
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:16r58u40r1kymd"
           },
           {
             "id": "scores-opposition-score-2",
@@ -1019,7 +1051,8 @@
                 "h": 7
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:14240u1065dbsa"
           },
           {
             "id": "result-1",
@@ -1054,7 +1087,8 @@
                 "h": 5.29
               }
             },
-            "sizes": ["square", "portrait", "story"]
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1xzwmhz0rlveg8"
           },
           {
             "id": "result-2",
@@ -1077,7 +1111,8 @@
                 "h": 9.4
               }
             },
-            "sizes": ["landscape"]
+            "sizes": ["landscape"],
+            "sig": "text:1q8i5xs0239znn"
           },
           {
             "id": "performers-1",
@@ -1116,7 +1151,8 @@
               "minScale": 0.7,
               "maxLines": 2,
               "ellipsis": true
-            }
+            },
+            "sig": "text:0bohti41aarzl9"
           },
           {
             "id": "performers-2",
@@ -1143,7 +1179,8 @@
               "minScale": 0.7,
               "maxLines": 2,
               "ellipsis": true
-            }
+            },
+            "sig": "text:0xgsh310teteli"
           }
         ]
       },
@@ -1180,37 +1217,48 @@
                 "w": 100,
                 "h": 100
               }
-            }
+            },
+            "sig": "shape:1n943401b7btsl"
           },
           {
-            "kind": "vector",
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 110.93 194.39\" preserveAspectRatio=\"none\"><polygon points=\"78.38,0 110.38,0 32,194 0,194\" fill=\"var(--gold)\"/></svg>",
+            "kind": "shape",
             "id": "day-l2",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 79.37,
                 "y": -4,
-                "w": 10.27,
-                "h": 18
+                "w": 10.22,
+                "h": 17.96
               },
               "portrait": {
                 "x": 79.37,
                 "y": -3.2,
-                "w": 10.27,
-                "h": 14.4
+                "w": 10.22,
+                "h": 14.37
               },
               "story": {
                 "x": 79.37,
                 "y": -2.25,
-                "w": 10.27,
-                "h": 10.12
+                "w": 10.22,
+                "h": 10.1
               }
-            }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [71.01, 0],
+                  [100, 0],
+                  [28.99, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "sig": "shape:0lhq7me1wvk7c3"
           },
           {
-            "kind": "vector",
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64.7 113.39\" preserveAspectRatio=\"none\"><polygon points=\"45.65,0 64.65,0 19,113 0,113\" fill=\"var(--gold)\"/></svg>",
+            "kind": "shape",
             "id": "day-l3",
             "sizes": ["landscape"],
             "geometry": {
@@ -1218,49 +1266,85 @@
                 "x": 89.17,
                 "y": -4,
                 "w": 5.39,
-                "h": 18
+                "h": 17.94
               }
-            }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [70.61, 0],
+                  [100, 0],
+                  [29.39, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "sig": "shape:1uyqsbu1a6q0fj"
           },
           {
-            "kind": "vector",
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 71.83 140.39\" preserveAspectRatio=\"none\"><polygon points=\"56.56,0 71.56,0 15,140 0,140\" fill=\"var(--gold)\" fill-opacity=\"0.55\"/></svg>",
+            "kind": "shape",
             "id": "day-l4",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 86.98,
                 "y": -4,
-                "w": 6.65,
-                "h": 13
+                "w": 6.62,
+                "h": 12.96
               },
               "portrait": {
                 "x": 86.98,
                 "y": -3.2,
-                "w": 6.65,
-                "h": 10.4
+                "w": 6.62,
+                "h": 10.37
               },
               "story": {
                 "x": 86.98,
                 "y": -2.25,
-                "w": 6.65,
-                "h": 7.31
+                "w": 6.62,
+                "h": 7.29
               }
-            }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [79.04, 0],
+                  [100, 0],
+                  [20.96, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
+            },
+            "sig": "shape:00yo5sn017lnbc"
           },
           {
-            "kind": "vector",
-            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 41.9 81.89\" preserveAspectRatio=\"none\"><polygon points=\"33.13,0 42.13,0 9,82 0,82\" fill=\"var(--gold)\" fill-opacity=\"0.55\"/></svg>",
+            "kind": "shape",
             "id": "day-l5",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 93.16,
                 "y": -4,
-                "w": 3.49,
-                "h": 13
+                "w": 3.51,
+                "h": 13.02
               }
-            }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [78.64, 0],
+                  [100, 0],
+                  [21.36, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
+            },
+            "sig": "shape:08b4nlf0o2hlr0"
           },
           {
             "kind": "image",
@@ -1291,7 +1375,8 @@
                 "w": 4.99,
                 "h": 9.5
               }
-            }
+            },
+            "sig": "image:194ijcq0drv4o1"
           },
           {
             "kind": "text",
@@ -1332,7 +1417,8 @@
                 "w": 60.94,
                 "h": 2.71
               }
-            }
+            },
+            "sig": "text:1buompc0sc3crf"
           },
           {
             "kind": "text",
@@ -1361,7 +1447,8 @@
                 "w": 34.87,
                 "h": 4.76
               }
-            }
+            },
+            "sig": "text:0u33pug0fmv9it"
           },
           {
             "kind": "text",
@@ -1402,7 +1489,8 @@
                 "w": 60.94,
                 "h": 1.09
               }
-            }
+            },
+            "sig": "text:1it0x4703n5gse"
           },
           {
             "kind": "text",
@@ -1431,7 +1519,8 @@
                 "w": 34.87,
                 "h": 2.06
               }
-            }
+            },
+            "sig": "text:0tw6gw31bjo76o"
           },
           {
             "kind": "shape",
@@ -1460,7 +1549,8 @@
                 "w": 13.56,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:1ylxks013d5njn"
           },
           {
             "kind": "shape",
@@ -1477,7 +1567,8 @@
                 "w": 7.12,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:0d1afa60t1lqvh"
           },
           {
             "kind": "text",
@@ -1513,7 +1604,8 @@
                 "w": 10.56,
                 "h": 1.61
               }
-            }
+            },
+            "sig": "text:0y1q6u700o5j7e"
           },
           {
             "kind": "text",
@@ -1537,7 +1629,8 @@
                 "w": 6.02,
                 "h": 2.86
               }
-            }
+            },
+            "sig": "text:1kpwy7w1v6exk3"
           },
           {
             "kind": "text",
@@ -1561,7 +1654,8 @@
                 "w": 20.7,
                 "h": 2.22
               }
-            }
+            },
+            "sig": "text:1en39xx0teiul8"
           },
           {
             "kind": "text",
@@ -1591,7 +1685,8 @@
                 "w": 27.27,
                 "h": 1.67
               }
-            }
+            },
+            "sig": "text:18wcu4m0ppwnnj"
           },
           {
             "kind": "text",
@@ -1615,7 +1710,8 @@
                 "w": 11.33,
                 "h": 2.22
               }
-            }
+            },
+            "sig": "text:1fb8n8y1war1b1"
           },
           {
             "kind": "text",
@@ -1644,7 +1740,8 @@
                 "w": 31.29,
                 "h": 8.7
               }
-            }
+            },
+            "sig": "text:1lutojn0a6b612"
           },
           {
             "kind": "text",
@@ -1679,7 +1776,8 @@
                 "w": 41.6,
                 "h": 6.56
               }
-            }
+            },
+            "sig": "text:1y8tuon1qwag4m"
           },
           {
             "kind": "text",
@@ -1708,7 +1806,8 @@
                 "w": 14,
                 "h": 6.98
               }
-            }
+            },
+            "sig": "text:106liz41mrc0nx"
           },
           {
             "kind": "rows",
@@ -1904,7 +2003,8 @@
                 "w": 81.85,
                 "h": 38.48
               }
-            }
+            },
+            "sig": "rows:0sc679h0nhd96e"
           },
           {
             "kind": "rows",
@@ -2100,7 +2200,8 @@
                 "w": 88,
                 "h": 46.4
               }
-            }
+            },
+            "sig": "rows:05zxxkd1tzdrdo"
           },
           {
             "kind": "rows",
@@ -2211,7 +2312,7 @@
                   "y": 38.55,
                   "h": 26.49,
                   "style": {
-                    "fontSize": 3.0,
+                    "fontSize": 3,
                     "color": "#F5F2E8",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
@@ -2296,7 +2397,8 @@
                 "w": 88,
                 "h": 35.72
               }
-            }
+            },
+            "sig": "rows:04p3nd11sl0w5a"
           },
           {
             "kind": "rows",
@@ -2495,7 +2597,8 @@
                 "w": 93.7,
                 "h": 34.83
               }
-            }
+            },
+            "sig": "rows:0iu1mbn0cm8rzo"
           },
           {
             "kind": "shape",
@@ -2529,7 +2632,8 @@
                 "w": 93.7,
                 "h": 0.16
               }
-            }
+            },
+            "sig": "shape:0k7dfnf184vgx2"
           },
           {
             "kind": "text",
@@ -2567,7 +2671,8 @@
                 "w": 24.4,
                 "h": 1.09
               }
-            }
+            },
+            "sig": "text:14xwb721dle72b"
           },
           {
             "kind": "text",
@@ -2593,7 +2698,8 @@
                 "w": 13.28,
                 "h": 2.06
               }
-            }
+            },
+            "sig": "text:1yegqqs08a67kv"
           },
           {
             "kind": "shape",
@@ -2626,7 +2732,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "shape:0940kyt12rml8w"
           },
           {
             "kind": "shape",
@@ -2647,7 +2754,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "shape:1uyff631md2upq"
           },
           {
             "kind": "image",
@@ -2676,7 +2784,8 @@
                 "w": 10,
                 "h": 2.48
               }
-            }
+            },
+            "sig": "image:047j3h50otvmqq"
           },
           {
             "kind": "image",
@@ -2693,7 +2802,8 @@
                 "w": 5.25,
                 "h": 4.4
               }
-            }
+            },
+            "sig": "image:18qemif1fyp00c"
           },
           {
             "kind": "text",
@@ -2733,7 +2843,8 @@
                 "w": 41.12,
                 "h": 1.88
               }
-            }
+            },
+            "sig": "text:1jq5z970ot45cw"
           },
           {
             "kind": "text",
@@ -2761,7 +2872,8 @@
                 "w": 21.96,
                 "h": 3.49
               }
-            }
+            },
+            "sig": "text:1c044jn0p7sthe"
           }
         ]
       }

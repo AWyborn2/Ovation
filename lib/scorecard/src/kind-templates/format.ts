@@ -321,6 +321,18 @@ export type LayerCommon = {
   locked?: boolean;
   /** Layers sharing this id select and move together in the editor (not a stack). */
   group?: string;
+  /**
+   * Layers sharing a link are one element drawn per size, each on its own
+   * sizes with that size's font size, corners or clip (a converted pack's
+   * copies): the editor applies an edit made to one to the others.
+   */
+  link?: string;
+  /**
+   * The element's design signature (`layerSignature`): the same piece of a
+   * design, on any page, kind or look, has the same one. Bundles carry it
+   * so the element library finds each distinct decoration once.
+   */
+  sig?: string;
   /** The sizes this layer is on; absent means every size. */
   sizes?: TemplateSize[];
   /**

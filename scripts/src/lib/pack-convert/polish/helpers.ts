@@ -402,6 +402,8 @@ export function clampPhotoToArtboard(doc: TemplateDocumentV2): string[] {
         return {
           ...l,
           id: `${l.id}-${size}`,
+          // One photo, drawn per size: the editor edits the copies together.
+          link: l.link ?? l.id,
           sizes: [size],
           geometry: { [size]: { x: r2(x0), y: r2(y0), w: r2(x1 - x0), h: r2(y1 - y0) } },
           ...(polygon ? { style: { ...l.style, clip: { polygon } } } : {}),

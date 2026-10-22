@@ -317,6 +317,19 @@ describe("format v2 validation", () => {
     expect(errors.join("\n")).toContain(message);
   });
 
+  it("accepts a link and a design signature, and refuses malformed ones", () => {
+    const ok = layer("a", { link: "card-l3", sig: "text:0a1b2c3d4e5f6g" });
+    expect(templateDocumentErrors(doc({ card: [ok] }), "milestone")).toEqual([]);
+    const errors = templateDocumentErrors(
+      doc({ card: [layer("b", { link: "a b", sig: "<script>" })] }),
+      "milestone",
+    );
+    expect(errors).toEqual([
+      "card/b.link needs a simple id.",
+      "card/b.sig must be a design signature (kind:hash).",
+    ]);
+  });
+
   it("refuses ids repeated across pages, and unknown document settings", () => {
     const errors = templateDocumentErrors(
       doc({ fixture: [layer("same")], title: [layer("same")] }, { palette: "foil" }),

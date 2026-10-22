@@ -51,7 +51,11 @@ import {
   type ColourMode,
   type PackCapture,
 } from "@workspace/scorecard/pack-capture";
-import { templateDocumentErrors, type TemplateSize } from "@workspace/scorecard/kind-templates";
+import {
+  signDocument,
+  templateDocumentErrors,
+  type TemplateSize,
+} from "@workspace/scorecard/kind-templates";
 import type { Page } from "puppeteer-core";
 import { REPO_ROOT, callHarness, withHarness, type HarnessSession } from "./lib/harness-browser";
 import { LOOK_POLISH } from "./lib/pack-convert/polish";
@@ -559,6 +563,8 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
     if (polish)
       for (const conv of conversions)
         polishNotes[conv.kind] = polish.apply(conv.document, conv.kind);
+    // Every layer's design signature, for the element library (C2).
+    if (!opts.recheck) for (const conv of conversions) signDocument(conv.document);
     const checks: Checks = {};
     const validation = validatorReadsV2()
       ? Object.fromEntries(
@@ -592,15 +598,27 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
           },
           null,
           2,
-        )}
-`,
+        )}\n`,
       );
-      for (const conv of conversions)
-        await write(
-          path.join(dir, `${conv.kind}.json`),
-          `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: !!polish, document: conv.document }, null, 2)}
-`,
-        );
+      for (const conv of conversions) {
+        const file = path.join(dir, `${conv.kind}.json`);
+        const bundle = {
+          name: `${look.name} ${conv.kind}`,
+          version: 1,
+          listed: !!polish,
+          document: conv.document,
+        };
+        // The server keeps a version it has synced whatever its file now says,
+        // so a file whose template changes takes the next version.
+        const old = await readFile(file, "utf8")
+          .then((t) => JSON.parse(t) as typeof bundle)
+          .catch(() => null);
+        if (old && Number.isInteger(old.version)) {
+          const same = (b: typeof bundle) => JSON.stringify([b.name, b.listed, b.document]);
+          bundle.version = same(old) === same(bundle) ? old.version : old.version + 1;
+        }
+        await write(file, `${JSON.stringify(bundle, null, 2)}\n`);
+      }
     }
     await write(
       path.join(dir, "report.md"),
