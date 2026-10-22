@@ -38,3 +38,16 @@ the new design, not the old one.
 3. Per-board display schema + layout contract.
 4. Settings redesign with live preview + rotation builder.
 5. kiosk-photo-rotation slideshows plug into the builder; junior library in parallel.
+
+## Design direction (22 Oct 2026)
+
+- Ash chose **classic honour board** for the TV: timber, gold-leaf Cinzel titles, engraved
+  Cormorant Garamond names, gold rules. Mockup: `docs/design-handoffs/honours-kiosk-redesign/mockup.html`.
+- TV: fixed title plate + column headings; rows scroll in a clipped, masked viewport and fade
+  under the gold rule; board-level fade in, slow scroll; footer (est. year, sponsor line, board
+  N of M); page dots for paginated boards.
+- Settings: tabs Rotation · Look · Sponsors & ads · TV link. Rotation = drag list (board |
+  sponsor wall | ad | photo slideshow) + live preview of unsaved state + per-item display panel
+  (columns 1–4, scroll/turn pages, text size S–XL, rows per page, speed, transition, end hold,
+  format), each inheriting a "club default" from Look.
+- Status: awaiting Ash's sign-off on the mockup.
