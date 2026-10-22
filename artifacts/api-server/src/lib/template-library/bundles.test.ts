@@ -14,7 +14,7 @@ import {
 } from "@workspace/db";
 import { renderIndex } from "../../../../../lib/template-bundles/generate-index.mjs";
 import { syncBundles } from "./bundles";
-import { fixtureBundle, fixtureTemplate } from "./bundles.test-helpers";
+import { fixtureBundle, fixtureTemplate, v2Document } from "./bundles.test-helpers";
 import { registerFitRunner, writeFitResult, type FitTarget } from "./fit";
 import { listLibraryLooks, listLibraryTemplates } from "./store";
 
@@ -121,6 +121,26 @@ describe("syncBundles", () => {
     // Coming back relists it.
     await syncBundles([fixtureBundle(LOOK, [fixtureTemplate("matchDay")])]);
     expect((await rowsFor(`${LOOK}/matchDay`)).template?.listed).toBe(true);
+  });
+
+  it("syncs a format v2 template, and skips one the v2 rules refuse (T3.6, L1-B)", async () => {
+    const good = fixtureTemplate("matchDay", {
+      version: 4,
+      document: v2Document("matchDay", ["title"]),
+    });
+    const ok = await syncBundles([fixtureBundle(`${LOOK}-v2`, [good])]);
+    expect(ok.skipped).toEqual([]);
+    const { versions } = await rowsFor(`${LOOK}-v2/matchDay`);
+    expect(versions.at(-1)?.coverage.pages).toEqual(expect.arrayContaining(["fixture", "title"]));
+
+    const doc = v2Document("milestone") as { pages: Record<string, { layers: object[] }> };
+    const page = Object.values(doc.pages)[0]!;
+    page.layers[0] = { ...page.layers[0], showWhen: { field: "notAField" } };
+    const bad = fixtureTemplate("milestone", { document: doc });
+    const s = await syncBundles([fixtureBundle(`${LOOK}-v2bad`, [bad])]);
+    expect(s.skipped).toEqual([
+      { slug: `${LOOK}-v2bad/milestone`, reason: expect.stringMatching(/showWhen\.field/) },
+    ]);
   });
 
   it("lists a template only once its current version passes the fit check", async () => {
