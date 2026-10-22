@@ -216,9 +216,13 @@ const moved = (a: LayerBox, b: LayerBox) => Math.abs(a.x - b.x) > 0.3 || Math.ab
  * Flex containers whose children move between presets, with the signatures
  * of the layers they hold (in the base capture of one size).
  */
-export function stackContainers(
-  m: SizeMaps,
-): Array<{ container: CapturedElement; sigs: string[]; stack: StackSpec }> {
+export function stackContainers(m: SizeMaps): Array<{
+  container: CapturedElement;
+  sigs: string[];
+  stack: StackSpec;
+  /** Each layer's flow item: the container's child it sits in (a chip and its text move together). */
+  items: Record<string, number>;
+}> {
   if (!m.minimal) return [];
   const cap = m.baseCapture;
   const byId = new Map(cap.elements.map((e) => [e.id, e]));
@@ -246,9 +250,25 @@ export function stackContainers(
     else if (moved(was, l.box)) g.moves = true;
     groups.set(c.id, g);
   }
+  const inside = (id: number, container: CapturedElement) => {
+    for (let e = byId.get(id); e && e.parent !== null; e = byId.get(e.parent))
+      if (e.parent === container.id) return true;
+    return false;
+  };
+  const elementOf = new Map(m.base.layers.map((l) => [l.sig, l.element]));
+  const childOf = (id: number, container: CapturedElement): number => {
+    for (let e = byId.get(id); e && e.parent !== null; e = byId.get(e.parent))
+      if (e.parent === container.id) return e.id;
+    return id;
+  };
   const out = [];
   for (const g of groups.values()) {
     if (!g.moves || !g.conditional || g.sigs.length < 2) continue;
+    // A stack moves all it holds: one with nested blocks laid out by their own flex
+    // containers (a sponsor grid, a next-game block) would collapse its own members over
+    // them, so it isn't stacked and every layer keeps its box.
+    if (m.base.layers.some((l) => !g.sigs.includes(l.sig) && inside(l.element, g.container)))
+      continue;
     const st = g.container.style;
     const direction = (st["flex-direction"] ?? "row").startsWith("column") ? "column" : "row";
     const gapPx = px(direction === "column" ? st["row-gap"] : st["column-gap"]);
@@ -279,6 +299,9 @@ export function stackContainers(
     out.push({
       container: g.container,
       sigs: g.sigs,
+      items: Object.fromEntries(
+        g.sigs.map((sig) => [sig, childOf(elementOf.get(sig) ?? -1, g.container)]),
+      ),
       stack: {
         direction,
         ...(Number.isFinite(gapPx) && gapPx > 0 ? { gap: r2((gapPx / W) * 100) } : {}),
@@ -301,6 +324,7 @@ export function applyStacks(
     sigs: string[];
     stack: StackSpec;
     geometry: Partial<Record<TemplateSize, LayerBox>>;
+    items?: Record<string, number>;
   }>,
   prefix = "",
 ): TemplateLayerV2[] {
@@ -309,18 +333,69 @@ export function applyStacks(
     const members = out.filter((l) => s.sigs.includes(sigOf.get(l.id) ?? ""));
     if (members.length < 2) return;
     const at = out.indexOf(members[0]!);
+    // A stack lays out its children one after another, so the layers of one flow item (a
+    // chip's shape and its text, a tile and its logo) go in a plain group that moves as one.
+    const byItem = new Map<number, TemplateLayerV2[]>();
+    const children: Array<TemplateLayerV2 | number> = [];
+    for (const l of members) {
+      const item = s.items?.[sigOf.get(l.id) ?? ""];
+      if (item === undefined) {
+        children.push(l);
+        continue;
+      }
+      if (!byItem.has(item)) {
+        byItem.set(item, []);
+        children.push(item);
+      }
+      byItem.get(item)!.push(l);
+    }
+    let n = 0;
     const group: GroupLayerV2 = {
       id: `${prefix}stack${i + 1}`,
       kind: "group",
       name: "Stack",
       stack: s.stack,
       geometry: s.geometry,
-      children: members,
+      children: children.map((c) => {
+        if (typeof c !== "number") return c;
+        const own = byItem.get(c)!;
+        return own.length === 1 ? own[0]! : itemGroup(`${prefix}stack${i + 1}-item${++n}`, own);
+      }),
     };
     out = out.filter((l) => !members.includes(l));
     out.splice(Math.min(at, out.length), 0, group);
   });
   return out;
+}
+
+/** A plain group around one flow item's layers: each size's box is theirs together. */
+function itemGroup(id: string, layers: TemplateLayerV2[]): GroupLayerV2 {
+  const geometry: Partial<Record<TemplateSize, LayerBox>> = {};
+  const on = new Set<TemplateSize>();
+  for (const size of SIZES) {
+    const boxes = layers
+      .filter((l) => !l.sizes || l.sizes.includes(size))
+      .map((l) => l.geometry[size])
+      .filter((b): b is LayerBox => !!b);
+    if (!boxes.length) continue;
+    on.add(size);
+    const x = Math.min(...boxes.map((b) => b.x));
+    const y = Math.min(...boxes.map((b) => b.y));
+    geometry[size] = {
+      x,
+      y,
+      w: r2(Math.max(...boxes.map((b) => b.x + b.w)) - x),
+      h: r2(Math.max(...boxes.map((b) => b.y + b.h)) - y),
+    };
+  }
+  return {
+    id,
+    kind: "group",
+    name: "Item",
+    ...(on.size < SIZES.length ? { sizes: SIZES.filter((s) => on.has(s)) } : {}),
+    geometry,
+    children: layers,
+  };
 }
 
 /** The page's layers from its per-size captures. */
@@ -344,12 +419,22 @@ export function mergePage(
   }
   const stacks = new Map<
     string,
-    { sigs: string[]; stack: StackSpec; geometry: Partial<Record<TemplateSize, LayerBox>> }
+    {
+      sigs: string[];
+      stack: StackSpec;
+      geometry: Partial<Record<TemplateSize, LayerBox>>;
+      items: Record<string, number>;
+    }
   >();
   for (const m of maps)
     for (const s of stackContainers(m)) {
       const key = [...s.sigs].sort().join("|");
-      const entry = stacks.get(key) ?? { sigs: s.sigs, stack: s.stack, geometry: {} };
+      const entry = stacks.get(key) ?? {
+        sigs: s.sigs,
+        stack: s.stack,
+        geometry: {},
+        items: s.items,
+      };
       const W = m.baseCapture.native.w;
       const H = m.baseCapture.native.h;
       const b = s.container.box;

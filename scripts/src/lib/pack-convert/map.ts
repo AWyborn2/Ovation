@@ -38,6 +38,7 @@ import type {
 import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
+  toHex,
   parseClipPolygon,
   parseGradient,
   parseMatrix,
@@ -408,7 +409,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const found = boundRows(tree, cap, bound);
     if (!found) continue;
     for (const id of found.consumed) consumed.add(id);
-    const spec = rowsSpec(tree, found.rows, bound, { repeat, W, colour, fit: true });
+    const spec = rowsSpec(tree, found.rows, bound, { repeat, W, colour, fit: true, twin });
     if (!spec) {
       polish.push({
         element: found.rows[0]!.id,
@@ -434,6 +435,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       colour,
       fit: true,
       cellField: indexed.cellField,
+      twin,
     });
     if (!spec) continue;
     const first = indexed.rows[0]!;
@@ -507,6 +509,12 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       if (opacity < 1) style.opacity = r2(opacity);
       const filters = imageFilters(tree, el, polish);
       if (filters.length) style.filter = filters;
+      // A blend on a wrapper blends the image inside it (Bold Type's photo screens onto
+      // the panel behind it).
+      const blend = [el, ...tree.ancestors(el)]
+        .map((e) => e.style["mix-blend-mode"])
+        .find((b) => b && b !== "normal");
+      if (blend) style.blend = blend as BlendMode;
       if (!PHOTO_SLOTS.has(slot) && slot !== "groundPhoto" && el.style["object-fit"] === "cover")
         polish.push({
           element: el.id,
@@ -666,13 +674,22 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const wraps =
       !nowrap && (inline ? [el, ...kids] : [el]).flatMap(runsOf).some((t) => (t.lines ?? 1) > 1);
     const box = clips ? raw : wraps ? { ...raw, w: raw.w + 1 } : textBox(raw, textStyle.align, W);
-    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis.
+    // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
+    // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
+    // shrinks, then ends in an ellipsis on as many lines as the worst case takes (at most
+    // two): content longer than the worst case still fits its box.
+    const worstLines = Math.max(
+      1,
+      ...(inline ? [el, ...kids] : [el]).flatMap(runsOf).map((t) => t.lines ?? 1),
+    );
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
         ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
         : clips && ellipsis
-          ? { minScale: 1, maxLines: 1, ellipsis: true }
-          : null;
+          ? { minScale: 1, maxLines: nowrap ? 1 : 2, ellipsis: true }
+          : /\{\{/.test(content)
+            ? { minScale: 0.6, maxLines: nowrap || worstLines < 2 ? 1 : 2, ellipsis: true }
+            : null;
     const m = motionFor();
     add(
       `text:${content}`,
@@ -798,6 +815,64 @@ export function fillOverBox(
       })),
     },
   };
+}
+
+/** A fill that paints nothing. */
+const TRANSPARENT = "#00000000";
+
+/** Outlined text's stand-in fill: this share of the stroke's own opacity. */
+const OUTLINE_FILL = 0.5;
+
+/**
+ * The part of a vertical gradient a box shows when the gradient is taller than
+ * the box (`background-size: 100% 220%`, Gold Foil's foil, positioned by its
+ * shine): stops moved into box coordinates, the ends interpolated, the rest cut.
+ */
+export function sizedGradient(
+  fill: TemplateFill,
+  size: string | undefined,
+  position: string | undefined,
+): TemplateFill {
+  if (typeof fill !== "object" || fill.type !== "linear") return fill;
+  const angle = fill.angle ?? 180;
+  if (angle !== 180 && angle !== 0) return fill;
+  const h = parseFloat((size ?? "").trim().split(/\s+/)[1] ?? "");
+  if (!Number.isFinite(h) || !/%$/.test((size ?? "").trim()) || h <= 100) return fill;
+  const posY = parseFloat((position ?? "").trim().split(/\s+/)[1] ?? "0");
+  const p = Number.isFinite(posY) ? posY : 0;
+  if (fill.stops.some((s) => s.at === undefined)) return fill;
+  // A stop at s % of the gradient lands at s·h − (h − 100)·p (percent of the box).
+  const at = (s: number) => (s * h) / 100 - ((h - 100) * p) / 100;
+  const moved = fill.stops.map((s) => ({ color: s.color, at: at(s.at!) }));
+  const colourAt = (y: number) => {
+    const after = moved.findIndex((s) => s.at >= y);
+    if (after <= 0) return moved[Math.max(0, after)]!.color;
+    if (after < 0) return moved[moved.length - 1]!.color;
+    const a = moved[after - 1]!;
+    const b = moved[after]!;
+    return mixHex(a.color, b.color, (y - a.at) / Math.max(1e-6, b.at - a.at));
+  };
+  const inside = moved.filter((s) => s.at > 0 && s.at < 100);
+  const stops = [
+    { color: colourAt(0), at: 0 },
+    ...inside.map((s) => ({ color: s.color, at: r2(s.at) })),
+    { color: colourAt(100), at: 100 },
+  ];
+  return { ...fill, stops };
+}
+
+/** Two hex colours mixed (`t` of the way to `b`); a token can't be mixed, so the nearer one. */
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseColour(a);
+  const pb = parseColour(b);
+  if (!pa || !pb || !a.startsWith("#") || !b.startsWith("#")) return t < 0.5 ? a : b;
+  const k = Math.min(1, Math.max(0, t));
+  return toHex({
+    r: pa.r + (pb.r - pa.r) * k,
+    g: pa.g + (pb.g - pa.g) * k,
+    b: pa.b + (pb.b - pa.b) * k,
+    a: pa.a + (pb.a - pa.a) * k,
+  });
 }
 
 /** One side of a border drawn on fewer than four sides. */
@@ -1119,6 +1194,9 @@ function shapeStyle(
     }
   }
   if (opacity < 1) style.opacity = r2(opacity);
+  // A box with only a border or a shadow paints nothing inside: said outright, because the
+  // renderer fills a shape without a fill with the accent (v1's default).
+  if (!style.fill && (style.border || style.boxShadow)) style.fill = TRANSPARENT;
   const blend = el.style["mix-blend-mode"];
   if (blend && blend !== "normal") style.blend = blend as BlendMode;
   // A polygon clip (Club Kit's angled bands) cuts the box to that shape.
@@ -1138,7 +1216,15 @@ function shapeStyle(
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
       });
-  return { style, key: JSON.stringify(style), edges, under };
+  // The signature that matches this paint across sizes: its colours, not its lengths
+  // (a radius, shadow or clip in px differs per size; the merge splits styles that differ).
+  const key = JSON.stringify([
+    style.fill ?? null,
+    style.border?.color ?? null,
+    !!style.boxShadow,
+    !!style.clip,
+  ]);
+  return { style, key, edges, under };
 }
 
 const FONT_GENERIC =
@@ -1202,9 +1288,28 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
   const fillColour = el.style["-webkit-text-fill-color"];
   if (clip === "text" && el.style["background-image"]) {
     const gradient = gradientFill(splitTopLevel(el.style["background-image"])[0] ?? "", ctx, el);
-    if (gradient) style.textFill = gradient;
-  } else if (fillColour && parseColour(fillColour)?.a === 0) {
-    ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
+    if (gradient)
+      style.textFill = sizedGradient(
+        gradient,
+        el.style["background-size"],
+        el.style["background-position"],
+      );
+  } else if (
+    (fillColour && parseColour(fillColour)?.a === 0) ||
+    parseColour(tree.style(el, "color"))?.a === 0
+  ) {
+    // Outlined text (Bold Type's watermark numbers): v2 has no text stroke, so it's a
+    // faint fill in the stroke's colour, at half the stroke's strength.
+    const strokePx = px(tree.style(el, "-webkit-text-stroke-width"));
+    const stroke = ctx.colour(el, "-webkit-text-stroke-color");
+    if (Number.isFinite(strokePx) && strokePx > 0 && stroke) {
+      style.color = stroke;
+      style.opacity = r2((style.opacity ?? 1) * OUTLINE_FILL);
+      ctx.polish.push({
+        element: el.id,
+        what: "outlined text drawn as a faint fill (no text stroke in v2)",
+      });
+    } else ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
   }
   return style;
 }
@@ -1216,6 +1321,11 @@ interface RowsOptions {
   fit: boolean;
   /** Indexed rows: an element's own field key → the row field. */
   cellField?: (el: CapturedElement) => string | null;
+  /**
+   * An element's worst-case twin: rows, gaps and cells are measured there, where
+   * real content lays the row out (short sentinel markers lay it out differently).
+   */
+  twin?: (el: CapturedElement) => CapturedElement;
 }
 
 /** A rows spec from captured rows: the base row's cells, its height and the pitch. */
@@ -1232,14 +1342,19 @@ function rowsSpec(
   );
   const first = rows[baseIndex] ?? rows[0];
   if (!first || first.box.h <= 0) return null;
-  const top = rows[0]!;
-  const below = rows.find((r) => r.box.y > top.box.y + 0.5 && Math.abs(r.box.x - top.box.x) < 1);
-  const columnsX = [...new Set(rows.map((r) => Math.round(r.box.x)))];
+  // Geometry from the worst-case twins when every row has one.
+  const twinned = rows.map((r) => opts.twin?.(r));
+  const geo = twinned.every((t, i) => t && t !== rows[i] && t.box.h > 0)
+    ? (twinned as CapturedElement[])
+    : rows;
+  const top = geo[0]!;
+  const below = geo.find((r) => r.box.y > top.box.y + 0.5 && Math.abs(r.box.x - top.box.x) < 1);
+  const columnsX = [...new Set(geo.map((r) => Math.round(r.box.x)))];
   const columns = Math.max(1, Math.min(6, columnsX.length));
-  const rowH = first.box.h;
+  const rowH = geo[rows.indexOf(first)]!.box.h;
   const pitch = below ? below.box.y - top.box.y : rowH;
   const cellsOf = (row: CapturedElement, values: Record<string, string>) =>
-    rowCells(tree, row, values, opts);
+    rowCells(tree, row, values, geo === rows ? { ...opts, twin: undefined } : opts);
   const cells = cellsOf(first, bound[baseIndex]?.values ?? {});
   if (!cells.some((c) => c.show !== "backdrop")) return null;
   // Variant rows (the club's ladder row, a lost result): their cell styles that differ.
@@ -1285,7 +1400,10 @@ function rowCells(
   values: Record<string, string>,
   opts: RowsOptions,
 ): RowsCell[] {
-  const rowH = row.box.h;
+  // Cells sit where the worst case puts them in its twin row (else in this one).
+  const rowTwin = opts.twin?.(row);
+  const useTwin = !!rowTwin && rowTwin !== row && rowTwin.box.h > 0;
+  const rowBox = useTwin ? rowTwin!.box : row.box;
   const fieldFor = (el: CapturedElement, text: string): string | null => {
     if (opts.cellField) return opts.cellField(el);
     const t = text.trim().toLowerCase();
@@ -1298,12 +1416,17 @@ function rowCells(
       .sort((a, b) => b[1].length - a[1].length)[0];
     return inside ? inside[0] : null;
   };
-  const at = (el: CapturedElement) => ({
-    x: r2(((el.box.x - row.box.x) / row.box.w) * 100),
-    w: r2((el.box.w / row.box.w) * 100),
-    y: r2(((el.box.y - row.box.y) / rowH) * 100),
-    h: r2((el.box.h / rowH) * 100),
-  });
+  const at = (el: CapturedElement) => {
+    const t = useTwin ? opts.twin!(el) : el;
+    const box = t !== el || !useTwin ? t.box : el.box;
+    const from = t !== el || !useTwin ? rowBox : row.box;
+    return {
+      x: r2(((box.x - from.x) / from.w) * 100),
+      w: r2((box.w / from.w) * 100),
+      y: r2(((box.y - from.y) / from.h) * 100),
+      h: r2((box.h / from.h) * 100),
+    };
+  };
   const textStyle = (el: CapturedElement): NonNullable<RowsCell["style"]> => {
     const scale = scaleOf(tree, el);
     const fontPx = (px(tree.style(el, "font-size")) || 16) * scale;

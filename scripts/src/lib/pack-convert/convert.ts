@@ -191,10 +191,13 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
       const pair = (on: VariantCaptures | undefined, off: VariantCaptures | undefined) => {
         const onCap = pick(on, size, { content: "sentinel", palette: "A" });
         const offCap = pick(off, size, { content: "sentinel", palette: "A" });
+        // Boxes from each branch's own worst-case render, where it has one.
+        const worstOf = (v: VariantCaptures | undefined) =>
+          pick(v, size, { content: "worst", palette: "A" })?.capture ?? null;
         return onCap && offCap
           ? {
-              on: mapCapture(onCap.capture, { aliases }),
-              off: mapCapture(offCap.capture, { aliases }),
+              on: mapCapture(onCap.capture, { aliases, geometry: worstOf(on) }),
+              off: mapCapture(offCap.capture, { aliases, geometry: worstOf(off) }),
             }
           : undefined;
       };
