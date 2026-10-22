@@ -729,6 +729,9 @@ export function fillOverBox(
   };
 }
 
+/** A fill that paints nothing. */
+const TRANSPARENT = "#00000000";
+
 /** Outlined text's stand-in fill: this share of the stroke's own opacity. */
 const OUTLINE_FILL = 0.5;
 
@@ -1101,6 +1104,9 @@ function shapeStyle(
     }
   }
   if (opacity < 1) style.opacity = r2(opacity);
+  // A box with only a border or a shadow paints nothing inside: said outright, because the
+  // renderer fills a shape without a fill with the accent (v1's default).
+  if (!style.fill && (style.border || style.boxShadow)) style.fill = TRANSPARENT;
   const blend = el.style["mix-blend-mode"];
   if (blend && blend !== "normal") style.blend = blend as BlendMode;
   // A polygon clip (Club Kit's angled bands) cuts the box to that shape.
