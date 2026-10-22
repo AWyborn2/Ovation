@@ -23,6 +23,7 @@ import { MAX_ELEMENT_LAYERS } from "./elements";
 import { kindFields, TEMPLATE_CARD_KINDS } from "./fields";
 import {
   BLEND_MODES,
+  BORDER_SIDES,
   BORDER_STYLES,
   COLOUR_TOKENS,
   DERIVED_PALETTES,
@@ -40,6 +41,7 @@ import {
   STACK_ALIGNS,
   STACK_DIRECTIONS,
   STACK_JUSTIFIES,
+  V2_STYLE_KEYS,
   type PageKey,
 } from "./format";
 import { kindHasPage } from "./pages";
@@ -84,6 +86,12 @@ export const V2_RANGES = {
   overlayScale: [0.1, 10],
   /** Line height, a multiple of the font size. */
   lineHeight: [0.5, 3],
+  /** Text stroke width, percent of the artboard width. */
+  textStrokeWidth: [0, 5],
+  /** Skew along each axis, degrees. */
+  skew: [-75, 75],
+  /** Backdrop blur, pixels at native card size. */
+  backdropBlurPx: [0, MAX_BLUR_PX],
   /** Text fit: the smallest share of its designed size text may shrink to. */
   minScale: [0.3, 1],
   /** Stack gap, percent of the artboard width. */
@@ -127,19 +135,7 @@ const STYLE_KEYS = new Set([
   "radius",
   "opacity",
 ]);
-const V2_STYLE_KEYS = new Set([
-  ...STYLE_KEYS,
-  "fill",
-  "textFill",
-  "border",
-  "boxShadow",
-  "textShadow",
-  "blend",
-  "filter",
-  "overlay",
-  "lineHeight",
-  "clip",
-]);
+const V2_STYLE_KEY_SET = new Set<string>([...STYLE_KEYS, ...V2_STYLE_KEYS]);
 const LAYER_KEYS = new Set([
   "id",
   "kind",
@@ -369,7 +365,7 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     errors.push(`${where} must be an object.`);
     return;
   }
-  const keys = v2 ? V2_STYLE_KEYS : STYLE_KEYS;
+  const keys = v2 ? V2_STYLE_KEY_SET : STYLE_KEYS;
   for (const [k, value] of Object.entries(v)) {
     if (value === undefined) continue;
     const at = `${where}.${k}`;
@@ -388,15 +384,31 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     else if (k === "opacity") numberIn(errors, at, value, 0, 1);
     else if (k === "fill" || k === "textFill") checkFill(errors, at, value);
     else if (k === "border") {
-      if (!isObject(value)) errors.push(`${at} must be { width, color, style }.`);
+      if (!isObject(value)) errors.push(`${at} must be { width, color, style, sides }.`);
       else {
-        knownKeys(errors, at, value, new Set(["width", "color", "style"]));
+        knownKeys(errors, at, value, new Set(["width", "color", "style", "sides"]));
         numberIn(errors, `${at}.width`, value.width, ...V2_RANGES.borderWidth);
         checkColour(errors, `${at}.color`, value.color);
         if (value.style !== undefined) oneOf(errors, `${at}.style`, value.style, BORDER_STYLES);
+        if (value.sides !== undefined) checkBorderSides(errors, `${at}.sides`, value.sides);
       }
     } else if (k === "boxShadow") checkShadows(errors, at, value, true);
-    else if (k === "textShadow") checkShadows(errors, at, value, false);
+    else if (k === "textShadow" || k === "dropShadow") checkShadows(errors, at, value, false);
+    else if (k === "textStroke") {
+      if (!isObject(value)) errors.push(`${at} must be { width, color }.`);
+      else {
+        knownKeys(errors, at, value, new Set(["width", "color"]));
+        numberIn(errors, `${at}.width`, value.width, ...V2_RANGES.textStrokeWidth);
+        checkColour(errors, `${at}.color`, value.color);
+      }
+    } else if (k === "skew") {
+      if (!isObject(value)) errors.push(`${at} must be { x, y }.`);
+      else {
+        knownKeys(errors, at, value, new Set(["x", "y"]));
+        inRange(errors, `${at}.x`, value.x, V2_RANGES.skew);
+        inRange(errors, `${at}.y`, value.y, V2_RANGES.skew);
+      }
+    } else if (k === "backdropBlur") numberIn(errors, at, value, ...V2_RANGES.backdropBlurPx);
     else if (k === "blend") oneOf(errors, at, value, BLEND_MODES);
     else if (k === "filter") checkFilters(errors, at, value);
     else if (k === "overlay") {
@@ -410,6 +422,20 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     } else if (k === "lineHeight") numberIn(errors, at, value, ...V2_RANGES.lineHeight);
     else if (k === "clip") checkClip(errors, at, value);
   }
+}
+
+/** A border's sides: one to four of top, right, bottom and left, each once. */
+function checkBorderSides(errors: Errors, where: string, v: unknown): void {
+  if (!Array.isArray(v) || v.length < 1 || v.length > BORDER_SIDES.length)
+    return void errors.push(
+      `${where} must be 1 to ${BORDER_SIDES.length} of ${BORDER_SIDES.join(", ")}.`,
+    );
+  const seen = new Set<unknown>();
+  v.forEach((side, i) => {
+    oneOf(errors, `${where}[${i}]`, side, BORDER_SIDES);
+    if (seen.has(side)) errors.push(`${where} repeats ${String(side).slice(0, 10)}.`);
+    seen.add(side);
+  });
 }
 
 /** A clip: `{ polygon: [[x, y], …] }`, 3 to MAX_CLIP_POINTS points in percent of the box. */
