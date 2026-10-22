@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Building2,
   EyeOff,
+  LayoutTemplate,
   LogOut,
   Palette,
   PlusCircle,
@@ -26,7 +27,14 @@ import { cn } from "@/lib/utils";
  * platform layout. A club-admin session never satisfies `usePlatformAdmin`, so a
  * club admin can't reach the console even client-side.
  */
-export function PlatformAdminShell({ children }: { children: ReactNode }) {
+export function PlatformAdminShell({
+  children,
+  bare = false,
+}: {
+  children: ReactNode;
+  /** `children` alone, for full-screen tools like the template editor. */
+  bare?: boolean;
+}) {
   const me = usePlatformAdmin();
   if (me.isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
@@ -34,6 +42,7 @@ export function PlatformAdminShell({ children }: { children: ReactNode }) {
   if (!me.data) {
     return <PlatformLoginGate />;
   }
+  if (bare) return <>{children}</>;
   return <PlatformAdminLayout admin={me.data}>{children}</PlatformAdminLayout>;
 }
 
@@ -84,6 +93,7 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
     { href: "/platform-admin/playhq-sync", label: "PlayHQ sync", icon: RefreshCw },
     { href: "/platform-admin/player-privacy", label: "Player privacy", icon: ShieldOff },
     { href: "/platform-admin/grade-decisions", label: "Competitions", icon: Trophy },
+    { href: "/platform-admin/library", label: "Template library", icon: LayoutTemplate },
     { href: "/platform-admin/brand", label: "Platform brand", icon: Palette },
   ];
 
