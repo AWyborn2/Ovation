@@ -1,5 +1,28 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** kiosk-photo-rotation
+
+## Context
+
+- Architecture: `.10x/decisions/architect/kiosk-photo-rotation.md` (proposed, 22 Oct 2026).
+  Scope: `.10x/decisions/product-manager/kiosk-photo-rotation.md`.
+- Two deliverables, in order:
+  1. **Junior photo library** (senior parity): extend `junior_photos` + new
+     `junior_photo_participants` join (backfill), fail-closed `juniorLibraryPhotoAllowed`, Juniors
+     admin library UI reusing senior components, kiosk-token path on the gated junior image route.
+  2. **Kiosk photo slideshows:** `kiosk_photo_slideshows` jsonb + `"photos:<uuid>"` sequence
+     entries; photos resolved server-side in `GET /honour-display/kiosk`; new `photos` frame kind
+     in `honours-kiosk.tsx`. Senior-only slideshows can ship before (1) lands.
+- Integration points: `honour_display_settings`, `routes/honour-display.ts`,
+  `lib/honour-display/assemble.ts`, `lib/junior-photos.ts`, `routes/juniors-photos.ts`,
+  `lib/api-spec/openapi.yaml` (spec first), production migration SQL by hand.
+
+## Handoff History
+
+### Previous (PM → Architect, kiosk-photo-rotation)
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** kiosk-photo-rotation
@@ -42,7 +65,6 @@
 P1: interludes ("1 photo every N boards"), recent-moments preset. P2: per-board photo
 backgrounds with contrast guard.
 
-## Handoff History
 
 ### Previous (Senior Engineer → SDE, studio-editor-multiselect)
 
