@@ -9,6 +9,7 @@ and never shows recent moments. Target user: club admin setting up the clubroom 
 members and visitors in the clubroom.
 
 ## Ash's answers
+- Junior photos may show on the TV, subject to club-managed photo consent (22 Oct 2026).
 - Wants all four uses configurable: interludes between boards, a slideshow segment, photo
   backgrounds behind boards, and recent-moments content.
 - Wants all selection modes: folder, tags/filter, hand-picked, and random from the library.
@@ -46,8 +47,15 @@ A **photo source** = filter + order:
 Video, live social feeds, per-photo scheduling, uploads from the kiosk, photo editing.
 
 ## Risks / constraints
-- **Juniors isolation:** sources must exclude junior-tagged/junior stock photos unless a
-  future juniors kiosk is in scope. Default exclude.
+- **Junior photos ARE allowed on the kiosk (Ash, 22 Oct 2026)**, governed by the club's own
+  photo privacy rules: consent comes from the club's registration form and the club manages it
+  via the existing `junior_participants.photo_withheld` flag (ADR-007, junior card photos).
+  Reuse that rule; do not invent a new consent model. A photo featuring a junior whose photo is
+  withheld never shows. Re-check consent on every kiosk load so a newly withheld photo
+  disappears from the TV on its next refresh, with no republish. Display-only: still no
+  blending of junior stats/careers into senior reads (juniors isolation holds).
+  Open question for architect: how library photos link to junior participants (player tags are
+  senior-only today), and the default for untagged junior/group photos.
 - **Tenant isolation:** kiosk reads only the tenant's own library (public kiosk endpoint).
 - Privacy: kiosk is public — only photos the club treats as publicly displayable; consider a
   per-photo "hide from kiosk" flag.
