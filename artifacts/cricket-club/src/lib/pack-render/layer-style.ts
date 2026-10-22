@@ -1,7 +1,9 @@
 /**
  * Layer styles beyond v1 (ADR-011 §1 Styles, L1-D T1.18–T1.21): fills and
  * gradients, text fills, borders, shadows, blend modes, photo filters,
- * grain and halftone overlays, and the derived palettes a document uses.
+ * grain and halftone overlays, and the derived palettes a document uses; and
+ * what the converter needed next (B4): borders on some sides, text strokes,
+ * skew, backdrop blur and drop shadows.
  *
  * The renderer calls these for v2 documents only (`paletteVars` excepted,
  * whose Club Kit rule every document already follows), so v1 documents
@@ -11,6 +13,7 @@
  */
 import {
   BLEND_MODES,
+  BORDER_SIDES,
   MAX_BLUR_PX,
   type LayerMotion,
   type NormalisedDocument,
@@ -234,10 +237,70 @@ function textShadowCss(list: TemplateStyleV2["textShadow"]): string | null {
   return parts.length ? parts.join(", ") : null;
 }
 
+/** Drop shadows as CSS filter functions (`drop-shadow(…) drop-shadow(…)`), or null. */
+function dropShadowCss(list: TemplateStyleV2["dropShadow"]): string | null {
+  if (!Array.isArray(list)) return null;
+  const parts = list
+    .slice(0, 4)
+    .map((s) => {
+      const colour = cssColour(s?.color);
+      return colour ? `drop-shadow(${cqw(s.x)} ${cqw(s.y)} ${cqw(s.blur, 0, 50)} ${colour})` : null;
+    })
+    .filter((s): s is string => s !== null);
+  return parts.length ? parts.join(" ") : null;
+}
+
+/** A border, all round or on some sides only (a dashed rule above a footer). */
+function borderCss(border: TemplateStyleV2["border"]): string[] {
+  if (!border || typeof border !== "object") return [];
+  const colour = cssColour(border.color);
+  if (!colour) return [];
+  const style = BORDER_STYLES.has(String(border.style)) ? border.style : "solid";
+  const line = `${cqw(border.width, 0, 20)} ${style} ${colour}`;
+  const sides = Array.isArray(border.sides)
+    ? BORDER_SIDES.filter((side) => border.sides!.includes(side))
+    : null;
+  if (!sides || sides.length === BORDER_SIDES.length)
+    return [`border:${line}`, "box-sizing:border-box"];
+  if (sides.length === 0) return [];
+  return [...sides.map((side) => `border-${side}:${line}`), "box-sizing:border-box"];
+}
+
+function blendCss(s: TemplateStyleV2): string[] {
+  return typeof s.blend === "string" && BLENDS.has(s.blend) && s.blend !== "normal"
+    ? [`mix-blend-mode:${s.blend}`]
+    : [];
+}
+
+/**
+ * The wrapper a clipped layer with a drop shadow needs: `clip-path` clips the
+ * element's own filter, so the glow round a clipped band is drawn by the
+ * element around it. The wrapper also takes the blend mode, which an element
+ * inside a filter would blend with nothing. Null when the layer needs none.
+ */
+export function clippedGlowCss(layer: TemplateLayerV2): string[] | null {
+  const s = layer.style;
+  if (!s || typeof s !== "object" || !clipCss(s.clip)) return null;
+  const glow = dropShadowCss(s.dropShadow);
+  if (!glow) return null;
+  return [`filter:${glow}`, ...blendCss(s)];
+}
+
+/** A layer's skew as a CSS transform function (`skew(…)`), or null. */
+export function skewCss(style: TemplateStyleV2 | undefined): string | null {
+  const k = style?.skew;
+  if (!k || typeof k !== "object") return null;
+  const x = +clamp(num(k.x), -75, 75).toFixed(2);
+  const y = +clamp(num(k.y), -75, 75).toFixed(2);
+  return x || y ? `skew(${x}deg, ${y}deg)` : null;
+}
+
 /**
  * Declarations a v2 layer's style adds to its box: the fill (shapes paint it
- * on their own element), border, shadows, blend mode and photo filters, with
- * the layer's radius so they follow its corners.
+ * on their own element), border, shadows, blend mode, photo filters and drop
+ * shadows, backdrop blur and clip, with the layer's radius so they follow its
+ * corners. A clipped layer with a drop shadow leaves its glow and blend mode
+ * to its wrapper (`clippedGlowCss`).
  */
 export function layerBoxCss(layer: TemplateLayerV2, ctx: StyleContext): string[] {
   const s = layer.style;
@@ -245,20 +308,23 @@ export function layerBoxCss(layer: TemplateLayerV2, ctx: StyleContext): string[]
   const out: string[] = [];
   const fill = layer.kind === "shape" ? null : fillCss(s.fill);
   if (fill) out.push(`background:${fill}`);
-  if (s.border && typeof s.border === "object") {
-    const colour = cssColour(s.border.color);
-    const style = BORDER_STYLES.has(String(s.border.style)) ? s.border.style : "solid";
-    if (colour)
-      out.push(`border:${cqw(s.border.width, 0, 20)} ${style} ${colour}`, "box-sizing:border-box");
-  }
+  const border = borderCss(s.border);
+  out.push(...border);
   const shadow = shadowCss(s.boxShadow);
   if (shadow) out.push(`box-shadow:${shadow}`);
-  if ((fill || s.border || shadow) && s.radius != null && layer.kind !== "text")
+  const backdrop =
+    num(s.backdropBlur) > 0
+      ? `blur(${+clamp(num(s.backdropBlur), 0, MAX_BLUR_PX).toFixed(2)}px)`
+      : null;
+  if ((fill || s.border || shadow || backdrop) && s.radius != null && layer.kind !== "text")
     out.push(`border-radius:${num(s.radius)}px`);
-  if (typeof s.blend === "string" && BLENDS.has(s.blend) && s.blend !== "normal")
-    out.push(`mix-blend-mode:${s.blend}`);
-  const filter = filterCss(s.filter, ctx);
+  const wrapped = clippedGlowCss(layer) !== null;
+  if (!wrapped) out.push(...blendCss(s));
+  const filter = [filterCss(s.filter, ctx), wrapped ? null : dropShadowCss(s.dropShadow)]
+    .filter(Boolean)
+    .join(" ");
   if (filter) out.push(`filter:${filter}`);
+  if (backdrop) out.push(`-webkit-backdrop-filter:${backdrop}`, `backdrop-filter:${backdrop}`);
   const clip = clipCss(s.clip);
   if (clip) out.push(`clip-path:${clip}`);
   return out;
@@ -286,9 +352,9 @@ export function shapeFillCss(style: TemplateStyleV2 | undefined): string | null 
 
 /**
  * Declarations a v2 text style adds after v1's text CSS: a text fill (the
- * gradient clipped to the glyphs, as foil numbers are), text shadows and the
- * line height. A shine loop sweeps the text fill, so the fill is drawn taller
- * than the text and the sweep runs here, on the text itself.
+ * gradient clipped to the glyphs, as foil numbers are), text shadows, a text
+ * stroke and the line height. A shine loop sweeps the text fill, so the fill
+ * is drawn taller than the text and the sweep runs here, on the text itself.
  */
 export function textStyleCss(
   style: TemplateStyleV2 | undefined,
@@ -312,6 +378,10 @@ export function textStyleCss(
   }
   const shadow = textShadowCss(style.textShadow);
   if (shadow) out.push(`text-shadow:${shadow}`);
+  const stroke = style.textStroke;
+  const strokeColour = stroke && typeof stroke === "object" ? cssColour(stroke.color) : null;
+  if (strokeColour && num(stroke!.width) > 0)
+    out.push(`-webkit-text-stroke:${cqw(stroke!.width, 0, 5)} ${strokeColour}`);
   if (style.lineHeight != null)
     out.push(`line-height:${+clamp(num(style.lineHeight, 1.05), 0.5, 3).toFixed(3)}`);
   return out;

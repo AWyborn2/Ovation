@@ -16,6 +16,7 @@
 import { TEMPLATE_SIZES, TEMPLATE_SIZE_ORDER } from "./document";
 import {
   BLEND_MODES,
+  BORDER_SIDES,
   BORDER_STYLES,
   COLOUR_TOKENS,
   DERIVED_PALETTE_PREFIX,
@@ -87,14 +88,17 @@ motion: { in: { preset ${list(MOTION_IN_PRESETS)}, delayMs ${range(r.motionDelay
 - color, background, fontFamily: text of at most 120 characters with none of " < > ; { } or a backslash.
 - fontSize (percent of the artboard width: headlines 8–14, body 2.5–4) 0.2–80, fontWeight 100–1000, letterSpacing (em) −1–3, uppercase true | false, align left | center | right, radius, opacity 0–1, lineHeight (a multiple of the font size) ${range(r.lineHeight)}.
 - fill (wins over background) and textFill (paints the text itself, as foil numbers are): a colour, or a gradient: { type: "linear", angle ${range(r.angle)}, stops } or { type: "radial", shape circle | ellipse, at { x, y } (percent of the box), stops }, with ${MIN_GRADIENT_STOPS}–${MAX_GRADIENT_STOPS} stops { color, at ${range(r.stopAt)} }.
-- border: { width (percent of the artboard width, ${range(r.borderWidth)}), color, style ${list(BORDER_STYLES)} }.
-- boxShadow: up to ${MAX_SHADOWS} of { x, y, blur, spread, color, inset }; textShadow: up to ${MAX_SHADOWS} of { x, y, blur, color }. Offsets and spread ${range(r.shadowOffset)} and blur ${range(r.shadowBlur)}, in percent of the artboard width.
+- border: { width (percent of the artboard width, ${range(r.borderWidth)}), color, style ${list(BORDER_STYLES)}, sides (some of ${list(BORDER_SIDES)}; absent is all four) }.
+- boxShadow: up to ${MAX_SHADOWS} of { x, y, blur, spread, color, inset }; textShadow: up to ${MAX_SHADOWS} of { x, y, blur, color }; dropShadow: up to ${MAX_SHADOWS} of { x, y, blur, color }, following what the layer draws (a clipped band, an SVG, a logo) rather than its box, for glows. Offsets and spread ${range(r.shadowOffset)} and blur ${range(r.shadowBlur)}, in percent of the artboard width.
+- textStroke (text): { width (percent of the artboard width, ${range(r.textStrokeWidth)}), color }, an outline round the glyphs; outlined text with no fill sets color "transparent".
+- skew: { x, y } in degrees (${range(r.skew)}), slanting the layer about its centre.
+- backdropBlur: pixels at native card size, ${range(r.backdropBlurPx)}, blurring what's behind the layer (frosted glass).
 - blend: ${list(BLEND_MODES)}.
 - filter (photos and images): a list of { preset: "duotone", dark, light }, { preset: "grayscale", amount ${range(r.grayscale)} }, { preset: "blur", px ${range(r.blurPx)} }, { preset: "brightness", amount ${range(r.brightness)} (1 is unchanged) }; presets ${list(FILTER_PRESETS)}, each at most once.
 - overlay: { kind ${list(OVERLAY_KINDS)}, opacity ${range(r.overlayOpacity)}, scale ${range(r.overlayScale)} }.
 - clip: { polygon: [[x, y], …] }, 3 to ${MAX_CLIP_POINTS} points in percent of the layer's box (${range(r.clipPoint)}), cutting the box to that shape: angled bands, cut corners.
 
-Colours in fill, textFill, border, shadows and filters are a hex (#rgb, #rgba, #rrggbb or #rrggbbaa) or one of the club's colour tokens as var(--token), optionally with a hex fallback (var(--gold, #FBAC27)): ${list(COLOUR_TOKENS)}, or the derived palettes ${palettes}. Use the tokens for anything that should follow the club's colours: --gold is the club's accent.
+Colours in fill, textFill, border, shadows, textStroke and filters are a hex (#rgb, #rgba, #rrggbb or #rrggbbaa) or one of the club's colour tokens as var(--token), optionally with a hex fallback (var(--gold, #FBAC27)): ${list(COLOUR_TOKENS)}, or the derived palettes ${palettes}. Use the tokens for anything that should follow the club's colours: --gold is the club's accent.
 
 ## Rules
 - Use only the fields, image fields and lists the page lists; ${list(IMPLICIT_IMAGE_TOKENS)} are on every page.
