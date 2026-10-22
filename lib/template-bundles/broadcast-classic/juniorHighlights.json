@@ -1,992 +1,1024 @@
 {
   "name": "Broadcast junior highlights",
-  "version": 1,
+  "version": 2,
   "listed": true,
   "document": {
-    "layers": [
-      {
-        "id": "stage",
-        "kind": "shape",
-        "name": "Stage",
-        "style": {
-          "background": "var(--ink,#101216)"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "slash-1",
-        "kind": "shape",
-        "name": "Accent slash",
-        "style": {
-          "background": "var(--gold,#FBAC27)"
-        },
-        "geometry": {
-          "square": {
-            "x": 83,
-            "y": -4,
-            "w": 3,
-            "h": 18,
-            "rotate": 22
-          },
-          "portrait": {
-            "x": 83,
-            "y": -3.2,
-            "w": 3,
-            "h": 14.4,
-            "rotate": 22
-          },
-          "story": {
-            "x": 83,
-            "y": -2.25,
-            "w": 3,
-            "h": 10.12,
-            "rotate": 22
-          },
-          "landscape": {
-            "x": 91.08,
-            "y": -4,
-            "w": 1.57,
-            "h": 18,
-            "rotate": 22
-          }
-        }
-      },
-      {
-        "id": "slash-2",
-        "kind": "shape",
-        "name": "Accent slash",
-        "style": {
-          "background": "var(--gold,#FBAC27)",
-          "opacity": 0.55
-        },
-        "geometry": {
-          "square": {
-            "x": 89.6,
-            "y": -4,
-            "w": 1.4,
-            "h": 13,
-            "rotate": 22
-          },
-          "portrait": {
-            "x": 89.6,
-            "y": -3.2,
-            "w": 1.4,
-            "h": 10.4,
-            "rotate": 22
-          },
-          "story": {
-            "x": 89.6,
-            "y": -2.25,
-            "w": 1.4,
-            "h": 7.31,
-            "rotate": 22
-          },
-          "landscape": {
-            "x": 94.54,
-            "y": -4,
-            "w": 0.73,
-            "h": 13,
-            "rotate": 22
-          }
-        }
-      },
-      {
-        "id": "crest",
-        "kind": "element",
-        "name": "Crest",
-        "element": {
-          "id": "ck.crest"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 6,
-            "w": 10,
-            "h": 10
-          },
-          "portrait": {
-            "x": 6,
-            "y": 4.8,
-            "w": 10,
-            "h": 8
-          },
-          "story": {
-            "x": 6,
-            "y": 3.37,
-            "w": 10,
-            "h": 5.62
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 6,
-            "w": 5.25,
-            "h": 10
-          }
-        }
-      },
-      {
-        "id": "club-name-1",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 4,
-          "fontWeight": 800,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "#F2F5F8",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 6.4,
-            "w": 56,
-            "h": 5.2
-          },
-          "portrait": {
-            "x": 18,
-            "y": 5.12,
-            "w": 56,
-            "h": 4.16
-          },
-          "story": {
-            "x": 18,
-            "y": 3.6,
-            "w": 56,
-            "h": 2.92
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-name-2",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.1,
-          "fontWeight": 800,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "#F2F5F8",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 6.4,
-            "w": 76.9,
-            "h": 5.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "club-tagline-1",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.5,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 11.8,
-            "w": 56,
-            "h": 3
-          },
-          "portrait": {
-            "x": 18,
-            "y": 9.44,
-            "w": 56,
-            "h": 2.4
-          },
-          "story": {
-            "x": 18,
-            "y": 6.64,
-            "w": 56,
-            "h": 1.69
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-tagline-2",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.79,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 11.8,
-            "w": 76.9,
-            "h": 3
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "chip-1",
-        "kind": "text",
-        "name": "Card-type tag",
-        "content": "JUNIORS",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.6,
-          "fontWeight": 800,
-          "letterSpacing": 0.08,
-          "uppercase": true,
-          "color": "var(--accent-ink,#10151B)",
-          "background": "var(--gold,#FBAC27)",
-          "radius": 2,
-          "align": "center"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 18.4,
-            "w": 22,
-            "h": 4.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 14.72,
-            "w": 22,
-            "h": 3.68
-          },
-          "story": {
-            "x": 6,
-            "y": 10.35,
-            "w": 22,
-            "h": 2.59
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "chip-2",
-        "kind": "text",
-        "name": "Card-type tag",
-        "content": "JUNIORS",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.36,
-          "fontWeight": 800,
-          "letterSpacing": 0.08,
-          "uppercase": true,
-          "color": "var(--accent-ink,#10151B)",
-          "background": "var(--gold,#FBAC27)",
-          "radius": 2,
-          "align": "center"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 18.4,
-            "w": 11.55,
-            "h": 4.6
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "rule",
-        "kind": "shape",
-        "name": "Footer rule",
-        "style": {
-          "background": "rgba(255,255,255,.14)"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 87.4,
-            "w": 88,
-            "h": 0.25
-          },
-          "portrait": {
-            "x": 6,
-            "y": 89.92,
-            "w": 88,
-            "h": 0.2
-          },
-          "story": {
-            "x": 6,
-            "y": 92.91,
-            "w": 88,
-            "h": 0.14
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 87.4,
-            "w": 93.7,
-            "h": 0.25
-          }
-        }
-      },
-      {
-        "id": "sponsor-1",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.12,
-          "uppercase": true,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 89.6,
-            "w": 51.04,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 91.68,
-            "w": 51.04,
-            "h": 3.52
-          },
-          "story": {
-            "x": 6,
-            "y": 94.15,
-            "w": 51.04,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "sponsor-2",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.12,
-          "uppercase": true,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 89.6,
-            "w": 54.35,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "hashtag-1",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.8,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "right"
-        },
-        "geometry": {
-          "square": {
-            "x": 60,
-            "y": 89.6,
-            "w": 34,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 60,
-            "y": 91.68,
-            "w": 34,
-            "h": 3.52
-          },
-          "story": {
-            "x": 60,
-            "y": 94.15,
-            "w": 34,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "hashtag-2",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.47,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "right"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 79,
-            "y": 89.6,
-            "w": 17.85,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "eyebrow-1",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{grade}} · {{roundLabel}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 24.66,
-            "w": 88,
-            "h": 5.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 27.59,
-            "w": 88,
-            "h": 2.56
-          },
-          "story": {
-            "x": 6,
-            "y": 32.59,
-            "w": 88,
-            "h": 1.8
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "eyebrow-2",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{grade}} · {{roundLabel}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 36.71,
-            "w": 36.75,
-            "h": 3.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "title-top-1",
-        "kind": "text",
-        "name": "Title line 1",
-        "content": "JUNIORS",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 9.12,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "#F2F5F8",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 31.26,
-            "w": 88,
-            "h": 11.49
-          }
-        },
-        "sizes": ["square"]
-      },
-      {
-        "id": "title-top-2",
-        "kind": "text",
-        "name": "Title line 1",
-        "content": "JUNIORS",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 10.64,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "#F2F5F8",
-          "align": "left"
-        },
-        "geometry": {
-          "portrait": {
-            "x": 6,
-            "y": 30.95,
-            "w": 88,
-            "h": 10.73
-          },
-          "story": {
-            "x": 6,
-            "y": 34.95,
-            "w": 88,
-            "h": 7.54
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "title-top-3",
-        "kind": "text",
-        "name": "Title line 1",
-        "content": "JUNIORS",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 4.79,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "#F2F5F8",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 40.91,
-            "w": 36.75,
-            "h": 11.49
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "title-bottom-1",
-        "kind": "text",
-        "name": "Title line 2",
-        "content": "SHINE",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 9.12,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 42.75,
-            "w": 88,
-            "h": 11.49
-          }
-        },
-        "sizes": ["square"]
-      },
-      {
-        "id": "title-bottom-2",
-        "kind": "text",
-        "name": "Title line 2",
-        "content": "SHINE",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 10.64,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "left"
-        },
-        "geometry": {
-          "portrait": {
-            "x": 6,
-            "y": 41.67,
-            "w": 88,
-            "h": 10.73
-          },
-          "story": {
-            "x": 6,
-            "y": 42.49,
-            "w": 88,
-            "h": 7.54
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "title-bottom-3",
-        "kind": "text",
-        "name": "Title line 2",
-        "content": "SHINE",
-        "style": {
-          "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-          "fontSize": 4.79,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "var(--gold,#FBAC27)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 52.4,
-            "w": 36.75,
-            "h": 11.49
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "highlights-1",
-        "kind": "rows",
-        "name": "Highlights",
-        "rows": {
-          "repeat": "highlights",
-          "rowHeight": 6,
-          "gap": 0.8,
-          "cells": [
-            {
-              "field": "figure",
-              "x": 0,
-              "w": 100,
-              "style": {
-                "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-                "fontWeight": 400,
-                "color": "var(--gold,#FBAC27)",
-                "align": "right",
-                "fontSize": 3.6,
-                "background": "rgba(255,255,255,.07)"
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "stage",
+            "kind": "shape",
+            "name": "Stage",
+            "style": {
+              "background": "var(--ink,#101216)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
               }
             },
-            {
-              "field": "name",
-              "x": 3,
-              "w": 40,
-              "style": {
-                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                "fontWeight": 800,
-                "color": "#F2F5F8",
-                "align": "left",
-                "fontSize": 3,
-                "uppercase": true
-              }
-            },
-            {
-              "field": "note",
-              "x": 44,
-              "w": 38,
-              "style": {
-                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-                "fontWeight": 500,
-                "color": "rgba(242,245,248,.64)",
-                "align": "left",
-                "fontSize": 1.8
-              }
-            }
-          ]
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 56.04,
-            "w": 88,
-            "h": 19.9
-          }
-        },
-        "sizes": ["square"]
-      },
-      {
-        "id": "highlights-2",
-        "kind": "rows",
-        "name": "Highlights",
-        "rows": {
-          "repeat": "highlights",
-          "rowHeight": 7.2,
-          "gap": 0.96,
-          "cells": [
-            {
-              "field": "figure",
-              "x": 0,
-              "w": 100,
-              "style": {
-                "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-                "fontWeight": 400,
-                "color": "var(--gold,#FBAC27)",
-                "align": "right",
-                "fontSize": 4.32,
-                "background": "rgba(255,255,255,.07)"
-              }
-            },
-            {
-              "field": "name",
-              "x": 3,
-              "w": 40,
-              "style": {
-                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                "fontWeight": 800,
-                "color": "#F2F5F8",
-                "align": "left",
-                "fontSize": 3.6,
-                "uppercase": true
-              }
-            },
-            {
-              "field": "note",
-              "x": 44,
-              "w": 38,
-              "style": {
-                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-                "fontWeight": 500,
-                "color": "rgba(242,245,248,.64)",
-                "align": "left",
-                "fontSize": 2.16
-              }
-            }
-          ]
-        },
-        "geometry": {
-          "portrait": {
-            "x": 6,
-            "y": 53.84,
-            "w": 88,
-            "h": 19.06
-          }
-        },
-        "sizes": ["portrait"]
-      },
-      {
-        "id": "highlights-3",
-        "kind": "rows",
-        "name": "Highlights",
-        "rows": {
-          "repeat": "highlights",
-          "rowHeight": 9,
-          "gap": 1.2,
-          "cells": [
-            {
-              "field": "figure",
-              "x": 0,
-              "w": 100,
-              "style": {
-                "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-                "fontWeight": 400,
-                "color": "var(--gold,#FBAC27)",
-                "align": "right",
-                "fontSize": 5.4,
-                "background": "rgba(255,255,255,.07)"
-              }
-            },
-            {
-              "field": "name",
-              "x": 3,
-              "w": 40,
-              "style": {
-                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                "fontWeight": 800,
-                "color": "#F2F5F8",
-                "align": "left",
-                "fontSize": 4.5,
-                "uppercase": true
-              }
-            },
-            {
-              "field": "note",
-              "x": 44,
-              "w": 38,
-              "style": {
-                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-                "fontWeight": 500,
-                "color": "rgba(242,245,248,.64)",
-                "align": "left",
-                "fontSize": 2.7
-              }
-            }
-          ]
-        },
-        "geometry": {
-          "story": {
-            "x": 6,
-            "y": 51.04,
-            "w": 88,
-            "h": 16.71
-          }
-        },
-        "sizes": ["story"]
-      },
-      {
-        "id": "highlights-4",
-        "kind": "rows",
-        "name": "Highlights",
-        "rows": {
-          "repeat": "highlights",
-          "rowHeight": 4.41,
-          "gap": 0.59,
-          "cells": [
-            {
-              "field": "figure",
-              "x": 0,
-              "w": 100,
-              "style": {
-                "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
-                "fontWeight": 400,
-                "color": "var(--gold,#FBAC27)",
-                "align": "right",
-                "fontSize": 2.65,
-                "background": "rgba(255,255,255,.07)"
-              }
-            },
-            {
-              "field": "name",
-              "x": 3,
-              "w": 40,
-              "style": {
-                "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                "fontWeight": 800,
-                "color": "#F2F5F8",
-                "align": "left",
-                "fontSize": 2.2,
-                "uppercase": true
-              }
-            },
-            {
-              "field": "note",
-              "x": 44,
-              "w": 38,
-              "style": {
-                "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-                "fontWeight": 500,
-                "color": "rgba(242,245,248,.64)",
-                "align": "left",
-                "fontSize": 1.32
-              }
-            }
-          ]
-        },
-        "geometry": {
-          "landscape": {
-            "x": 43.05,
-            "y": 40.13,
-            "w": 53.8,
-            "h": 27.74
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "privacy-1",
-        "kind": "text",
-        "name": "Privacy note",
-        "content": "First names and initials only · photos with parent consent",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 2.2,
-          "fontWeight": 500,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 77.34,
-            "w": 88,
-            "h": 6
+            "sig": "shape:14mols51854b2w"
           },
-          "portrait": {
-            "x": 6,
-            "y": 74.01,
-            "w": 88,
-            "h": 4.8
+          {
+            "id": "slash-1",
+            "kind": "shape",
+            "name": "Accent slash",
+            "style": {
+              "background": "var(--gold,#FBAC27)"
+            },
+            "geometry": {
+              "square": {
+                "x": 83,
+                "y": -4,
+                "w": 3,
+                "h": 18,
+                "rotate": 22
+              },
+              "portrait": {
+                "x": 83,
+                "y": -3.2,
+                "w": 3,
+                "h": 14.4,
+                "rotate": 22
+              },
+              "story": {
+                "x": 83,
+                "y": -2.25,
+                "w": 3,
+                "h": 10.12,
+                "rotate": 22
+              },
+              "landscape": {
+                "x": 91.08,
+                "y": -4,
+                "w": 1.57,
+                "h": 18,
+                "rotate": 22
+              }
+            },
+            "sig": "shape:1cz580t0thavie"
           },
-          "story": {
-            "x": 6,
-            "y": 68.54,
-            "w": 88,
-            "h": 3.37
+          {
+            "id": "slash-2",
+            "kind": "shape",
+            "name": "Accent slash",
+            "style": {
+              "background": "var(--gold,#FBAC27)",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 89.6,
+                "y": -4,
+                "w": 1.4,
+                "h": 13,
+                "rotate": 22
+              },
+              "portrait": {
+                "x": 89.6,
+                "y": -3.2,
+                "w": 1.4,
+                "h": 10.4,
+                "rotate": 22
+              },
+              "story": {
+                "x": 89.6,
+                "y": -2.25,
+                "w": 1.4,
+                "h": 7.31,
+                "rotate": 22
+              },
+              "landscape": {
+                "x": 94.54,
+                "y": -4,
+                "w": 0.73,
+                "h": 13,
+                "rotate": 22
+              }
+            },
+            "sig": "shape:1yxvvuc1khj69t"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "crest",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 10,
+                "h": 10
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 10,
+                "h": 8
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 10,
+                "h": 5.62
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 5.25,
+                "h": 10
+              }
+            },
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club-name-1",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 4,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "#F2F5F8",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 6.4,
+                "w": 56,
+                "h": 5.2
+              },
+              "portrait": {
+                "x": 18,
+                "y": 5.12,
+                "w": 56,
+                "h": 4.16
+              },
+              "story": {
+                "x": 18,
+                "y": 3.6,
+                "w": 56,
+                "h": 2.92
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:12s4mlq0eymojd"
+          },
+          {
+            "id": "club-name-2",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "#F2F5F8",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 6.4,
+                "w": 76.9,
+                "h": 5.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0teooav03937m4"
+          },
+          {
+            "id": "club-tagline-1",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.5,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 11.8,
+                "w": 56,
+                "h": 3
+              },
+              "portrait": {
+                "x": 18,
+                "y": 9.44,
+                "w": 56,
+                "h": 2.4
+              },
+              "story": {
+                "x": 18,
+                "y": 6.64,
+                "w": 56,
+                "h": 1.69
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0vlurfz0ivrmjq"
+          },
+          {
+            "id": "club-tagline-2",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.79,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 11.8,
+                "w": 76.9,
+                "h": 3
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:16yjek31emcy8k"
+          },
+          {
+            "id": "chip-1",
+            "kind": "text",
+            "name": "Card-type tag",
+            "content": "JUNIORS",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.6,
+              "fontWeight": 800,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "var(--accent-ink,#10151B)",
+              "background": "var(--gold,#FBAC27)",
+              "radius": 2,
+              "align": "center"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 18.4,
+                "w": 22,
+                "h": 4.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 14.72,
+                "w": 22,
+                "h": 3.68
+              },
+              "story": {
+                "x": 6,
+                "y": 10.35,
+                "w": 22,
+                "h": 2.59
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:01fvi0t02rtv8g"
+          },
+          {
+            "id": "chip-2",
+            "kind": "text",
+            "name": "Card-type tag",
+            "content": "JUNIORS",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.36,
+              "fontWeight": 800,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "var(--accent-ink,#10151B)",
+              "background": "var(--gold,#FBAC27)",
+              "radius": 2,
+              "align": "center"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 18.4,
+                "w": 11.55,
+                "h": 4.6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:02tl1fv0os4ka8"
+          },
+          {
+            "id": "rule",
+            "kind": "shape",
+            "name": "Footer rule",
+            "style": {
+              "background": "rgba(255,255,255,.14)"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.4,
+                "w": 88,
+                "h": 0.25
+              },
+              "portrait": {
+                "x": 6,
+                "y": 89.92,
+                "w": 88,
+                "h": 0.2
+              },
+              "story": {
+                "x": 6,
+                "y": 92.91,
+                "w": 88,
+                "h": 0.14
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87.4,
+                "w": 93.7,
+                "h": 0.25
+              }
+            },
+            "sig": "shape:1rh3u1p1bh4mty"
+          },
+          {
+            "id": "sponsor-1",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 89.6,
+                "w": 51.04,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 91.68,
+                "w": 51.04,
+                "h": 3.52
+              },
+              "story": {
+                "x": 6,
+                "y": 94.15,
+                "w": 51.04,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:180d9v70t00wh8"
+          },
+          {
+            "id": "sponsor-2",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 89.6,
+                "w": 54.35,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:18ja9yn1cla0ri"
+          },
+          {
+            "id": "hashtag-1",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "right"
+            },
+            "geometry": {
+              "square": {
+                "x": 60,
+                "y": 89.6,
+                "w": 34,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 60,
+                "y": 91.68,
+                "w": 34,
+                "h": 3.52
+              },
+              "story": {
+                "x": 60,
+                "y": 94.15,
+                "w": 34,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0bo6rw71qdd3xi"
+          },
+          {
+            "id": "hashtag-2",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "right"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 79,
+                "y": 89.6,
+                "w": 17.85,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1x6o6e515wbhui"
+          },
+          {
+            "id": "eyebrow-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{grade}} · {{roundLabel}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 24.66,
+                "w": 88,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 27.59,
+                "w": 88,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 32.59,
+                "w": 88,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:033wepd0vsxnha"
+          },
+          {
+            "id": "eyebrow-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{grade}} · {{roundLabel}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 36.71,
+                "w": 36.75,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:19boh470am2k8q"
+          },
+          {
+            "id": "title-top-1",
+            "kind": "text",
+            "name": "Title line 1",
+            "content": "JUNIORS",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 9.12,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#F2F5F8",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 31.26,
+                "w": 88,
+                "h": 11.49
+              }
+            },
+            "sizes": ["square"],
+            "sig": "text:15wlrvk1vcqj33"
+          },
+          {
+            "id": "title-top-2",
+            "kind": "text",
+            "name": "Title line 1",
+            "content": "JUNIORS",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 10.64,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#F2F5F8",
+              "align": "left"
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 30.95,
+                "w": 88,
+                "h": 10.73
+              },
+              "story": {
+                "x": 6,
+                "y": 34.95,
+                "w": 88,
+                "h": 7.54
+              }
+            },
+            "sizes": ["portrait", "story"],
+            "sig": "text:15qx0pd1l9ds2k"
+          },
+          {
+            "id": "title-top-3",
+            "kind": "text",
+            "name": "Title line 1",
+            "content": "JUNIORS",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 4.79,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#F2F5F8",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 40.91,
+                "w": 36.75,
+                "h": 11.49
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1dftbm20muyod5"
+          },
+          {
+            "id": "title-bottom-1",
+            "kind": "text",
+            "name": "Title line 2",
+            "content": "SHINE",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 9.12,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 42.75,
+                "w": 88,
+                "h": 11.49
+              }
+            },
+            "sizes": ["square"],
+            "sig": "text:0tvasib0h1gsto"
+          },
+          {
+            "id": "title-bottom-2",
+            "kind": "text",
+            "name": "Title line 2",
+            "content": "SHINE",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 10.64,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "left"
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 41.67,
+                "w": 88,
+                "h": 10.73
+              },
+              "story": {
+                "x": 6,
+                "y": 42.49,
+                "w": 88,
+                "h": 7.54
+              }
+            },
+            "sizes": ["portrait", "story"],
+            "sig": "text:0m20ng800l5mrp"
+          },
+          {
+            "id": "title-bottom-3",
+            "kind": "text",
+            "name": "Title line 2",
+            "content": "SHINE",
+            "style": {
+              "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+              "fontSize": 4.79,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--gold,#FBAC27)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 52.4,
+                "w": 36.75,
+                "h": 11.49
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0e21n4t1vqr39y"
+          },
+          {
+            "id": "highlights-1",
+            "kind": "rows",
+            "name": "Highlights",
+            "rows": {
+              "repeat": "highlights",
+              "rowHeight": 6,
+              "gap": 0.8,
+              "cells": [
+                {
+                  "field": "figure",
+                  "x": 0,
+                  "w": 100,
+                  "style": {
+                    "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+                    "fontWeight": 400,
+                    "color": "var(--gold,#FBAC27)",
+                    "align": "right",
+                    "fontSize": 3.6,
+                    "background": "rgba(255,255,255,.07)"
+                  }
+                },
+                {
+                  "field": "name",
+                  "x": 3,
+                  "w": 40,
+                  "style": {
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "color": "#F2F5F8",
+                    "align": "left",
+                    "fontSize": 3,
+                    "uppercase": true
+                  }
+                },
+                {
+                  "field": "note",
+                  "x": 44,
+                  "w": 38,
+                  "style": {
+                    "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                    "fontWeight": 500,
+                    "color": "rgba(242,245,248,.64)",
+                    "align": "left",
+                    "fontSize": 1.8
+                  }
+                }
+              ]
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 56.04,
+                "w": 88,
+                "h": 19.9
+              }
+            },
+            "sizes": ["square"],
+            "sig": "rows:11n65ci1hlt23h"
+          },
+          {
+            "id": "highlights-2",
+            "kind": "rows",
+            "name": "Highlights",
+            "rows": {
+              "repeat": "highlights",
+              "rowHeight": 7.2,
+              "gap": 0.96,
+              "cells": [
+                {
+                  "field": "figure",
+                  "x": 0,
+                  "w": 100,
+                  "style": {
+                    "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+                    "fontWeight": 400,
+                    "color": "var(--gold,#FBAC27)",
+                    "align": "right",
+                    "fontSize": 4.32,
+                    "background": "rgba(255,255,255,.07)"
+                  }
+                },
+                {
+                  "field": "name",
+                  "x": 3,
+                  "w": 40,
+                  "style": {
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "color": "#F2F5F8",
+                    "align": "left",
+                    "fontSize": 3.6,
+                    "uppercase": true
+                  }
+                },
+                {
+                  "field": "note",
+                  "x": 44,
+                  "w": 38,
+                  "style": {
+                    "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                    "fontWeight": 500,
+                    "color": "rgba(242,245,248,.64)",
+                    "align": "left",
+                    "fontSize": 2.16
+                  }
+                }
+              ]
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 53.84,
+                "w": 88,
+                "h": 19.06
+              }
+            },
+            "sizes": ["portrait"],
+            "sig": "rows:1g1nzbu0y1iio7"
+          },
+          {
+            "id": "highlights-3",
+            "kind": "rows",
+            "name": "Highlights",
+            "rows": {
+              "repeat": "highlights",
+              "rowHeight": 9,
+              "gap": 1.2,
+              "cells": [
+                {
+                  "field": "figure",
+                  "x": 0,
+                  "w": 100,
+                  "style": {
+                    "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+                    "fontWeight": 400,
+                    "color": "var(--gold,#FBAC27)",
+                    "align": "right",
+                    "fontSize": 5.4,
+                    "background": "rgba(255,255,255,.07)"
+                  }
+                },
+                {
+                  "field": "name",
+                  "x": 3,
+                  "w": 40,
+                  "style": {
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "color": "#F2F5F8",
+                    "align": "left",
+                    "fontSize": 4.5,
+                    "uppercase": true
+                  }
+                },
+                {
+                  "field": "note",
+                  "x": 44,
+                  "w": 38,
+                  "style": {
+                    "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                    "fontWeight": 500,
+                    "color": "rgba(242,245,248,.64)",
+                    "align": "left",
+                    "fontSize": 2.7
+                  }
+                }
+              ]
+            },
+            "geometry": {
+              "story": {
+                "x": 6,
+                "y": 51.04,
+                "w": 88,
+                "h": 16.71
+              }
+            },
+            "sizes": ["story"],
+            "sig": "rows:13tnmte0vsbbht"
+          },
+          {
+            "id": "highlights-4",
+            "kind": "rows",
+            "name": "Highlights",
+            "rows": {
+              "repeat": "highlights",
+              "rowHeight": 4.41,
+              "gap": 0.59,
+              "cells": [
+                {
+                  "field": "figure",
+                  "x": 0,
+                  "w": 100,
+                  "style": {
+                    "fontFamily": "var(--disp,'Anton'),'Barlow Condensed',sans-serif",
+                    "fontWeight": 400,
+                    "color": "var(--gold,#FBAC27)",
+                    "align": "right",
+                    "fontSize": 2.65,
+                    "background": "rgba(255,255,255,.07)"
+                  }
+                },
+                {
+                  "field": "name",
+                  "x": 3,
+                  "w": 40,
+                  "style": {
+                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+                    "fontWeight": 800,
+                    "color": "#F2F5F8",
+                    "align": "left",
+                    "fontSize": 2.2,
+                    "uppercase": true
+                  }
+                },
+                {
+                  "field": "note",
+                  "x": 44,
+                  "w": 38,
+                  "style": {
+                    "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+                    "fontWeight": 500,
+                    "color": "rgba(242,245,248,.64)",
+                    "align": "left",
+                    "fontSize": 1.32
+                  }
+                }
+              ]
+            },
+            "geometry": {
+              "landscape": {
+                "x": 43.05,
+                "y": 40.13,
+                "w": 53.8,
+                "h": 27.74
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "rows:17a4l5x1vvw4pe"
+          },
+          {
+            "id": "privacy-1",
+            "kind": "text",
+            "name": "Privacy note",
+            "content": "First names and initials only · photos with parent consent",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 500,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 77.34,
+                "w": 88,
+                "h": 6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 74.01,
+                "w": 88,
+                "h": 4.8
+              },
+              "story": {
+                "x": 6,
+                "y": 68.54,
+                "w": 88,
+                "h": 3.37
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0qt55br0qpyuzs"
+          },
+          {
+            "id": "privacy-2",
+            "kind": "text",
+            "name": "Privacy note",
+            "content": "First names and initials only · photos with parent consent",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.15,
+              "fontWeight": 500,
+              "color": "rgba(242,245,248,.64)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 65.29,
+                "w": 36.75,
+                "h": 6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0d5tps4155l5zd"
           }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "privacy-2",
-        "kind": "text",
-        "name": "Privacy note",
-        "content": "First names and initials only · photos with parent consent",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 1.15,
-          "fontWeight": 500,
-          "color": "rgba(242,245,248,.64)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 65.29,
-            "w": 36.75,
-            "h": 6
-          }
-        },
-        "sizes": ["landscape"]
+        ]
       }
-    ]
+    }
   }
 }

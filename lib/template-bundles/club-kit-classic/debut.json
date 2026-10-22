@@ -1,734 +1,1700 @@
 {
   "name": "Club Kit debut",
-  "version": 1,
+  "version": 2,
   "listed": true,
   "document": {
-    "layers": [
-      {
-        "id": "background",
-        "kind": "element",
-        "name": "Club background",
-        "element": {
-          "id": "ck.background"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "background",
+            "name": "Club background",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base)",
+                        "at": 0
+                      },
+                      {
+                        "color": "var(--ck-base2)",
+                        "at": 100
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l1",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1yh28bt13rxwkc"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "radial",
+                    "at": {
+                      "x": 0,
+                      "y": 100
+                    },
+                    "stops": [
+                      {
+                        "color": "var(--ck-glowc)"
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 60
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l2",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0t02qoc1gpjwh5"
+              }
+            ],
+            "sig": "group:0lma41004yqpn3"
           },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 3
+                }
+              ],
+              "opacity": 0.07
+            },
+            "id": "watermark",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 30,
+                "w": 70,
+                "h": 70
+              },
+              "portrait": {
+                "x": 0,
+                "y": 44,
+                "w": 70,
+                "h": 56
+              },
+              "story": {
+                "x": 0,
+                "y": 60.63,
+                "w": 69.99,
+                "h": 39.37
+              },
+              "landscape": {
+                "x": 0,
+                "y": 30,
+                "w": 36.75,
+                "h": 70
+              }
+            },
+            "name": "Crest watermark",
+            "sig": "image:0xhlg3r0zdshfa"
           },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "photo-frame-side",
+            "name": "Photo frame",
+            "kind": "group",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 50.2,
+                "y": 0,
+                "w": 49.8,
+                "h": 100
+              },
+              "landscape": {
+                "x": 52.43,
+                "y": 0,
+                "w": 47.58,
+                "h": 100
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [29.8, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l1",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 50.2,
+                    "y": 0,
+                    "w": 49.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 52.43,
+                    "y": 0,
+                    "w": 47.58,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:190rdnd1ifgqf0"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [28.36, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l2",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 51.2,
+                    "y": 0,
+                    "w": 48.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 53.39,
+                    "y": 0,
+                    "w": 46.62,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0ooa8b50kmz83w"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [27.17, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l3",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 52,
+                    "y": 0,
+                    "w": 48,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 54.15,
+                    "y": 0,
+                    "w": 45.86,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1rvsqh50h4kx8k"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l4",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1009n7i063hrtr"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l5",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "photo:10w9jk8003u12p"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 90,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-35)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l6",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:091ruyy07o3381"
+              }
+            ],
+            "sig": "group:1k2vt8g03bddwx"
           },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "photo-frame-top",
+            "name": "Photo frame",
+            "kind": "group",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 48.59
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 63.75
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.82],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l1",
+                "link": "photo-frame-top-l1",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 48.59
+                  }
+                },
+                "sig": "shape:131782p0ija21q"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.6],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l2",
+                "link": "photo-frame-top-l1",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 63.75
+                  }
+                },
+                "sig": "shape:18h06e513r57ec"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.38],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l3",
+                "link": "photo-frame-top-l3",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 47.53
+                  }
+                },
+                "sig": "shape:0o7f6ym1il2knj"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.2],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l4",
+                "link": "photo-frame-top-l3",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 62.53
+                  }
+                },
+                "sig": "shape:111aya30vpqjbk"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l5",
+                "link": "photo-frame-top-l5",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 46.68
+                  }
+                },
+                "sig": "shape:1dphayp1y2ahme"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.87],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l6",
+                "link": "photo-frame-top-l5",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 61.55
+                  }
+                },
+                "sig": "shape:0ar5zhr10f9awq"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l7",
+                "sizes": ["portrait", "story"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 44.56
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 59.11
+                  }
+                },
+                "sig": "shape:0pxnmw00ltii8t"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 77.99],
+                      [0, 99.99]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l8",
+                "link": "photo-frame-top-l8",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 44.56
+                  }
+                },
+                "sig": "photo:1tnbc380hdons7"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l9",
+                "link": "photo-frame-top-l8",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 59.11
+                  }
+                },
+                "sig": "photo:193hvuy1y0yo27"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 77.99],
+                      [0, 99.99]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l10",
+                "link": "photo-frame-top-l10",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 44.56
+                  }
+                },
+                "sig": "shape:1hfo22q1h146sp"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l11",
+                "link": "photo-frame-top-l10",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 59.11
+                  }
+                },
+                "sig": "shape:03hj3dm1igqain"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 77.99],
+                      [0, 99.99]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l12",
+                "link": "photo-frame-top-l12",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 44.56
+                  }
+                },
+                "sig": "shape:0eedfnj16denbs"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l13",
+                "link": "photo-frame-top-l12",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 59.11
+                  }
+                },
+                "sig": "shape:12esd4n1xnyg9u"
+              }
+            ],
+            "sig": "group:1pugv4b1c4r5v6"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "crest",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 10,
+                "h": 10
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 10,
+                "h": 8
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 10,
+                "h": 5.62
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 5.25,
+                "h": 10
+              }
+            },
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club-name-1",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 4,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 6.4,
+                "w": 58,
+                "h": 5.2
+              },
+              "portrait": {
+                "x": 18,
+                "y": 5.12,
+                "w": 58,
+                "h": 4.16
+              },
+              "story": {
+                "x": 18,
+                "y": 3.6,
+                "w": 58,
+                "h": 2.92
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1pcu1a10z4w0pi"
+          },
+          {
+            "id": "club-name-2",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 6.4,
+                "w": 77.95,
+                "h": 5.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:16vudi41j2qian"
+          },
+          {
+            "id": "club-tagline-1",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.5,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 11.8,
+                "w": 58,
+                "h": 3
+              },
+              "portrait": {
+                "x": 18,
+                "y": 9.44,
+                "w": 58,
+                "h": 2.4
+              },
+              "story": {
+                "x": 18,
+                "y": 6.64,
+                "w": 58,
+                "h": 1.69
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1epyzr11vh5ig2"
+          },
+          {
+            "id": "club-tagline-2",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.79,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 11.8,
+                "w": 77.95,
+                "h": 3
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0drrfzt1fvafns"
+          },
+          {
+            "id": "chip",
+            "name": "Card-type chip",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 81,
+                "y": 8.5,
+                "w": 12.99,
+                "h": 4.5
+              },
+              "portrait": {
+                "x": 81,
+                "y": 6.8,
+                "w": 12.99,
+                "h": 3.6
+              },
+              "story": {
+                "x": 81.01,
+                "y": 4.78,
+                "w": 12.99,
+                "h": 2.53
+              },
+              "landscape": {
+                "x": 90.02,
+                "y": 8.5,
+                "w": 6.83,
+                "h": 4.5
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "chip-l1",
+                "geometry": {
+                  "square": {
+                    "x": 81,
+                    "y": 8.5,
+                    "w": 1.2,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 81,
+                    "y": 6.8,
+                    "w": 1.2,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 81.01,
+                    "y": 4.78,
+                    "w": 1.2,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 90.02,
+                    "y": 8.5,
+                    "w": 0.63,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "chip-l2",
+                "geometry": {
+                  "square": {
+                    "x": 82.19,
+                    "y": 8.5,
+                    "w": 11.8,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 82.19,
+                    "y": 6.8,
+                    "w": 11.8,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 82.21,
+                    "y": 4.78,
+                    "w": 11.79,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 90.65,
+                    "y": 8.5,
+                    "w": 6.2,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "text",
+                "content": "DEBUT",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 2.5,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l3",
+                "link": "chip-l3",
+                "sizes": ["square", "portrait", "story"],
+                "geometry": {
+                  "square": {
+                    "x": 84.39,
+                    "y": 9.22,
+                    "w": 8.41,
+                    "h": 2.96
+                  },
+                  "portrait": {
+                    "x": 84.39,
+                    "y": 7.38,
+                    "w": 8.41,
+                    "h": 2.37
+                  },
+                  "story": {
+                    "x": 84.41,
+                    "y": 5.18,
+                    "w": 8.4,
+                    "h": 1.67
+                  }
+                },
+                "sig": "text:1wznzkc11hyvn1"
+              },
+              {
+                "kind": "text",
+                "content": "DEBUT",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 1.31,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l4",
+                "link": "chip-l3",
+                "sizes": ["landscape"],
+                "geometry": {
+                  "landscape": {
+                    "x": 91.81,
+                    "y": 9.18,
+                    "w": 4.89,
+                    "h": 3.02
+                  }
+                },
+                "sig": "text:0k6d55o1ojqoq7"
+              }
+            ],
+            "sig": "group:0z8xdzt1hk6zki"
+          },
+          {
+            "id": "rule",
+            "name": "Tricolour rule",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87,
+                "w": 88,
+                "h": 0.8
+              },
+              "portrait": {
+                "x": 6,
+                "y": 89.6,
+                "w": 88,
+                "h": 0.64
+              },
+              "story": {
+                "x": 6,
+                "y": 92.69,
+                "w": 88,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87,
+                "w": 93.7,
+                "h": 0.8
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "rule-l1",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 87,
+                    "w": 51.53,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 89.6,
+                    "w": 51.53,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 92.69,
+                    "w": 51.53,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 87,
+                    "w": 54.87,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)"
+                },
+                "id": "rule-l2",
+                "geometry": {
+                  "square": {
+                    "x": 58.59,
+                    "y": 87,
+                    "w": 8.59,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 58.59,
+                    "y": 89.6,
+                    "w": 8.59,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 58.59,
+                    "y": 92.69,
+                    "w": 8.59,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 59.14,
+                    "y": 87,
+                    "w": 9.14,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:1d8d4rq15ewynx"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "rule-l3",
+                "geometry": {
+                  "square": {
+                    "x": 68.23,
+                    "y": 87,
+                    "w": 25.77,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 68.23,
+                    "y": 89.6,
+                    "w": 25.77,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 68.23,
+                    "y": 92.69,
+                    "w": 25.77,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 69.41,
+                    "y": 87,
+                    "w": 27.44,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              }
+            ],
+            "sig": "group:0hmhtsw005vlf9"
+          },
+          {
+            "id": "sponsor-1",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2,
+              "fontWeight": 700,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 89.6,
+                "w": 51.04,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 91.68,
+                "w": 51.04,
+                "h": 3.52
+              },
+              "story": {
+                "x": 6,
+                "y": 94.15,
+                "w": 51.04,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0jysi4m0o0072t"
+          },
+          {
+            "id": "sponsor-2",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.05,
+              "fontWeight": 700,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 89.6,
+                "w": 54.35,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:09q17641tq5uxx"
+          },
+          {
+            "id": "hashtag-1",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "right"
+            },
+            "geometry": {
+              "square": {
+                "x": 60,
+                "y": 89.6,
+                "w": 34,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 60,
+                "y": 91.68,
+                "w": 34,
+                "h": 3.52
+              },
+              "story": {
+                "x": 60,
+                "y": 94.15,
+                "w": 34,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:15yqpxf1q6y2gg"
+          },
+          {
+            "id": "hashtag-2",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "right"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 79,
+                "y": 89.6,
+                "w": 17.85,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1svbwf31dk77be"
+          },
+          {
+            "id": "debut-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 30.3,
+                "w": 44,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 52.8,
+                "w": 88,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 66.81,
+                "w": 88,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0684wfd1nn8apk"
+          },
+          {
+            "id": "debut-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 31.5,
+                "w": 48.3,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1irfd3j0vlycrs"
+          },
+          {
+            "id": "player-1",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 10,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 37.3,
+                "w": 44,
+                "h": 21.2
+              },
+              "portrait": {
+                "x": 6,
+                "y": 56.48,
+                "w": 88,
+                "h": 16.96
+              },
+              "story": {
+                "x": 6,
+                "y": 69.4,
+                "w": 88,
+                "h": 11.92
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:073nh9y1b7auex"
+          },
+          {
+            "id": "player-2",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 5.25,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 36.1,
+                "w": 48.3,
+                "h": 21.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0keosld1hkkns2"
+          },
+          {
+            "id": "tribute-1",
+            "kind": "text",
+            "name": "Supporting line",
+            "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 500,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 60.1,
+                "w": 44,
+                "h": 6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 74.72,
+                "w": 88,
+                "h": 4.8
+              },
+              "story": {
+                "x": 6,
+                "y": 82.23,
+                "w": 88,
+                "h": 3.37
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0ncfiq900cvd5e"
+          },
+          {
+            "id": "tribute-2",
+            "kind": "text",
+            "name": "Supporting line",
+            "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.15,
+              "fontWeight": 500,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 58.9,
+                "w": 48.3,
+                "h": 6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1fyqxt60v8bvxr"
+          },
+          {
+            "id": "cap-fill",
+            "kind": "shape",
+            "name": "Badge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#FBAC27))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 68.3,
+                "w": 24,
+                "h": 6.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 81.28,
+                "w": 24,
+                "h": 5.12
+              },
+              "story": {
+                "x": 6,
+                "y": 86.84,
+                "w": 24,
+                "h": 3.6
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 67.1,
+                "w": 12.6,
+                "h": 6.4
+              }
+            },
+            "sig": "shape:0fpps021gcxom5"
+          },
+          {
+            "id": "cap-1",
+            "kind": "text",
+            "name": "Badge text",
+            "content": "CAP {{capNumber}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 4,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-onp,var(--accent-ink,#10151B))",
+              "align": "center"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 68.3,
+                "w": 24,
+                "h": 6.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 81.28,
+                "w": 24,
+                "h": 5.12
+              },
+              "story": {
+                "x": 6,
+                "y": 86.84,
+                "w": 24,
+                "h": 3.6
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1w62n6o1t6vasr"
+          },
+          {
+            "id": "cap-2",
+            "kind": "text",
+            "name": "Badge text",
+            "content": "CAP {{capNumber}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-onp,var(--accent-ink,#10151B))",
+              "align": "center"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 67.1,
+                "w": 12.6,
+                "h": 6.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0j2r63b1q3nuqo"
           }
-        }
-      },
-      {
-        "id": "watermark",
-        "kind": "element",
-        "name": "Crest watermark",
-        "element": {
-          "id": "ck.watermark"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 30,
-            "w": 70,
-            "h": 70
-          },
-          "portrait": {
-            "x": 0,
-            "y": 44,
-            "w": 70,
-            "h": 56
-          },
-          "story": {
-            "x": 0,
-            "y": 60.63,
-            "w": 70,
-            "h": 39.37
-          },
-          "landscape": {
-            "x": 0,
-            "y": 30,
-            "w": 36.75,
-            "h": 70
-          }
-        }
-      },
-      {
-        "id": "photo-frame-side",
-        "kind": "element",
-        "name": "Photo frame",
-        "element": {
-          "id": "ck.frame-side",
-          "props": {
-            "photo": "{{photo}}"
-          }
-        },
-        "geometry": {
-          "square": {
-            "x": 50,
-            "y": 0,
-            "w": 50,
-            "h": 100
-          },
-          "landscape": {
-            "x": 52.24,
-            "y": 0,
-            "w": 47.77,
-            "h": 100
-          }
-        },
-        "sizes": ["square", "landscape"]
-      },
-      {
-        "id": "photo-frame-top",
-        "kind": "element",
-        "name": "Photo frame",
-        "element": {
-          "id": "ck.frame-top",
-          "props": {
-            "photo": "{{photo}}"
-          }
-        },
-        "geometry": {
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 48.8
-          },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 64
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "crest",
-        "kind": "element",
-        "name": "Crest",
-        "element": {
-          "id": "ck.crest"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 6,
-            "w": 10,
-            "h": 10
-          },
-          "portrait": {
-            "x": 6,
-            "y": 4.8,
-            "w": 10,
-            "h": 8
-          },
-          "story": {
-            "x": 6,
-            "y": 3.37,
-            "w": 10,
-            "h": 5.62
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 6,
-            "w": 5.25,
-            "h": 10
-          }
-        }
-      },
-      {
-        "id": "club-name-1",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 4,
-          "fontWeight": 900,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 6.4,
-            "w": 58,
-            "h": 5.2
-          },
-          "portrait": {
-            "x": 18,
-            "y": 5.12,
-            "w": 58,
-            "h": 4.16
-          },
-          "story": {
-            "x": 18,
-            "y": 3.6,
-            "w": 58,
-            "h": 2.92
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-name-2",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.1,
-          "fontWeight": 900,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 6.4,
-            "w": 77.95,
-            "h": 5.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "club-tagline-1",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.5,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 11.8,
-            "w": 58,
-            "h": 3
-          },
-          "portrait": {
-            "x": 18,
-            "y": 9.44,
-            "w": 58,
-            "h": 2.4
-          },
-          "story": {
-            "x": 18,
-            "y": 6.64,
-            "w": 58,
-            "h": 1.69
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-tagline-2",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.79,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 11.8,
-            "w": 77.95,
-            "h": 3
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "chip",
-        "kind": "element",
-        "name": "Card-type chip",
-        "element": {
-          "id": "ck.kind-chip",
-          "props": {
-            "label": "DEBUT"
-          }
-        },
-        "geometry": {
-          "square": {
-            "x": 78,
-            "y": 8.5,
-            "w": 16,
-            "h": 5
-          },
-          "portrait": {
-            "x": 78,
-            "y": 6.8,
-            "w": 16,
-            "h": 4
-          },
-          "story": {
-            "x": 78,
-            "y": 4.78,
-            "w": 16,
-            "h": 2.81
-          },
-          "landscape": {
-            "x": 88.45,
-            "y": 8.5,
-            "w": 8.4,
-            "h": 5
-          }
-        }
-      },
-      {
-        "id": "rule",
-        "kind": "element",
-        "name": "Tricolour rule",
-        "element": {
-          "id": "ck.tricolour-rule"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 87,
-            "w": 88,
-            "h": 0.8
-          },
-          "portrait": {
-            "x": 6,
-            "y": 89.6,
-            "w": 88,
-            "h": 0.64
-          },
-          "story": {
-            "x": 6,
-            "y": 92.69,
-            "w": 88,
-            "h": 0.45
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 87,
-            "w": 93.7,
-            "h": 0.8
-          }
-        }
-      },
-      {
-        "id": "sponsor-1",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 2,
-          "fontWeight": 700,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 89.6,
-            "w": 51.04,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 91.68,
-            "w": 51.04,
-            "h": 3.52
-          },
-          "story": {
-            "x": 6,
-            "y": 94.15,
-            "w": 51.04,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "sponsor-2",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 1.05,
-          "fontWeight": 700,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 89.6,
-            "w": 54.35,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "hashtag-1",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.8,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "right"
-        },
-        "geometry": {
-          "square": {
-            "x": 60,
-            "y": 89.6,
-            "w": 34,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 60,
-            "y": 91.68,
-            "w": 34,
-            "h": 3.52
-          },
-          "story": {
-            "x": 60,
-            "y": 94.15,
-            "w": 34,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "hashtag-2",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.47,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "right"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 79,
-            "y": 89.6,
-            "w": 17.85,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "debut-1",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 30.3,
-            "w": 44,
-            "h": 5.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 52.8,
-            "w": 88,
-            "h": 2.56
-          },
-          "story": {
-            "x": 6,
-            "y": 66.81,
-            "w": 88,
-            "h": 1.8
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "debut-2",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 31.5,
-            "w": 48.3,
-            "h": 3.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "player-1",
-        "kind": "text",
-        "name": "Player name",
-        "content": "{{playerName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 10,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 37.3,
-            "w": 44,
-            "h": 21.2
-          },
-          "portrait": {
-            "x": 6,
-            "y": 56.48,
-            "w": 88,
-            "h": 16.96
-          },
-          "story": {
-            "x": 6,
-            "y": 69.4,
-            "w": 88,
-            "h": 11.92
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "player-2",
-        "kind": "text",
-        "name": "Player name",
-        "content": "{{playerName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 5.25,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 36.1,
-            "w": 48.3,
-            "h": 21.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "tribute-1",
-        "kind": "text",
-        "name": "Supporting line",
-        "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 2.2,
-          "fontWeight": 500,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 60.1,
-            "w": 44,
-            "h": 6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 74.72,
-            "w": 88,
-            "h": 4.8
-          },
-          "story": {
-            "x": 6,
-            "y": 82.23,
-            "w": 88,
-            "h": 3.37
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "tribute-2",
-        "kind": "text",
-        "name": "Supporting line",
-        "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 1.15,
-          "fontWeight": 500,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 58.9,
-            "w": 48.3,
-            "h": 6
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "cap-fill",
-        "kind": "shape",
-        "name": "Badge",
-        "style": {
-          "background": "var(--ck-p,var(--gold,#FBAC27))"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 68.3,
-            "w": 24,
-            "h": 6.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 81.28,
-            "w": 24,
-            "h": 5.12
-          },
-          "story": {
-            "x": 6,
-            "y": 86.84,
-            "w": 24,
-            "h": 3.6
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 67.1,
-            "w": 12.6,
-            "h": 6.4
-          }
-        }
-      },
-      {
-        "id": "cap-1",
-        "kind": "text",
-        "name": "Badge text",
-        "content": "CAP {{capNumber}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 4,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-onp,var(--accent-ink,#10151B))",
-          "align": "center"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 68.3,
-            "w": 24,
-            "h": 6.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 81.28,
-            "w": 24,
-            "h": 5.12
-          },
-          "story": {
-            "x": 6,
-            "y": 86.84,
-            "w": 24,
-            "h": 3.6
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "cap-2",
-        "kind": "text",
-        "name": "Badge text",
-        "content": "CAP {{capNumber}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.1,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-onp,var(--accent-ink,#10151B))",
-          "align": "center"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 67.1,
-            "w": 12.6,
-            "h": 6.4
-          }
-        },
-        "sizes": ["landscape"]
+        ]
       }
-    ]
+    },
+    "palettes": ["club-kit"]
   }
 }

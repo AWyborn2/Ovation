@@ -1,6 +1,6 @@
 {
   "name": "Broadcast match summary",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -224,12 +224,9 @@
             "sig": "shape:1yxvvuc1khj69t"
           },
           {
+            "kind": "image",
+            "content": "{{clubLogo}}",
             "id": "crest",
-            "kind": "element",
-            "name": "Crest",
-            "element": {
-              "id": "ck.crest"
-            },
             "geometry": {
               "square": {
                 "x": 6,
@@ -256,7 +253,8 @@
                 "h": 10
               }
             },
-            "sig": "element:0tichnn1hjfrj6"
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
           },
           {
             "id": "club-name-1",

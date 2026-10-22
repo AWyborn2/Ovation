@@ -1,871 +1,1901 @@
 {
   "name": "Club Kit century",
-  "version": 1,
+  "version": 2,
   "listed": true,
   "document": {
-    "layers": [
-      {
-        "id": "background",
-        "kind": "element",
-        "name": "Club background",
-        "element": {
-          "id": "ck.background"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "background",
+            "name": "Club background",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base)",
+                        "at": 0
+                      },
+                      {
+                        "color": "var(--ck-base2)",
+                        "at": 100
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l1",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1yh28bt13rxwkc"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "radial",
+                    "at": {
+                      "x": 0,
+                      "y": 100
+                    },
+                    "stops": [
+                      {
+                        "color": "var(--ck-glowc)"
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 60
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l2",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0t02qoc1gpjwh5"
+              }
+            ],
+            "sig": "group:0lma41004yqpn3"
           },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 3
+                }
+              ],
+              "opacity": 0.07
+            },
+            "id": "watermark",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 30,
+                "w": 70,
+                "h": 70
+              },
+              "portrait": {
+                "x": 0,
+                "y": 44,
+                "w": 70,
+                "h": 56
+              },
+              "story": {
+                "x": 0,
+                "y": 60.63,
+                "w": 69.99,
+                "h": 39.37
+              },
+              "landscape": {
+                "x": 0,
+                "y": 30,
+                "w": 36.75,
+                "h": 70
+              }
+            },
+            "name": "Crest watermark",
+            "sig": "image:0xhlg3r0zdshfa"
           },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "photo-frame-side",
+            "name": "Photo frame",
+            "kind": "group",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 50.2,
+                "y": 0,
+                "w": 49.8,
+                "h": 100
+              },
+              "landscape": {
+                "x": 52.43,
+                "y": 0,
+                "w": 47.58,
+                "h": 100
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [29.8, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l1",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 50.2,
+                    "y": 0,
+                    "w": 49.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 52.43,
+                    "y": 0,
+                    "w": 47.58,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:190rdnd1ifgqf0"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [28.36, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l2",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 51.2,
+                    "y": 0,
+                    "w": 48.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 53.39,
+                    "y": 0,
+                    "w": 46.62,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0ooa8b50kmz83w"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [27.17, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l3",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 52,
+                    "y": 0,
+                    "w": 48,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 54.15,
+                    "y": 0,
+                    "w": 45.86,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1rvsqh50h4kx8k"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l4",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1009n7i063hrtr"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l5",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "photo:10w9jk8003u12p"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 90,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-35)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l6",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:091ruyy07o3381"
+              }
+            ],
+            "sig": "group:1k2vt8g03bddwx"
           },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "photo-frame-top",
+            "name": "Photo frame",
+            "kind": "group",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 30.86
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 50.01
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.82],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l1",
+                "link": "photo-frame-top-l1",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 30.86
+                  }
+                },
+                "sig": "shape:131782p0ija21q"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.83],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l2",
+                "link": "photo-frame-top-l1",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 50.01
+                  }
+                },
+                "sig": "shape:1yg72fc14p5iqn"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.37],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l3",
+                "sizes": ["portrait", "story"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 30.19
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 48.92
+                  }
+                },
+                "sig": "shape:00huhon1d1qbau"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l4",
+                "sizes": ["portrait", "story"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 29.65
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 48.05
+                  }
+                },
+                "sig": "shape:1dphayp1y2ahme"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l5",
+                "sizes": ["portrait", "story"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 28.3
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 45.86
+                  }
+                },
+                "sig": "shape:0pxnmw00ltii8t"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l6",
+                "link": "photo-frame-top-l6",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 28.3
+                  }
+                },
+                "sig": "photo:0rysooe1xu703f"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l7",
+                "link": "photo-frame-top-l6",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 45.86
+                  }
+                },
+                "sig": "photo:193hvuy1y0yo27"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l8",
+                "link": "photo-frame-top-l8",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 28.3
+                  }
+                },
+                "sig": "shape:0osa37q01f6hlv"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l9",
+                "link": "photo-frame-top-l8",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 45.86
+                  }
+                },
+                "sig": "shape:03hj3dm1igqain"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l10",
+                "link": "photo-frame-top-l10",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 28.3
+                  }
+                },
+                "sig": "shape:0has91n1g1ruzi"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l11",
+                "link": "photo-frame-top-l10",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 45.86
+                  }
+                },
+                "sig": "shape:12esd4n1xnyg9u"
+              }
+            ],
+            "sig": "group:0rahe0v0ynnoyc"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "crest",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 10,
+                "h": 10
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 10,
+                "h": 8
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 10,
+                "h": 5.62
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 5.25,
+                "h": 10
+              }
+            },
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club-name-1",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 4,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 6.4,
+                "w": 58,
+                "h": 5.2
+              },
+              "portrait": {
+                "x": 18,
+                "y": 5.12,
+                "w": 58,
+                "h": 4.16
+              },
+              "story": {
+                "x": 18,
+                "y": 3.6,
+                "w": 58,
+                "h": 2.92
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1pcu1a10z4w0pi"
+          },
+          {
+            "id": "club-name-2",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 6.4,
+                "w": 77.95,
+                "h": 5.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:16vudi41j2qian"
+          },
+          {
+            "id": "club-tagline-1",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.5,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 18,
+                "y": 11.8,
+                "w": 58,
+                "h": 3
+              },
+              "portrait": {
+                "x": 18,
+                "y": 9.44,
+                "w": 58,
+                "h": 2.4
+              },
+              "story": {
+                "x": 18,
+                "y": 6.64,
+                "w": 58,
+                "h": 1.69
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1epyzr11vh5ig2"
+          },
+          {
+            "id": "club-tagline-2",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.79,
+              "fontWeight": 600,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.45,
+                "y": 11.8,
+                "w": 77.95,
+                "h": 3
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0drrfzt1fvafns"
+          },
+          {
+            "id": "chip",
+            "name": "Card-type chip",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 77.96,
+                "y": 8.5,
+                "w": 16.04,
+                "h": 4.5
+              },
+              "portrait": {
+                "x": 77.96,
+                "y": 6.8,
+                "w": 16.04,
+                "h": 3.6
+              },
+              "story": {
+                "x": 77.98,
+                "y": 4.78,
+                "w": 16.02,
+                "h": 2.53
+              },
+              "landscape": {
+                "x": 88.43,
+                "y": 8.5,
+                "w": 8.42,
+                "h": 4.5
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "chip-l1",
+                "geometry": {
+                  "square": {
+                    "x": 77.96,
+                    "y": 8.5,
+                    "w": 1.2,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 77.96,
+                    "y": 6.8,
+                    "w": 1.2,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 77.98,
+                    "y": 4.78,
+                    "w": 1.2,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 88.43,
+                    "y": 8.5,
+                    "w": 0.63,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "chip-l2",
+                "geometry": {
+                  "square": {
+                    "x": 79.16,
+                    "y": 8.5,
+                    "w": 14.84,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 79.16,
+                    "y": 6.8,
+                    "w": 14.84,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 79.18,
+                    "y": 4.78,
+                    "w": 14.82,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 89.06,
+                    "y": 8.5,
+                    "w": 7.79,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "text",
+                "content": "CENTURY",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 2.5,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l3",
+                "link": "chip-l3",
+                "sizes": ["square", "portrait", "story"],
+                "geometry": {
+                  "square": {
+                    "x": 81.36,
+                    "y": 9.22,
+                    "w": 11.44,
+                    "h": 2.96
+                  },
+                  "portrait": {
+                    "x": 81.36,
+                    "y": 7.38,
+                    "w": 11.44,
+                    "h": 2.37
+                  },
+                  "story": {
+                    "x": 81.37,
+                    "y": 5.18,
+                    "w": 11.43,
+                    "h": 1.67
+                  }
+                },
+                "sig": "text:0j3bkuy098rxyz"
+              },
+              {
+                "kind": "text",
+                "content": "CENTURY",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 1.31,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l4",
+                "link": "chip-l3",
+                "sizes": ["landscape"],
+                "geometry": {
+                  "landscape": {
+                    "x": 90.21,
+                    "y": 9.18,
+                    "w": 6.48,
+                    "h": 3.02
+                  }
+                },
+                "sig": "text:1iqbt861qt1mup"
+              }
+            ],
+            "sig": "group:1gn86lx0sekgja"
+          },
+          {
+            "id": "rule",
+            "name": "Tricolour rule",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87,
+                "w": 88,
+                "h": 0.8
+              },
+              "portrait": {
+                "x": 6,
+                "y": 89.6,
+                "w": 88,
+                "h": 0.64
+              },
+              "story": {
+                "x": 6,
+                "y": 92.69,
+                "w": 88,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87,
+                "w": 93.7,
+                "h": 0.8
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "rule-l1",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 87,
+                    "w": 51.53,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 89.6,
+                    "w": 51.53,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 92.69,
+                    "w": 51.53,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 87,
+                    "w": 54.87,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)"
+                },
+                "id": "rule-l2",
+                "geometry": {
+                  "square": {
+                    "x": 58.59,
+                    "y": 87,
+                    "w": 8.59,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 58.59,
+                    "y": 89.6,
+                    "w": 8.59,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 58.59,
+                    "y": 92.69,
+                    "w": 8.59,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 59.14,
+                    "y": 87,
+                    "w": 9.14,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:1d8d4rq15ewynx"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "rule-l3",
+                "geometry": {
+                  "square": {
+                    "x": 68.23,
+                    "y": 87,
+                    "w": 25.77,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 68.23,
+                    "y": 89.6,
+                    "w": 25.77,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 68.23,
+                    "y": 92.69,
+                    "w": 25.77,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 69.41,
+                    "y": 87,
+                    "w": 27.44,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              }
+            ],
+            "sig": "group:0hmhtsw005vlf9"
+          },
+          {
+            "id": "sponsor-1",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2,
+              "fontWeight": 700,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 89.6,
+                "w": 51.04,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 91.68,
+                "w": 51.04,
+                "h": 3.52
+              },
+              "story": {
+                "x": 6,
+                "y": 94.15,
+                "w": 51.04,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0jysi4m0o0072t"
+          },
+          {
+            "id": "sponsor-2",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.05,
+              "fontWeight": 700,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 89.6,
+                "w": 54.35,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:09q17641tq5uxx"
+          },
+          {
+            "id": "hashtag-1",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "right"
+            },
+            "geometry": {
+              "square": {
+                "x": 60,
+                "y": 89.6,
+                "w": 34,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 60,
+                "y": 91.68,
+                "w": 34,
+                "h": 3.52
+              },
+              "story": {
+                "x": 60,
+                "y": 94.15,
+                "w": 34,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:15yqpxf1q6y2gg"
+          },
+          {
+            "id": "hashtag-2",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "right"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 79,
+                "y": 89.6,
+                "w": 17.85,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1svbwf31dk77be"
+          },
+          {
+            "id": "raised-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "RAISED THE BAT",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 20.29,
+                "w": 44,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 33.22,
+                "w": 88,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 53.04,
+                "w": 88,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:10g4liw121lj35"
+          },
+          {
+            "id": "raised-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "RAISED THE BAT",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 22.69,
+                "w": 48.3,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0yumtt41h5s653"
+          },
+          {
+            "id": "runs-1",
+            "kind": "text",
+            "name": "Runs",
+            "content": "{{runs}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 23,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 25.89,
+                "w": 30.8,
+                "h": 22.54
+              }
+            },
+            "sizes": ["square"],
+            "sig": "text:15i81jn1yyapvq"
+          },
+          {
+            "id": "runs-2",
+            "kind": "text",
+            "name": "Runs",
+            "content": "{{runs}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 30,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 35.78,
+                "w": 42.84,
+                "h": 23.52
+              },
+              "story": {
+                "x": 6,
+                "y": 54.84,
+                "w": 42.84,
+                "h": 16.54
+              }
+            },
+            "sizes": ["portrait", "story"],
+            "sig": "text:095smn70ftehrq"
+          },
+          {
+            "id": "runs-3",
+            "kind": "text",
+            "name": "Runs",
+            "content": "{{runs}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 12.07,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#FBAC27))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 25.89,
+                "w": 17.24,
+                "h": 22.54
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1t147ue09a8pol"
+          },
+          {
+            "id": "runs-aside-1",
+            "kind": "text",
+            "name": "Runs detail",
+            "content": "({{balls}})",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 5,
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 38.4,
+                "y": 41.43,
+                "w": 11.6,
+                "h": 6
+              },
+              "portrait": {
+                "x": 50.44,
+                "y": 53.7,
+                "w": 43.56,
+                "h": 4.8
+              },
+              "story": {
+                "x": 50.44,
+                "y": 67.44,
+                "w": 43.56,
+                "h": 3.37
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1hm7h4b08halbm"
+          },
+          {
+            "id": "runs-aside-2",
+            "kind": "text",
+            "name": "Runs detail",
+            "content": "({{balls}})",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.62,
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 21.23,
+                "y": 41.43,
+                "w": 30.22,
+                "h": 6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0djqjqw1d0rbq7"
+          },
+          {
+            "id": "label-dash",
+            "name": "Tricolour dash",
+            "kind": "group",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 52.73,
+                "w": 9,
+                "h": 0.8
+              },
+              "portrait": {
+                "x": 6,
+                "y": 62.74,
+                "w": 9,
+                "h": 0.64
+              },
+              "story": {
+                "x": 6,
+                "y": 73.8,
+                "w": 9,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 52.73,
+                "w": 4.72,
+                "h": 0.8
+              }
+            },
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "label-dash-l1",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 52.73,
+                    "w": 5.27,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 62.74,
+                    "w": 5.27,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 73.8,
+                    "w": 5.27,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 52.73,
+                    "w": 2.76,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)"
+                },
+                "id": "label-dash-l2",
+                "geometry": {
+                  "square": {
+                    "x": 11.38,
+                    "y": 52.73,
+                    "w": 0.88,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 11.38,
+                    "y": 62.74,
+                    "w": 0.88,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 11.38,
+                    "y": 73.8,
+                    "w": 0.88,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 5.97,
+                    "y": 52.73,
+                    "w": 0.46,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:1d8d4rq15ewynx"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "label-dash-l3",
+                "geometry": {
+                  "square": {
+                    "x": 12.36,
+                    "y": 52.73,
+                    "w": 2.64,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 12.36,
+                    "y": 62.74,
+                    "w": 2.64,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 12.36,
+                    "y": 73.8,
+                    "w": 2.64,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 6.49,
+                    "y": 52.73,
+                    "w": 1.38,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              }
+            ],
+            "sig": "group:0hmhtsw005vlf9"
+          },
+          {
+            "id": "label-1",
+            "kind": "text",
+            "name": "Label",
+            "content": "CENTURY",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 6,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 17,
+                "y": 49.83,
+                "w": 33,
+                "h": 6.6
+              },
+              "portrait": {
+                "x": 17,
+                "y": 60.42,
+                "w": 77,
+                "h": 5.28
+              },
+              "story": {
+                "x": 17,
+                "y": 72.17,
+                "w": 77,
+                "h": 3.71
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0lwydcq02oligd"
+          },
+          {
+            "id": "label-2",
+            "kind": "text",
+            "name": "Label",
+            "content": "CENTURY",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 3.15,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 8.92,
+                "y": 49.83,
+                "w": 42.52,
+                "h": 6.6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:17ojla10gvd1l4"
+          },
+          {
+            "id": "player-1",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 9,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 58.63,
+                "w": 44,
+                "h": 19.08
+              },
+              "portrait": {
+                "x": 6,
+                "y": 67.46,
+                "w": 88,
+                "h": 15.26
+              },
+              "story": {
+                "x": 6,
+                "y": 77.12,
+                "w": 88,
+                "h": 10.73
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1fr7zqe142d97f"
+          },
+          {
+            "id": "player-2",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 4.72,
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#F2F5F8)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 58.63,
+                "w": 48.3,
+                "h": 19.08
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0rwvurg1vjc77f"
+          },
+          {
+            "id": "match-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 79.11,
+                "w": 44,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 83.84,
+                "w": 88,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 88.64,
+                "w": 88,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1wmbjew0fq5onx"
+          },
+          {
+            "id": "match-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 79.11,
+                "w": 48.3,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:14wy1yw0pn6fir"
           }
-        }
-      },
-      {
-        "id": "watermark",
-        "kind": "element",
-        "name": "Crest watermark",
-        "element": {
-          "id": "ck.watermark"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 30,
-            "w": 70,
-            "h": 70
-          },
-          "portrait": {
-            "x": 0,
-            "y": 44,
-            "w": 70,
-            "h": 56
-          },
-          "story": {
-            "x": 0,
-            "y": 60.63,
-            "w": 70,
-            "h": 39.37
-          },
-          "landscape": {
-            "x": 0,
-            "y": 30,
-            "w": 36.75,
-            "h": 70
-          }
-        }
-      },
-      {
-        "id": "photo-frame-side",
-        "kind": "element",
-        "name": "Photo frame",
-        "element": {
-          "id": "ck.frame-side",
-          "props": {
-            "photo": "{{photo}}"
-          }
-        },
-        "geometry": {
-          "square": {
-            "x": 50,
-            "y": 0,
-            "w": 50,
-            "h": 100
-          },
-          "landscape": {
-            "x": 52.24,
-            "y": 0,
-            "w": 47.77,
-            "h": 100
-          }
-        },
-        "sizes": ["square", "landscape"]
-      },
-      {
-        "id": "photo-frame-top",
-        "kind": "element",
-        "name": "Photo frame",
-        "element": {
-          "id": "ck.frame-top",
-          "props": {
-            "photo": "{{photo}}"
-          }
-        },
-        "geometry": {
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 31
-          },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 50.23
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "crest",
-        "kind": "element",
-        "name": "Crest",
-        "element": {
-          "id": "ck.crest"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 6,
-            "w": 10,
-            "h": 10
-          },
-          "portrait": {
-            "x": 6,
-            "y": 4.8,
-            "w": 10,
-            "h": 8
-          },
-          "story": {
-            "x": 6,
-            "y": 3.37,
-            "w": 10,
-            "h": 5.62
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 6,
-            "w": 5.25,
-            "h": 10
-          }
-        }
-      },
-      {
-        "id": "club-name-1",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 4,
-          "fontWeight": 900,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 6.4,
-            "w": 58,
-            "h": 5.2
-          },
-          "portrait": {
-            "x": 18,
-            "y": 5.12,
-            "w": 58,
-            "h": 4.16
-          },
-          "story": {
-            "x": 18,
-            "y": 3.6,
-            "w": 58,
-            "h": 2.92
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-name-2",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.1,
-          "fontWeight": 900,
-          "letterSpacing": 0.02,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 6.4,
-            "w": 77.95,
-            "h": 5.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "club-tagline-1",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.5,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 18,
-            "y": 11.8,
-            "w": 58,
-            "h": 3
-          },
-          "portrait": {
-            "x": 18,
-            "y": 9.44,
-            "w": 58,
-            "h": 2.4
-          },
-          "story": {
-            "x": 18,
-            "y": 6.64,
-            "w": 58,
-            "h": 1.69
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-tagline-2",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.79,
-          "fontWeight": 600,
-          "letterSpacing": 0.18,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.45,
-            "y": 11.8,
-            "w": 77.95,
-            "h": 3
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "chip",
-        "kind": "element",
-        "name": "Card-type chip",
-        "element": {
-          "id": "ck.kind-chip",
-          "props": {
-            "label": "CENTURY"
-          }
-        },
-        "geometry": {
-          "square": {
-            "x": 78,
-            "y": 8.5,
-            "w": 16,
-            "h": 5
-          },
-          "portrait": {
-            "x": 78,
-            "y": 6.8,
-            "w": 16,
-            "h": 4
-          },
-          "story": {
-            "x": 78,
-            "y": 4.78,
-            "w": 16,
-            "h": 2.81
-          },
-          "landscape": {
-            "x": 88.45,
-            "y": 8.5,
-            "w": 8.4,
-            "h": 5
-          }
-        }
-      },
-      {
-        "id": "rule",
-        "kind": "element",
-        "name": "Tricolour rule",
-        "element": {
-          "id": "ck.tricolour-rule"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 87,
-            "w": 88,
-            "h": 0.8
-          },
-          "portrait": {
-            "x": 6,
-            "y": 89.6,
-            "w": 88,
-            "h": 0.64
-          },
-          "story": {
-            "x": 6,
-            "y": 92.69,
-            "w": 88,
-            "h": 0.45
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 87,
-            "w": 93.7,
-            "h": 0.8
-          }
-        }
-      },
-      {
-        "id": "sponsor-1",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 2,
-          "fontWeight": 700,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 89.6,
-            "w": 51.04,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 91.68,
-            "w": 51.04,
-            "h": 3.52
-          },
-          "story": {
-            "x": 6,
-            "y": 94.15,
-            "w": 51.04,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "sponsor-2",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 1.05,
-          "fontWeight": 700,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 89.6,
-            "w": 54.35,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "hashtag-1",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.8,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "right"
-        },
-        "geometry": {
-          "square": {
-            "x": 60,
-            "y": 89.6,
-            "w": 34,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 60,
-            "y": 91.68,
-            "w": 34,
-            "h": 3.52
-          },
-          "story": {
-            "x": 60,
-            "y": 94.15,
-            "w": 34,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "hashtag-2",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{clubHashtag}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.47,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "right"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 79,
-            "y": 89.6,
-            "w": 17.85,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "raised-1",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "RAISED THE BAT",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 20.29,
-            "w": 44,
-            "h": 5.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 33.22,
-            "w": 88,
-            "h": 2.56
-          },
-          "story": {
-            "x": 6,
-            "y": 53.04,
-            "w": 88,
-            "h": 1.8
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "raised-2",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "RAISED THE BAT",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 22.69,
-            "w": 48.3,
-            "h": 3.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "runs-1",
-        "kind": "text",
-        "name": "Runs",
-        "content": "{{runs}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 23,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 25.89,
-            "w": 30.8,
-            "h": 22.54
-          }
-        },
-        "sizes": ["square"]
-      },
-      {
-        "id": "runs-2",
-        "kind": "text",
-        "name": "Runs",
-        "content": "{{runs}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 30,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "portrait": {
-            "x": 6,
-            "y": 35.78,
-            "w": 42.84,
-            "h": 23.52
-          },
-          "story": {
-            "x": 6,
-            "y": 54.84,
-            "w": 42.84,
-            "h": 16.54
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "runs-3",
-        "kind": "text",
-        "name": "Runs",
-        "content": "{{runs}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 12.07,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#FBAC27))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 25.89,
-            "w": 17.24,
-            "h": 22.54
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "runs-aside-1",
-        "kind": "text",
-        "name": "Runs detail",
-        "content": "({{balls}})",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 5,
-          "fontWeight": 700,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 38.4,
-            "y": 41.43,
-            "w": 11.6,
-            "h": 6
-          },
-          "portrait": {
-            "x": 50.44,
-            "y": 53.7,
-            "w": 43.56,
-            "h": 4.8
-          },
-          "story": {
-            "x": 50.44,
-            "y": 67.44,
-            "w": 43.56,
-            "h": 3.37
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "runs-aside-2",
-        "kind": "text",
-        "name": "Runs detail",
-        "content": "({{balls}})",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.62,
-          "fontWeight": 700,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 21.23,
-            "y": 41.43,
-            "w": 30.22,
-            "h": 6
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "label-dash",
-        "kind": "element",
-        "name": "Tricolour dash",
-        "element": {
-          "id": "ck.tricolour-rule"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 52.73,
-            "w": 9,
-            "h": 0.8
-          },
-          "portrait": {
-            "x": 6,
-            "y": 62.74,
-            "w": 9,
-            "h": 0.64
-          },
-          "story": {
-            "x": 6,
-            "y": 73.8,
-            "w": 9,
-            "h": 0.45
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 52.73,
-            "w": 4.72,
-            "h": 0.8
-          }
-        }
-      },
-      {
-        "id": "label-1",
-        "kind": "text",
-        "name": "Label",
-        "content": "CENTURY",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 6,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 17,
-            "y": 49.83,
-            "w": 33,
-            "h": 6.6
-          },
-          "portrait": {
-            "x": 17,
-            "y": 60.42,
-            "w": 77,
-            "h": 5.28
-          },
-          "story": {
-            "x": 17,
-            "y": 72.17,
-            "w": 77,
-            "h": 3.71
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "label-2",
-        "kind": "text",
-        "name": "Label",
-        "content": "CENTURY",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 3.15,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 8.92,
-            "y": 49.83,
-            "w": 42.52,
-            "h": 6.6
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "player-1",
-        "kind": "text",
-        "name": "Player name",
-        "content": "{{playerName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 9,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 58.63,
-            "w": 44,
-            "h": 19.08
-          },
-          "portrait": {
-            "x": 6,
-            "y": 67.46,
-            "w": 88,
-            "h": 15.26
-          },
-          "story": {
-            "x": 6,
-            "y": 77.12,
-            "w": 88,
-            "h": 10.73
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "player-2",
-        "kind": "text",
-        "name": "Player name",
-        "content": "{{playerName}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 4.72,
-          "fontWeight": 900,
-          "uppercase": true,
-          "color": "var(--ck-chalk,#F2F5F8)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 58.63,
-            "w": 48.3,
-            "h": 19.08
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "match-1",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 79.11,
-            "w": 44,
-            "h": 5.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 83.84,
-            "w": 88,
-            "h": 2.56
-          },
-          "story": {
-            "x": 6,
-            "y": 88.64,
-            "w": 88,
-            "h": 1.8
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "match-2",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
-        "style": {
-          "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-chalk2,rgba(242,245,248,.68))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 79.11,
-            "w": 48.3,
-            "h": 3.2
-          }
-        },
-        "sizes": ["landscape"]
+        ]
       }
-    ]
+    },
+    "palettes": ["club-kit"]
   }
 }

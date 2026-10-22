@@ -43,8 +43,17 @@ export interface CaptureApi {
     size: CaptureSize,
     colourMode?: ColourMode,
   ): CaptureRender;
-  /** Mount `input` for `packId` at `size` and record its DOM. */
-  capture(packId: string, input: CaptureRender, size: CaptureSize): Promise<PackCapture>;
+  /**
+   * Mount `input` for `packId` at `size` and record its DOM; with `document`,
+   * that template's page drawn on the blank base from the same input (a
+   * starter's elements, split into native layers).
+   */
+  capture(
+    packId: string,
+    input: CaptureRender,
+    size: CaptureSize,
+    opts?: { document?: unknown; page?: string },
+  ): Promise<PackCapture>;
   /**
    * Mount a card and leave it for a screenshot (`#pack-capture-root`): the
    * pack's own card, or with `document` a converted template's page drawn on
@@ -126,19 +135,41 @@ export async function capture(
   packId: string,
   render: CaptureRender,
   size: CaptureSize,
+  opts: { document?: unknown; page?: string } = {},
 ): Promise<PackCapture> {
   const started = performance.now();
   const card = prepareCard(packId, render, size);
   if (!card.html) throw new Error(`${packId} has no design for ${card.input.kind}`);
+  const html = opts.document
+    ? renderPackCard(
+        card.input,
+        size,
+        render.sponsorsOn,
+        card.tokens,
+        card.junior,
+        card.data,
+        BLANK_PACK_ID,
+        opts.document as CardAdjustments,
+        { page: opts.page as PageKey | undefined },
+      )
+    : card.html;
 
   const native = packNativeSize(size);
-  const container = await mountHtml(card.html, size);
+  const container = await mountHtml(html, size);
+  if (opts.document) await ensureDocumentFonts(opts.document as CardAdjustments);
 
   try {
     const root = (container.querySelector(".pack-card-root") ??
       container.firstElementChild) as HTMLElement;
     const { elements, keyframes } = captureCardDom(root, render.detail);
     const { vars, colours } = rootVariables(root);
+    // A drawn template declares its derived palettes (`--ck-*`) on its layers' container.
+    const layers = opts.document ? container.querySelector<HTMLElement>(".pack-free-layers") : null;
+    if (layers) {
+      const own = rootVariables(layers);
+      Object.assign(vars, own.vars);
+      Object.assign(colours, own.colours);
+    }
 
     const bound = bindInput(card.input, packId, card.data.names);
     applyPackData(bound, card.data, card.input.kind);

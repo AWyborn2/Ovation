@@ -426,7 +426,7 @@ function validatorReadsV2(): boolean {
 }
 
 /** The share of pixels two PNG screenshots agree on (in the page: no image library needed). */
-async function pixelMatch(page: Page, a: string, b: string): Promise<number> {
+export async function pixelMatch(page: Page, a: string, b: string): Promise<number> {
   return page.evaluate(
     async (pngA, pngB) => {
       // Browser globals, typed here because the scripts package has no DOM types.
