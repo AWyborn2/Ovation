@@ -54,6 +54,177 @@ the PRs merge.
 | S3c | 3      | #458 | The bundles import guard matches the package specifier `@workspace/template-bundles`, so test helpers can read bundle files from disk | Tests that pinned the starters now read the bundles. v1 render hashes are unchanged                                                                                                                         | n/a                                            |
 | F1  | orch.  | #459 | `@opentelemetry/api` is now a direct dependency of the API server                                                                     | The Anthropic SDK imports it, and the build keeps it external, so the bundled API failed to start (found on the dev stack; production would have failed the same way)                                       | n/a                                            |
 
+## Editable elements: decisions from each PR (22 Oct 2026)
+
+Copied from the "Decisions for Ash" section of each merged stream PR (#461–#481), grouped by PR. The plan is `docs/plans/2026-10-22-editable-elements-plan.md`.
+
+#### #461 Element library: table and API (Stream D1)
+
+1. **Reports get their own table** (`library_element_reports`). The plan named reports but no storage for them. It's one row per club and element, with `resolved_at` for the console (D5).
+2. **"Insert" is a read** (`GET /elements/{id}`). Inserting copies layers into the card (E2), so the server records no usage. A usage count can come later if the panel wants a "popular" sort.
+3. **Club saves are listed at once**, as E1 says. The server refuses anything that isn't a token, slot or library image. D4 adds the client-side stripping: images to placeholders, text to sample text, colours to brand tokens.
+4. **Element layers may use any card kind's tokens.** An element can go into any card, and a token the target card lacks is caught when that template is saved.
+5. **Extra columns** beyond the plan's list: `signature` (D2's de-duplication), `bundle_hash` (boot sync, as for templates), `created_by_admin_id` and `updated_at`.
+
+#### #462 feat(pack-convert): simple SVGs as native shapes (C1)
+
+| #    | Decision                                                                                   | Why                                                                                                                                             | To reverse                                          |
+| ---- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| C1-1 | Existing bundles are changed in place by `nativise-vectors.ts`, not re-converted           | A re-conversion would undo Stream 1's hand polish on Broadcast Dark. C4 re-converts every look later                                            | Re-convert instead (C4 does)                        |
+| C1-2 | A circle is a fully rounded box (`radius` 10000). An ellipse is a 32-point clip polygon    | The format has no ellipse. A rounded box is a true circle only in a square box, so an ellipse needs the outline                                 | Add an ellipse shape to the format                  |
+| C1-3 | Gold Foil's stripes stay a vector                                                          | The stripes are one path of many separate lines, not one shape. A native version needs a repeating-gradient fill, which the format doesn't have | Add repeating gradients (B1) and redraw the stripes |
+| C1-4 | Bundle files that change take the next version, including #454's Weekend Wraps (version 2) | The server ignores a changed file at the same version                                                                                           | n/a                                                 |
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #463 Template format: v2 styles the converter dropped (Stream B, B4)
+
+1. **B4 first, out of B1–B4 order.** Stream C's re-run of all seven looks waits on these fields, so B4 shipped first. B1 to B3 (the gradient, clip and shadow editors) follow.
+2. **Drop shadows are a style list, not a filter preset.** `filter` is documented for photos and images, but the glows sit on shapes, vectors and text. So `dropShadow` is its own list, like `boxShadow` and `textShadow`, and works on any layer.
+3. **Skew is a style, not geometry.** Per-size geometry is Stream C's. Skew is the same on every size, so it sits with the style and composes after the layer's rotation.
+4. **Side borders extend `border`.** An optional `sides` list on the existing border, absent meaning all four. The alternative was a separate field per side; that was rejected, so one border keeps one width, colour and style.
+5. **A glow on a clipped layer that also blurs its backdrop** isn't supported well. The wrapper's filter would blur an empty backdrop. No pack does this; I left it.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #464 Editable elements A1: Layers drawer supports vector and group layers
+
+- Vectors are labelled **"Graphic"** in Layers, not "Vector", since that's the word a club admin would use. Groups are "Group".
+
+#### #465 feat(templates): link per-size copies, sign every layer's design (C2)
+
+| #    | Decision                                                                                                    | Why                                                                                                                                      | To reverse                                                              |
+| ---- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| C2-1 | Per-size copies are linked, not merged into one layer with per-size styles                                  | 98% of copies differ in style. Per-size styles would need renderer and editor changes from Streams A and B, while links change no render | Add per-size style to the format and renderer, then merge linked copies |
+| C2-2 | `sig` is a design hash (`layerSignature`), not the converter's internal signature                           | The converter's shape signatures are colour-only, so they would merge different decorations of the same colour                           | n/a                                                                     |
+| C2-3 | Every v2 bundle is signed now (each file takes the next version). Links come with the converter re-run (C4) | Stream D can start on today's bundles. Recovering copies from finished documents would be guesswork                                      | n/a                                                                     |
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #466 Studio editor: gradient editor for fills and text fills (Stream B, B1)
+
+1. **No gradient preview strip in the panel.** The panel sits outside the card, so the club's colour tokens don't resolve there. The canvas shows every edit live instead.
+2. **Stops keep the order they're in.** A stop moved past its neighbour is drawn where CSS puts it (no further than the stop before it); the editor doesn't re-sort. Re-sorting would make the stop being typed into jump.
+3. **Quick angles are down, across and the two diagonals.** Any other angle is typed, 0–360.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #467 Element library: extract every look's decorations (Stream D2)
+
+1. **De-duplication ignores colour within a look.** A gold, chalk and panel copy of the same slash is one element, since every club recolours it. Across looks, colour still separates two looks' versions.
+2. **The extractor keeps its own signature, not C2's `sig`.** `sig` is exact per size and per colour: de-duplicating by it gives 506 distinct decorations against 134, so nearly every per-size copy would be its own element. `sig` and `link` are left out of element layers, and insertion (D3) gives fresh ids. The output is re-extracted from the bundles after C1 and C2 (Broadcast Dark's slashes are native shapes now).
+3. **At most 16 elements per look and category** keeps the panel browsable. Club Kit's 11 fades are under the cap; the cap only bites on looks with many near-identical badges.
+4. **Bundle elements that leave the files are deleted** (with any reports of them), not unlisted. Nothing references them, unlike library templates, which club copies point at.
+5. **Re-running after Stream C4 is a manual step:** run the script, Prettier and the index generator. There's no drift test, so Stream C's PRs aren't blocked on it.
+
+#### #468 Editable elements A2: edit inside groups and stacks, nested Layers tree
+
+- **Adding an element while inside a group puts it on the page**, not in the group, and leaves the group. Paste while inside a group pastes into that group (like Canva).
+- **Stack children can't be dragged** (only resized). Dragging one would change a position the stack ignores.
+- **Clicking empty canvas leaves the group** as well as clearing the selection.
+- The Layers tree selects, opens, hides and locks; it has no drag-to-reorder yet (stack order is set in the Layer panel).
+
+#### #469 feat(templates): the starters' Club Kit elements as native layers (C3)
+
+| #    | Decision                                                                                                                              | Why                                                                                                                                                | To reverse                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| C3-1 | Elements are captured in the browser and mapped by the converter, not rewritten by hand                                               | It reproduces the parts as drawn (99.9% pixel match). The same tool can make native versions of all 29 `ck.*` elements for the Elements panel (D3) | n/a                                                                                                              |
+| C3-2 | Every starter template becomes format v2, and the original v1 documents are frozen as test fixtures                                   | Native layers need v2. The v1 render hashes still pin how stored v1 documents draw                                                                 | n/a                                                                                                              |
+| C3-3 | The background glow uses v2's radial gradient, which has no size, so it spreads a little further than `ellipse 80% 60%`               | The format has no radial size                                                                                                                      | Add a size to radial gradients (Stream B) and re-split                                                           |
+| C3-4 | **A club with no crest loses the monogram stand-in on these starters**: the crest and watermark are now the `{{clubLogo}}` image only | v2 has no "show when a field is empty", so the monogram can't sit behind the crest safely. A transparent crest would show it through               | Add an empty-field condition (e.g. `showWhen: { missing: "clubLogo" }`) and re-split. I suggest Stream B adds it |
+| C3-5 | Sponsor's art panel shows the sponsor's art                                                                                           | It's what the white panel is for. The v1 renderer left `{{sponsorArt}}` empty                                                                      | n/a                                                                                                              |
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #470 Element library: data-driven Elements panel, native inserts (Stream D3)
+
+1. **Inserting copies the element's layers in place:** a band lands where the look had it. Moving it is a drag, and a group's children follow once A2 lands.
+2. **The template editor keeps its rule** that added layers go on the size being edited, with the "add to other sizes" prompt. The element's other designed sizes aren't applied automatically there; in the Studio editor (one size) they ride along unused.
+3. **Tiles are drawn live** (no stored thumbnails), so they always show the club's own colours. `thumbnail_url` stays unused for now.
+4. **The Club Kit pieces stay until C3**, so nothing is lost while their native versions don't exist yet.
+
+#### #471 Studio editor: clip editor with presets and draggable points (Stream B, B2)
+
+1. **The points are dragged on a pad in the panel, not on the canvas.** Canvas handles are Stream A's area (`canvas.tsx`). The pad shows the box with a 10 % margin, so points just outside can be reached. Typing covers −100–200 %.
+2. **Four presets**, from what the looks use: slash (Broadcast), chevron, angled band (Club Kit's bands) and cut corner.
+   - Each leans one way; Flip gives the other.
+   - Amount 0 is the box itself, so it reads as Custom.
+3. **A preset edited point by point becomes Custom**, keeping its points. Picking the preset again resets them to the preset's amount.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #472 Studio editor: shadow lists and effect controls (Stream B, B3)
+
+1. **B4's fields get their controls here.** B3 was shadows and glows, but border sides, the text outline, slant and blur behind had no control. "Every element editable" needs them, so they're in this PR rather than a fifth slice.
+2. **"Shape shadow" is the name for drop shadows.** It says what it follows. "Drop shadow" reads like the box shadow every editor has.
+3. **New shadows start as a soft drop shadow or a glow in the club's colour**, not empty, so adding one shows something straight away.
+4. **Slant has no handle on the canvas.** Like the clip pad, canvas handles are Stream A's area. Slant is typed in degrees.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #473 Editable elements A3: a list's row cells and backdrops are selectable layers
+
+- **The row template is edited on the first row**, wherever you double-click. The selection jumps to row one rather than staying on the row you clicked.
+- **A cell's place is a share of the row and is the same on every size.** Deleting a cell deletes it from the row on every size (in a template, deleting an ordinary layer only takes it off the current size).
+- **Cells have no eye or lock** in the Layers tree: they show and lock with their list.
+- **Row variants** (the club's own ladder row) keep their per-field overrides. Recolouring a cell changes the base style, and a variant's override still wins on its rows.
+- Pasting a copied page layer into a list is skipped by the existing field check; to add a cell, duplicate one (Ctrl+D) and change its field in the rows panel.
+
+#### #474 Element library: Save as element, published to every club (Stream D4)
+
+1. **Text with no live field becomes "Text"**, not kept. A club's slogans and sponsor names shouldn't travel. Text with a field keeps its words, with the club's name swapped for `{{clubName}}`.
+2. **A non-crest picture becomes the photo slot**, not a removed layer, so the element keeps its shape (say, a framed photo).
+3. **Only the club's accent, panel and ink are mapped** to brand tokens: exact colour matches only. Other colours stay as they are.
+4. **Saving isn't offered in the platform console** for now. Ovation's own elements come from the bundles; a console "save as element" can come with D5 if wanted.
+5. **Taking an element out of the library is one click**, with no confirm. Cards it was added to keep their copies. Re-listing would need Ovation, through D5's console.
+
+#### #475 Editable elements A4: copy, paste, resize and linked copies for nested layers
+
+- **What linked copies share**: everything except the box, sizes, font size, corner radius, clip, photo framing, list rows, hidden, locked and grouping. So a colour or text change goes to every size; a font-size change stays on the size it was made on, since each size sets its own.
+- **Hide and lock stay per copy**, so a piece can be hidden on one size only.
+- Deleting a linked copy asks after the delete (like "Add to other sizes?"), rather than before.
+
+#### #476 Element library: console moderation, unlist and reports (Stream D5)
+
+1. **Unlisting resolves the element's open reports.** Dismissing resolves them without unlisting. A club that reports again opens a new one (D1 keeps one report per club and element, reopened).
+2. **"List again" undoes either unlisting**, the author club's or Ovation's. That's the console's way to restore something a club took out by mistake.
+3. **The console shows no previews.** It has no club identity to draw them in; the Elements panel draws each element in the viewing club's colours. A preview with sample colours can follow if wanted.
+4. **No email to the author club** when Ovation unlists its element. The panel's "Your club's elements" view shows it as unlisted.
+
+#### #477 Fix: day pages crash the library previews (Gold Foil Match Summary)
+
+#### #478 feat(templates): B4 styles, seven looks re-converted or transplanted, links (C4)
+
+| #    | Decision                                                                                                     | Why                                                                                                       | To reverse                                                   |
+| ---- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| C4-1 | The hand-polished looks aren't re-converted. Their links, skews and sigs are transplanted by matching layers | A re-conversion would lose Stream 1's hand polish                                                         | Re-convert them and redo the polish                          |
+| C4-2 | A transplanted link joins only copies on different sizes. Unmatched layers (40, 50 and 24) keep no link      | An edit must never spread to a layer that isn't a copy                                                    | n/a                                                          |
+| C4-3 | Text the worst case wraps keeps the pack's size, wraps to two lines, then ends in "…"                        | It passes the fit check and still matches the pack's wrapping. A shrinking fit draws fewer, smaller lines | Return to no fit (worst-case titles then fail the fit check) |
+| C4-4 | Broadcast Dark's slashes are native skews (C1 had made them clip polygons)                                   | Editable as an angle; same render (96% before and after)                                                  | Keep the clips                                               |
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #479 Studio editor: name the shadow lists, box each shadow and stop (Stream B browser check)
+
+1. **The clip pad stays square**, whatever the layer's shape. A 9:1 band would make a 9:1 pad too thin to drag points on, so the pad shows the box stretched to a square. The points' numbers are in percent of the layer's box either way.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #480 fix(template-library): retry fit checks that couldn't run at boot (Bold Type listed nothing)
+
+| #   | Decision                                                                                 | Why                                                                                      | To reverse                 |
+| --- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------- |
+| F-1 | Retry in the fit runner (30 s, 60 s, 120 s), not a change to the dev stack's start order | Covers any harness hiccup, in production too, where the next sweep could be an hour away | Set `FIT_RUN_RETRIES` to 0 |
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+#### #481 Element library: the 29 Club Kit pieces native; re-extracted after C4
+
+1. **The registry stays as a read-only fallback**, not deleted. Existing drafts and templates with `kind: "element"` layers keep drawing exactly as before. No migration rewrites stored cards.
+2. **The pieces' text is the panel's sample text**, drawn on a Century card, so a piece's fields come through as tokens where the card has them (club name, hashtag, sponsor line) and as editable sample text otherwise (score bars, leader rows).
+3. **The trading card's 96.2% match** is the lowest. The difference is its photo's edge treatment, and it's an editable starting point, not a fixed render.
+4. **The 4 duplicates go uncredited to Club Kit**: they stay in Club Kit Classic, where the extraction found them first.
+
 ## Waiting on Ash
 
 - Sign-off on each of the seven looks (Club Kit, Broadcast Dark, Duotone, Gold Foil, Bold Type, Neon Night, Sunset). Each one's `report.md` says "pending Ash sign-off"
