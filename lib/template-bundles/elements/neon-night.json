@@ -1,0 +1,1037 @@
+{
+  "look": "neon-night",
+  "elements": [
+    {
+      "slug": "neon-night/frames/dark-panel",
+      "name": "Dark panel",
+      "category": "frames",
+      "tags": ["neon-night", "frames", "dark", "panel", "shape", "rounded"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#080E1AB8",
+              "border": {
+                "width": 0.08,
+                "color": "#D3175A59"
+              },
+              "radius": 5.82
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 44,
+                "y": 39.88,
+                "w": 47.86,
+                "h": 23.18
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/bands/gold-band",
+      "name": "Gold band",
+      "category": "bands",
+      "tags": ["neon-night", "bands", "gold", "band", "shape", "rounded"],
+      "signature": "f21cee985b88dcce",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "radius": 705.79,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 1.32,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.63,
+                "y": 77.73,
+                "w": 77.15,
+                "h": 6.98
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/bands/dark-band",
+      "name": "Dark band",
+      "category": "bands",
+      "tags": ["neon-night", "bands", "dark", "band", "shape", "rounded"],
+      "signature": "e490868e3a41cbef",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#080E1AB8",
+              "border": {
+                "width": 0.09,
+                "color": "#D3175A59"
+              },
+              "radius": 9.98
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 60.67,
+                "w": 81.85,
+                "h": 25.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/dark-pill",
+      "name": "Dark pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "dark", "pill", "shape", "rounded"],
+      "signature": "ff8caa20a4b6a445",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#05070D8C",
+              "border": {
+                "width": 0.08,
+                "color": "var(--gold)"
+              },
+              "radius": 623.7,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 1.05,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 89.32,
+                "y": 8.39,
+                "w": 7.53,
+                "h": 4.72
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/gold-pill",
+      "name": "Gold pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "gold", "pill", "shape", "rounded"],
+      "signature": "23f9ac4f95291787",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "radius": 411.31,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 0.69,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 73.02,
+                "w": 9.06,
+                "h": 5.45
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/tinted-pill",
+      "name": "Tinted pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "tinted", "pill", "shape", "rounded"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#E23B3B",
+              "radius": 623.7
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 91,
+                "y": 7.35,
+                "w": 5.85,
+                "h": 4.4
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/dark-pill-2",
+      "name": "Dark pill 2",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "dark", "pill", "2", "shape", "rounded"],
+      "signature": "53f127bb1f820459",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)"
+              },
+              "radius": 705.79,
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 82.08,
+                "y": 61.99,
+                "w": 5.77,
+                "h": 3.35
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/tinted-pill-2",
+      "name": "Tinted pill 2",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "tinted", "pill", "2", "shape", "rounded"],
+      "signature": "650cbad3acba8f9e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#E23B3B",
+              "radius": 1069.2
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 82.86,
+                "y": 7.35,
+                "w": 11.14,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 82.86,
+                "y": 5.88,
+                "w": 11.14,
+                "h": 3.52
+              },
+              "story": {
+                "x": 82.86,
+                "y": 4.13,
+                "w": 11.14,
+                "h": 2.48
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/rules/gold-rule",
+      "name": "Gold rule",
+      "category": "rules",
+      "tags": ["neon-night", "rules", "gold", "rule", "shape"],
+      "signature": "176341bc5207a6d7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 1.32,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 55.94,
+                "w": 10.56,
+                "h": 0.59
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/gold-glow",
+      "name": "Gold glow",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "gold", "glow", "shape"],
+      "signature": "6e17cfe4cf2e0d97",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 2,
+                  "color": "var(--gold)"
+                },
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 6,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 86.1,
+                "w": 100,
+                "h": 0.3
+              },
+              "portrait": {
+                "x": 0,
+                "y": 88.88,
+                "w": 100,
+                "h": 0.24
+              },
+              "story": {
+                "x": 0,
+                "y": 92.18,
+                "w": 100,
+                "h": 0.17
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/tinted-glow",
+      "name": "Tinted glow",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "tinted", "glow", "shape", "gradient"],
+      "signature": "0019fe90864c25f1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "at": {
+                  "x": 85,
+                  "y": 15
+                },
+                "stops": [
+                  {
+                    "color": "#D3175A59",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/tinted-fade",
+      "name": "Tinted fade",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "tinted", "fade", "shape", "gradient"],
+      "signature": "134c9f4883a5c895",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#D3175A17"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/tinted-glow-2",
+      "name": "Tinted glow 2",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "tinted", "glow", "2", "shape", "gradient"],
+      "signature": "211f1821bc3cb050",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "at": {
+                  "x": 10,
+                  "y": 95
+                },
+                "stops": [
+                  {
+                    "color": "#EC489947",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 45
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/tinted-fade-2",
+      "name": "Tinted fade 2",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "tinted", "fade", "2", "shape", "gradient"],
+      "signature": "715b7feb6fa282d9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#D3175A17"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/dark-glow",
+      "name": "Dark glow",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "dark", "glow", "shape", "rounded"],
+      "signature": "a6da929c3dc5ed9e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#05070D8C",
+              "border": {
+                "width": 0.19,
+                "color": "var(--gold)"
+              },
+              "radius": 1069.2,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 2,
+                  "color": "#D3175A99"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 79.6,
+                "y": 8.36,
+                "w": 14.4,
+                "h": 4.77
+              },
+              "portrait": {
+                "x": 79.6,
+                "y": 6.69,
+                "w": 14.4,
+                "h": 3.82
+              },
+              "story": {
+                "x": 79.6,
+                "y": 4.7,
+                "w": 14.4,
+                "h": 2.68
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/crest-frames/dark-crest-plate",
+      "name": "Dark crest plate",
+      "category": "crest-frames",
+      "tags": ["neon-night", "crest-frames", "dark", "crest", "plate", "shape"],
+      "signature": "f3e2d28404b0f5f7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#080E1AB8"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 53.81,
+                "w": 5.28,
+                "h": 5.28
+              },
+              "portrait": {
+                "x": 6,
+                "y": 52.32,
+                "w": 7.04,
+                "h": 5.63
+              },
+              "story": {
+                "x": 6,
+                "y": 51.63,
+                "w": 7.04,
+                "h": 3.96
+              },
+              "landscape": {
+                "x": 32.92,
+                "y": 41.98,
+                "w": 2.77,
+                "h": 5.27
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/data-blocks/stack",
+      "name": "Stack",
+      "category": "data-blocks",
+      "tags": ["neon-night", "data-blocks", "stack", "group"],
+      "signature": "9a7cf2189ea35eab",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "group",
+            "stack": {
+              "direction": "row",
+              "gap": 1.98,
+              "align": "end",
+              "justify": "start"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 32.95,
+                "w": 81.85,
+                "h": 10.1
+              },
+              "portrait": {
+                "x": 6,
+                "y": 43.55,
+                "w": 88,
+                "h": 10.77
+              },
+              "story": {
+                "x": 6,
+                "y": 60.31,
+                "w": 88,
+                "h": 7.57
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 32.94,
+                "w": 42.93,
+                "h": 10.09
+              }
+            },
+            "children": [
+              {
+                "id": "e1-1",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 34.19,
+                    "w": 5.28,
+                    "h": 5.28
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 37.51,
+                    "w": 7.04,
+                    "h": 5.63
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 56.06,
+                    "w": 7.04,
+                    "h": 3.96
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 34.17,
+                    "w": 2.77,
+                    "h": 5.27
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "#080E1AB8",
+                      "radius": 7.13,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-1",
+                    "sizes": ["square"],
+                    "geometry": {
+                      "square": {
+                        "x": 6,
+                        "y": 34.19,
+                        "w": 5.28,
+                        "h": 5.28
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "#080E1AB8",
+                      "radius": 9.5,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-2",
+                    "sizes": ["portrait", "story"],
+                    "geometry": {
+                      "portrait": {
+                        "x": 6,
+                        "y": 37.51,
+                        "w": 7.04,
+                        "h": 5.63
+                      },
+                      "story": {
+                        "x": 6,
+                        "y": 56.06,
+                        "w": 7.04,
+                        "h": 3.96
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "#080E1AB8",
+                      "radius": 4.15,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-3",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 3.15,
+                        "y": 34.17,
+                        "w": 2.77,
+                        "h": 5.27
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{opposition.logo}}",
+                    "style": {
+                      "radius": 7.13,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-4",
+                    "sizes": ["square"],
+                    "geometry": {
+                      "square": {
+                        "x": 6,
+                        "y": 34.19,
+                        "w": 5.28,
+                        "h": 5.28
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{opposition.logo}}",
+                    "style": {
+                      "radius": 9.5,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-5",
+                    "sizes": ["portrait", "story"],
+                    "geometry": {
+                      "portrait": {
+                        "x": 6,
+                        "y": 37.51,
+                        "w": 7.04,
+                        "h": 5.63
+                      },
+                      "story": {
+                        "x": 6,
+                        "y": 56.06,
+                        "w": 7.04,
+                        "h": 3.96
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{opposition.logo}}",
+                    "style": {
+                      "radius": 4.15,
+                      "opacity": 0.74
+                    },
+                    "id": "e1-1-6",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 3.15,
+                        "y": 34.17,
+                        "w": 2.77,
+                        "h": 5.27
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "e1-2",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 55.54,
+                    "y": 26.74,
+                    "w": 33.32,
+                    "h": 16.94
+                  },
+                  "portrait": {
+                    "x": 50.92,
+                    "y": 29.58,
+                    "w": 44.37,
+                    "h": 18
+                  },
+                  "story": {
+                    "x": 50.92,
+                    "y": 50.49,
+                    "w": 44.37,
+                    "h": 12.66
+                  },
+                  "landscape": {
+                    "x": 29.13,
+                    "y": 26.66,
+                    "w": 17.95,
+                    "h": 16.83
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "content": "{{opposition.score}}",
+                    "style": {
+                      "color": "#EAFBFF",
+                      "fontFamily": "'Anton',sans-serif",
+                      "fontSize": 11.22,
+                      "fontWeight": 400,
+                      "align": "left",
+                      "lineHeight": 0.9,
+                      "opacity": 0.74
+                    },
+                    "fit": {
+                      "minScale": 0.6,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-1",
+                    "sizes": ["square"],
+                    "geometry": {
+                      "square": {
+                        "x": 55.54,
+                        "y": 26.74,
+                        "w": 33.32,
+                        "h": 16.94
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{opposition.score}}",
+                    "style": {
+                      "color": "#EAFBFF",
+                      "fontFamily": "'Anton',sans-serif",
+                      "fontSize": 14.96,
+                      "fontWeight": 400,
+                      "align": "left",
+                      "lineHeight": 0.9,
+                      "opacity": 0.74
+                    },
+                    "fit": {
+                      "minScale": 0.6,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-2",
+                    "sizes": ["portrait", "story"],
+                    "geometry": {
+                      "portrait": {
+                        "x": 50.92,
+                        "y": 29.58,
+                        "w": 44.37,
+                        "h": 18
+                      },
+                      "story": {
+                        "x": 50.92,
+                        "y": 50.49,
+                        "w": 44.37,
+                        "h": 12.66
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{opposition.score}}",
+                    "style": {
+                      "color": "#EAFBFF",
+                      "fontFamily": "'Anton',sans-serif",
+                      "fontSize": 5.89,
+                      "fontWeight": 400,
+                      "align": "left",
+                      "lineHeight": 0.9,
+                      "opacity": 0.74
+                    },
+                    "fit": {
+                      "minScale": 0.6,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-3",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 29.13,
+                        "y": 26.66,
+                        "w": 17.95,
+                        "h": 16.83
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

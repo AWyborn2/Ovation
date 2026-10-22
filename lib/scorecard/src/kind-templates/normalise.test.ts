@@ -2,7 +2,7 @@
  * Reading stored documents as v2 (T1.2): v1 `{ layers }` is the kind's
  * primary page, `animation` is `motion.in`, and nothing stored is changed.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TemplateDocumentV2, TemplateLayerV2 } from "./format";
@@ -17,7 +17,8 @@ function bundleDocuments(): Array<{ look: string; kind: string; document: unknow
   const out: Array<{ look: string; kind: string; document: unknown }> = [];
   for (const look of readdirSync(BUNDLES).sort()) {
     const dir = path.join(BUNDLES, look);
-    if (!statSync(dir).isDirectory() || look === "dist" || look === "node_modules") continue;
+    // A look folder has a look.json; `elements/` and build output don't.
+    if (!statSync(dir).isDirectory() || !existsSync(path.join(dir, "look.json"))) continue;
     for (const file of readdirSync(dir).sort()) {
       if (!file.endsWith(".json") || file === "look.json") continue;
       const parsed = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {

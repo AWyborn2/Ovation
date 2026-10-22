@@ -1,0 +1,143 @@
+{
+  "look": "club-kit-classic",
+  "elements": [
+    {
+      "slug": "club-kit-classic/bands/live-score",
+      "name": "Live score",
+      "category": "bands",
+      "tags": ["club-kit-classic", "bands", "live", "score", "shape"],
+      "signature": "8ac823c19a6084d6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-panel,rgba(242,245,248,.07))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 66.48,
+                "w": 44,
+                "h": 13
+              },
+              "portrait": {
+                "x": 6,
+                "y": 70.72,
+                "w": 88,
+                "h": 10.4
+              },
+              "story": {
+                "x": 6,
+                "y": 79.41,
+                "w": 88,
+                "h": 7.31
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 66.34,
+                "w": 48.3,
+                "h": 13
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit-classic/badges/stat-1-panel",
+      "name": "Stat 1 panel",
+      "category": "badges",
+      "tags": ["club-kit-classic", "badges", "stat", "1", "panel", "shape"],
+      "signature": "cdb32ff5f6d876af",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-panel,rgba(242,245,248,.07))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 57.14,
+                "w": 14.13,
+                "h": 11
+              },
+              "portrait": {
+                "x": 6,
+                "y": 71.2,
+                "w": 28.8,
+                "h": 8.8
+              },
+              "story": {
+                "x": 6,
+                "y": 79.75,
+                "w": 28.8,
+                "h": 6.19
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 55.94,
+                "w": 15.82,
+                "h": 11
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit-classic/rules/live-score-edge",
+      "name": "Live score edge",
+      "category": "rules",
+      "tags": ["club-kit-classic", "rules", "live", "score", "edge", "shape"],
+      "signature": "98a31bfabcf8e2fe",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#FBAC27))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 66.48,
+                "w": 1,
+                "h": 13
+              },
+              "portrait": {
+                "x": 6,
+                "y": 70.72,
+                "w": 1,
+                "h": 10.4
+              },
+              "story": {
+                "x": 6,
+                "y": 79.41,
+                "w": 1,
+                "h": 7.31
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 66.34,
+                "w": 0.52,
+                "h": 13
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    }
+  ]
+}

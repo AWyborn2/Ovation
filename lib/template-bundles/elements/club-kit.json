@@ -1,0 +1,2423 @@
+{
+  "look": "club-kit",
+  "elements": [
+    {
+      "slug": "club-kit/frames/kit-block",
+      "name": "Kit block",
+      "category": "frames",
+      "tags": ["club-kit", "frames", "kit", "block", "shape", "gradient"],
+      "signature": "dd8f5d29e42d68a5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 7.61,
+                "y": 19.55,
+                "w": 46.79,
+                "h": 64.2
+              },
+              "portrait": {
+                "x": 26.61,
+                "y": 36.01,
+                "w": 46.79,
+                "h": 51.36
+              },
+              "story": {
+                "x": 26.61,
+                "y": 55,
+                "w": 46.79,
+                "h": 36.11
+              },
+              "landscape": {
+                "x": 3.99,
+                "y": 19.55,
+                "w": 24.56,
+                "h": 64.2
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/bands/panel-slash",
+      "name": "Panel slash",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "panel", "slash", "shape", "angled"],
+      "signature": "7fb8931450b0085c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [29.8, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 50.2,
+                "y": 0,
+                "w": 49.8,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/bands/panel-slash-2",
+      "name": "Panel slash 2",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "panel", "slash", "2", "shape", "angled"],
+      "signature": "a64bbe222b4295e4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 74.15],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 34.04
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/bands/panel-slash-3",
+      "name": "Panel slash 3",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "panel", "slash", "3", "shape", "angled"],
+      "signature": "76714a323bb9b00e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 80.43],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 44.97
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/bands/panel-slash-4",
+      "name": "Panel slash 4",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "panel", "slash", "4", "shape", "angled"],
+      "signature": "bca2f3bab04b0d3b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 89.91],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 61.31
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/bands/kit-slash",
+      "name": "Kit slash",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "kit", "slash", "shape", "gradient", "angled"],
+      "signature": "3e6e5497e2536bb4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              },
+              "landscape": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/bands/kit-slash-2",
+      "name": "Kit slash 2",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "kit", "slash", "2", "shape", "gradient", "angled"],
+      "signature": "6dcca761032e388c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 71.61],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 31
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/bands/kit-slash-3",
+      "name": "Kit slash 3",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "kit", "slash", "3", "shape", "gradient", "angled"],
+      "signature": "2aa07da8526a32b3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.01],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 41.93
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/bands/kit-slash-4",
+      "name": "Kit slash 4",
+      "category": "bands",
+      "tags": ["club-kit", "bands", "kit", "slash", "4", "shape", "gradient", "angled"],
+      "signature": "f600dc742f40cafb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 89.54],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 59.17
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/badges/panel-chip",
+      "name": "Panel chip",
+      "category": "badges",
+      "tags": ["club-kit", "badges", "panel", "chip", "shape"],
+      "signature": "f3e2d28404b0f5f7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.5,
+                "y": 77.11,
+                "w": 2.5,
+                "h": 1.6
+              },
+              "portrait": {
+                "x": 13.5,
+                "y": 82.58,
+                "w": 2.5,
+                "h": 1.28
+              },
+              "story": {
+                "x": 13.5,
+                "y": 87.75,
+                "w": 2.5,
+                "h": 0.9
+              },
+              "landscape": {
+                "x": 7.09,
+                "y": 63.01,
+                "w": 1.31,
+                "h": 1.6
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/badges/accent-chip",
+      "name": "Accent chip",
+      "category": "badges",
+      "tags": ["club-kit", "badges", "accent", "chip", "shape"],
+      "signature": "e2d5c298f6143c5b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "opacity": 0.92
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 86,
+                "w": 18,
+                "h": 8
+              },
+              "portrait": {
+                "x": 6,
+                "y": 88.8,
+                "w": 18,
+                "h": 6.4
+              },
+              "story": {
+                "x": 6,
+                "y": 92.13,
+                "w": 18,
+                "h": 4.5
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 86,
+                "w": 9.45,
+                "h": 8
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/badges/dark-pill",
+      "name": "Dark pill",
+      "category": "badges",
+      "tags": ["club-kit", "badges", "dark", "pill", "shape", "rounded"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#0A0C10D1",
+              "border": {
+                "width": 0.19,
+                "color": "var(--gold)"
+              },
+              "radius": 5.4
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 39.61,
+                "w": 11.78,
+                "h": 6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 55.63,
+                "w": 11.78,
+                "h": 4.8
+              },
+              "story": {
+                "x": 6,
+                "y": 68.8,
+                "w": 11.78,
+                "h": 3.37
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/badges/accent-pill",
+      "name": "Accent pill",
+      "category": "badges",
+      "tags": ["club-kit", "badges", "accent", "pill", "shape", "rounded"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 10.8
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 8.4,
+                "y": 40.78,
+                "w": 9,
+                "h": 9
+              },
+              "portrait": {
+                "x": 8.4,
+                "y": 52.88,
+                "w": 10,
+                "h": 8
+              },
+              "story": {
+                "x": 8.4,
+                "y": 66.87,
+                "w": 10,
+                "h": 5.63
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/badges/gold-chip",
+      "name": "Gold chip",
+      "category": "badges",
+      "tags": ["club-kit", "badges", "gold", "chip", "shape", "angled"],
+      "signature": "0a400cc40500a45f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [50, 0],
+                  [61, 35],
+                  [98, 35],
+                  [68, 57],
+                  [79, 91],
+                  [50, 70],
+                  [21, 91],
+                  [32, 57],
+                  [2, 35],
+                  [39, 35]
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 11.05,
+                "w": 4,
+                "h": 4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 43.02,
+                "w": 4,
+                "h": 3.2
+              },
+              "story": {
+                "x": 6,
+                "y": 59.94,
+                "w": 4,
+                "h": 2.25
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 25.7,
+                "w": 2.1,
+                "h": 4
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/rules/chalk-rule",
+      "name": "Chalk rule",
+      "category": "rules",
+      "tags": ["club-kit", "rules", "chalk", "rule", "shape"],
+      "signature": "4528ad44661bf6f3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ck-chalk)"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 58.68,
+                "y": 87.3,
+                "w": 8.68,
+                "h": 0.8
+              },
+              "portrait": {
+                "x": 58.68,
+                "y": 89.84,
+                "w": 8.68,
+                "h": 0.64
+              },
+              "story": {
+                "x": 58.68,
+                "y": 92.86,
+                "w": 8.68,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 59.31,
+                "y": 87.31,
+                "w": 9.31,
+                "h": 0.8
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/rules/panel-divider",
+      "name": "Panel divider",
+      "category": "rules",
+      "tags": ["club-kit", "rules", "panel", "divider", "shape"],
+      "signature": "89af6fe3a2067bc0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 81.94,
+                "y": 8.75,
+                "w": 1.2,
+                "h": 4.5
+              },
+              "portrait": {
+                "x": 81.94,
+                "y": 7,
+                "w": 1.2,
+                "h": 3.6
+              },
+              "story": {
+                "x": 81.94,
+                "y": 4.92,
+                "w": 1.2,
+                "h": 2.53
+              },
+              "landscape": {
+                "x": 90.52,
+                "y": 8.75,
+                "w": 0.63,
+                "h": 4.5
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/glows/glow-glow",
+      "name": "Glow glow",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "glow", "shape", "gradient"],
+      "signature": "346016aff1154b37",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 0,
+                  "y": 100
+                },
+                "stops": [
+                  {
+                    "color": "var(--ck-glowc)"
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 60
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade",
+      "name": "Kit fade",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "shape", "gradient", "angled"],
+      "signature": "48f9f810e8777807",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "var(--ck-base-35)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              },
+              "landscape": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-2",
+      "name": "Kit fade 2",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "2", "shape", "gradient", "angled"],
+      "signature": "1db7c666508b9f80",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--ck-base-70)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 30
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 71.61],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 31
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-3",
+      "name": "Kit fade 3",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "3", "shape", "gradient", "angled"],
+      "signature": "c77896bb7c2445e3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 0,
+                "stops": [
+                  {
+                    "color": "var(--ck-base-55)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 71.61],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 31
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-4",
+      "name": "Kit fade 4",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "4", "shape", "gradient", "angled"],
+      "signature": "6f3096665cf1fa02",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 0,
+                "stops": [
+                  {
+                    "color": "var(--ck-base-55)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.01],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 41.93
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-5",
+      "name": "Kit fade 5",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "5", "shape", "gradient", "angled"],
+      "signature": "f8a94339d2614d45",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--ck-base-70)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 30
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.01],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 41.93
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-6",
+      "name": "Kit fade 6",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "6", "shape", "gradient", "angled"],
+      "signature": "68c75e76536c5003",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 0,
+                "stops": [
+                  {
+                    "color": "var(--ck-base-55)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 89.54],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 59.17
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-7",
+      "name": "Kit fade 7",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "7", "shape", "gradient", "angled"],
+      "signature": "a66901c98035d8b3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--ck-base-70)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 30
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 89.54],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 59.17
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/gold-glow",
+      "name": "Gold glow",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "gold", "glow", "shape"],
+      "signature": "78be06e2ea5bdbda",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.58,
+                  "blur": 3.15,
+                  "spread": -1.05,
+                  "color": "#00000099"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 4.19,
+                "y": 19.44,
+                "w": 24.17,
+                "h": 64.44,
+                "rotate": -3
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/glows/kit-fade-8",
+      "name": "Kit fade 8",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "kit", "fade", "8", "shape", "gradient"],
+      "signature": "ac710d233b7692bd",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 0,
+                "stops": [
+                  {
+                    "color": "var(--ck-base)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 55
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 7.61,
+                "y": 19.55,
+                "w": 46.79,
+                "h": 64.2
+              },
+              "portrait": {
+                "x": 26.61,
+                "y": 36.01,
+                "w": 46.79,
+                "h": 51.36
+              },
+              "story": {
+                "x": 26.61,
+                "y": 55,
+                "w": 46.79,
+                "h": 36.11
+              },
+              "landscape": {
+                "x": 3.99,
+                "y": 19.55,
+                "w": 24.56,
+                "h": 64.2
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/glows/gold-glow-2",
+      "name": "Gold glow 2",
+      "category": "glows",
+      "tags": ["club-kit", "glows", "gold", "glow", "2", "shape"],
+      "signature": "b44711566837e500",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 3,
+                  "blur": 6,
+                  "spread": -2,
+                  "color": "#00000099"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 8,
+                "y": 19.43,
+                "w": 46.02,
+                "h": 64.44,
+                "rotate": -3
+              },
+              "portrait": {
+                "x": 27,
+                "y": 35.91,
+                "w": 46.02,
+                "h": 51.56,
+                "rotate": -3
+              },
+              "story": {
+                "x": 27,
+                "y": 54.93,
+                "w": 46.02,
+                "h": 36.25,
+                "rotate": -3
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "club-kit/sponsor-strips/accent-sponsor-tile",
+      "name": "Accent sponsor tile",
+      "category": "sponsor-strips",
+      "tags": ["club-kit", "sponsor-strips", "accent", "sponsor", "tile", "shape"],
+      "signature": "0b31e5390338263f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 24.5,
+                "y": 32.85,
+                "w": 16,
+                "h": 8
+              },
+              "portrait": {
+                "x": 11.06,
+                "y": 35.57,
+                "w": 24.96,
+                "h": 9.98
+              },
+              "story": {
+                "x": 11.57,
+                "y": 26.38,
+                "w": 37.68,
+                "h": 10.6
+              },
+              "landscape": {
+                "x": 36.61,
+                "y": 34.58,
+                "w": 8.4,
+                "h": 8
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/sponsor-strips/stack",
+      "name": "Stack",
+      "category": "sponsor-strips",
+      "tags": ["club-kit", "sponsor-strips", "stack", "group"],
+      "signature": "578cc4a145c3d3b0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "group",
+            "stack": {
+              "direction": "row",
+              "gap": 2,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 89.9,
+                "w": 88,
+                "h": 4.1
+              },
+              "portrait": {
+                "x": 6,
+                "y": 91.92,
+                "w": 88,
+                "h": 3.28
+              },
+              "story": {
+                "x": 6,
+                "y": 94.32,
+                "w": 88,
+                "h": 2.3
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 89.91,
+                "w": 93.7,
+                "h": 4.1
+              }
+            },
+            "children": [
+              {
+                "id": "e1-1",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 89.95,
+                    "w": 41.46,
+                    "h": 4
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 91.96,
+                    "w": 41.46,
+                    "h": 3.2
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 94.35,
+                    "w": 41.46,
+                    "h": 2.25
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 89.95,
+                    "w": 24.41,
+                    "h": 4
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "content": "PRESENTED BY",
+                    "style": {
+                      "color": "var(--ck-chalk2)",
+                      "fontFamily": "'IBM Plex Mono',monospace",
+                      "fontSize": 1.7,
+                      "fontWeight": 500,
+                      "letterSpacing": 0.18,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "id": "e1-1-1",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 6,
+                        "y": 90.77,
+                        "w": 16.91,
+                        "h": 2.22
+                      },
+                      "portrait": {
+                        "x": 6,
+                        "y": 92.62,
+                        "w": 16.91,
+                        "h": 1.78
+                      },
+                      "story": {
+                        "x": 6,
+                        "y": 94.81,
+                        "w": 16.91,
+                        "h": 1.25
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "PRESENTED BY",
+                    "style": {
+                      "color": "var(--ck-chalk2)",
+                      "fontFamily": "'IBM Plex Mono',monospace",
+                      "fontSize": 0.89,
+                      "fontWeight": 500,
+                      "letterSpacing": 0.18,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "id": "e1-1-2",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 3.15,
+                        "y": 90.84,
+                        "w": 9.35,
+                        "h": 2.22
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--accent-ink)",
+                      "opacity": 0.92
+                    },
+                    "id": "e1-1-3",
+                    "geometry": {
+                      "square": {
+                        "x": 23.11,
+                        "y": 89.95,
+                        "w": 9,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 23.11,
+                        "y": 91.96,
+                        "w": 9,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 23.11,
+                        "y": 94.35,
+                        "w": 9,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 12.13,
+                        "y": 89.95,
+                        "w": 4.72,
+                        "h": 4
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{sponsor1}}",
+                    "id": "e1-1-4",
+                    "geometry": {
+                      "square": {
+                        "x": 23.61,
+                        "y": 89.95,
+                        "w": 8,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 23.61,
+                        "y": 91.96,
+                        "w": 8,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 23.61,
+                        "y": 94.35,
+                        "w": 8,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 12.39,
+                        "y": 89.95,
+                        "w": 4.2,
+                        "h": 4
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--accent-ink)",
+                      "opacity": 0.92
+                    },
+                    "id": "e1-1-5",
+                    "geometry": {
+                      "square": {
+                        "x": 33.31,
+                        "y": 89.95,
+                        "w": 9,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 33.31,
+                        "y": 91.96,
+                        "w": 9,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 33.31,
+                        "y": 94.35,
+                        "w": 9,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 17.49,
+                        "y": 89.95,
+                        "w": 4.72,
+                        "h": 4
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{sponsor2}}",
+                    "id": "e1-1-6",
+                    "geometry": {
+                      "square": {
+                        "x": 33.81,
+                        "y": 89.95,
+                        "w": 8,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 33.81,
+                        "y": 91.96,
+                        "w": 8,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 33.81,
+                        "y": 94.35,
+                        "w": 8,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 17.75,
+                        "y": 89.95,
+                        "w": 4.2,
+                        "h": 4
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--accent-ink)",
+                      "opacity": 0.92
+                    },
+                    "id": "e1-1-7",
+                    "geometry": {
+                      "square": {
+                        "x": 43.51,
+                        "y": 89.95,
+                        "w": 9,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 43.51,
+                        "y": 91.96,
+                        "w": 9,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 43.51,
+                        "y": 94.35,
+                        "w": 9,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 22.84,
+                        "y": 89.95,
+                        "w": 4.72,
+                        "h": 4
+                      }
+                    }
+                  },
+                  {
+                    "kind": "image",
+                    "content": "{{sponsor3}}",
+                    "id": "e1-1-8",
+                    "geometry": {
+                      "square": {
+                        "x": 44.01,
+                        "y": 89.95,
+                        "w": 8,
+                        "h": 4
+                      },
+                      "portrait": {
+                        "x": 44.01,
+                        "y": 91.96,
+                        "w": 8,
+                        "h": 3.2
+                      },
+                      "story": {
+                        "x": 44.01,
+                        "y": 94.35,
+                        "w": 8,
+                        "h": 2.25
+                      },
+                      "landscape": {
+                        "x": 23.1,
+                        "y": 89.95,
+                        "w": 4.2,
+                        "h": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "e1-2",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 49.46,
+                    "y": 89.9,
+                    "w": 44.54,
+                    "h": 4.1
+                  },
+                  "portrait": {
+                    "x": 49.46,
+                    "y": 91.92,
+                    "w": 44.54,
+                    "h": 3.28
+                  },
+                  "story": {
+                    "x": 49.46,
+                    "y": 94.32,
+                    "w": 44.54,
+                    "h": 2.3
+                  },
+                  "landscape": {
+                    "x": 73.46,
+                    "y": 89.91,
+                    "w": 23.39,
+                    "h": 4.1
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--gold)"
+                    },
+                    "id": "e1-2-1",
+                    "geometry": {
+                      "square": {
+                        "x": 49.46,
+                        "y": 89.9,
+                        "w": 44.54,
+                        "h": 4.1
+                      },
+                      "portrait": {
+                        "x": 49.46,
+                        "y": 91.92,
+                        "w": 44.54,
+                        "h": 3.28
+                      },
+                      "story": {
+                        "x": 49.46,
+                        "y": 94.32,
+                        "w": 44.54,
+                        "h": 2.3
+                      },
+                      "landscape": {
+                        "x": 73.46,
+                        "y": 89.91,
+                        "w": 23.39,
+                        "h": 4.1
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{clubHashtag}}",
+                    "style": {
+                      "color": "var(--accent-ink)",
+                      "fontFamily": "'Barlow Condensed',sans-serif",
+                      "fontSize": 2.9,
+                      "fontWeight": 800,
+                      "letterSpacing": 0.04,
+                      "align": "left",
+                      "lineHeight": 1
+                    },
+                    "fit": {
+                      "minScale": 0.6,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-2",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 51.06,
+                        "y": 90.22,
+                        "w": 42.59,
+                        "h": 3.43
+                      },
+                      "portrait": {
+                        "x": 51.06,
+                        "y": 92.18,
+                        "w": 42.59,
+                        "h": 2.74
+                      },
+                      "story": {
+                        "x": 51.06,
+                        "y": 94.5,
+                        "w": 42.59,
+                        "h": 1.93
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{clubHashtag}}",
+                    "style": {
+                      "color": "var(--accent-ink)",
+                      "fontFamily": "'Barlow Condensed',sans-serif",
+                      "fontSize": 1.52,
+                      "fontWeight": 800,
+                      "letterSpacing": 0.04,
+                      "align": "left",
+                      "lineHeight": 1
+                    },
+                    "fit": {
+                      "minScale": 0.6,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-3",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 74.3,
+                        "y": 90.19,
+                        "w": 22.71,
+                        "h": 3.49
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/data-blocks/stack-2",
+      "name": "Stack 2",
+      "category": "data-blocks",
+      "tags": ["club-kit", "data-blocks", "stack", "2", "group"],
+      "signature": "4369813ecb2c2475",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "group",
+            "stack": {
+              "direction": "row",
+              "gap": 1.4,
+              "align": "center",
+              "justify": "start"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 61.84,
+                "w": 88,
+                "h": 5.1
+              },
+              "portrait": {
+                "x": 6,
+                "y": 74.73,
+                "w": 88,
+                "h": 4.08
+              },
+              "story": {
+                "x": 6,
+                "y": 82.23,
+                "w": 88,
+                "h": 2.87
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 58.99,
+                "w": 93.7,
+                "h": 5.09
+              }
+            },
+            "children": [
+              {
+                "id": "e1-1",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 61.84,
+                    "w": 15.58,
+                    "h": 5.1
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 74.73,
+                    "w": 15.58,
+                    "h": 4.08
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 82.23,
+                    "w": 15.58,
+                    "h": 2.87
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 58.99,
+                    "w": 8.17,
+                    "h": 5.09
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--gold)"
+                    },
+                    "id": "e1-1-1",
+                    "geometry": {
+                      "square": {
+                        "x": 6,
+                        "y": 61.84,
+                        "w": 15.58,
+                        "h": 5.1
+                      },
+                      "portrait": {
+                        "x": 6,
+                        "y": 74.73,
+                        "w": 15.58,
+                        "h": 4.08
+                      },
+                      "story": {
+                        "x": 6,
+                        "y": 82.23,
+                        "w": 15.58,
+                        "h": 2.87
+                      },
+                      "landscape": {
+                        "x": 3.15,
+                        "y": 58.99,
+                        "w": 8.17,
+                        "h": 5.09
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "WATCH LIVE",
+                    "style": {
+                      "color": "var(--accent-ink)",
+                      "fontFamily": "'Barlow Condensed',sans-serif",
+                      "fontSize": 2.6,
+                      "fontWeight": 800,
+                      "letterSpacing": 0.06,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "id": "e1-1-2",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 7.4,
+                        "y": 62.81,
+                        "w": 13.78,
+                        "h": 3.15
+                      },
+                      "portrait": {
+                        "x": 7.4,
+                        "y": 75.5,
+                        "w": 13.78,
+                        "h": 2.52
+                      },
+                      "story": {
+                        "x": 7.4,
+                        "y": 82.78,
+                        "w": 13.78,
+                        "h": 1.77
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "WATCH LIVE",
+                    "style": {
+                      "color": "var(--accent-ink)",
+                      "fontFamily": "'Barlow Condensed',sans-serif",
+                      "fontSize": 1.37,
+                      "fontWeight": 800,
+                      "letterSpacing": 0.06,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "id": "e1-1-3",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 3.88,
+                        "y": 59.91,
+                        "w": 7.71,
+                        "h": 3.02
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "e1-2",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 22.98,
+                    "y": 62.74,
+                    "w": 61.95,
+                    "h": 3.3
+                  },
+                  "portrait": {
+                    "x": 22.98,
+                    "y": 75.45,
+                    "w": 61.95,
+                    "h": 2.64
+                  },
+                  "story": {
+                    "x": 22.98,
+                    "y": 82.74,
+                    "w": 61.95,
+                    "h": 1.86
+                  },
+                  "landscape": {
+                    "x": 12.06,
+                    "y": 59.89,
+                    "w": 32.53,
+                    "h": 3.3
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "content": "{{livestream}}",
+                    "style": {
+                      "color": "var(--ck-chalk2)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 2.2,
+                      "fontWeight": 500,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-1",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 22.98,
+                        "y": 62.92,
+                        "w": 61.95,
+                        "h": 2.87
+                      },
+                      "portrait": {
+                        "x": 22.98,
+                        "y": 75.59,
+                        "w": 61.95,
+                        "h": 2.3
+                      },
+                      "story": {
+                        "x": 22.98,
+                        "y": 82.84,
+                        "w": 61.95,
+                        "h": 1.61
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{livestream}}",
+                    "style": {
+                      "color": "var(--ck-chalk2)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 1.16,
+                      "fontWeight": 500,
+                      "align": "left",
+                      "lineHeight": 1.5
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-2",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 12.06,
+                        "y": 60.05,
+                        "w": 32.53,
+                        "h": 2.86
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "club-kit/data-blocks/stack-3",
+      "name": "Stack 3",
+      "category": "data-blocks",
+      "tags": ["club-kit", "data-blocks", "stack", "3", "group"],
+      "signature": "bcb6de1776efa4be",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "group",
+            "stack": {
+              "direction": "row",
+              "gap": 1,
+              "align": "center",
+              "justify": "start"
+            },
+            "geometry": {
+              "square": {
+                "x": 7.5,
+                "y": 75.44,
+                "w": 42.76,
+                "h": 2.86
+              },
+              "portrait": {
+                "x": 7.5,
+                "y": 75.14,
+                "w": 85,
+                "h": 2.29
+              },
+              "story": {
+                "x": 7.5,
+                "y": 82.36,
+                "w": 85,
+                "h": 1.61
+              },
+              "landscape": {
+                "x": 3.94,
+                "y": 68.79,
+                "w": 47.15,
+                "h": 2.86
+              }
+            },
+            "children": [
+              {
+                "id": "e1-1",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 7.5,
+                    "y": 76.27,
+                    "w": 1.2,
+                    "h": 1.2
+                  },
+                  "portrait": {
+                    "x": 7.5,
+                    "y": 75.45,
+                    "w": 9.98,
+                    "h": 1.66
+                  },
+                  "story": {
+                    "x": 7.5,
+                    "y": 82.58,
+                    "w": 9.98,
+                    "h": 1.17
+                  },
+                  "landscape": {
+                    "x": 3.94,
+                    "y": 69.62,
+                    "w": 0.63,
+                    "h": 1.2
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "content": "LAST MET",
+                    "style": {
+                      "color": "var(--ck-pt)",
+                      "fontFamily": "'IBM Plex Mono',monospace",
+                      "fontSize": 1.6,
+                      "fontWeight": 600,
+                      "letterSpacing": 0.18,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "id": "e1-1-1",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 7.5,
+                        "y": 72.08,
+                        "w": 10.98,
+                        "h": 2.13
+                      },
+                      "portrait": {
+                        "x": 7.5,
+                        "y": 75.38,
+                        "w": 10.98,
+                        "h": 1.7
+                      },
+                      "story": {
+                        "x": 7.5,
+                        "y": 82.53,
+                        "w": 10.98,
+                        "h": 1.2
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "LAST MET",
+                    "style": {
+                      "color": "var(--ck-pt)",
+                      "fontFamily": "'IBM Plex Mono',monospace",
+                      "fontSize": 0.84,
+                      "fontWeight": 600,
+                      "letterSpacing": 0.18,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "id": "e1-1-2",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 3.94,
+                        "y": 65.52,
+                        "w": 6.24,
+                        "h": 2.06
+                      }
+                    }
+                  },
+                  {
+                    "kind": "shape",
+                    "style": {
+                      "fill": "var(--gold)"
+                    },
+                    "id": "e1-1-3",
+                    "geometry": {
+                      "square": {
+                        "x": 7.5,
+                        "y": 76.27,
+                        "w": 1.2,
+                        "h": 1.2
+                      },
+                      "portrait": {
+                        "x": 7.5,
+                        "y": 78.73,
+                        "w": 1.2,
+                        "h": 0.96
+                      },
+                      "story": {
+                        "x": 7.5,
+                        "y": 84.88,
+                        "w": 1.2,
+                        "h": 0.67
+                      },
+                      "landscape": {
+                        "x": 3.94,
+                        "y": 69.62,
+                        "w": 0.63,
+                        "h": 1.2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "e1-2",
+                "kind": "group",
+                "geometry": {
+                  "square": {
+                    "x": 9.7,
+                    "y": 75.44,
+                    "w": 40.56,
+                    "h": 2.86
+                  },
+                  "portrait": {
+                    "x": 18.48,
+                    "y": 75.14,
+                    "w": 74.02,
+                    "h": 2.29
+                  },
+                  "story": {
+                    "x": 18.48,
+                    "y": 82.36,
+                    "w": 74.02,
+                    "h": 1.61
+                  },
+                  "landscape": {
+                    "x": 5.09,
+                    "y": 68.79,
+                    "w": 46,
+                    "h": 2.86
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "text",
+                    "content": "{{lastMeeting}}",
+                    "style": {
+                      "color": "var(--ck-chalk)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 2.2,
+                      "fontWeight": 600,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-1",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 18.48,
+                        "y": 71.69,
+                        "w": 31.78,
+                        "h": 2.87
+                      },
+                      "portrait": {
+                        "x": 18.48,
+                        "y": 75.07,
+                        "w": 74.02,
+                        "h": 2.3
+                      },
+                      "story": {
+                        "x": 18.48,
+                        "y": 82.31,
+                        "w": 74.02,
+                        "h": 1.61
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{lastMeeting}}",
+                    "style": {
+                      "color": "var(--ck-chalk)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 1.16,
+                      "fontWeight": 600,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-2",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 9.7,
+                        "y": 65.13,
+                        "w": 41.38,
+                        "h": 2.86
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{milestoneWatch}}",
+                    "style": {
+                      "color": "var(--ck-chalk)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 2.2,
+                      "fontWeight": 600,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-3",
+                    "sizes": ["square", "portrait", "story"],
+                    "geometry": {
+                      "square": {
+                        "x": 9.7,
+                        "y": 75.35,
+                        "w": 40.56,
+                        "h": 2.87
+                      },
+                      "portrait": {
+                        "x": 9.7,
+                        "y": 78,
+                        "w": 82.8,
+                        "h": 2.3
+                      },
+                      "story": {
+                        "x": 9.7,
+                        "y": 84.36,
+                        "w": 82.8,
+                        "h": 1.61
+                      }
+                    }
+                  },
+                  {
+                    "kind": "text",
+                    "content": "{{milestoneWatch}}",
+                    "style": {
+                      "color": "var(--ck-chalk)",
+                      "fontFamily": "'IBM Plex Sans',sans-serif",
+                      "fontSize": 1.16,
+                      "fontWeight": 600,
+                      "align": "left",
+                      "lineHeight": 1.3
+                    },
+                    "fit": {
+                      "minScale": 1,
+                      "maxLines": 1,
+                      "ellipsis": true
+                    },
+                    "id": "e1-2-4",
+                    "sizes": ["landscape"],
+                    "geometry": {
+                      "landscape": {
+                        "x": 5.09,
+                        "y": 68.79,
+                        "w": 46,
+                        "h": 2.86
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    }
+  ]
+}

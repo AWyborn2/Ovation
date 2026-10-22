@@ -4,7 +4,7 @@
  * browser.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fitReportSummary, type TemplateFitReport } from "@workspace/scorecard/kind-templates";
 
@@ -47,7 +47,8 @@ export function readBundleTargets(root: string): FitTarget[] {
   if (!existsSync(dir)) return [];
   const out: FitTarget[] = [];
   const looks = readdirSync(dir)
-    .filter((name) => LOOK.test(name) && statSync(path.join(dir, name)).isDirectory())
+    // A look folder has a look.json; the element library's `elements/` doesn't.
+    .filter((name) => LOOK.test(name) && existsSync(path.join(dir, name, "look.json")))
     .sort();
   for (const look of looks) {
     const kinds = readdirSync(path.join(dir, look))
