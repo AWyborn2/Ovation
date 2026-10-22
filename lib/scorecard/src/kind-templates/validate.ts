@@ -26,6 +26,7 @@ import {
   COLOUR_TOKENS,
   DERIVED_PALETTES,
   FILTER_PRESETS,
+  MAX_CLIP_POINTS,
   FORMAT_VERSION,
   LAYER_KINDS_V2,
   MAX_BLUR_PX,
@@ -73,6 +74,10 @@ export const V2_RANGES = {
   grayscale: [0, 1],
   /** Blur filter, pixels at native card size. */
   blurPx: [0, MAX_BLUR_PX],
+  /** Brightness filter: 1 is unchanged. */
+  brightness: [0, 3],
+  /** A clip polygon's points, percent of the layer's box (a little outside allowed). */
+  clipPoint: [-100, 200],
   overlayOpacity: [0, 1],
   overlayScale: [0.1, 10],
   /** Line height, a multiple of the font size. */
@@ -131,6 +136,7 @@ const V2_STYLE_KEYS = new Set([
   "filter",
   "overlay",
   "lineHeight",
+  "clip",
 ]);
 const LAYER_KEYS = new Set([
   "id",
@@ -348,6 +354,9 @@ function checkFilters(errors: Errors, where: string, v: unknown): void {
     } else if (filter.preset === "blur") {
       knownKeys(errors, at, filter, new Set(["preset", "px"]));
       numberIn(errors, `${at}.px`, filter.px, ...V2_RANGES.blurPx);
+    } else if (filter.preset === "brightness") {
+      knownKeys(errors, at, filter, new Set(["preset", "amount"]));
+      numberIn(errors, `${at}.amount`, filter.amount, ...V2_RANGES.brightness);
     } else oneOf(errors, `${at}.preset`, filter.preset, FILTER_PRESETS);
   });
 }
@@ -397,7 +406,23 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
         inRange(errors, `${at}.scale`, value.scale, V2_RANGES.overlayScale);
       }
     } else if (k === "lineHeight") numberIn(errors, at, value, ...V2_RANGES.lineHeight);
+    else if (k === "clip") checkClip(errors, at, value);
   }
+}
+
+/** A clip: `{ polygon: [[x, y], …] }`, 3 to MAX_CLIP_POINTS points in percent of the box. */
+function checkClip(errors: Errors, where: string, v: unknown): void {
+  if (!isObject(v)) return void errors.push(`${where} must be { polygon }.`);
+  knownKeys(errors, where, v, new Set(["polygon"]));
+  const points = v.polygon;
+  if (!Array.isArray(points) || points.length < 3 || points.length > MAX_CLIP_POINTS)
+    return void errors.push(`${where}.polygon must be 3 to ${MAX_CLIP_POINTS} points.`);
+  points.forEach((p, i) => {
+    if (!Array.isArray(p) || p.length !== 2)
+      return void errors.push(`${where}.polygon[${i}] must be [x, y].`);
+    numberIn(errors, `${where}.polygon[${i}][0]`, p[0], ...V2_RANGES.clipPoint);
+    numberIn(errors, `${where}.polygon[${i}][1]`, p[1], ...V2_RANGES.clipPoint);
+  });
 }
 
 function checkBox(errors: Errors, where: string, v: unknown): void {

@@ -540,8 +540,8 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
         results: compareResults(files),
         validation,
         rendererNote:
-          "Pixel match reflects the v2 renderer as it stands: until L1-C (stacks, conditions) and L1-D " +
-          "(fills, borders, shadows, vectors, motion) land, styled shapes and vectors don't draw, so scores are low.",
+          "Pixel match compares the pack and the converted page drawing the same sample input; " +
+          "sample photos and logos are grey placeholders in both.",
       })}\n`,
     );
     const pages = conversions.reduce((n, c) => n + c.pages.length, 0);

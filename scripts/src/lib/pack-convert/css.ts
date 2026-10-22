@@ -229,6 +229,49 @@ export function px(value: string | undefined): number {
 /** Round to 2 decimal places (percent and em values in a document). */
 export const r2 = (n: number) => Math.round(n * 100) / 100;
 
+/** A length in px against `size`: `Npx`, `N%`, a bare number, or `calc()` of those added and subtracted. */
+function lengthPx(value: string, size: number): number | null {
+  const t = value.trim();
+  if (/^-?[\d.]+px$/.test(t)) return parseFloat(t);
+  if (/^-?[\d.]+%$/.test(t)) return (parseFloat(t) / 100) * size;
+  if (/^-?[\d.]+$/.test(t)) return parseFloat(t);
+  const calc = /^calc\((.*)\)$/s.exec(t);
+  if (!calc) return null;
+  const terms = calc[1]!.trim().split(/\s+([+-])\s+/);
+  let total = lengthPx(terms[0]!, size);
+  for (let i = 1; total !== null && i < terms.length; i += 2) {
+    const term = lengthPx(terms[i + 1] ?? "", size);
+    total = term === null ? null : terms[i] === "+" ? total + term : total - term;
+  }
+  return total;
+}
+
+/**
+ * A CSS `clip-path: polygon(…)` as points in percent of a `w` × `h` box
+ * (px, percentages and `calc()` resolved against the box), or null for any
+ * other shape or a value it can't read.
+ */
+export function parseClipPolygon(
+  value: string | undefined,
+  w: number,
+  h: number,
+): Array<[number, number]> | null {
+  if (!value || !(w > 0) || !(h > 0)) return null;
+  const m = /^polygon\((.*)\)$/s.exec(value.trim());
+  if (!m) return null;
+  const body = m[1]!.trim().replace(/^(?:nonzero|evenodd)\s*,\s*/i, "");
+  const out: Array<[number, number]> = [];
+  for (const point of splitTopLevel(body)) {
+    const coords = splitTopLevel(point, " ");
+    if (coords.length !== 2) return null;
+    const x = lengthPx(coords[0]!, w);
+    const y = lengthPx(coords[1]!, h);
+    if (x === null || y === null) return null;
+    out.push([r2((x / w) * 100), r2((y / h) * 100)]);
+  }
+  return out.length >= 3 ? out : null;
+}
+
 /** A 2D CSS matrix (`matrix(a, b, c, d, e, f)`), or null for none / 3D. */
 export function parseMatrix(value: string | undefined): number[] | null {
   const m = /^matrix\(([^)]*)\)$/.exec((value ?? "").trim());

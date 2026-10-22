@@ -172,6 +172,8 @@ function filterCss(filters: TemplateFilter[] | undefined, ctx: StyleContext): st
       parts.push(`grayscale(${+clamp(num(f.amount, 1), 0, 1).toFixed(3)})`);
     else if (f.preset === "blur")
       parts.push(`blur(${+clamp(num(f.px), 0, MAX_BLUR_PX).toFixed(2)}px)`);
+    else if (f.preset === "brightness")
+      parts.push(`brightness(${+clamp(num(f.amount, 1), 0, 3).toFixed(3)})`);
     else if (f.preset === "duotone") {
       const packMap =
         ctx.duotone &&
@@ -257,7 +259,24 @@ export function layerBoxCss(layer: TemplateLayerV2, ctx: StyleContext): string[]
     out.push(`mix-blend-mode:${s.blend}`);
   const filter = filterCss(s.filter, ctx);
   if (filter) out.push(`filter:${filter}`);
+  const clip = clipCss(s.clip);
+  if (clip) out.push(`clip-path:${clip}`);
   return out;
+}
+
+/** A clip polygon as CSS `polygon()`, points in percent of the box; null when it isn't one. */
+export function clipCss(clip: TemplateStyleV2["clip"]): string | null {
+  const points = clip && Array.isArray(clip.polygon) ? clip.polygon : null;
+  if (!points || points.length < 3) return null;
+  const parts: string[] = [];
+  for (const p of points.slice(0, 32)) {
+    if (!Array.isArray(p)) return null;
+    const x = num(p[0], NaN);
+    const y = num(p[1], NaN);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    parts.push(`${+clamp(x, -100, 200).toFixed(3)}% ${+clamp(y, -100, 200).toFixed(3)}%`);
+  }
+  return `polygon(${parts.join(", ")})`;
 }
 
 /** A v2 shape's paint: its fill, else v1's background (null keeps the v1 rule). */

@@ -293,3 +293,129 @@ describe("text fill over a taller box", () => {
     expect(fillOverBox(style, { y: 0, h: 100 }, { y: 0, h: 100 })).toBe(style);
   });
 });
+
+describe("clips, layered backgrounds and brightness", () => {
+  const cap = capture();
+  const band = el(0, "div", [0, 800, 1080, 200], {
+    size: { w: 1080, h: 200 },
+    style: {
+      "background-color": "rgb(211, 23, 90)",
+      "clip-path": "polygon(160px 0px, 100% 0px, 100% 100%, 0px calc(100% - 50px))",
+    },
+  });
+  const stage = el(0, "div", [0, 0, 1080, 400], {
+    style: {
+      "background-color": "rgb(14, 43, 81)",
+      "background-image":
+        "linear-gradient(rgba(0, 0, 0, 0.5), rgb(0, 0, 0)), radial-gradient(circle at 50% 0%, rgb(211, 23, 90), rgb(14, 43, 81))",
+    },
+  });
+  const wrap = el(0, "div", [100, 100, 300, 300], { style: { filter: "brightness(50%)" } });
+  const pic = el(wrap.id, "img", [100, 100, 300, 300], {
+    src: "sentinel:photo",
+    style: { filter: "brightness(0.6)" },
+  });
+  // A photo inside the band, the lower half of it: the band's clip cuts it too.
+  const inner = el(band.id, "img", [0, 900, 1080, 100], { src: "sentinel:photo" });
+  cap.elements.push(band, inner, stage, wrap, pic);
+  const result = mapCapture(cap);
+  const of = (e: CapturedElement) => result.layers.filter((l) => l.element === e.id);
+
+  it("cuts a clipped box to its polygon, in percent of the box", () => {
+    const [shape] = of(band);
+    expect(shape!.layer).toMatchObject({
+      kind: "shape",
+      style: {
+        clip: {
+          polygon: [
+            [14.81, 0],
+            [100, 0],
+            [100, 100],
+            [0, 75],
+          ],
+        },
+      },
+    });
+    expect(result.polish.some((p) => p.element === band.id && /clip-path/.test(p.what))).toBe(
+      false,
+    );
+  });
+
+  it("cuts a layer inside a clipped box to the box's polygon, in the layer's own percent", () => {
+    const [photo] = of(inner);
+    const clip = (photo!.layer as { style?: { clip?: { polygon: number[][] } } }).style?.clip;
+    const want = [
+      [14.81, -100],
+      [100, -100],
+      [100, 100],
+      [0, 50],
+    ];
+    // Within the rounding of the layer's box (percent of the card, two places).
+    clip!.polygon.flat().forEach((v, i) => expect(v).toBeCloseTo(want.flat()[i]!, 0));
+  });
+
+  it("keeps every background layer, bottom first, the top one on the box", () => {
+    const layers = of(stage).map((l) => (l.layer as { style: { fill: unknown } }).style.fill);
+    expect(layers).toHaveLength(3);
+    expect(typeof layers[0]).toBe("string"); // the background colour, at the bottom
+    expect(layers[1]).toMatchObject({ type: "radial" });
+    expect(layers[2]).toMatchObject({ type: "linear" });
+    expect(result.polish.some((p) => /layered backgrounds/.test(p.what))).toBe(false);
+  });
+
+  it("maps brightness, nested filters multiplied", () => {
+    const photo = result.layers.find((l) => l.layer.kind === "photo" && l.element === pic.id)!;
+    expect((photo.layer as { style?: { filter?: unknown } }).style?.filter).toEqual([
+      { preset: "brightness", amount: 0.3 },
+    ]);
+  });
+});
+
+describe("paint order", () => {
+  it("paints a z-index: 1 header over art after it in the document, as CSS does", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1920], {
+      className: "pack-card-root",
+      style: { "background-color": "rgb(14, 43, 81)" },
+    });
+    const header = el(0, "div", [0, 0, 1080, 120], {
+      style: { position: "relative", "z-index": "1", "background-color": "rgb(211, 23, 90)" },
+    });
+    const title = el(header.id, "div", [60, 30, 600, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 30, 400, 60]),
+    });
+    const art = el(0, "div", [0, 0, 1080, 1200], {
+      style: { position: "absolute", "background-color": "rgb(30, 90, 170)" },
+    });
+    // z-index on a static element outside a flex container does nothing.
+    const plain = el(0, "div", [0, 1300, 1080, 100], {
+      style: { "z-index": "5", "background-color": "rgb(240, 240, 240)" },
+    });
+    const cap = capture();
+    cap.elements = [root, header, title, art, plain];
+    const order = mapCapture(cap).layers.map((l) => l.element);
+    expect(order).toEqual([root.id, art.id, plain.id, header.id, title.id]);
+  });
+});
+
+describe("text width", () => {
+  it("keeps the pack's width for text that wraps, and adds room to one line", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const wrapped = el(0, "div", [60, 100, 900, 240], {
+      style: TEXT,
+      text: [{ text: "[[headline]]", box: { x: 60, y: 100, w: 880, h: 240 }, lines: 2 }],
+    });
+    const single = el(0, "div", [60, 500, 900, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 500, 600, 60]),
+    });
+    const cap = capture();
+    cap.elements = [root, wrapped, single];
+    const boxOf = (e: CapturedElement) =>
+      mapCapture(cap).layers.find((l) => l.element === e.id)!.box;
+    expect(boxOf(wrapped).w).toBeCloseTo(((900 + 1) / 1080) * 100, 1);
+    expect(boxOf(single).w).toBeGreaterThan((900 / 1080) * 100 + 1);
+  });
+});
