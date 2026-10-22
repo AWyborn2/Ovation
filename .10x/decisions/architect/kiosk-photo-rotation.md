@@ -72,3 +72,6 @@ grade) — kept in junior tables, not merged into `club_photos`.
 
 ## One-way doors
 `junior_photo_participants` and dropping `junior_photos.participant_id` (do the drop later).
+
+## Sequencing (22 Oct 2026)
+honours-kiosk-redesign (`honours-kiosk-redesign.md`) comes before the slideshow settings UI; the junior library can proceed in parallel.
