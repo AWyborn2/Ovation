@@ -33,7 +33,7 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
-import { FIT_ATTR, FIT_TEXT_ATTR, textFitAttrs } from "./layer-fit";
+import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import {
   groupDepthAllowed,
@@ -457,9 +457,11 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
       }
       // Cells stay on one line so an overflow shows as width, which the fit
-      // step shrinks and, failing that, reports (KTD9).
+      // step shrinks and, failing that, reports (KTD9). In format v2 it then
+      // ends the text in "…" after its last whole word that fits.
       const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
-      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
+      const words = ctx.formatVersion === 2 ? ` ${FIT_WORDS_ATTR}="1"` : "";
+      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}"${words} style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
     // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
     const acrossFirst = spec.flow === "across";

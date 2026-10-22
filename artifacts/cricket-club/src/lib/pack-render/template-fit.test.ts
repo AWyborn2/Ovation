@@ -151,6 +151,47 @@ describe("runTemplateFit", () => {
     const report = await runTemplateFit(tooSmall, "ladder", mountRecorder().mount);
     expect(report.issues.filter((i) => i.reason === "rows-capacity")).toHaveLength(4);
   });
+
+  it("passes a list cell that ends in … after a whole word, and fails one cut mid-word", async () => {
+    const ladder = doc({
+      card: {
+        layers: [
+          {
+            id: "table",
+            kind: "rows",
+            geometry: at(5, 20, 90, 70),
+            rows: { repeat: "rows", rowHeight: 6, cells: [{ field: "team", x: 0, w: 60 }] },
+          },
+        ],
+      },
+    });
+    // Up to `room` characters fit a cell at any scale; more overflow.
+    const measured =
+      (room: number): FitMount =>
+      async (...args) => {
+        const out = await mountRecorder().mount(...args);
+        for (const el of Array.from(out.root.querySelectorAll<HTMLElement>("[data-layer-fit]"))) {
+          Object.defineProperty(el, "clientWidth", { configurable: true, get: () => 100 });
+          Object.defineProperty(el, "clientHeight", { configurable: true, get: () => 20 });
+          Object.defineProperty(el, "scrollHeight", { configurable: true, get: () => 20 });
+          Object.defineProperty(el, "scrollWidth", {
+            configurable: true,
+            get: () => ((el.textContent ?? "").length > room ? 200 : 100),
+          });
+        }
+        return out;
+      };
+    const overflow = async (room: number) =>
+      (await runTemplateFit(ladder, "ladder", measured(room))).issues.filter(
+        (i) => i.reason === "overflow",
+      );
+    // Worst-case team names end after a whole word ("North Suburban…").
+    expect(await overflow(16)).toEqual([]);
+    // Too narrow for any first word: every name is cut mid-word, and fails.
+    const narrow = await overflow(4);
+    expect(narrow.length).toBeGreaterThan(0);
+    expect(narrow.every((i) => i.field === "team" && i.detail === "cut mid-word")).toBe(true);
+  });
 });
 
 describe("checkFitInDom", () => {
