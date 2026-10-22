@@ -17,7 +17,11 @@ import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { hashPassword } from "../lib/auth";
 import { syncBundles } from "../lib/template-library/bundles";
-import { fixtureBundle, fixtureTemplate } from "../lib/template-library/bundles.test-helpers";
+import {
+  fixtureBundle,
+  fixtureTemplate,
+  v2Document,
+} from "../lib/template-library/bundles.test-helpers";
 import { registerFitRunner, writeFitResult, type FitTarget } from "../lib/template-library/fit";
 import { listLibraryTemplates } from "../lib/template-library/store";
 
@@ -171,6 +175,12 @@ describe("console library: making templates", () => {
       .from(libraryTemplateVersionsTable)
       .where(eq(libraryTemplateVersionsTable.templateId, res.body.id));
     expect(v!.createdByAdminId).toBe(platformAdminId);
+  });
+
+  it("creates a format v2 template with every page it designs", async () => {
+    const res = await create({ kind: "matchDay", document: v2Document("matchDay", ["title"]) });
+    expect(res.status).toBe(201);
+    expect(res.body.coverage.pages).toEqual(expect.arrayContaining(["fixture", "title"]));
   });
 
   it("refuses an unknown kind, an invalid document and outside images", async () => {

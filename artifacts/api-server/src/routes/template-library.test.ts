@@ -21,7 +21,11 @@ import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { ensureKindTemplate } from "../lib/kind-templates";
 import { syncBundles } from "../lib/template-library/bundles";
-import { fixtureBundle, fixtureTemplate } from "../lib/template-library/bundles.test-helpers";
+import {
+  fixtureBundle,
+  fixtureTemplate,
+  v2Document,
+} from "../lib/template-library/bundles.test-helpers";
 
 const STAMP = Date.now();
 const LOOK = `rt-${STAMP}`;
@@ -234,6 +238,29 @@ describe("club templates", () => {
       document: { layers: "no" },
     });
     expect(bad.status).toBe(400);
+  });
+
+  it("saves a format v2 document, and refuses one the v2 rules don't allow (T3.6, L1-B)", async () => {
+    const created = await me().post("/club-templates", {
+      libraryTemplateId: libIds[`${LOOK}/matchDay`],
+    });
+    const id = created.body.id;
+    const saved = await me().put(`/club-templates/${id}`, {
+      baseVersion: 1,
+      document: v2Document("matchDay", ["title"]),
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.coverage.pages).toEqual(expect.arrayContaining(["fixture", "title"]));
+    const doc = v2Document("matchDay") as { pages: { fixture: { layers: object[] } } };
+    doc.pages.fixture.layers[0] = { ...doc.pages.fixture.layers[0], showWhen: { field: "nope" } };
+    const bad = await me().put(`/club-templates/${id}`, { baseVersion: 2, document: doc });
+    expect(bad.status).toBe(400);
+    expect(bad.body.problems).toEqual([expect.stringMatching(/showWhen\.field/)]);
+    const notAPage = await me().put(`/club-templates/${id}`, {
+      baseVersion: 2,
+      document: { formatVersion: 2, pages: { card: { layers: [] } } },
+    });
+    expect(notAPage.status).toBe(400);
   });
 
   it("duplicates, refuses to delete a default, and deletes the rest", async () => {
