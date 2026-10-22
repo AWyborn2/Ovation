@@ -98,6 +98,8 @@ export type FreeLayer = {
   locked?: boolean;
   /** Layers sharing a group id select and move together. */
   group?: string;
+  /** Layers sharing a link are one element drawn per size (format v2, Stream C). */
+  link?: string;
   /**
    * Text for `text` and `sticker`; image url for `image`; the milestone
    * (e.g. "100") for `medal`; unused for `shape` and `chart`.

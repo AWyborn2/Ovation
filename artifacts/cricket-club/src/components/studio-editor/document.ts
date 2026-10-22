@@ -30,6 +30,67 @@ function mapLayers(doc: EditorDoc, fn: (l: FreeLayer) => FreeLayer | null): Edit
   return { ...doc, layers };
 }
 
+/** A group's child layers (format v2); none for any other layer. */
+export const childrenOf = (l: FreeLayer): FreeLayer[] =>
+  (l as FreeLayer & { children?: FreeLayer[] }).children ?? [];
+
+/**
+ * A layer with its box at `size` set to `to`. A group's children are in
+ * artboard coordinates, so they are moved and scaled with it (at every depth)
+ * from where the group was, or they would stay behind when it moves.
+ */
+export function placeBox(
+  layer: FreeLayer,
+  size: CardSize,
+  to: LayerBox,
+  now = Date.now(),
+): FreeLayer {
+  const next: FreeLayer = {
+    ...layer,
+    geometry: { ...layer.geometry, [size]: to },
+    editedAt: { ...layer.editedAt, [size]: now },
+  };
+  const from = boxOf(layer, size);
+  const kids = childrenOf(layer);
+  if (!from || !kids.length) return next;
+  const sx = from.w > 0 ? to.w / from.w : 1;
+  const sy = from.h > 0 ? to.h / from.h : 1;
+  const children = kids.map((c) => {
+    const b = boxOf(c, size);
+    if (!b) return c;
+    return placeBox(
+      c,
+      size,
+      {
+        ...b,
+        x: to.x + (b.x - from.x) * sx,
+        y: to.y + (b.y - from.y) * sy,
+        w: b.w * sx,
+        h: b.h * sy,
+      },
+      now,
+    );
+  });
+  return { ...next, children } as FreeLayer;
+}
+
+/**
+ * A copy of a layer with new ids for it and, in a group, every layer inside
+ * it. Links are re-keyed through `links`, so copies made together stay linked
+ * to each other and never to the originals.
+ */
+export function withNewIds(layer: FreeLayer, links = new Map<string, string>()): FreeLayer {
+  const kids = childrenOf(layer);
+  const copy: FreeLayer = { ...layer, id: newId() };
+  if (layer.link) {
+    copy.link = links.get(layer.link) ?? newId("k");
+    links.set(layer.link, copy.link);
+  }
+  return kids.length
+    ? ({ ...copy, children: kids.map((k) => withNewIds(k, links)) } as FreeLayer)
+    : copy;
+}
+
 /** Set boxes for some layers at `size` (other formats untouched). */
 export function setBoxes(
   doc: EditorDoc,
@@ -37,15 +98,7 @@ export function setBoxes(
   boxes: Record<string, LayerBox>,
   now = Date.now(),
 ): EditorDoc {
-  return mapLayers(doc, (l) =>
-    boxes[l.id]
-      ? {
-          ...l,
-          geometry: { ...l.geometry, [size]: boxes[l.id] },
-          editedAt: { ...l.editedAt, [size]: now },
-        }
-      : l,
-  );
+  return mapLayers(doc, (l) => (boxes[l.id] ? placeBox(l, size, boxes[l.id], now) : l));
 }
 
 /** Move layers by (dx, dy) percent at `size`, keeping each box on the page. */
@@ -144,17 +197,18 @@ export function duplicate(
 ): { doc: EditorDoc; ids: string[] } {
   const copies: FreeLayer[] = [];
   const groupMap = new Map<string, string>();
+  const links = new Map<string, string>();
   for (const l of layersOf(doc)) {
     if (!ids.includes(l.id)) continue;
     const b = boxOf(l, size);
     const group = l.group ? (groupMap.get(l.group) ?? newId("g")) : undefined;
     if (l.group && group) groupMap.set(l.group, group);
+    const copy: FreeLayer = { ...withNewIds(structuredClone(l), links), group, locked: false };
+    // A group's children move with it, so the copy's contents sit inside the copy.
+    const placed = b ? placeBox(copy, size, { ...b, x: b.x + 2, y: b.y + 2 }) : copy;
     copies.push({
-      ...structuredClone(l),
-      id: newId(),
-      group,
-      locked: false,
-      geometry: b ? { [size]: { ...b, x: b.x + 2, y: b.y + 2 } } : {},
+      ...placed,
+      geometry: b ? { [size]: placed.geometry[size]! } : {},
       editedAt: { [size]: Date.now() },
     });
   }

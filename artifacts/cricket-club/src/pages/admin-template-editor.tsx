@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ChevronRight,
   Database,
   Layers3,
   Monitor,
@@ -25,6 +26,7 @@ import {
   CONTENT_PRESETS,
   isContentKind,
   kindFields,
+  MAX_STACK_DEPTH,
   planTemplateSlides,
   primaryPage,
   type ContentPreset,
@@ -62,6 +64,7 @@ import {
   type History,
 } from "@/components/studio-editor/history";
 import {
+  boxOf,
   duplicate,
   group as groupLayers,
   layersOf,
@@ -89,6 +92,7 @@ import {
 } from "@/components/studio-editor/template-ops";
 import {
   asAdjustments,
+  depthOf,
   editorPages,
   findLayer,
   makeStack,
@@ -120,6 +124,16 @@ import {
   writeClipboard,
 } from "@/components/studio-editor/clipboard";
 import { isImageRowField } from "@/components/studio-editor/rows-panel";
+import {
+  isContainer,
+  isStack,
+  parentOf,
+  scopeDoc,
+  scopeInStack,
+  scopeLayer,
+  scopePath,
+  withScope,
+} from "@/components/studio-editor/scope";
 import { actionForKey, isTypingTarget } from "@/components/studio-editor/shortcuts";
 import {
   BLANK_PACK_ID,
@@ -146,6 +160,10 @@ const RAIL: RailItem[] = [
 ];
 
 const TEMPLATES = "/admin/social/template-library";
+
+/** The whole template with one level of one page (the page, or a group in it) replaced. */
+const withLevel = (present: TemplateDoc, page: PageKey, scope: string | null, next: EditorDoc) =>
+  withPage(present, page, withScope(pageDoc(present, page), scope, next));
 
 export function useViewport(): { w: number; h: number } {
   const read = () =>
@@ -361,7 +379,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const pages = editorPages(kind);
   const [page, setPage] = useState<PageKey>(primaryPage(kind));
   const [preset, setPreset] = useState<ContentPreset>("standard");
-  const doc = pageDoc(full, page);
+  const pageFull = pageDoc(full, page);
+  // The level being edited: the page, or a group entered by double-click (A2).
+  const [scope, setScope] = useState<string | null>(null);
+  const doc = scopeDoc(pageFull, scope);
+  const scopeGroup = scopeLayer(pageFull, scope);
+  useEffect(() => {
+    if (scope && !scopeGroup) setScope(null);
+  }, [scope, scopeGroup]);
 
   const [format, setFormat] = useState<CardSize>("square");
   const [selection, setSelection] = useState<string[]>([]);
@@ -385,11 +410,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
 
   // Load the faces the page uses, and note any that fail (KTD17).
   const fontKey = JSON.stringify(
-    layersOf(doc).map((l) => [l.style?.fontFamily, l.style?.fontWeight, l.rows?.cells]),
+    layersOf(pageFull).map((l) => [l.style?.fontFamily, l.style?.fontWeight, l.rows?.cells]),
   );
   useEffect(() => {
     let live = true;
-    ensureDocumentFonts(doc).then((failed) => live && setFontFailures(failed));
+    ensureDocumentFonts(pageFull).then((failed) => live && setFontFailures(failed));
     return () => {
       live = false;
     };
@@ -412,7 +437,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   // Lists spill onto extra slides by capacity; the editor shows the first.
   const plan = planTemplateSlides(
     sourceInput as unknown as Record<string, unknown>,
-    doc as LayerDocument,
+    pageFull as LayerDocument,
     format,
   );
   const input = pageInput(
@@ -423,16 +448,25 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const values = packFieldValues(input, data, BLANK_PACK_ID);
 
   // Every edit is to the page on show; the whole document is what history keeps.
+  // Inside a group, `doc` is its children: an edit is written back into the group.
   const pageRef = useRef(page);
   pageRef.current = page;
-  const edit = useCallback((next: EditorDoc) => {
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const editPage = useCallback((next: EditorDoc) => {
     setHistory((h) => commit(h, withPage(h.present, pageRef.current, next)));
     setAddPrompt(null);
     setPasteNote(null);
     setStackNote(null);
   }, []);
+  const edit = useCallback((next: EditorDoc) => {
+    setHistory((h) => commit(h, withLevel(h.present, pageRef.current, scopeRef.current, next)));
+    setAddPrompt(null);
+    setPasteNote(null);
+    setStackNote(null);
+  }, []);
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
-    const nextFull = withPage(history.present, page, next);
+    const nextFull = withLevel(history.present, page, scope, next);
     if (!done) {
       if (!gestureBase.current) gestureBase.current = history.present;
       setHistory((h) => replace(h, nextFull));
@@ -441,9 +475,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     const base = gestureBase.current;
     gestureBase.current = null;
     if (base) {
-      setHistory((h) => commitFrom(h, base, withPage(h.present, page, next)));
+      setHistory((h) => commitFrom(h, base, withLevel(h.present, page, scope, next)));
       setAddPrompt(null);
     }
+  };
+  /** Edit inside `group` (null: the page), selecting `ids` there. */
+  const enterScope = (group: string | null, ids: string[] = []) => {
+    setScope(group);
+    setInside(null);
+    setSelection(ids);
   };
 
   const layers = layersOnSize(doc, format);
@@ -456,24 +496,25 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const isGroup =
     selected.length > 1 && selected.every((l) => l.group && l.group === selected[0].group);
 
+  // A new element goes on the page itself, so adding one leaves a group being edited.
   const addTemplateLayers = (added: FreeLayer[]) => {
     const placed = added.map((l) => onlyOnSize(l, format));
-    edit({ ...doc, layers: [...layersOf(doc), ...placed] });
-    setSelection(placed.map((l) => l.id));
+    editPage({ ...pageFull, layers: [...layersOf(pageFull), ...placed] });
+    enterScope(
+      null,
+      placed.map((l) => l.id),
+    );
     setAddPrompt({ ids: placed.map((l) => l.id), from: format });
   };
   const acceptAddPrompt = () => {
     if (!addPrompt) return;
-    setHistory((h) =>
-      replace(
+    setHistory((h) => {
+      const level = scopeDoc(pageDoc(h.present, page), scope);
+      return replace(
         h,
-        withPage(
-          h.present,
-          page,
-          addToOtherSizes(pageDoc(h.present, page), addPrompt.ids, addPrompt.from),
-        ),
-      ),
-    );
+        withLevel(h.present, page, scope, addToOtherSizes(level, addPrompt.ids, addPrompt.from)),
+      );
+    });
     setAddPrompt(null);
   };
 
@@ -483,8 +524,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   };
 
   const canvasArea = useRef<HTMLElement>(null);
-  const stateRef = useRef({ doc, selection, format, inside });
-  stateRef.current = { doc, selection, format, inside };
+  const stateRef = useRef({ doc, pageFull, scope, selection, format, inside });
+  stateRef.current = { doc, pageFull, scope, selection, format, inside };
   const copySelection = () => {
     const s = stateRef.current;
     const clip = copyLayers(s.doc, s.format, s.selection, "template");
@@ -535,10 +576,17 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           }
           break;
         case "escape":
+          setAddPrompt(null);
+          // Inside a group, Esc goes up a level with the group selected.
+          if (s.scope) {
+            setScope(parentOf(s.pageFull, s.scope));
+            setSelection([s.scope]);
+            setInside(null);
+            break;
+          }
           setSelection([]);
           setInside(null);
           setLayersOpen(false);
-          setAddPrompt(null);
           break;
         case "nudge":
           if (s.selection.length) edit(nudge(s.doc, s.format, s.selection, action.dx, action.dy));
@@ -624,7 +672,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     setBaseVersion(t.version);
     setCurrent(t);
     setConflict(null);
-    setSelection([]);
+    enterScope(null);
   };
 
   const onLayout = useCallback((next: LayoutWarning[]) => {
@@ -636,15 +684,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     ...fontFailures.map((f) => ({ reason: "font" as const, size: format, detail: f })),
   ];
   const layerName = (lid: string | undefined) =>
-    layersOf(doc).find((l) => l.id === lid)?.name ?? "a text box";
+    (lid ? findLayer(pageFull, lid)?.layer.name : undefined) ?? "a text box";
   const keyField = keyFieldOf(kind);
   const listPhotoField = (kindFields(kind)?.repeats ?? []).some((r) =>
     r.fields.some((f) => isImageRowField(f.key)),
   );
+  const path = scopePath(pageFull, scope);
 
   const stackSelection = () => {
     const r = makeStack(doc, selection, format);
-    if (!r) {
+    // Inside a group the new stack sits that many levels deeper.
+    const made = r ? findLayer(r.doc, r.id)?.layer : null;
+    if (!r || (made && depthOf(made) + path.length > MAX_STACK_DEPTH)) {
       setStackNote("Those layers can't go in a stack: stacks nest at most four deep.");
       return;
     }
@@ -676,7 +727,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           setAddPrompt(null);
         }}
         inheritedFormats={[]}
-        formatLabel={(f) => (layersOnSize(doc, f).length === 0 ? " · empty" : "")}
+        formatLabel={(f) => (layersOnSize(pageFull, f).length === 0 ? " · empty" : "")}
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}
         onUndo={() => {
@@ -702,7 +753,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                   value={page}
                   onChange={(e) => {
                     setPage(e.target.value as PageKey);
-                    setSelection([]);
+                    enterScope(null);
                     setAddPrompt(null);
                   }}
                 >
@@ -919,6 +970,43 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             </div>
           )}
 
+          {scopeGroup && (
+            <nav
+              aria-label="Editing inside"
+              className="mb-3 flex max-w-full flex-wrap items-center gap-1 text-xs text-[var(--ed-ink2)]"
+            >
+              <button
+                type="button"
+                className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                onClick={() => enterScope(null, [path[0]!.id])}
+              >
+                {PAGE_LABEL[page]}
+              </button>
+              {path.map((g, i) => (
+                <span key={g.id} className="flex items-center gap-1">
+                  <ChevronRight className="h-3 w-3" aria-hidden />
+                  {i < path.length - 1 ? (
+                    <button
+                      type="button"
+                      className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
+                      onClick={() => enterScope(g.id, [path[i + 1]!.id])}
+                    >
+                      {g.name ?? (isStack(g) ? "Stack" : "Group")}
+                    </button>
+                  ) : (
+                    <span
+                      aria-current="location"
+                      className="px-1.5 font-semibold text-[var(--ed-ink)]"
+                    >
+                      {g.name ?? (isStack(g) ? "Stack" : "Group")}
+                    </span>
+                  )}
+                </span>
+              ))}
+              <span className="ml-2">Esc goes up a level.</span>
+            </nav>
+          )}
+
           <EditorCanvas
             key={`play-${playing}`}
             doc={doc}
@@ -932,20 +1020,28 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             packId={BLANK_PACK_ID}
             selection={selection}
             onSelect={(lid) => {
-              if (lid === null) {
-                setSelection([]);
-                setInside(null);
-              } else setSelection(selectionFor(doc, lid, inside));
+              // A click off every layer clears the selection and leaves a group.
+              if (lid === null) enterScope(null);
+              else setSelection(selectionFor(doc, lid, inside));
             }}
             onToggle={(lid) => setSelection((s) => toggleSelection(doc, s, lid, inside))}
             marqueeArea={canvasArea}
             onSelectMany={(ids, additive) =>
               setSelection((s) => selectMany(doc, s, ids, inside, additive))
             }
-            onEnterGroup={(lid) => {
-              setInside(layers.find((l) => l.id === lid)?.group ?? null);
+            onEnterGroup={(lid, child) => {
+              const l = layers.find((x) => x.id === lid);
+              if (l && isContainer(l)) {
+                enterScope(lid, child ? [child] : []);
+                return;
+              }
+              setInside(l?.group ?? null);
               setSelection([lid]);
             }}
+            scopeId={scopeGroup?.id ?? null}
+            scopeBox={scopeGroup ? boxOf(scopeGroup as FreeLayer, format) : null}
+            measure={scopeInStack(pageFull, scope)}
+            fixed={isStack(scopeGroup)}
             onChange={onCanvasChange}
             onLayout={onLayout}
             touch
@@ -1009,7 +1105,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 ))}
               </ul>
             )}
-            {page === primaryPage(kind) && keyField && !showsKeyField(doc, kind) && (
+            {page === primaryPage(kind) && keyField && !showsKeyField(pageFull, kind) && (
               <p role="status" className="flex items-center gap-2 text-amber-300">
                 <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
                 This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
@@ -1049,24 +1145,31 @@ export function TemplateEditorV2<T extends EditorTemplate>({
 
           {layersOpen && (
             <LayersDrawer
-              layers={layers}
+              layers={layersOnSize(pageFull, format)}
+              size={format}
+              scope={scope}
               selection={selection}
-              onSelect={(ids, mode) =>
+              onSelect={(ids, mode, parent) => {
+                // A row in another group goes inside that group first.
+                if (parent !== scope) {
+                  enterScope(parent, ids);
+                  return;
+                }
                 setSelection((s) =>
                   mode === "replace"
                     ? ids
                     : mode === "toggle"
                       ? toggleSelection(doc, s, ids[0], inside)
                       : [...new Set([...s, ...ids])],
-                )
-              }
+                );
+              }}
               onToggleHidden={(lid) => {
-                const l = layers.find((x) => x.id === lid);
-                if (l) edit(updateLayer(doc, lid, { hidden: !l.hidden }));
+                const l = findLayer(pageFull, lid)?.layer;
+                if (l) editPage(updateDeep(pageFull, lid, { hidden: !l.hidden }));
               }}
               onToggleLocked={(lid) => {
-                const l = layers.find((x) => x.id === lid);
-                if (l) edit(updateLayer(doc, lid, { locked: !l.locked }));
+                const l = findLayer(pageFull, lid)?.layer;
+                if (l) editPage(updateDeep(pageFull, lid, { locked: !l.locked }));
               }}
               onClose={() => setLayersOpen(false)}
             />

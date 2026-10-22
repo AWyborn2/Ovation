@@ -9,7 +9,7 @@ import path from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
-import { layerOnSize } from "@workspace/scorecard/kind-templates";
+import { layerOnSize, primaryPage } from "@workspace/scorecard/kind-templates";
 import AdminTemplateEditor from "@/pages/admin-template-editor";
 import type { FreeLayer } from "@/lib/pack-render";
 import { renderAt } from "@/test/render";
@@ -77,7 +77,7 @@ describe("layers drawer", () => {
     expect(screen.getByRole("button", { name: "Hide Graphic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Hide Group" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Lock Score block" })).toBeTruthy();
-    const icons = [...document.querySelectorAll("li > button:first-child > svg")].map((s) =>
+    const icons = [...document.querySelectorAll("li button[aria-pressed] > svg")].map((s) =>
       s.getAttribute("class"),
     );
     expect(icons[0]).toMatch(/lucide-group/);
@@ -93,19 +93,19 @@ describe("layers drawer", () => {
       },
     ]);
     expect(screen.getByRole("button", { name: "Hide hologram" })).toBeTruthy();
-    expect(document.querySelector("li > button:first-child > svg")?.getAttribute("class")).toMatch(
+    expect(document.querySelector("li button[aria-pressed] > svg")?.getAttribute("class")).toMatch(
       /lucide-square/,
     );
   });
 
-  // Gold Foil keeps its stripes as vectors (C1 made Broadcast Dark's slashes native shapes).
-  it("opens Layers on a Gold Foil template with vectors", async () => {
+  it("opens Layers on a converted template with vectors and groups (Gold Foil)", async () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
-    const doc = bundle("gold-foil", "ladder").document;
+    const kind = "matchSummary";
+    const doc = bundle("gold-foil", kind).document;
     const template = {
       id: 9,
-      kind: "ladder",
-      name: "Gold Foil ladder",
+      kind,
+      name: "Gold Foil match summary",
       version: 1,
       isDefault: false,
       basedOn: null,
@@ -113,7 +113,7 @@ describe("layers drawer", () => {
       updateAvailable: null,
       fitStatus: "pass",
       fitReport: null,
-      coverage: { pages: ["card"], sizes: ["square"] },
+      coverage: { pages: [primaryPage(kind)], sizes: ["square"] },
       updatedAt: null,
       waitingDrafts: 0,
       document: doc,
@@ -142,11 +142,13 @@ describe("layers drawer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Layers" }));
     const list = await screen.findByRole("complementary", { name: "Layers" });
     // The drawer lists the layers on the size being edited (square).
-    const card = doc.pages!.card!.layers.filter((l) => layerOnSize(l, "square"));
+    const card = doc.pages![primaryPage(kind)]!.layers.filter((l) => layerOnSize(l, "square"));
     expect(card.some((l) => l.kind === "vector")).toBe(true);
+    expect(card.some((l) => l.kind === "group")).toBe(true);
     expect(within(list).getAllByRole("listitem")).toHaveLength(card.length);
-    expect(within(list).queryAllByRole("button", { name: "Hide Graphic" }).length).toBe(
-      card.filter((l) => l.kind === "vector" && !l.name).length,
-    );
+    const count = (icon: string) =>
+      list.querySelectorAll(`li button[aria-pressed] > svg.lucide-${icon}`).length;
+    expect(count("pen-tool")).toBe(card.filter((l) => l.kind === "vector").length);
+    expect(count("group")).toBe(card.filter((l) => l.kind === "group").length);
   });
 });
