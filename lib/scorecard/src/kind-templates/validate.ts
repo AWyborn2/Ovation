@@ -464,6 +464,11 @@ function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): voi
   )
     errors.push(`${where}.columns must be a whole number from 1 to 6.`);
   if (v.columnGap !== undefined) numberIn(errors, `${where}.columnGap`, v.columnGap, 0, 50);
+  if (v.flow !== undefined) {
+    if (!scope.v2) errors.push(`${where}.flow is a format v2 option.`);
+    else if (v.flow !== "down" && v.flow !== "across")
+      errors.push(`${where}.flow must be down or across.`);
+  }
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
     errors.push(`${where}.cells must be a list of at most ${MAX_CELLS} cells.`);
   } else {
