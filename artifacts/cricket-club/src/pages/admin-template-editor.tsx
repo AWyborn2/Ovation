@@ -45,6 +45,8 @@ import {
 } from "@/components/studio-editor/editor-shell";
 import { ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
+import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { FieldsPanel } from "@/components/studio-editor/fields-panel";
@@ -122,6 +124,7 @@ import {
   writeClipboard,
 } from "@/components/studio-editor/clipboard";
 import { isImageRowField } from "@/components/studio-editor/rows-panel";
+import { removeLinked, sharedLinks, syncLinks } from "@/components/studio-editor/links";
 import {
   cellAt,
   isContainer,
@@ -134,7 +137,13 @@ import {
   withScope,
 } from "@/components/studio-editor/scope";
 import { actionForKey, isTypingTarget } from "@/components/studio-editor/shortcuts";
-import { BLANK_PACK_ID, packFieldValues, packNativeSize, type FreeLayer } from "@/lib/pack-render";
+import {
+  BLANK_PACK_ID,
+  packFieldValues,
+  packNativeSize,
+  resolveCardTokens,
+  type FreeLayer,
+} from "@/lib/pack-render";
 import { previewSample, stressSample } from "@/lib/kind-templates/samples";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { draftInput } from "@/components/social-queue/draft-meta";
@@ -165,7 +174,11 @@ const withLevel = (
   scope: string | null,
   next: EditorDoc,
   size: CardSize,
-) => withPage(present, page, withScope(pageDoc(present, page), scope, next, size));
+) => {
+  const before = pageDoc(present, page);
+  // An edit to a linked copy's content or style reaches its other copies.
+  return withPage(present, page, syncLinks(before, withScope(before, scope, next, size)));
+};
 
 export function useViewport(): { w: number; h: number } {
   const read = () =>
@@ -393,6 +406,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   }, [scope, scopeGroup]);
 
   const [selection, setSelection] = useState<string[]>([]);
+  const [savingElement, setSavingElement] = useState(false);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>(viewport.w >= 1024 ? "fields" : null);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -400,6 +414,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [stress, setStress] = useState(false);
   const [playing, setPlaying] = useState(0);
   const [addPrompt, setAddPrompt] = useState<{ ids: string[]; from: CardSize } | null>(null);
+  // Links whose copies on other sizes may go too, after deleting one copy.
+  const [linkPrompt, setLinkPrompt] = useState<string[] | null>(null);
   const [warnings, setWarnings] = useState<LayoutWarning[]>([]);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [conflict, setConflict] = useState<KindTemplateConflict | null>(null);
@@ -460,6 +476,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const editPage = useCallback((next: EditorDoc) => {
     setHistory((h) => commit(h, withPage(h.present, pageRef.current, next)));
     setAddPrompt(null);
+    setLinkPrompt(null);
     setPasteNote(null);
     setStackNote(null);
   }, []);
@@ -468,6 +485,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       commit(h, withLevel(h.present, pageRef.current, scopeRef.current, next, formatRef.current)),
     );
     setAddPrompt(null);
+    setLinkPrompt(null);
     setPasteNote(null);
     setStackNote(null);
   }, []);
@@ -530,14 +548,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     setAddPrompt(null);
   };
 
-  const removeSelected = (ids: string[]) => {
-    edit(removeFromSize(doc, ids, format));
-    setSelection([]);
-  };
-
   const canvasArea = useRef<HTMLElement>(null);
-  const stateRef = useRef({ doc, pageFull, scope, inList, selection, format, inside });
-  stateRef.current = { doc, pageFull, scope, inList, selection, format, inside };
+  const stateRef = useRef({ doc, pageFull, page, scope, inList, selection, format, inside });
+  stateRef.current = { doc, pageFull, page, scope, inList, selection, format, inside };
+  /** Delete layers from this size, offering to delete their linked copies on the other sizes. */
+  const removeSelected = (ids: string[]) => {
+    const s = stateRef.current;
+    const view = removeFromSize(s.doc, ids, s.format);
+    edit(view);
+    setSelection([]);
+    const links = sharedLinks(s.pageFull, withScope(s.pageFull, s.scope, view, s.format), ids);
+    if (links.length) setLinkPrompt(links);
+  };
   const copySelection = () => {
     const s = stateRef.current;
     const clip = copyLayers(s.doc, s.format, s.selection, "template");
@@ -550,7 +572,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     const clip = readClipboard("template");
     const s = stateRef.current;
     if (!clip) return;
-    const r = pasteLayers(s.doc, clip, s.format, { kind, onlyOnSize: true });
+    const r = pasteLayers(s.doc, clip, s.format, {
+      kind,
+      onlyOnSize: true,
+      page: s.page,
+    });
     if (r.ids.length) {
       edit(r.doc);
       setSelection(r.ids);
@@ -583,10 +609,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           setAddPrompt(null);
           break;
         case "delete":
-          if (s.selection.length) {
-            edit(removeFromSize(s.doc, s.selection, s.format));
-            setSelection([]);
-          }
+          if (s.selection.length) removeSelected(s.selection);
           break;
         case "escape":
           setAddPrompt(null);
@@ -625,10 +648,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           copySelection();
           break;
         case "cut":
-          if (copySelection()) {
-            edit(removeFromSize(s.doc, s.selection, s.format));
-            setSelection([]);
-          }
+          if (copySelection()) removeSelected(s.selection);
           break;
         case "paste":
           pasteClipboard();
@@ -925,6 +945,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               onCopy={copySelection}
               onPaste={pasteClipboard}
               canPaste={canPaste}
+              // A club's save is credited to it; the console has no club to credit.
+              onSaveElement={host.club ? () => setSavingElement(true) : undefined}
               arrange={{
                 count: unitCount(doc, format, selection, inside),
                 onAlign: (to) => edit(align(doc, format, selection, to, inside)),
@@ -932,6 +954,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
               }}
             />
+            {host.club && (
+              <SaveElementDialog
+                layers={selected}
+                context={elementSaveContext(
+                  data,
+                  resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID }),
+                )}
+                clubName={data.brand?.name || clubName || "your club"}
+                open={savingElement}
+                onClose={() => setSavingElement(false)}
+              />
+            )}
             {single?.kind === "text" && (
               <TextStyleBar
                 style={single.style}
@@ -970,6 +1004,30 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
               >
                 Just {SIZE_LABEL[addPrompt.from].toLowerCase()}
+              </button>
+            </div>
+          )}
+
+          {linkPrompt && (
+            <div
+              role="dialog"
+              aria-label="Delete on other sizes"
+              className="mb-4 flex items-center gap-3 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-3 py-2 text-sm"
+            >
+              <span>The other sizes have their own copy. Delete it on every size?</span>
+              <button
+                type="button"
+                onClick={() => editPage(removeLinked(pageFull, linkPrompt))}
+                className="rounded-full bg-[var(--ed-accent)] px-3 py-1 font-semibold text-[var(--ed-on-accent)]"
+              >
+                Delete on every size
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkPrompt(null)}
+                className="rounded-full px-3 py-1 font-semibold hover:bg-[var(--ed-card)]"
+              >
+                Just {SIZE_LABEL[format].toLowerCase()}
               </button>
             </div>
           )}

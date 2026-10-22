@@ -1,4 +1,4 @@
-/** The Elements panel's element library (editable-elements plan, D3). */
+/** The Elements panel's element library (editable-elements plan, D3, D4). */
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderAt } from "../../../test/render";
@@ -41,7 +41,11 @@ const KIT = { id: 1, slug: "club-kit", name: "Club Kit" };
 function setup(onAdd = vi.fn()) {
   const api = installApiMock({
     "/template-library/elements": {
-      elements: [element(7, "Gold band", KIT), element(8, "Seaview strip", null)],
+      elements: [
+        element(7, "Gold band", KIT),
+        element(8, "Seaview strip", null),
+        { ...element(9, "Our chip", null), authorName: "Demo CC", mine: true },
+      ],
       nextCursor: 8,
     },
     "/template-library/looks": {
@@ -111,5 +115,34 @@ describe("LibraryElements", () => {
     await waitFor(() =>
       expect(elementCalls(api.calls).some((u) => u.searchParams.get("cursor") === "8")).toBe(true),
     );
+  });
+
+  it("shows the club's own elements, and lets it take one out of the library", async () => {
+    const { api } = setup();
+    await screen.findByRole("button", { name: "Add Gold band" });
+    fireEvent.change(screen.getByRole("combobox", { name: "Look" }), {
+      target: { value: "__mine" },
+    });
+    await waitFor(() =>
+      expect(elementCalls(api.calls).some((u) => u.searchParams.get("mine") === "true")).toBe(true),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Take out of the library" }));
+    await waitFor(() =>
+      expect(api.calls.some((u) => u.includes("/template-library/elements/9/unlist"))).toBe(true),
+    );
+  });
+
+  it("reports another club's element, but never Ovation's or the club's own", async () => {
+    const { api } = setup();
+    await screen.findByRole("button", { name: "Add Gold band" });
+    expect(screen.queryByRole("button", { name: "Report Gold band" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Report Our chip" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Report Seaview strip" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "Reason" }), {
+      target: { value: "Copied our art" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send report" }));
+    expect(await screen.findByText(/Ovation will review it/)).toBeTruthy();
+    expect(api.calls.some((u) => u.includes("/template-library/elements/8/report"))).toBe(true);
   });
 });

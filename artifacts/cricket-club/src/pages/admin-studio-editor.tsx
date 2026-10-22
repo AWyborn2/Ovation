@@ -50,6 +50,8 @@ import {
 } from "@/components/studio-editor/content-panels";
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
+import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
@@ -271,6 +273,7 @@ function EditorApp({ draftId }: { draftId: number }) {
   const slideInput = slide.input;
   const slideJunior = isJuniorSlide(slide, false);
   const [selection, setSelection] = useState<string[]>([]);
+  const [savingElement, setSavingElement] = useState(false);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>("content");
   const [layersOpen, setLayersOpen] = useState(false);
@@ -432,10 +435,9 @@ function EditorApp({ draftId }: { draftId: number }) {
       ? { ...data, photoUrl: undefined }
       : data;
   const fieldValues = packFieldValues(slideInput, slideData, packId);
+  const cardTokens = resolveCardTokens({ theme, junior: slideJunior, data, packId });
   // The club's Club Kit palette, for the element library's thumbnails.
-  const elementPalette = clubKitVars(
-    clubKitPaletteFor(resolveCardTokens({ theme, junior: slideJunior, data, packId }), data?.brand),
-  );
+  const elementPalette = clubKitVars(clubKitPaletteFor(cardTokens, data?.brand));
 
   const native = packNativeSize(format);
   const title = draftHeading(draft);
@@ -617,12 +619,20 @@ function EditorApp({ draftId }: { draftId: number }) {
               onCopy={copySelection}
               onPaste={pasteClipboard}
               canPaste={canPaste}
+              onSaveElement={() => setSavingElement(true)}
               arrange={{
                 count: unitCount(doc, format, selection, inside),
                 onAlign: (to) => edit(align(doc, format, selection, to, inside)),
                 onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
                 onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
               }}
+            />
+            <SaveElementDialog
+              layers={selected}
+              context={elementSaveContext(data, cardTokens)}
+              clubName={data?.brand?.name || "your club"}
+              open={savingElement}
+              onClose={() => setSavingElement(false)}
             />
             {pasteNote && (
               <p role="status" className="mt-2 text-sm text-amber-300">
