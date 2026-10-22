@@ -37,6 +37,16 @@ export interface VariantCaptures {
   }>;
 }
 
+/** Whether text or a list bound to data sits off the card (beyond a 1% bleed). */
+function offCard(r: MapResult): boolean {
+  return r.layers.some(
+    (l) =>
+      (l.layer.kind === "text" || l.layer.kind === "rows") &&
+      JSON.stringify(l.layer).includes("{{") &&
+      (l.box.x < -1 || l.box.y < -1 || l.box.x + l.box.w > 101 || l.box.y + l.box.h > 101),
+  );
+}
+
 /** What a page was converted from, and what it couldn't take. */
 export interface PageReport {
   kind: string;
@@ -172,13 +182,25 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
       });
       // A worst case that draws another design (its content flips the pack's layout) has
       // no boxes for this one: the sentinel render's boxes are used instead.
-      const otherDesign = (mapped.geometryCoverage ?? 1) < GEOMETRY_COVERAGE;
+      let otherDesign = (mapped.geometryCoverage ?? 1) < GEOMETRY_COVERAGE;
       if (otherDesign) {
         mapped = mapCapture(a.capture, { paletteB: baseB?.capture, aliases });
         mapped.polish.push({
           element: -1,
           what: "the worst-case render draws another design: boxes sized from the sentinel render",
         });
+      } else if (worstCap && offCard(mapped)) {
+        // A worst case the pack itself can't fit (its text runs off the card) has no
+        // usable boxes either, where the sentinel render's stay on the card.
+        const own = mapCapture(a.capture, { paletteB: baseB?.capture, aliases });
+        if (!offCard(own)) {
+          mapped = own;
+          otherDesign = true;
+          mapped.polish.push({
+            element: -1,
+            what: "the worst-case render runs off the card: boxes sized from the sentinel render",
+          });
+        }
       }
       // Colour checks need the aligned palette-B twin, captured at the standard preset.
       const stdA = pick(standard, size, { content: "sentinel", palette: "A" });
@@ -206,6 +228,7 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
         size,
         base: mapped,
         baseCapture: a.capture,
+        ...(!otherDesign && worstCap ? { geometry: worstCap.capture } : {}),
         ...(minA ? { minimal: mapCapture(minA.capture, { aliases }) } : {}),
         ...(noPhoto ? { photo: pair(standard, noPhoto) } : {}),
         ...(noSponsors ? { sponsors: pair(standard, noSponsors) } : {}),
@@ -240,6 +263,30 @@ export function convertKind(packFiles: VariantCaptures[], kind: string): KindCon
   ];
   if (palettes.length) document.palettes = [...palettes];
   return { kind: templateKind, document, pages };
+}
+
+/**
+ * A conversion pointed at a polished bundle document (`--recheck`): the
+ * pack's renders stay, the layers counted are the bundle's.
+ */
+export function withDocument(conv: KindConversion, document: TemplateDocumentV2): KindConversion {
+  return {
+    ...conv,
+    document,
+    pages: conv.pages.map((p) => {
+      const layers = document.pages[p.page]?.layers ?? [];
+      let stacks = 0;
+      const walk = (list: TemplateLayerV2[]) => {
+        for (const l of list)
+          if (isGroupLayer(l)) {
+            if (l.stack) stacks++;
+            walk(l.children);
+          }
+      };
+      walk(layers);
+      return { ...p, layers: countKinds(layers), stacks };
+    }),
+  };
 }
 
 function countKinds(layers: TemplateLayerV2[]): Record<string, number> {

@@ -10757,6 +10757,44 @@ paths:
         "409":
           description: The slug is taken.
 
+  /platform/admin/library/import/figma:
+    post:
+      operationId: importFigmaTemplate
+      tags: [platformAdmin]
+      summary: Import a Figma design as an unlisted console template (ADR-011 L8-B)
+      description: >-
+        Reads the link's frames (named <page>/<size>, or card-shaped) with
+        Ovation's read-only Figma token, maps them to the template format,
+        exports vectors as SVG and copies images to the library, then saves an
+        unlisted console template, validated and sent to the fit job. The
+        report lists everything that was changed or left out. Colours bound to
+        styles named ovation/* become the club's colour tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFigmaTemplateRequest"
+      responses:
+        "201":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaImportResult"
+        "400":
+          description: A bad link, an unknown kind, no frames, or a document the format refuses (with the report).
+        "401":
+          description: Not authenticated.
+        "404":
+          description: Figma can't find the file or frame.
+        "409":
+          description: The import is off (no FIGMA_ACCESS_TOKEN), the token has expired or been revoked, or the account can't open the file.
+        "429":
+          description: Figma is rate limiting Ovation's account.
+        "502":
+          description: Figma failed or couldn't be reached.
+
   /platform/admin/grade-decisions:
     get:
       operationId: getPlatformGradeDecisions
@@ -23001,6 +23039,78 @@ components:
           $ref: "#/components/schemas/TemplateDocument"
         templateRef:
           $ref: "#/components/schemas/TemplateRef"
+
+    ImportFigmaTemplateRequest:
+      type: object
+      required: [fileUrl, kind]
+      properties:
+        fileUrl:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: A Figma design link (with or without node-id), or a bare file key.
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+
+    FigmaReportLine:
+      type: object
+      required: [level, message]
+      properties:
+        level:
+          type: string
+          enum: [warn, info]
+        page: { type: string }
+        sizes:
+          type: array
+          items: { type: string }
+        layer:
+          type: string
+          description: The layer's name path in Figma.
+        message: { type: string }
+
+    FigmaFrameMatch:
+      type: object
+      required: [nodeId, name, page, size, by]
+      properties:
+        nodeId: { type: string }
+        name: { type: string }
+        page: { type: string }
+        size: { type: string }
+        by:
+          type: string
+          enum: [name, dimensions]
+
+    FigmaImportResult:
+      type: object
+      required: [template, fileName, frames, report, fonts, rendered]
+      properties:
+        template:
+          $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        fileName: { type: string }
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaFrameMatch"
+        report:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaReportLine"
+        fonts:
+          type: array
+          description: Figma fonts outside the catalogue and what they became.
+          items:
+            type: object
+            required: [from, to]
+            properties:
+              from: { type: string }
+              to: { type: string }
+        rendered:
+          type: object
+          required: [vectors, images]
+          properties:
+            vectors: { type: integer }
+            images: { type: integer }
 
     AdoptLookChange:
       type: object

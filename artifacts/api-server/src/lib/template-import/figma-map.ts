@@ -20,12 +20,28 @@
  *   gradient fills, corner radius, stroke, drop and inner shadows, opacity,
  *   blend mode.
  *
- * Image fills, vectors, auto layout and `rows:<repeat>` frames are L8-B's
- * (T8.6, T8.7): they're listed in `deferred` and the report, and skipped.
+ * L8-B (T8.6, T8.7) adds what needs Figma's renders, in a second pass with
+ * the `assets` the import fetched for the first pass's `deferred` nodes:
+ *
+ * - **Image fills:** a layer named `{{photo}}` becomes the card's photo slot
+ *   and one named `{{clubLogo}}` the crest; any other image is a library
+ *   image (a PNG render the import copied to `library/`).
+ * - **Vectors, boolean operations, stars, polygons and arcs** become vector
+ *   layers from Figma's SVG export, sanitised.
+ * - **Auto layout** frames inside a page become stack groups (direction,
+ *   gap, alignment, the padding as the group's inset), nested to
+ *   `MAX_STACK_DEPTH`. A page frame's own auto layout is left as drawn.
+ * - **`rows:<repeat>` frames** become rows layers: the first child is the
+ *   row, its `{{field}}` texts and images the cells.
+ *
+ * Without `assets` (the first pass) those nodes are listed in `deferred`.
  */
 import {
   BLEND_MODES,
   FORMAT_VERSION,
+  LOGO_ROW_FIELDS,
+  MAX_STACK_DEPTH,
+  PHOTO_TOKEN,
   PAGE_KEYS,
   TEMPLATE_SIZES,
   TEMPLATE_SIZE_ORDER,
@@ -38,7 +54,10 @@ import {
   type BlendMode,
   type LayerBox,
   type PageKey,
+  type RowsCell,
+  type StackSpec,
   type TemplateBorder,
+  type TemplateTextStyle,
   type TemplateBoxShadow,
   type TemplateDocumentV2,
   type TemplateFill,
@@ -89,8 +108,19 @@ export type FigmaImportResult = {
   fonts: Array<{ from: string; to: string }>;
 };
 
+/**
+ * What the import fetched for the first pass's deferred nodes, by node id:
+ * sanitised SVG markup for vectors, and library URLs for images.
+ */
+export type FigmaAssets = {
+  vectors?: Readonly<Record<string, string>>;
+  images?: Readonly<Record<string, string>>;
+};
+
 export type FigmaImportInput = {
   kind: string;
+  /** The second pass's fetched assets; absent on the first pass. */
+  assets?: FigmaAssets;
   /** Candidate page frames (`loadFigmaFrames`). */
   frames: readonly FigmaNode[];
   /** Style metadata by id, from the nodes response. */
@@ -242,7 +272,8 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 
 /** A layer as one size maps it: everything but its id, sizes and geometry. */
 type LayerBody = DistributiveOmit<TemplateLayerV2, "id" | "geometry" | "sizes">;
-type Mapped = { path: string; body: LayerBody; box: LayerBox };
+/** `parent` is the path of the stack group the layer sits in, when it sits in one. */
+type Mapped = { path: string; body: LayerBody; box: LayerBox; parent?: string };
 
 type FrameContext = {
   kind: string;
@@ -261,19 +292,15 @@ type FrameContext = {
   fontSubs: Map<string, string>;
   report: Report;
   deferred: FigmaDeferred[];
+  /** Null on the first pass. */
+  assets: FigmaAssets | null;
+  /** The stack group the layers being walked go in, and how deep it is. */
+  parent?: string;
+  depth: number;
 };
 
 function mapFrame(frame: MatchedFrame, ctx: FrameContext): Mapped[] {
   const out: Mapped[] = [];
-  const at: Where = { page: ctx.page, size: ctx.size };
-  if (isAutoLayout(frame.node)) {
-    ctx.report.add(
-      "info",
-      `The page frame uses auto layout: its layers are placed where Figma draws them (stacks come with L8-B).`,
-      at,
-    );
-    ctx.deferred.push(deferral(frame.node, "", ctx, "auto-layout"));
-  }
   const background = paintedShape(frame.node, "", ctx, { x: 0, y: 0, w: 100, h: 100 });
   if (background)
     out.push({
@@ -281,8 +308,95 @@ function mapFrame(frame: MatchedFrame, ctx: FrameContext): Mapped[] {
       body: { ...background, name: "Background" },
       box: { x: 0, y: 0, w: 100, h: 100 },
     });
+  // The page frame is the artboard: its own auto layout isn't a stack (its background
+  // would be stacked with the rest), so its layers stay where Figma draws them.
+  if (isAutoLayout(frame.node))
+    ctx.report.add(
+      "info",
+      "The page frame uses auto layout: its layers are placed where Figma draws them. Auto layout frames inside it become stacks.",
+      { page: ctx.page, size: ctx.size },
+    );
   walkChildren(frame.node, "", ctx, out, 0);
   return out;
+}
+
+/** The stack group's path for an auto layout frame at `path`. */
+const stackPath = (path: string) => (path ? `${path}#stack` : "#stack");
+
+/**
+ * An auto layout frame's children as a stack group (T8.7): the frame's
+ * padding is the group's inset, its spacing the gap. Deeper than
+ * `MAX_STACK_DEPTH`, the children are placed where Figma draws them.
+ */
+function stackChildren(
+  node: FigmaNode,
+  path: string,
+  ctx: FrameContext,
+  out: Mapped[],
+  angle: number,
+): void {
+  const at = where(ctx, path);
+  if (ctx.depth >= MAX_STACK_DEPTH) {
+    ctx.report.add(
+      "warn",
+      `Auto layout nested deeper than ${MAX_STACK_DEPTH}: its layers are placed where Figma draws them.`,
+      at,
+    );
+    walkChildren(node, path, ctx, out, angle);
+    return;
+  }
+  const bb = node.absoluteBoundingBox;
+  if (!bb) return;
+  if (Math.abs(normaliseAngle(angle)) >= 0.05)
+    ctx.report.add("warn", "Rotated auto layout: stacked upright.", at);
+  const left = node.paddingLeft ?? 0;
+  const right = node.paddingRight ?? 0;
+  const top = node.paddingTop ?? 0;
+  const bottom = node.paddingBottom ?? 0;
+  const w = Math.max(bb.width - left - right, 1);
+  const h = Math.max(bb.height - top - bottom, 1);
+  const box = toBox(bb.x + left + w / 2, bb.y + top + h / 2, w, h, ctx);
+  const group = stackPath(path);
+  out.push({
+    path: group,
+    body: { kind: "group", name: node.name, stack: stackOf(node, ctx, at), children: [] },
+    box,
+    ...(ctx.parent ? { parent: ctx.parent } : {}),
+  });
+  if ((node.children ?? []).some((c) => c.layoutPositioning === "ABSOLUTE"))
+    ctx.report.add(
+      "info",
+      "Absolutely positioned layers in auto layout: stacked with the rest.",
+      at,
+    );
+  walkChildren(node, path, { ...ctx, parent: group, depth: ctx.depth + 1 }, out, angle);
+}
+
+const JUSTIFY: Record<string, NonNullable<StackSpec["justify"]>> = {
+  MIN: "start",
+  CENTER: "center",
+  MAX: "end",
+  SPACE_BETWEEN: "space-between",
+};
+const ALIGN_ITEMS: Record<string, NonNullable<StackSpec["align"]>> = {
+  MIN: "start",
+  CENTER: "center",
+  MAX: "end",
+  BASELINE: "start",
+};
+
+function stackOf(node: FigmaNode, ctx: FrameContext, at: Where): StackSpec {
+  const stack: StackSpec = { direction: node.layoutMode === "HORIZONTAL" ? "row" : "column" };
+  if ((node.itemSpacing ?? 0) > 0) stack.gap = clamp(widthPct(node.itemSpacing!, ctx), 0, 50);
+  const justify = JUSTIFY[node.primaryAxisAlignItems ?? "MIN"];
+  if (justify && justify !== "start") stack.justify = justify;
+  const align = ALIGN_ITEMS[node.counterAxisAlignItems ?? "MIN"];
+  if (align && align !== "start") stack.align = align;
+  if (node.counterAxisAlignItems === "BASELINE")
+    ctx.report.add("info", "Baseline alignment: aligned to the start.", at);
+  if (node.layoutWrap === "WRAP")
+    ctx.report.add("warn", "Wrapping auto layout: stacked in one line.", at);
+  return stack;
 }
 
 function walkChildren(
@@ -310,7 +424,11 @@ function walkChildren(
     if (masked && child.visible !== false) {
       ctx.report.add("info", "Masked in Figma: drawn unmasked.", where(ctx, path));
     }
+    const from = out.length;
     visit(child, path, ctx, out, angle);
+    if (ctx.parent) {
+      for (let i = from; i < out.length; i++) out[i]!.parent ??= ctx.parent;
+    }
   }
 }
 
@@ -341,8 +459,7 @@ function visit(
   }
   if (SHAPE_TYPES.has(type)) {
     if (type === "ELLIPSE" && isArc(node)) {
-      ctx.report.add("info", "Arc or ring: exported as SVG by the import (L8-B).", at);
-      ctx.deferred.push(deferral(node, path, ctx, "vector"));
+      vectorLayer(node, path, ctx, out, "Arc or ring");
       return;
     }
     const box = lineAwareBox(node, ctx, angle, at);
@@ -352,19 +469,12 @@ function visit(
   }
   if (CONTAINER_TYPES.has(type)) {
     if (/^rows:/i.test(node.name.trim())) {
-      ctx.report.add("warn", "A rows frame: imported as a rows layer by L8-B, not here.", at);
-      ctx.deferred.push(deferral(node, path, ctx, "rows"));
+      const box = boxOf(node, ctx, angle, at);
+      const body = box && rowsLayer(node, ctx, at);
+      if (box && body) out.push({ path, body: { ...body, name: node.name }, box });
       return;
     }
     const frameLike = FRAME_TYPES.has(type);
-    if (frameLike && isAutoLayout(node)) {
-      ctx.report.add(
-        "info",
-        "Auto layout: its layers are placed where Figma draws them (stacks come with L8-B).",
-        at,
-      );
-      ctx.deferred.push(deferral(node, path, ctx, "auto-layout"));
-    }
     if (frameLike) {
       const box = boxOf(node, ctx, angle, at);
       const body = box && paintedShape(node, path, ctx, box);
@@ -373,12 +483,15 @@ function visit(
         ctx.report.add("info", "Clips its content: clipping isn't imported.", at);
       }
     }
+    if (frameLike && isAutoLayout(node)) {
+      stackChildren(node, path, ctx, out, angle);
+      return;
+    }
     walkChildren(node, path, ctx, out, frameLike ? angle : parentAngle);
     return;
   }
   if (VECTOR_TYPES.has(type)) {
-    ctx.report.add("info", "Vector: exported as SVG by the import (L8-B).", at);
-    ctx.deferred.push(deferral(node, path, ctx, "vector"));
+    vectorLayer(node, path, ctx, out, "Vector");
     return;
   }
   if (type === "SLICE") return;
@@ -388,6 +501,217 @@ function visit(
     at,
   );
 }
+
+/** A vector from Figma's SVG export, or a deferral on the first pass. */
+function vectorLayer(
+  node: FigmaNode,
+  path: string,
+  ctx: FrameContext,
+  out: Mapped[],
+  what: string,
+): void {
+  const at = where(ctx, path);
+  if (!ctx.assets) {
+    ctx.report.add("info", `${what}: exported as SVG by the import.`, at);
+    ctx.deferred.push(deferral(node, path, ctx, "vector"));
+    return;
+  }
+  const svg = ctx.assets.vectors?.[node.id];
+  if (!svg) {
+    ctx.report.add(
+      "warn",
+      `${what}: Figma's SVG export couldn't be used, so it isn't imported.`,
+      at,
+    );
+    return;
+  }
+  // The export covers the node's bounding box, already rotated, so the box is upright.
+  const box = boxOf(node, ctx, 0, at);
+  if (box) out.push({ path, body: { kind: "vector", name: node.name, svg }, box });
+}
+
+/** The slot a layer's name asks for: `{{photo}}`, `{{clubLogo}}`, or none. */
+function slotOf(name: string): "photo" | "clubLogo" | null {
+  const m = /\{\{\s*(photo|clublogo)\s*\}\}/i.exec(name);
+  if (!m) return null;
+  return m[1]!.toLowerCase() === "photo" ? "photo" : "clubLogo";
+}
+
+/**
+ * An image fill (T8.6): the photo or crest slot its name asks for, else the
+ * library copy the import made. Null on the first pass, with a deferral.
+ */
+function imageLayer(node: FigmaNode, path: string, ctx: FrameContext): LayerBody | null {
+  const at = where(ctx, path);
+  const style: TemplateStyleV2 = {};
+  const radius = radiusOf(node, ctx, at);
+  if (radius) style.radius = radius;
+  if ((node.opacity ?? 1) < 0.999) style.opacity = r2(node.opacity!);
+  const styled = Object.keys(style).length ? { style } : {};
+  const slot = slotOf(node.name);
+  if (slot === PHOTO_TOKEN) {
+    ctx.report.add("info", "The card's photo, hidden on junior cards.", at);
+    return { kind: "photo", showWhen: { junior: false }, ...styled };
+  }
+  if (slot === "clubLogo") return { kind: "image", content: "{{clubLogo}}", ...styled };
+  if (!ctx.assets) {
+    ctx.report.add("info", "Image fill: copied to the library by the import.", at);
+    ctx.deferred.push(deferral(node, path, ctx, "image"));
+    return null;
+  }
+  const url = ctx.assets.images?.[node.id];
+  if (!url) {
+    ctx.report.add(
+      "warn",
+      "Image fill: Figma's render couldn't be copied, so it isn't imported.",
+      at,
+    );
+    return null;
+  }
+  return { kind: "image", content: url, ...styled };
+}
+
+// ── Rows ────────────────────────────────────────────────────────────────────
+
+/** A text's style for a list cell (sizes in percent of the artboard width). */
+function cellStyle(node: FigmaNode, ctx: FrameContext, at: Where): TemplateTextStyle {
+  const ts = node.style ?? {};
+  const fontPx = ts.fontSize ?? 16;
+  const font = chooseFont(ctx.fonts, ts.fontFamily ?? "Inter", ts.fontWeight ?? 400);
+  if (font.substitutedFrom) {
+    ctx.fontSubs.set(font.substitutedFrom, font.family);
+    ctx.report.add(
+      "warn",
+      `Font "${font.substitutedFrom}" isn't in the Google Fonts catalogue: "${font.family}" is used instead.`,
+    );
+  }
+  const style: TemplateTextStyle = {
+    fontFamily: cssFontFamily(font),
+    fontWeight: clamp(font.weight, 100, 1000),
+    fontSize: clamp(r2((fontPx / ctx.fw) * 100), 0.2, 80),
+  };
+  if (ts.letterSpacing) style.letterSpacing = clamp(r3(ts.letterSpacing / fontPx), -1, 3);
+  if (ts.textCase === "UPPER") style.uppercase = true;
+  if (ts.textAlignHorizontal) style.align = ALIGN[ts.textAlignHorizontal] ?? "left";
+  const paint = topPaint(node.fills, "fill", ctx, at);
+  if (paint?.type === "SOLID") {
+    style.color = styledToken(node, "fill", ctx, at) ?? figmaHex(paint.color, paint.opacity ?? 1);
+  }
+  return style;
+}
+
+/**
+ * A `rows:<repeat>` frame as a rows layer (T8.7). Its first child is the row:
+ * texts showing one `{{field}}` of the list are text cells, and image-filled
+ * layers named `{{field}}` image cells (logo cells for crests and logos). The
+ * gap is the space between the first two rows, or the auto layout spacing.
+ */
+function rowsLayer(node: FigmaNode, ctx: FrameContext, at: Where): LayerBody | null {
+  const key = node.name
+    .trim()
+    .replace(/^rows:/i, "")
+    .trim();
+  const cat = pageTokens(ctx.kind, ctx.page);
+  const repeat = cat?.repeats.find((r) => r.key.toLowerCase() === key.toLowerCase());
+  if (!repeat) {
+    const lists = cat?.repeats.map((r) => r.key).join(", ") || "none";
+    ctx.report.add(
+      "warn",
+      `"rows:${key}": the ${ctx.page} page has no list called ${key} (its lists: ${lists}). Not imported.`,
+      at,
+    );
+    return null;
+  }
+  const rows = (node.children ?? []).filter(
+    (c) => c.visible !== false && CONTAINER_TYPES.has(c.type) && c.absoluteBoundingBox,
+  );
+  const row = rows[0];
+  const rb = row?.absoluteBoundingBox;
+  if (!row || !rb || !(rb.width > 0 && rb.height > 0)) {
+    ctx.report.add(
+      "warn",
+      "A rows frame needs its first row as a frame or group. Not imported.",
+      at,
+    );
+    return null;
+  }
+  const fields = new Map(repeat.fields.map((f) => [f.key.toLowerCase(), f.key]));
+  const cells: RowsCell[] = [];
+  const pct = (v: number, of: number) => r2(clamp((v / of) * 100, -100, 200));
+  const visitCell = (n: FigmaNode) => {
+    if (n.visible === false) return;
+    const bb = n.absoluteBoundingBox;
+    if (CONTAINER_TYPES.has(n.type) && !hasImageFill(n)) {
+      for (const c of n.children ?? []) visitCell(c);
+      return;
+    }
+    if (!bb) return;
+    const place = {
+      x: pct(bb.x - rb.x, rb.width),
+      w: pct(bb.width, rb.width),
+      y: pct(bb.y - rb.y, rb.height),
+      h: pct(bb.height, rb.height),
+    };
+    if (n.type === "TEXT") {
+      const tokens = [...(n.characters ?? "").matchAll(TOKEN_RE)].map((m) => m[1]!);
+      const field = tokens.length === 1 ? fields.get(tokens[0]!.toLowerCase()) : undefined;
+      if (!field) {
+        ctx.report.add(
+          "info",
+          tokens.length
+            ? `Row text "${n.name}" must show exactly one field of ${repeat.key} (${repeat.fields.map((f) => f.key).join(", ")}): not imported.`
+            : `Fixed text "${n.name}" in a row isn't imported: a cell shows a field.`,
+          at,
+        );
+        return;
+      }
+      cells.push({ field, ...place, style: cellStyle(n, ctx, at) });
+      return;
+    }
+    if (hasImageFill(n)) {
+      const m = /\{\{\s*([\w.]+)\s*\}\}/.exec(n.name);
+      const field = m ? fields.get(m[1]!.toLowerCase()) : undefined;
+      if (!field) {
+        ctx.report.add(
+          "info",
+          `Row image "${n.name}" isn't named after a field of ${repeat.key}: not imported.`,
+          at,
+        );
+        return;
+      }
+      cells.push({ field, ...place, show: LOGO_ROW_FIELDS.includes(field) ? "logo" : "image" });
+      return;
+    }
+    ctx.report.add("info", `"${n.name}" in a row isn't a field: not imported.`, at);
+  };
+  for (const c of row.children ?? []) visitCell(c);
+  if (cells.length === 0) {
+    ctx.report.add("warn", `The first row of "rows:${key}" shows no field. Not imported.`, at);
+    return null;
+  }
+  const second = rows[1]?.absoluteBoundingBox;
+  const gapPx = second
+    ? node.layoutMode === "HORIZONTAL"
+      ? second.x - (rb.x + rb.width)
+      : second.y - (rb.y + rb.height)
+    : (node.itemSpacing ?? 0);
+  const spec = {
+    repeat: repeat.key,
+    rowHeight: clamp(widthPct(rb.height, ctx), 0.5, 100),
+    cells: cells.slice(0, 24),
+    ...(gapPx > 0 ? { gap: clamp(widthPct(gapPx, ctx), 0, 50) } : {}),
+  };
+  if (rows.length > 1)
+    ctx.report.add(
+      "info",
+      `"rows:${key}" draws ${rows.length} rows in Figma: the first is the template, and the card shows as many as fit.`,
+      at,
+    );
+  return { kind: "rows", rows: spec } as LayerBody;
+}
+
+const hasImageFill = (n: FigmaNode) =>
+  (n.fills ?? []).some((p) => p.type === "IMAGE" && p.visible !== false);
 
 function where(ctx: FrameContext, path: string): Where {
   return { page: ctx.page, size: ctx.size, ...(path ? { layer: path } : {}) };
@@ -804,11 +1128,7 @@ function shapeLayer(
     const fill = topPaint(node.fills, "fill", ctx, at);
     if (fill) {
       const res = paintFill(fill, styledToken(node, "fill", ctx, at), w, h, ctx, at);
-      if (res.image) {
-        ctx.report.add("info", "Image fill: imported as a slot or library image by L8-B.", at);
-        ctx.deferred.push(deferral(node, path, ctx, "image"));
-        return null;
-      }
+      if (res.image) return imageLayer(node, path, ctx);
       if (res.color) style.fill = res.color;
       else if (res.fill) style.fill = res.fill;
       if (res.opacity !== undefined) opacity *= res.opacity;
@@ -1031,7 +1351,7 @@ function nearestSize(size: TemplateSize, from: readonly TemplateSize[]): Templat
   )[0]!;
 }
 
-type PageLayer = TemplateLayerV2 & { sizes: TemplateSize[] };
+type PageLayer = TemplateLayerV2 & { sizes: TemplateSize[]; path: string; parent?: string };
 
 function mergePage(
   page: PageKey,
@@ -1049,7 +1369,12 @@ function mergePage(
     // One layer per distinct body: a style that differs between sizes splits the layer.
     const groups = new Map<
       string,
-      { body: LayerBody; sizes: TemplateSize[]; boxes: Map<TemplateSize, LayerBox> }
+      {
+        body: LayerBody;
+        sizes: TemplateSize[];
+        boxes: Map<TemplateSize, LayerBox>;
+        parent?: string;
+      }
     >();
     for (const size of imported) {
       const mapped = bySize.get(size)!.get(path);
@@ -1059,6 +1384,7 @@ function mergePage(
         body: mapped.body,
         sizes: [] as TemplateSize[],
         boxes: new Map<TemplateSize, LayerBox>(),
+        ...(mapped.parent ? { parent: mapped.parent } : {}),
       };
       group.sizes.push(size);
       group.boxes.set(size, mapped.box);
@@ -1073,6 +1399,8 @@ function mergePage(
         ...group.body,
         geometry,
         sizes: group.sizes,
+        path,
+        ...(group.parent ? { parent: group.parent } : {}),
       } as PageLayer);
     }
   }
@@ -1101,13 +1429,39 @@ function mergePage(
     }
   }
 
-  return layers.map((layer) => {
+  return nestStacks(layers);
+}
+
+/**
+ * Stack groups take their children (T8.7): a layer goes in the group of its
+ * parent path that shares a size with it. A group left empty is dropped.
+ */
+function nestStacks(layers: readonly PageLayer[]): TemplateLayerV2[] {
+  const top: TemplateLayerV2[] = [];
+  const groups = new Map<string, Array<{ sizes: TemplateSize[]; layer: TemplateLayerV2 }>>();
+  for (const layer of layers) {
+    const { path, parent, ...rest } = layer;
     const sizes = TEMPLATE_SIZE_ORDER.filter((s) => layer.sizes.includes(s));
-    const out: TemplateLayerV2 = { ...layer };
+    const out = { ...rest } as TemplateLayerV2;
     if (sizes.length === TEMPLATE_SIZE_ORDER.length) delete out.sizes;
     else out.sizes = sizes;
-    return out;
-  });
+    if (out.kind === "group") {
+      const list = groups.get(path) ?? [];
+      list.push({ sizes, layer: out });
+      groups.set(path, list);
+    }
+    const homes = parent ? groups.get(parent) : undefined;
+    const home = homes?.find((g) => g.sizes.some((s) => sizes.includes(s))) ?? homes?.[0];
+    if (home && home.layer.kind === "group") home.layer.children.push(out);
+    else top.push(out);
+  }
+  const prune = (list: TemplateLayerV2[]): TemplateLayerV2[] =>
+    list.flatMap((l): TemplateLayerV2[] => {
+      if (l.kind !== "group") return [l];
+      const children = prune(l.children);
+      return children.length ? [{ ...l, children }] : [];
+    });
+  return prune(top);
 }
 
 // ── Entry ───────────────────────────────────────────────────────────────────
@@ -1160,6 +1514,8 @@ export function figmaToTemplate(input: FigmaImportInput): FigmaImportResult {
           fontSubs,
           report,
           deferred,
+          assets: input.assets ?? null,
+          depth: 0,
         }),
       );
     }

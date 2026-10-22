@@ -452,3 +452,32 @@ describe("clips and brightness (converter fidelity)", () => {
     ).toBeGreaterThan(0);
   });
 });
+
+describe("rows that fill across (Club Kit polish)", () => {
+  const tiles = (flow: unknown) => ({
+    id: "t",
+    kind: "rows",
+    geometry,
+    rows: {
+      repeat: "players",
+      rowHeight: 18,
+      columns: 3,
+      flow,
+      cells: [{ field: "name", x: 0, w: 100 }],
+    },
+  });
+
+  it("accepts flow across or down on a v2 list", () => {
+    expect(templateDocumentErrors(doc({ card: [tiles("across")] }), "teamOfWeek")).toEqual([]);
+    expect(templateDocumentErrors(doc({ card: [tiles("down")] }), "teamOfWeek")).toEqual([]);
+  });
+
+  it("refuses another flow, and flow on a v1 document", () => {
+    expect(templateDocumentErrors(doc({ card: [tiles("diagonal")] }), "teamOfWeek")).toEqual([
+      "card/t.rows.flow must be down or across.",
+    ]);
+    expect(templateDocumentErrors({ layers: [tiles("across")] }, "teamOfWeek")).toEqual([
+      "Layer 1.rows.flow is a format v2 option.",
+    ]);
+  });
+});

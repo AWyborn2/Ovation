@@ -16468,6 +16468,24 @@ export const CreateConsoleLibraryLookBody = zod.object({
 
 
 /**
+ * Reads the link's frames (named <page>/<size>, or card-shaped) with Ovation's read-only Figma token, maps them to the template format, exports vectors as SVG and copies images to the library, then saves an unlisted console template, validated and sent to the fit job. The report lists everything that was changed or left out. Colours bound to styles named ovation/* become the club's colour tokens.
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const importFigmaTemplateBodyFileUrlMax = 2000;
+
+export const importFigmaTemplateBodyNameMax = 80;
+
+
+
+export const ImportFigmaTemplateBody = zod.object({
+  "fileUrl": zod.string().min(1).max(importFigmaTemplateBodyFileUrlMax).describe('A Figma design link (with or without node-id), or a bare file key.'),
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(importFigmaTemplateBodyNameMax).optional(),
+  "lookId": zod.number().nullish()
+})
+
+
+/**
  * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
  */
 export const GetPlatformGradeDecisionsResponse = zod.object({

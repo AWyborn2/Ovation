@@ -200,6 +200,27 @@ describe("checkFitInDom", () => {
     expect(issues).toEqual([expect.objectContaining({ reason: "off-artboard", layerId: "name" })]);
   });
 
+  it("lets a faint watermark crest bleed off the card, but not a full-strength logo", () => {
+    const root = card('<div data-layer-id="crest"></div><div data-layer-id="logo"></div>', {
+      '[data-layer-id="crest"]': [-150, 400, 700, 700],
+      '[data-layer-id="logo"]': [-150, 10, 300, 300],
+    });
+    const issues = checkFitInDom(
+      root,
+      ctx([
+        {
+          id: "crest",
+          kind: "image",
+          content: "{{clubLogo}}",
+          style: { opacity: 0.07 },
+          geometry: at(-14, 37, 65, 65),
+        },
+        { id: "logo", kind: "image", content: "{{clubLogo}}", geometry: at(-14, 1, 28, 28) },
+      ] as never),
+    );
+    expect(issues).toEqual([expect.objectContaining({ reason: "off-artboard", layerId: "logo" })]);
+  });
+
   it("flags rows that run out of their list's box", () => {
     const root = card(
       '<div data-layer-id="xi"><div data-row-index="0"></div><div data-row-index="1"></div></div>',
