@@ -1,6 +1,6 @@
 {
   "name": "Club Kit match day",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -9,11 +9,8 @@
         "layers": [
           {
             "id": "background",
-            "kind": "element",
             "name": "Club background",
-            "element": {
-              "id": "ck.background"
-            },
+            "kind": "group",
             "geometry": {
               "square": {
                 "x": 0,
@@ -40,15 +37,123 @@
                 "h": 100
               }
             },
-            "sig": "element:0t7iu8s1ib3fpz"
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base)",
+                        "at": 0
+                      },
+                      {
+                        "color": "var(--ck-base2)",
+                        "at": 100
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l1",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1yh28bt13rxwkc"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "radial",
+                    "at": {
+                      "x": 0,
+                      "y": 100
+                    },
+                    "stops": [
+                      {
+                        "color": "var(--ck-glowc)"
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 60
+                      }
+                    ]
+                  }
+                },
+                "id": "background-l2",
+                "geometry": {
+                  "square": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0t02qoc1gpjwh5"
+              }
+            ],
+            "sig": "group:0lma41004yqpn3"
           },
           {
-            "id": "watermark",
-            "kind": "element",
-            "name": "Crest watermark",
-            "element": {
-              "id": "ck.watermark"
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 3
+                }
+              ],
+              "opacity": 0.07
             },
+            "id": "watermark",
             "geometry": {
               "square": {
                 "x": 0,
@@ -65,7 +170,7 @@
               "story": {
                 "x": 0,
                 "y": 60.63,
-                "w": 70,
+                "w": 69.99,
                 "h": 39.37
               },
               "landscape": {
@@ -75,69 +180,670 @@
                 "h": 70
               }
             },
-            "sig": "element:0mieari1tc7ynf"
+            "name": "Crest watermark",
+            "sig": "image:0xhlg3r0zdshfa"
           },
           {
             "id": "photo-frame-side",
-            "kind": "element",
             "name": "Photo frame",
-            "element": {
-              "id": "ck.frame-side",
-              "props": {
-                "photo": "{{photo}}"
-              }
-            },
+            "kind": "group",
+            "sizes": ["square", "landscape"],
             "geometry": {
               "square": {
-                "x": 50,
+                "x": 50.2,
                 "y": 0,
-                "w": 50,
+                "w": 49.8,
                 "h": 100
               },
               "landscape": {
-                "x": 52.24,
+                "x": 52.43,
                 "y": 0,
-                "w": 47.77,
+                "w": 47.58,
                 "h": 100
               }
             },
-            "sizes": ["square", "landscape"],
-            "sig": "element:1alwnyr17jzcc4"
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [29.8, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l1",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 50.2,
+                    "y": 0,
+                    "w": 49.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 52.43,
+                    "y": 0,
+                    "w": 47.58,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:190rdnd1ifgqf0"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [28.36, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l2",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 51.2,
+                    "y": 0,
+                    "w": 48.8,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 53.39,
+                    "y": 0,
+                    "w": 46.62,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:0ooa8b50kmz83w"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [27.17, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l3",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 52,
+                    "y": 0,
+                    "w": 48,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 54.15,
+                    "y": 0,
+                    "w": 45.86,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1rvsqh50h4kx8k"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l4",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:1009n7i063hrtr"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l5",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "photo:10w9jk8003u12p"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 90,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-35)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-side-l6",
+                "sizes": ["square", "landscape"],
+                "geometry": {
+                  "square": {
+                    "x": 54,
+                    "y": 0,
+                    "w": 46,
+                    "h": 100
+                  },
+                  "landscape": {
+                    "x": 56.06,
+                    "y": 0,
+                    "w": 43.95,
+                    "h": 100
+                  }
+                },
+                "sig": "shape:091ruyy07o3381"
+              }
+            ],
+            "sig": "group:1k2vt8g03bddwx"
           },
           {
             "id": "photo-frame-top",
-            "kind": "element",
             "name": "Photo frame",
-            "element": {
-              "id": "ck.frame-top",
-              "props": {
-                "photo": "{{photo}}"
-              }
-            },
+            "kind": "group",
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 0,
                 "y": 0,
                 "w": 100,
-                "h": 47.9
+                "h": 47.69
               },
               "story": {
                 "x": 0,
                 "y": 0,
                 "w": 100,
-                "h": 62.18
+                "h": 61.93
               }
             },
-            "sizes": ["portrait", "story"],
-            "sig": "element:0gd0t0v1p2zofy"
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.83],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l1",
+                "link": "photo-frame-top-l1",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 47.69
+                  }
+                },
+                "sig": "shape:1yg72fc14p5iqn"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.65],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l2",
+                "link": "photo-frame-top-l1",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 61.93
+                  }
+                },
+                "sig": "shape:0bsdv6c02xskiv"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.38],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l3",
+                "link": "photo-frame-top-l3",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 46.65
+                  }
+                },
+                "sig": "shape:0o7f6ym1il2knj"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.24],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l4",
+                "link": "photo-frame-top-l3",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 60.71
+                  }
+                },
+                "sig": "shape:1grdb2j1ich1hu"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 79],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l5",
+                "link": "photo-frame-top-l5",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 45.82
+                  }
+                },
+                "sig": "shape:1dphayp1y2ahme"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)",
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.9],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l6",
+                "link": "photo-frame-top-l5",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 59.73
+                  }
+                },
+                "sig": "shape:1swfl5n1qri7zg"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 160,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base2)"
+                      },
+                      {
+                        "color": "var(--panel)"
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l7",
+                "sizes": ["portrait", "story"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 43.73
+                  },
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 57.29
+                  }
+                },
+                "sig": "shape:0pxnmw00ltii8t"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l8",
+                "link": "photo-frame-top-l8",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 43.73
+                  }
+                },
+                "sig": "photo:0rysooe1xu703f"
+              },
+              {
+                "kind": "photo",
+                "style": {
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l9",
+                "link": "photo-frame-top-l8",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 57.29
+                  }
+                },
+                "sig": "photo:193hvuy1y0yo27"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l10",
+                "link": "photo-frame-top-l10",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 43.73
+                  }
+                },
+                "sig": "shape:0osa37q01f6hlv"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-70)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 30
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l11",
+                "link": "photo-frame-top-l10",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 57.29
+                  }
+                },
+                "sig": "shape:03hj3dm1igqain"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l12",
+                "link": "photo-frame-top-l12",
+                "sizes": ["portrait"],
+                "geometry": {
+                  "portrait": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 43.73
+                  }
+                },
+                "sig": "shape:0has91n1g1ruzi"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": {
+                    "type": "linear",
+                    "angle": 0,
+                    "stops": [
+                      {
+                        "color": "var(--ck-base-55)",
+                        "at": 0
+                      },
+                      {
+                        "color": "#00000000",
+                        "at": 40
+                      }
+                    ]
+                  },
+                  "clip": {
+                    "polygon": [
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
+                    ]
+                  }
+                },
+                "id": "photo-frame-top-l13",
+                "link": "photo-frame-top-l12",
+                "sizes": ["story"],
+                "geometry": {
+                  "story": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 100,
+                    "h": 57.29
+                  }
+                },
+                "sig": "shape:12esd4n1xnyg9u"
+              }
+            ],
+            "sig": "group:1epnx9509geqrc"
           },
           {
+            "kind": "image",
+            "content": "{{clubLogo}}",
             "id": "crest",
-            "kind": "element",
-            "name": "Crest",
-            "element": {
-              "id": "ck.crest"
-            },
             "geometry": {
               "square": {
                 "x": 6,
@@ -164,7 +870,8 @@
                 "h": 10
               }
             },
-            "sig": "element:0tichnn1hjfrj6"
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
           },
           {
             "id": "club-name-1",
@@ -292,49 +999,174 @@
           },
           {
             "id": "chip",
-            "kind": "element",
             "name": "Card-type chip",
-            "element": {
-              "id": "ck.kind-chip",
-              "props": {
-                "label": "GAME DAY"
-              }
-            },
+            "kind": "group",
             "geometry": {
               "square": {
-                "x": 78,
+                "x": 77.09,
                 "y": 8.5,
-                "w": 16,
-                "h": 5
+                "w": 16.91,
+                "h": 4.5
               },
               "portrait": {
-                "x": 78,
+                "x": 77.09,
                 "y": 6.8,
-                "w": 16,
-                "h": 4
+                "w": 16.91,
+                "h": 3.6
               },
               "story": {
-                "x": 78,
+                "x": 77.11,
                 "y": 4.78,
-                "w": 16,
-                "h": 2.81
+                "w": 16.89,
+                "h": 2.53
               },
               "landscape": {
-                "x": 88.45,
+                "x": 87.97,
                 "y": 8.5,
-                "w": 8.4,
-                "h": 5
+                "w": 8.88,
+                "h": 4.5
               }
             },
-            "sig": "element:0fjhzpp1tm1z5q"
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "chip-l1",
+                "geometry": {
+                  "square": {
+                    "x": 77.09,
+                    "y": 8.5,
+                    "w": 1.2,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 77.09,
+                    "y": 6.8,
+                    "w": 1.2,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 77.11,
+                    "y": 4.78,
+                    "w": 1.2,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 87.97,
+                    "y": 8.5,
+                    "w": 0.63,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "chip-l2",
+                "geometry": {
+                  "square": {
+                    "x": 78.29,
+                    "y": 8.5,
+                    "w": 15.71,
+                    "h": 4.5
+                  },
+                  "portrait": {
+                    "x": 78.29,
+                    "y": 6.8,
+                    "w": 15.71,
+                    "h": 3.6
+                  },
+                  "story": {
+                    "x": 78.31,
+                    "y": 4.78,
+                    "w": 15.69,
+                    "h": 2.53
+                  },
+                  "landscape": {
+                    "x": 88.6,
+                    "y": 8.5,
+                    "w": 8.25,
+                    "h": 4.5
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "text",
+                "content": "GAME DAY",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 2.5,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l3",
+                "link": "chip-l3",
+                "sizes": ["square", "portrait", "story"],
+                "geometry": {
+                  "square": {
+                    "x": 80.48,
+                    "y": 9.22,
+                    "w": 12.31,
+                    "h": 2.96
+                  },
+                  "portrait": {
+                    "x": 80.48,
+                    "y": 7.38,
+                    "w": 12.31,
+                    "h": 2.37
+                  },
+                  "story": {
+                    "x": 80.5,
+                    "y": 5.18,
+                    "w": 12.3,
+                    "h": 1.67
+                  }
+                },
+                "sig": "text:1srn2io116h99b"
+              },
+              {
+                "kind": "text",
+                "content": "GAME DAY",
+                "style": {
+                  "color": "var(--accent-ink)",
+                  "fontFamily": "'Barlow Condensed',sans-serif",
+                  "fontSize": 1.31,
+                  "fontWeight": 800,
+                  "letterSpacing": 0.12,
+                  "uppercase": true,
+                  "align": "left",
+                  "lineHeight": 1
+                },
+                "id": "chip-l4",
+                "link": "chip-l3",
+                "sizes": ["landscape"],
+                "geometry": {
+                  "landscape": {
+                    "x": 89.75,
+                    "y": 9.18,
+                    "w": 6.94,
+                    "h": 3.02
+                  }
+                },
+                "sig": "text:0k5n9741oyjemt"
+              }
+            ],
+            "sig": "group:02gkjaf1g8r1m0"
           },
           {
             "id": "rule",
-            "kind": "element",
             "name": "Tricolour rule",
-            "element": {
-              "id": "ck.tricolour-rule"
-            },
+            "kind": "group",
             "geometry": {
               "square": {
                 "x": 6,
@@ -361,7 +1193,111 @@
                 "h": 0.8
               }
             },
-            "sig": "element:0dj1p9m01qpmlt"
+            "children": [
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--gold)"
+                },
+                "id": "rule-l1",
+                "geometry": {
+                  "square": {
+                    "x": 6,
+                    "y": 87,
+                    "w": 51.53,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 6,
+                    "y": 89.6,
+                    "w": 51.53,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 6,
+                    "y": 92.69,
+                    "w": 51.53,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 3.15,
+                    "y": 87,
+                    "w": 54.87,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:09ysusg0sm0keb"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--ck-chalk)"
+                },
+                "id": "rule-l2",
+                "geometry": {
+                  "square": {
+                    "x": 58.59,
+                    "y": 87,
+                    "w": 8.59,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 58.59,
+                    "y": 89.6,
+                    "w": 8.59,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 58.59,
+                    "y": 92.69,
+                    "w": 8.59,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 59.14,
+                    "y": 87,
+                    "w": 9.14,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:1d8d4rq15ewynx"
+              },
+              {
+                "kind": "shape",
+                "style": {
+                  "fill": "var(--panel)"
+                },
+                "id": "rule-l3",
+                "geometry": {
+                  "square": {
+                    "x": 68.23,
+                    "y": 87,
+                    "w": 25.77,
+                    "h": 0.8
+                  },
+                  "portrait": {
+                    "x": 68.23,
+                    "y": 89.6,
+                    "w": 25.77,
+                    "h": 0.64
+                  },
+                  "story": {
+                    "x": 68.23,
+                    "y": 92.69,
+                    "w": 25.77,
+                    "h": 0.45
+                  },
+                  "landscape": {
+                    "x": 69.41,
+                    "y": 87,
+                    "w": 27.44,
+                    "h": 0.8
+                  }
+                },
+                "sig": "shape:0bvgnim1mmij7v"
+              }
+            ],
+            "sig": "group:0hmhtsw005vlf9"
           },
           {
             "id": "sponsor-1",

@@ -2,30 +2,30 @@
  * Reading stored documents as v2 (T1.2): v1 `{ layers }` is the kind's
  * primary page, `animation` is `motion.in`, and nothing stored is changed.
  */
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { TemplateDocumentV2, TemplateLayerV2 } from "./format";
 import { documentPageLayers, documentPages, normaliseDocument, normaliseLayer } from "./normalise";
 import { primaryPage } from "./pages";
 
-/** Every committed bundle template (the starters live there since T5.18). */
-const BUNDLES = path.resolve(__dirname, "../../../template-bundles");
+/**
+ * The starters' original v1 documents, frozen when their bundles became
+ * format v2 (C3): `__fixtures__/v1-starters/<look>.json`, by kind.
+ */
+const V1_STARTERS = path.resolve(__dirname, "__fixtures__", "v1-starters");
 
-/** Every committed bundle template: look, kind and stored document. */
-function bundleDocuments(): Array<{ look: string; kind: string; document: unknown }> {
+/** Every original v1 starter: look, kind and stored document. */
+function v1Documents(): Array<{ look: string; kind: string; document: unknown }> {
   const out: Array<{ look: string; kind: string; document: unknown }> = [];
-  for (const look of readdirSync(BUNDLES).sort()) {
-    const dir = path.join(BUNDLES, look);
-    // A look folder has a look.json; `elements/` and build output don't.
-    if (!statSync(dir).isDirectory() || !existsSync(path.join(dir, "look.json"))) continue;
-    for (const file of readdirSync(dir).sort()) {
-      if (!file.endsWith(".json") || file === "look.json") continue;
-      const parsed = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
-        document: unknown;
-      };
-      out.push({ look, kind: file.replace(/\.json$/, ""), document: parsed.document });
-    }
+  for (const file of readdirSync(V1_STARTERS).sort()) {
+    if (!file.endsWith(".json")) continue;
+    const look = file.replace(/\.json$/, "");
+    const byKind = JSON.parse(readFileSync(path.join(V1_STARTERS, file), "utf8")) as Record<
+      string,
+      unknown
+    >;
+    for (const [kind, document] of Object.entries(byKind)) out.push({ look, kind, document });
   }
   return out;
 }
@@ -53,10 +53,8 @@ function expectSameLayers(read: TemplateLayerV2[], stored: Array<Record<string, 
 }
 
 describe("v1 documents read as v2", () => {
-  it("puts every v1 bundle template's layers on its kind's primary page", () => {
-    const v1 = bundleDocuments().filter(
-      (b) => !("formatVersion" in (b.document as object) || "pages" in (b.document as object)),
-    );
+  it("puts every original v1 starter's layers on its kind's primary page", () => {
+    const v1 = v1Documents();
     expect(v1.length).toBeGreaterThan(0);
     for (const { kind, document } of v1) {
       const stored = document as { layers: Array<Record<string, unknown>> };

@@ -1,969 +1,1004 @@
 {
   "name": "Clubhouse premiership",
-  "version": 1,
+  "version": 2,
   "listed": true,
   "document": {
-    "layers": [
-      {
-        "id": "stage",
-        "kind": "shape",
-        "name": "Stage",
-        "style": {
-          "background": "var(--ck-stage,#16206B)"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "stage",
+            "kind": "shape",
+            "name": "Stage",
+            "style": {
+              "background": "var(--ck-stage,#16206B)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:137i2k01gab99n"
           },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "ground",
+            "kind": "image",
+            "name": "Ground photo",
+            "content": "{{groundPhoto}}",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "image:006fwc60ec7ea3"
           },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "ground-tint",
+            "kind": "shape",
+            "name": "Ground tint",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 60%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1fupbs01xlhfu7"
           },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
+          {
+            "id": "stroke-1",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
+            },
+            "geometry": {
+              "square": {
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
+              },
+              "story": {
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:1xhjbx00dhx3pp"
+          },
+          {
+            "id": "stroke-2",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.6
+            },
+            "geometry": {
+              "square": {
+                "x": -4,
+                "y": 94,
+                "w": 22,
+                "h": 1.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -4,
+                "y": 95.2,
+                "w": 22,
+                "h": 0.96,
+                "rotate": -38
+              },
+              "story": {
+                "x": -4,
+                "y": 96.63,
+                "w": 22,
+                "h": 0.67,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -2.1,
+                "y": 94,
+                "w": 11.55,
+                "h": 1.2,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:15mqt370789n24"
+          },
+          {
+            "id": "stroke-3",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 80,
+                "y": 4,
+                "w": 26,
+                "h": 1.6,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": 80,
+                "y": 3.2,
+                "w": 26,
+                "h": 1.28,
+                "rotate": -38
+              },
+              "story": {
+                "x": 80,
+                "y": 2.25,
+                "w": 26,
+                "h": 0.9,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": 89.5,
+                "y": 4,
+                "w": 13.65,
+                "h": 1.6,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:0cte51t164rfyw"
+          },
+          {
+            "id": "photo",
+            "kind": "photo",
+            "name": "Player photo",
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            },
+            "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "id": "photo-fade",
+            "kind": "shape",
+            "name": "Photo fade",
+            "style": {
+              "background": "linear-gradient(0deg,var(--ck-stage) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            },
+            "sig": "shape:10d5p2e1p4kmv7"
+          },
+          {
+            "id": "photo-fade-side",
+            "kind": "shape",
+            "name": "Photo fade (side)",
+            "style": {
+              "background": "linear-gradient(90deg,var(--ck-stage-55) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            },
+            "sig": "shape:1d4ncss1naocbl"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "crest",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 5,
+                "w": 11,
+                "h": 11
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4,
+                "w": 11,
+                "h": 8.8
+              },
+              "story": {
+                "x": 6,
+                "y": 2.81,
+                "w": 11,
+                "h": 6.19
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 5,
+                "w": 5.77,
+                "h": 11
+              }
+            },
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club-name-1",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 4.4,
+              "fontWeight": 700,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 19,
+                "y": 5,
+                "w": 75,
+                "h": 6.4
+              },
+              "portrait": {
+                "x": 19,
+                "y": 4,
+                "w": 75,
+                "h": 5.12
+              },
+              "story": {
+                "x": 19,
+                "y": 2.81,
+                "w": 75,
+                "h": 3.6
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0gs1q3k11re3m7"
+          },
+          {
+            "id": "club-name-2",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.31,
+              "fontWeight": 700,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.97,
+                "y": 5,
+                "w": 86.88,
+                "h": 6.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1ca08be0ehqpxj"
+          },
+          {
+            "id": "club-tagline-1",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.6,
+              "fontWeight": 600,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 19,
+                "y": 11.4,
+                "w": 75,
+                "h": 4
+              },
+              "portrait": {
+                "x": 19,
+                "y": 9.12,
+                "w": 75,
+                "h": 3.2
+              },
+              "story": {
+                "x": 19,
+                "y": 6.41,
+                "w": 75,
+                "h": 2.25
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0vls6l211fhjb3"
+          },
+          {
+            "id": "club-tagline-2",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 1.36,
+              "fontWeight": 600,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.97,
+                "y": 11.4,
+                "w": 86.88,
+                "h": 4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:065ydek1tse72j"
+          },
+          {
+            "id": "sponsor-1",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 700,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 91.6,
+                "w": 51.04,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 93.28,
+                "w": 51.04,
+                "h": 3.52
+              },
+              "story": {
+                "x": 6,
+                "y": 95.28,
+                "w": 51.04,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0j7fluv0v0kxug"
+          },
+          {
+            "id": "sponsor-2",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.26,
+              "fontWeight": 700,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 91.6,
+                "w": 54.35,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:18mn36e1fp8w13"
+          },
+          {
+            "id": "hashtag-1",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{hashtags}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 3,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "right"
+            },
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 91.6,
+                "w": 40,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 54,
+                "y": 93.28,
+                "w": 40,
+                "h": 3.52
+              },
+              "story": {
+                "x": 54,
+                "y": 95.28,
+                "w": 40,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:00ymnog0n2vs0x"
+          },
+          {
+            "id": "hashtag-2",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{hashtags}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.57,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "right"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 75.85,
+                "y": 91.6,
+                "w": 21,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0ae0l3q1qi6kd5"
+          },
+          {
+            "id": "eyebrow-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{competition}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 32.54,
+                "w": 44,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 51.32,
+                "w": 50,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 65.77,
+                "w": 50,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1enxnn21duvqy5"
+          },
+          {
+            "id": "eyebrow-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{competition}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 33.74,
+                "w": 46.85,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0sm9z7u1org63n"
+          },
+          {
+            "id": "word-1",
+            "kind": "text",
+            "name": "Premiers",
+            "content": "PREMIERS",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 10.73,
+              "fontWeight": 400,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 39.14,
+                "w": 44,
+                "h": 13.95
+              }
+            },
+            "sizes": ["square"],
+            "sig": "text:1e4ktea07bbgjb"
+          },
+          {
+            "id": "word-2",
+            "kind": "text",
+            "name": "Premiers",
+            "content": "PREMIERS",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 14.06,
+              "fontWeight": 400,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 54.68,
+                "w": 50,
+                "h": 14.62
+              },
+              "story": {
+                "x": 6,
+                "y": 68.13,
+                "w": 50,
+                "h": 10.28
+              }
+            },
+            "sizes": ["portrait", "story"],
+            "sig": "text:191aysa0jn9e2b"
+          },
+          {
+            "id": "word-3",
+            "kind": "text",
+            "name": "Premiers",
+            "content": "PREMIERS",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 5.63,
+              "fontWeight": 400,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 37.94,
+                "w": 46.85,
+                "h": 13.95
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0vn90gb0y9gq8k"
+          },
+          {
+            "id": "season-1",
+            "kind": "text",
+            "name": "Season and grade",
+            "content": "{{season}} {{grade}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 4.44,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 54.09,
+                "w": 44,
+                "h": 5.77
+              },
+              "portrait": {
+                "x": 6,
+                "y": 70.1,
+                "w": 50,
+                "h": 4.62
+              },
+              "story": {
+                "x": 6,
+                "y": 78.98,
+                "w": 50,
+                "h": 3.25
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:11g06ab1e9k23u"
+          },
+          {
+            "id": "season-2",
+            "kind": "text",
+            "name": "Season and grade",
+            "content": "{{season}} {{grade}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 2.33,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 52.89,
+                "w": 46.85,
+                "h": 5.77
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1gckpjb04ob7ji"
+          },
+          {
+            "id": "final-fill",
+            "kind": "shape",
+            "name": "Grand final",
+            "style": {
+              "background": "#FFFFFF"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 62.06,
+                "w": 44,
+                "h": 12.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 76.48,
+                "w": 50,
+                "h": 9.92
+              },
+              "story": {
+                "x": 6,
+                "y": 83.46,
+                "w": 50,
+                "h": 6.97
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 60.86,
+                "w": 46.85,
+                "h": 12.4
+              }
+            },
+            "sig": "shape:0whjrtm1hoy8ip"
+          },
+          {
+            "id": "final-edge",
+            "kind": "shape",
+            "name": "Grand final edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 62.06,
+                "w": 1,
+                "h": 12.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 76.48,
+                "w": 1,
+                "h": 9.92
+              },
+              "story": {
+                "x": 6,
+                "y": 83.46,
+                "w": 1,
+                "h": 6.97
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 60.86,
+                "w": 0.52,
+                "h": 12.4
+              }
+            },
+            "sig": "shape:1oegfiu1dmk8ah"
+          },
+          {
+            "id": "final-result-1",
+            "kind": "text",
+            "name": "Result",
+            "content": "{{result}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 3.6,
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-stage,#16206B)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 8.6,
+                "y": 63.66,
+                "w": 39.8,
+                "h": 5
+              },
+              "portrait": {
+                "x": 8.6,
+                "y": 77.76,
+                "w": 45.8,
+                "h": 4
+              },
+              "story": {
+                "x": 8.6,
+                "y": 84.36,
+                "w": 45.8,
+                "h": 2.81
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0025olg0n68bip"
+          },
+          {
+            "id": "final-result-2",
+            "kind": "text",
+            "name": "Result",
+            "content": "{{result}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.89,
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-stage,#16206B)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 4.51,
+                "y": 62.46,
+                "w": 44.65,
+                "h": 5
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0e9qidz1st3kko"
+          },
+          {
+            "id": "final-mom-1",
+            "kind": "text",
+            "name": "Player of the final",
+            "content": "Player of the final · {{mom}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2,
+              "fontWeight": 700,
+              "uppercase": false,
+              "color": "rgba(16,21,27,.66)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 8.6,
+                "y": 69.26,
+                "w": 39.8,
+                "h": 3.6
+              },
+              "portrait": {
+                "x": 8.6,
+                "y": 82.24,
+                "w": 45.8,
+                "h": 2.88
+              },
+              "story": {
+                "x": 8.6,
+                "y": 87.51,
+                "w": 45.8,
+                "h": 2.02
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1jfojev0tv8lx0"
+          },
+          {
+            "id": "final-mom-2",
+            "kind": "text",
+            "name": "Player of the final",
+            "content": "Player of the final · {{mom}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.05,
+              "fontWeight": 700,
+              "uppercase": false,
+              "color": "rgba(16,21,27,.66)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 4.51,
+                "y": 68.06,
+                "w": 44.65,
+                "h": 3.6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0x9dqrp0608bdo"
           }
-        }
-      },
-      {
-        "id": "ground",
-        "kind": "image",
-        "name": "Ground photo",
-        "content": "{{groundPhoto}}",
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "ground-tint",
-        "kind": "shape",
-        "name": "Ground tint",
-        "style": {
-          "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 60%,var(--ck-stage) 100%)"
-        },
-        "geometry": {
-          "square": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "portrait": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "story": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          },
-          "landscape": {
-            "x": 0,
-            "y": 0,
-            "w": 100,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "stroke-1",
-        "kind": "shape",
-        "name": "Paint stroke",
-        "style": {
-          "background": "var(--ck-p,var(--gold,#F5B400))",
-          "opacity": 0.85
-        },
-        "geometry": {
-          "square": {
-            "x": -8,
-            "y": 90,
-            "w": 30,
-            "h": 2.2,
-            "rotate": -38
-          },
-          "portrait": {
-            "x": -8,
-            "y": 92,
-            "w": 30,
-            "h": 1.76,
-            "rotate": -38
-          },
-          "story": {
-            "x": -8,
-            "y": 94.38,
-            "w": 30,
-            "h": 1.24,
-            "rotate": -38
-          },
-          "landscape": {
-            "x": -4.2,
-            "y": 90,
-            "w": 15.75,
-            "h": 2.2,
-            "rotate": -38
-          }
-        }
-      },
-      {
-        "id": "stroke-2",
-        "kind": "shape",
-        "name": "Paint stroke",
-        "style": {
-          "background": "var(--ck-p,var(--gold,#F5B400))",
-          "opacity": 0.6
-        },
-        "geometry": {
-          "square": {
-            "x": -4,
-            "y": 94,
-            "w": 22,
-            "h": 1.2,
-            "rotate": -38
-          },
-          "portrait": {
-            "x": -4,
-            "y": 95.2,
-            "w": 22,
-            "h": 0.96,
-            "rotate": -38
-          },
-          "story": {
-            "x": -4,
-            "y": 96.63,
-            "w": 22,
-            "h": 0.67,
-            "rotate": -38
-          },
-          "landscape": {
-            "x": -2.1,
-            "y": 94,
-            "w": 11.55,
-            "h": 1.2,
-            "rotate": -38
-          }
-        }
-      },
-      {
-        "id": "stroke-3",
-        "kind": "shape",
-        "name": "Paint stroke",
-        "style": {
-          "background": "var(--ck-p,var(--gold,#F5B400))",
-          "opacity": 0.55
-        },
-        "geometry": {
-          "square": {
-            "x": 80,
-            "y": 4,
-            "w": 26,
-            "h": 1.6,
-            "rotate": -38
-          },
-          "portrait": {
-            "x": 80,
-            "y": 3.2,
-            "w": 26,
-            "h": 1.28,
-            "rotate": -38
-          },
-          "story": {
-            "x": 80,
-            "y": 2.25,
-            "w": 26,
-            "h": 0.9,
-            "rotate": -38
-          },
-          "landscape": {
-            "x": 89.5,
-            "y": 4,
-            "w": 13.65,
-            "h": 1.6,
-            "rotate": -38
-          }
-        }
-      },
-      {
-        "id": "photo",
-        "kind": "photo",
-        "name": "Player photo",
-        "geometry": {
-          "square": {
-            "x": 44,
-            "y": 16,
-            "w": 56,
-            "h": 84
-          },
-          "portrait": {
-            "x": 38,
-            "y": 13.6,
-            "w": 62,
-            "h": 86.4
-          },
-          "story": {
-            "x": 38,
-            "y": 9.56,
-            "w": 62,
-            "h": 90.44
-          },
-          "landscape": {
-            "x": 50,
-            "y": 0,
-            "w": 50,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "photo-fade",
-        "kind": "shape",
-        "name": "Photo fade",
-        "style": {
-          "background": "linear-gradient(0deg,var(--ck-stage) 0%,var(--ck-stage-0) 30%)"
-        },
-        "geometry": {
-          "square": {
-            "x": 44,
-            "y": 16,
-            "w": 56,
-            "h": 84
-          },
-          "portrait": {
-            "x": 38,
-            "y": 13.6,
-            "w": 62,
-            "h": 86.4
-          },
-          "story": {
-            "x": 38,
-            "y": 9.56,
-            "w": 62,
-            "h": 90.44
-          },
-          "landscape": {
-            "x": 50,
-            "y": 0,
-            "w": 50,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "photo-fade-side",
-        "kind": "shape",
-        "name": "Photo fade (side)",
-        "style": {
-          "background": "linear-gradient(90deg,var(--ck-stage-55) 0%,var(--ck-stage-0) 30%)"
-        },
-        "geometry": {
-          "square": {
-            "x": 44,
-            "y": 16,
-            "w": 56,
-            "h": 84
-          },
-          "portrait": {
-            "x": 38,
-            "y": 13.6,
-            "w": 62,
-            "h": 86.4
-          },
-          "story": {
-            "x": 38,
-            "y": 9.56,
-            "w": 62,
-            "h": 90.44
-          },
-          "landscape": {
-            "x": 50,
-            "y": 0,
-            "w": 50,
-            "h": 100
-          }
-        }
-      },
-      {
-        "id": "crest",
-        "kind": "element",
-        "name": "Crest",
-        "element": {
-          "id": "ck.crest"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 5,
-            "w": 11,
-            "h": 11
-          },
-          "portrait": {
-            "x": 6,
-            "y": 4,
-            "w": 11,
-            "h": 8.8
-          },
-          "story": {
-            "x": 6,
-            "y": 2.81,
-            "w": 11,
-            "h": 6.19
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 5,
-            "w": 5.77,
-            "h": 11
-          }
-        }
-      },
-      {
-        "id": "club-name-1",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Cinzel',Georgia,serif",
-          "fontSize": 4.4,
-          "fontWeight": 700,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 19,
-            "y": 5,
-            "w": 75,
-            "h": 6.4
-          },
-          "portrait": {
-            "x": 19,
-            "y": 4,
-            "w": 75,
-            "h": 5.12
-          },
-          "story": {
-            "x": 19,
-            "y": 2.81,
-            "w": 75,
-            "h": 3.6
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-name-2",
-        "kind": "text",
-        "name": "Club name",
-        "content": "{{clubName}}",
-        "style": {
-          "fontFamily": "'Cinzel',Georgia,serif",
-          "fontSize": 2.31,
-          "fontWeight": 700,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.97,
-            "y": 5,
-            "w": 86.88,
-            "h": 6.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "club-tagline-1",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'Cinzel',Georgia,serif",
-          "fontSize": 2.6,
-          "fontWeight": 600,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 19,
-            "y": 11.4,
-            "w": 75,
-            "h": 4
-          },
-          "portrait": {
-            "x": 19,
-            "y": 9.12,
-            "w": 75,
-            "h": 3.2
-          },
-          "story": {
-            "x": 19,
-            "y": 6.41,
-            "w": 75,
-            "h": 2.25
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "club-tagline-2",
-        "kind": "text",
-        "name": "Club tagline",
-        "content": "{{clubTagline}}",
-        "style": {
-          "fontFamily": "'Cinzel',Georgia,serif",
-          "fontSize": 1.36,
-          "fontWeight": 600,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 9.97,
-            "y": 11.4,
-            "w": 86.88,
-            "h": 4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "sponsor-1",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 2.4,
-          "fontWeight": 700,
-          "letterSpacing": 0.08,
-          "uppercase": true,
-          "color": "rgba(255,255,255,.74)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 91.6,
-            "w": 51.04,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 93.28,
-            "w": 51.04,
-            "h": 3.52
-          },
-          "story": {
-            "x": 6,
-            "y": 95.28,
-            "w": 51.04,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "sponsor-2",
-        "kind": "text",
-        "name": "Sponsor",
-        "content": "{{sponsorPresentedBy}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.26,
-          "fontWeight": 700,
-          "letterSpacing": 0.08,
-          "uppercase": true,
-          "color": "rgba(255,255,255,.74)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 91.6,
-            "w": 54.35,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "hashtag-1",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{hashtags}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 3,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "right"
-        },
-        "geometry": {
-          "square": {
-            "x": 54,
-            "y": 91.6,
-            "w": 40,
-            "h": 4.4
-          },
-          "portrait": {
-            "x": 54,
-            "y": 93.28,
-            "w": 40,
-            "h": 3.52
-          },
-          "story": {
-            "x": 54,
-            "y": 95.28,
-            "w": 40,
-            "h": 2.47
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "hashtag-2",
-        "kind": "text",
-        "name": "Hashtag",
-        "content": "{{hashtags}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.57,
-          "fontWeight": 800,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "right"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 75.85,
-            "y": 91.6,
-            "w": 21,
-            "h": 4.4
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "eyebrow-1",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{competition}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.8,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 32.54,
-            "w": 44,
-            "h": 5.6
-          },
-          "portrait": {
-            "x": 6,
-            "y": 51.32,
-            "w": 50,
-            "h": 2.56
-          },
-          "story": {
-            "x": 6,
-            "y": 65.77,
-            "w": 50,
-            "h": 1.8
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "eyebrow-2",
-        "kind": "text",
-        "name": "Eyebrow",
-        "content": "{{competition}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 0.94,
-          "fontWeight": 600,
-          "letterSpacing": 0.22,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 33.74,
-            "w": 46.85,
-            "h": 3.2
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "word-1",
-        "kind": "text",
-        "name": "Premiers",
-        "content": "PREMIERS",
-        "style": {
-          "fontFamily": "'Alfa Slab One',Georgia,serif",
-          "fontSize": 10.73,
-          "fontWeight": 400,
-          "letterSpacing": -0.01,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 39.14,
-            "w": 44,
-            "h": 13.95
-          }
-        },
-        "sizes": ["square"]
-      },
-      {
-        "id": "word-2",
-        "kind": "text",
-        "name": "Premiers",
-        "content": "PREMIERS",
-        "style": {
-          "fontFamily": "'Alfa Slab One',Georgia,serif",
-          "fontSize": 14.06,
-          "fontWeight": 400,
-          "letterSpacing": -0.01,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "left"
-        },
-        "geometry": {
-          "portrait": {
-            "x": 6,
-            "y": 54.68,
-            "w": 50,
-            "h": 14.62
-          },
-          "story": {
-            "x": 6,
-            "y": 68.13,
-            "w": 50,
-            "h": 10.28
-          }
-        },
-        "sizes": ["portrait", "story"]
-      },
-      {
-        "id": "word-3",
-        "kind": "text",
-        "name": "Premiers",
-        "content": "PREMIERS",
-        "style": {
-          "fontFamily": "'Alfa Slab One',Georgia,serif",
-          "fontSize": 5.63,
-          "fontWeight": 400,
-          "letterSpacing": -0.01,
-          "uppercase": true,
-          "color": "var(--ck-pt,var(--gold,#F5B400))",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 37.94,
-            "w": 46.85,
-            "h": 13.95
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "season-1",
-        "kind": "text",
-        "name": "Season and grade",
-        "content": "{{season}} {{grade}}",
-        "style": {
-          "fontFamily": "'Alfa Slab One',Georgia,serif",
-          "fontSize": 4.44,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 54.09,
-            "w": 44,
-            "h": 5.77
-          },
-          "portrait": {
-            "x": 6,
-            "y": 70.1,
-            "w": 50,
-            "h": 4.62
-          },
-          "story": {
-            "x": 6,
-            "y": 78.98,
-            "w": 50,
-            "h": 3.25
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "season-2",
-        "kind": "text",
-        "name": "Season and grade",
-        "content": "{{season}} {{grade}}",
-        "style": {
-          "fontFamily": "'Alfa Slab One',Georgia,serif",
-          "fontSize": 2.33,
-          "fontWeight": 400,
-          "uppercase": true,
-          "color": "#FFFFFF",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 3.15,
-            "y": 52.89,
-            "w": 46.85,
-            "h": 5.77
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "final-fill",
-        "kind": "shape",
-        "name": "Grand final",
-        "style": {
-          "background": "#FFFFFF"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 62.06,
-            "w": 44,
-            "h": 12.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 76.48,
-            "w": 50,
-            "h": 9.92
-          },
-          "story": {
-            "x": 6,
-            "y": 83.46,
-            "w": 50,
-            "h": 6.97
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 60.86,
-            "w": 46.85,
-            "h": 12.4
-          }
-        }
-      },
-      {
-        "id": "final-edge",
-        "kind": "shape",
-        "name": "Grand final edge",
-        "style": {
-          "background": "var(--ck-p,var(--gold,#F5B400))"
-        },
-        "geometry": {
-          "square": {
-            "x": 6,
-            "y": 62.06,
-            "w": 1,
-            "h": 12.4
-          },
-          "portrait": {
-            "x": 6,
-            "y": 76.48,
-            "w": 1,
-            "h": 9.92
-          },
-          "story": {
-            "x": 6,
-            "y": 83.46,
-            "w": 1,
-            "h": 6.97
-          },
-          "landscape": {
-            "x": 3.15,
-            "y": 60.86,
-            "w": 0.52,
-            "h": 12.4
-          }
-        }
-      },
-      {
-        "id": "final-result-1",
-        "kind": "text",
-        "name": "Result",
-        "content": "{{result}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 3.6,
-          "fontWeight": 700,
-          "uppercase": true,
-          "color": "var(--ck-stage,#16206B)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 8.6,
-            "y": 63.66,
-            "w": 39.8,
-            "h": 5
-          },
-          "portrait": {
-            "x": 8.6,
-            "y": 77.76,
-            "w": 45.8,
-            "h": 4
-          },
-          "story": {
-            "x": 8.6,
-            "y": 84.36,
-            "w": 45.8,
-            "h": 2.81
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "final-result-2",
-        "kind": "text",
-        "name": "Result",
-        "content": "{{result}}",
-        "style": {
-          "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-          "fontSize": 1.89,
-          "fontWeight": 700,
-          "uppercase": true,
-          "color": "var(--ck-stage,#16206B)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 4.51,
-            "y": 62.46,
-            "w": 44.65,
-            "h": 5
-          }
-        },
-        "sizes": ["landscape"]
-      },
-      {
-        "id": "final-mom-1",
-        "kind": "text",
-        "name": "Player of the final",
-        "content": "Player of the final · {{mom}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 2,
-          "fontWeight": 700,
-          "uppercase": false,
-          "color": "rgba(16,21,27,.66)",
-          "align": "left"
-        },
-        "geometry": {
-          "square": {
-            "x": 8.6,
-            "y": 69.26,
-            "w": 39.8,
-            "h": 3.6
-          },
-          "portrait": {
-            "x": 8.6,
-            "y": 82.24,
-            "w": 45.8,
-            "h": 2.88
-          },
-          "story": {
-            "x": 8.6,
-            "y": 87.51,
-            "w": 45.8,
-            "h": 2.02
-          }
-        },
-        "sizes": ["square", "portrait", "story"]
-      },
-      {
-        "id": "final-mom-2",
-        "kind": "text",
-        "name": "Player of the final",
-        "content": "Player of the final · {{mom}}",
-        "style": {
-          "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
-          "fontSize": 1.05,
-          "fontWeight": 700,
-          "uppercase": false,
-          "color": "rgba(16,21,27,.66)",
-          "align": "left"
-        },
-        "geometry": {
-          "landscape": {
-            "x": 4.51,
-            "y": 68.06,
-            "w": 44.65,
-            "h": 3.6
-          }
-        },
-        "sizes": ["landscape"]
+        ]
       }
-    ]
+    },
+    "palettes": ["club-kit"]
   }
 }

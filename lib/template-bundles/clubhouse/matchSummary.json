@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match summary",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -333,12 +333,9 @@
             "sig": "shape:1d4ncss1naocbl"
           },
           {
+            "kind": "image",
+            "content": "{{clubLogo}}",
             "id": "crest",
-            "kind": "element",
-            "name": "Crest",
-            "element": {
-              "id": "ck.crest"
-            },
             "geometry": {
               "square": {
                 "x": 6,
@@ -365,7 +362,8 @@
                 "h": 11
               }
             },
-            "sig": "element:0tichnn1hjfrj6"
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
           },
           {
             "id": "club-name-1",
@@ -2552,6 +2550,6 @@
         ]
       }
     },
-    "palettes": ["duotone"]
+    "palettes": ["duotone", "club-kit"]
   }
 }
