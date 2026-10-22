@@ -30,7 +30,9 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
         </p>
       )}
       <div className="grid items-start gap-5 md:grid-cols-2">
-        {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
+        {slide && (
+          <SlidePreview slide={slide} size={s.size} packId={s.packId} document={s.document} />
+        )}
         <div className="min-w-0 space-y-4">
           {auto && (
             <AutoPhotoStatus

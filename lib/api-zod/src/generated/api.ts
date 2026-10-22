@@ -11178,6 +11178,34 @@ export const GetTemplatePreviewInputResponse = zod.object({
 
 
 /**
+ * The same assembly a version 3 carousel gets when it's saved: the set's pages from the picked template (or the club's default for the set's kind), its title and sponsors pages from the same look's Match Day template or the club's default Match Day, and the club's pack look as a whole template when the picked one lacks a page. For previews only; nothing is saved.
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const assembleCarouselTemplateBodyPagesMax = 20;
+
+
+
+export const AssembleCarouselTemplateBody = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']),
+  "pages": zod.array(zod.string()).max(assembleCarouselTemplateBodyPagesMax).describe('The pages the set\'s slides draw; the title and sponsors pages are added.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The picked template; absent for the club\'s default.')
+})
+
+export const AssembleCarouselTemplateResponse = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
+})
+
+
+/**
  * A listed template, or one the club holds a copy of (listed or not).
  * @summary One library template at its current version
  */

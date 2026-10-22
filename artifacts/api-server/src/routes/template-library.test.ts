@@ -395,6 +395,29 @@ describe("tenant isolation (T3.11)", () => {
   });
 });
 
+describe("carousel assembly preview (T5.17)", () => {
+  it("needs an admin, and refuses a page templates don't have", async () => {
+    const body = { setType: "matchDay", pages: ["fixture"] };
+    expect(
+      (await request(app).post("/api/template-library/carousel-assembly").send(body)).status,
+    ).toBe(401);
+    const bad = await me().post("/template-library/carousel-assembly", {
+      setType: "matchDay",
+      pages: ["nope"],
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it("draws a set with a picked template of another kind as a 400", async () => {
+    const res = await me().post("/template-library/carousel-assembly", {
+      setType: "matchDay",
+      pages: ["fixture"],
+      templateRef: { libraryTemplateId: libIds[`${LOOK}/milestone`], version: 1 },
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("preview input (T3.10)", () => {
   it("is the latest senior draft of the kind, never a junior one", async () => {
     const [senior] = await db
