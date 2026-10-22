@@ -708,6 +708,18 @@ const payloadOrigin = (row: EmailSendRow): string | null =>
   env.RENDER_HARNESS_ORIGIN() ??
   null;
 
+/**
+ * Who team sheets come from: TEAM_SHEET_EMAIL_FROM when set (a verified Resend
+ * domain), else EMAIL_FROM, with an optional reply-to. The sender also goes in
+ * "to"; contacts are bcc'd.
+ */
+function teamSheetSender(): { from: string | undefined; replyTo: string | undefined } {
+  return {
+    from: env.TEAM_SHEET_EMAIL_FROM() ?? env.EMAIL_FROM(),
+    replyTo: env.TEAM_SHEET_EMAIL_REPLY_TO(),
+  };
+}
+
 function finish(
   result: Awaited<ReturnType<typeof sendEmail>>,
   recipients: number,
@@ -761,8 +773,11 @@ async function deliverTeamSheet(row: ListSendRow): Promise<SendOutcome> {
     )
     .limit(1);
   const { subject, text } = teamSheetEmail(sheet, earlier != null && row.payload.manual !== true);
+  const sender = teamSheetSender();
   const result = await sendEmail({
-    to: to.from,
+    from: sender.from,
+    replyTo: sender.replyTo,
+    to: sender.from ?? to.from,
     bcc: to.recipients,
     subject,
     text,
@@ -874,8 +889,11 @@ async function deliverTeamSheetBatch(row: EmailSendRow): Promise<SendOutcome> {
       ),
     );
     const { subject, text } = teamSheetsEmail(pages);
+    const sender = teamSheetSender();
     const result = await sendEmail({
-      to: from,
+      from: sender.from,
+      replyTo: sender.replyTo,
+      to: sender.from ?? from,
       bcc: g.to,
       subject,
       text,

@@ -292,6 +292,41 @@ describe("Email all", () => {
   });
 });
 
+describe("team-sheet sender", () => {
+  it("team sheets come from TEAM_SHEET_EMAIL_FROM with its reply-to, else EMAIL_FROM", async () => {
+    await as(tenant, cookie)
+      .post("/api/selection/email-all", { selectionIds: [sideA] })
+      .expect(200);
+    await drainOutbox({ tenantId: tenant });
+    expect(sent.length).toBeGreaterThan(0);
+    for (const m of sent) {
+      expect(m.from).toBe(process.env.EMAIL_FROM);
+      expect(m.replyTo).toBeUndefined();
+    }
+
+    sent.length = 0;
+    process.env.TEAM_SHEET_EMAIL_FROM = "Team Sheets <sheets@example.org>";
+    process.env.TEAM_SHEET_EMAIL_REPLY_TO = "captain@example.net";
+    try {
+      await as(tenant, cookie)
+        .post("/api/selection/email-all", { selectionIds: [sideA] })
+        .expect(200);
+      await drainOutbox({ tenantId: tenant });
+      expect(sent.length).toBeGreaterThan(0);
+      for (const m of sent) {
+        expect(m).toMatchObject({
+          from: "Team Sheets <sheets@example.org>",
+          to: "Team Sheets <sheets@example.org>",
+          replyTo: "captain@example.net",
+        });
+      }
+    } finally {
+      delete process.env.TEAM_SHEET_EMAIL_FROM;
+      delete process.env.TEAM_SHEET_EMAIL_REPLY_TO;
+    }
+  });
+});
+
 describe("scheduled lists due together", () => {
   it("go out as one batch, so a contact on both gets one email, once per slot", async () => {
     // Thursday 18:00 Perth = Thursday 10:00 UTC.

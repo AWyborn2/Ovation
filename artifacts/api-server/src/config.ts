@@ -134,6 +134,14 @@ export const env = {
   RESEND_API_KEY: () => optional("RESEND_API_KEY"),
   /** Sender, e.g. "Ovation <studio@ovation.example>". Unset = email off. */
   EMAIL_FROM: () => optional("EMAIL_FROM"),
+  /**
+   * Sender for team-sheet emails only, e.g. "Halls Head CC Team Sheets
+   * <teamsheets@hallsheadcricket.com.au>" (its domain must be verified in
+   * Resend). Unset = EMAIL_FROM.
+   */
+  TEAM_SHEET_EMAIL_FROM: () => optional("TEAM_SHEET_EMAIL_FROM"),
+  /** Where replies to a team-sheet email go (any address). Unset = the sender. */
+  TEAM_SHEET_EMAIL_REPLY_TO: () => optional("TEAM_SHEET_EMAIL_REPLY_TO"),
 
   // ── SMS (Twilio or ClickSend) ────────────────────────────────────────────
   /**

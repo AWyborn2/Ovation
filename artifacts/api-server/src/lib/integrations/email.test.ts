@@ -79,4 +79,31 @@ describe("sendEmail (Resend)", () => {
       ],
     });
   });
+
+  it("sends from a per-message sender with a reply-to when given", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.EMAIL_FROM = "club@example.com";
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        bodies.push(JSON.parse(String(init.body)));
+        return new Response("{}", { status: 200 });
+      }),
+    );
+    await sendEmail({ to: "a@example.com", subject: "s", text: "t" });
+    await sendEmail({
+      from: "Team Sheets <sheets@example.org>",
+      replyTo: "captain@example.net",
+      to: "a@example.com",
+      subject: "s",
+      text: "t",
+    });
+    expect(bodies[0]).toMatchObject({ from: "club@example.com" });
+    expect(bodies[0]).not.toHaveProperty("reply_to");
+    expect(bodies[1]).toMatchObject({
+      from: "Team Sheets <sheets@example.org>",
+      reply_to: "captain@example.net",
+    });
+  });
 });

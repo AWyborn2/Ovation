@@ -227,3 +227,10 @@ get them in one email with one attachment.
   list, one sheet each.
 - **Send log:** a batch shows as "Email all team sheets (N sides)" or "Scheduled team sheets (N
   sides)".
+
+## As built: team-sheet sender (22 Oct 2026)
+
+Team-sheet emails (per list and batches) are sent from `TEAM_SHEET_EMAIL_FROM` when it is set, else
+`EMAIL_FROM`, with an optional `TEAM_SHEET_EMAIL_REPLY_TO`. The sender's domain must be verified in
+Resend. Every other email (social, availability, alerts) keeps `EMAIL_FROM`. The transport gained a
+per-message `from` and `replyTo` (`reply_to`).
