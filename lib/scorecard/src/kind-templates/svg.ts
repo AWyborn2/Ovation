@@ -225,6 +225,21 @@ function serialise(node: Node): string {
   return `<${node.name}${attrs}>${node.children.map(serialise).join("")}</${node.name}>`;
 }
 
+/** A parsed SVG element: its name, attributes in order, and children. */
+export type SvgNode = Node;
+
+/** Markup parsed against the allowlist into a tree; null when anything is outside it. */
+export function parseSvg(markup: string): SvgNode | null {
+  const errors: string[] = [];
+  const root = parse(markup, errors);
+  return root && errors.length === 0 ? root : null;
+}
+
+/** A tree back to markup, as the sanitiser writes it. */
+export function serialiseSvg(node: SvgNode): string {
+  return serialise(node);
+}
+
 /** The result of sanitising: the markup to draw, or why it can't be stored. */
 export type SvgResult = { svg: string; errors: [] } | { svg: null; errors: string[] };
 

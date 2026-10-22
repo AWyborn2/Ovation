@@ -181,12 +181,23 @@ describe("mapCapture", () => {
     expect(result.layers.filter((l) => l.layer.kind === "text")).toHaveLength(1);
   });
 
-  it("tokenises fills, turns a skewed panel into a polygon and maps the pulse", () => {
+  it("tokenises fills, cuts a skewed panel to its corners and maps the pulse", () => {
     const stage = result.layers[0]!.layer as { style: { fill: string } };
     expect(stage.style.fill).toBe("var(--ink)");
-    const vector = find((l) => l.layer.kind === "vector")!.layer as { svg: string };
-    expect(vector.svg).toContain("<polygon");
-    expect(vector.svg).toContain('fill="var(--gold)"');
+    // A native shape, not a polygon SVG: its box cut to the skewed corners (C1).
+    const slash = find((l) => l.sig.startsWith("shape:skew:"))!;
+    expect(slash.layer.style).toEqual({
+      fill: "var(--gold)",
+      clip: {
+        polygon: [
+          [19.51, 0],
+          [100, 0],
+          [80.49, 100],
+          [0, 100],
+        ],
+      },
+    });
+    expect(result.layers.some((l) => l.layer.kind === "vector")).toBe(false);
     expect(result.motion).toEqual({ hhPulse: "loop: pulse, 1400 ms" });
     const dot = find((l) => !!(l.layer as { motion?: unknown }).motion)!.layer as {
       motion: unknown;
@@ -199,7 +210,7 @@ describe("mapCapture", () => {
       "photo",
       "image",
       "rows",
-      "vector",
+      "shape",
       "shape",
     ]);
   });
