@@ -114,8 +114,8 @@ Polish applied:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 91% | none |
-| portrait | 84% | none |
-| story | 89% | none |
+| portrait | 85% | none |
+| story | 90% | none |
 | landscape | 93% | none |
 
 Polish:
@@ -309,9 +309,9 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 91% | none |
-| portrait | 87% | none |
-| story | 89% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 88% | none |
+| portrait | 86% | none |
+| story | 87% | none |
+| landscape | 87% | none |
 
 Polish:
 
@@ -385,8 +385,8 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 90% | none |
-| portrait | 86% | none |
-| story | 88% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait | 85% | none |
+| story | 85% | none |
 | landscape | 85% | none |
 
 Polish:
