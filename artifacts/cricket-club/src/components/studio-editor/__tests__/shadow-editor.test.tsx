@@ -54,6 +54,17 @@ const neon = [
 ];
 
 describe("shadow lists", () => {
+  it("names each list where it shows, and says what a shape shadow follows", () => {
+    panel({ boxShadow: neon }, "text");
+    for (const name of ["Box shadow", "Text shadow", "Shape shadow"])
+      expect(within(screen.getByRole("group", { name })).getByText(name)).toBeTruthy();
+    expect(
+      within(screen.getByRole("group", { name: "Shape shadow" })).getByText(
+        "Follows the layer's shape and clip, not its box.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("shows every shadow a converted look has, spread and inset included", () => {
     panel({ boxShadow: neon });
     const list = screen.getByRole("list", { name: "Box shadow list" });

@@ -466,9 +466,9 @@ export function LayerDesignPanel({
             onChange={(textShadow) => setStyle({ textShadow })}
           />
         )}
-        {/* Follows what the layer draws (its clip, a drawing, a logo), not its box. */}
         <ShadowListEditor
           name="Shape shadow"
+          hint="Follows the layer's shape and clip, not its box."
           value={style.dropShadow}
           onChange={(dropShadow) => setStyle({ dropShadow })}
         />

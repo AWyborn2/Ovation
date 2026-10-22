@@ -15,7 +15,10 @@ import { boxOf, childrenOf, type EditorDoc } from "../document";
 import { isContainer, scopeDoc } from "../scope";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../../lib/template-bundles");
-const LOOKS = readdirSync(BUNDLES).filter((d) => statSync(path.join(BUNDLES, d)).isDirectory());
+// A local build of the bundles package writes `dist` (and an install, `node_modules`) here.
+const LOOKS = readdirSync(BUNDLES).filter(
+  (d) => d !== "dist" && d !== "node_modules" && statSync(path.join(BUNDLES, d)).isDirectory(),
+);
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
 
 type Doc = { layers?: FreeLayer[]; pages?: Record<string, { layers: FreeLayer[] }> };

@@ -10,7 +10,7 @@ import {
   MIN_GRADIENT_STOPS,
   type TemplateGradient,
 } from "@workspace/scorecard/kind-templates";
-import { btn, ColourField, field, label, NumberField } from "./design-controls";
+import { btn, ColourField, field, item, label, NumberField } from "./design-controls";
 import { addStop, removeStop, setStop, stopPositions, withType } from "./gradient-ops";
 
 /** Quick angles, in the format's CSS convention (0 is to the top). */
@@ -109,7 +109,7 @@ export function GradientEditor({
       </div>
       <ol aria-label={`${name} gradient stops`} className="space-y-1">
         {value.stops.map((stop, i) => (
-          <li key={i} className="flex flex-wrap items-end gap-2">
+          <li key={i} className={item}>
             <ColourField
               name={`${name} stop ${i + 1}`}
               value={stop.color}
