@@ -51,6 +51,90 @@
       }
     },
     {
+      "slug": "broadcast-classic/bands/gold-slash",
+      "name": "Gold slash",
+      "category": "bands",
+      "tags": ["broadcast-classic", "bands", "gold", "slash", "shape", "angled"],
+      "signature": "042746021c8339d0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 79.37,
+                "y": -4,
+                "w": 10.22,
+                "h": 17.96
+              },
+              "portrait": {
+                "x": 79.37,
+                "y": -3.2,
+                "w": 10.22,
+                "h": 14.37
+              },
+              "story": {
+                "x": 79.37,
+                "y": -2.25,
+                "w": 10.22,
+                "h": 10.1
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [71.01, 0],
+                  [100, 0],
+                  [28.99, 100],
+                  [0, 100]
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/bands/gold-slash-2",
+      "name": "Gold slash 2",
+      "category": "bands",
+      "tags": ["broadcast-classic", "bands", "gold", "slash", "2", "shape", "angled"],
+      "signature": "d7c2d09dfead7045",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 89.17,
+                "y": -4,
+                "w": 5.39,
+                "h": 17.94
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [70.61, 0],
+                  [100, 0],
+                  [29.39, 100],
+                  [0, 100]
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "slug": "broadcast-classic/badges/stat-1-panel",
       "name": "Stat 1 panel",
       "category": "badges",
@@ -90,6 +174,92 @@
                 "w": 11.69,
                 "h": 11
               }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/badges/gold-chip",
+      "name": "Gold chip",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "gold", "chip", "shape", "angled"],
+      "signature": "5888717b6eff2606",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 93.16,
+                "y": -4,
+                "w": 3.51,
+                "h": 13.02
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [78.64, 0],
+                  [100, 0],
+                  [21.36, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/badges/gold-chip-2",
+      "name": "Gold chip 2",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "gold", "chip", "2", "shape", "angled"],
+      "signature": "8059f18cb0e4aca0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 86.98,
+                "y": -4,
+                "w": 6.62,
+                "h": 12.96
+              },
+              "portrait": {
+                "x": 86.98,
+                "y": -3.2,
+                "w": 6.62,
+                "h": 10.37
+              },
+              "story": {
+                "x": 86.98,
+                "y": -2.25,
+                "w": 6.62,
+                "h": 7.29
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [79.04, 0],
+                  [100, 0],
+                  [20.96, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
             }
           }
         ]

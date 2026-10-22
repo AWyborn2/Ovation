@@ -576,7 +576,11 @@ export function addPieces(
     files.push(file);
   }
   const slugs = new Set(file.elements.map((e) => e.slug));
-  const out = { added: [] as string[], duplicates: [] as string[], invalid: [] as Array<{ slug: string; error: string }> };
+  const out = {
+    added: [] as string[],
+    duplicates: [] as string[],
+    invalid: [] as Array<{ slug: string; error: string }>,
+  };
   for (const piece of pieces) {
     const category = PIECE_CATEGORIES[piece.id];
     if (!category) continue;

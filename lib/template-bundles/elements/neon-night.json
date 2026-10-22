@@ -2,39 +2,6 @@
   "look": "neon-night",
   "elements": [
     {
-      "slug": "neon-night/frames/dark-panel",
-      "name": "Dark panel",
-      "category": "frames",
-      "tags": ["neon-night", "frames", "dark", "panel", "shape", "rounded"],
-      "signature": "f82a793169a3ff5d",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#080E1AB8",
-              "border": {
-                "width": 0.08,
-                "color": "#D3175A59"
-              },
-              "radius": 5.82
-            },
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 44,
-                "y": 39.88,
-                "w": 47.86,
-                "h": 23.18
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "neon-night/bands/gold-band",
       "name": "Gold band",
       "category": "bands",
@@ -65,39 +32,6 @@
                 "y": 77.73,
                 "w": 77.15,
                 "h": 6.98
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "neon-night/bands/dark-band",
-      "name": "Dark band",
-      "category": "bands",
-      "tags": ["neon-night", "bands", "dark", "band", "shape", "rounded"],
-      "signature": "e490868e3a41cbef",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#080E1AB8",
-              "border": {
-                "width": 0.09,
-                "color": "#D3175A59"
-              },
-              "radius": 9.98
-            },
-            "id": "e1",
-            "sizes": ["square"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 60.67,
-                "w": 81.85,
-                "h": 25.71
               }
             }
           }
@@ -146,6 +80,68 @@
       }
     },
     {
+      "slug": "neon-night/badges/tinted-pill",
+      "name": "Tinted pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "tinted", "pill", "shape", "rounded"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#D3175A29",
+              "border": {
+                "width": 0.09,
+                "color": "#D3175A8C"
+              },
+              "radius": 9.98
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64.28,
+                "w": 17.85,
+                "h": 10.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/tinted-pill-2",
+      "name": "Tinted pill 2",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "tinted", "pill", "2", "shape", "rounded"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#E23B3B",
+              "radius": 623.7
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 91,
+                "y": 7.35,
+                "w": 5.85,
+                "h": 4.4
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "slug": "neon-night/badges/gold-pill",
       "name": "Gold pill",
       "category": "badges",
@@ -183,28 +179,29 @@
       }
     },
     {
-      "slug": "neon-night/badges/tinted-pill",
-      "name": "Tinted pill",
+      "slug": "neon-night/badges/dark-pill-2",
+      "name": "Dark pill 2",
       "category": "badges",
-      "tags": ["neon-night", "badges", "tinted", "pill", "shape", "rounded"],
-      "signature": "66ad817137b6480c",
+      "tags": ["neon-night", "badges", "dark", "pill", "2", "shape", "rounded"],
+      "signature": "17a929c9e8a8a325",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "style": {
-              "fill": "#E23B3B",
-              "radius": 623.7
+              "fill": "#080E1AB8",
+              "radius": 7.13,
+              "opacity": 0.74
             },
             "id": "e1",
-            "sizes": ["landscape"],
+            "sizes": ["square"],
             "geometry": {
-              "landscape": {
-                "x": 91,
-                "y": 7.35,
-                "w": 5.85,
-                "h": 4.4
+              "square": {
+                "x": 6,
+                "y": 34.19,
+                "w": 5.28,
+                "h": 5.28
               }
             }
           }
@@ -212,10 +209,10 @@
       }
     },
     {
-      "slug": "neon-night/badges/dark-pill-2",
-      "name": "Dark pill 2",
+      "slug": "neon-night/badges/dark-pill-3",
+      "name": "Dark pill 3",
       "category": "badges",
-      "tags": ["neon-night", "badges", "dark", "pill", "2", "shape", "rounded"],
+      "tags": ["neon-night", "badges", "dark", "pill", "3", "shape", "rounded"],
       "signature": "53f127bb1f820459",
       "document": {
         "formatVersion": 2,
@@ -246,10 +243,10 @@
       }
     },
     {
-      "slug": "neon-night/badges/tinted-pill-2",
-      "name": "Tinted pill 2",
+      "slug": "neon-night/badges/tinted-pill-3",
+      "name": "Tinted pill 3",
       "category": "badges",
-      "tags": ["neon-night", "badges", "tinted", "pill", "2", "shape", "rounded"],
+      "tags": ["neon-night", "badges", "tinted", "pill", "3", "shape", "rounded"],
       "signature": "650cbad3acba8f9e",
       "document": {
         "formatVersion": 2,
@@ -705,330 +702,6 @@
                 "h": 5.27
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "neon-night/data-blocks/stack",
-      "name": "Stack",
-      "category": "data-blocks",
-      "tags": ["neon-night", "data-blocks", "stack", "group"],
-      "signature": "9a7cf2189ea35eab",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "id": "e1",
-            "kind": "group",
-            "stack": {
-              "direction": "row",
-              "gap": 1.98,
-              "align": "end",
-              "justify": "start"
-            },
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 32.95,
-                "w": 81.85,
-                "h": 10.1
-              },
-              "portrait": {
-                "x": 6,
-                "y": 43.55,
-                "w": 88,
-                "h": 10.77
-              },
-              "story": {
-                "x": 6,
-                "y": 60.31,
-                "w": 88,
-                "h": 7.57
-              },
-              "landscape": {
-                "x": 3.15,
-                "y": 32.94,
-                "w": 42.93,
-                "h": 10.09
-              }
-            },
-            "children": [
-              {
-                "id": "e1-1",
-                "kind": "group",
-                "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 34.19,
-                    "w": 5.28,
-                    "h": 5.28
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 37.51,
-                    "w": 7.04,
-                    "h": 5.63
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 56.06,
-                    "w": 7.04,
-                    "h": 3.96
-                  },
-                  "landscape": {
-                    "x": 3.15,
-                    "y": 34.17,
-                    "w": 2.77,
-                    "h": 5.27
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "#080E1AB8",
-                      "radius": 7.13,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-1",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 6,
-                        "y": 34.19,
-                        "w": 5.28,
-                        "h": 5.28
-                      }
-                    }
-                  },
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "#080E1AB8",
-                      "radius": 9.5,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-2",
-                    "sizes": ["portrait", "story"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 6,
-                        "y": 37.51,
-                        "w": 7.04,
-                        "h": 5.63
-                      },
-                      "story": {
-                        "x": 6,
-                        "y": 56.06,
-                        "w": 7.04,
-                        "h": 3.96
-                      }
-                    }
-                  },
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "#080E1AB8",
-                      "radius": 4.15,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-3",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 3.15,
-                        "y": 34.17,
-                        "w": 2.77,
-                        "h": 5.27
-                      }
-                    }
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{opposition.logo}}",
-                    "style": {
-                      "radius": 7.13,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-4",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 6,
-                        "y": 34.19,
-                        "w": 5.28,
-                        "h": 5.28
-                      }
-                    }
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{opposition.logo}}",
-                    "style": {
-                      "radius": 9.5,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-5",
-                    "sizes": ["portrait", "story"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 6,
-                        "y": 37.51,
-                        "w": 7.04,
-                        "h": 5.63
-                      },
-                      "story": {
-                        "x": 6,
-                        "y": 56.06,
-                        "w": 7.04,
-                        "h": 3.96
-                      }
-                    }
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{opposition.logo}}",
-                    "style": {
-                      "radius": 4.15,
-                      "opacity": 0.74
-                    },
-                    "id": "e1-1-6",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 3.15,
-                        "y": 34.17,
-                        "w": 2.77,
-                        "h": 5.27
-                      }
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "e1-2",
-                "kind": "group",
-                "geometry": {
-                  "square": {
-                    "x": 55.54,
-                    "y": 26.74,
-                    "w": 33.32,
-                    "h": 16.94
-                  },
-                  "portrait": {
-                    "x": 50.92,
-                    "y": 29.58,
-                    "w": 44.37,
-                    "h": 18
-                  },
-                  "story": {
-                    "x": 50.92,
-                    "y": 50.49,
-                    "w": 44.37,
-                    "h": 12.66
-                  },
-                  "landscape": {
-                    "x": 29.13,
-                    "y": 26.66,
-                    "w": 17.95,
-                    "h": 16.83
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.score}}",
-                    "style": {
-                      "color": "#EAFBFF",
-                      "fontFamily": "'Anton',sans-serif",
-                      "fontSize": 11.22,
-                      "fontWeight": 400,
-                      "align": "left",
-                      "lineHeight": 0.9,
-                      "opacity": 0.74
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "e1-2-1",
-                    "sizes": ["square"],
-                    "geometry": {
-                      "square": {
-                        "x": 55.54,
-                        "y": 26.74,
-                        "w": 33.32,
-                        "h": 16.94
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.score}}",
-                    "style": {
-                      "color": "#EAFBFF",
-                      "fontFamily": "'Anton',sans-serif",
-                      "fontSize": 14.96,
-                      "fontWeight": 400,
-                      "align": "left",
-                      "lineHeight": 0.9,
-                      "opacity": 0.74
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "e1-2-2",
-                    "sizes": ["portrait", "story"],
-                    "geometry": {
-                      "portrait": {
-                        "x": 50.92,
-                        "y": 29.58,
-                        "w": 44.37,
-                        "h": 18
-                      },
-                      "story": {
-                        "x": 50.92,
-                        "y": 50.49,
-                        "w": 44.37,
-                        "h": 12.66
-                      }
-                    }
-                  },
-                  {
-                    "kind": "text",
-                    "content": "{{opposition.score}}",
-                    "style": {
-                      "color": "#EAFBFF",
-                      "fontFamily": "'Anton',sans-serif",
-                      "fontSize": 5.89,
-                      "fontWeight": 400,
-                      "align": "left",
-                      "lineHeight": 0.9,
-                      "opacity": 0.74
-                    },
-                    "fit": {
-                      "minScale": 0.6,
-                      "maxLines": 1,
-                      "ellipsis": true
-                    },
-                    "id": "e1-2-3",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 29.13,
-                        "y": 26.66,
-                        "w": 17.95,
-                        "h": 16.83
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
           }
         ]
       }

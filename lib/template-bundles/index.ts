@@ -462,14 +462,14 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
 ];
 
 export const ELEMENT_BUNDLES: ElementBundle[] = [
-  { look: "bold-type", hash: "2aeee0b6ed2015249b2619ae239168bb537e6d51bac7add9ba986d7421311fd7", file: elements0 },
-  { look: "broadcast-classic", hash: "ac8eb3d6c4fe2f0de6208486c173e2b5f700ada947bdf225a8d6ed5e95bcfe2d", file: elements1 },
-  { look: "broadcast-dark", hash: "7c5a33f4687ae8f12f7b6aa1d0233829c5cedfaa94aa5431d490ae9e27453e66", file: elements2 },
-  { look: "club-kit-classic", hash: "72ebb20854cb4358d8f56a35bee369d4ecccbc75f5e96f79589361e66a5fc3c2", file: elements3 },
-  { look: "club-kit", hash: "4597ff194d59ffe192c994d28aa7f9c64d311f79b25aa952904d38dea29ffd0e", file: elements4 },
+  { look: "bold-type", hash: "3e926bec6180ffe738a50e2f5e96007fe36241f069a072e43a56af2344ca953d", file: elements0 },
+  { look: "broadcast-classic", hash: "01b1b814d88d57d4dae8fba25d9175b54764def22e2a792d66c07893cb306d3c", file: elements1 },
+  { look: "broadcast-dark", hash: "1b87b7f42008536592942d4a0bc0e63c672f583e90332238b15969aeb81b3606", file: elements2 },
+  { look: "club-kit-classic", hash: "e94e1977e4d09d19eaebcdc663a6f74d5f8dde087514465188bba0f3d21b391c", file: elements3 },
+  { look: "club-kit", hash: "8f7d9c7a73664b26563dcfb7c5d011d633750ed4ad074ac7b57b84851d55663f", file: elements4 },
   { look: "clubhouse", hash: "1eaf6ad121c06013f0da75faee96e32808c94197b6bc1234b3aa236b6f5df2e0", file: elements5 },
   { look: "duotone", hash: "2134720c1616a04255013152cdcacfd6b0468c1a2e3bfb5cbe5475b048c9d3df", file: elements6 },
-  { look: "gold-foil", hash: "474a36e8cc2f0da3392537bc95fad20669bd49e27797a1a4672b1c347724089c", file: elements7 },
-  { look: "neon-night", hash: "7142a1533b18273bbe40227ac13fa1d56957832f083897563c213fd0b393a187", file: elements8 },
-  { look: "sunset", hash: "ef8ae691d69879eab3afa42bd937e12a805c36ff2389bf4d52174bdc9d63d327", file: elements9 },
+  { look: "gold-foil", hash: "bc18118c3e1b8bea91b778977aec155871f888ecd73d4452828ecd53b81796ab", file: elements7 },
+  { look: "neon-night", hash: "25aa3a67f2211bfa9d1cebd25a00b49e96458f6bbe6bf03cbddc3d88aedeb937", file: elements8 },
+  { look: "sunset", hash: "9ec43c295173dd3e6809429eb28049435664ae65d646d23c4eb73c2d08782eeb", file: elements9 },
 ];

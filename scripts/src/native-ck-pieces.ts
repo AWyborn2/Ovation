@@ -34,7 +34,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const PIECES_FILE = path.join(HERE, "data", "club-kit-pieces.json");
 
 /** The web app's piece registry, loaded at run time: its types need the DOM, the scripts' don't. */
-const REGISTRY = path.resolve(HERE, "../../artifacts/cricket-club/src/lib/studio-elements/registry.ts");
+const REGISTRY = path.resolve(
+  HERE,
+  "../../artifacts/cricket-club/src/lib/studio-elements/registry.ts",
+);
 type PieceDef = {
   id: string;
   label: string;
@@ -73,7 +76,11 @@ function pieceLayer(def: PieceDef): ElementLayer {
 }
 
 async function main(argv: readonly string[]): Promise<number> {
-  const only = argv.find((a) => a.startsWith("--only="))?.slice(7).split(",") ?? null;
+  const only =
+    argv
+      .find((a) => a.startsWith("--only="))
+      ?.slice(7)
+      .split(",") ?? null;
   const { ELEMENTS } = (await import(pathToFileURL(REGISTRY).href)) as {
     ELEMENTS: readonly PieceDef[];
   };
@@ -91,9 +98,17 @@ async function main(argv: readonly string[]): Promise<number> {
       const variant = variants.find((v) => v.kind === CARD_KIND);
       const a = variant?.renders.find((r) => r.content === "sentinel" && r.palette === "A");
       const b = variant?.renders.find((r) => r.content === "sentinel" && r.palette === "B");
-      if (!variant || !a || !b) throw new Error(`${INPUT_PACK} has no ${CARD_KIND} sentinel renders`);
+      if (!variant || !a || !b)
+        throw new Error(`${INPUT_PACK} has no ${CARD_KIND} sentinel renders`);
       const render = (r: typeof a, size: TemplateSize) =>
-        callHarness<CaptureRender>(page, "captureRender", INPUT_PACK, variant, r, size as CaptureSize);
+        callHarness<CaptureRender>(
+          page,
+          "captureRender",
+          INPUT_PACK,
+          variant,
+          r,
+          size as CaptureSize,
+        );
       const shot = async () =>
         (await (await page.$("#pack-capture-root"))!.screenshot({ encoding: "base64" })) as string;
 
@@ -132,7 +147,9 @@ async function main(argv: readonly string[]): Promise<number> {
           const after = await shot();
           match = Math.min(match, await pixelMatch(page, before, after));
         }
-        log(`[pieces] ${def.id}: ${layers.length} layer(s), lowest match ${(match * 100).toFixed(1)}%`);
+        log(
+          `[pieces] ${def.id}: ${layers.length} layer(s), lowest match ${(match * 100).toFixed(1)}%`,
+        );
         pieces.push({
           id: def.id,
           label: def.label,
@@ -146,7 +163,9 @@ async function main(argv: readonly string[]): Promise<number> {
       if (!only) {
         mkdirSync(path.dirname(PIECES_FILE), { recursive: true });
         writeFileSync(PIECES_FILE, `${JSON.stringify(pieces, null, 2)}\n`);
-        log(`[pieces] wrote ${pieces.length} pieces to ${path.relative(process.cwd(), PIECES_FILE)}`);
+        log(
+          `[pieces] wrote ${pieces.length} pieces to ${path.relative(process.cwd(), PIECES_FILE)}`,
+        );
       }
       return failures ? 1 : 0;
     },

@@ -178,22 +178,10 @@
               "fill": "var(--panel)",
               "clip": {
                 "polygon": [
-                  [
-                    29.8,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [29.8, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -231,22 +219,10 @@
               "fill": "var(--ck-chalk)",
               "clip": {
                 "polygon": [
-                  [
-                    28.36,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [28.36, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -284,22 +260,10 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    27.17,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [27.17, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -348,22 +312,10 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    24,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -414,22 +366,10 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    24,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -509,32 +449,16 @@
               "fill": "var(--panel)",
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    79.82
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.82],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "landscape"
-            ],
+            "sizes": ["square", "portrait", "landscape"],
             "geometry": {
               "square": {
                 "x": 0,
@@ -562,30 +486,16 @@
               "fill": "var(--panel)",
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    79.83
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.83],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "story"
-            ],
+            "sizes": ["story"],
             "geometry": {
               "story": {
                 "x": 0,
@@ -601,22 +511,10 @@
               "fill": "var(--ck-chalk)",
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    79.37
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 79.37],
+                  [0, 100]
                 ]
               }
             },
@@ -654,22 +552,10 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    79
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 79],
+                  [0, 100]
                 ]
               }
             },
@@ -718,22 +604,10 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    78
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 78],
+                  [0, 100]
                 ]
               }
             },
@@ -783,32 +657,16 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    78
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 78],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l6",
             "link": "el-l6",
-            "sizes": [
-              "square",
-              "story",
-              "landscape"
-            ],
+            "sizes": ["square", "story", "landscape"],
             "geometry": {
               "square": {
                 "x": 0,
@@ -848,30 +706,16 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    78.01
-                  ],
-                  [
-                    0,
-                    100.01
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 78.01],
+                  [0, 100.01]
                 ]
               }
             },
             "id": "el-l7",
             "link": "el-l6",
-            "sizes": [
-              "portrait"
-            ],
+            "sizes": ["portrait"],
             "geometry": {
               "portrait": {
                 "x": 0,
@@ -900,32 +744,16 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    78
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 78],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l8",
             "link": "el-l8",
-            "sizes": [
-              "square",
-              "story",
-              "landscape"
-            ],
+            "sizes": ["square", "story", "landscape"],
             "geometry": {
               "square": {
                 "x": 0,
@@ -966,30 +794,16 @@
               },
               "clip": {
                 "polygon": [
-                  [
-                    0,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    78.01
-                  ],
-                  [
-                    0,
-                    100.01
-                  ]
+                  [0, 0],
+                  [100, 0],
+                  [100, 78.01],
+                  [0, 100.01]
                 ]
               }
             },
             "id": "el-l9",
             "link": "el-l8",
-            "sizes": [
-              "portrait"
-            ],
+            "sizes": ["portrait"],
             "geometry": {
               "portrait": {
                 "x": 0,
@@ -1047,22 +861,10 @@
               "fill": "var(--panel)",
               "clip": {
                 "polygon": [
-                  [
-                    38.59,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [38.59, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -1100,22 +902,10 @@
               "fill": "var(--ck-chalk)",
               "clip": {
                 "polygon": [
-                  [
-                    35.32,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [35.32, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
@@ -1153,32 +943,16 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    32.45,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [32.45, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 62,
@@ -1206,30 +980,16 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    32.44,
-                    0
-                  ],
-                  [
-                    100,
-                    0
-                  ],
-                  [
-                    100,
-                    100
-                  ],
-                  [
-                    0,
-                    100
-                  ]
+                  [32.44, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
                 ]
               }
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 72,
@@ -1426,11 +1186,7 @@
             },
             "id": "el-l2",
             "link": "el-l2",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 18,
@@ -1471,9 +1227,7 @@
             },
             "id": "el-l3",
             "link": "el-l2",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 12.3,
@@ -1503,11 +1257,7 @@
             },
             "id": "el-l4",
             "link": "el-l4",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 18,
@@ -1549,9 +1299,7 @@
             },
             "id": "el-l5",
             "link": "el-l4",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 12.3,
@@ -1684,11 +1432,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 83.27,
@@ -1725,9 +1469,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 80.77,
@@ -1967,11 +1709,7 @@
             },
             "id": "el-l2",
             "link": "el-l2",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 78.67,
@@ -2007,9 +1745,7 @@
             },
             "id": "el-l3",
             "link": "el-l2",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 77.4,
@@ -2075,11 +1811,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2115,9 +1847,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2140,11 +1870,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 23.3,
@@ -2179,9 +1905,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 15.08,
@@ -2248,11 +1972,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2289,9 +2009,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2357,11 +2075,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2397,9 +2111,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2423,11 +2135,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2463,9 +2171,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2531,11 +2237,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2571,9 +2273,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2640,11 +2340,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2681,9 +2377,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -2806,11 +2500,7 @@
             },
             "id": "el-l6",
             "link": "el-l6",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 18,
@@ -2846,9 +2536,7 @@
             },
             "id": "el-l7",
             "link": "el-l6",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 12.3,
@@ -2914,11 +2602,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -2954,9 +2638,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -3021,11 +2703,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -3060,9 +2738,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -3166,11 +2842,7 @@
             },
             "id": "el-l2",
             "link": "el-l2",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8.4,
@@ -3211,9 +2883,7 @@
             },
             "id": "el-l3",
             "link": "el-l2",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.26,
@@ -3236,11 +2906,7 @@
             },
             "id": "el-l4",
             "link": "el-l4",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.85,
@@ -3275,9 +2941,7 @@
             },
             "id": "el-l5",
             "link": "el-l4",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.57,
@@ -3301,11 +2965,7 @@
             },
             "id": "el-l6",
             "link": "el-l6",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.8,
@@ -3341,9 +3001,7 @@
             },
             "id": "el-l7",
             "link": "el-l6",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.42,
@@ -3438,11 +3096,7 @@
             },
             "id": "el-l10",
             "link": "el-l10",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.51,
@@ -3483,9 +3137,7 @@
             },
             "id": "el-l11",
             "link": "el-l10",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.84,
@@ -3508,11 +3160,7 @@
             },
             "id": "el-l12",
             "link": "el-l12",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36.04,
@@ -3547,9 +3195,7 @@
             },
             "id": "el-l13",
             "link": "el-l12",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.77,
@@ -3573,11 +3219,7 @@
             },
             "id": "el-l14",
             "link": "el-l14",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 44.88,
@@ -3613,9 +3255,7 @@
             },
             "id": "el-l15",
             "link": "el-l14",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 26.41,
@@ -3681,11 +3321,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -3721,9 +3357,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -3746,11 +3380,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -3785,9 +3415,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -3918,11 +3546,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.3,
@@ -3957,9 +3581,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 5.92,
@@ -3984,11 +3606,7 @@
             },
             "id": "el-l5",
             "link": "el-l5",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.3,
@@ -4025,9 +3643,7 @@
             },
             "id": "el-l6",
             "link": "el-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 5.92,
@@ -4116,11 +3732,7 @@
             },
             "id": "el-l9",
             "link": "el-l9",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 18,
@@ -4155,9 +3767,7 @@
             },
             "id": "el-l10",
             "link": "el-l9",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 12.06,
@@ -4182,11 +3792,7 @@
             },
             "id": "el-l11",
             "link": "el-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 18,
@@ -4223,9 +3829,7 @@
             },
             "id": "el-l12",
             "link": "el-l11",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 12.06,
@@ -4314,11 +3918,7 @@
             },
             "id": "el-l15",
             "link": "el-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 29.7,
@@ -4353,9 +3953,7 @@
             },
             "id": "el-l16",
             "link": "el-l15",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 18.2,
@@ -4380,11 +3978,7 @@
             },
             "id": "el-l17",
             "link": "el-l17",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 29.7,
@@ -4421,9 +4015,7 @@
             },
             "id": "el-l18",
             "link": "el-l17",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 18.2,
@@ -4512,11 +4104,7 @@
             },
             "id": "el-l21",
             "link": "el-l21",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.4,
@@ -4551,9 +4139,7 @@
             },
             "id": "el-l22",
             "link": "el-l21",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 24.34,
@@ -4578,11 +4164,7 @@
             },
             "id": "el-l23",
             "link": "el-l23",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.4,
@@ -4619,9 +4201,7 @@
             },
             "id": "el-l24",
             "link": "el-l23",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 24.34,
@@ -4752,11 +4332,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8,
@@ -4791,9 +4367,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.05,
@@ -4821,11 +4395,7 @@
             },
             "id": "el-l5",
             "link": "el-l5",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -4865,9 +4435,7 @@
             },
             "id": "el-l6",
             "link": "el-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -4890,11 +4458,7 @@
             },
             "id": "el-l7",
             "link": "el-l7",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 47.08,
@@ -4929,9 +4493,7 @@
             },
             "id": "el-l8",
             "link": "el-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.56,
@@ -5020,11 +4582,7 @@
             },
             "id": "el-l11",
             "link": "el-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8,
@@ -5059,9 +4617,7 @@
             },
             "id": "el-l12",
             "link": "el-l11",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.05,
@@ -5089,11 +4645,7 @@
             },
             "id": "el-l13",
             "link": "el-l13",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -5133,9 +4685,7 @@
             },
             "id": "el-l14",
             "link": "el-l13",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -5158,11 +4708,7 @@
             },
             "id": "el-l15",
             "link": "el-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.26,
@@ -5197,9 +4743,7 @@
             },
             "id": "el-l16",
             "link": "el-l15",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.13,
@@ -5288,11 +4832,7 @@
             },
             "id": "el-l19",
             "link": "el-l19",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8,
@@ -5327,9 +4867,7 @@
             },
             "id": "el-l20",
             "link": "el-l19",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.05,
@@ -5357,11 +4895,7 @@
             },
             "id": "el-l21",
             "link": "el-l21",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -5401,9 +4935,7 @@
             },
             "id": "el-l22",
             "link": "el-l21",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -5426,11 +4958,7 @@
             },
             "id": "el-l23",
             "link": "el-l23",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.83,
@@ -5465,9 +4993,7 @@
             },
             "id": "el-l24",
             "link": "el-l23",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.44,
@@ -5556,11 +5082,7 @@
             },
             "id": "el-l27",
             "link": "el-l27",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8,
@@ -5595,9 +5117,7 @@
             },
             "id": "el-l28",
             "link": "el-l27",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.05,
@@ -5625,11 +5145,7 @@
             },
             "id": "el-l29",
             "link": "el-l29",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -5669,9 +5185,7 @@
             },
             "id": "el-l30",
             "link": "el-l29",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -5694,11 +5208,7 @@
             },
             "id": "el-l31",
             "link": "el-l31",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.51,
@@ -5733,9 +5243,7 @@
             },
             "id": "el-l32",
             "link": "el-l31",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.26,
@@ -5824,11 +5332,7 @@
             },
             "id": "el-l35",
             "link": "el-l35",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 8,
@@ -5863,9 +5367,7 @@
             },
             "id": "el-l36",
             "link": "el-l35",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.05,
@@ -5893,11 +5395,7 @@
             },
             "id": "el-l37",
             "link": "el-l37",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -5937,9 +5435,7 @@
             },
             "id": "el-l38",
             "link": "el-l37",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -5962,11 +5458,7 @@
             },
             "id": "el-l39",
             "link": "el-l39",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.48,
@@ -6001,9 +5493,7 @@
             },
             "id": "el-l40",
             "link": "el-l39",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.25,
@@ -6134,11 +5624,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.5,
@@ -6173,9 +5659,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6.03,
@@ -6204,11 +5688,7 @@
             },
             "id": "el-l5",
             "link": "el-l5",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -6249,9 +5729,7 @@
             },
             "id": "el-l6",
             "link": "el-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -6279,11 +5757,7 @@
             },
             "id": "el-l7",
             "link": "el-l7",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -6323,9 +5797,7 @@
             },
             "id": "el-l8",
             "link": "el-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -6348,11 +5820,7 @@
             },
             "id": "el-l9",
             "link": "el-l9",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.99,
@@ -6387,9 +5855,7 @@
             },
             "id": "el-l10",
             "link": "el-l9",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.51,
@@ -6478,11 +5944,7 @@
             },
             "id": "el-l13",
             "link": "el-l13",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.5,
@@ -6517,9 +5979,7 @@
             },
             "id": "el-l14",
             "link": "el-l13",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6.03,
@@ -6548,11 +6008,7 @@
             },
             "id": "el-l15",
             "link": "el-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -6593,9 +6049,7 @@
             },
             "id": "el-l16",
             "link": "el-l15",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -6623,11 +6077,7 @@
             },
             "id": "el-l17",
             "link": "el-l17",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -6667,9 +6117,7 @@
             },
             "id": "el-l18",
             "link": "el-l17",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -6692,11 +6140,7 @@
             },
             "id": "el-l19",
             "link": "el-l19",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.99,
@@ -6731,9 +6175,7 @@
             },
             "id": "el-l20",
             "link": "el-l19",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.51,
@@ -6822,11 +6264,7 @@
             },
             "id": "el-l23",
             "link": "el-l23",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.5,
@@ -6861,9 +6299,7 @@
             },
             "id": "el-l24",
             "link": "el-l23",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6.03,
@@ -6892,11 +6328,7 @@
             },
             "id": "el-l25",
             "link": "el-l25",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -6937,9 +6369,7 @@
             },
             "id": "el-l26",
             "link": "el-l25",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -6967,11 +6397,7 @@
             },
             "id": "el-l27",
             "link": "el-l27",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -7011,9 +6437,7 @@
             },
             "id": "el-l28",
             "link": "el-l27",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -7036,11 +6460,7 @@
             },
             "id": "el-l29",
             "link": "el-l29",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 45.39,
@@ -7075,9 +6495,7 @@
             },
             "id": "el-l30",
             "link": "el-l29",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 26.67,
@@ -7166,11 +6584,7 @@
             },
             "id": "el-l33",
             "link": "el-l33",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6.5,
@@ -7205,9 +6619,7 @@
             },
             "id": "el-l34",
             "link": "el-l33",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6.03,
@@ -7236,11 +6648,7 @@
             },
             "id": "el-l35",
             "link": "el-l35",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -7281,9 +6689,7 @@
             },
             "id": "el-l36",
             "link": "el-l35",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -7311,11 +6717,7 @@
             },
             "id": "el-l37",
             "link": "el-l37",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 15,
@@ -7355,9 +6757,7 @@
             },
             "id": "el-l38",
             "link": "el-l37",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 10.72,
@@ -7380,11 +6780,7 @@
             },
             "id": "el-l39",
             "link": "el-l39",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.44,
@@ -7419,9 +6815,7 @@
             },
             "id": "el-l40",
             "link": "el-l39",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.23,
@@ -7519,11 +6913,7 @@
             },
             "id": "el-l2",
             "link": "el-l2",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -7558,9 +6948,7 @@
             },
             "id": "el-l3",
             "link": "el-l2",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -7588,11 +6976,7 @@
             },
             "id": "el-l4",
             "link": "el-l4",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -7632,9 +7016,7 @@
             },
             "id": "el-l5",
             "link": "el-l4",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -7690,11 +7072,7 @@
             },
             "id": "el-l7",
             "link": "el-l7",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -7729,9 +7107,7 @@
             },
             "id": "el-l8",
             "link": "el-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -7759,11 +7135,7 @@
             },
             "id": "el-l9",
             "link": "el-l9",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -7803,9 +7175,7 @@
             },
             "id": "el-l10",
             "link": "el-l9",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -7828,11 +7198,7 @@
             },
             "id": "el-l11",
             "link": "el-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 26.1,
@@ -7867,9 +7233,7 @@
             },
             "id": "el-l12",
             "link": "el-l11",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 16.55,
@@ -7925,11 +7289,7 @@
             },
             "id": "el-l14",
             "link": "el-l14",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -7964,9 +7324,7 @@
             },
             "id": "el-l15",
             "link": "el-l14",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -7994,11 +7352,7 @@
             },
             "id": "el-l16",
             "link": "el-l16",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -8038,9 +7392,7 @@
             },
             "id": "el-l17",
             "link": "el-l16",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -8096,11 +7448,7 @@
             },
             "id": "el-l19",
             "link": "el-l19",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -8135,9 +7483,7 @@
             },
             "id": "el-l20",
             "link": "el-l19",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -8165,11 +7511,7 @@
             },
             "id": "el-l21",
             "link": "el-l21",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -8209,9 +7551,7 @@
             },
             "id": "el-l22",
             "link": "el-l21",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -8267,11 +7607,7 @@
             },
             "id": "el-l24",
             "link": "el-l24",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -8306,9 +7642,7 @@
             },
             "id": "el-l25",
             "link": "el-l24",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -8336,11 +7670,7 @@
             },
             "id": "el-l26",
             "link": "el-l26",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -8380,9 +7710,7 @@
             },
             "id": "el-l27",
             "link": "el-l26",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -8405,11 +7733,7 @@
             },
             "id": "el-l28",
             "link": "el-l28",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 27,
@@ -8444,9 +7768,7 @@
             },
             "id": "el-l29",
             "link": "el-l28",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 17.03,
@@ -8502,11 +7824,7 @@
             },
             "id": "el-l31",
             "link": "el-l31",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -8541,9 +7859,7 @@
             },
             "id": "el-l32",
             "link": "el-l31",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -8571,11 +7887,7 @@
             },
             "id": "el-l33",
             "link": "el-l33",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 10.8,
@@ -8615,9 +7927,7 @@
             },
             "id": "el-l34",
             "link": "el-l33",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 8.52,
@@ -8673,11 +7983,7 @@
             },
             "id": "el-l36",
             "link": "el-l36",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -8712,9 +8018,7 @@
             },
             "id": "el-l37",
             "link": "el-l36",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -8742,11 +8046,7 @@
             },
             "id": "el-l38",
             "link": "el-l38",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -8786,9 +8086,7 @@
             },
             "id": "el-l39",
             "link": "el-l38",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -8844,11 +8142,7 @@
             },
             "id": "el-l41",
             "link": "el-l41",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -8883,9 +8177,7 @@
             },
             "id": "el-l42",
             "link": "el-l41",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -8913,11 +8205,7 @@
             },
             "id": "el-l43",
             "link": "el-l43",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -8957,9 +8245,7 @@
             },
             "id": "el-l44",
             "link": "el-l43",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -9015,11 +8301,7 @@
             },
             "id": "el-l46",
             "link": "el-l46",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -9054,9 +8336,7 @@
             },
             "id": "el-l47",
             "link": "el-l46",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -9084,11 +8364,7 @@
             },
             "id": "el-l48",
             "link": "el-l48",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -9128,9 +8404,7 @@
             },
             "id": "el-l49",
             "link": "el-l48",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -9186,11 +8460,7 @@
             },
             "id": "el-l51",
             "link": "el-l51",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -9225,9 +8495,7 @@
             },
             "id": "el-l52",
             "link": "el-l51",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -9255,11 +8523,7 @@
             },
             "id": "el-l53",
             "link": "el-l53",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -9299,9 +8563,7 @@
             },
             "id": "el-l54",
             "link": "el-l53",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -9357,11 +8619,7 @@
             },
             "id": "el-l56",
             "link": "el-l56",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -9396,9 +8654,7 @@
             },
             "id": "el-l57",
             "link": "el-l56",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -9426,11 +8682,7 @@
             },
             "id": "el-l58",
             "link": "el-l58",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -9470,9 +8722,7 @@
             },
             "id": "el-l59",
             "link": "el-l58",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -9528,11 +8778,7 @@
             },
             "id": "el-l61",
             "link": "el-l61",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
@@ -9567,9 +8813,7 @@
             },
             "id": "el-l62",
             "link": "el-l61",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 19.23,
@@ -9597,11 +8841,7 @@
             },
             "id": "el-l63",
             "link": "el-l63",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 36,
@@ -9641,9 +8881,7 @@
             },
             "id": "el-l64",
             "link": "el-l63",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 21.75,
@@ -9666,11 +8904,7 @@
             },
             "id": "el-l65",
             "link": "el-l65",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 50.4,
@@ -9705,9 +8939,7 @@
             },
             "id": "el-l66",
             "link": "el-l65",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 29.31,
@@ -9775,11 +9007,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 27,
@@ -9820,9 +9048,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 26.03,
@@ -10068,11 +9294,7 @@
             },
             "id": "el-l9",
             "link": "el-l9",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 29.81,
@@ -10107,9 +9329,7 @@
             },
             "id": "el-l10",
             "link": "el-l9",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.52,
@@ -10164,11 +9384,7 @@
             },
             "id": "el-l12",
             "link": "el-l12",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 30.88,
@@ -10204,9 +9420,7 @@
             },
             "id": "el-l13",
             "link": "el-l12",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 28.09,
@@ -10231,11 +9445,7 @@
             },
             "id": "el-l14",
             "link": "el-l14",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.17,
@@ -10272,9 +9482,7 @@
             },
             "id": "el-l15",
             "link": "el-l14",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 28.24,
@@ -10363,11 +9571,7 @@
             },
             "id": "el-l18",
             "link": "el-l18",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.72,
@@ -10402,9 +9606,7 @@
             },
             "id": "el-l19",
             "link": "el-l18",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 28.29,
@@ -10429,11 +9631,7 @@
             },
             "id": "el-l20",
             "link": "el-l20",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.9,
@@ -10470,9 +9668,7 @@
             },
             "id": "el-l21",
             "link": "el-l20",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 28.39,
@@ -10561,11 +9757,7 @@
             },
             "id": "el-l24",
             "link": "el-l24",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.75,
@@ -10600,9 +9792,7 @@
             },
             "id": "el-l25",
             "link": "el-l24",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 33.56,
@@ -10627,11 +9817,7 @@
             },
             "id": "el-l26",
             "link": "el-l26",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.94,
@@ -10668,9 +9854,7 @@
             },
             "id": "el-l27",
             "link": "el-l26",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 33.65,
@@ -10759,11 +9943,7 @@
             },
             "id": "el-l30",
             "link": "el-l30",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 51.79,
@@ -10798,9 +9978,7 @@
             },
             "id": "el-l31",
             "link": "el-l30",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 38.82,
@@ -10825,11 +10003,7 @@
             },
             "id": "el-l32",
             "link": "el-l32",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 51.97,
@@ -10866,9 +10040,7 @@
             },
             "id": "el-l33",
             "link": "el-l32",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 38.92,
@@ -10957,11 +10129,7 @@
             },
             "id": "el-l36",
             "link": "el-l36",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 61.83,
@@ -10996,9 +10164,7 @@
             },
             "id": "el-l37",
             "link": "el-l36",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 44.09,
@@ -11023,11 +10189,7 @@
             },
             "id": "el-l38",
             "link": "el-l38",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 62.01,
@@ -11064,9 +10226,7 @@
             },
             "id": "el-l39",
             "link": "el-l38",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 44.19,
@@ -11124,46 +10284,16 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    50,
-                    0
-                  ],
-                  [
-                    61,
-                    35
-                  ],
-                  [
-                    98,
-                    35
-                  ],
-                  [
-                    68,
-                    57
-                  ],
-                  [
-                    79,
-                    91
-                  ],
-                  [
-                    50,
-                    70
-                  ],
-                  [
-                    21,
-                    91
-                  ],
-                  [
-                    32,
-                    57
-                  ],
-                  [
-                    2,
-                    35
-                  ],
-                  [
-                    39,
-                    35
-                  ]
+                  [50, 0],
+                  [61, 35],
+                  [98, 35],
+                  [68, 57],
+                  [79, 91],
+                  [50, 70],
+                  [21, 91],
+                  [32, 57],
+                  [2, 35],
+                  [39, 35]
                 ]
               }
             },
@@ -11201,46 +10331,16 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    50,
-                    0
-                  ],
-                  [
-                    61,
-                    35
-                  ],
-                  [
-                    98,
-                    35
-                  ],
-                  [
-                    68,
-                    57
-                  ],
-                  [
-                    79,
-                    91
-                  ],
-                  [
-                    50,
-                    70
-                  ],
-                  [
-                    21,
-                    91
-                  ],
-                  [
-                    32,
-                    57
-                  ],
-                  [
-                    2,
-                    35
-                  ],
-                  [
-                    39,
-                    35
-                  ]
+                  [50, 0],
+                  [61, 35],
+                  [98, 35],
+                  [68, 57],
+                  [79, 91],
+                  [50, 70],
+                  [21, 91],
+                  [32, 57],
+                  [2, 35],
+                  [39, 35]
                 ]
               }
             },
@@ -11278,46 +10378,16 @@
               "fill": "var(--gold)",
               "clip": {
                 "polygon": [
-                  [
-                    50,
-                    0
-                  ],
-                  [
-                    61,
-                    35
-                  ],
-                  [
-                    98,
-                    35
-                  ],
-                  [
-                    68,
-                    57
-                  ],
-                  [
-                    79,
-                    91
-                  ],
-                  [
-                    50,
-                    70
-                  ],
-                  [
-                    21,
-                    91
-                  ],
-                  [
-                    32,
-                    57
-                  ],
-                  [
-                    2,
-                    35
-                  ],
-                  [
-                    39,
-                    35
-                  ]
+                  [50, 0],
+                  [61, 35],
+                  [98, 35],
+                  [68, 57],
+                  [79, 91],
+                  [50, 70],
+                  [21, 91],
+                  [32, 57],
+                  [2, 35],
+                  [39, 35]
                 ]
               }
             },
@@ -11405,11 +10475,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -11445,9 +10511,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -11471,11 +10535,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -11511,9 +10571,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,
@@ -11646,11 +10704,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.8,
@@ -11687,9 +10741,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.99,
@@ -11713,11 +10765,7 @@
             },
             "id": "el-l5",
             "link": "el-l5",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.8,
@@ -11753,9 +10801,7 @@
             },
             "id": "el-l6",
             "link": "el-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.99,
@@ -11778,11 +10824,7 @@
             },
             "id": "el-l7",
             "link": "el-l7",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.8,
@@ -11817,9 +10859,7 @@
             },
             "id": "el-l8",
             "link": "el-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.99,
@@ -11956,11 +10996,7 @@
             },
             "id": "el-l3",
             "link": "el-l3",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12001,9 +11037,7 @@
             },
             "id": "el-l4",
             "link": "el-l3",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12026,11 +11060,7 @@
             },
             "id": "el-l5",
             "link": "el-l5",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12065,9 +11095,7 @@
             },
             "id": "el-l6",
             "link": "el-l5",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12090,11 +11118,7 @@
             },
             "id": "el-l7",
             "link": "el-l7",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 45.38,
@@ -12129,9 +11153,7 @@
             },
             "id": "el-l8",
             "link": "el-l7",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 26.67,
@@ -12226,11 +11248,7 @@
             },
             "id": "el-l11",
             "link": "el-l11",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12271,9 +11289,7 @@
             },
             "id": "el-l12",
             "link": "el-l11",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12296,11 +11312,7 @@
             },
             "id": "el-l13",
             "link": "el-l13",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12335,9 +11347,7 @@
             },
             "id": "el-l14",
             "link": "el-l13",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12360,11 +11370,7 @@
             },
             "id": "el-l15",
             "link": "el-l15",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 44.9,
@@ -12399,9 +11405,7 @@
             },
             "id": "el-l16",
             "link": "el-l15",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 26.42,
@@ -12496,11 +11500,7 @@
             },
             "id": "el-l19",
             "link": "el-l19",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12541,9 +11541,7 @@
             },
             "id": "el-l20",
             "link": "el-l19",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12566,11 +11564,7 @@
             },
             "id": "el-l21",
             "link": "el-l21",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 9.31,
@@ -12605,9 +11599,7 @@
             },
             "id": "el-l22",
             "link": "el-l21",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 7.74,
@@ -12630,11 +11622,7 @@
             },
             "id": "el-l23",
             "link": "el-l23",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 46.93,
@@ -12669,9 +11657,7 @@
             },
             "id": "el-l24",
             "link": "el-l23",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 27.49,
@@ -12736,11 +11722,7 @@
             },
             "id": "el-l1",
             "link": "el-l1",
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -12775,9 +11757,7 @@
             },
             "id": "el-l2",
             "link": "el-l1",
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 6,

@@ -528,11 +528,7 @@ function EditorApp({ draftId }: { draftId: number }) {
             )}
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
             {panel === "elements" && (
-              <ElementsPanel
-                size={format}
-                onAdd={addFreeLayer}
-                onAddLayers={addGroup}
-              />
+              <ElementsPanel size={format} onAdd={addFreeLayer} onAddLayers={addGroup} />
             )}
             {panel === "cricket" && (
               <CricketPanel
