@@ -2,12 +2,32 @@
  * Reading stored documents as v2 (T1.2): v1 `{ layers }` is the kind's
  * primary page, `animation` is `motion.in`, and nothing stored is changed.
  */
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { TEMPLATE_CARD_KINDS } from "./fields";
 import type { TemplateDocumentV2, TemplateLayerV2 } from "./format";
 import { documentPageLayers, documentPages, normaliseDocument, normaliseLayer } from "./normalise";
 import { primaryPage } from "./pages";
-import { STARTER_IDS, starterDocument } from "./starters";
+
+/** Every committed bundle template (the starters live there since T5.18). */
+const BUNDLES = path.resolve(__dirname, "../../../template-bundles");
+
+/** Every committed bundle template: look, kind and stored document. */
+function bundleDocuments(): Array<{ look: string; kind: string; document: unknown }> {
+  const out: Array<{ look: string; kind: string; document: unknown }> = [];
+  for (const look of readdirSync(BUNDLES).sort()) {
+    const dir = path.join(BUNDLES, look);
+    if (!statSync(dir).isDirectory() || look === "dist" || look === "node_modules") continue;
+    for (const file of readdirSync(dir).sort()) {
+      if (!file.endsWith(".json") || file === "look.json") continue;
+      const parsed = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
+        document: unknown;
+      };
+      out.push({ look, kind: file.replace(/\.json$/, ""), document: parsed.document });
+    }
+  }
+  return out;
+}
 
 const box = { square: { x: 0, y: 0, w: 50, h: 10 } };
 
@@ -32,20 +52,21 @@ function expectSameLayers(read: TemplateLayerV2[], stored: Array<Record<string, 
 }
 
 describe("v1 documents read as v2", () => {
-  it("puts every starter's layers on its kind's primary page", () => {
-    for (const starter of STARTER_IDS) {
-      for (const kind of TEMPLATE_CARD_KINDS) {
-        const stored = starterDocument(starter, kind);
-        if (!stored) continue;
-        const before = JSON.stringify(stored);
-        const doc = normaliseDocument(stored, kind);
-        expect(doc.formatVersion).toBe(2);
-        expect(doc.sourceFormat).toBe(1);
-        expect(documentPages(doc)).toEqual([primaryPage(kind)]);
-        expectSameLayers(documentPageLayers(doc, primaryPage(kind)), stored.layers);
-        // Never rewritten: the stored object is exactly as it was.
-        expect(JSON.stringify(stored)).toBe(before);
-      }
+  it("puts every v1 bundle template's layers on its kind's primary page", () => {
+    const v1 = bundleDocuments().filter(
+      (b) => !("formatVersion" in (b.document as object) || "pages" in (b.document as object)),
+    );
+    expect(v1.length).toBeGreaterThan(0);
+    for (const { kind, document } of v1) {
+      const stored = document as { layers: Array<Record<string, unknown>> };
+      const before = JSON.stringify(stored);
+      const doc = normaliseDocument(stored, kind);
+      expect(doc.formatVersion).toBe(2);
+      expect(doc.sourceFormat).toBe(1);
+      expect(documentPages(doc)).toEqual([primaryPage(kind)]);
+      expectSameLayers(documentPageLayers(doc, primaryPage(kind)), stored.layers);
+      // Never rewritten: the stored object is exactly as it was.
+      expect(JSON.stringify(stored)).toBe(before);
     }
   });
 

@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render } from "@testing-library/react";
 import {
   placeholderDocument,
-  starterDocument,
   TEMPLATE_CARD_KINDS,
   type LayerDocument,
 } from "@workspace/scorecard/kind-templates";
+import { starterDocument } from "@/test/starter-documents";
 import { CARD_KINDS, SIZES, type CardSize, type PhotoTransform } from "@/lib/share-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import { buildPackData } from "@/lib/pack-card-data";

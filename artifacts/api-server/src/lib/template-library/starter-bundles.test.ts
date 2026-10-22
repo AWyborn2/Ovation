@@ -1,41 +1,22 @@
 /**
- * The starters as bundles (ADR-011 T4.11): every starter × kind exported,
- * byte-identical to the TypeScript starter, listed except carousel and retired
- * kinds, and every committed bundle syncs without a problem. L4-D gives a
- * starter's Match Day and Match Summary templates the carousel pages from its
- * nearest polished look: the starter stays the primary page (gaining only text
- * fit, so long names shrink rather than overflow), the borrowed pages are
- * added, and the template is listed. The sync part is
- * a real-DB test (needs DATABASE_URL) and removes what it loaded.
+ * The starters as bundles (ADR-011 T4.11, L4-D). The starters' TypeScript went
+ * with T5.18, so the bundles are the starters now: every starter look holds a
+ * template for every kind it had, listed except Team List and retired kinds.
+ * Its Match Day and Match Summary templates carry the carousel pages from the
+ * nearest polished look (L4-D) at version 2; the rest are the original v1
+ * documents at version 1. (The web's render tests pin those originals.) And
+ * every committed bundle syncs without a problem: a real-DB test that removes
+ * what it loaded.
  */
 import { afterAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { db, libraryTemplatesTable, templateLooksTable } from "@workspace/db";
-import {
-  STARTER_IDS,
-  TEMPLATE_CARD_KINDS,
-  isDocumentV2,
-  primaryPage,
-  starterDocument,
-  type StarterId,
-} from "@workspace/scorecard/kind-templates";
+import { isDocumentV2, primaryPage } from "@workspace/scorecard/kind-templates";
 import { isRetiredCardKind } from "@workspace/scorecard";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { syncBundles } from "./bundles";
 
-const STARTER_LOOK: Record<StarterId, string> = {
-  "club-kit": "club-kit-classic",
-  broadcast: "broadcast-classic",
-  clubhouse: "clubhouse",
-};
-const CAROUSEL = new Set(["matchDay", "matchSummary", "teamList"]);
-
-/** A document's layers with any `fit` removed (L4-D adds fit to the starters' text). */
-const withoutFit = (layers: unknown[]): unknown[] =>
-  layers.map((layer) => {
-    const { fit: _fit, ...rest } = layer as { fit?: unknown; children?: unknown[] };
-    return rest.children ? { ...rest, children: withoutFit(rest.children) } : rest;
-  });
+const STARTER_LOOKS = ["club-kit-classic", "broadcast-classic", "clubhouse"];
 /** The pages L4-D adds to a starter's carousel templates. */
 const BORROWED: Record<string, readonly string[]> = {
   matchDay: ["title", "day", "sponsors"],
@@ -43,32 +24,25 @@ const BORROWED: Record<string, readonly string[]> = {
 };
 
 describe("starter bundles", () => {
-  for (const starter of STARTER_IDS) {
-    const bundle = TEMPLATE_BUNDLES.find((b) => b.slug === STARTER_LOOK[starter]);
+  for (const look of STARTER_LOOKS) {
+    const bundle = TEMPLATE_BUNDLES.find((b) => b.slug === look);
 
-    it(`${starter} is exported as the ${STARTER_LOOK[starter]} look`, () => {
+    it(`${look} carries its carousel pages, and lists everything but Team List`, () => {
       expect(bundle).toBeDefined();
-      const kinds = TEMPLATE_CARD_KINDS.filter((k) => starterDocument(starter, k));
-      expect(bundle!.templates.map((t) => t.kind).sort()).toEqual([...kinds].sort());
-    });
-
-    it(`${starter}'s documents are byte-identical to the TypeScript starters`, () => {
-      for (const t of bundle?.templates ?? []) {
-        const original = starterDocument(starter, t.kind)!;
+      expect(bundle!.templates.length).toBeGreaterThan(20);
+      for (const t of bundle!.templates) {
         const doc = t.file.document;
-        if (isDocumentV2(doc)) {
+        if (t.kind in BORROWED) {
+          expect(isDocumentV2(doc)).toBe(true);
+          if (!isDocumentV2(doc)) continue;
           const primary = primaryPage(t.kind);
-          expect(JSON.stringify(withoutFit(doc.pages[primary]!.layers))).toBe(
-            JSON.stringify(original.layers),
-          );
           expect(Object.keys(doc.pages).sort()).toEqual([primary, ...BORROWED[t.kind]!].sort());
-          expect(t.file.version).toBe(2);
-          expect(t.file.listed).toBe(true);
+          expect(t.file).toMatchObject({ version: 2, listed: true });
           continue;
         }
-        expect(JSON.stringify(doc)).toBe(JSON.stringify(original));
+        expect(isDocumentV2(doc)).toBe(false);
         expect(t.file.version).toBe(1);
-        expect(t.file.listed).toBe(!CAROUSEL.has(t.kind) && !isRetiredCardKind(t.kind));
+        expect(t.file.listed).toBe(t.kind !== "teamList" && !isRetiredCardKind(t.kind));
       }
     });
   }

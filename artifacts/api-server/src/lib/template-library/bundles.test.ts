@@ -186,7 +186,8 @@ describe("the bundles package", () => {
         if (statSync(full).isDirectory()) walk(full);
         else if (
           /\.(ts|tsx)$/.test(name) &&
-          readFileSync(full, "utf8").includes("template-bundles")
+          // The package, by import; test helpers may still read the bundle files.
+          readFileSync(full, "utf8").includes("@workspace/template-bundles")
         ) {
           offenders.push(path.relative(web, full));
         }

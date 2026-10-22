@@ -1,172 +1,36 @@
 /**
- * Starter proofs (plan U10): a contact sheet of every starter design, for
- * every card kind and size, rendered in this club's brand with sample data,
- * stress data (long names, empty optional lines, nine-row lists) and as a
- * junior card. Used to review starters before the KIND_TEMPLATES switch goes
- * on; kinds a starter hasn't designed yet show their placeholder, labelled.
+ * Template format proofs (L1-D): the format v2 samples, every v2 feature at
+ * every size, in this club's brand. The starter contact sheet this page used
+ * to show went with the starters' TypeScript (ADR-011 T5.18); the starters
+ * are bundles now, reviewed in the template library like every other look.
  */
 import { useState } from "react";
-import {
-  placeholderDocument,
-  STARTER_IDS,
-  STARTER_NAMES,
-  starterDocument,
-  TEMPLATE_CARD_KINDS,
-  TEMPLATE_SIZE_ORDER,
-  type StarterId,
-} from "@workspace/scorecard/kind-templates";
-import { PackCard } from "@/components/pack-card";
-import { FitCheckButton } from "@/components/template-library/fit-check-button";
 import { V2Samples } from "@/components/template-library/v2-samples";
-import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
-import type { ShareCardInput } from "@/lib/share-card";
-import { previewSample, stressSample } from "@/lib/kind-templates/samples";
-import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
-
-type Variant = "sample" | "stress" | "junior";
-const VARIANTS: Variant[] = ["sample", "stress", "junior"];
-
-function KindRow({
-  starter,
-  kind,
-  variant,
-  scale,
-}: {
-  starter: StarterId;
-  kind: ShareCardInput["kind"];
-  variant: Variant;
-  scale: number;
-}) {
-  const { data, clubName } = useKindTemplateData(kind);
-  const designed = starterDocument(starter, kind);
-  const doc = (designed ?? placeholderDocument(kind)) as CardAdjustments;
-  const input = variant === "stress" ? stressSample(kind, clubName) : previewSample(kind, clubName);
-  return (
-    <section className="border-b border-border py-4" aria-label={`${kind} ${variant}`}>
-      <h3 className="mb-2 text-sm font-semibold">
-        {kind}
-        {!designed && (
-          <span className="ml-2 rounded bg-amber-100 px-1.5 text-xs text-amber-900">
-            placeholder
-          </span>
-        )}
-      </h3>
-      {/* The fit check every template passes before it's listed (L2-B). */}
-      <div className="mb-2">
-        <FitCheckButton key={`${starter}/${kind}`} document={doc} kind={kind} />
-      </div>
-      <div className="flex flex-wrap items-end gap-3">
-        {TEMPLATE_SIZE_ORDER.map((size) => (
-          <figure key={size} className="m-0">
-            <PackCard
-              input={input}
-              size={size}
-              sponsorsOn
-              junior={variant === "junior"}
-              data={data}
-              packId={BLANK_PACK_ID}
-              adjustments={doc}
-              width={(size === "landscape" ? 220 : 160) * scale}
-            />
-            <figcaption className="mt-1 text-xs text-muted-foreground">{size}</figcaption>
-          </figure>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export default function AdminStarterProofs() {
-  const [starter, setStarter] = useState<StarterId>("club-kit");
-  const [variant, setVariant] = useState<Variant>("sample");
   const [scale, setScale] = useState(1);
-  const [only, setOnly] = useState<string>("all");
-  // The starters, or the format v2 samples (L1-D): every v2 feature at every size.
-  const [view, setView] = useState<"starters" | "v2">("starters");
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-xl font-bold">Starter proofs</h1>
+        <h1 className="text-xl font-bold">Template format proofs</h1>
         <p className="text-sm text-muted-foreground">
-          Every starter design for every card kind and size, in your club&apos;s colours. Check each
-          one before card kind templates are switched on.
+          Every format v2 feature at every size, in your club&apos;s colours. The looks, starters
+          included, are in the template library.
         </p>
       </header>
-      <div className="flex flex-wrap gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          Show
-          <select
-            className="rounded border border-border bg-background px-2 py-1"
-            value={view}
-            onChange={(e) => setView(e.target.value as "starters" | "v2")}
-          >
-            <option value="starters">Starters</option>
-            <option value="v2">Format v2 samples</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-2">
-          Starter
-          <select
-            className="rounded border border-border bg-background px-2 py-1"
-            value={starter}
-            onChange={(e) => setStarter(e.target.value as StarterId)}
-          >
-            {STARTER_IDS.map((id) => (
-              <option key={id} value={id}>
-                {STARTER_NAMES[id]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2">
-          Card
-          <select
-            className="rounded border border-border bg-background px-2 py-1"
-            value={only}
-            onChange={(e) => setOnly(e.target.value)}
-          >
-            <option value="all">Every card</option>
-            {TEMPLATE_CARD_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2">
-          Preview size
-          <select
-            className="rounded border border-border bg-background px-2 py-1"
-            value={scale}
-            onChange={(e) => setScale(Number(e.target.value))}
-          >
-            <option value={1}>Small</option>
-            <option value={2}>Medium</option>
-            <option value={3}>Large</option>
-          </select>
-        </label>
-        <label className="flex items-center gap-2">
-          Data
-          <select
-            className="rounded border border-border bg-background px-2 py-1"
-            value={variant}
-            onChange={(e) => setVariant(e.target.value as Variant)}
-          >
-            {VARIANTS.map((v) => (
-              <option key={v} value={v}>
-                {v === "sample" ? "Sample" : v === "stress" ? "Stress test" : "Junior card"}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {view === "v2" ? (
-        <V2Samples scale={scale} />
-      ) : (
-        TEMPLATE_CARD_KINDS.filter((k) => only === "all" || k === only).map((kind) => (
-          <KindRow key={kind} starter={starter} kind={kind} variant={variant} scale={scale} />
-        ))
-      )}
+      <label className="flex items-center gap-2 text-sm">
+        Preview size
+        <select
+          className="rounded border border-border bg-background px-2 py-1"
+          value={scale}
+          onChange={(e) => setScale(Number(e.target.value))}
+        >
+          <option value={1}>Small</option>
+          <option value={2}>Medium</option>
+          <option value={3}>Large</option>
+        </select>
+      </label>
+      <V2Samples scale={scale} />
     </div>
   );
 }

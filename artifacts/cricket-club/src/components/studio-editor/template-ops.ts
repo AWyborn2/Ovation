@@ -255,22 +255,3 @@ export function setVariantStyle(
     }),
   };
 }
-
-/**
- * A template as a starter document (T6.2): the layers only, without edit
- * timestamps, hidden or locked flags, so a designer can commit it to
- * `lib/scorecard/src/kind-templates/starters/*` under the kind. The starter
- * contract test then checks it (fields exist, no club literals or photo URLs).
- */
-export function starterExport(doc: EditorDoc): string {
-  const layers = layersOf(doc)
-    .filter((l) => !l.hidden)
-    .map((l) => {
-      const copy: FreeLayer = { ...l };
-      delete copy.editedAt;
-      delete copy.locked;
-      delete copy.hidden;
-      return copy;
-    });
-  return `${JSON.stringify({ layers }, null, 2)}\n`;
-}

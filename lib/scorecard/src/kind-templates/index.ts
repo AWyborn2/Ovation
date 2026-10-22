@@ -11,7 +11,7 @@ export * from "./normalise";
 export * from "./pages";
 export * from "./page-tokens";
 export * from "./slides";
-export * from "./starters";
+export * from "./placeholder";
 export * from "./svg";
 export * from "./warnings";
 export * from "./validate";
