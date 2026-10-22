@@ -414,10 +414,18 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
-      const style = {
-        ...cell.style,
-        ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
-      };
+      const override = variant ? spec.variants?.[variant]?.[cell.field] : undefined;
+      // On a v2 list, a row style's background for a key a backdrop holds colours that
+      // backdrop, not a text cell sharing the key that had none (a box behind the text).
+      const { background: _bg, ...textOverride } = override ?? {};
+      const own =
+        ctx.formatVersion === 2 &&
+        cell.show !== "backdrop" &&
+        cell.style?.background == null &&
+        spec.cells.some((c) => c.show === "backdrop" && c.field === cell.field)
+          ? textOverride
+          : override;
+      const style = { ...cell.style, ...own };
       const place = [
         "position:absolute",
         `left:${num(cell.x)}%`,

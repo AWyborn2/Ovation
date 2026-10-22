@@ -254,3 +254,42 @@ describe("a shape with no fill", () => {
     expect(html).toContain("var(--gold,#fbac27)");
   });
 });
+
+describe("a v2 list's row styles", () => {
+  const ladderInput = {
+    kind: "ladder",
+    competitionName: "PCA",
+    gradeLabel: "A Grade",
+    asOfLabel: "Round 5",
+    rows: [
+      { pos: 1, team: "Rockingham", played: 5, won: 4, lost: 1, points: 24, isClub: false },
+      { pos: 2, team: "Halls Head", played: 5, won: 3, lost: 2, points: 18, isClub: true },
+    ],
+  } as unknown as ShareCardInput;
+  const list = {
+    id: "list",
+    kind: "rows",
+    geometry: { square: { x: 5, y: 30, w: 90, h: 50 } },
+    rows: {
+      repeat: "rows",
+      rowHeight: 8,
+      cells: [
+        { field: "team", x: 0, w: 100, show: "backdrop", style: { background: "#222222" } },
+        { field: "team", x: 5, w: 70, style: { fontSize: 3 } },
+      ],
+      variants: { club: { team: { background: "#d3175a", color: "#ffffff" } } },
+    },
+  } as unknown as TemplateLayerV2;
+
+  it("colours the club row's backdrop, not a box behind its text", () => {
+    const html = render(ladderInput, {
+      formatVersion: 2,
+      pages: { card: { layers: [list] } },
+    } as CardAdjustments);
+    const club = html.slice(html.indexOf('data-row-variant="club"'));
+    const [backdrop, text] = club.split('data-row-cell="team"').slice(1, 3);
+    expect(backdrop).toContain("background:#d3175a");
+    expect(text).toContain("color:#ffffff");
+    expect(text).not.toContain("#d3175a");
+  });
+});

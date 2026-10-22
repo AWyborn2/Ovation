@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
-import { listPackManifests } from "@/lib/pack-templates/registry";
 import { ContentFieldPicker } from "@/components/social-studio/content-field-picker";
 import {
   CONTENT_PRESET_LABELS,
@@ -48,6 +47,7 @@ import { AutoPhotoStatus } from "./auto-photo-status";
 import { JuniorStockPicker } from "./junior-stock-picker";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
+import { CarouselTemplatePicker } from "./template-choice";
 import { useWeekendCarousel, type WeekendCarouselState } from "./use-weekend-carousel";
 
 const SIZE_KEYS = Object.keys(SIZES) as CardSize[];
@@ -165,25 +165,18 @@ export function WeekendCarouselBody({
           </p>
         )}
         <div className="space-y-1">
-          <Label htmlFor="carousel-pack">Built-in design pack</Label>
-          <select
-            id="carousel-pack"
-            value={s.packId}
-            disabled={s.busy}
-            onChange={(e) => s.setPackId(e.target.value)}
-            data-testid="select-carousel-pack"
-            className="flex h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 text-sm"
-          >
-            {listPackManifests().map((pack) => (
-              <option key={pack.packId} value={pack.packId}>
-                {pack.name}
-              </option>
-            ))}
-          </select>
+          <Label>Design</Label>
+          <CarouselTemplatePicker s={s} />
           <p className="text-xs text-muted-foreground">
-            Applies to every slide, including the cover and sponsors. Changing the pack keeps your
-            photos, crops, order and caption.
+            Applies to every slide; the cover and sponsors pages come from the same look&rsquo;s
+            match day design. Changing it keeps your photos, crops, order and caption, and your
+            club&rsquo;s default doesn&rsquo;t change.
           </p>
+          {s.assemblyError ? (
+            <p role="alert" className="text-xs text-destructive">
+              {s.assemblyError}
+            </p>
+          ) : null}
         </div>
         {s.error ? (
           <QueryError
@@ -492,7 +485,12 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
       {closingSlide && (
         <section className="space-y-3 rounded-md border p-3">
           <h3 className="text-base">Sponsors · final slide</h3>
-          <SlidePreview slide={closingSlide} size={s.size} packId={s.packId} />
+          <SlidePreview
+            slide={closingSlide}
+            size={s.size}
+            packId={s.packId}
+            document={s.document}
+          />
         </section>
       )}
 
@@ -598,11 +596,15 @@ function TeamEditor({
               ? `Shares one slide with the other junior games on this day (${shared.fixtureIds!.length} games). Junior day slides have no photo.`
               : "On the junior day slide above, with the other games on this day."}
           </p>
-          {showsShared && <SlidePreview slide={shared} size={s.size} packId={s.packId} />}
+          {showsShared && (
+            <SlidePreview slide={shared} size={s.size} packId={s.packId} document={s.document} />
+          )}
         </div>
       ) : (
         <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
-          {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
+          {slide && (
+            <SlidePreview slide={slide} size={s.size} packId={s.packId} document={s.document} />
+          )}
           <div className="min-w-0 space-y-4">
             {auto && (
               <AutoPhotoStatus

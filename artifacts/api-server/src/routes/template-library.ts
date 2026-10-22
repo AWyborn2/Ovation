@@ -8,6 +8,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   AdoptLibraryLookParams,
+  AssembleCarouselTemplateBody,
   ApplyClubTemplateBody,
   CreateClubTemplateBody,
   GetTemplatePreviewInputQueryParams,
@@ -20,6 +21,7 @@ import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admi
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { isTemplateKind } from "../lib/kind-templates";
+import { PAGE_KEYS, type PageKey } from "@workspace/scorecard/kind-templates";
 import {
   adoptLook,
   applyCopy,
@@ -35,6 +37,8 @@ import {
 } from "../lib/template-library/copies";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { previewInputFor } from "../lib/template-library/preview";
+import { assembleCarouselPages, setTemplateKind } from "../lib/template-library/draw";
+import { resolveDraftPack } from "../lib/draft-enrich";
 import {
   getLibraryTemplate,
   listLibraryLooks,
@@ -94,6 +98,37 @@ router.get("/template-library/preview-input", requireAdmin, async (req, res): Pr
   }
   res.json(await previewInputFor(getTenantId(req), parsed.data.kind));
 });
+
+// A carousel set's assembled document, for the Weekend Carousel's preview (T5.17).
+router.post(
+  "/template-library/carousel-assembly",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = AssembleCarouselTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { setType, pages, templateRef } = parsed.data;
+    const known = new Set<string>(PAGE_KEYS);
+    const unknown = pages.find((p) => !known.has(p));
+    if (unknown !== undefined) {
+      res.status(400).json({ error: `"${unknown.slice(0, 30)}" isn't a template page.` });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    try {
+      res.json(
+        await assembleCarouselPages(tenantId, setType, pages as PageKey[], {
+          templateRef: templateRef ?? null,
+          packId: await resolveDraftPack(tenantId, setTemplateKind(setType)),
+        }),
+      );
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
 
 router.post("/template-library/looks/:id/adopt", ...writes, async (req, res): Promise<void> => {
   const parsed = AdoptLibraryLookParams.safeParse(req.params);
