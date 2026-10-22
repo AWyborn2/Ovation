@@ -144,6 +144,40 @@ describe("editor v2", () => {
     expect(venue.fit).toEqual({ maxLines: 2 });
   });
 
+  it("clips a layer from the Layer panel, a drag on the clip pad undoing as one change", async () => {
+    open();
+    await screen.findByRole("combobox", { name: "Page" });
+    selectLayer("venue");
+    fireEvent.click(screen.getByRole("button", { name: "Layer" }));
+    const panel = await screen.findByTestId("layer-design-panel");
+    fireEvent.change(within(panel).getByRole("combobox", { name: "Clip shape" }), {
+      target: { value: "slash" },
+    });
+    const across = () =>
+      (within(panel).getByRole("spinbutton", { name: "Point 2 across (%)" }) as HTMLInputElement)
+        .value;
+    expect(across()).toBe("100");
+    const pad = within(panel).getByTestId("clip-pad");
+    pad.getBoundingClientRect = () => ({ left: 0, top: 0, width: 120, height: 120 }) as DOMRect;
+    fireEvent.pointerDown(within(panel).getByTestId("clip-point-1"), { pointerId: 1 });
+    fireEvent.pointerMove(pad, { clientX: 90, clientY: 10 });
+    fireEvent.pointerMove(pad, { clientX: 80, clientY: 10 });
+    fireEvent.pointerUp(pad);
+    expect(across()).toBe("70");
+    expect(within(panel).getByRole("combobox", { name: "Clip shape" })).toHaveProperty(
+      "value",
+      "custom",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(across()).toBe("100");
+    expect(within(panel).getByRole("combobox", { name: "Clip shape" })).toHaveProperty(
+      "value",
+      "slash",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(within(panel).getByRole("combobox", { name: "Clip shape" })).toHaveProperty("value", "");
+  });
+
   it("stacks two layers and lists them in the stack's controls", async () => {
     const requests = open();
     await screen.findByRole("combobox", { name: "Page" });

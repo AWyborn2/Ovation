@@ -824,7 +824,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                   layer={focus}
                   kind={kind}
                   page={page}
-                  onPatch={(patch) => edit(updateDeep(doc, focus.id, patch))}
+                  onPatch={(patch, done) => {
+                    // A drag in the panel (the clip pad) is one change, like a canvas drag.
+                    const next = updateDeep(doc, focus.id, patch);
+                    if (done === false || gestureBase.current) onCanvasChange(next, done !== false);
+                    else edit(next);
+                  }}
                   onSelect={(cid) => setFocusId(cid)}
                   onMoveChild={(cid, delta) => edit(moveChild(doc, focus.id, cid, delta))}
                   onUnstack={() => {
