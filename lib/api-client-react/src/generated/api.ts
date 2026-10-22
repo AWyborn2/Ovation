@@ -162,6 +162,7 @@ import type {
   ErrorEnvelope,
   FetchGoogleDriveFilesRequest,
   FetchGoogleDriveFilesResponse,
+  FigmaImportResult,
   FiveWicketHaul,
   Fixture,
   FixtureForecast,
@@ -212,6 +213,7 @@ import type {
   HonourDisplayBundle,
   HonourDisplaySettings,
   HonourDisplaySettingsUpdate,
+  ImportFigmaTemplateRequest,
   ImportPreview,
   ImportRecord,
   ImportSquadBody,
@@ -33931,6 +33933,78 @@ export const useCreateConsoleLibraryLook = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateConsoleLibraryLookMutationOptions(options));
+    }
+
+export const getImportFigmaTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/import/figma`
+}
+
+/**
+ * Reads the link's frames (named <page>/<size>, or card-shaped) with Ovation's read-only Figma token, maps them to the template format, exports vectors as SVG and copies images to the library, then saves an unlisted console template, validated and sent to the fit job. The report lists everything that was changed or left out. Colours bound to styles named ovation/* become the club's colour tokens.
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const importFigmaTemplate = async (importFigmaTemplateRequest: ImportFigmaTemplateRequest, options?: RequestInit): Promise<FigmaImportResult> => {
+
+  return customFetch<FigmaImportResult>(getImportFigmaTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      importFigmaTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getImportFigmaTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext> => {
+
+const mutationKey = ['importFigmaTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importFigmaTemplate>>, {data: BodyType<ImportFigmaTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importFigmaTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportFigmaTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof importFigmaTemplate>>>
+    export type ImportFigmaTemplateMutationBody = BodyType<ImportFigmaTemplateRequest>
+    export type ImportFigmaTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const useImportFigmaTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importFigmaTemplate>>,
+        TError,
+        {data: BodyType<ImportFigmaTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getImportFigmaTemplateMutationOptions(options));
     }
 
 export const getGetPlatformGradeDecisionsUrl = () => {
