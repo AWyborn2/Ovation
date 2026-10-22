@@ -1064,6 +1064,17 @@
   z-index: 3;
   background: var(--hb-board-bg);
 }
+/* The Glass skin's board background is translucent, so the pinned title and
+   heading rows would let the scrolling rows show through. Give them an opaque
+   frosted colour in the kiosk. */
+.hb-kiosk .skin-p3 .hb-head,
+.hb-kiosk .skin-p3 .hb-grid-table th,
+.hb-kiosk .skin-p3 .hb-col-head,
+.hb-kiosk.skin-p3 .hb-head,
+.hb-kiosk.skin-p3 .hb-grid-table th,
+.hb-kiosk.skin-p3 .hb-col-head {
+  background: #f1f4f8;
+}
 /* Preserve the printed-board skin's filled colour header row. */
 .hb-kiosk .skin-p9 .hb-grid-table th {
   background: var(--club-primary, #c1121f);
