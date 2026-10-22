@@ -515,6 +515,9 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
         .map((e) => e.style["mix-blend-mode"])
         .find((b) => b && b !== "normal");
       if (blend) style.blend = blend as BlendMode;
+      // A clip on a wrapper cuts the image inside it (Bold Type's slanted photo panel).
+      const clip = inheritedClip(tree, el);
+      if (clip) style.clip = clip;
       if (!PHOTO_SLOTS.has(slot) && slot !== "groundPhoto" && el.style["object-fit"] === "cover")
         polish.push({
           element: el.id,
@@ -785,6 +788,29 @@ function mixHex(a: string, b: string, t: number): string {
     b: pa.b + (pb.b - pa.b) * k,
     a: pa.a + (pb.a - pa.a) * k,
   });
+}
+
+/**
+ * The polygon a clipping ancestor cuts an image to, in percent of the image's
+ * own box (the ancestor's points moved into it), or undefined.
+ */
+function inheritedClip(tree: Tree, el: CapturedElement): TemplateStyleV2["clip"] | undefined {
+  const clipper = tree
+    .ancestors(el)
+    .find((a) => a.style["clip-path"] && a.style["clip-path"] !== "none");
+  if (!clipper || !(el.box.w > 0) || !(el.box.h > 0)) return undefined;
+  const size = clipper.size ?? { w: clipper.box.w, h: clipper.box.h };
+  const polygon = parseClipPolygon(clipper.style["clip-path"], size.w, size.h);
+  if (!polygon) return undefined;
+  const a = clipper.box;
+  const b = el.box;
+  const inBox = (v: number) => Math.min(200, Math.max(-100, r2(v)));
+  return {
+    polygon: polygon.map(([px, py]): [number, number] => [
+      inBox(((a.x + (px / 100) * a.w - b.x) / b.w) * 100),
+      inBox(((a.y + (py / 100) * a.h - b.y) / b.h) * 100),
+    ]),
+  };
 }
 
 /** One side of a border drawn on fewer than four sides. */

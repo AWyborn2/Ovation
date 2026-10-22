@@ -481,3 +481,25 @@ describe("stack flow items", () => {
     expect(item.geometry.square).toEqual({ x: 5, y: 10, w: 10, h: 5 });
   });
 });
+
+describe("clipped images", () => {
+  it("cuts an image to its wrapper's polygon, in the image's own box", () => {
+    const cap = capture();
+    const panel = el(0, "div", [540, 540, 540, 540], {
+      size: { w: 540, h: 540 },
+      style: { "clip-path": "polygon(18% 0px, 100% 0px, 100% 100%, 0px 100%)" },
+    });
+    // The photo covers the right half of the panel.
+    const pic = el(panel.id, "img", [810, 540, 270, 540], { src: "sentinel:photo" });
+    cap.elements.push(panel, pic);
+    const photo = mapCapture(cap).layers.find((l) => l.element === pic.id)!;
+    expect((photo.layer as { style?: { clip?: unknown } }).style?.clip).toEqual({
+      polygon: [
+        [-64, 0],
+        [100, 0],
+        [100, 100],
+        [-100, 100],
+      ],
+    });
+  });
+});
