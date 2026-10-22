@@ -5,40 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateSocialDraft, type TemplateRef } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { BLANK_PACK_ID, type PackCardData } from "@/lib/pack-render";
-import type { CardKind, CardSize, ShareCardInput } from "@/lib/share-card";
-import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
-import { PackCard } from "@/components/pack-card";
-import { CLUB_KIT_PACK } from "@/lib/pack-templates/club-kit";
+import { BLANK_PACK_ID } from "@/lib/pack-render";
+import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { getElement } from "@/lib/studio-elements/registry";
 
 const STARTER_SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
-
-/** A Club Kit starting point: one design (kind + leader preset). */
-export interface ClubKitStarter {
-  designKey: string;
-  name: string;
-  kind: CardKind;
-  category?: string;
-}
-
-/** Every Club Kit design, as an ad-hoc starting point. */
-export const CLUB_KIT_STARTERS: ClubKitStarter[] = CLUB_KIT_PACK.designs.map((d) => ({
-  designKey: d.designKey,
-  name: d.template.name,
-  kind: d.kind as CardKind,
-  ...(d.categoryPreset ? { category: d.categoryPreset } : {}),
-}));
-
-/** The input a Club Kit starter opens with. */
-export function starterInput(
-  starter: ClubKitStarter,
-  current: ShareCardInput,
-  inputFor: (kind: CardKind) => ShareCardInput,
-): ShareCardInput {
-  const base = starter.kind === current.kind ? current : inputFor(starter.kind);
-  return starter.category ? ({ ...base, category: starter.category } as ShareCardInput) : base;
-}
 
 /** A blank canvas already carrying the Club Kit background in every format. */
 export function clubKitBackgroundAdjustments(): { layers: Record<string, unknown>[] } {
@@ -67,29 +38,18 @@ type Props = {
    * the draft from that template rather than the pack.
    */
   templateRef?: TemplateRef | null;
-  /** A fresh card of another kind, for a template saved from that kind. */
-  inputFor: (kind: CardKind) => ShareCardInput;
-  /** Tenant data and theme, for the Club Kit design thumbnails. */
-  data?: PackCardData | null;
-  theme?: ApiCardTheme | null;
 };
 
 /**
- * Ways into the Studio editor from Create a card (U18): the card as composed,
- * a blank canvas (plain, or on the Club Kit background), or any Club Kit
- * design. (Saved editor templates retired with card kind templates, R20; the
- * template library replaced them.) Each makes an ad-hoc draft
+ * Ways into the Studio editor from Create a card (U18): the card as composed
+ * (drawn with the picked template, ADR-011), or a blank canvas (plain, or on
+ * the Club Kit background). New posts start from templates, never packs
+ * (T5.19): saved editor templates and the Club Kit design starters are
+ * retired; the template library holds every design. Each makes an ad-hoc draft
  * (awaiting review, never auto-posted) and opens it; the editor's Elements
  * panel then offers every Club Kit element for the design.
  */
-export function EditorStarters({
-  input,
-  packId,
-  templateRef = null,
-  inputFor,
-  data = null,
-  theme = null,
-}: Props) {
+export function EditorStarters({ input, packId, templateRef = null }: Props) {
   const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
   const create = useCreateSocialDraft();
@@ -147,46 +107,6 @@ export function EditorStarters({
             Start on the Club Kit background
           </Button>
         </div>
-
-        <section aria-labelledby="club-kit-designs" className="space-y-2">
-          <h3 id="club-kit-designs" className="text-sm font-semibold">
-            Start from a Club Kit design
-          </h3>
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {CLUB_KIT_STARTERS.map((st) => {
-              const stInput = starterInput(st, input, inputFor);
-              return (
-                <li key={st.designKey}>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={`Start from Club Kit ${st.name}`}
-                    onClick={() =>
-                      start({
-                        cardInput: stInput as unknown as Record<string, unknown>,
-                        packId: CLUB_KIT_PACK.packId,
-                      })
-                    }
-                    className="flex w-full flex-col gap-1 rounded-md border border-border p-1 text-left text-[11px] font-medium hover:border-primary disabled:opacity-50"
-                  >
-                    <span className="block overflow-hidden rounded-sm">
-                      <PackCard
-                        input={stInput}
-                        size="square"
-                        sponsorsOn
-                        junior={false}
-                        theme={theme}
-                        data={data}
-                        packId={CLUB_KIT_PACK.packId}
-                      />
-                    </span>
-                    <span className="truncate">{st.name}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
 
         {error && (
           <p role="alert" className="text-sm text-destructive">
