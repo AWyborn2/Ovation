@@ -255,6 +255,62 @@ export function editRows(
 }
 
 /**
+ * A text cell runs right to the next cell after it, less `gapPct` (percent of
+ * the row), so a long value's first word fits at the fit floor and the row
+ * cell can end in "…" after it.
+ */
+export function widenToNextCell(
+  doc: TemplateDocumentV2,
+  repeat: string,
+  field: string,
+  gapPct: number,
+): string[] {
+  let widened = 0;
+  editRows(doc, repeat, (rows) => {
+    for (const cell of rows.cells) {
+      if (cell.field !== field || cell.show) continue;
+      const next = rows.cells
+        .filter((o) => o !== cell && o.show !== "backdrop" && o.x >= cell.x + cell.w - 0.01)
+        .map((o) => o.x);
+      const w = r2((next.length ? Math.min(...next) : 100) - gapPct - cell.x);
+      if (w > cell.w) {
+        cell.w = w;
+        widened++;
+      }
+    }
+  });
+  return widened ? [`${repeat}.${field}: runs to the next cell (${widened} cells)`] : [];
+}
+
+/**
+ * A text cell's font is at most `maxRatio` of the cell's width (both in
+ * percent of the artboard, on the layer's narrowest size), so a long first
+ * word still fits at the fit floor. Shorter values are shrunk to about the
+ * same size by the fit step anyway.
+ */
+export function capFontToCell(
+  doc: TemplateDocumentV2,
+  repeat: string,
+  field: string,
+  maxRatio: number,
+): string[] {
+  let capped = 0;
+  editRows(doc, repeat, (rows, layer) => {
+    const widths = Object.values(layer.geometry).map((g) => g?.w ?? 100);
+    const layerW = Math.min(...widths);
+    for (const cell of rows.cells) {
+      if (cell.field !== field || cell.show || cell.style?.fontSize === undefined) continue;
+      const max = r2((maxRatio * cell.w * layerW) / 100);
+      if (cell.style.fontSize > max) {
+        cell.style = { ...cell.style, fontSize: max };
+        capped++;
+      }
+    }
+  });
+  return capped ? [`${repeat}.${field}: font at most ${maxRatio} of the cell's width`] : [];
+}
+
+/**
  * A row cell drawn as a chip: a fill behind the cell's text, a little wider
  * and taller than the text, centred. `plain` variants keep no fill.
  */

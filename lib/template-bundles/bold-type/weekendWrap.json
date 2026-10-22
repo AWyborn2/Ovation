@@ -586,11 +586,11 @@
                 {
                   "field": "gradeLabel",
                   "x": 2.05,
-                  "w": 8.87,
+                  "w": 10.36,
                   "y": 6.19,
                   "h": 30.28,
                   "style": {
-                    "fontSize": 3.56,
+                    "fontSize": 2.88,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -686,11 +686,11 @@
                 {
                   "field": "gradeLabel",
                   "x": 2.5,
-                  "w": 11,
+                  "w": 13,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 4.75,
+                    "fontSize": 3.89,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -786,11 +786,11 @@
                 {
                   "field": "gradeLabel",
                   "x": 2.5,
-                  "w": 11,
+                  "w": 13,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 4.75,
+                    "fontSize": 3.89,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -886,11 +886,11 @@
                 {
                   "field": "gradeLabel",
                   "x": 1.76,
-                  "w": 7.33,
+                  "w": 8.46,
                   "y": 6.59,
                   "h": 30.04,
                   "style": {
-                    "fontSize": 1.87,
+                    "fontSize": 1.49,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
