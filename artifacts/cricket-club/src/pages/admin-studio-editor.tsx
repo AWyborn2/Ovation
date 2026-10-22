@@ -23,8 +23,6 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
-  useListKindTemplates,
-  getListKindTemplatesQueryKey,
   type CardTemplate,
   type CardTheme as ApiCardTheme,
   type SocialSettingsBundle,
@@ -54,7 +52,6 @@ import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/cont
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
-import { SaveTemplateButton } from "@/components/studio-editor/save-template";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import {
   commit,
@@ -217,10 +214,6 @@ function EditorApp({ draftId }: { draftId: number }) {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
   const theme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
   const templatesQ = useListCardTemplates({ query: { queryKey: getListCardTemplatesQueryKey() } });
-  // Save as template is retired once card kind templates are on (R20).
-  const kindTemplatesOn =
-    useListKindTemplates({ query: { queryKey: getListKindTemplatesQueryKey() } }).data?.enabled ===
-    true;
   // A draft saved with a hidden legacy pack (P9) edits as Club Kit.
   const packId = renderablePackId(
     draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind),
@@ -511,16 +504,6 @@ function EditorApp({ draftId }: { draftId: number }) {
               }}
               baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
             />
-            {!kindTemplatesOn && (
-              <SaveTemplateButton
-                draftId={draftId}
-                beforeSave={() =>
-                  dirty
-                    ? update.mutateAsync({ id: draftId, data: { adjustments: rootDoc } })
-                    : Promise.resolve()
-                }
-              />
-            )}
           </>
         }
       />

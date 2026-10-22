@@ -293,14 +293,7 @@ export default function AdminSocialCreate() {
               </Button>
             </CardContent>
           </Card>
-          <EditorStarters
-            input={input}
-            packId={previewPackId}
-            templateRef={picked?.ref ?? null}
-            inputFor={(k) => buildCardInput(k, seedState(k, brand), false)}
-            data={packData}
-            theme={previewTheme}
-          />
+          <EditorStarters input={input} packId={previewPackId} templateRef={picked?.ref ?? null} />
         </div>
       </div>
 
