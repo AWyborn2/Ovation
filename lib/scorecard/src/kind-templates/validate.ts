@@ -19,7 +19,8 @@
  * starter and bundle contract tests.
  */
 import { TEMPLATE_SIZE_ORDER } from "./document";
-import { kindFields } from "./fields";
+import { MAX_ELEMENT_LAYERS } from "./elements";
+import { kindFields, TEMPLATE_CARD_KINDS } from "./fields";
 import {
   BLEND_MODES,
   BORDER_SIDES,
@@ -36,6 +37,7 @@ import {
   MOTION_IN_PRESETS,
   MOTION_LOOP_PRESETS,
   OVERLAY_KINDS,
+  PAGE_KEYS,
   STACK_ALIGNS,
   STACK_DIRECTIONS,
   STACK_JUSTIFIES,
@@ -852,6 +854,70 @@ function v2DocumentErrors(doc: Record<string, unknown>, kind: string): string[] 
   if (total > MAX_V2_DOCUMENT_LAYERS)
     errors.push(
       `A template can hold at most ${MAX_V2_DOCUMENT_LAYERS} layers; this one has ${total}.`,
+    );
+  return errors;
+}
+
+/**
+ * A library element's scope: the tokens and lists of every page of every kind,
+ * since an element can be inserted into any card. A token the card it lands in
+ * lacks is caught when that template is saved.
+ */
+function elementScope(): Scope {
+  const tokens = new Set<string>();
+  const pages: Array<[string, PageKey]> = [];
+  for (const kind of TEMPLATE_CARD_KINDS) {
+    for (const page of PAGE_KEYS) {
+      if (!kindHasPage(kind, page)) continue;
+      pages.push([kind, page]);
+      for (const t of pageTokenKeys(kind, page)) tokens.add(t);
+    }
+  }
+  return {
+    v2: true,
+    tokens,
+    repeat: (key) => {
+      for (const [kind, page] of pages) {
+        const r = pageRepeat(kind, page, key);
+        if (r)
+          return {
+            label: r.label,
+            fields: new Set(r.fields.map((f) => f.key)),
+            variants: r.variants,
+          };
+      }
+      return null;
+    },
+  };
+}
+
+/**
+ * Every problem with a library element's document (`elements.ts`), in plain
+ * language; empty when it is valid. Its layers follow v2's rules.
+ */
+export function elementDocumentErrors(doc: unknown): string[] {
+  const errors: Errors = [];
+  if (!isObject(doc)) return ["An element needs a list of layers."];
+  knownKeys(errors, "The element", doc, new Set(["formatVersion", "layers", "palettes"]));
+  if (doc.formatVersion !== FORMAT_VERSION) errors.push(`formatVersion must be ${FORMAT_VERSION}.`);
+  if (doc.palettes !== undefined) {
+    if (
+      !Array.isArray(doc.palettes) ||
+      doc.palettes.some((p) => !(DERIVED_PALETTES as readonly unknown[]).includes(p)) ||
+      new Set(doc.palettes).size !== doc.palettes.length
+    )
+      errors.push(`palettes must list ${DERIVED_PALETTES.join(" or ")} once each.`);
+  }
+  if (!Array.isArray(doc.layers)) return [...errors, "An element needs a list of layers."];
+  if (doc.layers.length === 0) errors.push("An element needs at least one layer.");
+  if (JSON.stringify(doc).length > MAX_DOCUMENT_BYTES)
+    return [...errors, `An element can be at most ${MAX_DOCUMENT_BYTES / 1024 / 1024} MB.`];
+  const w: Walk = { errors, ids: new Set(), pageLayers: 0 };
+  const scope = elementScope();
+  doc.layers.forEach((layer, i) => checkLayerV2(w, layer, "element", i, scope, 1));
+  if (w.pageLayers > MAX_ELEMENT_LAYERS)
+    errors.push(
+      `An element can hold at most ${MAX_ELEMENT_LAYERS} layers; this one has ${w.pageLayers}.`,
     );
   return errors;
 }

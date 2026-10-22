@@ -6482,6 +6482,145 @@ paths:
         "404":
           description: Not in the library
 
+  /template-library/elements:
+    get:
+      operationId: listLibraryElements
+      tags: [socialCards]
+      summary: Browse and search the element library
+      description: >-
+        Listed library elements (decorations from every look and those clubs
+        saved), 48 a page, optionally for one category or look, or matching a
+        search across names and tags. Every element is shared with every club.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the element's name or tags.
+          schema: { type: string, maxLength: 60 }
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/LibraryElementCategory"
+        - name: look
+          in: query
+          required: false
+          description: A look's slug.
+          schema: { type: string }
+        - name: mine
+          in: query
+          required: false
+          description: Only the elements this club saved, listed or not.
+          schema: { type: boolean }
+        - name: cursor
+          in: query
+          required: false
+          description: The previous page's `nextCursor`.
+          schema: { type: integer }
+      responses:
+        "200":
+          description: One page of elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElementPage"
+    post:
+      operationId: saveLibraryElement
+      tags: [socialCards]
+      summary: Save layers as a public library element
+      description: >-
+        Publishes the layers to every club at once (decision E1). The document
+        may only use tokens, slots and library images: no club upload, photo
+        or sponsor art.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveLibraryElementRequest"
+      responses:
+        "201":
+          description: The saved element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "400":
+          description: The name, category, tags or layers are not valid
+
+  /template-library/elements/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getLibraryElement
+      tags: [socialCards]
+      summary: One library element, to insert
+      description: >-
+        A listed element, or one this club saved (listed or not). Inserting
+        copies its layers into the card; nothing links back to the element.
+      responses:
+        "200":
+          description: The element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "404":
+          description: Not in the library
+
+  /template-library/elements/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistLibraryElement
+      tags: [socialCards]
+      summary: Take an element this club saved out of the library
+      description: >-
+        Other clubs stop seeing it. Cards it was already inserted into keep
+        their copies of its layers.
+      responses:
+        "200":
+          description: The element, now unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "404":
+          description: Not an element this club saved
+
+  /template-library/elements/{id}/report:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: reportLibraryElement
+      tags: [socialCards]
+      summary: Report a library element to Ovation
+      description: >-
+        One report per club and element; reporting again replaces the reason.
+        A club cannot report its own element (it can unlist it instead).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportLibraryElementRequest"
+      responses:
+        "204":
+          description: Reported
+        "400":
+          description: No reason given, or the club's own element
+        "404":
+          description: Not in the library
+
   /club-templates:
     get:
       operationId: listClubTemplates
@@ -22682,6 +22821,85 @@ components:
         nextCursor:
           type: ["integer", "null"]
           description: Pass as `cursor` for the next page; null on the last page.
+
+    LibraryElementCategory:
+      type: string
+      description: The Elements panel's categories (`ELEMENT_CATEGORIES`).
+      enum: [frames, bands, badges, rules, glows, crest-frames, sponsor-strips, data-blocks]
+
+    LibraryElementDocument:
+      type: object
+      description: >-
+        A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`,
+        each layer keeping its geometry per size. The validator owns the
+        detailed shape; the server checks it on save.
+      additionalProperties: true
+
+    LibraryElement:
+      type: object
+      required:
+        [id, slug, name, category, tags, origin, authorName, mine, look, listed, document, thumbnailUrl, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        name: { type: string }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          items: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that saved it.
+        mine:
+          type: boolean
+          description: This club saved it, so it can unlist it.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        listed: { type: boolean }
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+        thumbnailUrl:
+          type: ["string", "null"]
+          description: A library image; null when the panel draws the element live.
+        createdAt: { type: string, format: date-time }
+
+    LibraryElementPage:
+      type: object
+      required: [elements, nextCursor]
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryElement"
+        nextCursor:
+          type: ["integer", "null"]
+          description: Pass as `cursor` for the next page; null on the last page.
+
+    SaveLibraryElementRequest:
+      type: object
+      required: [name, category, document]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          maxItems: 12
+          items: { type: string, minLength: 1, maxLength: 24 }
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+
+    ReportLibraryElementRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
 
     LibraryLookTemplate:
       type: object

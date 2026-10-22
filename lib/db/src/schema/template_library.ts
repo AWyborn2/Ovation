@@ -10,6 +10,7 @@ import {
   primaryKey,
   check,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tenantsTable } from "./tenants";
@@ -179,3 +180,112 @@ export const templateGenerationsTable = pgTable(
 );
 
 export type TemplateGenerationRow = typeof templateGenerationsTable.$inferSelect;
+
+/** The Elements panel's categories (`ELEMENT_CATEGORIES` in `@workspace/scorecard`). */
+export type LibraryElementCategory =
+  | "frames"
+  | "bands"
+  | "badges"
+  | "rules"
+  | "glows"
+  | "crest-frames"
+  | "sponsor-strips"
+  | "data-blocks";
+
+/**
+ * Library elements (editable-elements plan, Stream D; migration 0061): shared
+ * decorations every club can insert. Like the library templates, a shared
+ * table: an element is a fragment of v2 layers holding no club's assets, and
+ * a club's save is public (decision E1). Inserting copies the layers into a
+ * card (E2), so nothing references a row afterwards.
+ *
+ *   origin 'bundle'   extracted from the looks, synced at boot (slug, bundle_hash)
+ *          'club'     saved by a club (author_tenant_id), public at once
+ *          'console'  made by a platform designer
+ */
+export const libraryElementsTable = pgTable(
+  "library_elements",
+  {
+    id: serial("id").primaryKey(),
+    // 'club-kit/frames/gold-corner' for bundle elements; null otherwise.
+    slug: text("slug").unique(),
+    name: text("name").notNull(),
+    category: text("category").$type<LibraryElementCategory>().notNull(),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    lookId: integer("look_id").references(() => templateLooksTable.id, { onDelete: "set null" }),
+    origin: text("origin").$type<TemplateOrigin>().notNull(),
+    // Null = Ovation.
+    authorTenantId: integer("author_tenant_id").references(() => tenantsTable.id, {
+      onDelete: "set null",
+    }),
+    // The club admin or platform admin who saved it.
+    createdByAdminId: integer("created_by_admin_id"),
+    // { formatVersion: 2, layers, palettes? } (`ElementDocument`).
+    document: jsonb("document").notNull(),
+    // What the extraction de-duplicates by: the layers with ids and positions left out.
+    signature: text("signature"),
+    // Bundle origin only: the hash of the element file this row came from.
+    bundleHash: text("bundle_hash"),
+    // A library asset (`/api/storage/public-objects/library/…`); null = drawn live.
+    thumbnailUrl: text("thumbnail_url"),
+    listed: boolean("listed").notNull().default(true),
+    unlistedAt: timestamp("unlisted_at", { withTimezone: true }),
+    unlistedBy: text("unlisted_by").$type<"author" | "ovation">(),
+    unlistReason: text("unlist_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxCategoryListed: index("library_elements_category_listed")
+      .on(t.category)
+      .where(sql`listed`),
+    idxAuthor: index("library_elements_author").on(t.authorTenantId),
+    chkOrigin: check(
+      "library_elements_origin_check",
+      sql`"origin" IN ('bundle', 'console', 'club')`,
+    ),
+    chkCategory: check(
+      "library_elements_category_check",
+      sql`"category" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks')`,
+    ),
+    chkUnlistedBy: check(
+      "library_elements_unlisted_by_check",
+      sql`"unlisted_by" IS NULL OR "unlisted_by" IN ('author', 'ovation')`,
+    ),
+  }),
+);
+
+export type LibraryElementRow = typeof libraryElementsTable.$inferSelect;
+
+/**
+ * A club's report of a library element (E1: any admin can report one; the
+ * platform console reviews them). One per club and element: reporting again
+ * replaces the reason. `resolved_at` is set when Ovation deals with it.
+ */
+export const libraryElementReportsTable = pgTable(
+  "library_element_reports",
+  {
+    id: serial("id").primaryKey(),
+    elementId: integer("element_id")
+      .notNull()
+      .references(() => libraryElementsTable.id, { onDelete: "cascade" }),
+    tenantId: integer("tenant_id")
+      .notNull()
+      .references(() => tenantsTable.id, { onDelete: "cascade" }),
+    adminId: integer("admin_id"),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => ({
+    uniqElementTenant: uniqueIndex("library_element_reports_element_tenant").on(
+      t.elementId,
+      t.tenantId,
+    ),
+  }),
+);
+
+export type LibraryElementReportRow = typeof libraryElementReportsTable.$inferSelect;
