@@ -1404,6 +1404,19 @@ function rowCells(
   const rowTwin = opts.twin?.(row);
   const useTwin = !!rowTwin && rowTwin !== row && rowTwin.box.h > 0;
   const rowBox = useTwin ? rowTwin!.box : row.box;
+  // A text cell at least one line of its font tall, centred where it was: an inline span's
+  // box is shorter than its line, and the template draws the line (1.05 of the font).
+  const lineTall = <C extends { y?: number; h?: number }>(
+    cell: C,
+    style: NonNullable<RowsCell["style"]>,
+  ): C => {
+    const linePx = ((style.fontSize ?? 0) / 100) * opts.W * 1.15;
+    const minH = Math.min(100, r2((linePx / rowBox.h) * 100));
+    const y = cell.y ?? 0;
+    const h = cell.h ?? 100;
+    if (h >= minH) return cell;
+    return { ...cell, y: Math.min(100 - minH, Math.max(0, r2(y + h / 2 - minH / 2))), h: minH };
+  };
   const fieldFor = (el: CapturedElement, text: string): string | null => {
     if (opts.cellField) return opts.cellField(el);
     const t = text.trim().toLowerCase();
@@ -1460,8 +1473,29 @@ function rowCells(
     }
     for (const run of el.text ?? []) {
       const field = fieldFor(el, run.text);
-      if (field) cells.push({ field, ...at(el), style: textStyle(el) });
+      if (!field) continue;
+      const style = textStyle(el);
+      cells.push({ field, ...lineTall(at(el), style), style });
     }
+  }
+  // A left-aligned text cell runs to the next cell on its line, as the pack's flex row lets
+  // it grow: its captured width is only as wide as that row's own text.
+  for (const c of cells) {
+    if (c.show || (c.style?.align ?? "left") !== "left") continue;
+    const top = c.y ?? 0;
+    const bottom = top + (c.h ?? 100);
+    const next = cells
+      .filter(
+        (o) =>
+          o !== c &&
+          o.show !== "backdrop" &&
+          o.x > c.x + 0.5 &&
+          (o.y ?? 0) < bottom &&
+          (o.y ?? 0) + (o.h ?? 100) > top,
+      )
+      .map((o) => o.x);
+    const edge = next.length ? Math.min(...next) - 1 : 98;
+    if (edge > c.x + c.w) c.w = r2(edge - c.x);
   }
   const firstField = cells.find((c) => c.field)?.field ?? "";
   // A backdrop cell needs a field key; it draws whatever the field holds.

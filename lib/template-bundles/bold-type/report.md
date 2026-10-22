@@ -286,10 +286,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 91% | none |
-| portrait | 86% | none |
-| story | 89% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 88% | none |
+| square | 90% | none |
+| portrait | 85% | none |
+| story | 86% | none |
+| landscape | 87% | none |
 
 Polish:
 
@@ -354,9 +354,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 90% | none |
+| square | 89% | none |
 | portrait | 85% | none |
-| story | 88% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| story | 85% | none |
 | landscape | 85% | none |
 
 Polish:
@@ -524,10 +524,10 @@ Polish applied:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 87% | overflow |
-| portrait | 89% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| story | 91% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 91% | overflow |
+| square | 86% | none |
+| portrait | 88% | overflow |
+| story | 91% | overflow |
+| landscape | 91% | none |
 
 Polish:
 
@@ -554,8 +554,8 @@ Polish applied:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 92% | overflow; overflow |
-| portrait | 90% | overflow; overflow; overflow |
-| story | 92% | overflow; overflow; overflow |
+| portrait | 90% | overflow; overflow |
+| story | 92% | overflow; overflow |
 | landscape | 95% | overflow |
 
 Polish:

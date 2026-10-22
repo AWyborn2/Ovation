@@ -56,7 +56,7 @@ Polish applied:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 91% | none |
+| square | 92% | none |
 | portrait | 89% | none |
 | story | 92% | none |
 | landscape | 95% | none |
@@ -114,8 +114,8 @@ Polish applied:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 91% | none |
-| portrait | 84% | none |
-| story | 89% | none |
+| portrait | 85% | none |
+| story | 90% | none |
 | landscape | 93% | none |
 
 Polish:
@@ -309,9 +309,9 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 91% | none |
-| portrait | 87% | none |
-| story | 89% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 88% | none |
+| portrait | 86% | none |
+| story | 86% | none |
+| landscape | 87% | none |
 
 Polish:
 
@@ -361,7 +361,7 @@ Polish applied:
 | --- | --- | --- |
 | square | 88% | none |
 | portrait | 87% | none |
-| story | 91% | none |
+| story | 90% | none |
 | landscape | 92% | none |
 
 Polish:
@@ -385,8 +385,8 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 90% | none |
-| portrait | 86% | none |
-| story | 88% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait | 85% | none |
+| story | 85% | none |
 | landscape | 85% | none |
 
 Polish:
@@ -411,7 +411,7 @@ Polish applied:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 89% | none |
+| square | 88% | none |
 | portrait | 82% | none |
 | story | 87% | none |
 | landscape | 93% | none |
@@ -560,10 +560,10 @@ Polish applied:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 93% | overflow |
-| portrait | 93% | overflow |
-| story | 95% | overflow |
-| landscape | 95% | overflow |
+| square | 93% | none |
+| portrait | 92% | none |
+| story | 95% | none |
+| landscape | 95% | none |
 
 Polish:
 
@@ -592,8 +592,8 @@ Polish applied:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 89% | overflow; overflow |
-| portrait | 86% | overflow; overflow; overflow |
-| story | 90% | overflow; overflow; overflow |
+| portrait | 86% | overflow; overflow |
+| story | 90% | overflow; overflow |
 | landscape | 94% | overflow |
 
 Polish:
