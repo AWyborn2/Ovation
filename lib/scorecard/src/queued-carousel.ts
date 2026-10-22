@@ -45,6 +45,15 @@ export function carouselPackId(carousel: { packId?: unknown; version?: unknown }
   return carousel.packId;
 }
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
+/** The card kind whose template draws a carousel set (ADR-011 T3.20). */
+export function carouselTemplateKind(setType: CarouselSetType | undefined): string {
+  return setType === "teamList"
+    ? "teamList"
+    : setType === "results" || setType === "matchSummary"
+      ? "matchSummary"
+      : "matchDay";
+}
+
 export const CAROUSEL_LABELS: Record<CarouselSetType, string> = {
   matchDay: "Match day",
   teamList: "Team lists",

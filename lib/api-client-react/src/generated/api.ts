@@ -108,6 +108,8 @@ import type {
   CardThemeUpdate,
   CardVideoJob,
   CardVideoJobInput,
+  CarouselAssembly,
+  CarouselAssemblyRequest,
   Century,
   CheckSlugAvailableParams,
   CheckoutBody,
@@ -21604,6 +21606,78 @@ export function useGetTemplatePreviewInput<TData = Awaited<ReturnType<typeof get
 
 
 
+
+export const getAssembleCarouselTemplateUrl = () => {
+
+
+
+
+  return `/api/template-library/carousel-assembly`
+}
+
+/**
+ * The same assembly a version 3 carousel gets when it's saved: the set's pages from the picked template (or the club's default for the set's kind), its title and sponsors pages from the same look's Match Day template or the club's default Match Day, and the club's pack look as a whole template when the picked one lacks a page. For previews only; nothing is saved.
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const assembleCarouselTemplate = async (carouselAssemblyRequest: CarouselAssemblyRequest, options?: RequestInit): Promise<CarouselAssembly> => {
+
+  return customFetch<CarouselAssembly>(getAssembleCarouselTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      carouselAssemblyRequest,)
+  }
+);}
+
+
+
+
+export const getAssembleCarouselTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext> => {
+
+const mutationKey = ['assembleCarouselTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assembleCarouselTemplate>>, {data: BodyType<CarouselAssemblyRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  assembleCarouselTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssembleCarouselTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof assembleCarouselTemplate>>>
+    export type AssembleCarouselTemplateMutationBody = BodyType<CarouselAssemblyRequest>
+    export type AssembleCarouselTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const useAssembleCarouselTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assembleCarouselTemplate>>,
+        TError,
+        {data: BodyType<CarouselAssemblyRequest>},
+        TContext
+      > => {
+      return useMutation(getAssembleCarouselTemplateMutationOptions(options));
+    }
 
 export const getGetLibraryTemplateUrl = (id: number,) => {
 

@@ -6577,6 +6577,38 @@ paths:
         "404":
           description: Unknown card kind
 
+  /template-library/carousel-assembly:
+    post:
+      operationId: assembleCarouselTemplate
+      tags: [socialCards]
+      summary: The document a carousel set would be drawn with (ADR-011 T5.17)
+      description: >-
+        The same assembly a version 3 carousel gets when it's saved: the set's
+        pages from the picked template (or the club's default for the set's
+        kind), its title and sponsors pages from the same look's Match Day
+        template or the club's default Match Day, and the club's pack look as
+        a whole template when the picked one lacks a page. For previews only;
+        nothing is saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarouselAssemblyRequest"
+      responses:
+        "200":
+          description: The assembled document and the template that drew the set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarouselAssembly"
+        "400":
+          description: An unknown page, or a template for another card kind
+        "404":
+          description: The template isn't one the club can use
+        "409":
+          description: No template the club can use has every page the set needs
+
   /template-library/{id}:
     parameters:
       - name: id
@@ -22942,6 +22974,33 @@ components:
         slug: { type: string, maxLength: 60 }
         name: { type: string, minLength: 1, maxLength: 80 }
         description: { type: ["string", "null"] }
+
+    CarouselAssemblyRequest:
+      type: object
+      required: [setType, pages]
+      properties:
+        setType:
+          type: string
+          enum: [matchDay, teamList, results, matchSummary]
+        pages:
+          type: array
+          maxItems: 20
+          description: The pages the set's slides draw; the title and sponsors pages are added.
+          items: { type: string }
+        templateRef:
+          description: The picked template; absent for the club's default.
+          oneOf:
+            - $ref: "#/components/schemas/TemplateRef"
+            - type: "null"
+
+    CarouselAssembly:
+      type: object
+      required: [document, templateRef]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          $ref: "#/components/schemas/TemplateRef"
 
     AdoptLookChange:
       type: object

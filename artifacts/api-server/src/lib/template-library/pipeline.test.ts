@@ -23,7 +23,7 @@ import {
 import { placeholderDocument, type PageKey } from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { ensureKindTemplate, templatedDesignFor } from "../kind-templates";
-import { assembleCarouselDocument, designFromRef } from "./draw";
+import { assembleCarouselDocument, assembleCarouselPages, designFromRef } from "./draw";
 import { documentCoverage } from "./coverage";
 
 const STAMP = Date.now();
@@ -372,6 +372,17 @@ describe("carousel assembly (T3.20)", () => {
     expect(templateRef).toEqual({ libraryTemplateId: ids["club-kit/matchSummary"], version: 1 });
     expect(document.pages.result!.layers[0]!.id).toBe("ck-ms-result");
     expect(document.pages.title!.layers[0]!.id).toBe("ck-md-title");
+  });
+
+  it("assembles from the pages alone exactly as from the slides (the composer's preview, T5.17)", async () => {
+    const t = await tenant("asm6");
+    const opts = {
+      templateRef: { libraryTemplateId: ids["club-kit/matchSummary"]!, version: 1 },
+      packId: "club-kit-v1",
+    };
+    const fromSlides = await assembleCarouselDocument(t, resultsSet(), opts);
+    const fromPages = await assembleCarouselPages(t, "matchSummary", ["result"], opts);
+    expect(fromPages).toEqual(fromSlides);
   });
 
   it("refuses a template of another kind, and another club's template", async () => {
