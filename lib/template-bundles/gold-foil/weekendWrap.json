@@ -1,6 +1,6 @@
 {
   "name": "Gold Foil weekendWrap",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -170,6 +170,7 @@
               "fill": "#00000000"
             },
             "id": "card-l3",
+            "link": "card-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -204,6 +205,7 @@
               "fill": "#00000000"
             },
             "id": "card-l4",
+            "link": "card-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -226,6 +228,7 @@
               "fill": "#00000000"
             },
             "id": "card-l5",
+            "link": "card-l5",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -260,6 +263,7 @@
               "fill": "#00000000"
             },
             "id": "card-l6",
+            "link": "card-l5",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -322,6 +326,7 @@
               "ellipsis": true
             },
             "id": "card-l8",
+            "link": "card-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -364,6 +369,7 @@
               "ellipsis": true
             },
             "id": "card-l9",
+            "link": "card-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -394,6 +400,7 @@
               "ellipsis": true
             },
             "id": "card-l10",
+            "link": "card-l10",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -436,6 +443,7 @@
               "ellipsis": true
             },
             "id": "card-l11",
+            "link": "card-l10",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -457,6 +465,7 @@
               }
             },
             "id": "card-l12",
+            "link": "card-l12",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -490,6 +499,7 @@
               }
             },
             "id": "card-l13",
+            "link": "card-l12",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -515,6 +525,7 @@
               "lineHeight": 1
             },
             "id": "card-l14",
+            "link": "card-l14",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -552,6 +563,7 @@
               "lineHeight": 1
             },
             "id": "card-l15",
+            "link": "card-l14",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -582,6 +594,7 @@
               "ellipsis": true
             },
             "id": "card-l16",
+            "link": "card-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -612,6 +625,7 @@
               "ellipsis": true
             },
             "id": "card-l17",
+            "link": "card-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -648,6 +662,7 @@
               "ellipsis": true
             },
             "id": "card-l18",
+            "link": "card-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -669,6 +684,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.88,
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.2,
+                  "blur": 0.79,
+                  "color": "#00000099"
+                }
+              ],
               "textFill": {
                 "type": "linear",
                 "stops": [
@@ -698,16 +721,17 @@
               }
             },
             "id": "card-l19",
+            "link": "card-l19",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 14.61,
-                "w": 28.01,
+                "w": 27.11,
                 "h": 18.91
               }
             },
-            "sig": "text:0eklsvu1kd5ehx"
+            "sig": "text:1lz3ltn1gcw0fm"
           },
           {
             "kind": "text",
@@ -719,6 +743,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.88,
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.26,
+                  "blur": 1.06,
+                  "color": "#00000099"
+                }
+              ],
               "textFill": {
                 "type": "linear",
                 "stops": [
@@ -748,22 +780,76 @@
               }
             },
             "id": "card-l20",
-            "sizes": ["portrait", "story"],
+            "link": "card-l19",
+            "sizes": ["portrait"],
             "geometry": {
               "portrait": {
                 "x": 6,
                 "y": 11.95,
-                "w": 37.09,
+                "w": 36.1,
                 "h": 20.17
-              },
+              }
+            },
+            "sig": "text:0acp1pt09upg60"
+          },
+          {
+            "kind": "text",
+            "content": "WEEKEND WRAP",
+            "style": {
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 10.56,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.88,
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.26,
+                  "blur": 1.06,
+                  "color": "#00000099"
+                }
+              ],
+              "textFill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#F5CCDB",
+                    "at": 13.22
+                  },
+                  {
+                    "color": "#F5CCDB",
+                    "at": 19.64
+                  },
+                  {
+                    "color": "#E46F99",
+                    "at": 65.04
+                  },
+                  {
+                    "color": "#C64271",
+                    "at": 86.91
+                  }
+                ]
+              }
+            },
+            "motion": {
+              "loop": {
+                "preset": "shine",
+                "periodMs": 5500
+              }
+            },
+            "id": "card-l21",
+            "link": "card-l19",
+            "sizes": ["story"],
+            "geometry": {
               "story": {
                 "x": 6,
                 "y": 23.25,
-                "w": 37.09,
+                "w": 36.1,
                 "h": 14.19
               }
             },
-            "sig": "text:0py83qn037hiva"
+            "sig": "text:1c7kehd0jbnnm0"
           },
           {
             "kind": "text",
@@ -775,6 +861,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.88,
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.1,
+                  "blur": 0.42,
+                  "color": "#00000099"
+                }
+              ],
               "textFill": {
                 "type": "linear",
                 "stops": [
@@ -803,17 +897,18 @@
                 "periodMs": 5500
               }
             },
-            "id": "card-l21",
+            "id": "card-l22",
+            "link": "card-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 43.54,
-                "w": 15.17,
+                "w": 14.25,
                 "h": 18.87
               }
             },
-            "sig": "text:08cte891ri5gtk"
+            "sig": "text:1yjsuqd0lz9vt2"
           },
           {
             "kind": "rows",
@@ -823,7 +918,7 @@
               "gap": 0.79,
               "cells": [
                 {
-                  "field": "gradeLabel",
+                  "field": "outcome",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -833,12 +928,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.05,
-                  "w": 10.36,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.32,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.94,
+                  "w": 10.47,
                   "y": 6.19,
                   "h": 30.28,
                   "style": {
-                    "fontSize": 2.88,
+                    "fontSize": 2.91,
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -846,9 +985,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 1.94,
+                  "w": 9.1,
+                  "y": 35.63,
+                  "h": 54.9,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 13.01,
-                  "w": 76.77,
+                  "w": 76.72,
                   "y": 23.34,
                   "h": 36.3,
                   "style": {
@@ -862,7 +1016,7 @@
                 {
                   "field": "performers",
                   "x": 13.01,
-                  "w": 84.99,
+                  "w": 85.05,
                   "y": 62.07,
                   "h": 14.59,
                   "style": {
@@ -875,8 +1029,8 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 89.98,
-                  "w": 8.82,
+                  "x": 88.93,
+                  "w": 9.82,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -892,6 +1046,9 @@
               ],
               "variants": {
                 "lost": {
+                  "gradeLabel": {
+                    "background": "#D3175A59"
+                  },
                   "outcome": {
                     "fontSize": 1.72,
                     "color": "#F5EACF9E",
@@ -900,11 +1057,21 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeSub": {
+                    "background": "#D3175A59"
+                  },
+                  "resultLine": {
+                    "background": "#D3175A59"
+                  },
+                  "performers": {
+                    "background": "#D3175A59"
                   }
                 }
               }
             },
-            "id": "card-l22",
+            "id": "card-l23",
+            "link": "card-l23",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -914,7 +1081,7 @@
                 "h": 54.97
               }
             },
-            "sig": "rows:1qc1h660voiha5"
+            "sig": "rows:1kw9joy1d6wfgx"
           },
           {
             "kind": "rows",
@@ -924,7 +1091,7 @@
               "gap": 1.05,
               "cells": [
                 {
-                  "field": "gradeLabel",
+                  "field": "outcome",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -934,12 +1101,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.5,
-                  "w": 13,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 13.1,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 3.89,
+                    "fontSize": 3.92,
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -947,9 +1158,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 15.91,
                   "h": 36.45,
                   "style": {
@@ -963,7 +1189,7 @@
                 {
                   "field": "performers",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 54.8,
                   "h": 29.28,
                   "style": {
@@ -976,8 +1202,8 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 87.87,
-                  "w": 10.93,
+                  "x": 86.57,
+                  "w": 11.72,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -993,6 +1219,9 @@
               ],
               "variants": {
                 "lost": {
+                  "gradeLabel": {
+                    "background": "#D3175A59"
+                  },
                   "outcome": {
                     "fontSize": 2.29,
                     "color": "#F5EACF9E",
@@ -1001,11 +1230,21 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeSub": {
+                    "background": "#D3175A59"
+                  },
+                  "resultLine": {
+                    "background": "#D3175A59"
+                  },
+                  "performers": {
+                    "background": "#D3175A59"
                   }
                 }
               }
             },
-            "id": "card-l23",
+            "id": "card-l24",
+            "link": "card-l23",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -1015,7 +1254,7 @@
                 "h": 58.43
               }
             },
-            "sig": "rows:1go039607l52vr"
+            "sig": "rows:0nf958b02kk7so"
           },
           {
             "kind": "rows",
@@ -1025,7 +1264,7 @@
               "gap": 1.05,
               "cells": [
                 {
-                  "field": "gradeLabel",
+                  "field": "outcome",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -1035,12 +1274,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.5,
-                  "w": 13,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 13.1,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 3.89,
+                    "fontSize": 3.92,
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -1048,9 +1331,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 15.91,
                   "h": 36.45,
                   "style": {
@@ -1064,7 +1362,7 @@
                 {
                   "field": "performers",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 54.81,
                   "h": 29.28,
                   "style": {
@@ -1077,8 +1375,8 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 87.87,
-                  "w": 10.93,
+                  "x": 86.57,
+                  "w": 11.72,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -1094,6 +1392,9 @@
               ],
               "variants": {
                 "lost": {
+                  "gradeLabel": {
+                    "background": "#D3175A59"
+                  },
                   "outcome": {
                     "fontSize": 2.29,
                     "color": "#F5EACF9E",
@@ -1102,11 +1403,21 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeSub": {
+                    "background": "#D3175A59"
+                  },
+                  "resultLine": {
+                    "background": "#D3175A59"
+                  },
+                  "performers": {
+                    "background": "#D3175A59"
                   }
                 }
               }
             },
-            "id": "card-l24",
+            "id": "card-l25",
+            "link": "card-l23",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -1116,17 +1427,17 @@
                 "h": 41.08
               }
             },
-            "sig": "rows:0pn91br1p60w8g"
+            "sig": "rows:0vlxxq00cgacsp"
           },
           {
             "kind": "rows",
             "rows": {
               "repeat": "matches",
               "rowHeight": 7.16,
-              "gap": 0.42,
+              "gap": 0.41,
               "cells": [
                 {
-                  "field": "gradeLabel",
+                  "field": "outcome",
                   "x": 0,
                   "w": 100,
                   "show": "backdrop",
@@ -1136,12 +1447,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 1.76,
-                  "w": 8.46,
+                  "x": 0,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.84,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.84,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.6,
+                  "w": 8.62,
                   "y": 6.59,
                   "h": 30.04,
                   "style": {
-                    "fontSize": 1.49,
+                    "fontSize": 1.52,
                     "color": "#DF5888",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -1149,9 +1504,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 1.6,
+                  "w": 7.65,
+                  "y": 35.76,
+                  "h": 54.38,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 10.82,
-                  "w": 80.36,
+                  "w": 80.49,
                   "y": 32.58,
                   "h": 17.97,
                   "style": {
@@ -1165,7 +1535,7 @@
                 {
                   "field": "performers",
                   "x": 10.82,
-                  "w": 80.36,
+                  "w": 80.49,
                   "y": 52.95,
                   "h": 14.46,
                   "style": {
@@ -1178,8 +1548,8 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 91.38,
-                  "w": 7.66,
+                  "x": 90.51,
+                  "w": 8.53,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -1195,6 +1565,9 @@
               ],
               "variants": {
                 "lost": {
+                  "gradeLabel": {
+                    "background": "#D3175A59"
+                  },
                   "outcome": {
                     "fontSize": 0.9,
                     "color": "#F5EACF9E",
@@ -1203,11 +1576,21 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeSub": {
+                    "background": "#D3175A59"
+                  },
+                  "resultLine": {
+                    "background": "#D3175A59"
+                  },
+                  "performers": {
+                    "background": "#D3175A59"
                   }
                 }
               }
             },
-            "id": "card-l25",
+            "id": "card-l26",
+            "link": "card-l23",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1217,42 +1600,67 @@
                 "h": 55.43
               }
             },
-            "sig": "rows:035zx221vd3p9x"
+            "sig": "rows:0oo729v0x7blr4"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
-              "opacity": 0.35
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
             },
-            "id": "card-l26",
+            "id": "card-l27",
+            "link": "card-l27",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:019iwud1962oyc"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--gold)",
+                "sides": ["top"]
               },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "card-l28",
+            "link": "card-l27",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:0mgmyo111s9wvk"
+            "sig": "shape:0s1apzc13c1w9d"
           },
           {
             "kind": "text",
@@ -1269,7 +1677,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l27",
+            "id": "card-l29",
+            "link": "card-l29",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1308,7 +1717,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l28",
+            "id": "card-l30",
+            "link": "card-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1326,7 +1736,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l29",
+            "id": "card-l31",
+            "link": "card-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1356,7 +1767,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l30",
+            "id": "card-l32",
+            "link": "card-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1374,7 +1786,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l31",
+            "id": "card-l33",
+            "link": "card-l33",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1404,7 +1817,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l32",
+            "id": "card-l34",
+            "link": "card-l33",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1422,7 +1836,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l33",
+            "id": "card-l35",
+            "link": "card-l35",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1452,7 +1867,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l34",
+            "id": "card-l36",
+            "link": "card-l35",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1470,7 +1886,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l35",
+            "id": "card-l37",
+            "link": "card-l37",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1500,7 +1917,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l36",
+            "id": "card-l38",
+            "link": "card-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1518,7 +1936,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l37",
+            "id": "card-l39",
+            "link": "card-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1548,7 +1967,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l38",
+            "id": "card-l40",
+            "link": "card-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1566,7 +1986,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l39",
+            "id": "card-l41",
+            "link": "card-l41",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1596,7 +2017,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l40",
+            "id": "card-l42",
+            "link": "card-l41",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1625,7 +2047,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l41",
+            "id": "card-l43",
+            "link": "card-l43",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1666,7 +2089,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l42",
+            "id": "card-l44",
+            "link": "card-l43",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {

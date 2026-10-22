@@ -1,6 +1,6 @@
 {
   "name": "Duotone teamList",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -435,7 +435,8 @@
                 "h": 2.59
               }
             },
-            "sig": "text:1mhbt3i1iiusqt"
+            "sig": "text:1mhbt3i1iiusqt",
+            "link": "team-l10"
           },
           {
             "kind": "text",
@@ -473,7 +474,8 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1iw1d631niaphy"
+            "sig": "text:1iw1d631niaphy",
+            "link": "team-l10"
           },
           {
             "kind": "text",
@@ -511,7 +513,8 @@
                 "h": 1.67
               }
             },
-            "sig": "text:075bij1095u7f4"
+            "sig": "text:075bij1095u7f4",
+            "link": "team-l10"
           },
           {
             "kind": "text",
@@ -549,7 +552,8 @@
                 "h": 3.33
               }
             },
-            "sig": "text:14gc7751bnjo88"
+            "sig": "text:14gc7751bnjo88",
+            "link": "team-l10"
           },
           {
             "kind": "text",
@@ -593,7 +597,8 @@
               "maxLines": 2,
               "ellipsis": true
             },
-            "sig": "text:0bnfffm1su6oc1"
+            "sig": "text:0bnfffm1su6oc1",
+            "link": "team-l14"
           },
           {
             "kind": "text",
@@ -631,7 +636,8 @@
               "maxLines": 2,
               "ellipsis": true
             },
-            "sig": "text:0l68h0u0lsarej"
+            "sig": "text:0l68h0u0lsarej",
+            "link": "team-l14"
           },
           {
             "kind": "text",
@@ -669,7 +675,8 @@
               "maxLines": 2,
               "ellipsis": true
             },
-            "sig": "text:0v19bn90aioq7q"
+            "sig": "text:0v19bn90aioq7q",
+            "link": "team-l14"
           },
           {
             "kind": "shape",
@@ -707,7 +714,8 @@
                 "h": 61.15
               }
             },
-            "sig": "shape:0opoupm06a0pzr"
+            "sig": "shape:0opoupm06a0pzr",
+            "link": "team-l17"
           },
           {
             "kind": "shape",
@@ -733,7 +741,8 @@
                 "h": 90
               }
             },
-            "sig": "shape:0pa4uz806z62fb"
+            "sig": "shape:0pa4uz806z62fb",
+            "link": "team-l17"
           },
           {
             "kind": "text",
@@ -756,7 +765,8 @@
                 "h": 5.71
               }
             },
-            "sig": "text:1a1xcc10b9deda"
+            "sig": "text:1a1xcc10b9deda",
+            "link": "team-l19"
           },
           {
             "kind": "text",
@@ -779,7 +789,8 @@
                 "h": 4.86
               }
             },
-            "sig": "text:07smqns1pe9opp"
+            "sig": "text:07smqns1pe9opp",
+            "link": "team-l19"
           },
           {
             "kind": "text",
@@ -802,7 +813,8 @@
                 "h": 3.67
               }
             },
-            "sig": "text:1gbaaf21lcxk0b"
+            "sig": "text:1gbaaf21lcxk0b",
+            "link": "team-l19"
           },
           {
             "kind": "text",
@@ -825,7 +837,8 @@
                 "h": 7.39
               }
             },
-            "sig": "text:1rr0rck0lk8mr5"
+            "sig": "text:1rr0rck0lk8mr5",
+            "link": "team-l19"
           },
           {
             "kind": "text",
@@ -853,7 +866,8 @@
                 "h": 2.59
               }
             },
-            "sig": "text:1grpipe1nsqnjp"
+            "sig": "text:1grpipe1nsqnjp",
+            "link": "team-l23"
           },
           {
             "kind": "text",
@@ -881,7 +895,8 @@
                 "h": 2.22
               }
             },
-            "sig": "text:127j0lt0u95vrs"
+            "sig": "text:127j0lt0u95vrs",
+            "link": "team-l23"
           },
           {
             "kind": "text",
@@ -904,7 +919,8 @@
                 "h": 3.67
               }
             },
-            "sig": "text:07k91uf0chubx6"
+            "sig": "text:07k91uf0chubx6",
+            "link": "team-l23"
           },
           {
             "kind": "text",
@@ -927,7 +943,8 @@
                 "h": 7.39
               }
             },
-            "sig": "text:040tw8501udq7c"
+            "sig": "text:040tw8501udq7c",
+            "link": "team-l23"
           },
           {
             "kind": "rows",
@@ -1017,7 +1034,8 @@
                 "h": 38.62
               }
             },
-            "sig": "rows:1kwphjk018vit7"
+            "sig": "rows:1kwphjk018vit7",
+            "link": "team-l27"
           },
           {
             "kind": "rows",
@@ -1105,7 +1123,8 @@
                 "h": 56.21
               }
             },
-            "sig": "rows:0u8gkwk1uo5du9"
+            "sig": "rows:0u8gkwk1uo5du9",
+            "link": "team-l27"
           },
           {
             "kind": "rows",
@@ -1193,7 +1212,8 @@
                 "h": 42.64
               }
             },
-            "sig": "rows:0u2znnq1ekiegl"
+            "sig": "rows:0u2znnq1ekiegl",
+            "link": "team-l27"
           },
           {
             "kind": "rows",
@@ -1283,7 +1303,8 @@
                 "h": 50.56
               }
             },
-            "sig": "rows:02i0atb0oib4u8"
+            "sig": "rows:02i0atb0oib4u8",
+            "link": "team-l27"
           },
           {
             "kind": "text",
@@ -1309,7 +1330,8 @@
                 "h": 2.22
               }
             },
-            "sig": "text:17hcfax1jhznsc"
+            "sig": "text:17hcfax1jhznsc",
+            "link": "team-l31"
           },
           {
             "kind": "text",
@@ -1335,7 +1357,8 @@
                 "h": 1.85
               }
             },
-            "sig": "text:0uxbdcw0qlk3j3"
+            "sig": "text:0uxbdcw0qlk3j3",
+            "link": "team-l31"
           },
           {
             "kind": "text",
@@ -1361,7 +1384,8 @@
                 "h": 1.41
               }
             },
-            "sig": "text:1lqyo4t0xszh9i"
+            "sig": "text:1lqyo4t0xszh9i",
+            "link": "team-l31"
           },
           {
             "kind": "text",
@@ -1387,7 +1411,8 @@
                 "h": 2.7
               }
             },
-            "sig": "text:1a9116u0xh2qo9"
+            "sig": "text:1a9116u0xh2qo9",
+            "link": "team-l31"
           },
           {
             "kind": "image",

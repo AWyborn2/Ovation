@@ -1,6 +1,6 @@
 {
   "name": "Bold Type matchDay",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -85,10 +85,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.35,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "fixture-l3",
+            "link": "fixture-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -110,7 +114,7 @@
                 "h": 32.4
               }
             },
-            "sig": "text:0tmiga30p5hvw0"
+            "sig": "text:0deph7y01bm7wl"
           },
           {
             "kind": "text",
@@ -122,10 +126,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.18,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "fixture-l4",
+            "link": "fixture-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -135,7 +143,7 @@
                 "h": 57.46
               }
             },
-            "sig": "text:0l83ogg1dzhi4j"
+            "sig": "text:18az0z415nnoln"
           },
           {
             "kind": "image",
@@ -188,6 +196,7 @@
               "ellipsis": true
             },
             "id": "fixture-l6",
+            "link": "fixture-l6",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -230,6 +239,7 @@
               "ellipsis": true
             },
             "id": "fixture-l7",
+            "link": "fixture-l6",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -261,6 +271,7 @@
               "ellipsis": true
             },
             "id": "fixture-l8",
+            "link": "fixture-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -304,6 +315,7 @@
               "ellipsis": true
             },
             "id": "fixture-l9",
+            "link": "fixture-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -363,6 +375,7 @@
               "lineHeight": 1
             },
             "id": "fixture-l11",
+            "link": "fixture-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -400,6 +413,7 @@
               "lineHeight": 1
             },
             "id": "fixture-l12",
+            "link": "fixture-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -424,12 +438,13 @@
               "lineHeight": 0.84
             },
             "id": "fixture-l13",
+            "link": "fixture-l13",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 25.65,
-                "w": 28.33,
+                "w": 27.42,
                 "h": 24.8
               }
             },
@@ -448,18 +463,19 @@
               "lineHeight": 0.84
             },
             "id": "fixture-l14",
+            "link": "fixture-l13",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
                 "y": 22.38,
-                "w": 37.52,
+                "w": 36.52,
                 "h": 26.42
               },
               "story": {
                 "x": 6,
                 "y": 30.58,
-                "w": 37.52,
+                "w": 36.52,
                 "h": 18.58
               }
             },
@@ -478,12 +494,13 @@
               "lineHeight": 0.84
             },
             "id": "fixture-l15",
+            "link": "fixture-l13",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 35.6,
-                "w": 17.13,
+                "w": 16.21,
                 "h": 27.91
               }
             },
@@ -508,6 +525,7 @@
               "ellipsis": true
             },
             "id": "fixture-l16",
+            "link": "fixture-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -538,6 +556,7 @@
               "ellipsis": true
             },
             "id": "fixture-l17",
+            "link": "fixture-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -574,6 +593,7 @@
               "ellipsis": true
             },
             "id": "fixture-l18",
+            "link": "fixture-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -588,79 +608,129 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "fixture-l19",
+            "link": "fixture-l19",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 52.79,
                 "w": 81.85,
-                "h": 0.09
+                "h": 14.53
               },
               "portrait": {
                 "x": 6,
                 "y": 51.26,
                 "w": 88,
-                "h": 0.07
+                "h": 15.43
               },
               "story": {
                 "x": 6,
                 "y": 50.89,
                 "w": 88,
-                "h": 0.05
-              },
-              "landscape": {
-                "x": 32.92,
-                "y": 40.9,
-                "w": 51.93,
-                "h": 0.16
+                "h": 10.85
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:132lpdw117wyn1"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "fixture-l20",
+            "link": "fixture-l19",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 32.92,
+                "y": 40.9,
+                "w": 51.93,
+                "h": 14.72
+              }
+            },
+            "sig": "shape:18jbr090ef71w8"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "fixture-l21",
+            "link": "fixture-l21",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 60.01,
+                "y": 52.89,
                 "w": 81.85,
-                "h": 0.09
+                "h": 7.22
               },
               "portrait": {
                 "x": 6,
-                "y": 58.94,
+                "y": 51.34,
                 "w": 88,
-                "h": 0.07
+                "h": 7.68
               },
               "story": {
                 "x": 6,
-                "y": 56.28,
+                "y": 50.94,
                 "w": 88,
-                "h": 0.05
-              },
-              "landscape": {
-                "x": 32.92,
-                "y": 48.18,
-                "w": 51.93,
-                "h": 0.16
+                "h": 5.4
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:1lf9p160ebiyud"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "fixture-l22",
+            "link": "fixture-l21",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 32.92,
+                "y": 41.06,
+                "w": 51.93,
+                "h": 7.28
+              }
+            },
+            "sig": "shape:03fdgrr1v6w9gg"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "var(--ink)"
             },
-            "id": "fixture-l21",
+            "id": "fixture-l23",
             "geometry": {
               "square": {
                 "x": 6,
@@ -692,7 +762,7 @@
           {
             "kind": "image",
             "content": "{{clubLogo}}",
-            "id": "fixture-l22",
+            "id": "fixture-l24",
             "geometry": {
               "square": {
                 "x": 6,
@@ -738,7 +808,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l23",
+            "id": "fixture-l25",
+            "link": "fixture-l25",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -767,7 +838,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l24",
+            "id": "fixture-l26",
+            "link": "fixture-l25",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -802,7 +874,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l25",
+            "id": "fixture-l27",
+            "link": "fixture-l25",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -819,7 +892,7 @@
             "style": {
               "fill": "var(--accent-ink)"
             },
-            "id": "fixture-l26",
+            "id": "fixture-l28",
             "geometry": {
               "square": {
                 "x": 82.23,
@@ -865,7 +938,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l27",
+            "id": "fixture-l29",
+            "link": "fixture-l29",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -894,7 +968,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l28",
+            "id": "fixture-l30",
+            "link": "fixture-l29",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -929,7 +1004,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l29",
+            "id": "fixture-l31",
+            "link": "fixture-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -944,44 +1020,69 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
-            "id": "fixture-l30",
+            "id": "fixture-l32",
+            "link": "fixture-l32",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 67.23,
+                "y": 60.1,
                 "w": 81.85,
-                "h": 0.09
+                "h": 7.22
               },
               "portrait": {
                 "x": 6,
-                "y": 66.61,
+                "y": 59.01,
                 "w": 88,
-                "h": 0.07
+                "h": 7.68
               },
               "story": {
                 "x": 6,
-                "y": 61.68,
+                "y": 56.34,
                 "w": 88,
-                "h": 0.05
-              },
-              "landscape": {
-                "x": 32.92,
-                "y": 55.46,
-                "w": 51.93,
-                "h": 0.16
+                "h": 5.4
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:1lf9p160ebiyud"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["bottom"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "fixture-l33",
+            "link": "fixture-l32",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 32.92,
+                "y": 48.34,
+                "w": 51.93,
+                "h": 7.28
+              }
+            },
+            "sig": "shape:03fdgrr1v6w9gg"
           },
           {
             "kind": "shape",
             "style": {
               "fill": "var(--ink)"
             },
-            "id": "fixture-l31",
+            "id": "fixture-l34",
             "geometry": {
               "square": {
                 "x": 6,
@@ -1013,7 +1114,7 @@
           {
             "kind": "image",
             "content": "{{opposition.logo}}",
-            "id": "fixture-l32",
+            "id": "fixture-l35",
             "geometry": {
               "square": {
                 "x": 6,
@@ -1059,7 +1160,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l33",
+            "id": "fixture-l36",
+            "link": "fixture-l36",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1088,7 +1190,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l34",
+            "id": "fixture-l37",
+            "link": "fixture-l36",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1123,7 +1226,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l35",
+            "id": "fixture-l38",
+            "link": "fixture-l36",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1145,7 +1249,8 @@
               "opacity": 0.22,
               "fill": "#00000000"
             },
-            "id": "fixture-l36",
+            "id": "fixture-l39",
+            "link": "fixture-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1179,7 +1284,8 @@
               "opacity": 0.22,
               "fill": "#00000000"
             },
-            "id": "fixture-l37",
+            "id": "fixture-l40",
+            "link": "fixture-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1209,7 +1315,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l38",
+            "id": "fixture-l41",
+            "link": "fixture-l41",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1239,7 +1346,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l39",
+            "id": "fixture-l42",
+            "link": "fixture-l41",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1275,7 +1383,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l40",
+            "id": "fixture-l43",
+            "link": "fixture-l41",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1300,7 +1409,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l41",
+            "id": "fixture-l44",
+            "link": "fixture-l44",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1325,7 +1435,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l42",
+            "id": "fixture-l45",
+            "link": "fixture-l44",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1356,7 +1467,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l43",
+            "id": "fixture-l46",
+            "link": "fixture-l44",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1384,7 +1496,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l44",
+            "id": "fixture-l47",
+            "link": "fixture-l47",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1408,11 +1521,12 @@
               "lineHeight": 1.2
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "fixture-l45",
+            "id": "fixture-l48",
+            "link": "fixture-l47",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1428,7 +1542,7 @@
                 "h": 3.93
               }
             },
-            "sig": "text:1n3gfd614s12ff"
+            "sig": "text:1nt7cxr1hx97uy"
           },
           {
             "kind": "text",
@@ -1446,7 +1560,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l46",
+            "id": "fixture-l49",
+            "link": "fixture-l47",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1471,7 +1586,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l47",
+            "id": "fixture-l50",
+            "link": "fixture-l50",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1496,7 +1612,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l48",
+            "id": "fixture-l51",
+            "link": "fixture-l50",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1527,7 +1644,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l49",
+            "id": "fixture-l52",
+            "link": "fixture-l50",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1555,7 +1673,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l50",
+            "id": "fixture-l53",
+            "link": "fixture-l53",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1579,11 +1698,12 @@
               "lineHeight": 1.2
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "fixture-l51",
+            "id": "fixture-l54",
+            "link": "fixture-l53",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1599,7 +1719,7 @@
                 "h": 3.93
               }
             },
-            "sig": "text:0jbw6h91acdl0y"
+            "sig": "text:1k6irbw1lp4wl3"
           },
           {
             "kind": "text",
@@ -1617,7 +1737,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l52",
+            "id": "fixture-l55",
+            "link": "fixture-l53",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1642,7 +1763,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l53",
+            "id": "fixture-l56",
+            "link": "fixture-l56",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1667,7 +1789,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l54",
+            "id": "fixture-l57",
+            "link": "fixture-l56",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1698,7 +1821,8 @@
               "lineHeight": 1.5,
               "opacity": 0.7
             },
-            "id": "fixture-l55",
+            "id": "fixture-l58",
+            "link": "fixture-l56",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1726,7 +1850,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l56",
+            "id": "fixture-l59",
+            "link": "fixture-l59",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1750,11 +1875,12 @@
               "lineHeight": 1.2
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "fixture-l57",
+            "id": "fixture-l60",
+            "link": "fixture-l59",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1770,7 +1896,7 @@
                 "h": 3.93
               }
             },
-            "sig": "text:0gv2drs0gxsw8x"
+            "sig": "text:0lcjful1cpadgg"
           },
           {
             "kind": "text",
@@ -1788,7 +1914,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l58",
+            "id": "fixture-l61",
+            "link": "fixture-l59",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1803,37 +1930,62 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
-            "id": "fixture-l59",
+            "id": "fixture-l62",
+            "link": "fixture-l62",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:132lpdw117wyn1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
               },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "fixture-l63",
+            "link": "fixture-l62",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:18jbr090ef71w8"
           },
           {
             "kind": "text",
@@ -1851,7 +2003,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "fixture-l60",
+            "id": "fixture-l64",
+            "link": "fixture-l64",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1891,7 +2044,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "fixture-l61",
+            "id": "fixture-l65",
+            "link": "fixture-l64",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1909,7 +2063,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "fixture-l62",
+            "id": "fixture-l66",
+            "link": "fixture-l66",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1939,7 +2094,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "fixture-l63",
+            "id": "fixture-l67",
+            "link": "fixture-l66",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1957,7 +2113,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "fixture-l64",
+            "id": "fixture-l68",
+            "link": "fixture-l68",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1987,7 +2144,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "fixture-l65",
+            "id": "fixture-l69",
+            "link": "fixture-l68",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2005,7 +2163,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "fixture-l66",
+            "id": "fixture-l70",
+            "link": "fixture-l70",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2035,7 +2194,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "fixture-l67",
+            "id": "fixture-l71",
+            "link": "fixture-l70",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2053,7 +2213,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "fixture-l68",
+            "id": "fixture-l72",
+            "link": "fixture-l72",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2083,7 +2244,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "fixture-l69",
+            "id": "fixture-l73",
+            "link": "fixture-l72",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2101,7 +2263,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "fixture-l70",
+            "id": "fixture-l74",
+            "link": "fixture-l74",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2131,7 +2294,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "fixture-l71",
+            "id": "fixture-l75",
+            "link": "fixture-l74",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2149,7 +2313,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "fixture-l72",
+            "id": "fixture-l76",
+            "link": "fixture-l76",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2179,7 +2344,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "fixture-l73",
+            "id": "fixture-l77",
+            "link": "fixture-l76",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2208,7 +2374,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l74",
+            "id": "fixture-l78",
+            "link": "fixture-l78",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2249,7 +2416,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "fixture-l75",
+            "id": "fixture-l79",
+            "link": "fixture-l78",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2343,10 +2511,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.35,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "title-l3",
+            "link": "title-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2368,7 +2540,7 @@
                 "h": 32.4
               }
             },
-            "sig": "text:0516zak17gjjhp"
+            "sig": "text:0kkw9up0e2r9ns"
           },
           {
             "kind": "text",
@@ -2380,10 +2552,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.18,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "title-l4",
+            "link": "title-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2393,7 +2569,7 @@
                 "h": 57.46
               }
             },
-            "sig": "text:1br4wqf1k50jk6"
+            "sig": "text:0l3ph9j1kkfitm"
           },
           {
             "kind": "shape",
@@ -2461,6 +2637,7 @@
               }
             },
             "id": "title-l6-square",
+            "link": "title-l6",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -2493,6 +2670,7 @@
               }
             },
             "id": "title-l6-portrait",
+            "link": "title-l6",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -2525,6 +2703,7 @@
               }
             },
             "id": "title-l6-landscape",
+            "link": "title-l6",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2557,6 +2736,7 @@
               }
             },
             "id": "title-l7-story",
+            "link": "title-l6",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -2619,6 +2799,7 @@
               "ellipsis": true
             },
             "id": "title-l9",
+            "link": "title-l9",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2661,6 +2842,7 @@
               "ellipsis": true
             },
             "id": "title-l10",
+            "link": "title-l9",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2692,6 +2874,7 @@
               "ellipsis": true
             },
             "id": "title-l11",
+            "link": "title-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2735,6 +2918,7 @@
               "ellipsis": true
             },
             "id": "title-l12",
+            "link": "title-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2794,6 +2978,7 @@
               "lineHeight": 1
             },
             "id": "title-l14",
+            "link": "title-l14",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2831,6 +3016,7 @@
               "lineHeight": 1
             },
             "id": "title-l15",
+            "link": "title-l14",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2861,6 +3047,7 @@
               "ellipsis": true
             },
             "id": "title-l16",
+            "link": "title-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -2891,6 +3078,7 @@
               "ellipsis": true
             },
             "id": "title-l17",
+            "link": "title-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -2927,6 +3115,7 @@
               "ellipsis": true
             },
             "id": "title-l18",
+            "link": "title-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2951,11 +3140,12 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l19",
+            "link": "title-l19",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -2965,7 +3155,7 @@
                 "h": 14.53
               }
             },
-            "sig": "text:1osvdby0rlytej"
+            "sig": "text:083sxcp0hjjlek"
           },
           {
             "kind": "text",
@@ -2980,11 +3170,12 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l20",
+            "link": "title-l19",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -3000,7 +3191,7 @@
                 "h": 15.18
               }
             },
-            "sig": "text:0xa0jpd0jhb1vk"
+            "sig": "text:0ubg9ia0p7ib1v"
           },
           {
             "kind": "text",
@@ -3015,11 +3206,12 @@
               "lineHeight": 0.95
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l21",
+            "link": "title-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3029,7 +3221,7 @@
                 "h": 14.53
               }
             },
-            "sig": "text:0ryg2la1ied48l"
+            "sig": "text:1eti3rv0aovr7w"
           },
           {
             "kind": "text",
@@ -3045,21 +3237,22 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l22",
+            "link": "title-l22",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 51.42,
-                "w": 26.73,
+                "w": 25.82,
                 "h": 8.7
               }
             },
-            "sig": "text:1p2gc6i13wd20f"
+            "sig": "text:0cjc4ky0qgiqm7"
           },
           {
             "kind": "text",
@@ -3075,27 +3268,28 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l23",
+            "link": "title-l22",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
                 "y": 38.64,
-                "w": 35.32,
+                "w": 34.39,
                 "h": 9.33
               },
               "story": {
                 "x": 6,
                 "y": 27.17,
-                "w": 35.32,
+                "w": 34.39,
                 "h": 6.56
               }
             },
-            "sig": "text:15e0azq07q9ps7"
+            "sig": "text:12v73u61ife6l3"
           },
           {
             "kind": "text",
@@ -3111,21 +3305,22 @@
               "lineHeight": 1
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "title-l24",
+            "link": "title-l22",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 51.34,
-                "w": 14.49,
+                "w": 13.58,
                 "h": 8.73
               }
             },
-            "sig": "text:10us3c91pdmakg"
+            "sig": "text:0f777hd1pv407k"
           },
           {
             "id": "title-stack1",
@@ -3140,26 +3335,26 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 59.74,
-                "w": 23.74,
+                "y": 61.4,
+                "w": 60.33,
                 "h": 3.36
               },
               "portrait": {
                 "x": 6,
-                "y": 50.44,
-                "w": 31.65,
+                "y": 49.31,
+                "w": 80.42,
                 "h": 3.59
               },
               "story": {
                 "x": 6,
-                "y": 35.47,
-                "w": 31.65,
+                "y": 34.67,
+                "w": 80.42,
                 "h": 2.52
               },
               "landscape": {
                 "x": 3.15,
-                "y": 59.7,
-                "w": 12.46,
+                "y": 61.36,
+                "w": 31.65,
                 "h": 3.36
               }
             },
@@ -3167,12 +3362,12 @@
               {
                 "id": "title-stack1-item1",
                 "kind": "group",
-                "name": "Item",
+                "name": "Stack item",
                 "geometry": {
                   "square": {
                     "x": 6,
                     "y": 61.4,
-                    "w": 10.7,
+                    "w": 10.62,
                     "h": 3.36
                   },
                   "portrait": {
@@ -3190,7 +3385,7 @@
                   "landscape": {
                     "x": 3.15,
                     "y": 61.36,
-                    "w": 6.08,
+                    "w": 5.57,
                     "h": 3.36
                   }
                 },
@@ -3202,6 +3397,7 @@
                       "radius": 4.28
                     },
                     "id": "title-l25",
+                    "link": "title-l25",
                     "sizes": ["square"],
                     "geometry": {
                       "square": {
@@ -3220,6 +3416,7 @@
                       "radius": 5.7
                     },
                     "id": "title-l26",
+                    "link": "title-l25",
                     "sizes": ["portrait", "story"],
                     "geometry": {
                       "portrait": {
@@ -3244,6 +3441,7 @@
                       "radius": 2.49
                     },
                     "id": "title-l27",
+                    "link": "title-l25",
                     "sizes": ["landscape"],
                     "geometry": {
                       "landscape": {
@@ -3268,6 +3466,7 @@
                       "lineHeight": 1.5
                     },
                     "id": "title-l28",
+                    "link": "title-l28",
                     "sizes": ["square"],
                     "geometry": {
                       "square": {
@@ -3292,6 +3491,7 @@
                       "lineHeight": 1.5
                     },
                     "id": "title-l29",
+                    "link": "title-l28",
                     "sizes": ["portrait", "story"],
                     "geometry": {
                       "portrait": {
@@ -3322,6 +3522,7 @@
                       "lineHeight": 1.5
                     },
                     "id": "title-l30",
+                    "link": "title-l28",
                     "sizes": ["landscape"],
                     "geometry": {
                       "landscape": {
@@ -3339,31 +3540,31 @@
               {
                 "id": "title-stack1-item2",
                 "kind": "group",
-                "name": "Item",
+                "name": "Stack item",
                 "geometry": {
                   "square": {
                     "x": 17.55,
-                    "y": 62.09,
+                    "y": 62,
                     "w": 48.78,
-                    "h": 1.85
+                    "h": 2.18
                   },
                   "portrait": {
                     "x": 21.4,
-                    "y": 50.09,
+                    "y": 49.94,
                     "w": 65.02,
-                    "h": 2
+                    "h": 2.32
                   },
                   "story": {
                     "x": 21.4,
-                    "y": 35.22,
+                    "y": 35.12,
                     "w": 65.02,
-                    "h": 1.41
+                    "h": 1.63
                   },
                   "landscape": {
                     "x": 9.21,
                     "y": 61.95,
                     "w": 25.59,
-                    "h": 1.9
+                    "h": 2.17
                   }
                 },
                 "children": [
@@ -3384,6 +3585,7 @@
                       "ellipsis": true
                     },
                     "id": "title-l31",
+                    "link": "title-l31",
                     "sizes": ["square"],
                     "geometry": {
                       "square": {
@@ -3412,6 +3614,7 @@
                       "ellipsis": true
                     },
                     "id": "title-l32",
+                    "link": "title-l31",
                     "sizes": ["portrait", "story"],
                     "geometry": {
                       "portrait": {
@@ -3446,6 +3649,7 @@
                       "ellipsis": true
                     },
                     "id": "title-l33",
+                    "link": "title-l31",
                     "sizes": ["landscape"],
                     "geometry": {
                       "landscape": {
@@ -3478,6 +3682,7 @@
               "opacity": 0.7
             },
             "id": "title-l34",
+            "link": "title-l34",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -3504,6 +3709,7 @@
               "opacity": 0.7
             },
             "id": "title-l35",
+            "link": "title-l34",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -3536,6 +3742,7 @@
               "opacity": 0.7
             },
             "id": "title-l36",
+            "link": "title-l34",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3550,575 +3757,438 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "title-l37",
+            "link": "title-l37",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:132lpdw117wyn1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
               },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "title-l38",
+            "link": "title-l37",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:18jbr090ef71w8"
           },
           {
-            "id": "title-stack2",
-            "kind": "group",
-            "name": "Stack",
-            "stack": {
-              "direction": "row",
-              "gap": 1.4,
-              "align": "center",
-              "justify": "start"
+            "kind": "text",
+            "content": "PROUDLY SUPPORTED BY",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
             },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "title-l39",
+            "link": "title-l39",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 89.6,
-                "w": 57.6,
-                "h": 4.4
+                "y": 90.77,
+                "w": 24.4,
+                "h": 1.94
               },
               "portrait": {
                 "x": 6,
-                "y": 91.68,
-                "w": 57.6,
-                "h": 3.52
+                "y": 92.61,
+                "w": 24.4,
+                "h": 1.56
               },
               "story": {
                 "x": 6,
-                "y": 94.15,
-                "w": 57.6,
-                "h": 2.48
-              },
+                "y": 94.81,
+                "w": 24.4,
+                "h": 1.09
+              }
+            },
+            "sig": "text:0a3izl3135y9kq"
+          },
+          {
+            "kind": "text",
+            "content": "PROUDLY SUPPORTED BY",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "showWhen": {
+              "sponsors": true
+            },
+            "id": "title-l40",
+            "link": "title-l39",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
+                "y": 90.67,
+                "w": 13.28,
+                "h": 2.06
+              }
+            },
+            "sig": "text:1g09m6z070xom4"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 6.48,
+              "opacity": 0.94
+            },
+            "id": "title-l41",
+            "link": "title-l41",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 30.8,
                 "y": 89.6,
-                "w": 30.24,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 30.8,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 30.8,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            },
+            "sig": "shape:1d6f0mr0bk87fm"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 3.78,
+              "opacity": 0.94
+            },
+            "id": "title-l42",
+            "link": "title-l41",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 16.17,
+                "y": 89.6,
+                "w": 5.25,
                 "h": 4.4
               }
             },
-            "children": [
-              {
-                "id": "title-stack2-item1",
-                "kind": "group",
-                "name": "Item",
-                "geometry": {
-                  "square": {
-                    "x": 6,
-                    "y": 90.77,
-                    "w": 24.4,
-                    "h": 1.94
-                  },
-                  "portrait": {
-                    "x": 6,
-                    "y": 92.61,
-                    "w": 24.4,
-                    "h": 1.56
-                  },
-                  "story": {
-                    "x": 6,
-                    "y": 94.81,
-                    "w": 24.4,
-                    "h": 1.09
-                  },
-                  "landscape": {
-                    "x": 3.15,
-                    "y": 90.67,
-                    "w": 13.28,
-                    "h": 2.06
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "text",
-                    "content": "PROUDLY SUPPORTED BY",
-                    "style": {
-                      "color": "var(--accent-ink)",
-                      "fontFamily": "'IBM Plex Mono',monospace",
-                      "fontSize": 1.5,
-                      "fontWeight": 500,
-                      "letterSpacing": 0.18,
-                      "align": "left",
-                      "lineHeight": 1.5,
-                      "opacity": 0.7
-                    },
-                    "showWhen": {
-                      "sponsors": true
-                    },
-                    "id": "title-l38",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 6,
-                        "y": 90.77,
-                        "w": 24.4,
-                        "h": 1.94
-                      },
-                      "portrait": {
-                        "x": 6,
-                        "y": 92.61,
-                        "w": 24.4,
-                        "h": 1.56
-                      },
-                      "story": {
-                        "x": 6,
-                        "y": 94.81,
-                        "w": 24.4,
-                        "h": 1.09
-                      }
-                    },
-                    "sig": "text:0a3izl3135y9kq"
-                  },
-                  {
-                    "kind": "text",
-                    "content": "PROUDLY SUPPORTED BY",
-                    "style": {
-                      "color": "var(--accent-ink)",
-                      "fontFamily": "'IBM Plex Mono',monospace",
-                      "fontSize": 0.79,
-                      "fontWeight": 500,
-                      "letterSpacing": 0.18,
-                      "align": "left",
-                      "lineHeight": 1.5,
-                      "opacity": 0.7
-                    },
-                    "showWhen": {
-                      "sponsors": true
-                    },
-                    "id": "title-l39",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 3.15,
-                        "y": 90.67,
-                        "w": 13.28,
-                        "h": 2.06
-                      }
-                    },
-                    "sig": "text:1g09m6z070xom4"
-                  }
-                ],
-                "sig": "group:1vwrflx14mzsb8"
+            "sig": "shape:12uv3yl120cnik"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "title-l43",
+            "link": "title-l43",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 30.8,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
               },
-              {
-                "id": "title-stack2-item2",
-                "kind": "group",
-                "name": "Item",
-                "geometry": {
-                  "square": {
-                    "x": 30.8,
-                    "y": 89.6,
-                    "w": 10,
-                    "h": 4.4
-                  },
-                  "portrait": {
-                    "x": 30.8,
-                    "y": 91.68,
-                    "w": 10,
-                    "h": 3.52
-                  },
-                  "story": {
-                    "x": 30.8,
-                    "y": 94.15,
-                    "w": 10,
-                    "h": 2.48
-                  },
-                  "landscape": {
-                    "x": 16.17,
-                    "y": 89.6,
-                    "w": 5.25,
-                    "h": 4.4
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 6.48,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l40",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 30.8,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 30.8,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 30.8,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "shape:1d6f0mr0bk87fm"
-                  },
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 3.78,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l41",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 16.17,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "shape:12uv3yl120cnik"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor1}}",
-                    "style": {
-                      "radius": 6.48
-                    },
-                    "id": "title-l42",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 30.8,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 30.8,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 30.8,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "image:047j3h50otvmqq"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor1}}",
-                    "style": {
-                      "radius": 3.78
-                    },
-                    "id": "title-l43",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 16.17,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "image:18qemif1fyp00c"
-                  }
-                ],
-                "sig": "group:0r17e5j05thn4k"
+              "portrait": {
+                "x": 30.8,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
               },
-              {
-                "id": "title-stack2-item3",
-                "kind": "group",
-                "name": "Item",
-                "geometry": {
-                  "square": {
-                    "x": 42.2,
-                    "y": 89.6,
-                    "w": 10,
-                    "h": 4.4
-                  },
-                  "portrait": {
-                    "x": 42.2,
-                    "y": 91.68,
-                    "w": 10,
-                    "h": 3.52
-                  },
-                  "story": {
-                    "x": 42.2,
-                    "y": 94.15,
-                    "w": 10,
-                    "h": 2.48
-                  },
-                  "landscape": {
-                    "x": 22.15,
-                    "y": 89.6,
-                    "w": 5.25,
-                    "h": 4.4
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 6.48,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l44",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 42.2,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 42.2,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 42.2,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "shape:1d6f0mr0bk87fm"
-                  },
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 3.78,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l45",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 22.15,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "shape:12uv3yl120cnik"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor2}}",
-                    "style": {
-                      "radius": 6.48
-                    },
-                    "id": "title-l46",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 42.2,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 42.2,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 42.2,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "image:0wa3pc6084xput"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor2}}",
-                    "style": {
-                      "radius": 3.78
-                    },
-                    "id": "title-l47",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 22.15,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "image:10vnp3s1tzck23"
-                  }
-                ],
-                "sig": "group:1lg1xbb0sl5xb8"
-              },
-              {
-                "id": "title-stack2-item4",
-                "kind": "group",
-                "name": "Item",
-                "geometry": {
-                  "square": {
-                    "x": 53.6,
-                    "y": 89.6,
-                    "w": 10,
-                    "h": 4.4
-                  },
-                  "portrait": {
-                    "x": 53.6,
-                    "y": 91.68,
-                    "w": 10,
-                    "h": 3.52
-                  },
-                  "story": {
-                    "x": 53.6,
-                    "y": 94.15,
-                    "w": 10,
-                    "h": 2.48
-                  },
-                  "landscape": {
-                    "x": 28.14,
-                    "y": 89.6,
-                    "w": 5.25,
-                    "h": 4.4
-                  }
-                },
-                "children": [
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 6.48,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l48",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 53.6,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 53.6,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 53.6,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "shape:1d6f0mr0bk87fm"
-                  },
-                  {
-                    "kind": "shape",
-                    "style": {
-                      "fill": "var(--accent-ink)",
-                      "radius": 3.78,
-                      "opacity": 0.94
-                    },
-                    "id": "title-l49",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 28.14,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "shape:12uv3yl120cnik"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor3}}",
-                    "style": {
-                      "radius": 6.48
-                    },
-                    "id": "title-l50",
-                    "sizes": ["square", "portrait", "story"],
-                    "geometry": {
-                      "square": {
-                        "x": 53.6,
-                        "y": 89.6,
-                        "w": 10,
-                        "h": 4.4
-                      },
-                      "portrait": {
-                        "x": 53.6,
-                        "y": 91.68,
-                        "w": 10,
-                        "h": 3.52
-                      },
-                      "story": {
-                        "x": 53.6,
-                        "y": 94.15,
-                        "w": 10,
-                        "h": 2.48
-                      }
-                    },
-                    "sig": "image:1dc2s8j1fjjl7s"
-                  },
-                  {
-                    "kind": "image",
-                    "content": "{{sponsor3}}",
-                    "style": {
-                      "radius": 3.78
-                    },
-                    "id": "title-l51",
-                    "sizes": ["landscape"],
-                    "geometry": {
-                      "landscape": {
-                        "x": 28.14,
-                        "y": 89.6,
-                        "w": 5.25,
-                        "h": 4.4
-                      }
-                    },
-                    "sig": "image:130ivkd072f9rq"
-                  }
-                ],
-                "sig": "group:0fi5z0r1cvgpq8"
+              "story": {
+                "x": 30.8,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
               }
-            ],
-            "sig": "group:1l48pah1k6fxru"
+            },
+            "sig": "image:047j3h50otvmqq"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "title-l44",
+            "link": "title-l43",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 16.17,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            },
+            "sig": "image:18qemif1fyp00c"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 6.48,
+              "opacity": 0.94
+            },
+            "id": "title-l45",
+            "link": "title-l45",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 42.2,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 42.2,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 42.2,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            },
+            "sig": "shape:1d6f0mr0bk87fm"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 3.78,
+              "opacity": 0.94
+            },
+            "id": "title-l46",
+            "link": "title-l45",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 22.15,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            },
+            "sig": "shape:12uv3yl120cnik"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "title-l47",
+            "link": "title-l47",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 42.2,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 42.2,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 42.2,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            },
+            "sig": "image:0wa3pc6084xput"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor2}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "title-l48",
+            "link": "title-l47",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 22.15,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            },
+            "sig": "image:10vnp3s1tzck23"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 6.48,
+              "opacity": 0.94
+            },
+            "id": "title-l49",
+            "link": "title-l49",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 53.6,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 53.6,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 53.6,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            },
+            "sig": "shape:1d6f0mr0bk87fm"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 3.78,
+              "opacity": 0.94
+            },
+            "id": "title-l50",
+            "link": "title-l49",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 28.14,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            },
+            "sig": "shape:12uv3yl120cnik"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "style": {
+              "radius": 6.48
+            },
+            "id": "title-l51",
+            "link": "title-l51",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 53.6,
+                "y": 89.6,
+                "w": 10,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 53.6,
+                "y": 91.68,
+                "w": 10,
+                "h": 3.52
+              },
+              "story": {
+                "x": 53.6,
+                "y": 94.15,
+                "w": 10,
+                "h": 2.48
+              }
+            },
+            "sig": "image:1dc2s8j1fjjl7s"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor3}}",
+            "style": {
+              "radius": 3.78
+            },
+            "id": "title-l52",
+            "link": "title-l51",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 28.14,
+                "y": 89.6,
+                "w": 5.25,
+                "h": 4.4
+              }
+            },
+            "sig": "image:130ivkd072f9rq"
           },
           {
             "kind": "text",
@@ -4137,7 +4207,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "title-l52",
+            "id": "title-l53",
+            "link": "title-l53",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -4178,7 +4249,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "title-l53",
+            "id": "title-l54",
+            "link": "title-l53",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4272,10 +4344,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.35,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "day-l3",
+            "link": "day-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -4297,7 +4373,7 @@
                 "h": 32.4
               }
             },
-            "sig": "text:0xri40d0ch0o4y"
+            "sig": "text:0d6c1qg0860ntz"
           },
           {
             "kind": "text",
@@ -4309,10 +4385,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.18,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "day-l4",
+            "link": "day-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4322,7 +4402,7 @@
                 "h": 57.46
               }
             },
-            "sig": "text:15tf5d21lad755"
+            "sig": "text:03thqy21q75nph"
           },
           {
             "kind": "image",
@@ -4375,6 +4455,7 @@
               "ellipsis": true
             },
             "id": "day-l6",
+            "link": "day-l6",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -4417,6 +4498,7 @@
               "ellipsis": true
             },
             "id": "day-l7",
+            "link": "day-l6",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4448,6 +4530,7 @@
               "ellipsis": true
             },
             "id": "day-l8",
+            "link": "day-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -4491,6 +4574,7 @@
               "ellipsis": true
             },
             "id": "day-l9",
+            "link": "day-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4550,6 +4634,7 @@
               "lineHeight": 1
             },
             "id": "day-l11",
+            "link": "day-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -4587,6 +4672,7 @@
               "lineHeight": 1
             },
             "id": "day-l12",
+            "link": "day-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4612,6 +4698,7 @@
               "lineHeight": 1.3
             },
             "id": "day-l13",
+            "link": "day-l13",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -4637,6 +4724,7 @@
               "lineHeight": 1.3
             },
             "id": "day-l14",
+            "link": "day-l13",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -4668,6 +4756,7 @@
               "lineHeight": 1.3
             },
             "id": "day-l15",
+            "link": "day-l13",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4698,6 +4787,7 @@
               "ellipsis": true
             },
             "id": "day-l16",
+            "link": "day-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -4728,6 +4818,7 @@
               "ellipsis": true
             },
             "id": "day-l17",
+            "link": "day-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -4764,6 +4855,7 @@
               "ellipsis": true
             },
             "id": "day-l18",
+            "link": "day-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -4793,8 +4885,52 @@
                 },
                 {
                   "field": "time",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.14,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.86,
+                  "h": 1.14,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "time",
                   "x": 1.73,
-                  "w": 12.7,
+                  "w": 13.7,
                   "y": 28.55,
                   "h": 42.94,
                   "style": {
@@ -4808,7 +4944,7 @@
                 {
                   "field": "grade",
                   "x": 15.43,
-                  "w": 75.39,
+                  "w": 76.39,
                   "y": 12.48,
                   "h": 21.08,
                   "style": {
@@ -4824,7 +4960,7 @@
                 {
                   "field": "opposition",
                   "x": 15.43,
-                  "w": 75.39,
+                  "w": 76.39,
                   "y": 28.33,
                   "h": 39.13,
                   "style": {
@@ -4839,7 +4975,7 @@
                 {
                   "field": "meta",
                   "x": 15.43,
-                  "w": 75.39,
+                  "w": 76.39,
                   "y": 62.24,
                   "h": 25.28,
                   "style": {
@@ -4852,7 +4988,7 @@
                   }
                 },
                 {
-                  "field": "time",
+                  "field": "crest",
                   "x": 91.82,
                   "w": 6.45,
                   "y": 17.56,
@@ -4873,6 +5009,7 @@
               ]
             },
             "id": "day-l19",
+            "link": "day-l19",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -4882,7 +5019,7 @@
                 "h": 35.84
               }
             },
-            "sig": "rows:0o0p6yy09kcvst"
+            "sig": "rows:198054t0bmhskm"
           },
           {
             "kind": "rows",
@@ -4902,8 +5039,52 @@
                 },
                 {
                   "field": "time",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.95,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.05,
+                  "h": 0.95,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "time",
                   "x": 1.9,
-                  "w": 14.3,
+                  "w": 15.3,
                   "y": 26.07,
                   "h": 47.86,
                   "style": {
@@ -4917,7 +5098,7 @@
                 {
                   "field": "grade",
                   "x": 17.2,
-                  "w": 72.7,
+                  "w": 73.7,
                   "y": 12.34,
                   "h": 21.15,
                   "style": {
@@ -4933,7 +5114,7 @@
                 {
                   "field": "opposition",
                   "x": 17.2,
-                  "w": 72.7,
+                  "w": 73.7,
                   "y": 26.03,
                   "h": 43.72,
                   "style": {
@@ -4948,7 +5129,7 @@
                 {
                   "field": "meta",
                   "x": 17.2,
-                  "w": 72.7,
+                  "w": 73.7,
                   "y": 62.28,
                   "h": 25.39,
                   "style": {
@@ -4961,7 +5142,7 @@
                   }
                 },
                 {
-                  "field": "time",
+                  "field": "crest",
                   "x": 90.9,
                   "w": 7.2,
                   "y": 17.46,
@@ -4982,6 +5163,7 @@
               ]
             },
             "id": "day-l20",
+            "link": "day-l19",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -4991,7 +5173,7 @@
                 "h": 43.24
               }
             },
-            "sig": "rows:0kpvg9x0sm4g6i"
+            "sig": "rows:0x5v0jc0kjkc2v"
           },
           {
             "kind": "rows",
@@ -5011,8 +5193,52 @@
                 },
                 {
                   "field": "time",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.22,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.78,
+                  "h": 1.22,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "time",
                   "x": 1.5,
-                  "w": 10.9,
+                  "w": 11.9,
                   "y": 19.4,
                   "h": 61.19,
                   "style": {
@@ -5026,7 +5252,7 @@
                 {
                   "field": "grade",
                   "x": 13.4,
-                  "w": 78.5,
+                  "w": 79.5,
                   "y": 9.77,
                   "h": 26.59,
                   "style": {
@@ -5042,7 +5268,7 @@
                 {
                   "field": "opposition",
                   "x": 13.4,
-                  "w": 78.5,
+                  "w": 79.5,
                   "y": 19.95,
                   "h": 55.91,
                   "style": {
@@ -5057,7 +5283,7 @@
                 {
                   "field": "meta",
                   "x": 13.4,
-                  "w": 78.5,
+                  "w": 79.5,
                   "y": 58.89,
                   "h": 31.88,
                   "style": {
@@ -5070,7 +5296,7 @@
                   }
                 },
                 {
-                  "field": "time",
+                  "field": "crest",
                   "x": 92.9,
                   "w": 5.6,
                   "y": 17.62,
@@ -5091,6 +5317,7 @@
               ]
             },
             "id": "day-l21",
+            "link": "day-l19",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -5100,7 +5327,7 @@
                 "h": 33.3
               }
             },
-            "sig": "rows:0wapu8401iqhvb"
+            "sig": "rows:01hxplm0sxiyqp"
           },
           {
             "kind": "rows",
@@ -5120,8 +5347,52 @@
                 },
                 {
                   "field": "time",
+                  "x": 0,
+                  "w": 0.18,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 99.82,
+                  "w": 0.18,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.61,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "meta",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.39,
+                  "h": 1.61,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "time",
                   "x": 1.96,
-                  "w": 14.17,
+                  "w": 15.17,
                   "y": 28.76,
                   "h": 42.46,
                   "style": {
@@ -5135,7 +5406,7 @@
                 {
                   "field": "grade",
                   "x": 17.13,
-                  "w": 72.77,
+                  "w": 73.77,
                   "y": 12.84,
                   "h": 20.86,
                   "style": {
@@ -5151,7 +5422,7 @@
                 {
                   "field": "opposition",
                   "x": 17.13,
-                  "w": 72.77,
+                  "w": 73.77,
                   "y": 28.57,
                   "h": 38.68,
                   "style": {
@@ -5166,7 +5437,7 @@
                 {
                   "field": "meta",
                   "x": 17.13,
-                  "w": 72.77,
+                  "w": 73.77,
                   "y": 62.11,
                   "h": 25.05,
                   "style": {
@@ -5179,7 +5450,7 @@
                   }
                 },
                 {
-                  "field": "time",
+                  "field": "crest",
                   "x": 90.9,
                   "w": 7.14,
                   "y": 17.86,
@@ -5198,9 +5469,12 @@
                   "show": "image"
                 }
               ],
-              "columns": 2
+              "columns": 2,
+              "columnGap": 0.62,
+              "flow": "across"
             },
             "id": "day-l22",
+            "link": "day-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5210,42 +5484,67 @@
                 "h": 32.45
               }
             },
-            "sig": "rows:0afgls01n2xigb"
+            "sig": "rows:10qq2u51uskn04"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "day-l23",
+            "link": "day-l23",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:132lpdw117wyn1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
               },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "day-l24",
+            "link": "day-l23",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:18jbr090ef71w8"
           },
           {
             "kind": "text",
@@ -5263,7 +5562,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "day-l24",
+            "id": "day-l25",
+            "link": "day-l25",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5303,7 +5603,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "day-l25",
+            "id": "day-l26",
+            "link": "day-l25",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5322,7 +5623,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "day-l26",
+            "id": "day-l27",
+            "link": "day-l27",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5353,7 +5655,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "day-l27",
+            "id": "day-l28",
+            "link": "day-l27",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5371,7 +5674,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "day-l28",
+            "id": "day-l29",
+            "link": "day-l29",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5401,7 +5705,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "day-l29",
+            "id": "day-l30",
+            "link": "day-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5420,7 +5725,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "day-l30",
+            "id": "day-l31",
+            "link": "day-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5451,7 +5757,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "day-l31",
+            "id": "day-l32",
+            "link": "day-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5469,7 +5776,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "day-l32",
+            "id": "day-l33",
+            "link": "day-l33",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5499,7 +5807,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "day-l33",
+            "id": "day-l34",
+            "link": "day-l33",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5518,7 +5827,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "day-l34",
+            "id": "day-l35",
+            "link": "day-l35",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5549,7 +5859,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "day-l35",
+            "id": "day-l36",
+            "link": "day-l35",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5567,7 +5878,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "day-l36",
+            "id": "day-l37",
+            "link": "day-l37",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5597,7 +5909,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "day-l37",
+            "id": "day-l38",
+            "link": "day-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5626,7 +5939,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l38",
+            "id": "day-l39",
+            "link": "day-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5667,7 +5981,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l39",
+            "id": "day-l40",
+            "link": "day-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5761,10 +6076,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.35,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "sponsors-l3",
+            "link": "sponsors-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -5786,7 +6105,7 @@
                 "h": 32.4
               }
             },
-            "sig": "text:0wctku218igohp"
+            "sig": "text:1pv8rbj1jh31g8"
           },
           {
             "kind": "text",
@@ -5798,10 +6117,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.18,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "sponsors-l4",
+            "link": "sponsors-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5811,7 +6134,7 @@
                 "h": 57.46
               }
             },
-            "sig": "text:0s7gkvl1tvh9py"
+            "sig": "text:1iq3yn10karwd6"
           },
           {
             "kind": "shape",
@@ -5876,6 +6199,7 @@
               }
             },
             "id": "sponsors-l6-square",
+            "link": "sponsors-l6",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -5908,6 +6232,7 @@
               }
             },
             "id": "sponsors-l6-portrait",
+            "link": "sponsors-l6",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -5940,6 +6265,7 @@
               }
             },
             "id": "sponsors-l6-landscape",
+            "link": "sponsors-l6",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -5972,6 +6298,7 @@
               }
             },
             "id": "sponsors-l7-story",
+            "link": "sponsors-l6",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -6034,6 +6361,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l9",
+            "link": "sponsors-l9",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -6076,6 +6404,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l10",
+            "link": "sponsors-l9",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6107,6 +6436,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l11",
+            "link": "sponsors-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -6150,6 +6480,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l12",
+            "link": "sponsors-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6209,6 +6540,7 @@
               "lineHeight": 1
             },
             "id": "sponsors-l14",
+            "link": "sponsors-l14",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -6246,6 +6578,7 @@
               "lineHeight": 1
             },
             "id": "sponsors-l15",
+            "link": "sponsors-l14",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6276,6 +6609,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l16",
+            "link": "sponsors-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6306,6 +6640,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l17",
+            "link": "sponsors-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6342,6 +6677,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l18",
+            "link": "sponsors-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6372,6 +6708,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l19",
+            "link": "sponsors-l19",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6402,6 +6739,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l20",
+            "link": "sponsors-l19",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6438,6 +6776,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l21",
+            "link": "sponsors-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6633,6 +6972,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l31",
+            "link": "sponsors-l31",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6664,6 +7004,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l32",
+            "link": "sponsors-l31",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6701,6 +7042,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l33",
+            "link": "sponsors-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6726,6 +7068,7 @@
               "lineHeight": 1.3
             },
             "id": "sponsors-l34",
+            "link": "sponsors-l34",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6751,6 +7094,7 @@
               "lineHeight": 1.3
             },
             "id": "sponsors-l35",
+            "link": "sponsors-l34",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6782,6 +7126,7 @@
               "lineHeight": 1.3
             },
             "id": "sponsors-l36",
+            "link": "sponsors-l34",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6812,6 +7157,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l37",
+            "link": "sponsors-l37",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6842,6 +7188,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l38",
+            "link": "sponsors-l37",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6878,6 +7225,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l39",
+            "link": "sponsors-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6909,6 +7257,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l40",
+            "link": "sponsors-l40",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -6935,11 +7284,12 @@
               "opacity": 0.7
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "sponsors-l41",
+            "link": "sponsors-l40",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -6955,7 +7305,7 @@
                 "h": 3.34
               }
             },
-            "sig": "text:1fskafl01tp22s"
+            "sig": "text:07v8ok61d4bd37"
           },
           {
             "kind": "text",
@@ -6977,6 +7327,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l42",
+            "link": "sponsors-l40",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7001,11 +7352,12 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "sponsors-l43",
+            "link": "sponsors-l43",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -7015,7 +7367,7 @@
                 "h": 4.45
               }
             },
-            "sig": "text:0kvi6wy1vyh4zx"
+            "sig": "text:0qdr0zb1uuoag4"
           },
           {
             "kind": "text",
@@ -7030,11 +7382,12 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "sponsors-l44",
+            "link": "sponsors-l43",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -7050,7 +7403,7 @@
                 "h": 3.34
               }
             },
-            "sig": "text:1shq1oj1l4kh7k"
+            "sig": "text:1rrl0ka00p2yql"
           },
           {
             "kind": "text",
@@ -7070,6 +7423,7 @@
               "ellipsis": true
             },
             "id": "sponsors-l45",
+            "link": "sponsors-l43",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7084,37 +7438,62 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "sponsors-l46",
+            "link": "sponsors-l46",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:132lpdw117wyn1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
               },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "sponsors-l47",
+            "link": "sponsors-l46",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:18jbr090ef71w8"
           },
           {
             "kind": "text",
@@ -7132,7 +7511,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l47",
+            "id": "sponsors-l48",
+            "link": "sponsors-l48",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7172,7 +7552,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l48",
+            "id": "sponsors-l49",
+            "link": "sponsors-l48",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7191,7 +7572,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "sponsors-l49",
+            "id": "sponsors-l50",
+            "link": "sponsors-l50",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7222,7 +7604,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "sponsors-l50",
+            "id": "sponsors-l51",
+            "link": "sponsors-l50",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7243,7 +7626,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l51",
+            "id": "sponsors-l52",
+            "link": "sponsors-l52",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7276,7 +7660,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l52",
+            "id": "sponsors-l53",
+            "link": "sponsors-l52",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7295,7 +7680,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "sponsors-l53",
+            "id": "sponsors-l54",
+            "link": "sponsors-l54",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7326,7 +7712,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "sponsors-l54",
+            "id": "sponsors-l55",
+            "link": "sponsors-l54",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7347,7 +7734,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l55",
+            "id": "sponsors-l56",
+            "link": "sponsors-l56",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7380,7 +7768,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l56",
+            "id": "sponsors-l57",
+            "link": "sponsors-l56",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7399,7 +7788,8 @@
               "radius": 6.48,
               "opacity": 0.94
             },
-            "id": "sponsors-l57",
+            "id": "sponsors-l58",
+            "link": "sponsors-l58",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7430,7 +7820,8 @@
               "radius": 3.78,
               "opacity": 0.94
             },
-            "id": "sponsors-l58",
+            "id": "sponsors-l59",
+            "link": "sponsors-l58",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7451,7 +7842,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l59",
+            "id": "sponsors-l60",
+            "link": "sponsors-l60",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7484,7 +7876,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "sponsors-l60",
+            "id": "sponsors-l61",
+            "link": "sponsors-l60",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7513,7 +7906,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "sponsors-l61",
+            "id": "sponsors-l62",
+            "link": "sponsors-l62",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7554,7 +7948,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "sponsors-l62",
+            "id": "sponsors-l63",
+            "link": "sponsors-l62",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {

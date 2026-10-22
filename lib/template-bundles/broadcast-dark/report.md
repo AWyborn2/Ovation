@@ -11,14 +11,14 @@ Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts`, po
 - Colours that move with the palette but aren't a token: 6.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 4 hd.
+- Polish time logged: not logged hd.
 
 ## bigMoment
 
 ### card
 
 - From `card.single`.
-- Layers: 18 shape, 4 vector, 7 image, 35 text.
+- Layers: 22 shape, 7 image, 35 text.
 - Motion: `hhPulse` → loop: pulse, 1400 ms.
 
 | Size      | Pixel match | Fit warnings |
@@ -37,7 +37,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 16 shape, 1 photo, 4 vector, 7 image, 33 text.
+- Layers: 20 shape, 1 photo, 7 image, 33 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -55,7 +55,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`.
-- Layers: 10 shape, 4 vector, 7 image, 20 text, 3 rows.
+- Layers: 14 shape, 7 image, 20 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -73,7 +73,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 11 shape, 4 vector, 7 image, 33 text.
+- Layers: 15 shape, 7 image, 33 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -87,7 +87,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 15 shape, 1 photo, 4 vector, 7 image, 26 text.
+- Layers: 19 shape, 1 photo, 7 image, 26 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -105,7 +105,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 16 shape, 1 photo, 4 vector, 7 image, 35 text.
+- Layers: 20 shape, 1 photo, 7 image, 35 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -123,7 +123,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`.
-- Layers: 13 shape, 1 photo, 4 vector, 7 image, 29 text.
+- Layers: 17 shape, 1 photo, 7 image, 29 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -141,13 +141,13 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 11 shape, 4 vector, 7 image, 38 text, 3 rows.
+- Layers: 15 shape, 7 image, 38 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
 | square    | 95%         | none         |
 | portrait  | 95%         | none         |
-| story     | 97%         | none         |
+| story     | 96%         | none         |
 | landscape | 97%         | none         |
 
 Colours not tokenised:
@@ -163,7 +163,7 @@ Colours not tokenised:
 ### fixture
 
 - From `fixture.slide`; not used: `fixture.single`.
-- Layers: 27 shape, 4 vector, 1 photo, 13 image, 64 text, 10 group; 2 stack group(s).
+- Layers: 31 shape, 1 photo, 13 image, 64 text, 10 group; 2 stack group(s).
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -175,7 +175,7 @@ Colours not tokenised:
 ### title
 
 - From `title.slide`.
-- Layers: 15 shape, 1 photo, 4 vector, 7 image, 28 text.
+- Layers: 19 shape, 1 photo, 7 image, 28 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -187,7 +187,7 @@ Colours not tokenised:
 ### day
 
 - From `day.slide`.
-- Layers: 10 shape, 4 vector, 7 image, 16 text, 4 rows.
+- Layers: 14 shape, 7 image, 16 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -199,7 +199,7 @@ Colours not tokenised:
 ### sponsors
 
 - From `sponsors.slide`.
-- Layers: 24 shape, 1 photo, 4 vector, 19 image, 31 text.
+- Layers: 28 shape, 1 photo, 19 image, 31 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -213,7 +213,7 @@ Colours not tokenised:
 ### result
 
 - From `result.single`; not used: `result.slide`.
-- Layers: 18 shape, 1 photo, 4 vector, 9 image, 34 text.
+- Layers: 22 shape, 1 photo, 9 image, 34 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -231,7 +231,7 @@ Converter notes (from the raw conversion):
 ### day
 
 - From `day.slide`.
-- Layers: 6 shape, 4 vector, 3 image, 16 text, 4 rows.
+- Layers: 10 shape, 3 image, 16 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -245,7 +245,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 16 shape, 1 photo, 4 vector, 7 image, 28 text.
+- Layers: 20 shape, 1 photo, 7 image, 28 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -259,7 +259,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 14 shape, 1 photo, 4 vector, 7 image, 27 text.
+- Layers: 18 shape, 1 photo, 7 image, 27 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -277,7 +277,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 24 shape, 1 photo, 4 vector, 7 image, 42 text.
+- Layers: 28 shape, 1 photo, 7 image, 42 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -290,13 +290,16 @@ Colours not tokenised:
 
 - background-color color(srgb 0.827451 0.0901961 0.352941 / 0.16)
 - border-top-color color(srgb 0.827451 0.0901961 0.352941 / 0.5)
+- border-right-color color(srgb 0.827451 0.0901961 0.352941 / 0.5)
+- border-bottom-color color(srgb 0.827451 0.0901961 0.352941 / 0.5)
+- border-left-color color(srgb 0.827451 0.0901961 0.352941 / 0.5)
 
 ## premiership
 
 ### card
 
 - From `card.single`.
-- Layers: 7 shape, 1 photo, 4 vector, 1 image, 27 text.
+- Layers: 11 shape, 1 photo, 1 image, 27 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -314,7 +317,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.single`.
-- Layers: 13 shape, 1 photo, 4 vector, 7 image, 29 text.
+- Layers: 17 shape, 1 photo, 7 image, 29 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -328,7 +331,7 @@ Converter notes (from the raw conversion):
 ### team
 
 - From `team.single`; not used: `team.slide`.
-- Layers: 8 shape, 1 photo, 4 vector, 3 image, 21 text, 3 rows.
+- Layers: 12 shape, 1 photo, 3 image, 21 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -342,7 +345,7 @@ Converter notes (from the raw conversion):
 ### card
 
 - From `card.weekend-wrap`.
-- Layers: 10 shape, 4 vector, 7 image, 18 text, 4 rows.
+- Layers: 14 shape, 7 image, 18 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |

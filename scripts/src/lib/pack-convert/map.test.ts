@@ -181,22 +181,14 @@ describe("mapCapture", () => {
     expect(result.layers.filter((l) => l.layer.kind === "text")).toHaveLength(1);
   });
 
-  it("tokenises fills, cuts a skewed panel to its corners and maps the pulse", () => {
+  it("tokenises fills, slants a skewed panel and maps the pulse", () => {
     const stage = result.layers[0]!.layer as { style: { fill: string } };
     expect(stage.style.fill).toBe("var(--ink)");
-    // A native shape, not a polygon SVG: its box cut to the skewed corners (C1).
-    const slash = find((l) => l.sig.startsWith("shape:skew:"))!;
-    expect(slash.layer.style).toEqual({
-      fill: "var(--gold)",
-      clip: {
-        polygon: [
-          [19.51, 0],
-          [100, 0],
-          [80.49, 100],
-          [0, 100],
-        ],
-      },
-    });
+    // A native shape with the pack's own skew (B4): its untransformed box, slanted about
+    // its centre, where the skewed box was centred (skewX(-22deg), 100 × 60 px).
+    const slash = find((l) => !!l.layer.style?.skew)!;
+    expect(slash.layer.style).toEqual({ fill: "var(--gold)", skew: { x: -22, y: 0 } });
+    expect(slash.box).toEqual({ x: 84.26, y: 0, w: 9.26, h: 5.56 });
     expect(result.layers.some((l) => l.layer.kind === "vector")).toBe(false);
     expect(result.motion).toEqual({ hhPulse: "loop: pulse, 1400 ms" });
     const dot = find((l) => !!(l.layer as { motion?: unknown }).motion)!.layer as {
@@ -743,7 +735,7 @@ describe("row cells", () => {
 });
 
 describe("live text fit", () => {
-  it("fits one-line text to one line, and lets text the worst case wraps wrap as the pack does", () => {
+  it("fits one-line text to one line; text the worst case wraps wraps as the pack does, then ends", () => {
     id = 0;
     const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
     // A label, a field and a separator: three one-line runs that wrap onto two lines.
@@ -762,7 +754,8 @@ describe("live text fit", () => {
     cap.elements = [root, eyebrow, name];
     const fitOf = (e: CapturedElement) =>
       (mapCapture(cap).layers.find((l) => l.element === e.id)!.layer as { fit?: unknown }).fit;
-    expect(fitOf(eyebrow)).toBeUndefined();
+    // At the pack's size: two lines as the pack draws them, then an ellipsis (C4).
+    expect(fitOf(eyebrow)).toEqual({ minScale: 1, maxLines: 2, ellipsis: true });
     expect(fitOf(name)).toEqual({ minScale: 0.6, maxLines: 1, ellipsis: true });
   });
 });
@@ -874,5 +867,54 @@ describe("cells only some rows draw", () => {
     expect(fields).toContain("role");
     // The name is bound once (surname and broadcast name share the sentinel's marker).
     expect(fields.filter((f) => f === "surname" || f === "broadcastName")).toHaveLength(1);
+  });
+});
+
+describe("B4 styles", () => {
+  it("maps a dashed side border, outlined text, frosted glass and a glow", () => {
+    id = 0;
+    const els: CapturedElement[] = [
+      el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" }),
+      el(0, "div", [60, 900, 960, 40], {
+        style: {
+          "border-top-width": "2px",
+          "border-top-style": "dashed",
+          "border-top-color": "rgb(255, 255, 255)",
+        },
+      }),
+      el(0, "div", [60, 100, 400, 200], {
+        style: {
+          ...TEXT,
+          color: "rgba(0, 0, 0, 0)",
+          "-webkit-text-stroke-width": "3px",
+          "-webkit-text-stroke-color": "rgb(211, 23, 90)",
+        },
+        text: text("100", [60, 100, 300, 200]),
+      }),
+      el(0, "div", [100, 400, 300, 200], {
+        style: { "background-color": "rgb(255, 255, 255)", "backdrop-filter": "blur(18px)" },
+      }),
+      el(0, "div", [0, 700, 1080, 60], {
+        style: {
+          "background-color": "rgb(211, 23, 90)",
+          filter: "drop-shadow(rgb(211, 23, 90) 0px 0px 12px)",
+        },
+      }),
+    ];
+    const cap = capture();
+    cap.elements = els;
+    cap.rows = {};
+    const { layers, polish } = mapCapture(cap);
+    const styleOf = (i: number) => layers.find((l) => l.element === i)!.layer.style!;
+    // One border on the side it's drawn on, dashed: not a solid strip.
+    expect(styleOf(1).border).toMatchObject({ width: 0.19, style: "dashed", sides: ["top"] });
+    // Outlined text: its stroke, nothing inside.
+    expect(styleOf(2)).toMatchObject({
+      color: "#00000000",
+      textStroke: { width: 0.28, color: "var(--gold)" },
+    });
+    expect(styleOf(3).backdropBlur).toBe(18);
+    expect(styleOf(4).dropShadow).toEqual([{ x: 0, y: 0, blur: 1.11, color: "var(--gold)" }]);
+    expect(polish.map((p) => p.what).join("\n")).not.toMatch(/drawn solid|faint fill|not mapped/);
   });
 });
