@@ -11828,6 +11828,90 @@ export const GetPlatformPlayhqSyncResponse = zod.object({
 
 
 /**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+export const GetTemplateDesignerResponse = zod.object({
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "model": zod.string(),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designs (the 70% bar counts first-try fits).'),
+  "generations": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "model": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "firstTryFit": zod.boolean().nullable().describe('The first reply was valid and fitted; null when no fit check ran.'),
+  "tokens": zod.object({
+  "input": zod.number(),
+  "output": zod.number(),
+  "cacheRead": zod.number(),
+  "cacheWrite": zod.number()
+}),
+  "costUsd": zod.number().nullable(),
+  "result": zod.union([zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number()
+}),zod.null()]).describe('The unlisted console template the design was saved as.'),
+  "errors": zod.array(zod.string()).describe('Why the last reply was invalid, while the server remembers it.'),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Runs in the background; poll the design until its status is done or failed. The result is saved as an unlisted console template in the library. The image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent.
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const startTemplateGenerationBodyBriefMax = 2000;
+
+
+
+export const StartTemplateGenerationBody = zod.object({
+  "kind": zod.string().describe('The card kind to design.'),
+  "brief": zod.string().max(startTemplateGenerationBodyBriefMax).optional(),
+  "image": zod.instanceof(File).optional().describe('A reference image (PNG or JPEG, at most 5 MB).')
+})
+
+
+/**
+ * @summary One AI design
+ */
+export const GetTemplateGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTemplateGenerationResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "model": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "firstTryFit": zod.boolean().nullable().describe('The first reply was valid and fitted; null when no fit check ran.'),
+  "tokens": zod.object({
+  "input": zod.number(),
+  "output": zod.number(),
+  "cacheRead": zod.number(),
+  "cacheWrite": zod.number()
+}),
+  "costUsd": zod.number().nullable(),
+  "result": zod.union([zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number()
+}),zod.null()]).describe('The unlisted console template the design was saved as.'),
+  "errors": zod.array(zod.string()).describe('Why the last reply was invalid, while the server remembers it.'),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+})
+
+
+/**
  * @summary This club's PlayHQ sync status (last refresh, stale or not)
  */
 export const GetTenantPlayhqSyncStatusResponse = zod.object({

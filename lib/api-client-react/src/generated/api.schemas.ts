@@ -6565,6 +6565,87 @@ export interface PlayhqWatchdogResponse {
   open: number;
 }
 
+export interface StartTemplateGenerationRequest {
+  /** The card kind to design. */
+  kind: string;
+  /** @maxLength 2000 */
+  brief?: string;
+  /** A reference image (PNG or JPEG, at most 5 MB). */
+  image?: Blob;
+}
+
+export type TemplateGenerationStatus = typeof TemplateGenerationStatus[keyof typeof TemplateGenerationStatus];
+
+
+export const TemplateGenerationStatus = {
+  queued: 'queued',
+  running: 'running',
+  done: 'done',
+  failed: 'failed',
+} as const;
+
+export type TemplateGenerationTokens = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+};
+
+/**
+ * The unlisted console template the design was saved as.
+ */
+export type TemplateGenerationResult = {
+  libraryTemplateId: number;
+  version: number;
+} | null;
+
+export interface TemplateGeneration {
+  id: number;
+  kind: string;
+  model: string;
+  status: TemplateGenerationStatus;
+  /**
+     * pass, warnings, invalid, refused or provider_error; null until it finishes.
+     * @nullable
+     */
+  outcome: string | null;
+  attempts: number;
+  /**
+     * The first reply was valid and fitted; null when no fit check ran.
+     * @nullable
+     */
+  firstTryFit: boolean | null;
+  tokens: TemplateGenerationTokens;
+  /** @nullable */
+  costUsd: number | null;
+  /** The unlisted console template the design was saved as. */
+  result: TemplateGenerationResult;
+  /** Why the last reply was invalid, while the server remembers it. */
+  errors: string[];
+  createdAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+/**
+ * Over the first 50 finished designs (the 70% bar counts first-try fits).
+ */
+export type TemplateDesignerQuality = {
+  counted: number;
+  firstTryFit: number;
+  /** @nullable */
+  meanCostUsd: number | null;
+};
+
+export interface TemplateDesigner {
+  /** Whether the Claude API key is set. */
+  configured: boolean;
+  model: string;
+  /** Over the first 50 finished designs (the 70% bar counts first-try fits). */
+  quality: TemplateDesignerQuality;
+  generations: TemplateGeneration[];
+}
+
 export type PlatformPlayhqSyncOrgsItemState = typeof PlatformPlayhqSyncOrgsItemState[keyof typeof PlatformPlayhqSyncOrgsItemState];
 
 

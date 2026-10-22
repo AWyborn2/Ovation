@@ -7003,6 +7003,75 @@ paths:
         "503":
           description: Ingest database not configured
 
+  /platform/admin/library/designer:
+    get:
+      operationId: getTemplateDesigner
+      tags: [platformAdmin]
+      summary: The AI designer's state (configured?), its quality figure and recent designs
+      responses:
+        "200":
+          description: The designer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateDesigner"
+        "401":
+          description: Not a platform admin
+
+  /platform/admin/library/designer/generations:
+    post:
+      operationId: startTemplateGeneration
+      tags: [platformAdmin]
+      summary: Start an AI design from a brief and an optional uploaded reference image
+      description: >-
+        Runs in the background; poll the design until its status is done or
+        failed. The result is saved as an unlisted console template in the
+        library. The image must be an upload (PNG or JPEG, at most 5 MB); a
+        library photo can never be sent.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/StartTemplateGenerationRequest"
+      responses:
+        "202":
+          description: The queued design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateGeneration"
+        "400":
+          description: No brief or image, an unknown kind, a bad image, or a library photo
+        "401":
+          description: Not a platform admin
+        "413":
+          description: The image is over 5 MB
+        "503":
+          description: The designer isn't configured (no ANTHROPIC_API_KEY)
+
+  /platform/admin/library/designer/generations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getTemplateGeneration
+      tags: [platformAdmin]
+      summary: One AI design
+      responses:
+        "200":
+          description: The design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateGeneration"
+        "401":
+          description: Not a platform admin
+        "404":
+          description: No such design
+
   /admin/playhq-sync/status:
     get:
       operationId: getTenantPlayhqSyncStatus
@@ -19815,6 +19884,85 @@ components:
         open:
           type: integer
           description: Incidents still open after this run.
+
+    StartTemplateGenerationRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          description: The card kind to design.
+        brief:
+          type: string
+          maxLength: 2000
+        image:
+          type: string
+          format: binary
+          description: A reference image (PNG or JPEG, at most 5 MB).
+
+    TemplateGeneration:
+      type: object
+      required:
+        [id, kind, model, status, outcome, attempts, firstTryFit, tokens, costUsd, result, errors, createdAt, finishedAt]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        model: { type: string }
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        outcome:
+          type: ["string", "null"]
+          description: pass, warnings, invalid, refused or provider_error; null until it finishes.
+        attempts: { type: integer }
+        firstTryFit:
+          type: ["boolean", "null"]
+          description: The first reply was valid and fitted; null when no fit check ran.
+        tokens:
+          type: object
+          required: [input, output, cacheRead, cacheWrite]
+          properties:
+            input: { type: integer }
+            output: { type: integer }
+            cacheRead: { type: integer }
+            cacheWrite: { type: integer }
+        costUsd: { type: ["number", "null"] }
+        result:
+          description: The unlisted console template the design was saved as.
+          oneOf:
+            - type: object
+              required: [libraryTemplateId, version]
+              properties:
+                libraryTemplateId: { type: integer }
+                version: { type: integer }
+            - type: "null"
+        errors:
+          type: array
+          items: { type: string }
+          description: Why the last reply was invalid, while the server remembers it.
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: ["string", "null"], format: date-time }
+
+    TemplateDesigner:
+      type: object
+      required: [configured, model, quality, generations]
+      properties:
+        configured:
+          type: boolean
+          description: Whether the Claude API key is set.
+        model: { type: string }
+        quality:
+          type: object
+          required: [counted, firstTryFit, meanCostUsd]
+          description: Over the first 50 finished designs (the 70% bar counts first-try fits).
+          properties:
+            counted: { type: integer }
+            firstTryFit: { type: integer }
+            meanCostUsd: { type: ["number", "null"] }
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateGeneration"
 
     PlatformPlayhqSync:
       type: object

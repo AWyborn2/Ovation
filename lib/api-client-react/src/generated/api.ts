@@ -431,6 +431,7 @@ import type {
   SquadPlayerSearchHit,
   SquadSeasonSeedResult,
   StartKindTemplateRequest,
+  StartTemplateGenerationRequest,
   Stat,
   StatInput,
   StatListResponse,
@@ -449,6 +450,8 @@ import type {
   TeamOfDecadeMemberUpdate,
   TeamSheetPreview,
   TeamSheetPrintBody,
+  TemplateDesigner,
+  TemplateGeneration,
   TemplatePreviewInput,
   TenantBrand,
   TenantPlan,
@@ -22912,6 +22915,240 @@ export function useGetPlatformPlayhqSync<TData = Awaited<ReturnType<typeof getPl
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPlatformPlayhqSyncQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTemplateDesignerUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer`
+}
+
+/**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+export const getTemplateDesigner = async ( options?: RequestInit): Promise<TemplateDesigner> => {
+
+  return customFetch<TemplateDesigner>(getGetTemplateDesignerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplateDesignerQueryKey = () => {
+    return [
+    `/api/platform/admin/library/designer`
+    ] as const;
+    }
+
+
+export const getGetTemplateDesignerQueryOptions = <TData = Awaited<ReturnType<typeof getTemplateDesigner>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplateDesignerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplateDesigner>>> = ({ signal }) => getTemplateDesigner({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplateDesignerQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplateDesigner>>>
+export type GetTemplateDesignerQueryError = ErrorType<void>
+
+
+/**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+
+export function useGetTemplateDesigner<TData = Awaited<ReturnType<typeof getTemplateDesigner>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplateDesignerQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStartTemplateGenerationUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer/generations`
+}
+
+/**
+ * Runs in the background; poll the design until its status is done or failed. The result is saved as an unlisted console template in the library. The image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent.
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const startTemplateGeneration = async (startTemplateGenerationRequest: StartTemplateGenerationRequest, options?: RequestInit): Promise<TemplateGeneration> => {
+    const formData = new FormData();
+formData.append(`kind`, startTemplateGenerationRequest.kind);
+if(startTemplateGenerationRequest.brief !== undefined) {
+ formData.append(`brief`, startTemplateGenerationRequest.brief);
+ }
+if(startTemplateGenerationRequest.image !== undefined) {
+ formData.append(`image`, startTemplateGenerationRequest.image);
+ }
+
+  return customFetch<TemplateGeneration>(getStartTemplateGenerationUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getStartTemplateGenerationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext> => {
+
+const mutationKey = ['startTemplateGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startTemplateGeneration>>, {data: BodyType<StartTemplateGenerationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startTemplateGeneration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartTemplateGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof startTemplateGeneration>>>
+    export type StartTemplateGenerationMutationBody = BodyType<StartTemplateGenerationRequest>
+    export type StartTemplateGenerationMutationError = ErrorType<void>
+
+    /**
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const useStartTemplateGeneration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startTemplateGeneration>>,
+        TError,
+        {data: BodyType<StartTemplateGenerationRequest>},
+        TContext
+      > => {
+      return useMutation(getStartTemplateGenerationMutationOptions(options));
+    }
+
+export const getGetTemplateGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/designer/generations/${id}`
+}
+
+/**
+ * @summary One AI design
+ */
+export const getTemplateGeneration = async (id: number, options?: RequestInit): Promise<TemplateGeneration> => {
+
+  return customFetch<TemplateGeneration>(getGetTemplateGenerationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplateGenerationQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/designer/generations/${id}`
+    ] as const;
+    }
+
+
+export const getGetTemplateGenerationQueryOptions = <TData = Awaited<ReturnType<typeof getTemplateGeneration>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplateGenerationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplateGeneration>>> = ({ signal }) => getTemplateGeneration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplateGenerationQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplateGeneration>>>
+export type GetTemplateGenerationQueryError = ErrorType<void>
+
+
+/**
+ * @summary One AI design
+ */
+
+export function useGetTemplateGeneration<TData = Awaited<ReturnType<typeof getTemplateGeneration>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplateGenerationQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
