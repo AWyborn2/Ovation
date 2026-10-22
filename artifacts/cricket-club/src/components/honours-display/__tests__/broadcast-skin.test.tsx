@@ -31,12 +31,13 @@ function legacySkinRules(css: string): string[] {
 
 describe("P11 · Ovation Broadcast honours skin (U19)", () => {
   it("leaves the .skin-p1–.skin-p10 rules byte-identical", () => {
-    // Fingerprint of the 27 legacy skin rules as of the Broadcast redesign.
+    // Fingerprint of the legacy skin rules (27 at the Broadcast redesign, plus the
+    // kiosk Glass-skin opaque pinned headers).
     // A change here means an existing kiosk skin moved — that must be deliberate.
     const rules = legacySkinRules(CSS);
-    expect(rules).toHaveLength(27);
+    expect(rules).toHaveLength(28);
     expect(createHash("sha256").update(rules.join("\n")).digest("hex")).toBe(
-      "cf34f29587aab5748b77df59081a7a4eb5a644c6207df7323b6385fb9317bc75",
+      "0fba05c965832b6a5ac88663b2a860a400949d2c872947d3270e7c30a3ca017e",
     );
   });
 

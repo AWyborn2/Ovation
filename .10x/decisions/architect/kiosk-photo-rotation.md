@@ -3,6 +3,7 @@
 Status: design proposed 22 Oct 2026 (Principal Architect). Scope: `.10x/decisions/product-manager/kiosk-photo-rotation.md`.
 
 ## Landscape (verified 22 Oct 2026)
+
 - Kiosk config = one row per tenant in `honour_display_settings` (`kiosk_sequence` jsonb string[],
   `kiosk_ads` jsonb, sponsor settings, `kiosk_token`). Public read `GET /honour-display/kiosk`
   (token), admin write `PATCH /honour-display-settings`. Page `pages/honours-kiosk.tsx` flattens
@@ -16,10 +17,12 @@ Status: design proposed 22 Oct 2026 (Principal Architect). Scope: `.10x/decision
   `GET /juniors/photos/:id` (+`/thumb`), re-checked per request, `no-store` (ADR-007).
 
 ## Ash's decision (22 Oct 2026)
+
 Juniors get a **junior library with the same setup as seniors** (folders, types, tags, season,
 grade) — kept in junior tables, not merged into `club_photos`.
 
 ## Options considered
+
 1. **Merge juniors into `club_photos` with a junior flag** — one library UI. Rejected: breaks the
    juniors isolation invariant, and senior objects are public-by-URL so a withheld child's
    photo would leak via a cached/known URL.
@@ -29,7 +32,9 @@ grade) — kept in junior tables, not merged into `club_photos`.
    behind junior routes, and let kiosk sources point at either library.
 
 ## Design (option 3)
+
 ### A. Junior library (prerequisite, own PR series)
+
 - `junior_photos` gains senior-parity columns: `grade`, `season`, `photo_types` text[] (same
   check set), `taken_at`, `match_format` (nullable; additive, idempotent migration).
 - New `junior_photo_participants (tenant_id, photo_id, participant_id)` many-to-many; backfill one
@@ -45,6 +50,7 @@ grade) — kept in junior tables, not merged into `club_photos`.
   onto the new rule.
 
 ### B. Kiosk photo slideshow (P0)
+
 - Settings: new jsonb `kiosk_photo_slideshows` on `honour_display_settings`, mirroring `kiosk_ads`:
   `{ id: "photos:<uuid>", name, library: "senior"|"junior"|"both", filter: { kind: "all"|"folders"|"types"|"picked", folders?, types?, photoIds?, juniorPhotoIds?, recentDays?, thisSeason? }, order: "random"|"newest"|"manual", perPass, secondsPerPhoto, crossfade, showCaption }`.
   Sequence entry `"photos:<uuid>"` — same pattern as `"ad:<id>"`, no schema change to sequence.
@@ -58,6 +64,7 @@ grade) — kept in junior tables, not merged into `club_photos`.
   `HonourDisplayBundle`; then codegen.
 
 ## Failure modes
+
 - Consent withdrawn mid-loop: bundle may be ≤10 min stale, but junior images are fetched through
   the gated no-store route, which 403s → frame skipped. Effective removal = next image load.
 - Empty source / all images fail: item skipped; if the whole sequence is empty, existing
@@ -66,12 +73,15 @@ grade) — kept in junior tables, not merged into `club_photos`.
 - Cross-tenant: resolution uses the token's tenant only; isolation tests required.
 
 ## Tests
+
 - Tenant isolation on kiosk photo resolution; withheld child (any one of several tags) excludes
   photo; untagged junior photo excluded; gated route 403 after withhold; empty source skip;
   migration backfill keeps existing junior card photos working.
 
 ## One-way doors
+
 `junior_photo_participants` and dropping `junior_photos.participant_id` (do the drop later).
 
 ## Sequencing (22 Oct 2026)
+
 honours-kiosk-redesign (`honours-kiosk-redesign.md`) comes before the slideshow settings UI; the junior library can proceed in parallel.

@@ -72,5 +72,6 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 - 2026-10-21 SDE: crest override follow-up. The crosswalk seed in `central-projector.sql` also pairs central home with PlayHQ home; it survives by majority vote, but a club with few matches could still be mis-seeded (worth a review).
 
 ## PM update 22 Oct 2026
+
 - kiosk-photo-rotation scoped; awaiting alignment, then architect.
 - Architect: kiosk-photo-rotation design proposed (junior library + kiosk slideshows).

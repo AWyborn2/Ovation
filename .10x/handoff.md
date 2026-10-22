@@ -65,7 +65,6 @@
 P1: interludes ("1 photo every N boards"), recent-moments preset. P2: per-board photo
 backgrounds with contrast guard.
 
-
 ### Previous (Senior Engineer → SDE, studio-editor-multiselect)
 
 **From:** Senior Engineer
@@ -83,7 +82,6 @@ backgrounds with contrast guard.
   - "Align left" is the text style bar's label; Arrange uses "Align left edges".
   - jsdom has no layout, so interaction tests stub `getBoundingClientRect` (`sizedBoard()` in `template-mode.test.tsx`).
 - Follow-ups: a shared `useEditorSelection` hook once the template library adds a third editor surface; snapping during group resize; group-aware rotation.
-
 
 ### Previous (EM → SDE, selection-hub-redesign)
 
