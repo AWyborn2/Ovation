@@ -1,0 +1,512 @@
+{
+  "look": "duotone",
+  "elements": [
+    {
+      "slug": "duotone/bands/panel-band",
+      "name": "Panel band",
+      "category": "bands",
+      "tags": ["duotone", "bands", "panel", "band", "shape", "rounded"],
+      "signature": "e490868e3a41cbef",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "border": {
+                "width": 0.19,
+                "color": "var(--panel)"
+              },
+              "radius": 1069.2
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 52.22,
+                "w": 66.25,
+                "h": 4.11
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 55.7,
+                "w": 70.05,
+                "h": 5.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/badges/gold-pill",
+      "name": "Gold pill",
+      "category": "badges",
+      "tags": ["duotone", "badges", "gold", "pill", "shape", "rounded"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)"
+              },
+              "radius": 623.7
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 87.38,
+                "y": 9.68,
+                "w": 7.13,
+                "h": 5.51
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/badges/ink-pill",
+      "name": "Ink pill",
+      "category": "badges",
+      "tags": ["duotone", "badges", "ink", "pill", "shape", "rounded"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)",
+              "radius": 623.7
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 85.46,
+                "y": 84.05,
+                "w": 9.04,
+                "h": 5.26
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/rules/white-rule",
+      "name": "White rule",
+      "category": "rules",
+      "tags": ["duotone", "rules", "white", "rule", "shape", "rounded"],
+      "signature": "650cbad3acba8f9e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#DADDE0",
+              "radius": 59.4
+            },
+            "id": "e1",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 60.88,
+                "w": 82.43,
+                "h": 0.13
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/glows/accent-glow",
+      "name": "Accent glow",
+      "category": "glows",
+      "tags": ["duotone", "glows", "accent", "glow", "shape", "rounded"],
+      "signature": "cd6c5a505875c175",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 59.4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 48.62,
+                "w": 92,
+                "h": 47.38
+              },
+              "portrait": {
+                "x": 4,
+                "y": 52.64,
+                "w": 92,
+                "h": 44.16
+              },
+              "story": {
+                "x": 4,
+                "y": 41.73,
+                "w": 92,
+                "h": 40.01
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/glows/kit-glow",
+      "name": "Kit glow",
+      "category": "glows",
+      "tags": ["duotone", "glows", "kit", "glow", "shape", "gradient"],
+      "signature": "0ea190e71f59a379",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "var(--dt-ink-55)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["duotone"]
+      }
+    },
+    {
+      "slug": "duotone/glows/kit-glow-2",
+      "name": "Kit glow 2",
+      "category": "glows",
+      "tags": ["duotone", "glows", "kit", "glow", "2", "shape", "gradient"],
+      "signature": "b707779e799953da",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--dt-p-22)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["duotone"]
+      }
+    },
+    {
+      "slug": "duotone/glows/panel-glow",
+      "name": "Panel glow",
+      "category": "glows",
+      "tags": ["duotone", "glows", "panel", "glow", "shape", "gradient"],
+      "signature": "f876a45585064c1f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 0,
+                  "y": 100
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 72
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/glows/dark-fade",
+      "name": "Dark fade",
+      "category": "glows",
+      "tags": ["duotone", "glows", "dark", "fade", "shape", "gradient"],
+      "signature": "0229bedbabace463",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#00000000",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--ink)",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 60,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "duotone/glows/kit-fade",
+      "name": "Kit fade",
+      "category": "glows",
+      "tags": ["duotone", "glows", "kit", "fade", "shape", "gradient"],
+      "signature": "ea896448978eed3c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--dt-ink-80)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 30
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 30
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 26.5
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 35
+              }
+            }
+          }
+        ],
+        "palettes": ["duotone"]
+      }
+    },
+    {
+      "slug": "duotone/sponsor-strips/white-sponsor-tile",
+      "name": "White sponsor tile",
+      "category": "sponsor-strips",
+      "tags": ["duotone", "sponsor-strips", "white", "sponsor", "tile", "shape"],
+      "signature": "0b31e5390338263f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF",
+              "border": {
+                "width": 0.09,
+                "color": "#DADDE0"
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 25.84,
+                "y": 42.08,
+                "w": 15.11,
+                "h": 7.55
+              },
+              "portrait": {
+                "x": 11.06,
+                "y": 43.63,
+                "w": 24.96,
+                "h": 9.98
+              },
+              "story": {
+                "x": 8.79,
+                "y": 36.16,
+                "w": 26.47,
+                "h": 7.45
+              },
+              "landscape": {
+                "x": 53.22,
+                "y": 29,
+                "w": 13.12,
+                "h": 12.5
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,481 @@
+{
+  "look": "clubhouse",
+  "elements": [
+    {
+      "slug": "clubhouse/frames/bubble-shadow",
+      "name": "Bubble shadow",
+      "category": "frames",
+      "tags": ["clubhouse", "frames", "bubble", "shadow", "shape", "rounded"],
+      "signature": "e0d3e3d80d280df2",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-stage-deep,#0C1240)",
+              "radius": 36
+            },
+            "geometry": {
+              "square": {
+                "x": 15.24,
+                "y": 35.8,
+                "w": 73.92,
+                "h": 38,
+                "rotate": -2
+              },
+              "portrait": {
+                "x": 15.24,
+                "y": 32.88,
+                "w": 73.92,
+                "h": 40,
+                "rotate": -2
+              },
+              "story": {
+                "x": 15.24,
+                "y": 33.46,
+                "w": 73.92,
+                "h": 37.12,
+                "rotate": -2
+              },
+              "landscape": {
+                "x": 25.27,
+                "y": 31.6,
+                "w": 51.76,
+                "h": 44,
+                "rotate": -2
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/badges/paint-stroke",
+      "name": "Paint stroke",
+      "category": "badges",
+      "tags": ["clubhouse", "badges", "paint", "stroke", "shape"],
+      "signature": "e54575637b511efc",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
+            },
+            "geometry": {
+              "square": {
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
+              },
+              "story": {
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/rules/gold-bar",
+      "name": "Gold bar",
+      "category": "rules",
+      "tags": ["clubhouse", "rules", "gold", "bar", "shape"],
+      "signature": "8ac823c19a6084d6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 51.08,
+                "w": 9,
+                "h": 0.8
+              },
+              "portrait": {
+                "x": 6,
+                "y": 41.89,
+                "w": 9,
+                "h": 0.64
+              },
+              "story": {
+                "x": 6,
+                "y": 36.79,
+                "w": 9,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 60.61,
+                "w": 4.72,
+                "h": 0.8
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/rules/sun-burst-stroke",
+      "name": "Sun-burst stroke",
+      "category": "rules",
+      "tags": ["clubhouse", "rules", "sun-burst", "stroke", "shape", "rounded"],
+      "signature": "e73fd5b03242e3a5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "radius": 2
+            },
+            "geometry": {
+              "square": {
+                "x": 5.58,
+                "y": 30.56,
+                "w": 9,
+                "h": 1.4,
+                "rotate": 35
+              },
+              "portrait": {
+                "x": 5.58,
+                "y": 27.92,
+                "w": 9,
+                "h": 1.12,
+                "rotate": 35
+              },
+              "story": {
+                "x": 5.58,
+                "y": 29.26,
+                "w": 9,
+                "h": 0.79,
+                "rotate": 35
+              },
+              "landscape": {
+                "x": 19.69,
+                "y": 25.88,
+                "w": 4.72,
+                "h": 1.4,
+                "rotate": 35
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/rules/corner-bracket",
+      "name": "Corner bracket",
+      "category": "rules",
+      "tags": ["clubhouse", "rules", "corner", "bracket", "shape", "rounded"],
+      "signature": "193917ccc2628ce4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "radius": 2
+            },
+            "geometry": {
+              "square": {
+                "x": 3,
+                "y": 3,
+                "w": 0.9,
+                "h": 18.2
+              },
+              "portrait": {
+                "x": 3,
+                "y": 2.4,
+                "w": 0.9,
+                "h": 14.56
+              },
+              "story": {
+                "x": 3,
+                "y": 1.69,
+                "w": 0.9,
+                "h": 10.24
+              },
+              "landscape": {
+                "x": 1.57,
+                "y": 3,
+                "w": 0.47,
+                "h": 18.2
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/rules/live-score-edge",
+      "name": "Live score edge",
+      "category": "rules",
+      "tags": ["clubhouse", "rules", "live", "score", "edge", "shape"],
+      "signature": "98a31bfabcf8e2fe",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64.74,
+                "w": 1,
+                "h": 13
+              },
+              "portrait": {
+                "x": 6,
+                "y": 64.33,
+                "w": 1,
+                "h": 10.4
+              },
+              "story": {
+                "x": 6,
+                "y": 60.07,
+                "w": 1,
+                "h": 7.31
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 64.42,
+                "w": 0.52,
+                "h": 13
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/ground-tint",
+      "name": "Ground tint",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "ground", "tint", "shape", "gradient"],
+      "signature": "60b94970a98e74a1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-80) 60%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/photo-fade",
+      "name": "Photo fade",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "photo", "fade", "shape", "gradient"],
+      "signature": "5c4352c760b796bb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(0deg,var(--ck-stage) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/photo-fade-side",
+      "name": "Photo fade (side)",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "photo", "fade", "(side)", "shape", "gradient"],
+      "signature": "d9e520f0181a5dbc",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(90deg,var(--ck-stage-55) 0%,var(--ck-stage-0) 30%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 44,
+                "y": 16,
+                "w": 56,
+                "h": 84
+              },
+              "portrait": {
+                "x": 38,
+                "y": 13.6,
+                "w": 62,
+                "h": 86.4
+              },
+              "story": {
+                "x": 38,
+                "y": 9.56,
+                "w": 62,
+                "h": 90.44
+              },
+              "landscape": {
+                "x": 50,
+                "y": 0,
+                "w": 50,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    },
+    {
+      "slug": "clubhouse/glows/ground-tint-2",
+      "name": "Ground tint 2",
+      "category": "glows",
+      "tags": ["clubhouse", "glows", "ground", "tint", "2", "shape", "gradient"],
+      "signature": "e2a4278e777f5d96",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-55) 45%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 62
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 55
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ],
+        "palettes": ["club-kit"]
+      }
+    }
+  ]
+}
