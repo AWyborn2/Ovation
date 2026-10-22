@@ -16433,6 +16433,173 @@ export const UnlistConsoleLibraryTemplateResponse = zod.object({
 
 
 /**
+ * For moderation (editable-elements plan, D5): every element with its author and how many reports are open, most-reported first, then newest. 100 a page.
+ * @summary Every library element, listed or not, with its open reports
+ */
+export const listConsoleLibraryElementsQueryQMax = 60;
+
+
+
+
+export const ListConsoleLibraryElementsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listConsoleLibraryElementsQueryQMax).optional().describe('Words that must each appear in the name or tags.'),
+  "origin": zod.enum(['bundle', 'console', 'club']).optional(),
+  "reported": zod.coerce.boolean().optional().describe('Only elements with an open report.'),
+  "listed": zod.coerce.boolean().optional(),
+  "page": zod.coerce.number().min(1).optional().describe('Page number, from 1.')
+})
+
+export const ListConsoleLibraryElementsResponse = zod.object({
+  "elements": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Every report of an element, open first
+ */
+export const ListConsoleLibraryElementReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryElementReportsResponse = zod.object({
+  "reports": zod.array(zod.object({
+  "id": zod.number(),
+  "clubName": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * No club sees it any more; cards it was added to keep their copies. Its open reports are resolved. A bundle sync keeps it unlisted.
+ * @summary Take an element out of the library, as Ovation
+ */
+export const UnlistConsoleLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const unlistConsoleLibraryElementBodyReasonMax = 500;
+
+
+
+export const UnlistConsoleLibraryElementBody = zod.object({
+  "reason": zod.string().max(unlistConsoleLibraryElementBodyReasonMax).optional()
+})
+
+export const UnlistConsoleLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Undoes either unlisting, the author's or Ovation's.
+ * @summary Put an element back in the library
+ */
+export const ListConsoleLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const DismissConsoleLibraryElementReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DismissConsoleLibraryElementReportsResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Every look, with how many templates each holds
  */
 export const ListConsoleLibraryLooksResponse = zod.object({

@@ -10709,6 +10709,141 @@ paths:
         "404":
           description: No such template.
 
+  /platform/admin/library/elements:
+    get:
+      operationId: listConsoleLibraryElements
+      tags: [platformAdmin]
+      summary: Every library element, listed or not, with its open reports
+      description: >-
+        For moderation (editable-elements plan, D5): every element with its
+        author and how many reports are open, most-reported first, then
+        newest. 100 a page.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the name or tags.
+          schema: { type: string, maxLength: 60 }
+        - name: origin
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [bundle, console, club]
+        - name: reported
+          in: query
+          required: false
+          description: Only elements with an open report.
+          schema: { type: boolean }
+        - name: listed
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: page
+          in: query
+          required: false
+          description: Page number, from 1.
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: One page of elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElementPage"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/library/elements/{id}/reports:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: listConsoleLibraryElementReports
+      tags: [platformAdmin]
+      summary: Every report of an element, open first
+      responses:
+        "200":
+          description: The reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElementReportList"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistConsoleLibraryElement
+      tags: [platformAdmin]
+      summary: Take an element out of the library, as Ovation
+      description: >-
+        No club sees it any more; cards it was added to keep their copies.
+        Its open reports are resolved. A bundle sync keeps it unlisted.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlistConsoleLibraryElementRequest"
+      responses:
+        "200":
+          description: The element, now unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/list:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: listConsoleLibraryElement
+      tags: [platformAdmin]
+      summary: Put an element back in the library
+      description: Undoes either unlisting, the author's or Ovation's.
+      responses:
+        "200":
+          description: The element, listed again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/reports/dismiss:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: dismissConsoleLibraryElementReports
+      tags: [platformAdmin]
+      summary: Resolve an element's open reports and keep it listed
+      responses:
+        "200":
+          description: The element, with no open reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
   /platform/admin/library/looks:
     get:
       operationId: listConsoleLibraryLooks
@@ -22900,6 +23035,81 @@ components:
       required: [reason]
       properties:
         reason: { type: string, minLength: 1, maxLength: 500 }
+
+    ConsoleLibraryElement:
+      type: object
+      required:
+        [id, slug, name, category, tags, origin, authorName, authorTenantId, look, listed, unlistedBy, unlistReason, unlistedAt, openReports, document, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        name: { type: string }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          items: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that saved it.
+        authorTenantId:
+          type: ["integer", "null"]
+          description: The club that saved it; null for Ovation's.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        listed: { type: boolean }
+        unlistedBy:
+          type: ["string", "null"]
+          enum: [author, ovation, null]
+        unlistReason: { type: ["string", "null"] }
+        unlistedAt: { type: ["string", "null"], format: date-time }
+        openReports:
+          type: integer
+          description: Reports not yet resolved.
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+        createdAt: { type: string, format: date-time }
+
+    ConsoleLibraryElementPage:
+      type: object
+      required: [elements, total, page, pageSize]
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryElement"
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+
+    LibraryElementReport:
+      type: object
+      required: [id, clubName, reason, createdAt, resolvedAt]
+      properties:
+        id: { type: integer }
+        clubName: { type: string }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+
+    LibraryElementReportList:
+      type: object
+      required: [reports]
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryElementReport"
+
+    UnlistConsoleLibraryElementRequest:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 500 }
 
     LibraryLookTemplate:
       type: object

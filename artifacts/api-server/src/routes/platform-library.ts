@@ -2,7 +2,7 @@
  * The platform console's template library (ADR-011 §12 "Platform admin",
  * L7-A, T7.1). Platform admins only: every library template listed or not,
  * console templates and their versions, listing and unlisting, looks, and
- * the Figma import (L8-B).
+ * the Figma import (L8-B), and element moderation (editable-elements plan, D5).
  */
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
@@ -11,6 +11,7 @@ import {
   CreateConsoleLibraryTemplateBody,
   DuplicateConsoleLibraryTemplateBody,
   SaveConsoleLibraryTemplateBody,
+  UnlistConsoleLibraryElementBody,
   UnlistConsoleLibraryTemplateBody,
 } from "@workspace/api-zod";
 import {
@@ -28,6 +29,13 @@ import {
   saveConsoleTemplate,
   unlistTemplate,
 } from "../lib/template-library/console";
+import {
+  dismissElementReports,
+  listConsoleElements,
+  listElementReports,
+  relistElement,
+  unlistElementAsOvation,
+} from "../lib/template-library/element-moderation";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { FigmaError } from "../lib/template-import/figma";
 import { figmaErrorStatus, importFromFigma } from "../lib/template-import/figma-import";
@@ -243,6 +251,114 @@ router.post(
         res.status(figmaErrorStatus(err)).json({ error: err.message, code: err.code });
         return;
       }
+      fail(res, err);
+    }
+  },
+);
+
+// ── Element moderation (D5) ─────────────────────────────────────────────────
+
+/** A boolean query flag as written ("true" / "false"), or an error. */
+function flagParam(value: unknown, name: string): boolean | undefined | Error {
+  if (value === undefined) return undefined;
+  if (value === "true" || value === "false") return value === "true";
+  return new Error(`${name} is true or false.`);
+}
+
+router.get(
+  "/platform/admin/library/elements",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const { q, origin, page } = req.query;
+    const reported = flagParam(req.query.reported, "reported");
+    const listed = flagParam(req.query.listed, "listed");
+    for (const flag of [reported, listed]) {
+      if (flag instanceof Error) {
+        res.status(400).json({ error: flag.message });
+        return;
+      }
+    }
+    if (origin !== undefined && !ORIGINS.includes(origin as (typeof ORIGINS)[number])) {
+      res.status(400).json({ error: "origin is bundle, console or club." });
+      return;
+    }
+    const pageNo = page === undefined ? 1 : Number(page);
+    if (!Number.isInteger(pageNo) || pageNo < 1) {
+      res.status(400).json({ error: "page is a whole number from 1." });
+      return;
+    }
+    res.json(
+      await listConsoleElements({
+        q: typeof q === "string" ? q.slice(0, 60) : undefined,
+        origin: origin as (typeof ORIGINS)[number] | undefined,
+        reported: reported as boolean | undefined,
+        listed: listed as boolean | undefined,
+        page: pageNo,
+      }),
+    );
+  },
+);
+
+router.get(
+  "/platform/admin/library/elements/:id/reports",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    try {
+      res.json({ reports: await listElementReports(id) });
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+router.post(
+  "/platform/admin/library/elements/:id/unlist",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    const parsed = UnlistConsoleLibraryElementBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    try {
+      const element = await unlistElementAsOvation(id, parsed.data.reason);
+      logger.info({ elementId: id, by: adminId(req) }, "library element unlisted by Ovation");
+      res.json(element);
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+router.post(
+  "/platform/admin/library/elements/:id/list",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    try {
+      const element = await relistElement(id);
+      logger.info({ elementId: id, by: adminId(req) }, "library element listed again");
+      res.json(element);
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+router.post(
+  "/platform/admin/library/elements/:id/reports/dismiss",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    try {
+      res.json(await dismissElementReports(id));
+    } catch (err) {
       fail(res, err);
     }
   },
