@@ -222,7 +222,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "premiership", hash: "16530ad73c43ac033d0d79f778fa75b74f69f6815a8c62c5fdfa6399b0fd582e", file: look0_13 },
       { kind: "record", hash: "dd65388db64f9974d1ca9ede352760cf450578a0b417c547bfc80d4a126243f5", file: look0_14 },
       { kind: "teamList", hash: "7635c90d7887b949d1c1a70267855c759c747c50f42f19eeafbb01d24f350272", file: look0_15 },
-      { kind: "weekendWrap", hash: "138761c4e45419d58cbfe4cff940ef61d810c5747dc1a3838787f77686ac7e33", file: look0_16 },
+      { kind: "weekendWrap", hash: "be6d6e8dbf78801ee3c4e3d55265edabdfebea07923f5dfaa6e40d04c69e1939", file: look0_16 },
     ],
   },
   {
@@ -400,7 +400,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "premiership", hash: "8d254a5a6a225117db4cbb1719c2488782408e6588a1573188440d06b798a367", file: look7_13 },
       { kind: "record", hash: "390b6be0b6363df48cf798107f842b22d8a2dc06d74e329f20d02ebd75c3e6c9", file: look7_14 },
       { kind: "teamList", hash: "93cc0da81c047a0efc39dc27b8a9a51a2528d18cd5cfb95a56b2a9310908426e", file: look7_15 },
-      { kind: "weekendWrap", hash: "95397ecbfb670bdf500768b8d23bbf297effb6417829f433599c0ac80a731232", file: look7_16 },
+      { kind: "weekendWrap", hash: "a197ee5839a47e26ae393ad74b2b07d886d924746ce1c0b1611d3e9817abf7d4", file: look7_16 },
     ],
   },
   {
@@ -423,7 +423,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "premiership", hash: "e24749411d1bcba8c20401e2de1552e9a06ec2f28a5af811ea2cea5da524bb1e", file: look8_13 },
       { kind: "record", hash: "95751b6b8b119daa7ff49431a73b992dd0569af899eaec560c67eacdd610f64d", file: look8_14 },
       { kind: "teamList", hash: "1f3c36d59d82ab4d4579c83a528db6f65e928e65446bd55c6f458b743027d9bd", file: look8_15 },
-      { kind: "weekendWrap", hash: "6d4658e63f587426654b42a14c307f964860f14a05f030ce8dcff5158dd4950f", file: look8_16 },
+      { kind: "weekendWrap", hash: "fd6d5c479c794597af27f7810f406fc325ef9b4cda79a19d887dd3d36aca76e2", file: look8_16 },
     ],
   },
   {
@@ -446,7 +446,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "premiership", hash: "f071874f3474dddbc05196aebf10fa68e1b0056af1dd46393d2d28895fd55c30", file: look9_13 },
       { kind: "record", hash: "1143727de5fd8b7e6c6d816e2e144fdd05b16fdb9c8f944c10d0ae3137135400", file: look9_14 },
       { kind: "teamList", hash: "b14e4238727ddf77b79b38a5a15a11ae05174c2039a0956ac487ec7ee1ce9a46", file: look9_15 },
-      { kind: "weekendWrap", hash: "3608a504f96044644b00b3ac0c805c9eef74d96eaca8b6c3c730490336584c7f", file: look9_16 },
+      { kind: "weekendWrap", hash: "8ce0f8b3085eb5f0d73e243499d72e417f118aec0f2c5de8cc8088208957f506", file: look9_16 },
     ],
   },
 ];

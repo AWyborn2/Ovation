@@ -5,11 +5,13 @@ import type {
   TemplateLayerV2,
 } from "@workspace/scorecard/kind-templates";
 import {
+  capFontToCell,
   chipCell,
   clampPhotoToArtboard,
   gradeOnRoundLine,
   stripesSvg,
   uniformSponsorGrid,
+  widenToNextCell,
 } from "./helpers";
 
 const doc = (pages: Record<string, TemplateLayerV2[]>): TemplateDocumentV2 => ({
@@ -101,6 +103,39 @@ describe("look polish helpers", () => {
     expect(rows.cells[0]).toMatchObject({ x: 89, w: 9, y: 37, h: 26 });
     expect(rows.cells[0]!.style).toMatchObject({ background: "var(--gold)", align: "center" });
     expect(rows.variants?.lost?.outcome).toMatchObject({ background: "#00000000" });
+  });
+
+  it("runs a text cell to the next cell, and caps its font to the cell's width", () => {
+    const d = doc({
+      card: [
+        {
+          id: "wrap",
+          kind: "rows",
+          rows: {
+            repeat: "matches",
+            rowHeight: 10,
+            cells: [
+              { field: "gradeLabel", x: 2, w: 9, h: 30, style: { fontSize: 4.75 } },
+              { field: "gradeLabel", x: 0, w: 100, show: "backdrop" },
+              { field: "resultLine", x: 16, w: 70, h: 30 },
+              { field: "performers", x: 16, w: 70, y: 40, h: 30 },
+            ],
+          },
+          geometry: { portrait: { x: 6, y: 20, w: 88, h: 60 } },
+        } as TemplateLayerV2,
+      ],
+    });
+    expect(widenToNextCell(d, "matches", "gradeLabel", 0.6)).toHaveLength(1);
+    const cells = (d.pages.card!.layers[0] as RowsLayerV2).rows.cells;
+    // To the result line, less the gap; the backdrop behind the row isn't a neighbour.
+    expect(cells[0]).toMatchObject({ x: 2, w: 13.4 });
+    expect(cells[1]).toMatchObject({ x: 0, w: 100 });
+    // 0.34 × 13.4 % of an 88 %-wide layer: 4.01 % of the artboard.
+    expect(capFontToCell(d, "matches", "gradeLabel", 0.34)).toHaveLength(1);
+    expect(cells[0]!.style?.fontSize).toBe(4.01);
+    // Both are idempotent: a second pass changes nothing.
+    expect(widenToNextCell(d, "matches", "gradeLabel", 0.6)).toEqual([]);
+    expect(capFontToCell(d, "matches", "gradeLabel", 0.34)).toEqual([]);
   });
 
   it("keeps a photo that bleeds off the card on it, one layer per size, clip moved in", () => {
