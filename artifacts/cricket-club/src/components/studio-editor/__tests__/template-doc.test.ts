@@ -1,6 +1,6 @@
 /** Editor v2's page model (ADR-011 L5-B): pages in and out, v1 kept v1, stacks, previews. */
 import { describe, expect, it } from "vitest";
-import { MAX_STACK_DEPTH } from "@workspace/scorecard/kind-templates";
+import { MAX_STACK_DEPTH, templateDocumentErrors } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { ShareCardInput } from "@/lib/share-card";
 import {
@@ -101,6 +101,18 @@ describe("stacks", () => {
       parent: { id: r.id },
     });
     expect((unstack(edited, r.id).layers ?? []).map((l) => l.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("builds a document the format validator accepts", () => {
+    const { doc } = openTemplate({ layers: page.layers }, "matchDay");
+    const r = makeStack(pageDoc(doc, "fixture"), ["a", "b"], "square")!;
+    const conditioned = updateDeep(r.doc, "c", {
+      showWhen: { photo: false },
+      fit: { maxLines: 2, minScale: 0.6 },
+    });
+    const stored = storedDocument(withPage(doc, "fixture", conditioned), "matchDay", 1);
+    expect(stored).toMatchObject({ formatVersion: 2 });
+    expect(templateDocumentErrors(stored, "matchDay")).toEqual([]);
   });
 
   it(`won't nest deeper than ${MAX_STACK_DEPTH}`, () => {
