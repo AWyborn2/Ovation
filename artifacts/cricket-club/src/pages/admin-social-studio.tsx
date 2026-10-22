@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,8 +13,6 @@ import {
   getListCardThemesQueryKey,
   useListClubPhotos,
   getListClubPhotosQueryKey,
-  useListKindTemplates,
-  getListKindTemplatesQueryKey,
   type CardTheme as ApiCardTheme,
   type ClubPhoto,
 } from "@workspace/api-client-react";
@@ -23,19 +21,17 @@ import { useHeroImage } from "@/lib/use-hero-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, PenSquare } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { usePackSelection } from "@/lib/use-pack-selection";
 import { usePackColourModes } from "@/lib/use-pack-colour-modes";
-import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
-import { KindTemplatesSection } from "@/components/social-studio/kind-templates-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { CardNamesSection } from "@/components/social-studio/card-names-section";
 import { CardContentSection } from "@/components/social-studio/card-content-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import { THUMB_SIZE, kindLabel, type CardKind } from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
-import { renderShareCard, SIZES, type RenderOptions, type ShareCardInput } from "@/lib/share-card";
+import { SIZES, type ShareCardInput } from "@/lib/share-card";
 import {
   buildPackData,
   tenantHashtag,
@@ -49,73 +45,6 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { WeekendCarousel } from "@/components/weekend-carousel";
 
-// Renders a card preview (built-in body + optional saved layout) to an <img>.
-function CardThumb({
-  input,
-  baseOpts,
-  layout,
-}: {
-  input: ShareCardInput;
-  baseOpts: RenderOptions;
-  layout?: CardTemplate["layers"] | null;
-}) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [retryToken, setRetryToken] = useState(0);
-  const layoutSig = JSON.stringify(layout ?? []);
-
-  useEffect(() => {
-    let cancelled = false;
-    let objUrl: string | null = null;
-    setFailed(false);
-    (async () => {
-      try {
-        const blob = await renderShareCard(input, {
-          ...baseOpts,
-          size: THUMB_SIZE,
-          layout: layout ?? [],
-        });
-        if (cancelled) return;
-        objUrl = URL.createObjectURL(blob);
-        setUrl(objUrl);
-      } catch (e) {
-        if (cancelled) return;
-        // A render failure shouldn't break the whole gallery — show a
-        // retryable error state on this tile instead of a spinner forever.
-        console.error("Card thumbnail render failed", input.kind, e);
-        setFailed(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (objUrl) URL.revokeObjectURL(objUrl);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input.kind, layoutSig, baseOpts.brand, retryToken]);
-
-  return (
-    <div
-      className="flex items-center justify-center overflow-hidden rounded bg-muted"
-      style={{ aspectRatio: `${SIZES[THUMB_SIZE].w} / ${SIZES[THUMB_SIZE].h}` }}
-    >
-      {url ? (
-        <img src={url} alt="" className="h-full w-full object-contain" />
-      ) : failed ? (
-        <button
-          type="button"
-          className="flex flex-col items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          onClick={() => setRetryToken((t) => t + 1)}
-        >
-          <span>Preview failed</span>
-          <span className="underline">Retry</span>
-        </button>
-      ) : (
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      )}
-    </div>
-  );
-}
-
 export default function AdminSocialStudio() {
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -123,12 +52,6 @@ export default function AdminSocialStudio() {
   const settingsQ = useGetSocialSettings();
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
   const templatesQ = useListCardTemplates();
-  // Card kind templates (plan U9): when switched on for the club, each kind's
-  // design replaces the per-kind pack choice and saved editor templates.
-  const kindTemplatesQ = useListKindTemplates({
-    query: { queryKey: getListKindTemplatesQueryKey() },
-  });
-  const kindTemplatesOn = kindTemplatesQ.data?.enabled === true;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -143,16 +66,6 @@ export default function AdminSocialStudio() {
   // kind. Pack rows share the `defaultForKinds` column but are deliberately
   // excluded: a pack claim is reported by the pack selector below, and only
   // there — one surface per decision.
-  const defaultByKind = new Map<string, CardTemplate>();
-  for (const t of templates) {
-    if (t.source === "pack") continue;
-    for (const k of t.defaultForKinds ?? []) defaultByKind.set(k, t);
-  }
-
-  const baseOpts: RenderOptions = {
-    size: THUMB_SIZE,
-    brand: bundle?.brand ?? null,
-  };
 
   // --- Tenant branding for the card-type gallery -----------------------------
   // The gallery answers "what does a Match Result card look like FOR US", so
@@ -260,7 +173,6 @@ export default function AdminSocialStudio() {
     return <LoadingState label="Loading studio…" />;
   }
 
-  const layerTemplates = templates.filter((t) => t.source === "layers");
   // Uploaded backgrounds only. Pack rows are code-rendered designs, not
   // uploads: they carry no background image, can't be opened in the Cards tab,
   // and Delete on one isn't durable (the server re-creates it on next start).
@@ -294,23 +206,21 @@ export default function AdminSocialStudio() {
         colourModes={colourModes}
       />
 
-      {/* Each card kind's design (templates on), else which pack each card type uses */}
-      {kindTemplatesOn ? (
-        <KindTemplatesSection
-          templates={kindTemplatesQ.data?.templates ?? []}
-          packIdByKind={packs.packIdByKind}
-          inputByKind={galleryInputByKind}
-          dataByKind={galleryDataByKind}
-        />
-      ) : (
-        <PackPerTypeSection
-          selection={packs}
-          inputByKind={galleryInputByKind}
-          dataByKind={galleryDataByKind}
-          theme={galleryTheme}
-          templateByKind={defaultByKind}
-        />
-      )}
+      {/* Each card kind's design: the club's default templates, in the template library (ADR-011) */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-lg font-semibold">Card designs</h2>
+            <p className="text-sm text-muted-foreground">
+              Every card is drawn with your club&rsquo;s template for its kind. Pick, edit and
+              manage them in the template library.
+            </p>
+          </div>
+          <Button size="sm" asChild>
+            <Link href="/admin/social/template-library">Open the template library</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* The names every card prints for each club and grade (ADR-010 P1). */}
       <CardNamesSection />
@@ -322,73 +232,6 @@ export default function AdminSocialStudio() {
           templates from the retired layout editor still render and can be
           deleted, but no longer edited. */}
       <section className="space-y-3">
-        {!kindTemplatesOn && (
-          <>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Templates</h2>
-              <Button size="sm" asChild>
-                <Link href="/admin/social/create">
-                  <PenSquare className="mr-1 h-3.5 w-3.5" aria-hidden /> Design in the editor
-                </Link>
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Make a card in the Studio editor and use Save as template to reuse it. Your templates
-              appear under Design it yourself on Create a card.
-            </p>
-
-            {layerTemplates.length === 0 ? null : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {layerTemplates.map((t) => {
-                  const baseKind = (t.baseKind as CardKind) ?? "milestone";
-                  return (
-                    <Card key={t.id} className="overflow-hidden">
-                      <CardThumb
-                        input={sampleCardInput(baseKind)}
-                        baseOpts={baseOpts}
-                        layout={t.layers ?? []}
-                      />
-                      <CardContent className="space-y-2 p-3">
-                        <span className="block truncate text-sm font-medium">{t.name}</span>
-                        <div className="flex flex-wrap gap-1">
-                          {(t.cardKinds?.length ?? 0) === 0 ? (
-                            <Badge variant="outline" className="text-[10px]">
-                              All cards
-                            </Badge>
-                          ) : (
-                            t.cardKinds.map((k) => (
-                              <Badge
-                                key={k}
-                                variant={t.defaultForKinds?.includes(k) ? "default" : "outline"}
-                                className="text-[10px]"
-                              >
-                                {kindLabel(k)}
-                                {t.defaultForKinds?.includes(k) ? " ★" : ""}
-                              </Badge>
-                            ))
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="flex-1 text-xs text-muted-foreground">Older layout</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs text-destructive"
-                            aria-label={`Delete ${t.name}`}
-                            onClick={() => handleDelete(t)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
-
         {bgTemplates.length > 0 && (
           <div className="space-y-2 pt-2">
             <p className="text-xs font-medium text-muted-foreground">

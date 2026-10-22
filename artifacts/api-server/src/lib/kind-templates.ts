@@ -1,15 +1,13 @@
 /**
  * Card kind templates (plan 2026-10-07-002, U5; ADR-002, ADR-003).
  *
- * One versioned DEFAULT template per tenant and card kind, stored as a
- * `card_templates` row with `source = 'kind'` and `is_kind_default` (the
- * template library, ADR-011, lets a club hold other copies of a kind; these
- * routes and the draft pipeline read and write only the default until L3-B and
- * L5-C replace them). Templates are created lazily —
- * from the starter the club's current pack maps to — the first time a draft
- * of the kind needs one, or explicitly from a starter in the editor. Saves are
- * rejected when another admin saved first. Applying a version copies it into
- * the kind's unposted drafts, recording each draft's previous design first.
+ * One DEFAULT template per tenant and card kind, stored as a `card_templates`
+ * row with `source = 'kind'` and `is_kind_default`; the template library
+ * (ADR-011) lets a club hold other copies of a kind, edited through
+ * `/club-templates`. The default is created lazily from the club's pack look
+ * the first time a draft of the kind needs one. Applying a template copies it
+ * into the kind's unposted drafts, recording each draft's previous design
+ * first.
  *
  * Kind template rows never set `defaultForKinds`: that column carries the
  * club's pack choice, and `clearDefaultKinds` ignores `source` (KTD5).
@@ -35,12 +33,10 @@ import {
   lazyDefaultSlugs,
   lookTemplateSlug,
   starterLookForPack,
-  startingDocument,
-  starterForPack,
   templateDocumentErrors,
-  type StarterId,
   type StarterDocument,
 } from "@workspace/scorecard/kind-templates";
+import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { recordDraftRevision } from "./draft-revisions";
 
 export const KIND_SOURCE = "kind";
@@ -65,23 +61,10 @@ export class KindTemplateError extends Error {
   }
 }
 
-const notFound = (error: string) => new KindTemplateError(404, { error });
-
 /** Whether a kind is one templates support. */
 export function isTemplateKind(kind: string): boolean {
   return kindFields(kind) !== null;
 }
-
-export type KindTemplateView = {
-  kind: string;
-  version: number;
-  updatedAt: string | null;
-  replacedPackId: string | null;
-  noticeDismissed: boolean;
-  waitingDrafts: number;
-  document?: StarterDocument;
-  updatedByName?: string | null;
-};
 
 /** Unposted drafts of a kind, per kind, for one tenant. */
 export async function waitingDraftCounts(tenantId: number): Promise<Map<string, number>> {
@@ -97,40 +80,6 @@ export async function waitingDraftCounts(tenantId: number): Promise<Map<string, 
     )
     .groupBy(kindExpr);
   return new Map(rows.map((r) => [r.kind, Number(r.n)]));
-}
-
-export function presentKindTemplate(
-  row: CardTemplateRow,
-  waitingDrafts: number,
-  opts: { withDocument?: boolean; updatedByName?: string | null } = {},
-): KindTemplateView {
-  const view: KindTemplateView = {
-    kind: row.baseKind ?? "",
-    version: row.version,
-    updatedAt: (row.updatedAt ?? row.createdAt)?.toISOString() ?? null,
-    replacedPackId: row.replacedPackId,
-    noticeDismissed: row.noticeDismissedAt !== null,
-    waitingDrafts,
-  };
-  if (opts.withDocument) {
-    view.document = (row.adjustments ?? { layers: [] }) as StarterDocument;
-    view.updatedByName = opts.updatedByName ?? null;
-  }
-  return view;
-}
-
-/** A tenant's default kind templates, one per kind. */
-export async function listKindTemplates(tenantId: number): Promise<CardTemplateRow[]> {
-  return db
-    .select()
-    .from(cardTemplatesTable)
-    .where(
-      and(
-        eq(cardTemplatesTable.tenantId, tenantId),
-        eq(cardTemplatesTable.source, KIND_SOURCE),
-        eq(cardTemplatesTable.isKindDefault, true),
-      ),
-    );
 }
 
 /** A tenant's default template for a kind, or null when it has none yet. */
@@ -188,20 +137,13 @@ export function validateDocument(document: unknown, kind: string): StarterDocume
   return doc;
 }
 
-const conflict = async (row: CardTemplateRow) =>
-  new KindTemplateError(409, {
-    error: "Someone else changed this template since you opened it.",
-    currentVersion: row.version,
-    updatedAt: (row.updatedAt ?? row.createdAt)?.toISOString() ?? null,
-    updatedByName: await updatedByName(row),
-  });
-
 /**
  * What a club's lazy default for a kind is copied from: its pack's look's
  * template for the kind (Club Kit's when that look lacks the kind) once that
  * template is listed, else its pack's starter look (L4-B's starter bundles),
- * at the template's current version. With none of those in the library, the TypeScript starter its pack
- * maps to stands in, with no origin (until L5-C deletes the starters).
+ * at the template's current version. A library without those (a database the
+ * bundles haven't synced to yet) gets the starter bundle's own file, with no
+ * origin.
  */
 async function lazyDefaultSource(
   kind: string,
@@ -254,12 +196,21 @@ async function lazyDefaultSource(
   }
   return {
     name: `${kind} template`,
-    document: startingDocument(starterForPack(currentPackId), kind),
+    document: structuredClone(starterBundleDocument(currentPackId, kind)),
     originTemplateId: null,
     originVersion: null,
     fitStatus: "pass",
     fitReport: null,
   };
+}
+
+/** The starter bundle file's document for a kind: the pack's starter look, else Club Kit's. */
+function starterBundleDocument(currentPackId: string | null, kind: string): unknown {
+  const fileFor = (look: string) =>
+    TEMPLATE_BUNDLES.find((b) => b.slug === look)?.templates.find((t) => t.kind === kind)?.file;
+  const file = fileFor(starterLookForPack(currentPackId)) ?? fileFor(starterLookForPack(null));
+  if (!file) throw new Error(`no starter bundle has a ${kind} template`);
+  return file.document;
 }
 
 /**
@@ -329,117 +280,11 @@ export async function ensureKindTemplate(
   return row;
 }
 
-/**
- * Start a kind's template from a starter: creates it, or — given the version
- * the admin is looking at — replaces an existing template's design.
- */
-export async function startKindTemplate(
-  tenantId: number,
-  kind: string,
-  starter: StarterId,
-  baseVersion: number | undefined,
-  adminId: number | null,
-): Promise<CardTemplateRow> {
-  const document = startingDocument(starter, kind);
-  const existing = await loadKindTemplate(tenantId, kind);
-  if (!existing) {
-    await db
-      .insert(cardTemplatesTable)
-      .values({
-        tenantId,
-        name: `${kind} template`,
-        source: KIND_SOURCE,
-        baseKind: kind,
-        cardKinds: [kind],
-        isKindDefault: true,
-        adjustments: document,
-        version: 1,
-        updatedAt: new Date(),
-        updatedByAdminId: adminId,
-      })
-      .onConflictDoNothing();
-    const row = await loadKindTemplate(tenantId, kind);
-    if (!row) throw new Error(`kind template for ${kind} vanished after insert`);
-    return row;
-  }
-  if (baseVersion === undefined || baseVersion !== existing.version) throw await conflict(existing);
-  return writeVersion(existing, document, adminId);
-}
-
-async function writeVersion(
-  row: CardTemplateRow,
-  document: StarterDocument,
-  adminId: number | null,
-): Promise<CardTemplateRow> {
-  const [saved] = await db
-    .update(cardTemplatesTable)
-    .set({
-      adjustments: document,
-      version: row.version + 1,
-      updatedAt: new Date(),
-      updatedByAdminId: adminId,
-    })
-    .where(and(eq(cardTemplatesTable.id, row.id), eq(cardTemplatesTable.version, row.version)))
-    .returning();
-  if (!saved) {
-    const latest = await loadKindTemplate(row.tenantId, row.baseKind ?? "");
-    throw await conflict(latest ?? row);
-  }
-  return saved;
-}
-
-/** Save a new version, unless another admin saved since `baseVersion` (KTD7). */
-export async function saveKindTemplate(
-  tenantId: number,
-  kind: string,
-  baseVersion: number,
-  document: unknown,
-  adminId: number | null,
-): Promise<CardTemplateRow> {
-  const doc = validateDocument(document, kind);
-  const existing = await loadKindTemplate(tenantId, kind);
-  if (!existing) throw notFound("This card kind has no template yet.");
-  if (existing.version !== baseVersion) throw await conflict(existing);
-  return writeVersion(existing, doc, adminId);
-}
-
-/** Hide the retired-pack notice for a kind. */
-export async function dismissKindTemplateNotice(tenantId: number, kind: string): Promise<void> {
-  const row = await loadKindTemplate(tenantId, kind);
-  if (!row) throw notFound("This card kind has no template yet.");
-  await db
-    .update(cardTemplatesTable)
-    .set({ noticeDismissedAt: new Date() })
-    .where(eq(cardTemplatesTable.id, row.id));
-}
-
 /** The kind a draft renders, from its card input. */
 const draftKind = (draft: Pick<SocialDraftRow, "cardInput">): string | null => {
   const input = draft.cardInput as { kind?: unknown } | null;
   return typeof input?.kind === "string" ? input.kind : null;
 };
-
-/**
- * Copy a saved template version into the kind's unposted drafts (R16, KTD8).
- * Each draft's previous design is recorded as a revision first, status is
- * re-checked under a row lock so a draft posted meanwhile is skipped (R18),
- * and the caption marker `editedAt` is left alone. The draft then owes a
- * layout check render before automation may act on it (KTD10).
- */
-export async function applyKindTemplate(
-  tenantId: number,
-  kind: string,
-  version: number,
-  /** How many waiting drafts the admin was shown; any shortfall was posted meanwhile. */
-  expectedDrafts?: number,
-): Promise<{ changed: number; skipped: number }> {
-  return db.transaction(async (tx) => {
-    const template = await loadKindTemplate(tenantId, kind, tx);
-    if (!template) throw notFound("This card kind has no template yet.");
-    if (template.version !== version) throw await conflict(template);
-    return applyTemplateToDrafts(tx, template, expectedDrafts);
-  });
-}
 
 /**
  * Copy a club template's current document into the unposted drafts of its

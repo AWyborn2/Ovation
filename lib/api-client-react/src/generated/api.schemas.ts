@@ -8586,57 +8586,6 @@ export interface EditorTemplate {
   createdAt: string;
 }
 
-export interface KindTemplateSummary {
-  kind: string;
-  version: number;
-  /** @nullable */
-  updatedAt: string | null;
-  /**
-     * The retired design pack this template replaced, if any (R19).
-     * @nullable
-     */
-  replacedPackId: string | null;
-  noticeDismissed: boolean;
-  /** Unposted drafts of this kind an apply would change. */
-  waitingDrafts: number;
-}
-
-export interface KindTemplateList {
-  /** Always true (kept for today's Studio until `/club-templates` replaces this list). */
-  enabled: boolean;
-  templates: KindTemplateSummary[];
-}
-
-export type KindTemplate = KindTemplateSummary & ({
-  document: CardAdjustments;
-  /**
-     * Who saved the current version.
-     * @nullable
-     */
-  updatedByName?: string | null;
-});
-
-export interface SaveKindTemplateRequest {
-  /** The version this edit started from. */
-  baseVersion: number;
-  document: CardAdjustments;
-}
-
-export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestStarter[keyof typeof StartKindTemplateRequestStarter];
-
-
-export const StartKindTemplateRequestStarter = {
-  'club-kit': 'club-kit',
-  broadcast: 'broadcast',
-  clubhouse: 'clubhouse',
-} as const;
-
-export interface StartKindTemplateRequest {
-  starter: StartKindTemplateRequestStarter;
-  /** Required when the kind already has a template. */
-  baseVersion?: number;
-}
-
 export interface ApplyKindTemplateRequest {
   /** The saved template version to apply. */
   version: number;
