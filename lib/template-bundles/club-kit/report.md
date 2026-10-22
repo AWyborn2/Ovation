@@ -18,7 +18,7 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts` on 2026-1
 ### card
 
 - From `card.single`.
-- Layers: 35 shape, 5 image, 3 photo, 17 text.
+- Layers: 35 shape, 5 image, 3 photo, 18 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -32,7 +32,7 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts` on 2026-1
 ### card
 
 - From `card.single`.
-- Layers: 35 shape, 5 image, 3 photo, 25 text.
+- Layers: 35 shape, 5 image, 3 photo, 26 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -60,25 +60,25 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts` on 2026-1
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`, `card.Catches`, `card.Dismissals`.
-- Layers: 32 shape, 5 image, 3 photo, 14 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 16 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                       |
-| --------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| square    | 93%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 85%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow                               |
-| story     | 89%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow                               |
-| landscape | 94%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow                               |
+| Size      | Pixel match | Fit warnings                                                                                                           |
+| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| square    | 94%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait  | 87%         | none                                                                                                                   |
+| story     | 90%         | none                                                                                                                   |
+| landscape | 94%         | none                                                                                                                   |
 
 Polish:
 
-- rows leaders: row style top dropped (not a style this list has) (×3)
+- rows leaders: row style top dropped (not a style this list has) (×4)
 
 ## countdown
 
 ### card
 
 - From `card.single`.
-- Layers: 32 shape, 5 image, 3 photo, 25 text.
+- Layers: 32 shape, 5 image, 3 photo, 26 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -92,7 +92,7 @@ Polish:
 ### card
 
 - From `card.single`.
-- Layers: 33 shape, 5 image, 3 photo, 18 text.
+- Layers: 33 shape, 5 image, 3 photo, 19 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -138,7 +138,7 @@ Polish:
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 57%         | none         |
+| square    | 59%         | none         |
 | portrait  | 73%         | none         |
 | story     | 52%         | none         |
 | landscape | 59%         | none         |
@@ -148,7 +148,7 @@ Polish:
 ### card
 
 - From `card.single`.
-- Layers: 32 shape, 5 image, 3 photo, 26 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 26 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings                                                                                                           |
 | --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -162,7 +162,7 @@ Polish:
 ### fixture
 
 - From `fixture.slide`; not used: `fixture.single`.
-- Layers: 42 shape, 6 image, 3 photo, 38 text, 9 group; 3 stack group(s).
+- Layers: 34 shape, 6 image, 3 photo, 39 text, 9 group; 3 stack group(s).
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -190,23 +190,23 @@ Polish:
 ### day
 
 - From `day.slide`.
-- Layers: 12 shape, 5 image, 15 text, 3 rows.
+- Layers: 12 shape, 5 image, 15 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 89%         | none         |
-| portrait  | 89%         | none         |
-| story     | 86%         | none         |
-| landscape | 92%         | none         |
+| square    | 93%         | none         |
+| portrait  | 92%         | none         |
+| story     | 90%         | none         |
+| landscape | 93%         | none         |
 
 ### sponsors
 
 - From `sponsors.slide`.
-- Layers: 19 shape, 1 photo, 5 image, 26 text, 3 rows.
+- Layers: 19 shape, 1 photo, 5 image, 26 text, 4 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 87%         | none         |
+| square    | 88%         | none         |
 | portrait  | 78%         | none         |
 | story     | 71%         | none         |
 | landscape | 92%         | none         |
@@ -228,21 +228,21 @@ Polish:
 ### day
 
 - From `day.slide`.
-- Layers: 10 shape, 3 image, 15 text, 3 rows.
+- Layers: 10 shape, 3 image, 15 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                         |
-| --------- | ----------- | -------------------------------------------------------------------- |
-| square    | 87%         | overflow                                                             |
-| portrait  | 87%         | overflow                                                             |
-| story     | 84%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 90%         | none                                                                 |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 91%         | none         |
+| portrait  | 90%         | none         |
+| story     | 87%         | none         |
+| landscape | 92%         | none         |
 
 ## milestone
 
 ### card
 
 - From `card.single`.
-- Layers: 37 shape, 5 image, 3 photo, 23 text.
+- Layers: 37 shape, 5 image, 3 photo, 24 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -256,7 +256,7 @@ Polish:
 ### card
 
 - From `card.single`.
-- Layers: 35 shape, 5 image, 3 photo, 20 text.
+- Layers: 35 shape, 5 image, 3 photo, 22 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -288,7 +288,7 @@ Polish:
 ### card
 
 - From `card.single`.
-- Layers: 35 shape, 3 image, 3 photo, 21 text.
+- Layers: 35 shape, 3 image, 3 photo, 22 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -306,7 +306,7 @@ Polish:
 ### card
 
 - From `card.single`.
-- Layers: 35 shape, 5 image, 3 photo, 19 text.
+- Layers: 35 shape, 5 image, 3 photo, 20 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -320,7 +320,7 @@ Polish:
 ### card
 
 - From `card.results-summary`.
-- Layers: 32 shape, 5 image, 3 photo, 18 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings                                                         |
 | --------- | ----------- | -------------------------------------------------------------------- |
@@ -334,21 +334,21 @@ Polish:
 ### card
 
 - From `card.game-day`.
-- Layers: 32 shape, 5 image, 3 photo, 18 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings                                                                   |
 | --------- | ----------- | ------------------------------------------------------------------------------ |
-| square    | 90%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 87%         | overflow; overflow; overflow; overflow                                         |
-| story     | 92%         | overflow; overflow; overflow; overflow                                         |
-| landscape | 93%         | overflow; overflow; overflow; overflow                                         |
+| square    | 91%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait  | 88%         | overflow; overflow; overflow; overflow                                         |
+| story     | 93%         | overflow; overflow; overflow; overflow                                         |
+| landscape | 94%         | overflow; overflow; overflow; overflow                                         |
 
 ## sponsor
 
 ### card
 
 - From `card.single`.
-- Layers: 33 shape, 6 image, 3 photo, 22 text.
+- Layers: 33 shape, 6 image, 3 photo, 23 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -366,7 +366,7 @@ Polish:
 ### team
 
 - From `team.team-list`; not used: `team.starting-xi`, `team.slide`.
-- Layers: 30 shape, 3 image, 3 photo, 17 text, 3 rows.
+- Layers: 30 shape, 3 image, 3 photo, 18 text, 3 rows.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -384,17 +384,17 @@ Polish:
 
 | Size      | Pixel match | Fit warnings                                                                                                                                                                                                                                                                                                                                                           |
 | --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| square    | 85%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 80%         | none                                                                                                                                                                                                                                                                                                                                                                   |
-| story     | 86%         | none                                                                                                                                                                                                                                                                                                                                                                   |
-| landscape | 92%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow                                                                                                                         |
+| square    | 94%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait  | 91%         | none                                                                                                                                                                                                                                                                                                                                                                   |
+| story     | 93%         | none                                                                                                                                                                                                                                                                                                                                                                   |
+| landscape | 95%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow                                                                                                                         |
 
 ## tradingCard
 
 ### card
 
 - From `card.single`.
-- Layers: 51 shape, 6 image, 4 photo, 34 text.
+- Layers: 50 shape, 6 image, 4 photo, 34 text.
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
@@ -408,11 +408,11 @@ Polish:
 ### card
 
 - From `card.weekend-wrap`.
-- Layers: 32 shape, 5 image, 3 photo, 18 text, 3 rows.
+- Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                       |
-| --------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| square    | 88%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 85%         | overflow; overflow                                                                                 |
-| story     | 89%         | overflow; overflow                                                                                 |
-| landscape | 91%         | overflow; overflow                                                                                 |
+| Size      | Pixel match | Fit warnings                                               |
+| --------- | ----------- | ---------------------------------------------------------- |
+| square    | 90%         | overflow; overflow; overflow; overflow; overflow; overflow |
+| portrait  | 87%         | none                                                       |
+| story     | 91%         | none                                                       |
+| landscape | 92%         | none                                                       |

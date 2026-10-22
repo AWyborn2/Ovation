@@ -205,6 +205,78 @@
           {
             "kind": "shape",
             "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 74.15],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l6",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 34.04
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 87.61],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l7",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 49.95
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "clip": {
+                "polygon": [
+                  [27.16, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l8",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 52,
+                "y": 0,
+                "w": 48,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
               "fill": "var(--ck-chalk)",
               "clip": {
                 "polygon": [
@@ -215,13 +287,85 @@
                 ]
               }
             },
-            "id": "result-l6",
+            "id": "result-l9",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 51.2,
                 "y": 0,
                 "w": 48.8,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ck-chalk)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 73.53],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l10",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 33.24
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ck-chalk)",
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 87.47],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l11",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 49.39
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ck-chalk)",
+              "clip": {
+                "polygon": [
+                  [26.35, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l12",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 52.53,
+                "y": 0,
+                "w": 47.47,
                 "h": 100
               }
             }
@@ -239,7 +383,7 @@
                 ]
               }
             },
-            "id": "result-l7",
+            "id": "result-l13",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -247,54 +391,6 @@
                 "y": 0,
                 "w": 48,
                 "h": 100
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--panel)",
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 74.15],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l8",
-            "sizes": ["portrait"],
-            "geometry": {
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 34.04
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--ck-chalk)",
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 73.53],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l9",
-            "sizes": ["portrait"],
-            "geometry": {
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 33.24
               }
             }
           },
@@ -311,7 +407,7 @@
                 ]
               }
             },
-            "id": "result-l10",
+            "id": "result-l14",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -319,89 +415,6 @@
                 "y": 0,
                 "w": 100,
                 "h": 32.6
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "angle": 160,
-                "stops": [
-                  {
-                    "color": "var(--ck-base2)"
-                  },
-                  {
-                    "color": "var(--panel)"
-                  }
-                ]
-              },
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 71.61],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l11",
-            "sizes": ["portrait"],
-            "geometry": {
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 31
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--panel)",
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 87.61],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l12",
-            "sizes": ["story"],
-            "geometry": {
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 49.95
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--ck-chalk)",
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 87.47],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l13",
-            "sizes": ["story"],
-            "geometry": {
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 49.39
               }
             }
           },
@@ -418,41 +431,6 @@
                 ]
               }
             },
-            "id": "result-l14",
-            "sizes": ["story"],
-            "geometry": {
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 48.94
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "angle": 160,
-                "stops": [
-                  {
-                    "color": "var(--ck-base2)"
-                  },
-                  {
-                    "color": "var(--panel)"
-                  }
-                ]
-              },
-              "clip": {
-                "polygon": [
-                  [0, 0],
-                  [100, 0],
-                  [100, 87.06],
-                  [0, 100]
-                ]
-              }
-            },
             "id": "result-l15",
             "sizes": ["story"],
             "geometry": {
@@ -460,55 +438,7 @@
                 "x": 0,
                 "y": 0,
                 "w": 100,
-                "h": 47.81
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--panel)",
-              "clip": {
-                "polygon": [
-                  [27.16, 0],
-                  [100, 0],
-                  [100, 100],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l16",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 52,
-                "y": 0,
-                "w": 48,
-                "h": 100
-              }
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--ck-chalk)",
-              "clip": {
-                "polygon": [
-                  [26.35, 0],
-                  [100, 0],
-                  [100, 100],
-                  [0, 100]
-                ]
-              }
-            },
-            "id": "result-l17",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 52.53,
-                "y": 0,
-                "w": 47.47,
-                "h": 100
+                "h": 48.94
               }
             }
           },
@@ -525,7 +455,7 @@
                 ]
               }
             },
-            "id": "result-l18",
+            "id": "result-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -560,7 +490,7 @@
                 ]
               }
             },
-            "id": "result-l19",
+            "id": "result-l17",
             "sizes": ["square", "landscape"],
             "geometry": {
               "square": {
@@ -574,6 +504,76 @@
                 "y": 0,
                 "w": 46,
                 "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 71.61],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l18",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 31
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 160,
+                "stops": [
+                  {
+                    "color": "var(--ck-base2)"
+                  },
+                  {
+                    "color": "var(--panel)"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 87.06],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "result-l19",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 47.81
               }
             }
           },
@@ -890,6 +890,11 @@
               "align": "left",
               "lineHeight": 1.3
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l29",
             "sizes": ["landscape"],
             "geometry": {
@@ -913,6 +918,11 @@
               "align": "left",
               "lineHeight": 0.8
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l30",
             "sizes": ["square"],
             "geometry": {
@@ -935,6 +945,11 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l31",
             "sizes": ["portrait", "story"],
@@ -964,6 +979,11 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l32",
             "sizes": ["landscape"],
@@ -1112,6 +1132,11 @@
               "align": "left",
               "lineHeight": 0.9
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l38",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
@@ -1146,6 +1171,11 @@
               "align": "left",
               "lineHeight": 0.9
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l39",
             "sizes": ["landscape"],
             "geometry": {
@@ -1168,6 +1198,11 @@
               "align": "left",
               "lineHeight": 1.5,
               "opacity": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l40",
             "sizes": ["square", "portrait", "story"],
@@ -1203,6 +1238,11 @@
               "align": "left",
               "lineHeight": 1.5,
               "opacity": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l41",
             "sizes": ["landscape"],
@@ -1384,6 +1424,11 @@
               "align": "left",
               "lineHeight": 0.9
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l48",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
@@ -1418,6 +1463,11 @@
               "align": "left",
               "lineHeight": 0.9
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l49",
             "sizes": ["landscape"],
             "geometry": {
@@ -1440,6 +1490,11 @@
               "align": "left",
               "lineHeight": 1.5,
               "opacity": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l50",
             "sizes": ["square", "portrait", "story"],
@@ -1475,6 +1530,11 @@
               "align": "left",
               "lineHeight": 1.5,
               "opacity": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l51",
             "sizes": ["landscape"],
@@ -1770,9 +1830,6 @@
               "fill": "var(--accent-ink)",
               "opacity": 0.92
             },
-            "showWhen": {
-              "sponsors": true
-            },
             "id": "result-l61",
             "geometry": {
               "square": {
@@ -1877,6 +1934,11 @@
               "align": "left",
               "lineHeight": 1
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "result-l64",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
@@ -1911,6 +1973,11 @@
               "letterSpacing": 0.04,
               "align": "left",
               "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "result-l65",
             "sizes": ["landscape"],
@@ -2465,6 +2532,11 @@
               "align": "left",
               "lineHeight": 0.88
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "day-l7",
             "sizes": ["square"],
             "geometry": {
@@ -2487,6 +2559,11 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.88
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
             },
             "id": "day-l8",
             "sizes": ["portrait", "story"],
@@ -2517,6 +2594,11 @@
               "align": "left",
               "lineHeight": 0.88
             },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
             "id": "day-l9",
             "sizes": ["landscape"],
             "geometry": {
@@ -2532,7 +2614,153 @@
             "kind": "rows",
             "rows": {
               "repeat": "dayRows",
-              "rowHeight": 10,
+              "rowHeight": 8.55,
+              "gap": 0.87,
+              "cells": [
+                {
+                  "field": "grade",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ck-panel)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 0.63,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 1.91,
+                  "w": 6,
+                  "y": 10.17,
+                  "h": 28.4,
+                  "style": {
+                    "fontSize": 2.2,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 7.91,
+                  "w": 55.3,
+                  "y": 17.53,
+                  "h": 21.39,
+                  "style": {
+                    "fontSize": 1.4,
+                    "color": "var(--ck-chalk2)",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 400,
+                    "uppercase": true,
+                    "letterSpacing": 0.14,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 1.91,
+                  "w": 68.62,
+                  "y": 38.92,
+                  "h": 29.78,
+                  "style": {
+                    "fontSize": 3,
+                    "color": "var(--ck-chalk)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "uppercase": true,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 1.91,
+                  "w": 68.62,
+                  "y": 68.7,
+                  "h": 21.14,
+                  "style": {
+                    "fontSize": 1.6,
+                    "color": "var(--ck-chalk2)",
+                    "fontFamily": "'IBM Plex Sans',sans-serif",
+                    "fontWeight": 400,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 70.53,
+                  "w": 20.58,
+                  "y": 18.43,
+                  "h": 34.62,
+                  "style": {
+                    "fontSize": 3.4,
+                    "color": "var(--ck-pt)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "oppScore",
+                  "x": 70.53,
+                  "w": 20.58,
+                  "y": 57.13,
+                  "h": 24.45,
+                  "style": {
+                    "fontSize": 2.4,
+                    "color": "var(--ck-chalk2)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.68,
+                  "w": 5.93,
+                  "y": 19.48,
+                  "h": 61.06,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.68,
+                  "w": 5.93,
+                  "y": 19.48,
+                  "h": 61.06,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l10",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 38.99,
+                "w": 88,
+                "h": 37.04
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.6,
               "gap": 1,
               "cells": [
                 {
@@ -2558,9 +2786,9 @@
                 {
                   "field": "word",
                   "x": 2.22,
-                  "w": 16.73,
-                  "y": 10,
-                  "h": 27.99,
+                  "w": 6.9,
+                  "y": 10.41,
+                  "h": 29.15,
                   "style": {
                     "fontSize": 2.2,
                     "color": "var(--accent-ink)",
@@ -2571,10 +2799,10 @@
                 },
                 {
                   "field": "grade",
-                  "x": 18.95,
-                  "w": 29.48,
-                  "y": 17.62,
-                  "h": 21.01,
+                  "x": 9.12,
+                  "w": 56.04,
+                  "y": 18.35,
+                  "h": 21.88,
                   "style": {
                     "fontSize": 1.4,
                     "color": "var(--ck-chalk2)",
@@ -2588,9 +2816,9 @@
                 {
                   "field": "opposition",
                   "x": 2.22,
-                  "w": 58.29,
-                  "y": 38.62,
-                  "h": 30.6,
+                  "w": 63.91,
+                  "y": 40.22,
+                  "h": 27.72,
                   "style": {
                     "fontSize": 3,
                     "color": "var(--ck-chalk)",
@@ -2603,9 +2831,9 @@
                 {
                   "field": "result",
                   "x": 2.22,
-                  "w": 58.29,
-                  "y": 69.22,
-                  "h": 20.78,
+                  "w": 63.91,
+                  "y": 67.94,
+                  "h": 21.64,
                   "style": {
                     "fontSize": 1.6,
                     "color": "var(--ck-chalk2)",
@@ -2616,10 +2844,10 @@
                 },
                 {
                   "field": "clubScore",
-                  "x": 60.51,
-                  "w": 29.27,
-                  "y": 19.01,
-                  "h": 33.99,
+                  "x": 66.13,
+                  "w": 23.64,
+                  "y": 17.72,
+                  "h": 35.4,
                   "style": {
                     "fontSize": 3.4,
                     "color": "var(--ck-pt)",
@@ -2630,10 +2858,10 @@
                 },
                 {
                   "field": "oppScore",
-                  "x": 60.51,
-                  "w": 29.27,
-                  "y": 57,
-                  "h": 24,
+                  "x": 66.13,
+                  "w": 23.64,
+                  "y": 57.28,
+                  "h": 24.99,
                   "style": {
                     "fontSize": 2.4,
                     "color": "var(--ck-chalk2)",
@@ -2646,8 +2874,8 @@
                   "field": "crest",
                   "x": 91.59,
                   "w": 6.82,
-                  "y": 20.01,
-                  "h": 59.99,
+                  "y": 18.75,
+                  "h": 62.48,
                   "show": "backdrop",
                   "style": {
                     "background": "var(--accent-ink)"
@@ -2657,21 +2885,15 @@
                   "field": "crest",
                   "x": 91.59,
                   "w": 6.82,
-                  "y": 20.01,
-                  "h": 59.99,
+                  "y": 18.75,
+                  "h": 62.48,
                   "show": "image"
                 }
               ]
             },
-            "id": "day-l10",
-            "sizes": ["square", "portrait"],
+            "id": "day-l11",
+            "sizes": ["portrait"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 38.99,
-                "w": 88,
-                "h": 37.04
-              },
               "portrait": {
                 "x": 6,
                 "y": 35.65,
@@ -2684,7 +2906,7 @@
             "kind": "rows",
             "rows": {
               "repeat": "dayRows",
-              "rowHeight": 11.43,
+              "rowHeight": 10.51,
               "gap": 1.15,
               "cells": [
                 {
@@ -2710,9 +2932,9 @@
                 {
                   "field": "word",
                   "x": 2.56,
-                  "w": 19.24,
-                  "y": 10.06,
-                  "h": 28.1,
+                  "w": 7.94,
+                  "y": 10.94,
+                  "h": 30.55,
                   "style": {
                     "fontSize": 2.53,
                     "color": "var(--accent-ink)",
@@ -2723,10 +2945,10 @@
                 },
                 {
                   "field": "grade",
-                  "x": 21.8,
-                  "w": 26.4,
-                  "y": 17.08,
-                  "h": 21.14,
+                  "x": 10.5,
+                  "w": 50.56,
+                  "y": 18.58,
+                  "h": 22.98,
                   "style": {
                     "fontSize": 1.61,
                     "color": "var(--ck-chalk2)",
@@ -2740,9 +2962,9 @@
                 {
                   "field": "opposition",
                   "x": 2.56,
-                  "w": 52.03,
-                  "y": 38.22,
-                  "h": 30.8,
+                  "w": 58.5,
+                  "y": 41.56,
+                  "h": 24.75,
                   "style": {
                     "fontSize": 3.45,
                     "color": "var(--ck-chalk)",
@@ -2755,9 +2977,9 @@
                 {
                   "field": "result",
                   "x": 2.56,
-                  "w": 52.03,
-                  "y": 69.02,
-                  "h": 20.93,
+                  "w": 58.5,
+                  "y": 66.3,
+                  "h": 22.76,
                   "style": {
                     "fontSize": 1.84,
                     "color": "var(--ck-chalk2)",
@@ -2768,10 +2990,10 @@
                 },
                 {
                   "field": "clubScore",
-                  "x": 54.59,
-                  "w": 33.65,
-                  "y": 18.79,
-                  "h": 34.22,
+                  "x": 61.06,
+                  "w": 27.19,
+                  "y": 16.07,
+                  "h": 37.22,
                   "style": {
                     "fontSize": 3.91,
                     "color": "var(--ck-pt)",
@@ -2782,10 +3004,10 @@
                 },
                 {
                   "field": "oppScore",
-                  "x": 54.59,
-                  "w": 33.65,
-                  "y": 57.04,
-                  "h": 24.16,
+                  "x": 61.06,
+                  "w": 27.19,
+                  "y": 57.65,
+                  "h": 26.27,
                   "style": {
                     "fontSize": 2.76,
                     "color": "var(--ck-chalk2)",
@@ -2798,8 +3020,8 @@
                   "field": "crest",
                   "x": 90.33,
                   "w": 7.84,
-                  "y": 19.81,
-                  "h": 60.39,
+                  "y": 17.16,
+                  "h": 65.67,
                   "show": "backdrop",
                   "style": {
                     "background": "var(--accent-ink)"
@@ -2809,13 +3031,13 @@
                   "field": "crest",
                   "x": 90.33,
                   "w": 7.84,
-                  "y": 19.81,
-                  "h": 60.39,
+                  "y": 17.16,
+                  "h": 65.67,
                   "show": "image"
                 }
               ]
             },
-            "id": "day-l11",
+            "id": "day-l12",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -2830,8 +3052,8 @@
             "kind": "rows",
             "rows": {
               "repeat": "dayRows",
-              "rowHeight": 5.22,
-              "gap": 0.52,
+              "rowHeight": 5.01,
+              "gap": 0.53,
               "cells": [
                 {
                   "field": "grade",
@@ -2845,7 +3067,7 @@
                 {
                   "field": "word",
                   "x": 0,
-                  "w": 0.27,
+                  "w": 0.54,
                   "y": 0,
                   "h": 100,
                   "show": "backdrop",
@@ -2855,10 +3077,10 @@
                 },
                 {
                   "field": "word",
-                  "x": 1.05,
-                  "w": 8.25,
-                  "y": 10.07,
-                  "h": 28.14,
+                  "x": 2.11,
+                  "w": 6.84,
+                  "y": 10.49,
+                  "h": 29.32,
                   "style": {
                     "fontSize": 1.16,
                     "color": "var(--accent-ink)",
@@ -2869,10 +3091,10 @@
                 },
                 {
                   "field": "grade",
-                  "x": 9.3,
-                  "w": 39.91,
-                  "y": 16.25,
-                  "h": 21.12,
+                  "x": 8.95,
+                  "w": 56.03,
+                  "y": 16.95,
+                  "h": 22.01,
                   "style": {
                     "fontSize": 0.74,
                     "color": "var(--ck-chalk2)",
@@ -2885,10 +3107,10 @@
                 },
                 {
                   "field": "opposition",
-                  "x": 1.05,
-                  "w": 79.48,
-                  "y": 38.21,
-                  "h": 30.81,
+                  "x": 2.11,
+                  "w": 64.3,
+                  "y": 39.81,
+                  "h": 27.92,
                   "style": {
                     "fontSize": 1.58,
                     "color": "var(--ck-chalk)",
@@ -2900,10 +3122,10 @@
                 },
                 {
                   "field": "result",
-                  "x": 1.05,
-                  "w": 79.48,
-                  "y": 69.02,
-                  "h": 20.92,
+                  "x": 2.11,
+                  "w": 64.3,
+                  "y": 67.73,
+                  "h": 21.79,
                   "style": {
                     "fontSize": 0.84,
                     "color": "var(--ck-chalk2)",
@@ -2914,10 +3136,10 @@
                 },
                 {
                   "field": "clubScore",
-                  "x": 80.53,
-                  "w": 14.43,
-                  "y": 18.78,
-                  "h": 34.23,
+                  "x": 66.41,
+                  "w": 23.45,
+                  "y": 17.48,
+                  "h": 35.66,
                   "style": {
                     "fontSize": 1.79,
                     "color": "var(--ck-pt)",
@@ -2928,10 +3150,10 @@
                 },
                 {
                   "field": "oppScore",
-                  "x": 80.53,
-                  "w": 14.43,
-                  "y": 57.03,
-                  "h": 24.18,
+                  "x": 66.41,
+                  "w": 23.45,
+                  "y": 57.34,
+                  "h": 25.19,
                   "style": {
                     "fontSize": 1.26,
                     "color": "var(--ck-chalk2)",
@@ -2942,10 +3164,10 @@
                 },
                 {
                   "field": "crest",
-                  "x": 95.85,
-                  "w": 3.36,
-                  "y": 19.8,
-                  "h": 60.4,
+                  "x": 91.66,
+                  "w": 6.76,
+                  "y": 18.53,
+                  "h": 62.94,
                   "show": "backdrop",
                   "style": {
                     "background": "var(--accent-ink)"
@@ -2953,15 +3175,18 @@
                 },
                 {
                   "field": "crest",
-                  "x": 95.85,
-                  "w": 3.36,
-                  "y": 19.8,
-                  "h": 60.4,
+                  "x": 91.66,
+                  "w": 6.76,
+                  "y": 18.53,
+                  "h": 62.94,
                   "show": "image"
                 }
-              ]
+              ],
+              "columns": 2,
+              "columnGap": 0.56,
+              "flow": "across"
             },
-            "id": "day-l12",
+            "id": "day-l13",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2977,7 +3202,7 @@
             "style": {
               "fill": "var(--gold)"
             },
-            "id": "day-l13",
+            "id": "day-l14",
             "geometry": {
               "square": {
                 "x": 6,
@@ -3010,7 +3235,7 @@
             "style": {
               "fill": "var(--ck-chalk)"
             },
-            "id": "day-l14",
+            "id": "day-l15",
             "geometry": {
               "square": {
                 "x": 58.68,
@@ -3043,7 +3268,7 @@
             "style": {
               "fill": "var(--panel)"
             },
-            "id": "day-l15",
+            "id": "day-l16",
             "geometry": {
               "square": {
                 "x": 67.96,
@@ -3086,7 +3311,7 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "day-l16",
+            "id": "day-l17",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -3124,7 +3349,7 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "day-l17",
+            "id": "day-l18",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3144,7 +3369,7 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "day-l18",
+            "id": "day-l19",
             "geometry": {
               "square": {
                 "x": 23.11,
@@ -3175,7 +3400,7 @@
           {
             "kind": "image",
             "content": "{{sponsor1}}",
-            "id": "day-l19",
+            "id": "day-l20",
             "geometry": {
               "square": {
                 "x": 23.61,
@@ -3208,7 +3433,7 @@
             "style": {
               "fill": "var(--gold)"
             },
-            "id": "day-l20",
+            "id": "day-l21",
             "geometry": {
               "square": {
                 "x": 49.46,
@@ -3248,7 +3473,12 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "day-l21",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l22",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -3283,7 +3513,12 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "day-l22",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l23",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3297,7 +3532,7 @@
           {
             "kind": "image",
             "content": "{{clubLogo}}",
-            "id": "day-l23",
+            "id": "day-l24",
             "geometry": {
               "square": {
                 "x": 6,
@@ -3342,7 +3577,7 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l24",
+            "id": "day-l25",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -3382,7 +3617,7 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l25",
+            "id": "day-l26",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3411,7 +3646,7 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l26",
+            "id": "day-l27",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -3452,7 +3687,7 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "day-l27",
+            "id": "day-l28",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -3468,7 +3703,7 @@
             "style": {
               "fill": "var(--panel)"
             },
-            "id": "day-l28",
+            "id": "day-l29",
             "geometry": {
               "square": {
                 "x": 78.44,
@@ -3501,7 +3736,7 @@
             "style": {
               "fill": "var(--gold)"
             },
-            "id": "day-l29",
+            "id": "day-l30",
             "geometry": {
               "square": {
                 "x": 79.64,
@@ -3542,7 +3777,7 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "day-l30",
+            "id": "day-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -3578,7 +3813,7 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "day-l31",
+            "id": "day-l32",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
