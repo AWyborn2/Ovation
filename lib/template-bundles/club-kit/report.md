@@ -11,7 +11,7 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished
 - Colours that move with the palette but aren't a token: 0.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 10 hd.
+- Polish time logged: not logged hd.
 
 ## announcement
 
@@ -152,7 +152,7 @@ Converter notes (from the raw conversion):
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 92%         | none         |
+| square    | 93%         | none         |
 | portrait  | 92%         | none         |
 | story     | 94%         | none         |
 | landscape | 96%         | none         |

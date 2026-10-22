@@ -98,14 +98,14 @@ describe("layers drawer", () => {
     );
   });
 
-  it("opens Layers on a converted template with vectors and groups (Gold Foil)", async () => {
+  /** Open the template editor's Layers drawer on a bundle template; the square's layers. */
+  async function openLayers(look: string, kind: string) {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
-    const kind = "matchSummary";
-    const doc = bundle("gold-foil", kind).document;
+    const doc = bundle(look, kind).document;
     const template = {
       id: 9,
       kind,
-      name: "Gold Foil match summary",
+      name: `${look} ${kind}`,
       version: 1,
       isDefault: false,
       basedOn: null,
@@ -143,12 +143,21 @@ describe("layers drawer", () => {
     const list = await screen.findByRole("complementary", { name: "Layers" });
     // The drawer lists the layers on the size being edited (square).
     const card = doc.pages![primaryPage(kind)]!.layers.filter((l) => layerOnSize(l, "square"));
-    expect(card.some((l) => l.kind === "vector")).toBe(true);
-    expect(card.some((l) => l.kind === "group")).toBe(true);
     expect(within(list).getAllByRole("listitem")).toHaveLength(card.length);
     const count = (icon: string) =>
       list.querySelectorAll(`li button[aria-pressed] > svg.lucide-${icon}`).length;
+    return { card, count };
+  }
+
+  it("opens Layers on a converted template with vectors (Gold Foil's stripes)", async () => {
+    const { card, count } = await openLayers("gold-foil", "matchSummary");
+    expect(card.some((l) => l.kind === "vector")).toBe(true);
     expect(count("pen-tool")).toBe(card.filter((l) => l.kind === "vector").length);
+  });
+
+  it("opens Layers on a starter with groups (its Club Kit elements, split in C3)", async () => {
+    const { card, count } = await openLayers("club-kit-classic", "century");
+    expect(card.some((l) => l.kind === "group")).toBe(true);
     expect(count("group")).toBe(card.filter((l) => l.kind === "group").length);
   });
 });

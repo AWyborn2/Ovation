@@ -1,6 +1,6 @@
 {
   "name": "Bold Type weekendWrap",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -85,10 +85,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.35,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "card-l3",
+            "link": "card-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -110,7 +114,7 @@
                 "h": 32.4
               }
             },
-            "sig": "text:18chf850bhquga"
+            "sig": "text:1nzjmog0szybrz"
           },
           {
             "kind": "text",
@@ -122,10 +126,14 @@
               "uppercase": true,
               "align": "left",
               "lineHeight": 0.8,
-              "color": "#FFFFFF38",
-              "opacity": 0.5
+              "textStroke": {
+                "width": 0.18,
+                "color": "#FFFFFF38"
+              },
+              "color": "#00000000"
             },
             "id": "card-l4",
+            "link": "card-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -135,7 +143,7 @@
                 "h": 57.46
               }
             },
-            "sig": "text:0d3p7f209mjmo1"
+            "sig": "text:10vg0jm03e4zv1"
           },
           {
             "kind": "image",
@@ -188,6 +196,7 @@
               "ellipsis": true
             },
             "id": "card-l6",
+            "link": "card-l6",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -230,6 +239,7 @@
               "ellipsis": true
             },
             "id": "card-l7",
+            "link": "card-l6",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -261,6 +271,7 @@
               "ellipsis": true
             },
             "id": "card-l8",
+            "link": "card-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -304,6 +315,7 @@
               "ellipsis": true
             },
             "id": "card-l9",
+            "link": "card-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -363,6 +375,7 @@
               "lineHeight": 1
             },
             "id": "card-l11",
+            "link": "card-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -400,6 +413,7 @@
               "lineHeight": 1
             },
             "id": "card-l12",
+            "link": "card-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -430,6 +444,7 @@
               "ellipsis": true
             },
             "id": "card-l13",
+            "link": "card-l13",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -460,6 +475,7 @@
               "ellipsis": true
             },
             "id": "card-l14",
+            "link": "card-l13",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -496,6 +512,7 @@
               "ellipsis": true
             },
             "id": "card-l15",
+            "link": "card-l13",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -520,12 +537,13 @@
               "lineHeight": 0.88
             },
             "id": "card-l16",
+            "link": "card-l16",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 14.61,
-                "w": 28.01,
+                "w": 27.11,
                 "h": 18.91
               }
             },
@@ -544,18 +562,19 @@
               "lineHeight": 0.88
             },
             "id": "card-l17",
+            "link": "card-l16",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
                 "y": 11.95,
-                "w": 37.09,
+                "w": 36.1,
                 "h": 20.17
               },
               "story": {
                 "x": 6,
                 "y": 23.25,
-                "w": 37.09,
+                "w": 36.1,
                 "h": 14.19
               }
             },
@@ -574,12 +593,13 @@
               "lineHeight": 0.88
             },
             "id": "card-l18",
+            "link": "card-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 43.54,
-                "w": 15.17,
+                "w": 14.25,
                 "h": 18.87
               }
             },
@@ -603,12 +623,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.05,
-                  "w": 10.36,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.32,
+                  "h": 0.68,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.94,
+                  "w": 10.47,
                   "y": 6.19,
                   "h": 30.28,
                   "style": {
-                    "fontSize": 2.88,
+                    "fontSize": 2.91,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -616,9 +680,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 1.94,
+                  "w": 9.1,
+                  "y": 35.63,
+                  "h": 54.9,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F2F5F8A8",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 13.01,
-                  "w": 76.77,
+                  "w": 76.72,
                   "y": 23.34,
                   "h": 36.3,
                   "style": {
@@ -632,7 +711,7 @@
                 {
                   "field": "performers",
                   "x": 13.01,
-                  "w": 84.99,
+                  "w": 85.05,
                   "y": 62.07,
                   "h": 14.59,
                   "style": {
@@ -645,8 +724,19 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 89.98,
-                  "w": 8.82,
+                  "x": 90.78,
+                  "w": 7.17,
+                  "y": 38.08,
+                  "h": 23.82,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 88.93,
+                  "w": 9.82,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -670,11 +760,24 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF38"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF38"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF38"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF38"
                   }
                 }
               }
             },
             "id": "card-l19",
+            "link": "card-l19",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -684,7 +787,7 @@
                 "h": 54.97
               }
             },
-            "sig": "rows:193g96u13wpb4z"
+            "sig": "rows:12ixstr178rvw4"
           },
           {
             "kind": "rows",
@@ -704,12 +807,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.5,
-                  "w": 13,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 13.1,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 3.89,
+                    "fontSize": 3.92,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -717,9 +864,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A8",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 15.91,
                   "h": 36.45,
                   "style": {
@@ -733,7 +895,7 @@
                 {
                   "field": "performers",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 54.8,
                   "h": 29.28,
                   "style": {
@@ -746,8 +908,19 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 87.87,
-                  "w": 10.93,
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 86.57,
+                  "w": 11.72,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -771,11 +944,24 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF38"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF38"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF38"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF38"
                   }
                 }
               }
             },
             "id": "card-l20",
+            "link": "card-l19",
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
@@ -785,7 +971,7 @@
                 "h": 58.43
               }
             },
-            "sig": "rows:127prsi1h06o0d"
+            "sig": "rows:10sw9x301ny85s"
           },
           {
             "kind": "rows",
@@ -805,12 +991,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 2.5,
-                  "w": 13,
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.48,
+                  "h": 0.52,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 2.4,
+                  "w": 13.1,
                   "y": 6.02,
                   "h": 30.41,
                   "style": {
-                    "fontSize": 3.89,
+                    "fontSize": 3.92,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -818,9 +1048,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.4,
+                  "w": 11.2,
+                  "y": 35.58,
+                  "h": 55.09,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F2F5F8A8",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 15.91,
                   "h": 36.45,
                   "style": {
@@ -834,7 +1079,7 @@
                 {
                   "field": "performers",
                   "x": 16.1,
-                  "w": 71.57,
+                  "w": 71.27,
                   "y": 54.81,
                   "h": 29.28,
                   "style": {
@@ -847,8 +1092,19 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 87.87,
-                  "w": 10.93,
+                  "x": 88.67,
+                  "w": 8.82,
+                  "y": 38.22,
+                  "h": 23.56,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 86.57,
+                  "w": 11.72,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -872,11 +1128,24 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF38"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF38"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF38"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF38"
                   }
                 }
               }
             },
             "id": "card-l21",
+            "link": "card-l19",
             "sizes": ["story"],
             "geometry": {
               "story": {
@@ -886,14 +1155,14 @@
                 "h": 41.08
               }
             },
-            "sig": "rows:0qx3wl31dy4p5q"
+            "sig": "rows:06c5dmy0kas4dn"
           },
           {
             "kind": "rows",
             "rows": {
               "repeat": "matches",
               "rowHeight": 7.16,
-              "gap": 0.42,
+              "gap": 0.41,
               "cells": [
                 {
                   "field": "gradeLabel",
@@ -906,12 +1175,56 @@
                 },
                 {
                   "field": "gradeLabel",
-                  "x": 1.76,
-                  "w": 8.46,
+                  "x": 0,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.84,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "resultLine",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "performers",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.84,
+                  "h": 1.16,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--ink)"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
+                  "x": 1.6,
+                  "w": 8.62,
                   "y": 6.59,
                   "h": 30.04,
                   "style": {
-                    "fontSize": 1.49,
+                    "fontSize": 1.52,
                     "color": "#E05D8C",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -919,9 +1232,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 1.6,
+                  "w": 7.65,
+                  "y": 35.76,
+                  "h": 54.38,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F2F5F8A8",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "center"
+                  }
+                },
+                {
                   "field": "resultLine",
                   "x": 10.82,
-                  "w": 80.36,
+                  "w": 80.49,
                   "y": 32.58,
                   "h": 17.97,
                   "style": {
@@ -935,7 +1263,7 @@
                 {
                   "field": "performers",
                   "x": 10.82,
-                  "w": 80.36,
+                  "w": 80.49,
                   "y": 52.95,
                   "h": 14.46,
                   "style": {
@@ -948,8 +1276,19 @@
                 },
                 {
                   "field": "outcome",
-                  "x": 91.38,
-                  "w": 7.66,
+                  "x": 92.18,
+                  "w": 6.06,
+                  "y": 37.73,
+                  "h": 24.54,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--accent-ink)"
+                  }
+                },
+                {
+                  "field": "outcome",
+                  "x": 90.51,
+                  "w": 8.53,
                   "y": 37,
                   "h": 26,
                   "style": {
@@ -973,11 +1312,24 @@
                     "letterSpacing": 0.08,
                     "align": "center",
                     "background": "#00000000"
+                  },
+                  "gradeLabel": {
+                    "background": "#FFFFFF38"
+                  },
+                  "gradeSub": {
+                    "background": "#FFFFFF38"
+                  },
+                  "resultLine": {
+                    "background": "#FFFFFF38"
+                  },
+                  "performers": {
+                    "background": "#FFFFFF38"
                   }
                 }
               }
             },
             "id": "card-l22",
+            "link": "card-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -987,42 +1339,67 @@
                 "h": 55.43
               }
             },
-            "sig": "rows:1q6qr5206thvf3"
+            "sig": "rows:083h7ie11eya71"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
-              "opacity": 0.22
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.22,
+              "fill": "#00000000"
             },
             "id": "card-l23",
+            "link": "card-l23",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:132lpdw117wyn1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
               },
+              "opacity": 0.22,
+              "fill": "#00000000"
+            },
+            "id": "card-l24",
+            "link": "card-l23",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:06x3sby0okz18v"
+            "sig": "shape:18jbr090ef71w8"
           },
           {
             "kind": "text",
@@ -1040,7 +1417,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l24",
+            "id": "card-l25",
+            "link": "card-l25",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1080,7 +1458,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l25",
+            "id": "card-l26",
+            "link": "card-l25",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1098,7 +1477,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "card-l26",
+            "id": "card-l27",
+            "link": "card-l27",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1128,7 +1508,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "card-l27",
+            "id": "card-l28",
+            "link": "card-l27",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1146,7 +1527,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l28",
+            "id": "card-l29",
+            "link": "card-l29",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1176,7 +1558,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l29",
+            "id": "card-l30",
+            "link": "card-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1194,7 +1577,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "card-l30",
+            "id": "card-l31",
+            "link": "card-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1224,7 +1608,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "card-l31",
+            "id": "card-l32",
+            "link": "card-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1242,7 +1627,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l32",
+            "id": "card-l33",
+            "link": "card-l33",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1272,7 +1658,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l33",
+            "id": "card-l34",
+            "link": "card-l33",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1290,7 +1677,8 @@
               "fill": "#FFFFFFF0",
               "radius": 6.48
             },
-            "id": "card-l34",
+            "id": "card-l35",
+            "link": "card-l35",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1320,7 +1708,8 @@
               "fill": "#FFFFFFF0",
               "radius": 3.78
             },
-            "id": "card-l35",
+            "id": "card-l36",
+            "link": "card-l35",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1338,7 +1727,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l36",
+            "id": "card-l37",
+            "link": "card-l37",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1368,7 +1758,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l37",
+            "id": "card-l38",
+            "link": "card-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1397,7 +1788,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l38",
+            "id": "card-l39",
+            "link": "card-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1438,7 +1830,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l39",
+            "id": "card-l40",
+            "link": "card-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {

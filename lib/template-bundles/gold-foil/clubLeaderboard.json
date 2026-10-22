@@ -1,6 +1,6 @@
 {
   "name": "Gold Foil clubLeaderboard",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -170,6 +170,7 @@
               "fill": "#00000000"
             },
             "id": "card-l3",
+            "link": "card-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -204,6 +205,7 @@
               "fill": "#00000000"
             },
             "id": "card-l4",
+            "link": "card-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -226,6 +228,7 @@
               "fill": "#00000000"
             },
             "id": "card-l5",
+            "link": "card-l5",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -260,6 +263,7 @@
               "fill": "#00000000"
             },
             "id": "card-l6",
+            "link": "card-l5",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -322,6 +326,7 @@
               "ellipsis": true
             },
             "id": "card-l8",
+            "link": "card-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -364,6 +369,7 @@
               "ellipsis": true
             },
             "id": "card-l9",
+            "link": "card-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -394,6 +400,7 @@
               "ellipsis": true
             },
             "id": "card-l10",
+            "link": "card-l10",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -436,6 +443,7 @@
               "ellipsis": true
             },
             "id": "card-l11",
+            "link": "card-l10",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -457,6 +465,7 @@
               }
             },
             "id": "card-l12",
+            "link": "card-l12",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -490,6 +499,7 @@
               }
             },
             "id": "card-l13",
+            "link": "card-l12",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -520,6 +530,7 @@
               "ellipsis": true
             },
             "id": "card-l14",
+            "link": "card-l14",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -562,6 +573,7 @@
               "ellipsis": true
             },
             "id": "card-l15",
+            "link": "card-l14",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -600,6 +612,7 @@
               "ellipsis": true
             },
             "id": "card-l16",
+            "link": "card-l16",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -650,6 +663,7 @@
               "ellipsis": true
             },
             "id": "card-l17",
+            "link": "card-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -680,6 +694,7 @@
               "ellipsis": true
             },
             "id": "card-l18",
+            "link": "card-l18",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -710,6 +725,7 @@
               "ellipsis": true
             },
             "id": "card-l19",
+            "link": "card-l18",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -741,11 +757,12 @@
               "lineHeight": 1.3
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
             "id": "card-l20",
+            "link": "card-l18",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -755,7 +772,7 @@
                 "h": 4.45
               }
             },
-            "sig": "text:18a3ye60yy96cd"
+            "sig": "text:13xkhx31vhw7f4"
           },
           {
             "kind": "text",
@@ -770,21 +787,22 @@
               "lineHeight": 0.92
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "card-l21",
+            "link": "card-l21",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 23.87,
-                "w": 49.89,
+                "w": 48.53,
                 "h": 10.46
               }
             },
-            "sig": "text:1ehfkkw10g0erx"
+            "sig": "text:0wwgchw1jh9pal"
           },
           {
             "kind": "text",
@@ -799,27 +817,28 @@
               "lineHeight": 0.92
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "card-l22",
+            "link": "card-l21",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 6,
                 "y": 21.87,
-                "w": 66.51,
+                "w": 64.67,
                 "h": 11.11
               },
               "story": {
                 "x": 6,
                 "y": 30.22,
-                "w": 66.51,
+                "w": 64.67,
                 "h": 7.81
               }
             },
-            "sig": "text:0v5sgc11x2u4v8"
+            "sig": "text:0npe5hx0h2zdes"
           },
           {
             "kind": "text",
@@ -834,28 +853,29 @@
               "lineHeight": 0.92
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
             "id": "card-l23",
+            "link": "card-l21",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 48.91,
-                "w": 26.41,
+                "w": 25.49,
                 "h": 10.32
               }
             },
-            "sig": "text:13nhbcf1kfso9m"
+            "sig": "text:0o8qczf04fxwt6"
           },
           {
             "kind": "rows",
             "rows": {
               "repeat": "leaders",
               "rowHeight": 10.73,
-              "gap": 2.14,
+              "gap": 0.66,
               "cells": [
                 {
                   "field": "gradeLabel",
@@ -868,8 +888,52 @@
                 },
                 {
                   "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "playerName",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.86,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "value",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.14,
+                  "h": 0.86,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
                   "x": 2.05,
-                  "w": 85.98,
+                  "w": 48.33,
                   "y": 5.56,
                   "h": 31.09,
                   "style": {
@@ -881,9 +945,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.05,
+                  "w": 11.77,
+                  "y": 36.41,
+                  "h": 55.35,
+                  "style": {
+                    "fontSize": 0.99,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "left"
+                  }
+                },
+                {
                   "field": "playerName",
                   "x": 13.82,
-                  "w": 74.21,
+                  "w": 74.16,
                   "y": 38.32,
                   "h": 23.37,
                   "style": {
@@ -896,8 +975,8 @@
                 },
                 {
                   "field": "value",
-                  "x": 89.03,
-                  "w": 8.97,
+                  "x": 87.98,
+                  "w": 9.97,
                   "y": 30.92,
                   "h": 38.16,
                   "style": {
@@ -905,12 +984,13 @@
                     "color": "#F6EBD0",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "left"
+                    "align": "right"
                   }
                 }
               ]
             },
             "id": "card-l24",
+            "link": "card-l24",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -920,14 +1000,14 @@
                 "h": 44.89
               }
             },
-            "sig": "rows:0z1ksxp1dnrm1g"
+            "sig": "rows:1gye9br0uhhi4q"
           },
           {
             "kind": "rows",
             "rows": {
               "repeat": "leaders",
               "rowHeight": 14.24,
-              "gap": 2.86,
+              "gap": 0.88,
               "cells": [
                 {
                   "field": "gradeLabel",
@@ -940,8 +1020,52 @@
                 },
                 {
                   "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.89,
+                  "w": 0.11,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "playerName",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.65,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "value",
+                  "x": 0,
+                  "w": 100,
+                  "y": 99.35,
+                  "h": 0.65,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
                   "x": 2.5,
-                  "w": 82.93,
+                  "w": 47.97,
                   "y": 5.35,
                   "h": 31.25,
                   "style": {
@@ -953,9 +1077,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 2.5,
+                  "w": 14.6,
+                  "y": 36.35,
+                  "h": 55.59,
+                  "style": {
+                    "fontSize": 1.32,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "left"
+                  }
+                },
+                {
                   "field": "playerName",
                   "x": 17.1,
-                  "w": 68.33,
+                  "w": 68.03,
                   "y": 38.27,
                   "h": 23.45,
                   "style": {
@@ -968,8 +1107,8 @@
                 },
                 {
                   "field": "value",
-                  "x": 86.43,
-                  "w": 11.57,
+                  "x": 85.13,
+                  "w": 12.37,
                   "y": 30.82,
                   "h": 38.36,
                   "style": {
@@ -977,12 +1116,13 @@
                     "color": "#F6EBD0",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "left"
+                    "align": "right"
                   }
                 }
               ]
             },
             "id": "card-l25",
+            "link": "card-l24",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -998,14 +1138,14 @@
                 "h": 33.53
               }
             },
-            "sig": "rows:0bo28xc07xkj7r"
+            "sig": "rows:1kydqh21u7hrmt"
           },
           {
             "kind": "rows",
             "rows": {
               "repeat": "leaders",
               "rowHeight": 5.7,
-              "gap": 1.12,
+              "gap": 0.34,
               "cells": [
                 {
                   "field": "gradeLabel",
@@ -1018,8 +1158,52 @@
                 },
                 {
                   "field": "gradeLabel",
+                  "x": 0,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeSub",
+                  "x": 99.84,
+                  "w": 0.16,
+                  "y": 0,
+                  "h": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "playerName",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "value",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.54,
+                  "h": 1.46,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#D3175A52"
+                  }
+                },
+                {
+                  "field": "gradeLabel",
                   "x": 1.76,
-                  "w": 88.1,
+                  "w": 48.55,
                   "y": 6.11,
                   "h": 30.68,
                   "style": {
@@ -1031,9 +1215,24 @@
                   }
                 },
                 {
+                  "field": "gradeSub",
+                  "x": 1.76,
+                  "w": 9.73,
+                  "y": 36.57,
+                  "h": 54.68,
+                  "style": {
+                    "fontSize": 0.52,
+                    "color": "#F5EACF9E",
+                    "fontFamily": "'IBM Plex Mono',monospace",
+                    "fontWeight": 600,
+                    "letterSpacing": 0.12,
+                    "align": "left"
+                  }
+                },
+                {
                   "field": "playerName",
                   "x": 11.49,
-                  "w": 78.37,
+                  "w": 78.51,
                   "y": 38.47,
                   "h": 23.04,
                   "style": {
@@ -1046,8 +1245,8 @@
                 },
                 {
                   "field": "value",
-                  "x": 90.86,
-                  "w": 7.38,
+                  "x": 90,
+                  "w": 8.24,
                   "y": 31.12,
                   "h": 37.75,
                   "style": {
@@ -1055,12 +1254,13 @@
                     "color": "#F6EBD0",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
-                    "align": "left"
+                    "align": "right"
                   }
                 }
               ]
             },
             "id": "card-l26",
+            "link": "card-l24",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1070,42 +1270,67 @@
                 "h": 45.37
               }
             },
-            "sig": "rows:01b0yx90tjw460"
+            "sig": "rows:11juczs1p6j9nr"
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
-              "opacity": 0.35
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
             },
             "id": "card-l27",
+            "link": "card-l27",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:019iwud1962oyc"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--gold)",
+                "sides": ["top"]
               },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "card-l28",
+            "link": "card-l27",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:0mgmyo111s9wvk"
+            "sig": "shape:0s1apzc13c1w9d"
           },
           {
             "kind": "text",
@@ -1127,7 +1352,8 @@
             "showWhen": {
               "sponsors": false
             },
-            "id": "card-l28",
+            "id": "card-l29",
+            "link": "card-l29",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1171,7 +1397,8 @@
             "showWhen": {
               "sponsors": false
             },
-            "id": "card-l29",
+            "id": "card-l30",
+            "link": "card-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1198,7 +1425,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l30",
+            "id": "card-l31",
+            "link": "card-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1237,7 +1465,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l31",
+            "id": "card-l32",
+            "link": "card-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1255,7 +1484,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l32",
+            "id": "card-l33",
+            "link": "card-l33",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1285,7 +1515,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l33",
+            "id": "card-l34",
+            "link": "card-l33",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1303,7 +1534,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l34",
+            "id": "card-l35",
+            "link": "card-l35",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1333,7 +1565,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l35",
+            "id": "card-l36",
+            "link": "card-l35",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1351,7 +1584,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l36",
+            "id": "card-l37",
+            "link": "card-l37",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1381,7 +1615,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l37",
+            "id": "card-l38",
+            "link": "card-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1399,7 +1634,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l38",
+            "id": "card-l39",
+            "link": "card-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1429,7 +1665,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l39",
+            "id": "card-l40",
+            "link": "card-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1447,7 +1684,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l40",
+            "id": "card-l41",
+            "link": "card-l41",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1477,7 +1715,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l41",
+            "id": "card-l42",
+            "link": "card-l41",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1495,7 +1734,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l42",
+            "id": "card-l43",
+            "link": "card-l43",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1525,7 +1765,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l43",
+            "id": "card-l44",
+            "link": "card-l43",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1557,7 +1798,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l44",
+            "id": "card-l45",
+            "link": "card-l45",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -1601,7 +1843,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l45",
+            "id": "card-l46",
+            "link": "card-l45",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
