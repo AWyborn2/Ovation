@@ -803,3 +803,62 @@ describe("a text's own background in a row", () => {
     expect(order.indexOf("outcome:backdrop")).toBeLessThan(order.indexOf("outcome:text"));
   });
 });
+
+describe("the Duotone pack's photo map", () => {
+  it("maps its SVG gradient-map filter to the duotone preset from the Duotone palette", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1350], { className: "pack-card-root" });
+    const wrap = el(0, "div", [0, 0, 1080, 1350], {
+      style: { filter: 'url("#dt-duo-0e2b51-1f5fb4-e988aa")' },
+    });
+    const pic = el(wrap.id, "img", [0, 0, 1080, 1350], { src: "sentinel:photo" });
+    const cap = capture();
+    cap.elements = [root, wrap, pic];
+    const result = mapCapture(cap);
+    const photo = result.layers.find((l) => l.layer.kind === "photo")!;
+    expect((photo.layer as { style?: { filter?: unknown } }).style?.filter).toEqual([
+      { preset: "duotone", dark: "var(--dt-ink)", light: "var(--dt-p)" },
+    ]);
+    expect(result.polish.some((p) => /filter url/.test(p.what))).toBe(false);
+  });
+});
+
+describe("cells only some rows draw", () => {
+  it("adds a captain's mark from the row that has it, once", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const list = el(0, "div", [60, 100, 900, 300]);
+    const els: CapturedElement[] = [root, list];
+    const row = (y: number, n: string, name: string, role: string) => {
+      const r = el(list.id, "div", [60, y, 900, 60]);
+      els.push(
+        r,
+        el(r.id, "div", [60, y, 60, 60], { style: TEXT, text: text(n, [60, y, 40, 60]) }),
+        el(r.id, "div", [140, y, 500, 60], { style: TEXT, text: text(name, [140, y, 300, 60]) }),
+      );
+      if (role)
+        els.push(
+          el(r.id, "div", [860, y, 80, 60], { style: TEXT, text: text(role, [860, y, 60, 60]) }),
+        );
+    };
+    row(100, "1", "QI ZI", "");
+    row(170, "2", "QJ ZJ", "(VC)");
+    row(240, "3", "QK ZK", "");
+    const cap = capture();
+    cap.elements = els;
+    cap.rows = {
+      players: [
+        { values: { number: "1", surname: "QI ZI", broadcastName: "QI ZI", role: "" } },
+        { values: { number: "2", surname: "QJ ZJ", broadcastName: "QJ ZJ", role: "VC" } },
+        { values: { number: "3", surname: "QK ZK", broadcastName: "QK ZK", role: "" } },
+      ],
+    };
+    const layer = mapCapture(cap).layers.find((l) => l.layer.kind === "rows")!.layer as {
+      rows: { cells: Array<{ field: string; show?: string }> };
+    };
+    const fields = layer.rows.cells.filter((c) => !c.show).map((c) => c.field);
+    expect(fields).toContain("role");
+    // The name is bound once (surname and broadcast name share the sentinel's marker).
+    expect(fields.filter((f) => f === "surname" || f === "broadcastName")).toHaveLength(1);
+  });
+});
