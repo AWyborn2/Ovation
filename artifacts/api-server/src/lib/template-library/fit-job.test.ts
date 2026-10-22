@@ -1,6 +1,6 @@
 /**
  * The server fit job (ADR-011 §4, L2-B, T2.6–T2.7): results land on the
- * version, a check that can't run leaves it pending for the next sweep, and
+ * version, a check that can't run is tried again and then left pending for the next sweep, and
  * fit checks wait behind card renders. Real-DB test (needs DATABASE_URL); the
  * browser check is stubbed (CI has no Chromium here).
  */
@@ -104,13 +104,30 @@ describe("the fit job", () => {
     expect((v.fitReport as TemplateFitReport).issues[0]).toMatchObject({ reason: "overflow" });
   });
 
-  it("leaves a check that can't run pending, and the sweep asks again", async () => {
+  it("tries a check that couldn't run again, so a harness still starting doesn't leave it pending", async () => {
+    let calls = 0;
     setFitCheck(async () => {
+      calls += 1;
+      if (calls < 3) throw new Error("net::ERR_CONNECTION_REFUSED");
+      return report("pass");
+    });
+    registerFitRunner(fitRunner(quiet, { retryDelayMs: 1 }));
+    await syncBundles([fixtureBundle(`${LOOK}-r`, [fixtureTemplate("player")])]);
+    await fitChecksSettled();
+    expect(calls).toBe(3);
+    expect((await version(`${LOOK}-r/player`)).fitStatus).toBe("pass");
+  });
+
+  it("leaves a check that can't run pending, and the sweep asks again", async () => {
+    let calls = 0;
+    setFitCheck(async () => {
+      calls += 1;
       throw new Error("no harness");
     });
-    registerFitRunner(fitRunner(quiet));
+    registerFitRunner(fitRunner(quiet, { retries: 2, retryDelayMs: 1 }));
     await syncBundles([fixtureBundle(`${LOOK}-c`, [fixtureTemplate("player")])]);
     await fitChecksSettled();
+    expect(calls).toBe(3);
     expect((await version(`${LOOK}-c/player`)).fitStatus).toBe("pending");
 
     setFitCheck(async () => report("pass"));
