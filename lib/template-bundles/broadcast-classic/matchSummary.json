@@ -1188,7 +1188,12 @@
               "square",
               "portrait",
               "story"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.7,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "performers-2",
@@ -1212,7 +1217,12 @@
             },
             "sizes": [
               "landscape"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.7,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           }
         ]
       },
@@ -2334,7 +2344,7 @@
                   "y": 38.55,
                   "h": 26.49,
                   "style": {
-                    "fontSize": 3.7,
+                    "fontSize": 3.0,
                     "color": "#F5F2E8",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
@@ -2364,7 +2374,7 @@
                   "y": 19.69,
                   "h": 34.46,
                   "style": {
-                    "fontSize": 4.05,
+                    "fontSize": 3.4,
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,

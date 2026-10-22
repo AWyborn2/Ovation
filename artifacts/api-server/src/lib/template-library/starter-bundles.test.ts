@@ -3,8 +3,9 @@
  * byte-identical to the TypeScript starter, listed except carousel and retired
  * kinds, and every committed bundle syncs without a problem. L4-D gives a
  * starter's Match Day and Match Summary templates the carousel pages from its
- * nearest polished look: the starter stays byte-identical as the primary page,
- * the borrowed pages are added, and the template is listed. The sync part is
+ * nearest polished look: the starter stays the primary page (gaining only text
+ * fit, so long names shrink rather than overflow), the borrowed pages are
+ * added, and the template is listed. The sync part is
  * a real-DB test (needs DATABASE_URL) and removes what it loaded.
  */
 import { afterAll, describe, expect, it } from "vitest";
@@ -28,6 +29,13 @@ const STARTER_LOOK: Record<StarterId, string> = {
   clubhouse: "clubhouse",
 };
 const CAROUSEL = new Set(["matchDay", "matchSummary", "teamList"]);
+
+/** A document's layers with any `fit` removed (L4-D adds fit to the starters' text). */
+const withoutFit = (layers: unknown[]): unknown[] =>
+  layers.map((layer) => {
+    const { fit: _fit, ...rest } = layer as { fit?: unknown; children?: unknown[] };
+    return rest.children ? { ...rest, children: withoutFit(rest.children) } : rest;
+  });
 /** The pages L4-D adds to a starter's carousel templates. */
 const BORROWED: Record<string, readonly string[]> = {
   matchDay: ["title", "day", "sponsors"],
@@ -50,7 +58,7 @@ describe("starter bundles", () => {
         const doc = t.file.document;
         if (isDocumentV2(doc)) {
           const primary = primaryPage(t.kind);
-          expect(JSON.stringify(doc.pages[primary]!.layers)).toBe(
+          expect(JSON.stringify(withoutFit(doc.pages[primary]!.layers))).toBe(
             JSON.stringify(original.layers),
           );
           expect(Object.keys(doc.pages).sort()).toEqual([primary, ...BORROWED[t.kind]!].sort());

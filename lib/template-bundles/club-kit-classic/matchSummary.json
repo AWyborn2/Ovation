@@ -1067,7 +1067,12 @@
               "square",
               "portrait",
               "story"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.7,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "performers-2",
@@ -1091,7 +1096,12 @@
             },
             "sizes": [
               "landscape"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.7,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           }
         ]
       },

@@ -614,7 +614,12 @@
             "sizes": [
               "square",
               "story"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "grade-2",
@@ -639,7 +644,12 @@
             },
             "sizes": [
               "portrait"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "grade-3",
@@ -664,7 +674,12 @@
             },
             "sizes": [
               "landscape"
-            ]
+            ],
+            "fit": {
+              "minScale": 0.45,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "fixture-fill",
@@ -3729,11 +3744,11 @@
                 {
                   "field": "time",
                   "x": 1.5,
-                  "w": 11.9,
+                  "w": 15,
                   "y": 31.37,
                   "h": 37.24,
                   "style": {
-                    "fontSize": 4.05,
+                    "fontSize": 3.3,
                     "color": "var(--gold)",
                     "fontFamily": "'Anton',sans-serif",
                     "fontWeight": 400,
@@ -3742,8 +3757,8 @@
                 },
                 {
                   "field": "grade",
-                  "x": 13.4,
-                  "w": 79.5,
+                  "x": 17,
+                  "w": 75.9,
                   "y": 12.54,
                   "h": 21.05,
                   "style": {
@@ -3758,12 +3773,12 @@
                 },
                 {
                   "field": "opposition",
-                  "x": 13.4,
-                  "w": 79.5,
+                  "x": 17,
+                  "w": 75.9,
                   "y": 33.59,
                   "h": 28.63,
                   "style": {
-                    "fontSize": 3.7,
+                    "fontSize": 3.0,
                     "color": "#F5F2E8",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
@@ -3773,8 +3788,8 @@
                 },
                 {
                   "field": "meta",
-                  "x": 13.4,
-                  "w": 79.5,
+                  "x": 17,
+                  "w": 75.9,
                   "y": 62.21,
                   "h": 25.24,
                   "style": {
