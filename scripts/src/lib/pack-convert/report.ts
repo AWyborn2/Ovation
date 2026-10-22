@@ -33,6 +33,8 @@ export function lookReport(opts: {
   validation?: Record<string, string[]> | null;
   generatedAt: string;
   results?: { same: boolean; differences: string[] } | null;
+  /** A re-check of the polished bundle (`--recheck`), not the raw conversion. */
+  polish?: { halfDays: number | null; listed: number };
 }): string {
   const { conversions, checks } = opts;
   const lines: string[] = [];
@@ -45,11 +47,16 @@ export function lookReport(opts: {
   const mean = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : undefined;
   const motion = Object.assign({}, ...all.map((p) => p.motion)) as Record<string, string>;
 
-  lines.push(`# ${opts.look}: raw conversion report`);
+  const polished = opts.polish;
+  lines.push(`# ${opts.look}: ${polished ? "conversion" : "raw conversion"} report`);
   lines.push("");
   lines.push(
-    `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\` on ${opts.generatedAt}. ` +
-      "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.",
+    polished
+      ? `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\`, polished by hand, ` +
+          `re-checked against the pack on ${opts.generatedAt}. Status: **polished, pending Ash's sign-off**; ` +
+          `${polished.listed} of ${conversions.length} kinds listed.`
+      : `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\` on ${opts.generatedAt}. ` +
+          "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.",
   );
   lines.push("");
   lines.push("## Summary");
@@ -88,7 +95,11 @@ export function lookReport(opts: {
         : "- Validation: every document passes the template validator.",
     );
   }
-  lines.push(`- Polish time logged: 0 hd (raw conversion).`);
+  lines.push(
+    polished
+      ? `- Polish time logged: ${polished.halfDays ?? "not logged"} hd.`
+      : "- Polish time logged: 0 hd (raw conversion).",
+  );
   lines.push("");
 
   for (const conv of conversions) {
@@ -132,7 +143,7 @@ export function lookReport(opts: {
       }
       lines.push("");
       if (page.polish.length) {
-        lines.push("Polish:");
+        lines.push(polished ? "Converter notes (from the raw conversion):" : "Polish:");
         lines.push("");
         for (const p of page.polish) lines.push(`- ${p}`);
         lines.push("");
