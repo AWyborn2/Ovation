@@ -507,3 +507,112 @@ function tagsFor(look: string, category: ElementCategory, o: Occurrence, name: s
   ];
   return [...new Set(tags.filter((t) => t && t.length <= 24))].slice(0, 12);
 }
+
+/** A Club Kit panel piece as native layers (`native-ck-pieces.ts`). */
+export type PieceInput = {
+  id: string;
+  label: string;
+  keywords: string;
+  layers: unknown[];
+};
+
+/** Where each Club Kit piece sits among the panel's categories. */
+export const PIECE_CATEGORIES: Record<string, ElementCategory> = {
+  "ck.background": "frames",
+  "ck.frame-side": "frames",
+  "ck.frame-top": "frames",
+  "ck.trim": "bands",
+  "ck.watermark": "crest-frames",
+  "ck.crest": "crest-frames",
+  "ck.club-lockup": "crest-frames",
+  "ck.kind-chip": "badges",
+  "ck.tricolour-rule": "rules",
+  "ck.hashtag": "badges",
+  "ck.sponsor-strip": "sponsor-strips",
+  "ck.eyebrow": "data-blocks",
+  "ck.headline": "data-blocks",
+  "ck.result-word": "data-blocks",
+  "ck.big-number": "data-blocks",
+  "ck.player-name": "data-blocks",
+  "ck.meta": "data-blocks",
+  "ck.score-bars": "data-blocks",
+  "ck.result-line": "data-blocks",
+  "ck.stat-cells": "data-blocks",
+  "ck.leader-rows": "data-blocks",
+  "ck.grade-rows": "data-blocks",
+  "ck.xi-list": "data-blocks",
+  "ck.trading-card": "frames",
+  "ck.prem-stars": "badges",
+  "ck.premiers-lockup": "data-blocks",
+  "ck.gf-panel": "data-blocks",
+  "ck.junior-rows": "data-blocks",
+  "ck.junior-privacy": "data-blocks",
+};
+
+/** One signature for a piece's layers: the layer itself, or a group of them. */
+const piecesSignature = (layers: Layer[]): string =>
+  decorationSignature(
+    layers.length === 1
+      ? layers[0]!
+      : { kind: "group", geometry: layers[0]?.geometry, children: layers },
+  );
+
+/**
+ * The Club Kit pieces added to `look`'s elements, named as the panel named
+ * them. A piece the extraction already found (the starters drew seven of them,
+ * split by C3) is left out, by signature against every look's elements.
+ */
+export function addPieces(
+  files: ElementFile[],
+  pieces: PieceInput[],
+  look: string,
+): { added: string[]; duplicates: string[]; invalid: Array<{ slug: string; error: string }> } {
+  const seen = new Set(
+    files.flatMap((f) => f.elements.map((e) => piecesSignature(e.document.layers as Layer[]))),
+  );
+  let file = files.find((f) => f.look === look);
+  if (!file) {
+    file = { look, elements: [] };
+    files.push(file);
+  }
+  const slugs = new Set(file.elements.map((e) => e.slug));
+  const out = { added: [] as string[], duplicates: [] as string[], invalid: [] as Array<{ slug: string; error: string }> };
+  for (const piece of pieces) {
+    const category = PIECE_CATEGORIES[piece.id];
+    if (!category) continue;
+    const layers = piece.layers as Layer[];
+    const signature = piecesSignature(layers);
+    if (seen.has(signature)) {
+      out.duplicates.push(piece.id);
+      continue;
+    }
+    const name = piece.label.replace(/\s+—\s+/, ", ");
+    let slug = `${look}/${category}/${slugify(name)}`;
+    for (let i = 2; slugs.has(slug); i++) slug = `${look}/${category}/${slugify(name)}-${i}`;
+    const copies = layers.map((l, i) => withIds(l, `e${i + 1}`));
+    const palettes = palettesFor({ kind: "group", children: copies });
+    const document: ElementDocument = {
+      formatVersion: 2,
+      layers: copies as unknown as ElementDocument["layers"],
+      ...(palettes ? { palettes } : {}),
+    };
+    const errors = elementDocumentErrors(document);
+    if (errors.length > 0) {
+      out.invalid.push({ slug, error: errors[0]! });
+      continue;
+    }
+    seen.add(signature);
+    slugs.add(slug);
+    const tags = [look, category, "club kit", ...piece.keywords.toLowerCase().split(/\s+/)];
+    file.elements.push({
+      slug,
+      name,
+      category,
+      tags: [...new Set(tags.filter((t) => t && t.length <= 24))].slice(0, 12),
+      signature,
+      document,
+    });
+    out.added.push(piece.id);
+  }
+  return out;
+}
