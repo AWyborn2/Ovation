@@ -122,6 +122,10 @@ import look4_21 from "./clubhouse/teamListRound.json";
 import look4_22 from "./clubhouse/teamOfWeek.json";
 import look4_23 from "./clubhouse/tradingCard.json";
 import look4_24 from "./clubhouse/weekendWrap.json";
+import look5 from "./duotone/look.json";
+import look5_0 from "./duotone/matchDay.json";
+import look5_1 from "./duotone/matchSummary.json";
+import look5_2 from "./duotone/teamList.json";
 
 export type * from "./types";
 
@@ -270,6 +274,15 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "teamOfWeek", hash: "1f488004d82c59cf9f651c3d6a5b942b5fc25552b7f95392b1ccd9ad57cf1c21", file: look4_22 },
       { kind: "tradingCard", hash: "bb0e6d2556800838611ac195c150f2a2a63972f40dd87ce342c14d783cc82724", file: look4_23 },
       { kind: "weekendWrap", hash: "92ac08bae7735767c2c7c8ea65d099a9248d210dc065a291ce2d55fe5ba9925e", file: look4_24 },
+    ],
+  },
+  {
+    slug: "duotone",
+    look: look5,
+    templates: [
+      { kind: "matchDay", hash: "dd1e2d376ae7096a85cf1fadff9341ed9d78d7d8ec684e4e51a7dd4f509d507a", file: look5_0 },
+      { kind: "matchSummary", hash: "958d8011a91deb1880f1fefe8c998dc139287597b99c7d98fb7018793deb5d50", file: look5_1 },
+      { kind: "teamList", hash: "a99f47f8d85c680e724f3dd480bce09a16714c9d2e932ecf0f284b731cfa504d", file: look5_2 },
     ],
   },
 ];
