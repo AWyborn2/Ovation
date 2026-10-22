@@ -421,7 +421,14 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const found = boundRows(tree, cap, bound);
     if (!found) continue;
     for (const id of found.consumed) consumed.add(id);
-    const spec = rowsSpec(tree, found.rows, bound, { repeat, W, colour, fit: true, twin });
+    const spec = rowsSpec(tree, found.rows, bound, {
+      repeat,
+      W,
+      colour,
+      fit: true,
+      twin,
+      twinValues: opts.geometry?.rows?.[repeat]?.map((r) => r.values),
+    });
     if (!spec) {
       polish.push({
         element: found.rows[0]!.id,
@@ -952,6 +959,10 @@ function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): Te
         out.push({ preset: "blur", px: Math.min(MAX_BLUR_PX, r2(n)) });
       // A darkened photo (a scrimmed hero): nested brightness() filters multiply.
       else if (name === "brightness" && Number.isFinite(n)) brightness = (brightness ?? 1) * amount;
+      // The Duotone pack's gradient map (an SVG filter built from the club's colours):
+      // the format's duotone preset from the Duotone palette, which draws exactly it.
+      else if (name === "url" && /#dt-duo-/.test(arg!))
+        out.push({ preset: "duotone", dark: "var(--dt-ink)", light: "var(--dt-p)" });
       else polish.push({ element: el.id, what: `filter ${name}(${arg}) not mapped` });
     }
   }
@@ -1372,6 +1383,10 @@ interface RowsOptions {
    * real content lays the row out (short sentinel markers lay it out differently).
    */
   twin?: (el: CapturedElement) => CapturedElement;
+  /** The worst case's row values, in row order (it shows real-looking content). */
+  twinValues?: Array<Record<string, string>>;
+  /** This row's worst-case values, to tell apart fields the sentinel gave one marker. */
+  rowTwinValues?: Record<string, string>;
 }
 
 /** A rows spec from captured rows: the base row's cells, its height and the pitch. */
@@ -1413,10 +1428,37 @@ function rowsSpec(
     rowCells(tree, row, values, {
       ...opts,
       others,
+      rowTwinValues: opts.twinValues?.[rows.indexOf(row)],
       ...(geo === rows ? { twin: undefined } : {}),
     });
   const cells = cellsOf(first, bound[baseIndex]?.values ?? {});
   if (!cells.some((c) => c.show !== "backdrop")) return null;
+  // A field the base row leaves empty but other rows draw (a captain's "(C)", an
+  // overseas mark): its cell from the first row that has it, drawn when the row has it.
+  const fieldsHere = new Set(cells.filter((c) => c.show !== "backdrop").map((c) => c.field));
+  rows.forEach((row, i) => {
+    if (row === first) return;
+    for (const c of cellsOf(row, bound[i]?.values ?? {}))
+      if (
+        c.show !== "backdrop" &&
+        c.field &&
+        !fieldsHere.has(c.field) &&
+        // Not a field this row gives the same value as one already bound (the sentinel's
+        // surname and broadcast name are one marker), nor a cell the base row already has.
+        ![...fieldsHere].some(
+          (f) => (bound[i]?.values[f] ?? "").trim() === (bound[i]?.values[c.field] ?? "").trim(),
+        ) &&
+        !cells.some(
+          (b) =>
+            b.show !== "backdrop" &&
+            Math.abs(b.x - c.x) < 1 &&
+            Math.abs((b.y ?? 0) - (c.y ?? 0)) < 5,
+        )
+      ) {
+        fieldsHere.add(c.field);
+        cells.push(c);
+      }
+  });
   // Variant rows (the club's ladder row, a lost result): their cell styles that differ.
   const variants: NonNullable<RowsSpec["variants"]> = {};
   bound.forEach((r, i) => {
@@ -1518,9 +1560,19 @@ function rowCells(
           return said === undefined || norm(o.values[k] ?? "") === norm(said);
         }),
       );
+      // The worst case shows real-looking content: the one field whose worst-case value
+      // is what its twin of this cell says ("M. SURNAME" is the broadcast name, not the surname).
+      const said = opts.twin?.(el)?.text?.[run]?.text;
+      const twinPick =
+        said && opts.rowTwinValues
+          ? fits.filter(([k]) => norm(opts.rowTwinValues![k] ?? "") === norm(said))
+          : [];
       const taken = new Set(cells.filter((c) => c.show !== "backdrop").map((c) => c.field));
       const pick =
-        fits.find(([k]) => !taken.has(k)) ?? fits[0] ?? exact.find(([k]) => !taken.has(k));
+        (twinPick.length === 1 ? twinPick[0] : undefined) ??
+        fits.find(([k]) => !taken.has(k)) ??
+        fits[0] ??
+        exact.find(([k]) => !taken.has(k));
       if (pick) return pick[0];
     }
     if (exact[0]) return exact[0][0];

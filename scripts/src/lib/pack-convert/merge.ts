@@ -468,6 +468,11 @@ export function applyStacks(
         );
       });
       if (items.length < 2) return;
+      // A stack needs a box on every size its members draw on: where the pack lays the
+      // block out without flex (no stack there), they keep their own boxes instead.
+      const drawnOn = (l: TemplateLayerV2): TemplateSize[] =>
+        (l.sizes ?? SIZES).filter((size) => l.geometry[size]);
+      if ([...taken].some((h) => drawnOn(h).some((size) => !s.geometry[size]))) return;
       // Groups nest four deep at most: an outer stack that would go deeper keeps its
       // items where the pack drew them (inner stacks, done first, keep their flow).
       if (1 + Math.max(...items.map(groupDepth)) > MAX_STACK_DEPTH) return;

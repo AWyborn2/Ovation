@@ -141,3 +141,27 @@ describe("flexReproduces", () => {
     expect(flexReproduces(row, box, drawn, 1000, 10)).toBe(true);
   });
 });
+
+describe("a stack only some sizes lay out with flex", () => {
+  it("isn't built, so members drawn on other sizes keep their own boxes", () => {
+    const both = { square: { x: 0, y: 0, w: 10, h: 10 }, portrait: { x: 0, y: 0, w: 10, h: 8 } };
+    const layers = [
+      { id: "a", kind: "text", content: "A", geometry: both },
+      { id: "b", kind: "text", content: "B", geometry: both },
+    ] as TemplateLayerV2[];
+    const sigOf = new Map(layers.map((l) => [l.id, l.id]));
+    const out = applyStacks(layers, sigOf, [
+      {
+        sigs: ["a", "b"],
+        depth: 2,
+        stack: { direction: "column" },
+        geometry: { square: { x: 0, y: 0, w: 10, h: 20 } },
+        units: [
+          { sigs: ["a"], geometry: { square: both.square } },
+          { sigs: ["b"], geometry: { square: both.square } },
+        ],
+      },
+    ]);
+    expect(out.map((l) => l.id)).toEqual(["a", "b"]);
+  });
+});
