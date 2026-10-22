@@ -525,9 +525,13 @@ function layerInner(
     case "rows":
       return renderRows(layer, ctx);
     case "shape": {
-      // A v2 shape paints its fill (a colour or gradient) in place of v1's background.
-      const fill = ctx.formatVersion === 2 ? shapeFillCss(layer.style) : null;
-      return `<div style="width:100%;height:100%;background:${fill ?? s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+      // A v2 shape paints its fill (a colour or gradient) in place of v1's background,
+      // and nothing when it sets none (a frame line is a border on no fill); a v1
+      // shape that sets nothing keeps the accent it always had.
+      const v2 = ctx.formatVersion === 2;
+      const fill = v2 ? shapeFillCss(layer.style) : null;
+      const paint = fill ?? s.background ?? (v2 ? "transparent" : "var(--gold,#fbac27)");
+      return `<div style="width:100%;height:100%;background:${paint};border-radius:${num(s.radius)}px"></div>`;
     }
     case "image": {
       // A template's image can be a field token (the club crest, the club's
