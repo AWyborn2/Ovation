@@ -64,6 +64,91 @@
       }
     },
     {
+      "slug": "broadcast-dark/frames/hairline-frame",
+      "name": "Hairline frame",
+      "category": "frames",
+      "tags": [
+        "broadcast-dark",
+        "frames",
+        "hairline",
+        "frame",
+        "shape",
+        "outline",
+        "rounded",
+        "subtle"
+      ],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF0F",
+              "border": {
+                "width": 0.08,
+                "color": "#FFFFFF1F"
+              },
+              "radius": 4.99
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 44,
+                "y": 39.88,
+                "w": 47.86,
+                "h": 23.18
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-dark/frames/hairline-frame-2",
+      "name": "Hairline frame 2",
+      "category": "frames",
+      "tags": [
+        "broadcast-dark",
+        "frames",
+        "hairline",
+        "frame",
+        "2",
+        "shape",
+        "outline",
+        "rounded",
+        "subtle"
+      ],
+      "signature": "e490868e3a41cbef",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF0F",
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF1F"
+              },
+              "radius": 8.56
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 61.13,
+                "w": 81.85,
+                "h": 25.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "slug": "broadcast-dark/bands/gold-column",
       "name": "Gold column",
       "category": "bands",
@@ -188,7 +273,7 @@
       "name": "Accent pill",
       "category": "badges",
       "tags": ["broadcast-dark", "badges", "accent", "pill", "shape", "rounded"],
-      "signature": "17a929c9e8a8a325",
+      "signature": "26db730437aea671",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -226,32 +311,29 @@
       }
     },
     {
-      "slug": "broadcast-dark/badges/dark-pill",
-      "name": "Dark pill",
+      "slug": "broadcast-dark/badges/glass-pill",
+      "name": "Glass pill",
       "category": "badges",
-      "tags": ["broadcast-dark", "badges", "dark", "pill", "shape", "rounded"],
-      "signature": "f82a793169a3ff5d",
+      "tags": ["broadcast-dark", "badges", "glass", "pill", "shape", "rounded", "subtle"],
+      "signature": "a94a061732e8bc49",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "style": {
-              "fill": "#0A0C10D1",
-              "border": {
-                "width": 0.09,
-                "color": "var(--gold)"
-              },
-              "radius": 3.56
+              "fill": "var(--accent-ink)",
+              "radius": 7.13,
+              "opacity": 0.06
             },
             "id": "e1",
             "sizes": ["square"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 58.06,
-                "w": 7.71,
-                "h": 3.9
+                "y": 33.25,
+                "w": 5.28,
+                "h": 5.28
               }
             }
           }
@@ -263,7 +345,7 @@
       "name": "Gold divider",
       "category": "rules",
       "tags": ["broadcast-dark", "rules", "gold", "divider", "shape"],
-      "signature": "4a56fcf424ee6fda",
+      "signature": "c99b1b03cef9c6d6",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -310,10 +392,10 @@
       }
     },
     {
-      "slug": "broadcast-dark/rules/gold-rule",
-      "name": "Gold rule",
+      "slug": "broadcast-dark/rules/glass-rule",
+      "name": "Glass rule",
       "category": "rules",
-      "tags": ["broadcast-dark", "rules", "gold", "rule", "shape"],
+      "tags": ["broadcast-dark", "rules", "glass", "rule", "shape", "subtle"],
       "signature": "4528ad44661bf6f3",
       "document": {
         "formatVersion": 2,
@@ -321,33 +403,79 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "#FFFFFF24"
             },
             "id": "e1",
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 54.83,
-                "w": 10.56,
-                "h": 0.59
+                "y": 87.51,
+                "w": 88,
+                "h": 0.09
               },
               "portrait": {
                 "x": 6,
-                "y": 60.94,
-                "w": 14.08,
-                "h": 0.63
+                "y": 90.01,
+                "w": 88,
+                "h": 0.07
               },
               "story": {
                 "x": 6,
-                "y": 72.53,
-                "w": 14.08,
-                "h": 0.45
+                "y": 92.97,
+                "w": 88,
+                "h": 0.05
               },
               "landscape": {
                 "x": 3.15,
-                "y": 53.94,
-                "w": 5.54,
-                "h": 0.59
+                "y": 87.44,
+                "w": 93.7,
+                "h": 0.16
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-dark/rules/glass-rule-2",
+      "name": "Glass rule 2",
+      "category": "rules",
+      "tags": ["broadcast-dark", "rules", "glass", "rule", "2", "shape", "subtle"],
+      "signature": "dc9e91506535fc59",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "opacity": 0.14
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 51.61,
+                "w": 81.85,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 6,
+                "y": 50,
+                "w": 88,
+                "h": 0.07
+              },
+              "story": {
+                "x": 6,
+                "y": 50,
+                "w": 88,
+                "h": 0.05
+              },
+              "landscape": {
+                "x": 32.92,
+                "y": 37.54,
+                "w": 51.93,
+                "h": 0.16
               }
             }
           }
@@ -466,7 +594,7 @@
       "name": "Stack",
       "category": "data-blocks",
       "tags": ["broadcast-dark", "data-blocks", "stack", "group"],
-      "signature": "67de096efdc0b0da",
+      "signature": "628c6e3a219f6b00",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -1013,7 +1141,7 @@
       "name": "Stack 2",
       "category": "data-blocks",
       "tags": ["broadcast-dark", "data-blocks", "stack", "2", "group"],
-      "signature": "cb6caa36df01dfa7",
+      "signature": "829e5dbf7e2e1880",
       "document": {
         "formatVersion": 2,
         "layers": [

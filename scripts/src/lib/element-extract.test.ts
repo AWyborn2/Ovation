@@ -311,14 +311,23 @@ describe("faint decorations", () => {
       opacity,
     });
 
-  it("leaves out what's too faint to see", () => {
-    const { files, summary } = extractElements([look("gold-foil", [sideRule(0.35, 0.09)])]);
-    expect(summary.faint).toBe(1);
-    expect(files).toEqual([]);
+  it("keeps a subtle one, named for what it is, tagged and listed after the strong", () => {
+    const glass = shape("g", at({ x: 6, y: 40, w: 88, h: 20 }), { fill: "#FFFFFF1F" });
+    const { files, summary } = extractElements([
+      look("sunset", [sideRule(0.35, 0.09), glass, sideRule(1, 0.3)]),
+    ]);
+    expect(summary.blank).toBe(0);
+    const els = files[0]!.elements;
+    expect(els.find((e) => e.name === "Hairline rule")!.tags).toContain("subtle");
+    expect(els.find((e) => e.name === "Glass band")!.tags).toContain("subtle");
+    const rules = els.filter((e) => e.category === "rules").map((e) => e.name);
+    expect(rules).toEqual(["Gold rule", "Hairline rule"]);
+    expect(els.find((e) => e.name === "Gold rule")!.tags).not.toContain("subtle");
   });
 
-  it("files a clear box drawn by one border side as a rule, named for the border", () => {
-    const { files } = extractElements([look("gold-foil", [sideRule(1, 0.3)])]);
-    expect(files[0]!.elements[0]).toMatchObject({ category: "rules", name: "Gold rule" });
+  it("leaves out only what draws nothing at all", () => {
+    const { files, summary } = extractElements([look("sunset", [sideRule(0, 0.3)])]);
+    expect(summary.blank).toBe(1);
+    expect(files).toEqual([]);
   });
 });

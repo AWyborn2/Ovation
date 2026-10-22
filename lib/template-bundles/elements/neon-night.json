@@ -84,45 +84,6 @@
       "name": "Tinted pill",
       "category": "badges",
       "tags": ["neon-night", "badges", "tinted", "pill", "shape", "rounded"],
-      "signature": "f82a793169a3ff5d",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#D3175A29",
-              "border": {
-                "width": 0.19,
-                "color": "#D3175A8C"
-              },
-              "radius": 13.31
-            },
-            "id": "e1",
-            "sizes": ["portrait", "story"],
-            "geometry": {
-              "portrait": {
-                "x": 6,
-                "y": 70.21,
-                "w": 23.92,
-                "h": 11.52
-              },
-              "story": {
-                "x": 6,
-                "y": 79.06,
-                "w": 23.92,
-                "h": 8.1
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "neon-night/badges/tinted-pill-2",
-      "name": "Tinted pill 2",
-      "category": "badges",
-      "tags": ["neon-night", "badges", "tinted", "pill", "2", "shape", "rounded"],
       "signature": "66ad817137b6480c",
       "document": {
         "formatVersion": 2,
@@ -189,7 +150,7 @@
       "name": "Dark pill 2",
       "category": "badges",
       "tags": ["neon-night", "badges", "dark", "pill", "2", "shape", "rounded"],
-      "signature": "17a929c9e8a8a325",
+      "signature": "14f0ab834e571e83",
       "document": {
         "formatVersion": 2,
         "layers": [
@@ -215,10 +176,10 @@
       }
     },
     {
-      "slug": "neon-night/badges/tinted-pill-3",
-      "name": "Tinted pill 3",
+      "slug": "neon-night/badges/tinted-pill-2",
+      "name": "Tinted pill 2",
       "category": "badges",
-      "tags": ["neon-night", "badges", "tinted", "pill", "3", "shape", "rounded"],
+      "tags": ["neon-night", "badges", "tinted", "pill", "2", "shape", "rounded"],
       "signature": "650cbad3acba8f9e",
       "document": {
         "formatVersion": 2,
@@ -249,6 +210,73 @@
                 "y": 4.13,
                 "w": 11.14,
                 "h": 2.48
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/glass-pill",
+      "name": "Glass pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "glass", "pill", "shape", "rounded", "subtle"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#D3175A29",
+              "border": {
+                "width": 0.09,
+                "color": "#D3175A8C"
+              },
+              "radius": 9.98
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64.28,
+                "w": 17.85,
+                "h": 10.71
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/badges/hairline-pill",
+      "name": "Hairline pill",
+      "category": "badges",
+      "tags": ["neon-night", "badges", "hairline", "pill", "shape", "outline", "rounded", "subtle"],
+      "signature": "a19de80fec846916",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)"
+              },
+              "radius": 705.79,
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 82.08,
+                "y": 61.99,
+                "w": 5.77,
+                "h": 3.35
               }
             }
           }
@@ -516,6 +544,117 @@
                 "y": 4.7,
                 "w": 14.4,
                 "h": 2.68
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/soft-fade",
+      "name": "Soft fade",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "soft", "fade", "shape", "gradient", "subtle"],
+      "signature": "134c9f4883a5c895",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#D3175A17"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "neon-night/glows/soft-fade-2",
+      "name": "Soft fade 2",
+      "category": "glows",
+      "tags": ["neon-night", "glows", "soft", "fade", "2", "shape", "gradient", "subtle"],
+      "signature": "715b7feb6fa282d9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#D3175A17"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
               }
             }
           }

@@ -62,22 +62,57 @@ const layersOfElement = (element: LibraryElement, size: CardSize, now?: number) 
   elementLayers(element.document as ElementDocumentLike, size, now);
 
 /**
- * A mid-grey ground under every tile: the club's dark card base would hide a
- * dark translucent panel, and a light one would hide a white rule.
+ * The ground under a tile, over exactly the part of the card it shows: a
+ * photo-like sweep from light to dark, so a white glass panel shows on the
+ * dark side and a dark one on the light side. The club's dark card base would
+ * hide a dark translucent panel, and a light ground would hide a white rule.
  */
-const BACKDROP = {
+const backdrop = (size: CardSize, box: { x: number; y: number; w: number; h: number }) => ({
   id: "element-backdrop",
   kind: "shape",
-  geometry: Object.fromEntries(
-    (["square", "portrait", "story", "landscape"] as const).map((s) => [
-      s,
-      { x: 0, y: 0, w: 100, h: 100 },
-    ]),
-  ),
-  style: { fill: "#5B626C" },
-};
+  geometry: { [size]: box },
+  style: {
+    fill: {
+      type: "linear",
+      angle: 120,
+      stops: [
+        { color: "#EDE8DC", at: 0 },
+        { color: "#8C929B", at: 50 },
+        { color: "#1E232A", at: 100 },
+      ],
+    },
+  },
+});
 
-/** One element, drawn on a neutral ground and zoomed to its layers. */
+/**
+ * How a tile shows an element: zoomed to its layers (a thin rule up to 4x
+ * further, showing part of its length at a visible weight), where the card
+ * sits in the tile, and the tile's window onto the card in percent.
+ */
+function tileView(layers: FreeLayer[], size: CardSize) {
+  const bounds = elementBounds(layers, size);
+  if (!bounds) return null;
+  const native = SIZES[size];
+  const bw = (Math.max(bounds.w, 1) / 100) * native.w;
+  const bh = (Math.max(bounds.h, 1) / 100) * native.h;
+  const fit = Math.min((TILE.w * 0.88) / bw, (TILE.h * 0.84) / bh);
+  const scale = bh * fit < 4 ? Math.min((TILE.h * 0.84) / bh, fit * 4) : fit;
+  const cx = (bounds.x / 100) * native.w + bw / 2;
+  const cy = (bounds.y / 100) * native.h + bh / 2;
+  return {
+    width: native.w * scale,
+    left: TILE.w / 2 - cx * scale,
+    top: TILE.h / 2 - cy * scale,
+    window: {
+      x: ((cx - TILE.w / 2 / scale) / native.w) * 100,
+      y: ((cy - TILE.h / 2 / scale) / native.h) * 100,
+      w: (TILE.w / scale / native.w) * 100,
+      h: (TILE.h / scale / native.h) * 100,
+    },
+  };
+}
+
+/** One element, drawn on a light-to-dark ground and zoomed to its layers. */
 function ElementThumb({
   element,
   size,
@@ -88,26 +123,20 @@ function ElementThumb({
   thumb: ThumbData;
 }) {
   const layers = useMemo(() => layersOfElement(element, size, 0), [element, size]);
-  const bounds = elementBounds(layers, size);
+  const view = useMemo(() => tileView(layers, size), [layers, size]);
   const document = useMemo(
     () => ({
       formatVersion: 2,
-      pages: { card: { layers: [BACKDROP, ...layers] } },
+      pages: { card: { layers: view ? [backdrop(size, view.window), ...layers] : layers } },
       ...(element.document.palettes ? { palettes: element.document.palettes } : {}),
     }),
-    [layers, element],
+    [layers, element, view, size],
   );
-  if (!bounds) return <div className="h-20 rounded-md bg-[#10151B]" aria-hidden />;
-  const native = SIZES[size];
-  const bw = (Math.max(bounds.w, 1) / 100) * native.w;
-  const bh = (Math.max(bounds.h, 1) / 100) * native.h;
-  const scale = Math.min((TILE.w * 0.88) / bw, (TILE.h * 0.84) / bh);
-  const left = TILE.w / 2 - ((bounds.x / 100) * native.w + bw / 2) * scale;
-  const top = TILE.h / 2 - ((bounds.y / 100) * native.h + bh / 2) * scale;
+  if (!view) return <div className="h-20 rounded-md bg-[#10151B]" aria-hidden />;
   return (
     <WhenVisible aspect={`${TILE.w} / ${TILE.h}`}>
       <div aria-hidden className="relative h-full w-full overflow-hidden">
-        <div className="absolute" style={{ left, top }}>
+        <div className="absolute" style={{ left: view.left, top: view.top }}>
           <PackCard
             input={thumb.input}
             size={size}
@@ -116,7 +145,7 @@ function ElementThumb({
             data={thumb.data}
             packId={BLANK_PACK_ID}
             adjustments={document as unknown as CardAdjustments}
-            width={native.w * scale}
+            width={view.width}
           />
         </div>
       </div>
@@ -167,7 +196,17 @@ function ElementPage({
             className="flex flex-col gap-1.5 rounded-lg p-1.5 text-left text-[11px] font-semibold text-[var(--ed-ink2)] hover:ring-1 hover:ring-[var(--ed-accent)]"
           >
             <ElementThumb element={element} size={size} thumb={thumb} />
-            <span className="truncate">{element.name}</span>
+            <span className="flex items-center gap-1">
+              <span className="truncate">{element.name}</span>
+              {element.tags.includes("subtle") && (
+                <span
+                  title="Faint by design: glass, a hairline or a soft glow"
+                  className="shrink-0 rounded bg-[var(--ed-panel)] px-1 text-[9px] font-normal"
+                >
+                  Subtle
+                </span>
+              )}
+            </span>
             <span className="-mt-1 truncate text-[10px] font-normal opacity-70">
               {element.look?.name ?? element.authorName}
               {!element.listed && " · unlisted"}
