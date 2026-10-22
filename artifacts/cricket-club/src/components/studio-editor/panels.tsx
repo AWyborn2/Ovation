@@ -4,7 +4,6 @@ import type { CardSize } from "@/lib/share-card";
 import { isSponsorSlot } from "@/lib/pack-render/adjustments";
 import { cn } from "@/lib/utils";
 import { newId, type EditorDoc } from "./document";
-import { ElementLibrary } from "./element-library";
 import { LibraryElements } from "./library-elements";
 
 const input =
@@ -200,28 +199,24 @@ const SHAPES = [
 ];
 
 /**
- * Basic shapes, the element library (every look's decorations and the
- * elements clubs saved, added as native layers), then the Club Kit pieces.
+ * Basic shapes, then the element library: every look's decorations (Club
+ * Kit's panel pieces among them) and the elements clubs saved, added as
+ * native layers.
  */
 export function ElementsPanel({
   size,
   onAdd,
   onAddLayers,
-  paletteVars = "",
-  crestUrl = null,
 }: {
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
   /** Adds a library element's layers together and selects them. */
   onAddLayers: (layers: FreeLayer[]) => void;
-  paletteVars?: string;
-  crestUrl?: string | null;
 }) {
   return (
     <>
       <BasicShapes size={size} onAdd={onAdd} />
       <LibraryElements size={size} onAdd={onAddLayers} />
-      <ElementLibrary size={size} paletteVars={paletteVars} crestUrl={crestUrl} onAdd={onAdd} />
     </>
   );
 }

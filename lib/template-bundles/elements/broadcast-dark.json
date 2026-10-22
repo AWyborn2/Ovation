@@ -97,83 +97,49 @@
       }
     },
     {
-      "slug": "broadcast-dark/bands/gold-slash",
-      "name": "Gold slash",
+      "slug": "broadcast-dark/bands/gold-column",
+      "name": "Gold column",
       "category": "bands",
-      "tags": ["broadcast-dark", "bands", "gold", "slash", "shape", "angled"],
-      "signature": "042746021c8339d0",
+      "tags": ["broadcast-dark", "bands", "gold", "column", "shape"],
+      "signature": "d9aede0976ba4359",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "id": "e1",
-            "sizes": ["square", "portrait", "story"],
+            "sizes": ["square", "portrait", "story", "landscape"],
             "geometry": {
               "square": {
-                "x": 79.37,
-                "y": -4,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.98,
+                "w": 2.96,
                 "h": 17.96
               },
               "portrait": {
-                "x": 79.37,
-                "y": -3.2,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -3.18,
+                "w": 2.96,
                 "h": 14.37
               },
               "story": {
-                "x": 79.37,
-                "y": -2.25,
-                "w": 10.22,
+                "x": 83.03,
+                "y": -2.24,
+                "w": 2.96,
                 "h": 10.1
-              }
-            },
-            "style": {
-              "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [71.01, 0],
-                  [100, 0],
-                  [28.99, 100],
-                  [0, 100]
-                ]
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "broadcast-dark/bands/gold-slash-2",
-      "name": "Gold slash 2",
-      "category": "bands",
-      "tags": ["broadcast-dark", "bands", "gold", "slash", "2", "shape", "angled"],
-      "signature": "d7c2d09dfead7045",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
+              },
               "landscape": {
-                "x": 89.17,
-                "y": -4,
-                "w": 5.39,
+                "x": 91.07,
+                "y": -3.97,
+                "w": 1.58,
                 "h": 17.94
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [70.61, 0],
-                  [100, 0],
-                  [29.39, 100],
-                  [0, 100]
-                ]
+              "skew": {
+                "x": -22,
+                "y": 0
               }
             }
           }
@@ -326,86 +292,51 @@
       }
     },
     {
-      "slug": "broadcast-dark/badges/gold-chip",
-      "name": "Gold chip",
-      "category": "badges",
-      "tags": ["broadcast-dark", "badges", "gold", "chip", "shape", "angled"],
-      "signature": "5888717b6eff2606",
+      "slug": "broadcast-dark/rules/gold-divider",
+      "name": "Gold divider",
+      "category": "rules",
+      "tags": ["broadcast-dark", "rules", "gold", "divider", "shape"],
+      "signature": "4a56fcf424ee6fda",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "id": "e1",
-            "sizes": ["landscape"],
+            "sizes": ["square", "portrait", "story", "landscape"],
             "geometry": {
+              "square": {
+                "x": 89.61,
+                "y": -3.98,
+                "w": 1.39,
+                "h": 12.96
+              },
+              "portrait": {
+                "x": 89.61,
+                "y": -3.18,
+                "w": 1.39,
+                "h": 10.37
+              },
+              "story": {
+                "x": 89.61,
+                "y": -2.24,
+                "w": 1.39,
+                "h": 7.29
+              },
               "landscape": {
-                "x": 93.16,
-                "y": -4,
-                "w": 3.51,
+                "x": 94.53,
+                "y": -4.01,
+                "w": 0.75,
                 "h": 13.02
               }
             },
             "style": {
               "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [78.64, 0],
-                  [100, 0],
-                  [21.36, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "broadcast-dark/badges/gold-chip-2",
-      "name": "Gold chip 2",
-      "category": "badges",
-      "tags": ["broadcast-dark", "badges", "gold", "chip", "2", "shape", "angled"],
-      "signature": "8059f18cb0e4aca0",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 86.98,
-                "y": -4,
-                "w": 6.62,
-                "h": 12.96
-              },
-              "portrait": {
-                "x": 86.98,
-                "y": -3.2,
-                "w": 6.62,
-                "h": 10.37
-              },
-              "story": {
-                "x": 86.98,
-                "y": -2.25,
-                "w": 6.62,
-                "h": 7.29
+              "opacity": 0.55,
+              "skew": {
+                "x": -22,
+                "y": 0
               }
-            },
-            "style": {
-              "fill": "var(--gold)",
-              "clip": {
-                "polygon": [
-                  [79.04, 0],
-                  [100, 0],
-                  [20.96, 100],
-                  [0, 100]
-                ]
-              },
-              "opacity": 0.55
             }
           }
         ]

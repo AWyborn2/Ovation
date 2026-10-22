@@ -118,7 +118,6 @@ import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/li
 import { planTemplateSlides, type LayerDocument } from "@workspace/scorecard/kind-templates";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
-import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { renderablePackId } from "@/lib/pack-templates/registry";
 import { useBrand } from "@/lib/brand-context";
@@ -436,8 +435,6 @@ function EditorApp({ draftId }: { draftId: number }) {
       : data;
   const fieldValues = packFieldValues(slideInput, slideData, packId);
   const cardTokens = resolveCardTokens({ theme, junior: slideJunior, data, packId });
-  // The club's Club Kit palette, for the element library's thumbnails.
-  const elementPalette = clubKitVars(clubKitPaletteFor(cardTokens, data?.brand));
 
   const native = packNativeSize(format);
   const title = draftHeading(draft);
@@ -531,13 +528,7 @@ function EditorApp({ draftId }: { draftId: number }) {
             )}
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
             {panel === "elements" && (
-              <ElementsPanel
-                size={format}
-                onAdd={addFreeLayer}
-                onAddLayers={addGroup}
-                paletteVars={elementPalette}
-                crestUrl={(bundle?.brand ?? brand).logoUrl ?? null}
-              />
+              <ElementsPanel size={format} onAdd={addFreeLayer} onAddLayers={addGroup} />
             )}
             {panel === "cricket" && (
               <CricketPanel

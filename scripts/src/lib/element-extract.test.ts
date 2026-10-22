@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PER_CATEGORY,
+  addPieces,
   categorise,
   colourWord,
   decorationSignature,
@@ -257,5 +258,47 @@ describe("extractElements", () => {
       ]),
     ]);
     expect(files[0]!.elements[0]!.document.palettes).toEqual(["club-kit"]);
+  });
+});
+
+describe("addPieces", () => {
+  const piece = (id: string, label: string, layer: unknown) => ({
+    id,
+    label,
+    keywords: "chip label type",
+    layers: [layer],
+  });
+
+  it("adds the panel's pieces to the look, named as the panel named them", () => {
+    const { files } = extractElements([look("club-kit", [])]);
+    const r = addPieces(
+      files,
+      [
+        piece(
+          "ck.trim",
+          "Jumper trim — stripe",
+          shape("t", at({ x: 60, y: 0, w: 20, h: 100 }), { fill: "var(--ck-chalk)" }),
+        ),
+      ],
+      "club-kit",
+    );
+    expect(r).toMatchObject({ added: ["ck.trim"], duplicates: [], invalid: [] });
+    const [element] = files.find((f) => f.look === "club-kit")!.elements;
+    expect(element).toMatchObject({
+      slug: "club-kit/bands/jumper-trim-stripe",
+      name: "Jumper trim, stripe",
+      category: "bands",
+    });
+    expect(element!.tags).toEqual(expect.arrayContaining(["club kit", "chip", "label"]));
+    expect(element!.document.palettes).toEqual(["club-kit"]);
+    expect((element!.document.layers[0] as { id: string }).id).toBe("e1");
+  });
+
+  it("leaves out a piece the extraction already found", () => {
+    const rule = shape("r", at({ x: 6, y: 86, w: 88, h: 1 }));
+    const { files } = extractElements([look("club-kit-classic", [rule])]);
+    const r = addPieces(files, [piece("ck.tricolour-rule", "Tricolour rule", rule)], "club-kit");
+    expect(r.duplicates).toEqual(["ck.tricolour-rule"]);
+    expect(files.find((f) => f.look === "club-kit")?.elements ?? []).toEqual([]);
   });
 });

@@ -3,7 +3,9 @@
  * every distinct decoration from the ten looks, one file per look, at
  * `lib/template-bundles/elements/<look>.json`. The API syncs them into
  * `library_elements` at start. How decorations are found, de-duplicated,
- * named and sorted: `lib/element-extract.ts`.
+ * named and sorted: `lib/element-extract.ts`. The Club Kit pieces the
+ * Elements panel used to list (`src/data/club-kit-pieces.json`, from
+ * `native-ck-pieces.ts`) join Club Kit's elements, unless already found.
  *
  *   pnpm --filter @workspace/scripts run extract-elements
  *
@@ -14,7 +16,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractElements, type LookInput } from "./lib/element-extract";
+import { addPieces, extractElements, type LookInput, type PieceInput } from "./lib/element-extract";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BUNDLES = path.join(ROOT, "lib/template-bundles");
@@ -43,6 +45,16 @@ function readLooks(): LookInput[] {
 }
 
 const { files, summary } = extractElements(readLooks());
+// The Elements panel's Club Kit pieces, as native layers (`native-ck-pieces.ts`).
+const PIECES = path.join(ROOT, "scripts/src/data/club-kit-pieces.json");
+if (existsSync(PIECES)) {
+  const pieces = JSON.parse(readFileSync(PIECES, "utf8")) as PieceInput[];
+  const r = addPieces(files, pieces, "club-kit");
+  console.log(
+    `club kit pieces: ${r.added.length} added, ${r.duplicates.length} already found (${r.duplicates.join(", ")}), ${r.invalid.length} invalid`,
+  );
+  for (const i of r.invalid) console.log(`  invalid ${i.slug}: ${i.error}`);
+}
 mkdirSync(OUT, { recursive: true });
 for (const f of readdirSync(OUT)) if (f.endsWith(".json")) rmSync(path.join(OUT, f));
 for (const file of files) {
