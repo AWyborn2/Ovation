@@ -53,6 +53,8 @@ export type FitMount = (
 
 /** Images a template may show: https, inline images, or this site's own paths. */
 const ALLOWED_IMAGE = /^(?:https:\/\/|data:image\/|\/(?!\/))/;
+/** An image this faint is a watermark, which may bleed off the card. */
+const WATERMARK_OPACITY = 0.3;
 /** Markup a sanitised vector never holds. */
 const UNSAFE_VECTOR = "script, foreignObject, [href], [xlink\\:href]";
 
@@ -92,8 +94,16 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
     )
       issues.push({ ...at, reason: "hidden-shown", layerId });
     const box = el.getBoundingClientRect();
+    // A faint image (a watermark crest at a few percent) may bleed off the card by
+    // design; data you read may not.
+    const opacity = (layer as { style?: { opacity?: unknown } }).style?.opacity;
+    const watermark =
+      (layer.kind === "image" || layer.kind === "photo") &&
+      typeof opacity === "number" &&
+      opacity <= WATERMARK_OPACITY;
     if (
       tokens.length > 0 &&
+      !watermark &&
       box.width > 0 &&
       box.height > 0 &&
       (box.left < art.left - 1 ||

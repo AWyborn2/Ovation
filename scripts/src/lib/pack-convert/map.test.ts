@@ -7,10 +7,19 @@ import {
   fillOverBox,
   joinRuns,
   mapCapture,
+  backdropKeys,
   readingOrder,
   sizedGradient,
+  widenTextCells,
 } from "./map";
-import { applyStacks, mergePage, mergeSizes, stackContainers, type SizeMaps } from "./merge";
+import {
+  applyStacks,
+  mergePage,
+  mergeSizes,
+  stackContainers,
+  stackUnits,
+  type SizeMaps,
+} from "./merge";
 
 const TEXT = {
   "font-family": '"Barlow Condensed", "Arial Narrow", sans-serif',
@@ -334,14 +343,21 @@ describe("stacks", () => {
   }
 
   it("stacks a flex container whose members move between presets", () => {
-    const stacks = stackContainers(maps(false));
+    const m = maps(false);
+    const stacks = stackContainers(m);
     expect(stacks).toHaveLength(1);
-    expect(stacks[0]!.sigs).toEqual(["a", "b", "full"]);
     expect(stacks[0]!.stack.direction).toBe("column");
+    const units = stackUnits(m, stacks[0]!.container.id)!.units;
+    expect(units.map((u) => u.sigs)).toEqual([["a"], ["b"], ["full"]]);
   });
 
-  it("doesn't stack a container with a nested flex block, which the stack would overlap", () => {
-    expect(stackContainers(maps(true))).toEqual([]);
+  it("keeps a nested flex block as one item of the stack, so the stack can't overlap it", () => {
+    const m = maps(true);
+    const [stack] = stackContainers(m);
+    const units = stackUnits(m, stack!.container.id)!.units;
+    // The nested block (element 5) is one flow item holding its tile.
+    expect(units.map((u) => u.child.id)).toEqual([2, 3, 4, 5]);
+    expect(units[3]!.sigs).toEqual(["tile"]);
   });
 });
 
@@ -463,9 +479,13 @@ describe("stack flow items", () => {
       [
         {
           sigs: ["chip", "chipText", "link"],
+          depth: 2,
           stack: { direction: "row" },
           geometry: { square: { x: 5, y: 10, w: 40, h: 5 } },
-          items: { chip: 1, chipText: 1, link: 2 },
+          units: [
+            { sigs: ["chip", "chipText"], geometry: { square: { x: 5, y: 10, w: 10, h: 5 } } },
+            { sigs: ["link"], geometry: box(20) },
+          ],
         },
       ],
       "title-",
@@ -524,5 +544,211 @@ describe("text width", () => {
       mapCapture(cap).layers.find((l) => l.element === e.id)!.box;
     expect(boxOf(wrapped).w).toBeCloseTo(((900 + 1) / 1080) * 100, 1);
     expect(boxOf(single).w).toBeGreaterThan((900 / 1080) * 100 + 1);
+  });
+});
+
+describe("row cells", () => {
+  it("widens text cells away from their alignment, sharing gaps with growing neighbours", () => {
+    const cell = (field: string, x: number, w: number, align: "left" | "right" | "center") => ({
+      field,
+      x,
+      w,
+      y: 0,
+      h: 100,
+      style: { align },
+    });
+    const cells = [
+      { field: "name", x: 0, w: 100, show: "backdrop" as const },
+      cell("name", 5, 20, "left"),
+      cell("note", 40, 10, "left"),
+      cell("figure", 80, 10, "right"),
+    ];
+    widenTextCells(cells, { left: 2, right: 98 });
+    // The name takes the whole gap up to the note (it grows rightward too);
+    // the note and the right-aligned figure split theirs.
+    expect(cells.slice(1).map((c) => [c.x, c.w])).toEqual([
+      [5, 35],
+      [40, 25],
+      [65, 25],
+    ]);
+    expect(cells[0]).toMatchObject({ x: 0, w: 100 });
+  });
+
+  it("treats a left-aligned cell pushed to the row's right edge as right-aligned", () => {
+    const cells = [
+      { field: "name", x: 5, w: 30, y: 0, h: 50, style: { align: "left" as const } },
+      { field: "figure", x: 88, w: 10, y: 20, h: 60, style: { align: "left" as const } },
+    ];
+    widenTextCells(cells, { left: 2, right: 98 });
+    // The figure grows leftward to the gap's middle; the name takes the other half.
+    expect(cells[1]).toMatchObject({ x: 61.5, w: 36.5, style: { align: "right" } });
+    expect(cells[0]).toMatchObject({ x: 5, w: 56.5 });
+  });
+
+  it("binds the cell a ladder's position and losses share by the other rows, then the free field", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const list = el(0, "div", [60, 100, 900, 200]);
+    const rows: CapturedElement[] = [];
+    const cellsOf = (y: number, pos: string, team: string, lost: string, club: boolean) => {
+      const row = el(list.id, "div", [60, y, 900, 60], {
+        style: club
+          ? {
+              "background-color": "rgb(211, 23, 90)",
+              "border-left-width": "8px",
+              "border-left-color": "rgb(30, 90, 170)",
+            }
+          : { "background-color": "rgb(30, 40, 60)" },
+      });
+      rows.push(
+        row,
+        el(row.id, "div", [70, y, 40, 60], { style: TEXT, text: text(pos, [70, y, 30, 60]) }),
+        el(row.id, "div", [140, y, 300, 60], { style: TEXT, text: text(team, [140, y, 200, 60]) }),
+        el(row.id, "div", [800, y, 40, 60], { style: TEXT, text: text(lost, [800, y, 30, 60]) }),
+      );
+    };
+    cellsOf(100, "1", "QD", "1", true);
+    cellsOf(170, "2", "QE", "2", false);
+    cellsOf(240, "3", "QF", "3", false);
+    const cap = capture();
+    cap.elements = [root, list, ...rows];
+    cap.rows = {
+      rows: [
+        { variant: "club", values: { pos: "1", team: "QD", lost: "1" } },
+        { values: { pos: "2", team: "QE", lost: "2" } },
+        { values: { pos: "3", team: "QF", lost: "3" } },
+        // A row past the card's room: bound, but not drawn.
+        { values: { pos: "4", team: "QG", lost: "4" } },
+      ],
+    };
+    const layer = mapCapture(cap).layers.find((l) => l.layer.kind === "rows")!.layer as {
+      rows: {
+        cells: Array<{ field: string; show?: string }>;
+        variants?: Record<string, Record<string, { background?: string }>>;
+      };
+    };
+    expect(layer.rows.cells.filter((c) => !c.show).map((c) => c.field)).toEqual([
+      "pos",
+      "team",
+      "lost",
+    ]);
+    // The club row's fill survives the text cell that shares its field key, and its accent bar is a strip.
+    const club = layer.rows.variants?.club ?? {};
+    expect(Object.values(club).some((s) => s.background !== undefined)).toBe(true);
+  });
+
+  it("keys each backdrop by the content it holds, else a field no other backdrop has", () => {
+    const badge = { field: "", x: 2, w: 10, y: 10, h: 80, show: "backdrop" as const };
+    const strip = { field: "", x: 0, w: 1, show: "backdrop" as const };
+    const cells = [
+      badge,
+      strip,
+      { field: "grade", x: 3, w: 8, y: 20, h: 60 },
+      { field: "result", x: 15, w: 60 },
+      { field: "outcome", x: 80, w: 15 },
+    ];
+    const keys = backdropKeys(cells, true);
+    expect(keys.get(badge)).toBe("grade");
+    expect(keys.get(strip)).toBe("result");
+    expect(keys.get(null)).toBe("outcome");
+  });
+
+  it("doesn't anchor a row on a value another row's text holds (DEF in DEF BY)", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const list = el(0, "div", [60, 100, 900, 400]);
+    const els: CapturedElement[] = [root, list];
+    const row = (y: number, grade: string, verb: string) => {
+      const r = el(list.id, "div", [60, y, 900, 150], {
+        style: { "background-color": "rgb(30, 40, 60)" },
+      });
+      const head = el(r.id, "div", [60, y, 900, 50]);
+      els.push(
+        r,
+        head,
+        el(head.id, "div", [70, y, 300, 50], { style: TEXT, text: text(grade, [70, y, 60, 50]) }),
+        el(r.id, "div", [500, y + 60, 100, 40], {
+          style: TEXT,
+          text: text(verb, [500, y + 60, 80, 40]),
+        }),
+      );
+    };
+    row(100, "QG", "DEF");
+    row(300, "QN", "DEF BY");
+    const cap = capture();
+    cap.elements = els;
+    cap.rows = {
+      results: [
+        { values: { grade: "QG", verb: "DEF" } },
+        { variant: "lost", values: { grade: "QN", verb: "DEF BY" } },
+      ],
+    };
+    const result = mapCapture(cap);
+    const rows = result.layers.find((l) => l.layer.kind === "rows")!.layer as {
+      rows: { cells: Array<{ field: string; show?: string }> };
+    };
+    expect(rows.rows.cells.filter((c) => !c.show).map((c) => c.field)).toEqual(["grade", "verb"]);
+    expect(result.polish.some((p) => /left as fixed text/.test(p.what))).toBe(false);
+    // No row value is left behind as static text.
+    expect(
+      result.layers.some((l) =>
+        /"Q[GN]"|DEF/.test(JSON.stringify(l.layer.kind === "text" ? l.layer : {})),
+      ),
+    ).toBe(false);
+  });
+
+  it("reads a grid of tiles that fills each line first as flow across", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    const grid = el(0, "div", [60, 100, 960, 400]);
+    const els: CapturedElement[] = [root, grid];
+    const tile = (x: number, y: number, name: string) => {
+      const t = el(grid.id, "div", [x, y, 440, 180], {
+        style: { "background-color": "rgb(30, 40, 60)" },
+      });
+      els.push(
+        t,
+        el(t.id, "div", [x + 20, y + 60, 300, 60], {
+          style: TEXT,
+          text: text(name, [x + 20, y + 60, 100, 60]),
+        }),
+      );
+    };
+    tile(60, 100, "QA");
+    tile(560, 100, "QB");
+    tile(60, 300, "QC");
+    tile(560, 300, "QD");
+    const cap = capture();
+    cap.elements = els;
+    cap.rows = { players: ["QA", "QB", "QC", "QD"].map((name) => ({ values: { name } })) };
+    const layer = mapCapture(cap).layers.find((l) => l.layer.kind === "rows")!.layer as {
+      rows: { columns?: number; flow?: string };
+    };
+    expect(layer.rows).toMatchObject({ columns: 2, flow: "across", columnGap: 6.38 });
+  });
+});
+
+describe("live text fit", () => {
+  it("fits one-line text to one line, and lets text the worst case wraps wrap as the pack does", () => {
+    id = 0;
+    const root = el(null, "div", [0, 0, 1080, 1080], { className: "pack-card-root" });
+    // A label, a field and a separator: three one-line runs that wrap onto two lines.
+    const eyebrow = el(0, "div", [60, 100, 600, 60], {
+      style: { ...TEXT, "font-size": "24px", "line-height": "30px" },
+      text: [
+        { text: "FIRST GRADE DEBUT ·", box: { x: 60, y: 100, w: 580, h: 30 }, lines: 1 },
+        { text: "[[grade]]", box: { x: 60, y: 130, w: 300, h: 30 }, lines: 1 },
+      ],
+    });
+    const name = el(0, "div", [60, 300, 900, 60], {
+      style: TEXT,
+      text: text("[[clubName]]", [60, 300, 600, 60]),
+    });
+    const cap = capture();
+    cap.elements = [root, eyebrow, name];
+    const fitOf = (e: CapturedElement) =>
+      (mapCapture(cap).layers.find((l) => l.element === e.id)!.layer as { fit?: unknown }).fit;
+    expect(fitOf(eyebrow)).toBeUndefined();
+    expect(fitOf(name)).toEqual({ minScale: 0.6, maxLines: 1, ellipsis: true });
   });
 });

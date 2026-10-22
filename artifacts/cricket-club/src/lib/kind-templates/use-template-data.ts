@@ -30,10 +30,13 @@ export const PREVIEW_PHOTO =
 
 export function useKindTemplateData(
   kind: ShareCardInput["kind"],
-  opts: { photoUrl?: string | null } = {},
+  opts: { photoUrl?: string | null; club?: boolean } = {},
 ): { data: PackCardData; clubName: string | null; loading: boolean } {
   const brand = useBrand();
-  const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
+  // The platform console (`club: false`) has no club, so it previews with the site's brand.
+  const settingsQ = useGetSocialSettings({
+    query: { queryKey: getGetSocialSettingsQueryKey(), enabled: opts.club !== false },
+  });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
   const photoUrl = opts.photoUrl === undefined ? PREVIEW_PHOTO : opts.photoUrl;
   const data = useMemo(
