@@ -11,7 +11,7 @@ import {
   type TemplateBoxShadow,
   type TemplateTextShadow,
 } from "@workspace/scorecard/kind-templates";
-import { btn, ColourField, NumberField } from "./design-controls";
+import { btn, ColourField, item, NumberField, subhead } from "./design-controls";
 
 /** A box shadow; text and drop shadows are the same without spread and inset. */
 type Shadow = TemplateBoxShadow;
@@ -27,12 +27,15 @@ const [blurMin, blurMax] = V2_RANGES.shadowBlur;
 
 export function ShadowListEditor({
   name,
+  hint,
   value,
   onChange,
   box = false,
 }: {
-  /** What the list is called ("Box shadow", "Text shadow", "Glow"). */
+  /** What the list is called ("Box shadow", "Text shadow", "Shape shadow"), shown over it. */
   name: string;
+  /** A line under the name saying what the shadow follows. */
+  hint?: string;
   value: Shadow[] | undefined;
   onChange: (list: Shadow[] | undefined) => void;
   /** Box shadows also have a spread and can be inset. */
@@ -46,10 +49,15 @@ export function ShadowListEditor({
   const lower = name.toLowerCase();
   return (
     <div className="space-y-1" role="group" aria-label={name}>
+      <p className={subhead}>{name}</p>
+      {hint && <p className="text-[11px] text-[var(--ed-ink2)]">{hint}</p>}
       {list.length > 0 && (
         <ol aria-label={`${name} list`} className="space-y-2">
           {list.map((s, i) => (
-            <li key={i} className="flex flex-wrap items-end gap-2">
+            <li key={i} className={item}>
+              <span className={subhead} aria-hidden>
+                {i + 1}
+              </span>
               <ColourField
                 name={`${name} ${i + 1}`}
                 value={s.color}

@@ -10,6 +10,10 @@ export const field =
 export const label = "flex flex-col gap-1 text-[11px] font-semibold text-[var(--ed-ink2)]";
 export const btn =
   "rounded-lg border border-[var(--ed-line)] px-2 py-1 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-40";
+/** One entry of a list (a shadow, a gradient stop), boxed so its fields read as one. */
+export const item = "flex flex-wrap items-end gap-2 rounded-lg border border-[var(--ed-line)] p-2";
+/** A small heading over a group of controls. */
+export const subhead = "text-[11px] font-semibold text-[var(--ed-ink2)]";
 
 /** The card's colour tokens, as the panel names them (`--gold` is the club's accent). */
 const TOKEN_LABEL: Record<(typeof COLOUR_TOKENS)[number], string> = {
