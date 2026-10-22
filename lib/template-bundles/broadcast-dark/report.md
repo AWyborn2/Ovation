@@ -1,6 +1,6 @@
 # Broadcast Dark: conversion report
 
-Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 12 of 17 kinds listed.
+Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 14 of 17 kinds listed.
 
 ## Summary
 
@@ -11,7 +11,7 @@ Converted from the `broadcast-dark-v1` pack by `scripts/src/convert-pack.ts`, po
 - Colours that move with the palette but aren't a token: 6.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 3 hd.
+- Polish time logged: 4 hd.
 
 ## bigMoment
 
@@ -57,12 +57,12 @@ Converter notes (from the raw conversion):
 - From `card.Runs`; not used: `card.Wickets`.
 - Layers: 10 shape, 4 vector, 7 image, 20 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                           |
-| --------- | ----------- | -------------------------------------- |
-| square    | 94%         | overflow; overflow; overflow; overflow |
-| portrait  | 93%         | overflow; overflow; overflow; overflow |
-| story     | 95%         | overflow; overflow; overflow; overflow |
-| landscape | 95%         | overflow; overflow; overflow; overflow |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 94%         | none         |
+| portrait  | 93%         | none         |
+| story     | 95%         | none         |
+| landscape | 95%         | none         |
 
 Converter notes (from the raw conversion):
 
@@ -189,12 +189,12 @@ Colours not tokenised:
 - From `day.slide`.
 - Layers: 10 shape, 4 vector, 7 image, 16 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                                               |
-| --------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| square    | 92%         | none                                                                                                                                       |
-| portrait  | 89%         | none                                                                                                                                       |
-| story     | 92%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 90%         | none                                                                                                                                       |
+| Size      | Pixel match | Fit warnings                                                                                                                                                                                                                                                                                                                                   |
+| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| square    | 92%         | none                                                                                                                                                                                                                                                                                                                                           |
+| portrait  | 89%         | none                                                                                                                                                                                                                                                                                                                                           |
+| story     | 92%         | overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word |
+| landscape | 90%         | none                                                                                                                                                                                                                                                                                                                                           |
 
 ### sponsors
 
@@ -233,12 +233,12 @@ Converter notes (from the raw conversion):
 - From `day.slide`.
 - Layers: 6 shape, 4 vector, 3 image, 16 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                                               |
-| --------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| square    | 91%         | none                                                                                                                                       |
-| portrait  | 88%         | none                                                                                                                                       |
-| story     | 90%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 89%         | none                                                                                                                                       |
+| Size      | Pixel match | Fit warnings                                                                                                                                                                                                                                                                                                                                   |
+| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| square    | 91%         | none                                                                                                                                                                                                                                                                                                                                           |
+| portrait  | 88%         | none                                                                                                                                                                                                                                                                                                                                           |
+| story     | 90%         | overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word; overflow: cut mid-word |
+| landscape | 89%         | none                                                                                                                                                                                                                                                                                                                                           |
 
 ## milestone
 
@@ -332,9 +332,9 @@ Converter notes (from the raw conversion):
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 95%         | overflow     |
-| portrait  | 94%         | overflow     |
-| story     | 96%         | overflow     |
+| square    | 95%         | none         |
+| portrait  | 94%         | none         |
+| story     | 96%         | none         |
 | landscape | 97%         | none         |
 
 ## weekendWrap
@@ -344,12 +344,12 @@ Converter notes (from the raw conversion):
 - From `card.weekend-wrap`.
 - Layers: 10 shape, 4 vector, 7 image, 18 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                     |
-| --------- | ----------- | ------------------------------------------------ |
-| square    | 83%         | overflow; overflow; overflow; overflow; overflow |
-| portrait  | 80%         | overflow; overflow; overflow; overflow; overflow |
-| story     | 86%         | overflow; overflow; overflow; overflow; overflow |
-| landscape | 90%         | overflow; overflow; overflow; overflow; overflow |
+| Size      | Pixel match | Fit warnings           |
+| --------- | ----------- | ---------------------- |
+| square    | 83%         | overflow: cut mid-word |
+| portrait  | 80%         | overflow: cut mid-word |
+| story     | 86%         | overflow: cut mid-word |
+| landscape | 90%         | overflow: cut mid-word |
 
 Converter notes (from the raw conversion):
 

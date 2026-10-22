@@ -1,6 +1,6 @@
 # Club Kit: conversion report
 
-Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 17 of 24 kinds listed.
+Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 22 of 24 kinds listed.
 
 ## Summary
 
@@ -11,7 +11,7 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished
 - Colours that move with the palette but aren't a token: 0.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 9 hd.
+- Polish time logged: 10 hd.
 
 ## announcement
 
@@ -62,12 +62,12 @@ Converted from the `club-kit-v1` pack by `scripts/src/convert-pack.ts`, polished
 - From `card.Runs`; not used: `card.Wickets`, `card.Catches`, `card.Dismissals`.
 - Layers: 32 shape, 5 image, 3 photo, 16 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                           |
-| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| square    | 94%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 87%         | none                                                                                                                   |
-| story     | 90%         | none                                                                                                                   |
-| landscape | 94%         | none                                                                                                                   |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 94%         | none         |
+| portrait  | 87%         | none         |
+| story     | 90%         | none         |
+| landscape | 94%         | none         |
 
 Converter notes (from the raw conversion):
 
@@ -327,12 +327,12 @@ Converter notes (from the raw conversion):
 - From `card.results-summary`.
 - Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                                                         |
-| --------- | ----------- | -------------------------------------------------------------------- |
-| square    | 84%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 88%         | none                                                                 |
-| story     | 91%         | none                                                                 |
-| landscape | 95%         | none                                                                 |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 84%         | none         |
+| portrait  | 88%         | none         |
+| story     | 91%         | none         |
+| landscape | 95%         | none         |
 
 ## roundFixtures
 
@@ -341,12 +341,12 @@ Converter notes (from the raw conversion):
 - From `card.game-day`.
 - Layers: 32 shape, 5 image, 3 photo, 19 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                                                                   |
-| --------- | ----------- | ------------------------------------------------------------------------------ |
-| square    | 91%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 88%         | overflow; overflow; overflow; overflow                                         |
-| story     | 93%         | overflow; overflow; overflow; overflow                                         |
-| landscape | 94%         | overflow; overflow; overflow; overflow                                         |
+| Size      | Pixel match | Fit warnings           |
+| --------- | ----------- | ---------------------- |
+| square    | 91%         | overflow: cut mid-word |
+| portrait  | 88%         | overflow: cut mid-word |
+| story     | 93%         | overflow: cut mid-word |
+| landscape | 94%         | overflow: cut mid-word |
 
 ## sponsor
 
@@ -375,10 +375,10 @@ Converter notes (from the raw conversion):
 
 | Size      | Pixel match | Fit warnings |
 | --------- | ----------- | ------------ |
-| square    | 96%         | overflow     |
-| portrait  | 89%         | overflow     |
-| story     | 96%         | overflow     |
-| landscape | 94%         | overflow     |
+| square    | 95%         | none         |
+| portrait  | 89%         | none         |
+| story     | 96%         | none         |
+| landscape | 94%         | none         |
 
 ## teamOfWeek
 
@@ -387,12 +387,12 @@ Converter notes (from the raw conversion):
 - From `card.single`.
 - Layers: 32 shape, 5 image, 3 photo, 15 text, 3 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                                                                                                                                                                                                                                                                           |
-| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| square    | 94%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| portrait  | 91%         | none                                                                                                                                                                                                                                                                                                                                                                   |
-| story     | 93%         | none                                                                                                                                                                                                                                                                                                                                                                   |
-| landscape | 95%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow                                                                                                                         |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 91%         | none         |
+| story     | 93%         | none         |
+| landscape | 95%         | none         |
 
 ## tradingCard
 
