@@ -61,7 +61,23 @@ type ThumbData = { input: ShareCardInput; data: PackCardData };
 const layersOfElement = (element: LibraryElement, size: CardSize, now?: number) =>
   elementLayers(element.document as ElementDocumentLike, size, now);
 
-/** One element, drawn on the blank card and zoomed to its layers. */
+/**
+ * A mid-grey ground under every tile: the club's dark card base would hide a
+ * dark translucent panel, and a light one would hide a white rule.
+ */
+const BACKDROP = {
+  id: "element-backdrop",
+  kind: "shape",
+  geometry: Object.fromEntries(
+    (["square", "portrait", "story", "landscape"] as const).map((s) => [
+      s,
+      { x: 0, y: 0, w: 100, h: 100 },
+    ]),
+  ),
+  style: { fill: "#5B626C" },
+};
+
+/** One element, drawn on a neutral ground and zoomed to its layers. */
 function ElementThumb({
   element,
   size,
@@ -76,7 +92,7 @@ function ElementThumb({
   const document = useMemo(
     () => ({
       formatVersion: 2,
-      pages: { card: { layers } },
+      pages: { card: { layers: [BACKDROP, ...layers] } },
       ...(element.document.palettes ? { palettes: element.document.palettes } : {}),
     }),
     [layers, element],

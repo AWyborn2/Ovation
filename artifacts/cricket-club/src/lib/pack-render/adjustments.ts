@@ -47,6 +47,7 @@ import {
   clippedGlowCss,
   colourResolver,
   layerBoxCss,
+  layerNeedsV2,
   overlayHtml,
   paletteVars,
   shapeFillCss,
@@ -618,7 +619,10 @@ function hasToken(token: string, values: Record<string, string>, ctx: FreeLayerC
  * requested page drawn (`ctx.page`, default the kind's primary page, where a
  * v1 document's layers are). A v1 document draws exactly as it always has;
  * the drop rule, conditions, groups, vectors and v2 styles apply to v2
- * documents only.
+ * documents only, except that a layer carrying v2-only content (a library
+ * element inserted into a v1 draft: a fill, a clip, a group) draws by v2's
+ * styles wherever it is. A stored v1 document can't hold those, so its
+ * renders are unchanged.
  */
 export function renderFreeLayers(
   adj: CardAdjustments | null | undefined,
@@ -640,6 +644,7 @@ export function renderFreeLayers(
     formatVersion: doc.sourceFormat,
     animate: opts.animate === true,
   };
+  const v2Ctx: FreeLayerContext = { ...drawCtx, formatVersion: 2 };
   // What v2 styles read: the card's colours (an SVG filter needs real ones)
   // and the filter definitions the overlay carries.
   const tokens = ctx.tokens;
@@ -666,38 +671,44 @@ export function renderFreeLayers(
 
   /**
    * One layer, positioned on the artboard; null when it isn't drawn on this
-   * card. `depth` is how deep it sits in groups (1 = the page's own layer).
+   * card. `depth` is how deep it sits in groups (1 = the page's own layer);
+   * `inV2` is true inside a layer drawn by v2's styles.
    */
-  const draw = (layer: TemplateLayerV2, depth: number): DrawnLayer | null => {
+  const draw = (layer: TemplateLayerV2, depth: number, inV2 = false): DrawnLayer | null => {
     if (layer.hidden) return null;
     if (layer.sizes && !layer.sizes.includes(size)) return null;
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
     if (!box) return null;
     if (v2 && (!layerShows(layer, layout) || layerDropped(layer, { kind, page, has }))) return null;
+    // Its styles are v2's in a v2 document, or when it carries v2-only content.
+    const styled = v2 || inV2 || layerNeedsV2(layer);
     let inner: string | null;
     if (layer.kind === "group") {
       // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
       if (!groupDepthAllowed(depth)) return null;
       const children = (Array.isArray(layer.children) ? layer.children : [])
-        .map((child) => draw(child, depth + 1))
+        .map((child) => draw(child, depth + 1, styled))
         .filter((child): child is DrawnLayer => child !== null);
       inner = renderGroup(layer as GroupLayerV2, box.value, children, layout);
     } else if (layer.kind === "vector") {
       inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
     } else {
-      inner = layerInner(layer as unknown as FreeLayer, values, drawCtx, size);
+      inner = layerInner(layer as unknown as FreeLayer, values, styled ? v2Ctx : drawCtx, size);
     }
     if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;
     // A v2 skew slants the layer after its rotation.
-    const transform = [rotate ? `rotate(${num(rotate)}deg)` : "", v2 ? skewCss(layer.style) : ""]
+    const transform = [
+      rotate ? `rotate(${num(rotate)}deg)` : "",
+      styled ? skewCss(layer.style) : "",
+    ]
       .filter(Boolean)
       .join(" ");
-    let boxCss = v2 ? layerBoxCss(layer, styleCtx) : [];
+    let boxCss = styled ? layerBoxCss(layer, styleCtx) : [];
     // A grain or halftone texture sits over the layer's content (v2).
-    if (v2) inner += overlayHtml(layer.style);
+    if (styled) inner += overlayHtml(layer.style);
     // A clipped layer's glow is drawn round it: its box styles move to an inner wrapper.
-    const glow = v2 ? clippedGlowCss(layer) : null;
+    const glow = styled ? clippedGlowCss(layer) : null;
     if (glow) {
       inner = `<div style="position:absolute;inset:0;${boxCss.join(";")}">${inner}</div>`;
       boxCss = glow;

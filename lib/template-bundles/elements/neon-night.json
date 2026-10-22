@@ -93,19 +93,25 @@
             "style": {
               "fill": "#D3175A29",
               "border": {
-                "width": 0.09,
+                "width": 0.19,
                 "color": "#D3175A8C"
               },
-              "radius": 9.98
+              "radius": 13.31
             },
             "id": "e1",
-            "sizes": ["square"],
+            "sizes": ["portrait", "story"],
             "geometry": {
-              "square": {
+              "portrait": {
                 "x": 6,
-                "y": 64.28,
-                "w": 17.85,
-                "h": 10.71
+                "y": 70.21,
+                "w": 23.92,
+                "h": 11.52
+              },
+              "story": {
+                "x": 6,
+                "y": 79.06,
+                "w": 23.92,
+                "h": 8.1
               }
             }
           }
@@ -202,40 +208,6 @@
                 "y": 34.19,
                 "w": 5.28,
                 "h": 5.28
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "neon-night/badges/dark-pill-3",
-      "name": "Dark pill 3",
-      "category": "badges",
-      "tags": ["neon-night", "badges", "dark", "pill", "3", "shape", "rounded"],
-      "signature": "53f127bb1f820459",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "var(--gold)"
-              },
-              "radius": 705.79,
-              "opacity": 0.35,
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square"],
-            "geometry": {
-              "square": {
-                "x": 82.08,
-                "y": 61.99,
-                "w": 5.77,
-                "h": 3.35
               }
             }
           }
@@ -436,62 +408,6 @@
       }
     },
     {
-      "slug": "neon-night/glows/tinted-fade",
-      "name": "Tinted fade",
-      "category": "glows",
-      "tags": ["neon-night", "glows", "tinted", "fade", "shape", "gradient"],
-      "signature": "134c9f4883a5c895",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "angle": 90,
-                "stops": [
-                  {
-                    "color": "#D3175A17"
-                  },
-                  {
-                    "color": "#00000000"
-                  }
-                ]
-              }
-            },
-            "id": "e1",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
       "slug": "neon-night/glows/tinted-glow-2",
       "name": "Tinted glow 2",
       "category": "glows",
@@ -518,61 +434,6 @@
                   {
                     "color": "#00000000",
                     "at": 45
-                  }
-                ]
-              }
-            },
-            "id": "e1",
-            "geometry": {
-              "square": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "portrait": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "story": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              },
-              "landscape": {
-                "x": 0,
-                "y": 0,
-                "w": 100,
-                "h": 100
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "neon-night/glows/tinted-fade-2",
-      "name": "Tinted fade 2",
-      "category": "glows",
-      "tags": ["neon-night", "glows", "tinted", "fade", "2", "shape", "gradient"],
-      "signature": "715b7feb6fa282d9",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": {
-                "type": "linear",
-                "stops": [
-                  {
-                    "color": "#D3175A17"
-                  },
-                  {
-                    "color": "#00000000"
                   }
                 ]
               }

@@ -2,164 +2,10 @@
   "look": "sunset",
   "elements": [
     {
-      "slug": "sunset/frames/white-panel",
-      "name": "White panel",
-      "category": "frames",
-      "tags": ["sunset", "frames", "white", "panel", "shape", "rounded"],
-      "signature": "d018b03010442f86",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF1F",
-              "border": {
-                "width": 0.09,
-                "color": "#FFFFFF4D"
-              },
-              "radius": 25.67,
-              "backdropBlur": 18
-            },
-            "id": "e1",
-            "sizes": ["square"],
-            "geometry": {
-              "square": {
-                "x": 6.7,
-                "y": 18.98,
-                "w": 70.76,
-                "h": 66.47
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/frames/white-panel-2",
-      "name": "White panel 2",
-      "category": "frames",
-      "tags": ["sunset", "frames", "white", "panel", "2", "shape", "rounded"],
-      "signature": "66ad817137b6480c",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF1F",
-              "radius": 8.16
-            },
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 38.44,
-                "y": 44.56,
-                "w": 39.15,
-                "h": 19.03
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/bands/dark-band",
-      "name": "Dark band",
+      "slug": "sunset/bands/gold-band",
+      "name": "Gold band",
       "category": "bands",
-      "tags": ["sunset", "bands", "dark", "band", "shape"],
-      "signature": "411a455d1c3d5609",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "#FFFFFF47",
-                "sides": ["top"]
-              },
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 87.51,
-                "w": 88,
-                "h": 6.49
-              },
-              "portrait": {
-                "x": 6,
-                "y": 90.01,
-                "w": 88,
-                "h": 5.19
-              },
-              "story": {
-                "x": 6,
-                "y": 92.97,
-                "w": 88,
-                "h": 3.65
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/bands/dark-band-2",
-      "name": "Dark band 2",
-      "category": "bands",
-      "tags": ["sunset", "bands", "dark", "band", "2", "shape"],
-      "signature": "4bfb89927f6c884c",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "var(--accent-ink)",
-                "sides": ["top"]
-              },
-              "opacity": 0.28,
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 6,
-                "y": 87.51,
-                "w": 88,
-                "h": 6.49
-              },
-              "portrait": {
-                "x": 6,
-                "y": 90.01,
-                "w": 88,
-                "h": 5.19
-              },
-              "story": {
-                "x": 6,
-                "y": 92.97,
-                "w": 88,
-                "h": 3.65
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/bands/white-band",
-      "name": "White band",
-      "category": "bands",
-      "tags": ["sunset", "bands", "white", "band", "shape", "rounded"],
+      "tags": ["sunset", "bands", "gold", "band", "shape", "rounded"],
       "signature": "650cbad3acba8f9e",
       "document": {
         "formatVersion": 2,
@@ -167,204 +13,17 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "#FFFFFF1F",
-              "radius": 14
+              "fill": "var(--gold)",
+              "radius": 577.5
             },
             "id": "e1",
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 9.49,
-                "y": 61.59,
-                "w": 65.18,
-                "h": 21.07
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/bands/dark-band-3",
-      "name": "Dark band 3",
-      "category": "bands",
-      "tags": ["sunset", "bands", "dark", "band", "3", "shape"],
-      "signature": "6afa4b25e78d6864",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "border": {
-                "width": 0.09,
-                "color": "#FFFFFF47",
-                "sides": ["bottom"]
-              },
-              "fill": "#00000000"
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 9.49,
-                "y": 48.32,
-                "w": 65.18,
-                "h": 1.95
-              },
-              "portrait": {
-                "x": 9.49,
-                "y": 48.68,
-                "w": 65.18,
-                "h": 1.88
-              },
-              "story": {
-                "x": 9.49,
-                "y": 49.07,
-                "w": 65.18,
-                "h": 1.32
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/bands/white-band-2",
-      "name": "White band 2",
-      "category": "bands",
-      "tags": ["sunset", "bands", "white", "band", "2", "shape", "rounded"],
-      "signature": "a05dcc05bfad1332",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF1F",
-              "border": {
-                "width": 0.08,
-                "color": "#FFFFFF4D"
-              },
-              "radius": 14.96,
-              "backdropBlur": 18
-            },
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 3.52,
-                "y": 37.83,
-                "w": 76.1,
-                "h": 28.7
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/badges/white-pill",
-      "name": "White pill",
-      "category": "badges",
-      "tags": ["sunset", "badges", "white", "pill", "shape", "rounded"],
-      "signature": "f82a793169a3ff5d",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF2E",
-              "border": {
-                "width": 0.08,
-                "color": "#FFFFFF73"
-              },
-              "radius": 623.7
-            },
-            "id": "e1",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 89.32,
-                "y": 8.39,
-                "w": 7.53,
-                "h": 4.72
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/badges/white-pill-2",
-      "name": "White pill 2",
-      "category": "badges",
-      "tags": ["sunset", "badges", "white", "pill", "2", "shape", "rounded"],
-      "signature": "e490868e3a41cbef",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF2E",
-              "border": {
-                "width": 0.09,
-                "color": "#FFFFFF73"
-              },
-              "radius": 1069.2
-            },
-            "id": "e1",
-            "sizes": ["square", "portrait", "story"],
-            "geometry": {
-              "square": {
-                "x": 79.79,
-                "y": 8.46,
-                "w": 14.21,
-                "h": 4.59
-              },
-              "portrait": {
-                "x": 79.79,
-                "y": 6.77,
-                "w": 14.21,
-                "h": 3.67
-              },
-              "story": {
-                "x": 79.79,
-                "y": 4.76,
-                "w": 14.21,
-                "h": 2.58
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/badges/accent-pill",
-      "name": "Accent pill",
-      "category": "badges",
-      "tags": ["sunset", "badges", "accent", "pill", "shape", "rounded"],
-      "signature": "17a929c9e8a8a325",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--accent-ink)",
-              "radius": 5.83,
-              "opacity": 0.09
-            },
-            "id": "e1",
-            "sizes": ["square"],
-            "geometry": {
-              "square": {
-                "x": 9.49,
-                "y": 39.95,
-                "w": 4.32,
-                "h": 4.32
+                "x": 11.57,
+                "y": 75.56,
+                "w": 61.38,
+                "h": 5.71
               }
             }
           }
@@ -376,28 +35,57 @@
       "name": "Dark pill",
       "category": "badges",
       "tags": ["sunset", "badges", "dark", "pill", "shape", "rounded"],
-      "signature": "eef8b95067935a28",
+      "signature": "f82a793169a3ff5d",
       "document": {
         "formatVersion": 2,
         "layers": [
           {
             "kind": "shape",
             "style": {
+              "fill": "#0A0C10D1",
               "border": {
                 "width": 0.09,
-                "color": "#FFFFFF47"
+                "color": "var(--gold)"
               },
-              "radius": 577.5,
-              "fill": "#00000000"
+              "radius": 2.92
             },
             "id": "e1",
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 69.91,
-                "y": 62.68,
-                "w": 4.76,
-                "h": 2.78
+                "x": 9.49,
+                "y": 60.34,
+                "w": 6.42,
+                "h": 3.27
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/badges/gold-pill",
+      "name": "Gold pill",
+      "category": "badges",
+      "tags": ["sunset", "badges", "gold", "pill", "shape", "rounded"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "radius": 336.49
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 5.02,
+                "y": 71.7,
+                "w": 7.41,
+                "h": 4.46
               }
             }
           }
@@ -596,51 +284,6 @@
                 "y": -12,
                 "w": 24.15,
                 "h": 46
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "slug": "sunset/crest-frames/white-crest-plate",
-      "name": "White crest plate",
-      "category": "crest-frames",
-      "tags": ["sunset", "crest-frames", "white", "crest", "plate", "shape"],
-      "signature": "f3e2d28404b0f5f7",
-      "document": {
-        "formatVersion": 2,
-        "layers": [
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "#FFFFFF1F"
-            },
-            "id": "e1",
-            "geometry": {
-              "square": {
-                "x": 9.49,
-                "y": 55.98,
-                "w": 4.32,
-                "h": 4.32
-              },
-              "portrait": {
-                "x": 9.49,
-                "y": 54.1,
-                "w": 5.23,
-                "h": 4.18
-              },
-              "story": {
-                "x": 9.49,
-                "y": 52.88,
-                "w": 5.23,
-                "h": 2.94
-              },
-              "landscape": {
-                "x": 29.38,
-                "y": 46.3,
-                "w": 2.27,
-                "h": 4.32
               }
             }
           }

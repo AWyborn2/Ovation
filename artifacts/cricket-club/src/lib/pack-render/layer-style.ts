@@ -20,6 +20,7 @@ import {
   type TemplateFill,
   type TemplateFilter,
   type TemplateLayerV2,
+  V2_STYLE_KEYS,
   type TemplateStyleV2,
 } from "@workspace/scorecard/kind-templates";
 import {
@@ -424,6 +425,17 @@ export function overlayHtml(style: TemplateStyleV2 | undefined): string {
 
 // ── Derived palettes ────────────────────────────────────────────────────────
 
+/**
+ * Whether a layer carries what only format v2 draws: v2 kinds or v2 style
+ * keys. Such a layer (a library element inserted into a v1 draft) draws by
+ * v2's styles even in a v1 document; a stored v1 document can't hold one.
+ */
+export function layerNeedsV2(layer: TemplateLayerV2): boolean {
+  if (layer.kind === "group" || layer.kind === "vector") return true;
+  const style = layer.style as Record<string, unknown> | undefined;
+  return !!style && V2_STYLE_KEYS.some((k) => style[k] !== undefined);
+}
+
 /** The palette a template overlay carries: Club Kit's, plus the club stage. */
 const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStageVars(p)}`;
 
@@ -432,7 +444,8 @@ const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStag
  * (empty when none is used). Library elements read the Club Kit palette, so
  * an overlay with an element gets it, as does one whose styles name it
  * (`var(--ck-stage)`) or, in v2, declares it. A v2 document that declares or
- * uses the Duotone palette (`var(--dt-p)`) gets `--dt-*`.
+ * uses the Duotone palette (`var(--dt-p)`) gets `--dt-*`, as does a v1 one
+ * whose v2 layers (an inserted library element) use it.
  */
 export function paletteVars(
   doc: NormalisedDocument,
@@ -447,7 +460,10 @@ export function paletteVars(
     json.includes("var(--ck-") ||
     declared.includes("club-kit");
   const usesDuotone =
-    doc.sourceFormat === 2 && (json.includes("var(--dt-") || declared.includes("duotone"));
+    declared.includes("duotone") ||
+    (json.includes("var(--dt-") &&
+      (doc.sourceFormat === 2 ||
+        layers.some((l) => layerNeedsV2(l) && JSON.stringify(l).includes("var(--dt-"))));
   return [
     usesClubKit ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}` : "",
     usesDuotone ? `;${duotoneVars(duotonePaletteFor(ctx.tokens, ctx.brand))}` : "",

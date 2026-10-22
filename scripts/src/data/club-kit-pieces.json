@@ -1169,7 +1169,7 @@
           },
           {
             "kind": "text",
-            "content": "Sentinel",
+            "content": "{{clubName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -1210,7 +1210,7 @@
           },
           {
             "kind": "text",
-            "content": "Sentinel",
+            "content": "{{clubName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -1239,7 +1239,7 @@
           },
           {
             "kind": "text",
-            "content": "QTAGLINE",
+            "content": "{{clubTagline}}",
             "style": {
               "color": "var(--ck-chalk2)",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -1281,7 +1281,7 @@
           },
           {
             "kind": "text",
-            "content": "QTAGLINE",
+            "content": "{{clubTagline}}",
             "style": {
               "color": "var(--ck-chalk2)",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -1697,7 +1697,7 @@
           },
           {
             "kind": "text",
-            "content": "#QHASHTAG",
+            "content": "{{clubHashtag}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -1733,7 +1733,7 @@
           },
           {
             "kind": "text",
-            "content": "#QHASHTAG",
+            "content": "{{clubHashtag}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -1859,7 +1859,7 @@
           },
           {
             "kind": "text",
-            "content": "QPRESENTING",
+            "content": "{{sponsorPresentedBy}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'IBM Plex Sans',sans-serif",
@@ -1894,7 +1894,7 @@
           },
           {
             "kind": "text",
-            "content": "QPRESENTING",
+            "content": "{{sponsorPresentedBy}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'IBM Plex Sans',sans-serif",
@@ -2590,7 +2590,7 @@
         "children": [
           {
             "kind": "text",
-            "content": "QA ZA",
+            "content": "{{playerName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -2626,7 +2626,7 @@
           },
           {
             "kind": "text",
-            "content": "QA ZA",
+            "content": "{{playerName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3014,9 +3014,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 1.11,
+                "color": "var(--panel)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l8",
+            "link": "el-l8",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -3035,44 +3042,27 @@
                 "y": 53.28,
                 "w": 48,
                 "h": 4.83
-              },
-              "landscape": {
-                "x": 6,
-                "y": 57.4,
-                "w": 25.2,
-                "h": 8.6
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.58,
+                "color": "var(--panel)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l9",
+            "link": "el-l8",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 57.39,
-                "w": 1.11,
-                "h": 8.6
-              },
-              "portrait": {
-                "x": 6,
-                "y": 55.52,
-                "w": 1.11,
-                "h": 6.88
-              },
-              "story": {
-                "x": 6,
-                "y": 53.28,
-                "w": 1.11,
-                "h": 4.83
-              },
               "landscape": {
                 "x": 6,
                 "y": 57.4,
-                "w": 0.58,
+                "w": 25.2,
                 "h": 8.6
               }
             }
@@ -3268,7 +3258,7 @@
         ]
       }
     ],
-    "match": 0.9979355281207133
+    "match": 0.9978557956104253
   },
   {
     "id": "ck.result-line",
@@ -3470,9 +3460,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l1",
+            "link": "el-l1",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -3491,45 +3488,28 @@
                 "y": 70,
                 "w": 10.9,
                 "h": 4.23
-              },
-              "landscape": {
-                "x": 6,
-                "y": 70,
-                "w": 5.72,
-                "h": 7.46
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l2",
+            "link": "el-l1",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 6,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.3
-              },
-              "story": {
-                "x": 6,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 6,
                 "y": 70,
                 "w": 5.72,
-                "h": 0.32
+                "h": 7.46
               }
             }
           },
@@ -3656,9 +3636,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l7",
+            "link": "el-l7",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 17.7,
@@ -3677,45 +3664,28 @@
                 "y": 70,
                 "w": 10.9,
                 "h": 4.23
-              },
-              "landscape": {
-                "x": 12.14,
-                "y": 70,
-                "w": 5.72,
-                "h": 7.46
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l8",
+            "link": "el-l7",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 17.7,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 17.7,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.3
-              },
-              "story": {
-                "x": 17.7,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 12.14,
                 "y": 70,
                 "w": 5.72,
-                "h": 0.32
+                "h": 7.46
               }
             }
           },
@@ -3842,9 +3812,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l13",
+            "link": "el-l13",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 29.4,
@@ -3863,45 +3840,28 @@
                 "y": 70,
                 "w": 10.9,
                 "h": 4.23
-              },
-              "landscape": {
-                "x": 18.28,
-                "y": 70,
-                "w": 5.72,
-                "h": 7.46
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l14",
+            "link": "el-l13",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 29.4,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 29.4,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.3
-              },
-              "story": {
-                "x": 29.4,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 18.28,
                 "y": 70,
                 "w": 5.72,
-                "h": 0.32
+                "h": 7.46
               }
             }
           },
@@ -4028,9 +3988,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l19",
+            "link": "el-l19",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.1,
@@ -4049,45 +4016,28 @@
                 "y": 70,
                 "w": 10.9,
                 "h": 4.23
-              },
-              "landscape": {
-                "x": 24.42,
-                "y": 70,
-                "w": 5.72,
-                "h": 7.46
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l20",
+            "link": "el-l19",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 41.1,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 41.1,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.3
-              },
-              "story": {
-                "x": 41.1,
-                "y": 70,
-                "w": 10.9,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 24.42,
                 "y": 70,
                 "w": 5.72,
-                "h": 0.32
+                "h": 7.46
               }
             }
           },
@@ -4214,7 +4164,7 @@
         ]
       }
     ],
-    "match": 0.9987489711934157
+    "match": 0.9984259259259259
   },
   {
     "id": "ck.leader-rows",
@@ -6843,60 +6793,83 @@
         "geometry": {
           "square": {
             "x": 6,
-            "y": 44.66,
+            "y": 44,
             "w": 49,
-            "h": 32.82
+            "h": 33.49
           },
           "portrait": {
             "x": 6,
-            "y": 44.53,
+            "y": 44,
             "w": 49,
-            "h": 26.25
+            "h": 26.79
           },
           "story": {
             "x": 6,
-            "y": 44.38,
+            "y": 44,
             "w": 49,
-            "h": 18.45
+            "h": 18.83
           },
           "landscape": {
             "x": 6,
-            "y": 44.48,
+            "y": 44,
             "w": 26.2,
-            "h": 33
+            "h": 33.48
           }
         },
         "children": [
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
             "id": "el-l1",
+            "link": "el-l1",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 48.9,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 47.92,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 46.76,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l2",
+            "link": "el-l1",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 48.84,
+                "y": 44,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -6911,8 +6884,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l2",
-            "link": "el-l2",
+            "id": "el-l3",
+            "link": "el-l3",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -6946,8 +6919,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l3",
-            "link": "el-l2",
+            "id": "el-l4",
+            "link": "el-l3",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -6974,8 +6947,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l4",
-            "link": "el-l4",
+            "id": "el-l5",
+            "link": "el-l5",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7014,8 +6987,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l5",
-            "link": "el-l4",
+            "id": "el-l6",
+            "link": "el-l5",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7029,33 +7002,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l6",
+            "id": "el-l7",
+            "link": "el-l7",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 54.6,
+                "y": 49.7,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 52.48,
+                "y": 48.56,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 49.96,
+                "y": 47.2,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l8",
+            "link": "el-l7",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 54.53,
+                "y": 49.7,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7070,8 +7066,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l7",
-            "link": "el-l7",
+            "id": "el-l9",
+            "link": "el-l9",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7105,8 +7101,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l8",
-            "link": "el-l7",
+            "id": "el-l10",
+            "link": "el-l9",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7133,8 +7129,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l9",
-            "link": "el-l9",
+            "id": "el-l11",
+            "link": "el-l11",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7173,8 +7169,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l10",
-            "link": "el-l9",
+            "id": "el-l12",
+            "link": "el-l11",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7196,8 +7192,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l11",
-            "link": "el-l11",
+            "id": "el-l13",
+            "link": "el-l13",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7231,8 +7227,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l12",
-            "link": "el-l11",
+            "id": "el-l14",
+            "link": "el-l13",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7246,33 +7242,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l13",
+            "id": "el-l15",
+            "link": "el-l15",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 60.3,
+                "y": 55.39,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 57.04,
+                "y": 53.12,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 53.17,
+                "y": 50.41,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l16",
+            "link": "el-l15",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 60.23,
+                "y": 55.39,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7287,8 +7306,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l14",
-            "link": "el-l14",
+            "id": "el-l17",
+            "link": "el-l17",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7322,8 +7341,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l15",
-            "link": "el-l14",
+            "id": "el-l18",
+            "link": "el-l17",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7350,8 +7369,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l16",
-            "link": "el-l16",
+            "id": "el-l19",
+            "link": "el-l19",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7390,8 +7409,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l17",
-            "link": "el-l16",
+            "id": "el-l20",
+            "link": "el-l19",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7405,33 +7424,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l18",
+            "id": "el-l21",
+            "link": "el-l21",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 66,
+                "y": 61.09,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 61.6,
+                "y": 57.67,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 56.37,
+                "y": 53.61,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l22",
+            "link": "el-l21",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 65.93,
+                "y": 61.09,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7446,8 +7488,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l19",
-            "link": "el-l19",
+            "id": "el-l23",
+            "link": "el-l23",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7481,8 +7523,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l20",
-            "link": "el-l19",
+            "id": "el-l24",
+            "link": "el-l23",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7509,8 +7551,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l21",
-            "link": "el-l21",
+            "id": "el-l25",
+            "link": "el-l25",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7549,8 +7591,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l22",
-            "link": "el-l21",
+            "id": "el-l26",
+            "link": "el-l25",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7564,33 +7606,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l23",
+            "id": "el-l27",
+            "link": "el-l27",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 71.69,
+                "y": 66.79,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 66.16,
+                "y": 62.23,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 59.58,
+                "y": 56.82,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l28",
+            "link": "el-l27",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 71.62,
+                "y": 66.79,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7605,8 +7670,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l24",
-            "link": "el-l24",
+            "id": "el-l29",
+            "link": "el-l29",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7640,8 +7705,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l25",
-            "link": "el-l24",
+            "id": "el-l30",
+            "link": "el-l29",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7668,8 +7733,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l26",
-            "link": "el-l26",
+            "id": "el-l31",
+            "link": "el-l31",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7708,8 +7773,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l27",
-            "link": "el-l26",
+            "id": "el-l32",
+            "link": "el-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7731,8 +7796,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l28",
-            "link": "el-l28",
+            "id": "el-l33",
+            "link": "el-l33",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7766,8 +7831,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l29",
-            "link": "el-l28",
+            "id": "el-l34",
+            "link": "el-l33",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7781,33 +7846,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l30",
+            "id": "el-l35",
+            "link": "el-l35",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 77.39,
+                "y": 72.49,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 6,
-                "y": 70.71,
+                "y": 66.79,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 6,
-                "y": 62.78,
+                "y": 60.02,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l36",
+            "link": "el-l35",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 6,
-                "y": 77.32,
+                "y": 72.48,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7822,8 +7910,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l31",
-            "link": "el-l31",
+            "id": "el-l37",
+            "link": "el-l37",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7857,8 +7945,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l32",
-            "link": "el-l31",
+            "id": "el-l38",
+            "link": "el-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7885,8 +7973,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l33",
-            "link": "el-l33",
+            "id": "el-l39",
+            "link": "el-l39",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -7925,8 +8013,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l34",
-            "link": "el-l33",
+            "id": "el-l40",
+            "link": "el-l39",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -7940,33 +8028,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l35",
+            "id": "el-l41",
+            "link": "el-l41",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 48.9,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 47.92,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 46.76,
+                "y": 44,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l42",
+            "link": "el-l41",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 48.84,
+                "y": 44,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -7981,8 +8092,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l36",
-            "link": "el-l36",
+            "id": "el-l43",
+            "link": "el-l43",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8016,8 +8127,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l37",
-            "link": "el-l36",
+            "id": "el-l44",
+            "link": "el-l43",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8044,8 +8155,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l38",
-            "link": "el-l38",
+            "id": "el-l45",
+            "link": "el-l45",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8084,8 +8195,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l39",
-            "link": "el-l38",
+            "id": "el-l46",
+            "link": "el-l45",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8099,33 +8210,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l40",
+            "id": "el-l47",
+            "link": "el-l47",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 54.6,
+                "y": 49.7,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 52.48,
+                "y": 48.56,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 49.96,
+                "y": 47.2,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l48",
+            "link": "el-l47",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 54.53,
+                "y": 49.7,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -8140,8 +8274,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l41",
-            "link": "el-l41",
+            "id": "el-l49",
+            "link": "el-l49",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8175,8 +8309,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l42",
-            "link": "el-l41",
+            "id": "el-l50",
+            "link": "el-l49",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8203,8 +8337,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l43",
-            "link": "el-l43",
+            "id": "el-l51",
+            "link": "el-l51",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8243,8 +8377,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l44",
-            "link": "el-l43",
+            "id": "el-l52",
+            "link": "el-l51",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8258,33 +8392,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l45",
+            "id": "el-l53",
+            "link": "el-l53",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 60.3,
+                "y": 55.39,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 57.04,
+                "y": 53.12,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 53.17,
+                "y": 50.41,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l54",
+            "link": "el-l53",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 60.23,
+                "y": 55.39,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -8299,8 +8456,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l46",
-            "link": "el-l46",
+            "id": "el-l55",
+            "link": "el-l55",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8334,8 +8491,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l47",
-            "link": "el-l46",
+            "id": "el-l56",
+            "link": "el-l55",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8362,8 +8519,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l48",
-            "link": "el-l48",
+            "id": "el-l57",
+            "link": "el-l57",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8402,8 +8559,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l49",
-            "link": "el-l48",
+            "id": "el-l58",
+            "link": "el-l57",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8417,33 +8574,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l50",
+            "id": "el-l59",
+            "link": "el-l59",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 66,
+                "y": 61.09,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 61.6,
+                "y": 57.67,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 56.37,
+                "y": 53.61,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l60",
+            "link": "el-l59",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 65.93,
+                "y": 61.09,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -8458,8 +8638,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l51",
-            "link": "el-l51",
+            "id": "el-l61",
+            "link": "el-l61",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8493,8 +8673,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l52",
-            "link": "el-l51",
+            "id": "el-l62",
+            "link": "el-l61",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8521,8 +8701,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l53",
-            "link": "el-l53",
+            "id": "el-l63",
+            "link": "el-l63",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8561,8 +8741,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l54",
-            "link": "el-l53",
+            "id": "el-l64",
+            "link": "el-l63",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8576,33 +8756,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l55",
+            "id": "el-l65",
+            "link": "el-l65",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 71.69,
+                "y": 66.79,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 66.16,
+                "y": 62.23,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 59.58,
+                "y": 56.82,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l66",
+            "link": "el-l65",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 71.62,
+                "y": 66.79,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -8617,8 +8820,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l56",
-            "link": "el-l56",
+            "id": "el-l67",
+            "link": "el-l67",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8652,8 +8855,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l57",
-            "link": "el-l56",
+            "id": "el-l68",
+            "link": "el-l67",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8680,8 +8883,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l58",
-            "link": "el-l58",
+            "id": "el-l69",
+            "link": "el-l69",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8720,8 +8923,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l59",
-            "link": "el-l58",
+            "id": "el-l70",
+            "link": "el-l69",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8735,33 +8938,56 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-line)"
+              "border": {
+                "width": 0.09,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
             },
-            "id": "el-l60",
+            "id": "el-l71",
+            "link": "el-l71",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.2,
-                "y": 77.39,
+                "y": 72.49,
                 "w": 22.8,
-                "h": 0.09
+                "h": 5
               },
               "portrait": {
                 "x": 31.2,
-                "y": 70.71,
+                "y": 66.79,
                 "w": 22.8,
-                "h": 0.07
+                "h": 4
               },
               "story": {
                 "x": 31.2,
-                "y": 62.78,
+                "y": 60.02,
                 "w": 22.8,
-                "h": 0.05
+                "h": 2.81
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--ck-line)",
+                "sides": ["bottom"]
               },
+              "fill": "#00000000"
+            },
+            "id": "el-l72",
+            "link": "el-l71",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 19.23,
-                "y": 77.32,
+                "y": 72.48,
                 "w": 11.97,
-                "h": 0.16
+                "h": 5
               }
             }
           },
@@ -8776,8 +9002,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l61",
-            "link": "el-l61",
+            "id": "el-l73",
+            "link": "el-l73",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8811,8 +9037,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l62",
-            "link": "el-l61",
+            "id": "el-l74",
+            "link": "el-l73",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8839,8 +9065,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l63",
-            "link": "el-l63",
+            "id": "el-l75",
+            "link": "el-l75",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8879,8 +9105,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "el-l64",
-            "link": "el-l63",
+            "id": "el-l76",
+            "link": "el-l75",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -8902,8 +9128,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l65",
-            "link": "el-l65",
+            "id": "el-l77",
+            "link": "el-l77",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -8937,8 +9163,8 @@
               "align": "left",
               "lineHeight": 1.5
             },
-            "id": "el-l66",
-            "link": "el-l65",
+            "id": "el-l78",
+            "link": "el-l77",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -9372,7 +9598,7 @@
           },
           {
             "kind": "text",
-            "content": "QA ZA",
+            "content": "{{playerName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -9408,7 +9634,7 @@
           },
           {
             "kind": "text",
-            "content": "QA ZA",
+            "content": "{{playerName}}",
             "style": {
               "color": "var(--ck-chalk)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -9495,9 +9721,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l16",
+            "link": "el-l16",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 31.35,
@@ -9516,45 +9749,28 @@
                 "y": 47.49,
                 "w": 9.83,
                 "h": 4.5
-              },
-              "landscape": {
-                "x": 28.33,
-                "y": 72.05,
-                "w": 5.16,
-                "h": 7.94
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l17",
+            "link": "el-l16",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 31.35,
-                "y": 71.99,
-                "w": 9.83,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 31.35,
-                "y": 60.8,
-                "w": 9.83,
-                "h": 0.3
-              },
-              "story": {
-                "x": 31.35,
-                "y": 47.49,
-                "w": 9.83,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 28.33,
                 "y": 72.05,
                 "w": 5.16,
-                "h": 0.32
+                "h": 7.94
               }
             }
           },
@@ -9681,9 +9897,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l22",
+            "link": "el-l22",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 41.39,
@@ -9702,45 +9925,28 @@
                 "y": 47.2,
                 "w": 9.83,
                 "h": 4.5
-              },
-              "landscape": {
-                "x": 33.6,
-                "y": 71.52,
-                "w": 5.16,
-                "h": 7.94
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l23",
+            "link": "el-l22",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 41.39,
-                "y": 71.47,
-                "w": 9.83,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 41.39,
-                "y": 60.37,
-                "w": 9.83,
-                "h": 0.3
-              },
-              "story": {
-                "x": 41.39,
-                "y": 47.2,
-                "w": 9.83,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 33.6,
                 "y": 71.52,
                 "w": 5.16,
-                "h": 0.32
+                "h": 7.94
               }
             }
           },
@@ -9867,9 +10073,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l28",
+            "link": "el-l28",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 51.42,
@@ -9888,45 +10101,28 @@
                 "y": 46.9,
                 "w": 9.83,
                 "h": 4.5
-              },
-              "landscape": {
-                "x": 38.87,
-                "y": 71,
-                "w": 5.16,
-                "h": 7.94
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l29",
+            "link": "el-l28",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 51.42,
-                "y": 70.94,
-                "w": 9.83,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 51.42,
-                "y": 59.95,
-                "w": 9.83,
-                "h": 0.3
-              },
-              "story": {
-                "x": 51.42,
-                "y": 46.9,
-                "w": 9.83,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 38.87,
                 "y": 71,
                 "w": 5.16,
-                "h": 0.32
+                "h": 7.94
               }
             }
           },
@@ -10053,9 +10249,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.37,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l34",
+            "link": "el-l34",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 61.46,
@@ -10074,45 +10277,28 @@
                 "y": 46.61,
                 "w": 9.83,
                 "h": 4.5
-              },
-              "landscape": {
-                "x": 44.14,
-                "y": 70.47,
-                "w": 5.16,
-                "h": 7.94
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              }
             },
             "id": "el-l35",
+            "link": "el-l34",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 61.46,
-                "y": 70.42,
-                "w": 9.83,
-                "h": 0.37
-              },
-              "portrait": {
-                "x": 61.46,
-                "y": 59.53,
-                "w": 9.83,
-                "h": 0.3
-              },
-              "story": {
-                "x": 61.46,
-                "y": 46.61,
-                "w": 9.83,
-                "h": 0.21
-              },
               "landscape": {
                 "x": 44.14,
                 "y": 70.47,
                 "w": 5.16,
-                "h": 0.32
+                "h": 7.94
               }
             }
           },
@@ -10239,7 +10425,7 @@
         ]
       }
     ],
-    "match": 0.961801268861454
+    "match": 0.9617472565157751
   },
   {
     "id": "ck.prem-stars",
@@ -10914,9 +11100,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 1.11,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l1",
+            "link": "el-l1",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -10935,44 +11128,27 @@
                 "y": 48.56,
                 "w": 48,
                 "h": 5.25
-              },
-              "landscape": {
-                "x": 6,
-                "y": 49,
-                "w": 25.2,
-                "h": 9.33
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.58,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l2",
+            "link": "el-l1",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 49,
-                "w": 1.11,
-                "h": 9.34
-              },
-              "portrait": {
-                "x": 6,
-                "y": 48.8,
-                "w": 1.11,
-                "h": 7.47
-              },
-              "story": {
-                "x": 6,
-                "y": 48.56,
-                "w": 1.11,
-                "h": 5.25
-              },
               "landscape": {
                 "x": 6,
                 "y": 49,
-                "w": 0.58,
+                "w": 25.2,
                 "h": 9.33
               }
             }
@@ -11166,9 +11342,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 1.11,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l9",
+            "link": "el-l9",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -11187,44 +11370,27 @@
                 "y": 54.38,
                 "w": 48,
                 "h": 5.25
-              },
-              "landscape": {
-                "x": 6,
-                "y": 59.33,
-                "w": 25.2,
-                "h": 9.33
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.58,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l10",
+            "link": "el-l9",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 59.34,
-                "w": 1.11,
-                "h": 9.34
-              },
-              "portrait": {
-                "x": 6,
-                "y": 57.07,
-                "w": 1.11,
-                "h": 7.47
-              },
-              "story": {
-                "x": 6,
-                "y": 54.38,
-                "w": 1.11,
-                "h": 5.25
-              },
               "landscape": {
                 "x": 6,
                 "y": 59.33,
-                "w": 0.58,
+                "w": 25.2,
                 "h": 9.33
               }
             }
@@ -11418,9 +11584,16 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--ck-panel)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 1.11,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l17",
+            "link": "el-l17",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -11439,44 +11612,27 @@
                 "y": 60.19,
                 "w": 48,
                 "h": 5.25
-              },
-              "landscape": {
-                "x": 6,
-                "y": 69.67,
-                "w": 25.2,
-                "h": 9.33
               }
             }
           },
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)"
+              "fill": "var(--ck-panel)",
+              "border": {
+                "width": 0.58,
+                "color": "var(--gold)",
+                "sides": ["left"]
+              }
             },
             "id": "el-l18",
+            "link": "el-l17",
+            "sizes": ["landscape"],
             "geometry": {
-              "square": {
-                "x": 6,
-                "y": 69.67,
-                "w": 1.11,
-                "h": 9.34
-              },
-              "portrait": {
-                "x": 6,
-                "y": 65.34,
-                "w": 1.11,
-                "h": 7.47
-              },
-              "story": {
-                "x": 6,
-                "y": 60.19,
-                "w": 1.11,
-                "h": 5.25
-              },
               "landscape": {
                 "x": 6,
                 "y": 69.67,
-                "w": 0.58,
+                "w": 25.2,
                 "h": 9.33
               }
             }
@@ -11670,7 +11826,7 @@
         ]
       }
     ],
-    "match": 0.9971891534391535
+    "match": 0.9969563492063492
   },
   {
     "id": "ck.junior-privacy",

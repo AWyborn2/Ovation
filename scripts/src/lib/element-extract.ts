@@ -20,8 +20,10 @@
  *   thin lines are rules, wide or angled strips bands, small pills badges,
  *   radial gradients, fades and whole-card patterns glows, polygon vectors
  *   slashes, boxes around the club crest crest frames, anything on the
- *   sponsors page sponsor strips. A plain full-card fill is the card's
- *   background, not a decoration, and is left out.
+ *   sponsors page sponsor strips, a clear box drawn by one or two border
+ *   sides a rule. A plain full-card fill is the card's background, not a
+ *   decoration, and is left out, as is anything too faint to see
+ *   (`paintStrength` under `MIN_ELEMENT_PAINT`).
  * - Signatures are per look: a decoration in two looks is two elements,
  *   since each look draws it in its own colours. An exact copy of an earlier
  *   look's decoration is that look's, and converted looks come first (the
@@ -32,6 +34,9 @@
 import { createHash } from "node:crypto";
 import {
   DERIVED_PALETTE_PREFIX,
+  MIN_ELEMENT_PAINT,
+  colourAlpha,
+  paintStrength,
   ELEMENT_CATEGORIES,
   TEMPLATE_SIZE_ORDER,
   elementDocumentErrors,
@@ -80,6 +85,8 @@ export type ElementFile = { look: string; elements: ExtractedElement[] };
 
 export type ExtractSummary = {
   candidates: number;
+  /** Decorations left out as too faint to see (`paintStrength`). */
+  faint: number;
   distinct: number;
   kept: number;
   invalid: Array<{ slug: string; error: string }>;
@@ -186,9 +193,12 @@ const exactStyle = (layer: Layer) =>
 function mainColour(layer: Layer): string | null {
   const s = layer.style ?? {};
   const fill = s.fill ?? s.background ?? s.textFill;
-  if (typeof fill === "string") return fill;
+  // A clear fill paints nothing: the border (or a child) gives the colour.
+  if (typeof fill === "string" && colourAlpha(fill) > 0.1) return fill;
   if (fill && typeof fill === "object" && Array.isArray((fill as { stops?: unknown }).stops)) {
-    const stop = (fill as { stops: Array<{ color?: unknown }> }).stops[0];
+    const stop = (fill as { stops: Array<{ color?: unknown }> }).stops.find(
+      (st) => colourAlpha(st.color) > 0.1,
+    );
     if (typeof stop?.color === "string") return stop.color;
   }
   const border = s.border as { color?: unknown } | undefined;
@@ -256,7 +266,7 @@ function featuresOf(layer: Layer, box: Box): Features {
     fade: gradient && transparentStop,
     gradient,
     clip: !!s.clip,
-    outline: !!s.border && !s.fill && !s.background,
+    outline: !!s.border && colourAlpha(s.fill ?? s.background) <= 0.1 && !gradient,
     rounded: typeof s.radius === "number" && s.radius > 0,
     effect: shadows.some((sh) => (sh.blur ?? 0) >= 2) || Array.isArray(s.filter),
     texture: !!s.overlay,
@@ -305,6 +315,13 @@ export function categorise(
     return { category: "crest-frames", noun: f.rounded ? "crest ring" : "crest plate" };
   if (layer.kind === "vector" && /<polygon/i.test(layer.svg ?? ""))
     return { category: "bands", noun: "slash" };
+  // A clear box drawn by one or two of its border sides is a rule.
+  const sides = (layer.style?.border as { sides?: unknown[] } | undefined)?.sides;
+  if (f.outline && Array.isArray(sides) && sides.length <= 2)
+    return {
+      category: "rules",
+      noun: sides.some((x) => x === "left" || x === "right") ? "divider" : "rule",
+    };
   const thin = Math.min(w, h);
   if (thin <= 1.6 && Math.max(w, h) >= thin * 3)
     return { category: "rules", noun: w >= h ? "rule" : "divider" };
@@ -375,7 +392,13 @@ export function extractElements(looks: LookInput[]): {
   files: ElementFile[];
   summary: ExtractSummary;
 } {
-  const summary: ExtractSummary = { candidates: 0, distinct: 0, kept: 0, invalid: [] };
+  const summary: ExtractSummary = {
+    candidates: 0,
+    faint: 0,
+    distinct: 0,
+    kept: 0,
+    invalid: [],
+  };
   // Per look: signature -> its copies. A copy an earlier look already has,
   // exactly, is that look's (the starters borrow converted looks' pages).
   const bySignature = new Map<string, Map<string, Occurrence[]>>();
@@ -397,6 +420,11 @@ export function extractElements(looks: LookInput[]): {
           const sorted = categorise(layer, page, crests);
           if (!sorted) continue;
           summary.candidates += 1;
+          // Too faint to see anywhere (a 35%-opacity hairline, a clear box).
+          if (paintStrength([layer]) < MIN_ELEMENT_PAINT) {
+            summary.faint += 1;
+            continue;
+          }
           const key = exactStyle(layer);
           exact.add(key);
           if (earlier.has(key)) continue;
