@@ -837,6 +837,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               <ElementsPanel
                 size={format}
                 onAdd={(l) => addTemplateLayers([l])}
+                onAddLayers={addTemplateLayers}
                 crestUrl={data.brand?.logoUrl ?? null}
               />
             )}
