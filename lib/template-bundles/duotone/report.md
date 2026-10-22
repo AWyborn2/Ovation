@@ -1,6 +1,6 @@
 # Duotone: conversion report
 
-Converted from the `duotone-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 2 of 3 kinds listed.
+Converted from the `duotone-v1` pack by `scripts/src/convert-pack.ts`, polished by hand, re-checked against the pack on 2026-10-22. Status: **polished, pending Ash's sign-off**; 3 of 3 kinds listed.
 
 ## Summary
 
@@ -82,12 +82,12 @@ Converted from the `duotone-v1` pack by `scripts/src/convert-pack.ts`, polished 
 - From `day.slide`.
 - Layers: 7 shape, 2 image, 10 text, 4 rows.
 
-| Size      | Pixel match | Fit warnings                                                                                                           |
-| --------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| square    | 86%         | none                                                                                                                   |
-| portrait  | 84%         | overflow; overflow                                                                                                     |
-| story     | 87%         | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 86%         | overflow; overflow                                                                                                     |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 86%         | none         |
+| portrait  | 84%         | none         |
+| story     | 87%         | none         |
+| landscape | 86%         | none         |
 
 ## teamList
 

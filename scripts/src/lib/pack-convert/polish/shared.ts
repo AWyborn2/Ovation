@@ -4,12 +4,17 @@
  */
 import type { TemplateDocumentV2 } from "@workspace/scorecard/kind-templates";
 import {
+  capFontToCell,
   chipCell,
   editRows,
   gradeOnRoundLine,
   uniformSponsorGrid,
+  widenToNextCell,
   type GridRegion,
 } from "./helpers";
+
+/** Weekend Wrap's grade font, at most this share of its cell's width (measured in the fit check). */
+export const GRADE_FONT_RATIO = 0.34;
 
 export interface SharedPolish {
   /** The pack's sponsors grid region per size (its major tiles over a 3 × 3 grid). */
@@ -53,6 +58,10 @@ export function sharedPolish(doc: TemplateDocumentV2, kind: string, opts: Shared
         h: 26,
         plain: ["lost"],
       }),
+      // The grade's first word is printed large: room to the result line for it,
+      // and a font small enough that "PHARMACY…" fits at the fit floor.
+      ...widenToNextCell(doc, "matches", "gradeLabel", 0.6),
+      ...capFontToCell(doc, "matches", "gradeLabel", GRADE_FONT_RATIO),
     );
   for (const repeat of ["matches", "leaders"]) {
     const n = editRows(doc, repeat, (rows) => {
