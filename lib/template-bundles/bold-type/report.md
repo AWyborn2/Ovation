@@ -1,17 +1,17 @@
-# Bold Type: raw conversion report
+# Bold Type: conversion and polish report
 
-Converted from the `bold-type-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.
+Converted from the `bold-type-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **polished, pending Ash sign-off**. The polish is applied by `scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it.
 
 ## Summary
 
 - Kinds: 17; pages: 21.
-- Mean pixel match against the pack: 88% over 84 renders.
+- Mean pixel match against the pack: 87% over 84 renders.
 - Pixel match compares the pack and the converted page drawing the same sample input; sample photos and logos are grey placeholders in both.
 - Motion: `hhPulse` → loop: pulse, 1400 ms.
 - Colours that move with the palette but aren't a token: 8.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 0 hd (raw conversion).
+- Polish time logged: 2 hd.
 
 ## bigMoment
 
@@ -40,6 +40,10 @@ Colours not tokenised:
 
 ## century
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -47,10 +51,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 89% | none |
-| portrait | 87% | none |
-| story | 92% | none |
-| landscape | 93% | none |
+| square | 86% | none |
+| portrait | 85% | none |
+| story | 90% | none |
+| landscape | 92% | none |
 
 Polish:
 
@@ -63,6 +67,10 @@ Colours not tokenised:
 - -webkit-text-stroke-color color(srgb 1 1 1 / 0.22)
 
 ## clubLeaderboard
+
+Polish applied:
+
+- leaders.gradeLabel: left-aligned, so a long grade clips at its end
 
 ### card
 
@@ -110,6 +118,10 @@ Colours not tokenised:
 
 ## debut
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -117,10 +129,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 80% | none |
-| portrait | 78% | none |
-| story | 86% | none |
-| landscape | 85% | none |
+| square | 78% | none |
+| portrait | 75% | none |
+| story | 83% | none |
+| landscape | 83% | none |
 
 Polish:
 
@@ -135,6 +147,10 @@ Colours not tokenised:
 
 ## fiveFor
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -142,10 +158,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 89% | none |
-| portrait | 88% | none |
-| story | 92% | none |
-| landscape | 92% | none |
+| square | 87% | none |
+| portrait | 85% | none |
+| story | 90% | none |
+| landscape | 90% | none |
 
 Polish:
 
@@ -160,6 +176,10 @@ Colours not tokenised:
 
 ## gradeLeader
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`.
@@ -167,10 +187,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 88% | none |
-| portrait | 85% | none |
-| story | 91% | none |
-| landscape | 90% | none |
+| square | 86% | none |
+| portrait | 83% | none |
+| story | 89% | none |
+| landscape | 88% | none |
 
 Polish:
 
@@ -210,6 +230,12 @@ Colours not tokenised:
 
 ## matchDay
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (4)
+- fixture: the round line prints the grade too (a core field the pack's card leaves out)
+- sponsors: one 3-column logo grid (12 logos) in place of the pack's major / other tiers; 9 converted layers replaced
+
 ### fixture
 
 - From `fixture.single`; not used: `fixture.slide`.
@@ -239,10 +265,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 83% | none |
-| portrait | 82% | none |
-| story | 88% | none |
-| landscape | 86% | none |
+| square | 80% | none |
+| portrait | 80% | none |
+| story | 86% | none |
+| landscape | 84% | none |
 
 Polish:
 
@@ -281,10 +307,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 77% | none |
-| portrait | 72% | none |
-| story | 82% | none |
-| landscape | 86% | none |
+| square | 76% | none |
+| portrait | 71% | none |
+| story | 80% | none |
+| landscape | 85% | none |
 
 Polish:
 
@@ -344,6 +370,10 @@ Colours not tokenised:
 
 ## milestone
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -351,10 +381,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 87% | none |
-| portrait | 85% | none |
-| story | 90% | none |
-| landscape | 92% | none |
+| square | 85% | none |
+| portrait | 83% | none |
+| story | 88% | none |
+| landscape | 91% | none |
 
 Polish:
 
@@ -367,6 +397,10 @@ Colours not tokenised:
 
 ## newSigning
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -374,10 +408,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 79% | none |
-| portrait | 77% | none |
-| story | 85% | none |
-| landscape | 87% | none |
+| square | 76% | none |
+| portrait | 75% | none |
+| story | 83% | none |
+| landscape | 85% | none |
 
 Polish:
 
@@ -392,6 +426,10 @@ Colours not tokenised:
 
 ## player
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -399,10 +437,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 83% | none |
-| portrait | 81% | none |
-| story | 88% | none |
-| landscape | 88% | none |
+| square | 80% | none |
+| portrait | 79% | none |
+| story | 86% | none |
+| landscape | 86% | none |
 
 Polish:
 
@@ -418,6 +456,10 @@ Colours not tokenised:
 
 ## premiership
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -425,10 +467,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 87% | none |
-| portrait | 87% | none |
-| story | 92% | none |
-| landscape | 90% | none |
+| square | 85% | none |
+| portrait | 85% | none |
+| story | 90% | none |
+| landscape | 88% | none |
 
 Polish:
 
@@ -443,6 +485,10 @@ Colours not tokenised:
 
 ## record
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### card
 
 - From `card.single`.
@@ -450,10 +496,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 87% | none |
-| portrait | 85% | none |
-| story | 91% | none |
-| landscape | 91% | none |
+| square | 84% | none |
+| portrait | 83% | none |
+| story | 88% | none |
+| landscape | 90% | none |
 
 Polish:
 
@@ -467,6 +513,10 @@ Colours not tokenised:
 
 ## teamList
 
+Polish applied:
+
+- the photo kept on the card: one layer per size, clamped, its clip moved in (2)
+
 ### team
 
 - From `team.single`; not used: `team.slide`.
@@ -474,10 +524,10 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 89% | overflow |
-| portrait | 91% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| story | 94% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
-| landscape | 92% | overflow |
+| square | 87% | overflow |
+| portrait | 89% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| story | 91% | overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow; overflow |
+| landscape | 91% | overflow |
 
 Polish:
 
@@ -491,6 +541,11 @@ Colours not tokenised:
 
 ## weekendWrap
 
+Polish applied:
+
+- matches.outcome: drawn as a chip (4 rows layers)
+- matches.gradeLabel: left-aligned, so a long grade clips at its end
+
 ### card
 
 - From `card.weekend-wrap`.
@@ -498,9 +553,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 92% | overflow |
-| portrait | 89% | overflow; overflow |
-| story | 92% | overflow; overflow |
+| square | 92% | overflow; overflow |
+| portrait | 90% | overflow; overflow; overflow |
+| story | 92% | overflow; overflow; overflow |
 | landscape | 95% | overflow |
 
 Polish:

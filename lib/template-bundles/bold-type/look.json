@@ -1,3 +1,5 @@
 {
-  "name": "Bold Type"
+  "name": "Bold Type",
+  "description": "Huge type on a block of club colour, outlined numbers and a slanted photo panel.",
+  "displayOrder": 5
 }
