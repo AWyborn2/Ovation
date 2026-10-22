@@ -33,6 +33,8 @@ export function lookReport(opts: {
   validation?: Record<string, string[]> | null;
   generatedAt: string;
   results?: { same: boolean; differences: string[] } | null;
+  /** The look's polish (L4-C): half-days logged and what it did, per kind. */
+  polish?: { halfDays: number; notes: Record<string, string[]> } | null;
 }): string {
   const { conversions, checks } = opts;
   const lines: string[] = [];
@@ -45,11 +47,15 @@ export function lookReport(opts: {
   const mean = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : undefined;
   const motion = Object.assign({}, ...all.map((p) => p.motion)) as Record<string, string>;
 
-  lines.push(`# ${opts.look}: raw conversion report`);
+  const polished = !!opts.polish;
+  lines.push(`# ${opts.look}: ${polished ? "conversion and polish" : "raw conversion"} report`);
   lines.push("");
   lines.push(
     `Converted from the \`${opts.packId}\` pack by \`scripts/src/convert-pack.ts\` on ${opts.generatedAt}. ` +
-      "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.",
+      (polished
+        ? "Status: **polished, pending Ash sign-off**. The polish is applied by " +
+          "`scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it."
+        : "Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off."),
   );
   lines.push("");
   lines.push("## Summary");
@@ -88,12 +94,23 @@ export function lookReport(opts: {
         : "- Validation: every document passes the template validator.",
     );
   }
-  lines.push(`- Polish time logged: 0 hd (raw conversion).`);
+  lines.push(
+    polished
+      ? `- Polish time logged: ${opts.polish!.halfDays} hd.`
+      : "- Polish time logged: 0 hd (raw conversion).",
+  );
   lines.push("");
 
   for (const conv of conversions) {
     lines.push(`## ${conv.kind}`);
     lines.push("");
+    const applied = opts.polish?.notes[conv.kind] ?? [];
+    if (applied.length) {
+      lines.push("Polish applied:");
+      lines.push("");
+      for (const n of applied) lines.push(`- ${n}`);
+      lines.push("");
+    }
     for (const page of conv.pages) {
       const key = checkKey(page.kind, page.page);
       lines.push(`### ${page.page}`);

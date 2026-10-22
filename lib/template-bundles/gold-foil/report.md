@@ -1,6 +1,6 @@
-# Gold Foil: raw conversion report
+# Gold Foil: conversion and polish report
 
-Converted from the `gold-foil-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **raw conversion, unlisted**, pending designer polish and Ash's sign-off.
+Converted from the `gold-foil-v1` pack by `scripts/src/convert-pack.ts` on 2026-10-22. Status: **polished, pending Ash sign-off**. The polish is applied by `scripts/src/lib/pack-convert/polish/`, so a re-conversion keeps it.
 
 ## Summary
 
@@ -11,9 +11,13 @@ Converted from the `gold-foil-v1` pack by `scripts/src/convert-pack.ts` on 2026-
 - Colours that move with the palette but aren't a token: 7.
 - Results set vs Match Summary: the same layout apart from the performers block.
 - Validation: every document passes the template validator.
-- Polish time logged: 0 hd (raw conversion).
+- Polish time logged: 4 hd.
 
 ## bigMoment
+
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
 
 ### card
 
@@ -39,6 +43,10 @@ Colours not tokenised:
 - color color(srgb 0.875765 0.344941 0.534118)
 
 ## century
+
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
 
 ### card
 
@@ -66,6 +74,11 @@ Colours not tokenised:
 
 ## clubLeaderboard
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+- leaders.gradeLabel: left-aligned, so a long grade clips at its end
+
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`.
@@ -88,6 +101,10 @@ Colours not tokenised:
 
 ## countdown
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -97,7 +114,7 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 91% | none |
-| portrait | 85% | none |
+| portrait | 84% | none |
 | story | 89% | none |
 | landscape | 93% | none |
 
@@ -110,6 +127,10 @@ Colours not tokenised:
 - color color(srgb 0.875765 0.344941 0.534118)
 
 ## debut
+
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
 
 ### card
 
@@ -137,6 +158,10 @@ Colours not tokenised:
 
 ## fiveFor
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -145,9 +170,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 88% | none |
-| portrait | 85% | none |
-| story | 90% | none |
+| square | 90% | none |
+| portrait | 87% | none |
+| story | 91% | none |
 | landscape | 94% | none |
 
 Polish:
@@ -163,6 +188,10 @@ Colours not tokenised:
 
 ## gradeLeader
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.Runs`; not used: `card.Wickets`.
@@ -173,7 +202,7 @@ Colours not tokenised:
 | --- | --- | --- |
 | square | 91% | none |
 | portrait | 88% | none |
-| story | 91% | none |
+| story | 92% | none |
 | landscape | 94% | none |
 
 Polish:
@@ -188,6 +217,10 @@ Colours not tokenised:
 - color color(srgb 0.875765 0.344941 0.534118)
 
 ## ladder
+
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
 
 ### card
 
@@ -214,6 +247,15 @@ Colours not tokenised:
 
 ## matchDay
 
+Polish applied:
+
+- fixture: diagonal stripes over the stage (a vector per size)
+- title: diagonal stripes over the stage (a vector per size)
+- day: diagonal stripes over the stage (a vector per size)
+- sponsors: diagonal stripes over the stage (a vector per size)
+- fixture: the round line prints the grade too (a core field the pack's card leaves out)
+- sponsors: one 3-column logo grid (12 logos) in place of the pack's major / other tiers; 9 converted layers replaced
+
 ### fixture
 
 - From `fixture.single`; not used: `fixture.slide`.
@@ -223,7 +265,7 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 95% | none |
-| portrait | 93% | none |
+| portrait | 92% | none |
 | story | 95% | none |
 | landscape | 96% | none |
 
@@ -286,9 +328,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 85% | none |
-| portrait | 75% | none |
-| story | 83% | none |
+| square | 86% | none |
+| portrait | 80% | none |
+| story | 86% | none |
 | landscape | 95% | none |
 
 Polish:
@@ -303,6 +345,11 @@ Colours not tokenised:
 - border-top-color color(srgb 0.827451 0.0901961 0.352941 / 0.35)
 
 ## matchSummary
+
+Polish applied:
+
+- result: diagonal stripes over the stage (a vector per size)
+- day: diagonal stripes over the stage (a vector per size)
 
 ### result
 
@@ -352,6 +399,10 @@ Colours not tokenised:
 
 ## milestone
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -360,9 +411,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 88% | none |
-| portrait | 81% | none |
-| story | 86% | none |
+| square | 89% | none |
+| portrait | 82% | none |
+| story | 87% | none |
 | landscape | 93% | none |
 
 Polish:
@@ -377,6 +428,10 @@ Colours not tokenised:
 
 ## newSigning
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -386,7 +441,7 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 84% | none |
-| portrait | 78% | none |
+| portrait | 79% | none |
 | story | 85% | none |
 | landscape | 91% | none |
 
@@ -402,6 +457,10 @@ Colours not tokenised:
 - color color(srgb 0.875765 0.344941 0.534118)
 
 ## player
+
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
 
 ### card
 
@@ -431,6 +490,10 @@ Colours not tokenised:
 
 ## premiership
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -440,7 +503,7 @@ Colours not tokenised:
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
 | square | 90% | none |
-| portrait | 87% | none |
+| portrait | 88% | none |
 | story | 91% | none |
 | landscape | 94% | none |
 
@@ -457,6 +520,10 @@ Colours not tokenised:
 
 ## record
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+
 ### card
 
 - From `card.single`.
@@ -465,7 +532,7 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 91% | none |
+| square | 92% | none |
 | portrait | 86% | none |
 | story | 90% | none |
 | landscape | 95% | none |
@@ -481,6 +548,10 @@ Colours not tokenised:
 - color color(srgb 0.875765 0.344941 0.534118)
 
 ## teamList
+
+Polish applied:
+
+- team: diagonal stripes over the stage (a vector per size)
 
 ### team
 
@@ -506,6 +577,12 @@ Colours not tokenised:
 
 ## weekendWrap
 
+Polish applied:
+
+- card: diagonal stripes over the stage (a vector per size)
+- matches.outcome: drawn as a chip (4 rows layers)
+- matches.gradeLabel: left-aligned, so a long grade clips at its end
+
 ### card
 
 - From `card.weekend-wrap`.
@@ -514,9 +591,9 @@ Colours not tokenised:
 
 | Size | Pixel match | Fit warnings |
 | --- | --- | --- |
-| square | 90% | overflow |
-| portrait | 86% | overflow; overflow |
-| story | 90% | overflow; overflow |
+| square | 89% | overflow; overflow |
+| portrait | 86% | overflow; overflow; overflow |
+| story | 90% | overflow; overflow; overflow |
 | landscape | 94% | overflow |
 
 Polish:

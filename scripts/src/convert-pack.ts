@@ -18,6 +18,7 @@
  *   --map-only               map the captures already in --out (no new capture)
  *   --no-check               skip the fit and pixel-diff renders
  *   --shots                  save each pack / template screenshot pair (`<look>/shots/`)
+ *   --no-polish              write the raw conversion, without the look's polish (T4.12)
  *   --base-url=<url>         use a running web app (the dev server) instead of a build
  *   --skip-build             reuse the last `vite build --mode capture`
  *   --concurrency=<n>        pages capturing at once (default 3)
@@ -47,6 +48,7 @@ import {
 import { templateDocumentErrors, type TemplateSize } from "@workspace/scorecard/kind-templates";
 import type { Page } from "puppeteer-core";
 import { REPO_ROOT, callHarness, withHarness, type HarnessSession } from "./lib/harness-browser";
+import { LOOK_POLISH } from "./lib/pack-convert/polish";
 import {
   compareResults,
   convertKind,
@@ -95,6 +97,8 @@ export interface ConvertOptions {
   concurrency: number;
   list: boolean;
   shots: boolean;
+  /** Apply the look's polish (`pack-convert/polish/`); off for a raw conversion. */
+  polish: boolean;
 }
 
 const list = (v: string | undefined) =>
@@ -122,6 +126,7 @@ const KNOWN = [
   "concurrency",
   "list",
   "shots",
+  "no-polish",
 ];
 
 export function parseArgs(argv: readonly string[]): ConvertOptions {
@@ -165,6 +170,7 @@ export function parseArgs(argv: readonly string[]): ConvertOptions {
     concurrency,
     list: args.has("list"),
     shots: args.has("shots"),
+    polish: !args.has("no-polish"),
   };
 }
 
@@ -508,6 +514,12 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
       const conv = convertKind(files, kind);
       if (conv) conversions.push(conv);
     }
+    // The look's polish (L4-C), applied before the checks so they measure what ships.
+    const polish = opts.polish ? LOOK_POLISH[look.slug] : undefined;
+    const polishNotes: Record<string, string[]> = {};
+    if (polish)
+      for (const conv of conversions)
+        polishNotes[conv.kind] = polish.apply(conv.document, conv.kind);
     const checks: Checks = {};
     const validation = validatorReadsV2()
       ? Object.fromEntries(
@@ -522,12 +534,19 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
       for (const conv of conversions) await checkConversion(page, packId, conv, checks, shotsDir);
     await writeFile(
       path.join(dir, "look.json"),
-      `${JSON.stringify({ name: look.name }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          name: look.name,
+          ...(polish ? { description: polish.description, displayOrder: polish.displayOrder } : {}),
+        },
+        null,
+        2,
+      )}\n`,
     );
     for (const conv of conversions)
       await writeFile(
         path.join(dir, `${conv.kind}.json`),
-        `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: false, document: conv.document }, null, 2)}\n`,
+        `${JSON.stringify({ name: `${look.name} ${conv.kind}`, version: 1, listed: !!polish, document: conv.document }, null, 2)}\n`,
       );
     await writeFile(
       path.join(dir, "report.md"),
@@ -539,6 +558,7 @@ async function mapPacks(page: Page | null, opts: ConvertOptions): Promise<number
         generatedAt,
         results: compareResults(files),
         validation,
+        polish: polish ? { halfDays: polish.halfDays, notes: polishNotes } : null,
         rendererNote:
           "Pixel match compares the pack and the converted page drawing the same sample input; " +
           "sample photos and logos are grey placeholders in both.",
