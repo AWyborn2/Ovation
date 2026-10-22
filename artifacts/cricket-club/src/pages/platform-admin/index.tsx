@@ -12,6 +12,7 @@ import PlayerPrivacyPage from "./player-privacy";
 import GradeDecisionsPage from "./grade-decisions";
 import LibraryPage from "./library";
 import AiDesignerPage from "./ai-designer";
+import LibraryElementsPage from "./library-elements";
 
 const LibraryEditorPage = lazy(() => import("./library-editor"));
 
@@ -51,6 +52,7 @@ function ConsoleRoutes() {
         <Route path="/platform-admin/grade-decisions" component={GradeDecisionsPage} />
         <Route path="/platform-admin/library" component={LibraryPage} />
         <Route path="/platform-admin/designer" component={AiDesignerPage} />
+        <Route path="/platform-admin/elements" component={LibraryElementsPage} />
         <Route path="/platform-admin/tenants/:id/history-import" component={HistoryImportPage} />
         <Route path="/platform-admin/tenants/:id" component={TenantDetail} />
       </Switch>

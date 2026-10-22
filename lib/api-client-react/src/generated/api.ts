@@ -130,6 +130,8 @@ import type {
   ClubTemplateList,
   CommitImportInput,
   CommitImportResult,
+  ConsoleLibraryElement,
+  ConsoleLibraryElementPage,
   ConsoleLibraryLook,
   ConsoleLibraryLookList,
   ConsoleLibraryTemplate,
@@ -267,6 +269,7 @@ import type {
   LadderCardRow,
   LibraryElement,
   LibraryElementPage,
+  LibraryElementReportList,
   LibraryLookList,
   LibraryTemplate,
   LibraryTemplatePage,
@@ -275,6 +278,7 @@ import type {
   LifeMemberUpdate,
   ListClubPhotosParams,
   ListClubTemplatesParams,
+  ListConsoleLibraryElementsParams,
   ListConsoleLibraryTemplatesParams,
   ListEmailSendsParams,
   ListFixturesParams,
@@ -468,6 +472,7 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UnlistConsoleLibraryElementRequest,
   UnlistConsoleLibraryTemplateRequest,
   UnscheduleDraftRequest,
   UpdateAdminTenantBrandBody,
@@ -33797,6 +33802,382 @@ export const useUnlistConsoleLibraryTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUnlistConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListConsoleLibraryElementsUrl = (params?: ListConsoleLibraryElementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/admin/library/elements?${stringifiedParams}` : `/api/platform/admin/library/elements`
+}
+
+/**
+ * For moderation (editable-elements plan, D5): every element with its author and how many reports are open, most-reported first, then newest. 100 a page.
+ * @summary Every library element, listed or not, with its open reports
+ */
+export const listConsoleLibraryElements = async (params?: ListConsoleLibraryElementsParams, options?: RequestInit): Promise<ConsoleLibraryElementPage> => {
+
+  return customFetch<ConsoleLibraryElementPage>(getListConsoleLibraryElementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryElementsQueryKey = (params?: ListConsoleLibraryElementsParams,) => {
+    return [
+    `/api/platform/admin/library/elements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryElementsQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError = ErrorType<void>>(params?: ListConsoleLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryElementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryElements>>> = ({ signal }) => listConsoleLibraryElements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryElementsQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElements>>>
+export type ListConsoleLibraryElementsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every library element, listed or not, with its open reports
+ */
+
+export function useListConsoleLibraryElements<TData = Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError = ErrorType<void>>(
+ params?: ListConsoleLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryElementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListConsoleLibraryElementReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/reports`
+}
+
+/**
+ * @summary Every report of an element, open first
+ */
+export const listConsoleLibraryElementReports = async (id: number, options?: RequestInit): Promise<LibraryElementReportList> => {
+
+  return customFetch<LibraryElementReportList>(getListConsoleLibraryElementReportsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryElementReportsQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/elements/${id}/reports`
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryElementReportsQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryElementReportsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>> = ({ signal }) => listConsoleLibraryElementReports(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryElementReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>>
+export type ListConsoleLibraryElementReportsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every report of an element, open first
+ */
+
+export function useListConsoleLibraryElementReports<TData = Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryElementReportsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUnlistConsoleLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/unlist`
+}
+
+/**
+ * No club sees it any more; cards it was added to keep their copies. Its open reports are resolved. A bundle sync keeps it unlisted.
+ * @summary Take an element out of the library, as Ovation
+ */
+export const unlistConsoleLibraryElement = async (id: number,
+    unlistConsoleLibraryElementRequest?: UnlistConsoleLibraryElementRequest, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getUnlistConsoleLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unlistConsoleLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getUnlistConsoleLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['unlistConsoleLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, {id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  unlistConsoleLibraryElement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistConsoleLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>>
+    export type UnlistConsoleLibraryElementMutationBody = BodyType<UnlistConsoleLibraryElementRequest> | undefined
+    export type UnlistConsoleLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Take an element out of the library, as Ovation
+ */
+export const useUnlistConsoleLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistConsoleLibraryElement>>,
+        TError,
+        {id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getUnlistConsoleLibraryElementMutationOptions(options));
+    }
+
+export const getListConsoleLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/list`
+}
+
+/**
+ * Undoes either unlisting, the author's or Ovation's.
+ * @summary Put an element back in the library
+ */
+export const listConsoleLibraryElement = async (id: number, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getListConsoleLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getListConsoleLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['listConsoleLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof listConsoleLibraryElement>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  listConsoleLibraryElement(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ListConsoleLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElement>>>
+
+    export type ListConsoleLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Put an element back in the library
+ */
+export const useListConsoleLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof listConsoleLibraryElement>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getListConsoleLibraryElementMutationOptions(options));
+    }
+
+export const getDismissConsoleLibraryElementReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/reports/dismiss`
+}
+
+/**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const dismissConsoleLibraryElementReports = async (id: number, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getDismissConsoleLibraryElementReportsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissConsoleLibraryElementReportsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['dismissConsoleLibraryElementReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  dismissConsoleLibraryElementReports(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissConsoleLibraryElementReportsMutationResult = NonNullable<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>>
+
+    export type DismissConsoleLibraryElementReportsMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const useDismissConsoleLibraryElementReports = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDismissConsoleLibraryElementReportsMutationOptions(options));
     }
 
 export const getListConsoleLibraryLooksUrl = () => {

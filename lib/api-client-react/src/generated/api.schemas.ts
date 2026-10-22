@@ -8758,6 +8758,80 @@ export interface ReportLibraryElementRequest {
   reason: string;
 }
 
+export type ConsoleLibraryElementOrigin = typeof ConsoleLibraryElementOrigin[keyof typeof ConsoleLibraryElementOrigin];
+
+
+export const ConsoleLibraryElementOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ConsoleLibraryElementUnlistedBy = typeof ConsoleLibraryElementUnlistedBy[keyof typeof ConsoleLibraryElementUnlistedBy] | null;
+
+
+export const ConsoleLibraryElementUnlistedBy = {
+  author: 'author',
+  ovation: 'ovation',
+} as const;
+
+export interface ConsoleLibraryElement {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  name: string;
+  category: LibraryElementCategory;
+  tags: string[];
+  origin: ConsoleLibraryElementOrigin;
+  /** Ovation, or the club that saved it. */
+  authorName: string;
+  /**
+     * The club that saved it; null for Ovation's.
+     * @nullable
+     */
+  authorTenantId: number | null;
+  look: LibraryLookRef | null;
+  listed: boolean;
+  /** @nullable */
+  unlistedBy: ConsoleLibraryElementUnlistedBy;
+  /** @nullable */
+  unlistReason: string | null;
+  /** @nullable */
+  unlistedAt: string | null;
+  /** Reports not yet resolved. */
+  openReports: number;
+  document: LibraryElementDocument;
+  createdAt: string;
+}
+
+export interface ConsoleLibraryElementPage {
+  elements: ConsoleLibraryElement[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface LibraryElementReport {
+  id: number;
+  clubName: string;
+  reason: string;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export interface LibraryElementReportList {
+  reports: LibraryElementReport[];
+}
+
+export interface UnlistConsoleLibraryElementRequest {
+  /** @maxLength 500 */
+  reason?: string;
+}
+
 export interface LibraryLookTemplate {
   id: number;
   kind: string;
@@ -12078,6 +12152,34 @@ export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplat
 
 
 export const ListConsoleLibraryTemplatesOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export type ListConsoleLibraryElementsParams = {
+/**
+ * Words that must each appear in the name or tags.
+ * @maxLength 60
+ */
+q?: string;
+origin?: ListConsoleLibraryElementsOrigin;
+/**
+ * Only elements with an open report.
+ */
+reported?: boolean;
+listed?: boolean;
+/**
+ * Page number, from 1.
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type ListConsoleLibraryElementsOrigin = typeof ListConsoleLibraryElementsOrigin[keyof typeof ListConsoleLibraryElementsOrigin];
+
+
+export const ListConsoleLibraryElementsOrigin = {
   bundle: 'bundle',
   console: 'console',
   club: 'club',
