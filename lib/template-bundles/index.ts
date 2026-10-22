@@ -158,6 +158,24 @@ import look6_13 from "./gold-foil/premiership.json";
 import look6_14 from "./gold-foil/record.json";
 import look6_15 from "./gold-foil/teamList.json";
 import look6_16 from "./gold-foil/weekendWrap.json";
+import look7 from "./neon-night/look.json";
+import look7_0 from "./neon-night/bigMoment.json";
+import look7_1 from "./neon-night/century.json";
+import look7_2 from "./neon-night/clubLeaderboard.json";
+import look7_3 from "./neon-night/countdown.json";
+import look7_4 from "./neon-night/debut.json";
+import look7_5 from "./neon-night/fiveFor.json";
+import look7_6 from "./neon-night/gradeLeader.json";
+import look7_7 from "./neon-night/ladder.json";
+import look7_8 from "./neon-night/matchDay.json";
+import look7_9 from "./neon-night/matchSummary.json";
+import look7_10 from "./neon-night/milestone.json";
+import look7_11 from "./neon-night/newSigning.json";
+import look7_12 from "./neon-night/player.json";
+import look7_13 from "./neon-night/premiership.json";
+import look7_14 from "./neon-night/record.json";
+import look7_15 from "./neon-night/teamList.json";
+import look7_16 from "./neon-night/weekendWrap.json";
 
 export type * from "./types";
 
@@ -352,6 +370,29 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "record", hash: "390b6be0b6363df48cf798107f842b22d8a2dc06d74e329f20d02ebd75c3e6c9", file: look6_14 },
       { kind: "teamList", hash: "93cc0da81c047a0efc39dc27b8a9a51a2528d18cd5cfb95a56b2a9310908426e", file: look6_15 },
       { kind: "weekendWrap", hash: "95397ecbfb670bdf500768b8d23bbf297effb6417829f433599c0ac80a731232", file: look6_16 },
+    ],
+  },
+  {
+    slug: "neon-night",
+    look: look7,
+    templates: [
+      { kind: "bigMoment", hash: "216b46317c4568832ff26af9e58def821cba9cd7d6ef1146a356d4cacf132db6", file: look7_0 },
+      { kind: "century", hash: "b7be00fe077d95f6484430c5e424ddbe7220718ad69a024af4192cab71633b9a", file: look7_1 },
+      { kind: "clubLeaderboard", hash: "3cd3e3583cda30eb9522ad5588dd37bb177a950f46836692d27eb5409a70c3bb", file: look7_2 },
+      { kind: "countdown", hash: "8c122422df501a852f99ae5ea9758cc5bb0413158417fe0e5e5b4845315f7d16", file: look7_3 },
+      { kind: "debut", hash: "5574f767364a05aa9739ebac3ed19fc7e75ae77496d59ee45b938c49ceb2159f", file: look7_4 },
+      { kind: "fiveFor", hash: "a2ed31a18e02863169725903b506a3f9d74aee3b0f74ff814eb4fe3f955d5b35", file: look7_5 },
+      { kind: "gradeLeader", hash: "0068f5ad87b8c3df5005faa72bdc4f9738b191a63b7bddcfaec20bdf9cac41f4", file: look7_6 },
+      { kind: "ladder", hash: "d76e5cc5c20c8652f63a1dab45988fa294de7564dc7966253ad408267f64a26a", file: look7_7 },
+      { kind: "matchDay", hash: "5f7014f5cc2c54fceff83fe69c5b76bccf42c004d7ddef802c8aae68adabc6ef", file: look7_8 },
+      { kind: "matchSummary", hash: "747419b3fff3c9206e81395c7c1fcae8e5c2da7f64f854ef06c8277b18b7cc96", file: look7_9 },
+      { kind: "milestone", hash: "5e4869f8c637fb0800c5e571198c7ef404c83d7da76f43ffd19f714dd9e48e39", file: look7_10 },
+      { kind: "newSigning", hash: "9ba246b7648a85564a9b578d1ca0bbda8a5546a041b55d0aa4c6d3e721097fa0", file: look7_11 },
+      { kind: "player", hash: "1b9093796a85a0bdc7e44aff46abfe3de29a033742315787af4aecdda127976f", file: look7_12 },
+      { kind: "premiership", hash: "e24749411d1bcba8c20401e2de1552e9a06ec2f28a5af811ea2cea5da524bb1e", file: look7_13 },
+      { kind: "record", hash: "95751b6b8b119daa7ff49431a73b992dd0569af899eaec560c67eacdd610f64d", file: look7_14 },
+      { kind: "teamList", hash: "1f3c36d59d82ab4d4579c83a528db6f65e928e65446bd55c6f458b743027d9bd", file: look7_15 },
+      { kind: "weekendWrap", hash: "6d4658e63f587426654b42a14c307f964860f14a05f030ce8dcff5158dd4950f", file: look7_16 },
     ],
   },
 ];
