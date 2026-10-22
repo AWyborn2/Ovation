@@ -1404,6 +1404,19 @@ function rowCells(
   const rowTwin = opts.twin?.(row);
   const useTwin = !!rowTwin && rowTwin !== row && rowTwin.box.h > 0;
   const rowBox = useTwin ? rowTwin!.box : row.box;
+  // A text cell at least one line of its font tall, centred where it was: an inline span's
+  // box is shorter than its line, and the template draws the line (1.05 of the font).
+  const lineTall = <C extends { y?: number; h?: number }>(
+    cell: C,
+    style: NonNullable<RowsCell["style"]>,
+  ): C => {
+    const linePx = ((style.fontSize ?? 0) / 100) * opts.W * 1.15;
+    const minH = Math.min(100, r2((linePx / rowBox.h) * 100));
+    const y = cell.y ?? 0;
+    const h = cell.h ?? 100;
+    if (h >= minH) return cell;
+    return { ...cell, y: Math.min(100 - minH, Math.max(0, r2(y + h / 2 - minH / 2))), h: minH };
+  };
   const fieldFor = (el: CapturedElement, text: string): string | null => {
     if (opts.cellField) return opts.cellField(el);
     const t = text.trim().toLowerCase();
@@ -1460,7 +1473,9 @@ function rowCells(
     }
     for (const run of el.text ?? []) {
       const field = fieldFor(el, run.text);
-      if (field) cells.push({ field, ...at(el), style: textStyle(el) });
+      if (!field) continue;
+      const style = textStyle(el);
+      cells.push({ field, ...lineTall(at(el), style), style });
     }
   }
   const firstField = cells.find((c) => c.field)?.field ?? "";
