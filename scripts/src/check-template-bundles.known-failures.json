@@ -1,4 +1,6 @@
 {
+  "bold-type/teamList": "Converted look: the team list's two narrow columns overflow the longest worst-case surnames at portrait and story (24). v2 row cells can't wrap or ellipsise (proposed: a row-cell fit rule).",
+  "bold-type/weekendWrap": "Converted look: the result rows' grade cell overflows worst-case grades; the pack prints a grade's first word large (8). v2 row cells can't wrap or ellipsise (proposed: a row-cell fit rule).",
   "broadcast-classic/ladder": "Starter not yet fitted to worst-case content: 10 overflow (L4-D).",
   "broadcast-classic/milestone": "Starter not yet fitted to worst-case content: 8 overflow (L4-D).",
   "broadcast-classic/premiership": "Starter not yet fitted to worst-case content: 12 overflow (L4-D).",
@@ -26,5 +28,6 @@
   "clubhouse/resultsSummary": "Starter not yet fitted to worst-case content: 8 overflow (L4-D).",
   "clubhouse/roundFixtures": "Starter not yet fitted to worst-case content: 36 overflow (L4-D).",
   "clubhouse/teamOfWeek": "Starter not yet fitted to worst-case content: 124 overflow (L4-D).",
-  "clubhouse/weekendWrap": "Starter not yet fitted to worst-case content: 14 overflow (L4-D)."
+  "clubhouse/weekendWrap": "Starter not yet fitted to worst-case content: 14 overflow (L4-D).",
+  "gold-foil/weekendWrap": "Converted look: the result rows' grade cell overflows worst-case grades; the pack prints a grade's first word large (8). v2 row cells can't wrap or ellipsise (proposed: a row-cell fit rule)."
 }

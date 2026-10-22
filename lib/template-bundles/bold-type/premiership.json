@@ -1,0 +1,1301 @@
+{
+  "name": "Bold Type premiership",
+  "version": 1,
+  "listed": true,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "card-l1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)"
+            },
+            "id": "card-l2",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "FLAG",
+            "style": {
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 48,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.8,
+              "color": "#FFFFFF38",
+              "opacity": 0.5
+            },
+            "id": "card-l3",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": -3,
+                "y": 59.97,
+                "w": 90.58,
+                "h": 57.59
+              },
+              "portrait": {
+                "x": -3,
+                "y": 67.98,
+                "w": 90.58,
+                "h": 46.07
+              },
+              "story": {
+                "x": -3,
+                "y": 77.48,
+                "w": 90.58,
+                "h": 32.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "FLAG",
+            "style": {
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 25.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.8,
+              "color": "#FFFFFF38",
+              "opacity": 0.5
+            },
+            "id": "card-l4",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": -1.57,
+                "y": 59.92,
+                "w": 47.55,
+                "h": 57.46
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "id": "card-l5",
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              },
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 52,
+                "h": 44.8
+              },
+              "story": {
+                "x": 37.28,
+                "y": 45,
+                "w": 68.72,
+                "h": 58.38
+              },
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 52,
+                "h": 52
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [20.35, 0],
+                  [113.04, 0],
+                  [113.04, 113.04],
+                  [0, 113.04]
+                ]
+              }
+            },
+            "id": "card-l6-square",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 46,
+                "h": 46
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [20.35, 0],
+                  [113.04, 0],
+                  [113.04, 112],
+                  [0, 112]
+                ]
+              }
+            },
+            "id": "card-l6-portrait",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 46,
+                "h": 40
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [19.16, 0],
+                  [106.45, 0],
+                  [106.45, 113.04],
+                  [0, 113.04]
+                ]
+              }
+            },
+            "id": "card-l6-landscape",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 48.85,
+                "h": 46
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                }
+              ],
+              "blend": "screen",
+              "opacity": 0.85,
+              "clip": {
+                "polygon": [
+                  [19.72, 0],
+                  [109.57, 0],
+                  [109.57, 106.13],
+                  [0, 106.13]
+                ]
+              }
+            },
+            "id": "card-l7-story",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 37.28,
+                "y": 45,
+                "w": 62.72,
+                "h": 55
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "card-l8",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 6,
+                "w": 9.5,
+                "h": 9.5
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4.8,
+                "w": 9.5,
+                "h": 7.6
+              },
+              "story": {
+                "x": 6,
+                "y": 3.37,
+                "w": 9.5,
+                "h": 5.34
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 6,
+                "w": 4.99,
+                "h": 9.5
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 4.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l9",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 7.01,
+                "w": 59.64,
+                "h": 4.81
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 5.61,
+                "w": 59.64,
+                "h": 3.85
+              },
+              "story": {
+                "x": 17.5,
+                "y": 3.95,
+                "w": 59.64,
+                "h": 2.71
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.31,
+              "fontWeight": 800,
+              "letterSpacing": 0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l10",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 7,
+                "w": 34.87,
+                "h": 4.76
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l11",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 17.5,
+                "y": 12.13,
+                "w": 59.64,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 17.5,
+                "y": 9.7,
+                "w": 59.64,
+                "h": 1.56
+              },
+              "story": {
+                "x": 17.5,
+                "y": 6.82,
+                "w": 59.64,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubTagline}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l12",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.19,
+                "y": 12.06,
+                "w": 34.87,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)"
+            },
+            "id": "card-l13",
+            "geometry": {
+              "square": {
+                "x": 79.14,
+                "y": 7.35,
+                "w": 14.86,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 79.14,
+                "y": 5.88,
+                "w": 14.86,
+                "h": 3.52
+              },
+              "story": {
+                "x": 79.14,
+                "y": 4.13,
+                "w": 14.86,
+                "h": 2.48
+              },
+              "landscape": {
+                "x": 89.05,
+                "y": 7.35,
+                "w": 7.8,
+                "h": 4.4
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PREMIERS",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "card-l14",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 81.14,
+                "y": 8.07,
+                "w": 11.86,
+                "h": 2.87
+              },
+              "portrait": {
+                "x": 81.14,
+                "y": 6.46,
+                "w": 11.86,
+                "h": 2.3
+              },
+              "story": {
+                "x": 81.14,
+                "y": 4.54,
+                "w": 11.86,
+                "h": 1.61
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PREMIERS",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.26,
+              "fontWeight": 800,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "card-l15",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 90.1,
+                "y": 8.03,
+                "w": 6.7,
+                "h": 2.86
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "CHAMPIONS",
+            "style": {
+              "color": "#FFFFFFB3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.4,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.2,
+                  "blur": 0.8,
+                  "color": "#000000D9"
+                }
+              ]
+            },
+            "id": "card-l16",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 84.17,
+                "y": 12.56,
+                "w": 10.83,
+                "h": 1.76
+              },
+              "portrait": {
+                "x": 84.17,
+                "y": 10.05,
+                "w": 10.83,
+                "h": 1.41
+              },
+              "story": {
+                "x": 84.17,
+                "y": 7.07,
+                "w": 10.83,
+                "h": 0.99
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "CHAMPIONS",
+            "style": {
+              "color": "#FFFFFFB3",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.74,
+              "fontWeight": 500,
+              "letterSpacing": 0.18,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.11,
+                  "blur": 0.42,
+                  "color": "#000000D9"
+                }
+              ]
+            },
+            "id": "card-l17",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 91.69,
+                "y": 12.43,
+                "w": 6.16,
+                "h": 1.75
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{grade}} · {{season}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.76,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l18",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 28.02,
+                "w": 51.13,
+                "h": 4.51
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{grade}} · {{season}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.29,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l19",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 14.8,
+                "w": 51.13,
+                "h": 7.13
+              },
+              "story": {
+                "x": 6,
+                "y": 10.41,
+                "w": 51.13,
+                "h": 5.01
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{grade}} · {{season}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.92,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l20",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 32.17,
+                "w": 46.71,
+                "h": 2.22
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PREMIERS",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 14.87,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.86
+            },
+            "id": "card-l21",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 28.72,
+                "w": 56.42,
+                "h": 22.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PREMIERS",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 19.36,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.86
+            },
+            "id": "card-l22",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 17.88,
+                "w": 73.43,
+                "h": 23.33
+              },
+              "story": {
+                "x": 6,
+                "y": 12.57,
+                "w": 73.43,
+                "h": 16.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PREMIERS",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Anton',sans-serif",
+              "fontSize": 7.8,
+              "fontWeight": 400,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 0.86
+            },
+            "id": "card-l23",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 30.48,
+                "w": 29.73,
+                "h": 22.38
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.38,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.1,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l24",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 47.08,
+                "w": 51.13,
+                "h": 11.51
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 4.4,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.1,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l25",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 37,
+                "w": 51.13,
+                "h": 15.91
+              },
+              "story": {
+                "x": 6,
+                "y": 26.02,
+                "w": 51.13,
+                "h": 11.19
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.77,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.1,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l26",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 48.96,
+                "w": 54.43,
+                "h": 7.68
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)"
+            },
+            "id": "card-l27",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 60.72,
+                "w": 10.82,
+                "h": 0.61
+              },
+              "portrait": {
+                "x": 6,
+                "y": 55.1,
+                "w": 14.08,
+                "h": 0.63
+              },
+              "story": {
+                "x": 6,
+                "y": 38.74,
+                "w": 14.08,
+                "h": 0.45
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 58.85,
+                "w": 5.67,
+                "h": 0.61
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Sans',sans-serif",
+              "fontSize": 2.57,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l28",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 63.63,
+                "w": 51.13,
+                "h": 6.67
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Sans',sans-serif",
+              "fontSize": 3.34,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l29",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 58.06,
+                "w": 51.13,
+                "h": 10.44
+              },
+              "story": {
+                "x": 6,
+                "y": 40.82,
+                "w": 51.13,
+                "h": 7.34
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Sans',sans-serif",
+              "fontSize": 1.35,
+              "fontWeight": 700,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l30",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 61.75,
+                "w": 28.45,
+                "h": 6.67
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PLAYER OF THE MATCH · {{mom}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.56,
+              "fontWeight": 500,
+              "letterSpacing": 0.16,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l31",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 72.02,
+                "w": 51.13,
+                "h": 4.37
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PLAYER OF THE MATCH · {{mom}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 2.02,
+              "fontWeight": 500,
+              "letterSpacing": 0.16,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "id": "card-l32",
+            "sizes": ["portrait", "story"],
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 70.4,
+                "w": 51.13,
+                "h": 4.5
+              },
+              "story": {
+                "x": 6,
+                "y": 49.5,
+                "w": 51.13,
+                "h": 3.17
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "PLAYER OF THE MATCH · {{mom}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.82,
+              "fontWeight": 500,
+              "letterSpacing": 0.16,
+              "align": "left",
+              "lineHeight": 1.5,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l33",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 70.04,
+                "w": 38.93,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "opacity": 0.22
+            },
+            "id": "card-l34",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 89.11,
+                "w": 88,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 6,
+                "y": 91.29,
+                "w": 88,
+                "h": 0.07
+              },
+              "story": {
+                "x": 6,
+                "y": 93.87,
+                "w": 88,
+                "h": 0.05
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 89.04,
+                "w": 93.7,
+                "h": 0.16
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "season proudly supported by {{sponsorPresentedBy}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 1.5,
+              "fontWeight": 500,
+              "letterSpacing": 0.16,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l35",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 91.61,
+                "w": 46.08,
+                "h": 1.94
+              },
+              "portrait": {
+                "x": 6,
+                "y": 93.29,
+                "w": 46.08,
+                "h": 1.56
+              },
+              "story": {
+                "x": 6,
+                "y": 95.28,
+                "w": 46.08,
+                "h": 1.09
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "season proudly supported by {{sponsorPresentedBy}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'IBM Plex Mono',monospace",
+              "fontSize": 0.79,
+              "fontWeight": 500,
+              "letterSpacing": 0.16,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.2,
+              "opacity": 0.7
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l36",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 91.54,
+                "w": 44.89,
+                "h": 2.06
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l37",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 54.08,
+                "y": 90.92,
+                "w": 41.12,
+                "h": 3.33
+              },
+              "portrait": {
+                "x": 54.08,
+                "y": 92.74,
+                "w": 41.12,
+                "h": 2.67
+              },
+              "story": {
+                "x": 54.08,
+                "y": 94.89,
+                "w": 41.12,
+                "h": 1.88
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l38",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 90.72,
+                "w": 21.96,
+                "h": 3.49
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
