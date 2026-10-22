@@ -4,7 +4,7 @@
  * row with an icon, and a kind this build doesn't know falls back to a plain
  * icon instead of crashing the editor.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -16,7 +16,8 @@ import { renderAt } from "@/test/render";
 import { LayersDrawer } from "../layers-drawer";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../../lib/template-bundles");
-const LOOKS = readdirSync(BUNDLES).filter((d) => statSync(path.join(BUNDLES, d)).isDirectory());
+// A look folder has a look.json; the element library's `elements/` doesn't.
+const LOOKS = readdirSync(BUNDLES).filter((d) => existsSync(path.join(BUNDLES, d, "look.json")));
 
 type Bundle = {
   document: { layers?: FreeLayer[]; pages?: Record<string, { layers: FreeLayer[] }> };

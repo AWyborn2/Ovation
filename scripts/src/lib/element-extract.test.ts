@@ -109,6 +109,21 @@ describe("decorationSignature", () => {
     });
     expect(decorationSignature(clear as never)).not.toBe(decorationSignature(a as never));
   });
+
+  it("treats a label's words alike, but not its fields", () => {
+    const chip = (content: string) => ({
+      id: "g",
+      kind: "group",
+      geometry: at({ x: 6, y: 6, w: 20, h: 6 }),
+      children: [
+        shape("bg", at({ x: 6, y: 6, w: 20, h: 6 })),
+        { id: "t", kind: "text", content, geometry: at({ x: 7, y: 7, w: 18, h: 4 }) },
+      ],
+    });
+    const sig = (content: string) => decorationSignature(chip(content) as never);
+    expect(sig("CENTURY")).toBe(sig("MILESTONE"));
+    expect(sig("{{grade}}")).not.toBe(sig("CENTURY"));
+  });
 });
 
 describe("the converter's sig and link (Stream C2)", () => {

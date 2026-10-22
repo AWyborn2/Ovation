@@ -462,11 +462,11 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
 ];
 
 export const ELEMENT_BUNDLES: ElementBundle[] = [
-  { look: "bold-type", hash: "f11fe317e8f6d584baf49ffe45c9d9541347f1ba78eb6d2fe875fb08319c38a8", file: elements0 },
+  { look: "bold-type", hash: "2aeee0b6ed2015249b2619ae239168bb537e6d51bac7add9ba986d7421311fd7", file: elements0 },
   { look: "broadcast-classic", hash: "ac8eb3d6c4fe2f0de6208486c173e2b5f700ada947bdf225a8d6ed5e95bcfe2d", file: elements1 },
   { look: "broadcast-dark", hash: "7c5a33f4687ae8f12f7b6aa1d0233829c5cedfaa94aa5431d490ae9e27453e66", file: elements2 },
-  { look: "club-kit-classic", hash: "20ce4e5858f530d29becb27e5e62ffea081c62eb19eb26d9192095133d5a7756", file: elements3 },
-  { look: "club-kit", hash: "d5ef532c3153375aa4decccc41584cd7f0589c2772a01fb09e65fecf31f74672", file: elements4 },
+  { look: "club-kit-classic", hash: "72ebb20854cb4358d8f56a35bee369d4ecccbc75f5e96f79589361e66a5fc3c2", file: elements3 },
+  { look: "club-kit", hash: "4597ff194d59ffe192c994d28aa7f9c64d311f79b25aa952904d38dea29ffd0e", file: elements4 },
   { look: "clubhouse", hash: "1eaf6ad121c06013f0da75faee96e32808c94197b6bc1234b3aa236b6f5df2e0", file: elements5 },
   { look: "duotone", hash: "2134720c1616a04255013152cdcacfd6b0468c1a2e3bfb5cbe5475b048c9d3df", file: elements6 },
   { look: "gold-foil", hash: "474a36e8cc2f0da3392537bc95fad20669bd49e27797a1a4672b1c347724089c", file: elements7 },

@@ -167,6 +167,8 @@ function lookOf(value: unknown, key = ""): unknown {
   // only whether a colour is see-through tells two decorations apart.
   if (typeof value === "string" && COLOUR.test(value.trim()))
     return TRANSPARENT.test(value.trim()) ? "clear" : "colour";
+  // A label's words (one chip per card kind) are edited per card; its fields aren't.
+  if (key === "content" && typeof value === "string" && !/\{\{/.test(value)) return "words";
   return value;
 }
 
