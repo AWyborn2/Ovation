@@ -8850,6 +8850,32 @@ export interface CreateConsoleLibraryLookRequest {
   description?: string | null;
 }
 
+export type CarouselAssemblyRequestSetType = typeof CarouselAssemblyRequestSetType[keyof typeof CarouselAssemblyRequestSetType];
+
+
+export const CarouselAssemblyRequestSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
+} as const;
+
+export interface CarouselAssemblyRequest {
+  setType: CarouselAssemblyRequestSetType;
+  /**
+     * The pages the set's slides draw; the title and sponsors pages are added.
+     * @maxItems 20
+     */
+  pages: string[];
+  /** The picked template; absent for the club's default. */
+  templateRef?: TemplateRef | null;
+}
+
+export interface CarouselAssembly {
+  document: TemplateDocument;
+  templateRef: TemplateRef;
+}
+
 export interface ImportFigmaTemplateRequest {
   /**
      * A Figma design link (with or without node-id), or a bare file key.
