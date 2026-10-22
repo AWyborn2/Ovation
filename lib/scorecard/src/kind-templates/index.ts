@@ -1,6 +1,7 @@
 export * from "./capacity";
 export * from "./document";
 export * from "./drop-rule";
+export * from "./elements";
 export * from "./fields";
 export * from "./fit-matrix";
 export * from "./fit-rules";
@@ -12,6 +13,7 @@ export * from "./pages";
 export * from "./page-tokens";
 export * from "./slides";
 export * from "./placeholder";
+export * from "./signature";
 export * from "./svg";
 export * from "./warnings";
 export * from "./validate";

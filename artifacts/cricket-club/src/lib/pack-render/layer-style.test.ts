@@ -442,3 +442,165 @@ describe("clips and brightness (converter fidelity)", () => {
     expect(wrapper(html, "pic")).toContain("filter:brightness(0.6)");
   });
 });
+
+describe("what the converter dropped (B4)", () => {
+  const band = {
+    polygon: [
+      [10, 0],
+      [100, 0],
+      [90, 100],
+      [0, 100],
+    ] as Array<[number, number]>,
+  };
+
+  it("draws a border on some sides only, dashed or dotted", () => {
+    const html = draw(
+      v2([
+        {
+          id: "rule",
+          kind: "shape",
+          geometry: box,
+          style: { border: { width: 0.2, color: "#ffffff38", style: "dashed", sides: ["top"] } },
+        },
+        {
+          id: "all",
+          kind: "shape",
+          geometry: box,
+          style: {
+            border: {
+              width: 0.2,
+              color: "#fff",
+              style: "dotted",
+              sides: ["left", "top", "right", "bottom"],
+            },
+          },
+        },
+      ]),
+    );
+    expect(wrapper(html, "rule")).toContain(
+      "border-top:0.2cqw dashed #ffffff38;box-sizing:border-box",
+    );
+    expect(wrapper(html, "rule")).not.toMatch(/border:|border-(right|bottom|left)/);
+    expect(wrapper(html, "all")).toContain("border:0.2cqw dotted #fff;box-sizing:border-box");
+  });
+
+  it("outlines text with a stroke, transparent fill and all", () => {
+    const html = draw(
+      v2([
+        {
+          id: "num",
+          kind: "text",
+          content: "8",
+          geometry: box,
+          style: { color: "transparent", textStroke: { width: 0.19, color: "#ffffff38" } },
+        },
+      ]),
+    );
+    expect(html).toContain("-webkit-text-stroke:0.19cqw #ffffff38");
+    expect(html).toContain("color:transparent");
+  });
+
+  it("slants a layer after its rotation", () => {
+    const html = draw(
+      v2([
+        { id: "a", kind: "shape", geometry: box, style: { fill: "#fff", skew: { x: -12 } } },
+        {
+          id: "b",
+          kind: "shape",
+          geometry: { square: { ...box.square, rotate: 5 } },
+          style: { fill: "#fff", skew: { x: -12, y: 3 } },
+        },
+        { id: "c", kind: "shape", geometry: box, style: { fill: "#fff", skew: { x: 0 } } },
+      ]),
+    );
+    expect(wrapper(html, "a")).toContain("transform:skew(-12deg, 0deg)");
+    expect(wrapper(html, "b")).toContain("transform:rotate(5deg) skew(-12deg, 3deg)");
+    expect(wrapper(html, "c")).not.toContain("transform");
+  });
+
+  it("blurs what's behind a layer, following its corners, at most 20 px", () => {
+    const html = draw(
+      v2([
+        {
+          id: "glass",
+          kind: "shape",
+          geometry: box,
+          style: { fill: "#ffffff14", radius: 18, backdropBlur: 18 },
+        },
+        { id: "max", kind: "shape", geometry: box, style: { backdropBlur: 60 } },
+      ]),
+    );
+    expect(wrapper(html, "glass")).toContain(
+      "border-radius:18px;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)",
+    );
+    expect(wrapper(html, "max")).toContain("backdrop-filter:blur(20px)");
+  });
+
+  it("adds drop shadows after a layer's photo filters", () => {
+    const html = draw(
+      v2([
+        {
+          id: "logo",
+          kind: "shape",
+          geometry: box,
+          style: {
+            filter: [{ preset: "grayscale" }],
+            dropShadow: [
+              { x: 0, y: 0.4, blur: 1, color: "rgba(0, 0, 0, 0.4)" },
+              { x: 0, y: 0, blur: 2.4, color: "#d3175ab3" },
+            ],
+          },
+        },
+      ]),
+    );
+    expect(wrapper(html, "logo")).toContain(
+      "filter:grayscale(1) drop-shadow(0cqw 0.4cqw 1cqw rgba(0, 0, 0, 0.4)) drop-shadow(0cqw 0cqw 2.4cqw #d3175ab3)",
+    );
+  });
+
+  it("draws a clipped layer's glow round it, so the clip doesn't cut the glow off", () => {
+    const html = draw(
+      v2([
+        {
+          id: "slash",
+          kind: "shape",
+          geometry: box,
+          style: {
+            fill: "var(--gold)",
+            clip: band,
+            blend: "screen",
+            dropShadow: [{ x: 0, y: 0, blur: 2.4, color: "#d3175ab3" }],
+          },
+        },
+      ]),
+    );
+    const outer = wrapper(html, "slash");
+    expect(outer).toContain("filter:drop-shadow(0cqw 0cqw 2.4cqw #d3175ab3);mix-blend-mode:screen");
+    expect(outer).not.toContain("clip-path");
+    const inner = html.split('data-layer-id="slash"')[1]!;
+    expect(inner).toMatch(
+      /^[^>]*><div style="position:absolute;inset:0;clip-path:polygon\(10% 0%, 100% 0%, 90% 100%, 0% 100%\)"><div style="width:100%;height:100%;background:var\(--gold\)/,
+    );
+  });
+
+  it("leaves out what isn't valid", () => {
+    const html = draw(
+      v2([
+        {
+          id: "x",
+          kind: "text",
+          content: "8",
+          geometry: box,
+          style: {
+            textStroke: { width: 0.2, color: "red" },
+            skew: { x: "a" as never },
+            backdropBlur: -3,
+            dropShadow: [{ x: 0, y: 0, blur: 1, color: "x" }],
+            border: { width: 1, color: "#fff", sides: [] },
+          },
+        },
+      ]),
+    );
+    expect(html).not.toMatch(/text-stroke|skew|backdrop|drop-shadow|border/);
+  });
+});

@@ -317,6 +317,19 @@ describe("format v2 validation", () => {
     expect(errors.join("\n")).toContain(message);
   });
 
+  it("accepts a link and a design signature, and refuses malformed ones", () => {
+    const ok = layer("a", { link: "card-l3", sig: "text:0a1b2c3d4e5f6g" });
+    expect(templateDocumentErrors(doc({ card: [ok] }), "milestone")).toEqual([]);
+    const errors = templateDocumentErrors(
+      doc({ card: [layer("b", { link: "a b", sig: "<script>" })] }),
+      "milestone",
+    );
+    expect(errors).toEqual([
+      "card/b.link needs a simple id.",
+      "card/b.sig must be a design signature (kind:hash).",
+    ]);
+  });
+
   it("refuses ids repeated across pages, and unknown document settings", () => {
     const errors = templateDocumentErrors(
       doc({ fixture: [layer("same")], title: [layer("same")] }, { palette: "foil" }),
@@ -479,5 +492,74 @@ describe("rows that fill across (Club Kit polish)", () => {
     expect(templateDocumentErrors({ layers: [tiles("across")] }, "teamOfWeek")).toEqual([
       "Layer 1.rows.flow is a format v2 option.",
     ]);
+  });
+});
+
+describe("what the converter dropped (B4)", () => {
+  const styled = (kind: string, style: Record<string, unknown>) =>
+    doc({
+      card: [{ id: "s", kind, geometry, ...(kind === "text" ? { content: "8" } : {}), style }],
+    });
+  const errors = (kind: string, style: Record<string, unknown>) =>
+    templateDocumentErrors(styled(kind, style), "player");
+
+  it("accepts side borders, a text stroke, skew, backdrop blur and drop shadows", () => {
+    expect(
+      errors("shape", {
+        border: { width: 0.2, color: "#ffffff38", style: "dashed", sides: ["top", "bottom"] },
+        skew: { x: -12 },
+        backdropBlur: 18,
+        dropShadow: [{ x: 0, y: 0, blur: 2.4, color: "#d3175ab3" }],
+        clip: {
+          polygon: [
+            [10, 0],
+            [100, 0],
+            [90, 100],
+            [0, 100],
+          ],
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      errors("text", { color: "transparent", textStroke: { width: 0.19, color: "#ffffff38" } }),
+    ).toEqual([]);
+  });
+
+  it("refuses them out of range or misshapen, naming the setting", () => {
+    expect(errors("shape", { border: { width: 1, color: "#fff", sides: [] } })).toEqual([
+      "card/s.style.border.sides must be 1 to 4 of top, right, bottom, left.",
+    ]);
+    expect(errors("shape", { border: { width: 1, color: "#fff", sides: ["top", "top"] } })).toEqual(
+      ["card/s.style.border.sides repeats top."],
+    );
+    expect(errors("shape", { border: { width: 1, color: "#fff", sides: ["middle"] } }).length).toBe(
+      1,
+    );
+    expect(errors("text", { textStroke: { width: 9, color: "#fff" } }).length).toBe(1);
+    expect(errors("text", { textStroke: { width: 0.2, color: "white" } }).length).toBe(1);
+    expect(errors("shape", { skew: { x: 89 } }).length).toBe(1);
+    expect(errors("shape", { skew: { z: 4 } }).length).toBe(1);
+    expect(errors("shape", { backdropBlur: 40 }).length).toBe(1);
+    expect(
+      errors("shape", {
+        dropShadow: Array.from({ length: 5 }, () => ({ x: 0, y: 0, blur: 1, color: "#000" })),
+      }),
+    ).toEqual(["card/s.style.dropShadow must be a list of at most 4 shadows."]);
+    expect(
+      errors("shape", { dropShadow: [{ x: 0, y: 0, blur: 1, spread: 1, color: "#000" }] }).length,
+    ).toBe(1);
+  });
+
+  it("keeps them out of v1 documents", () => {
+    for (const style of [
+      { textStroke: { width: 0.2, color: "#fff" } },
+      { skew: { x: 10 } },
+      { backdropBlur: 4 },
+      { dropShadow: [{ x: 0, y: 0, blur: 1, color: "#000" }] },
+    ])
+      expect(
+        templateDocumentErrors({ layers: [{ id: "a", kind: "shape", geometry, style }] }, "player"),
+        JSON.stringify(style),
+      ).toEqual([`Layer 1.style has an unknown setting "${Object.keys(style)[0]}".`]);
   });
 });
