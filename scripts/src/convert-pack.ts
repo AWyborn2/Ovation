@@ -13,7 +13,9 @@
  *   --colour-mode=club|pack  the club's colour mode for the pack (default club)
  *   --out=<dir>              captures (default scripts/exports/pack-capture, git-ignored)
  *   --convert-out=<dir>      converted looks (default scripts/exports/pack-convert, git-ignored)
- *   --bundles                write the converted looks to lib/template-bundles instead (L4-B)
+ *   --bundles                write the converted looks to lib/template-bundles instead (L4-B);
+ *                            then `prettier --write` the look folder (CI checks it) and
+ *                            `pnpm --filter @workspace/template-bundles run generate`
  *   --capture-only           capture, don't map
  *   --map-only               map the captures already in --out (no new capture)
  *   --no-check               skip the fit and pixel-diff renders
