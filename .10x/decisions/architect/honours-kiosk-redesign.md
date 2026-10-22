@@ -73,3 +73,10 @@ prefers-reduced-motion → Fade/Cut.
 Season-keyed boards show the season once per row in a leading Season column; grade columns
 carry names (+ note) only. Frees width for more grades (mockup shows 4; settings allow 1–5).
 Rows (one per season) are the unit for paging, scrolling and the Rows reveal transition.
+
+## Working prototype (23 Oct 2026)
+
+`docs/design-handoffs/honours-kiosk-redesign/prototype.html`: interactive settings + TV player
+(sample data, localStorage only). Defines the intended behaviour for the build: per-item
+overrides with "Use club default", drag/keyboard reorder, Play rotation, fit-to-screen
+readability warning (text scale < 0.7).
