@@ -13,6 +13,7 @@
  * Look slugs are the folder names under `lib/template-bundles/`.
  */
 import { templateKindFor } from "./pages";
+import { LEGACY_PACK_IDS } from "../pack-ids";
 
 export const CLUB_KIT_LOOK = "club-kit";
 
@@ -53,6 +54,11 @@ const PACK_TO_STARTER_LOOK: Readonly<Record<string, string>> = {
 
 export function starterLookForPack(packId: string | null | undefined): string {
   return (packId && PACK_TO_STARTER_LOOK[packId]) || "club-kit-classic";
+}
+
+/** Whether a pack id is one of the retired (hidden legacy) packs (R19). */
+export function isRetiredPack(packId: string | null | undefined): boolean {
+  return !!packId && (LEGACY_PACK_IDS as readonly string[]).includes(packId);
 }
 
 /**

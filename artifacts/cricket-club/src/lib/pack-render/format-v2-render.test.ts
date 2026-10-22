@@ -7,14 +7,13 @@
 import { describe, expect, it } from "vitest";
 import {
   primaryPage,
-  STARTER_IDS,
-  starterDocument,
   TEMPLATE_CARD_KINDS,
   TEMPLATE_SIZE_ORDER,
   type PageKey,
   type TemplateCardKind,
   type TemplateLayerV2,
 } from "@workspace/scorecard/kind-templates";
+import { STARTER_IDS, starterDocument } from "@/test/starter-documents";
 import {
   BLANK_PACK_ID,
   renderPackCard,
@@ -182,10 +181,10 @@ describe("a starter as an explicit v2 document", () => {
       ] as const) {
         for (const size of TEMPLATE_SIZE_ORDER) {
           const v1 = render(input, stored as CardAdjustments, { size, junior });
-          const v2 = render(input, asV2(stored, kind), { size, junior }).replaceAll(
-            ` ${FIT_WORDS_ATTR}="1"`,
-            "",
-          );
+          const v2 = render(input, asV2(stored as { layers: unknown[] }, kind), {
+            size,
+            junior,
+          }).replaceAll(` ${FIT_WORDS_ATTR}="1"`, "");
           expect(
             v2,
             `${starter}/${kind}/${size}/${junior ? "junior" : input === stress ? "stress" : "sample"}`,

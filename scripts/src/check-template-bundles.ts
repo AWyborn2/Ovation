@@ -8,7 +8,6 @@
  *   pnpm --filter @workspace/scripts run check-template-bundles
  *     [--changed-since=<git ref>]  only bundles changed since the ref, or all of
  *                                  them when the renderer or format changed
- *     [--starters]                 also check the TypeScript starters (local review)
  *     [--only=<look/kind,...>]     just these templates
  *     [--base-url=<url>]           a running web app instead of building one
  *     [--skip-build]               reuse the last build
@@ -20,13 +19,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  fitReportSummary,
-  STARTER_IDS,
-  starterDocument,
-  TEMPLATE_CARD_KINDS,
-  type TemplateFitReport,
-} from "@workspace/scorecard/kind-templates";
+import { fitReportSummary, type TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import { REPO_ROOT, callHarness, withHarness } from "./lib/harness-browser";
 import {
   gateFailures,
@@ -34,7 +27,6 @@ import {
   renderReport,
   selectChanged,
   type CheckedTemplate,
-  type FitTarget,
   type KnownFailures,
 } from "./check-template-bundles-core";
 
@@ -52,7 +44,6 @@ export function readKnownFailures(file = KNOWN_FAILURES): KnownFailures {
 
 export interface CheckOptions {
   changedSince: string | null;
-  starters: boolean;
   only: string[] | null;
   baseUrl: string | null;
   skipBuild: boolean;
@@ -67,13 +58,12 @@ export function parseArgs(argv: readonly string[]): CheckOptions {
     if (!m) throw new Error(`Unknown argument: ${a}`);
     args.set(m[1]!, m[2] ?? "true");
   }
-  const known = ["changed-since", "starters", "only", "base-url", "skip-build", "out"];
+  const known = ["changed-since", "only", "base-url", "skip-build", "out"];
   for (const key of args.keys())
     if (!known.includes(key)) throw new Error(`Unknown option --${key}`);
   const only = args.get("only");
   return {
     changedSince: args.get("changed-since") ?? null,
-    starters: args.get("starters") === "true",
     only: only
       ? only
           .split(",")
@@ -95,27 +85,14 @@ function changedFiles(ref: string): string[] {
   return out.split("\n").filter(Boolean);
 }
 
-/** The TypeScript starters as check targets (until L4-B exports them as bundles). */
-function starterTargets(): FitTarget[] {
-  const out: FitTarget[] = [];
-  for (const starter of STARTER_IDS)
-    for (const kind of TEMPLATE_CARD_KINDS) {
-      const document = starterDocument(starter, kind);
-      if (document) out.push({ id: `starter:${starter}/${kind}`, kind, document });
-    }
-  return out;
-}
-
 export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedTemplate[]> {
   const bundles = readBundleTargets(REPO_ROOT);
   let targets = opts.changedSince
     ? selectChanged(bundles, changedFiles(opts.changedSince))
     : bundles;
-  if (opts.starters) targets = [...targets, ...starterTargets()];
   if (opts.only) targets = targets.filter((t) => opts.only!.includes(t.id));
   const selection = [
     opts.changedSince ? `changed since ${opts.changedSince}` : "every bundle",
-    ...(opts.starters ? ["and the starters"] : []),
     ...(opts.only ? [`only ${opts.only.join(", ")}`] : []),
   ].join(" ");
   process.stderr.write(

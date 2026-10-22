@@ -19,13 +19,11 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   placeholderDocument,
-  STARTER_IDS,
-  starterDocument,
   TEMPLATE_CARD_KINDS,
   TEMPLATE_SIZE_ORDER,
-  type StarterId,
   type TemplateCardKind,
 } from "@workspace/scorecard/kind-templates";
+import { STARTER_IDS, starterDocument, type StarterId } from "@/test/starter-documents";
 import {
   BLANK_PACK_ID,
   renderPackCard,
