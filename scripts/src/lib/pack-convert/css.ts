@@ -220,6 +220,44 @@ export function parseShadows(value: string | undefined): ParsedShadow[] {
   });
 }
 
+/** A computed `filter` as its functions, in order (`drop-shadow(… rgba(…))` kept whole). */
+export function parseFilterFunctions(
+  value: string | undefined,
+): Array<{ name: string; arg: string }> {
+  const out: Array<{ name: string; arg: string }> = [];
+  if (!value || value === "none") return out;
+  const re = /([a-z-]+)\(/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    for (; i < value.length && depth; i++) {
+      if (value[i] === "(") depth++;
+      else if (value[i] === ")") depth--;
+    }
+    out.push({ name: m[1]!.toLowerCase(), arg: value.slice(re.lastIndex, i - 1).trim() });
+    re.lastIndex = i;
+  }
+  return out;
+}
+
+/** The `drop-shadow()`s of a computed `filter`, as shadows (they have no spread). */
+export function parseDropShadows(value: string | undefined): ParsedShadow[] {
+  return parseFilterFunctions(value)
+    .filter((f) => f.name === "drop-shadow")
+    .flatMap((f) => parseShadows(f.arg));
+}
+
+/** A pure skew transform (`skew(x, y)`) as degrees; null for any other matrix. */
+export function pureSkew(m: number[]): { x: number; y: number } | null {
+  const [a, b, c, d] = m as [number, number, number, number];
+  if (Math.abs(a - 1) > 0.005 || Math.abs(d - 1) > 0.005) return null;
+  const deg = (t: number) => r2((Math.atan(t) * 180) / Math.PI);
+  const skew = { x: deg(c), y: deg(b) };
+  if (!skew.x && !skew.y) return null;
+  return Math.abs(skew.x) <= 75 && Math.abs(skew.y) <= 75 ? skew : null;
+}
+
 /** A px length as a number; NaN for anything else (`normal`, `auto`, percentages). */
 export function px(value: string | undefined): number {
   const m = /^(-?[\d.]+)px$/.exec((value ?? "").trim());

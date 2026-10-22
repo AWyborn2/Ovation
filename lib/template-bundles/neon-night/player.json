@@ -1,6 +1,6 @@
 {
   "name": "Neon Night player",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -327,6 +327,7 @@
               ]
             },
             "id": "card-l8",
+            "link": "card-l8",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -370,6 +371,7 @@
               ]
             },
             "id": "card-l9",
+            "link": "card-l8",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -384,7 +386,19 @@
           {
             "kind": "image",
             "content": "{{clubLogo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 1.4,
+                  "color": "#D3175AB3"
+                }
+              ]
+            },
             "id": "card-l10",
+            "link": "card-l10",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
@@ -403,7 +417,27 @@
                 "y": 3.37,
                 "w": 9.5,
                 "h": 5.34
-              },
+              }
+            },
+            "sig": "image:140eagx0appsjm"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0,
+                  "blur": 0.74,
+                  "color": "#D3175AB3"
+                }
+              ]
+            },
+            "id": "card-l11",
+            "link": "card-l10",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 6,
@@ -411,7 +445,7 @@
                 "h": 9.5
               }
             },
-            "sig": "image:194ijcq0drv4o1"
+            "sig": "image:0apwlcz0ka2fu2"
           },
           {
             "kind": "text",
@@ -439,7 +473,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l11",
+            "id": "card-l12",
+            "link": "card-l12",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -489,7 +524,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l12",
+            "id": "card-l13",
+            "link": "card-l12",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -519,7 +555,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l13",
+            "id": "card-l14",
+            "link": "card-l14",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -561,7 +598,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l14",
+            "id": "card-l15",
+            "link": "card-l14",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -591,7 +629,8 @@
                 }
               ]
             },
-            "id": "card-l15",
+            "id": "card-l16",
+            "link": "card-l16",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -633,7 +672,8 @@
                 }
               ]
             },
-            "id": "card-l16",
+            "id": "card-l17",
+            "link": "card-l16",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -658,7 +698,8 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "card-l17",
+            "id": "card-l18",
+            "link": "card-l18",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -695,7 +736,8 @@
               "align": "left",
               "lineHeight": 1
             },
-            "id": "card-l18",
+            "id": "card-l19",
+            "link": "card-l18",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -733,7 +775,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l19",
+            "id": "card-l20",
+            "link": "card-l20",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -783,7 +826,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l20",
+            "id": "card-l21",
+            "link": "card-l20",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -808,7 +852,8 @@
               "align": "left",
               "lineHeight": 1.3
             },
-            "id": "card-l21",
+            "id": "card-l22",
+            "link": "card-l22",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -833,7 +878,8 @@
               "align": "left",
               "lineHeight": 1.3
             },
-            "id": "card-l22",
+            "id": "card-l23",
+            "link": "card-l22",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -864,7 +910,8 @@
               "align": "left",
               "lineHeight": 1.3
             },
-            "id": "card-l23",
+            "id": "card-l24",
+            "link": "card-l22",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -886,7 +933,8 @@
               },
               "radius": 3.56
             },
-            "id": "card-l24",
+            "id": "card-l25",
+            "link": "card-l25",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -908,7 +956,8 @@
               },
               "radius": 4.75
             },
-            "id": "card-l25",
+            "id": "card-l26",
+            "link": "card-l25",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -936,7 +985,8 @@
               },
               "radius": 2.08
             },
-            "id": "card-l26",
+            "id": "card-l27",
+            "link": "card-l25",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -965,7 +1015,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l27",
+            "id": "card-l28",
+            "link": "card-l28",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -994,7 +1045,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l28",
+            "id": "card-l29",
+            "link": "card-l28",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1029,7 +1081,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l29",
+            "id": "card-l30",
+            "link": "card-l28",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1068,11 +1121,12 @@
               ]
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l30",
+            "id": "card-l31",
+            "link": "card-l31",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1082,7 +1136,7 @@
                 "h": 36.04
               }
             },
-            "sig": "text:0a402kd0hhtzlm"
+            "sig": "text:1bo9jtk1j60jlf"
           },
           {
             "kind": "text",
@@ -1111,11 +1165,12 @@
               ]
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l31",
+            "id": "card-l32",
+            "link": "card-l31",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1131,7 +1186,7 @@
                 "h": 27.06
               }
             },
-            "sig": "text:0mxxamh14fw74g"
+            "sig": "text:0g3r66a0ks73nv"
           },
           {
             "kind": "text",
@@ -1160,11 +1215,12 @@
               ]
             },
             "fit": {
-              "minScale": 0.6,
+              "minScale": 1,
               "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l32",
+            "id": "card-l33",
+            "link": "card-l31",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1174,7 +1230,7 @@
                 "h": 36.16
               }
             },
-            "sig": "text:0m1j7o91tqodb4"
+            "sig": "text:0cmjni606ar8fj"
           },
           {
             "kind": "shape",
@@ -1186,7 +1242,8 @@
               },
               "radius": 9.98
             },
-            "id": "card-l33",
+            "id": "card-l34",
+            "link": "card-l34",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1208,7 +1265,8 @@
               },
               "radius": 13.31
             },
-            "id": "card-l34",
+            "id": "card-l35",
+            "link": "card-l34",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1236,7 +1294,8 @@
               },
               "radius": 5.82
             },
-            "id": "card-l35",
+            "id": "card-l36",
+            "link": "card-l34",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1260,21 +1319,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l36",
+            "id": "card-l37",
+            "link": "card-l37",
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 7.57,
+                "x": 8.07,
                 "y": 63.84,
-                "w": 14.71,
+                "w": 13.8,
                 "h": 8.89
               }
             },
-            "sig": "text:05p9vlc19yabav"
+            "sig": "text:0tpqq7c0ata7vr"
           },
           {
             "kind": "text",
@@ -1288,27 +1348,28 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l37",
+            "id": "card-l38",
+            "link": "card-l37",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
-                "x": 8.32,
+                "x": 8.82,
                 "y": 69.77,
-                "w": 19.27,
+                "w": 18.36,
                 "h": 9.56
               },
               "story": {
-                "x": 8.32,
+                "x": 8.82,
                 "y": 78.74,
-                "w": 19.27,
+                "w": 18.36,
                 "h": 6.72
               }
             },
-            "sig": "text:007gth00jczauf"
+            "sig": "text:12rnajw1dnn0uv"
           },
           {
             "kind": "text",
@@ -1322,21 +1383,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l38",
+            "id": "card-l39",
+            "link": "card-l37",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 3.77,
+                "x": 4.27,
                 "y": 64.6,
-                "w": 8.19,
+                "w": 7.27,
                 "h": 8.89
               }
             },
-            "sig": "text:1pf9c740n6xomb"
+            "sig": "text:1ic2lpk0s8fuxf"
           },
           {
             "kind": "text",
@@ -1356,7 +1418,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l39",
+            "id": "card-l40",
+            "link": "card-l40",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1386,7 +1449,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l40",
+            "id": "card-l41",
+            "link": "card-l40",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1422,7 +1486,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l41",
+            "id": "card-l42",
+            "link": "card-l40",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1444,7 +1509,8 @@
               },
               "radius": 9.98
             },
-            "id": "card-l42",
+            "id": "card-l43",
+            "link": "card-l43",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1466,7 +1532,8 @@
               },
               "radius": 13.31
             },
-            "id": "card-l43",
+            "id": "card-l44",
+            "link": "card-l43",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1494,7 +1561,8 @@
               },
               "radius": 5.82
             },
-            "id": "card-l44",
+            "id": "card-l45",
+            "link": "card-l43",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1518,21 +1586,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l45",
+            "id": "card-l46",
+            "link": "card-l46",
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 26.74,
+                "x": 27.24,
                 "y": 63.84,
-                "w": 9.81,
+                "w": 8.9,
                 "h": 8.89
               }
             },
-            "sig": "text:11zj3ci1rv57nd"
+            "sig": "text:022azxq015oah9"
           },
           {
             "kind": "text",
@@ -1546,27 +1615,28 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l46",
+            "id": "card-l47",
+            "link": "card-l46",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
-                "x": 34,
+                "x": 34.5,
                 "y": 69.77,
-                "w": 12.74,
+                "w": 11.83,
                 "h": 9.56
               },
               "story": {
-                "x": 34,
+                "x": 34.5,
                 "y": 78.74,
-                "w": 12.74,
+                "w": 11.83,
                 "h": 6.72
               }
             },
-            "sig": "text:0ke5y3q0d1ov7l"
+            "sig": "text:10cxstm122c665"
           },
           {
             "kind": "text",
@@ -1580,21 +1650,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l47",
+            "id": "card-l48",
+            "link": "card-l46",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 13.89,
+                "x": 14.39,
                 "y": 64.6,
-                "w": 5.62,
+                "w": 4.7,
                 "h": 8.89
               }
             },
-            "sig": "text:1vk2g2a1osaw9h"
+            "sig": "text:04yomhq199jcex"
           },
           {
             "kind": "text",
@@ -1614,7 +1685,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l48",
+            "id": "card-l49",
+            "link": "card-l49",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1644,7 +1716,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l49",
+            "id": "card-l50",
+            "link": "card-l49",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1680,7 +1753,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l50",
+            "id": "card-l51",
+            "link": "card-l49",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1702,7 +1776,8 @@
               },
               "radius": 9.98
             },
-            "id": "card-l51",
+            "id": "card-l52",
+            "link": "card-l52",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1724,7 +1799,8 @@
               },
               "radius": 13.31
             },
-            "id": "card-l52",
+            "id": "card-l53",
+            "link": "card-l52",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1752,7 +1828,8 @@
               },
               "radius": 5.82
             },
-            "id": "card-l53",
+            "id": "card-l54",
+            "link": "card-l52",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1776,21 +1853,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l54",
+            "id": "card-l55",
+            "link": "card-l55",
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 41.01,
+                "x": 41.51,
                 "y": 63.84,
-                "w": 9.81,
+                "w": 8.9,
                 "h": 8.89
               }
             },
-            "sig": "text:1v4db5l0spz56a"
+            "sig": "text:0b78r0t1fptgoe"
           },
           {
             "kind": "text",
@@ -1804,27 +1882,28 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l55",
+            "id": "card-l56",
+            "link": "card-l55",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
-                "x": 53.15,
+                "x": 53.65,
                 "y": 69.77,
-                "w": 12.74,
+                "w": 11.83,
                 "h": 9.56
               },
               "story": {
-                "x": 53.15,
+                "x": 53.65,
                 "y": 78.74,
-                "w": 12.74,
+                "w": 11.83,
                 "h": 6.72
               }
             },
-            "sig": "text:1l53g011odviue"
+            "sig": "text:1ey8ikd0usvomi"
           },
           {
             "kind": "text",
@@ -1838,21 +1917,22 @@
               "lineHeight": 0.9
             },
             "fit": {
-              "minScale": 0.6,
-              "maxLines": 1,
+              "minScale": 1,
+              "maxLines": 2,
               "ellipsis": true
             },
-            "id": "card-l56",
+            "id": "card-l57",
+            "link": "card-l55",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 21.45,
+                "x": 21.95,
                 "y": 64.6,
-                "w": 5.62,
+                "w": 4.7,
                 "h": 8.89
               }
             },
-            "sig": "text:1wfciad1prf7yq"
+            "sig": "text:0pzu7a101tbk7y"
           },
           {
             "kind": "text",
@@ -1872,7 +1952,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l57",
+            "id": "card-l58",
+            "link": "card-l58",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1902,7 +1983,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l58",
+            "id": "card-l59",
+            "link": "card-l58",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -1938,7 +2020,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l59",
+            "id": "card-l60",
+            "link": "card-l58",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -1966,7 +2049,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l60",
+            "id": "card-l61",
+            "link": "card-l61",
             "sizes": ["square"],
             "geometry": {
               "square": {
@@ -1994,7 +2078,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l61",
+            "id": "card-l62",
+            "link": "card-l61",
             "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
@@ -2028,7 +2113,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l62",
+            "id": "card-l63",
+            "link": "card-l61",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2043,37 +2129,62 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--gold)",
-              "opacity": 0.35
+              "border": {
+                "width": 0.09,
+                "color": "var(--gold)",
+                "sides": ["top"]
+              },
+              "opacity": 0.35,
+              "fill": "#00000000"
             },
-            "id": "card-l63",
+            "id": "card-l64",
+            "link": "card-l64",
+            "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
                 "x": 6,
                 "y": 87.51,
                 "w": 88,
-                "h": 0.09
+                "h": 6.49
               },
               "portrait": {
                 "x": 6,
                 "y": 90.01,
                 "w": 88,
-                "h": 0.07
+                "h": 5.19
               },
               "story": {
                 "x": 6,
                 "y": 92.97,
                 "w": 88,
-                "h": 0.05
+                "h": 3.65
+              }
+            },
+            "sig": "shape:019iwud1962oyc"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.08,
+                "color": "var(--gold)",
+                "sides": ["top"]
               },
+              "opacity": 0.35,
+              "fill": "#00000000"
+            },
+            "id": "card-l65",
+            "link": "card-l64",
+            "sizes": ["landscape"],
+            "geometry": {
               "landscape": {
                 "x": 3.15,
                 "y": 87.44,
                 "w": 93.7,
-                "h": 0.16
+                "h": 6.56
               }
             },
-            "sig": "shape:0mgmyo111s9wvk"
+            "sig": "shape:0s1apzc13c1w9d"
           },
           {
             "kind": "text",
@@ -2090,7 +2201,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l64",
+            "id": "card-l66",
+            "link": "card-l66",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2129,7 +2241,8 @@
             "showWhen": {
               "sponsors": true
             },
-            "id": "card-l65",
+            "id": "card-l67",
+            "link": "card-l66",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2147,7 +2260,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l66",
+            "id": "card-l68",
+            "link": "card-l68",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2177,7 +2291,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l67",
+            "id": "card-l69",
+            "link": "card-l68",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2195,7 +2310,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l68",
+            "id": "card-l70",
+            "link": "card-l70",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2225,7 +2341,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l69",
+            "id": "card-l71",
+            "link": "card-l70",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2243,7 +2360,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l70",
+            "id": "card-l72",
+            "link": "card-l72",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2273,7 +2391,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l71",
+            "id": "card-l73",
+            "link": "card-l72",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2291,7 +2410,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l72",
+            "id": "card-l74",
+            "link": "card-l74",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2321,7 +2441,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l73",
+            "id": "card-l75",
+            "link": "card-l74",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2339,7 +2460,8 @@
               "fill": "#FFFFFFEB",
               "radius": 6.48
             },
-            "id": "card-l74",
+            "id": "card-l76",
+            "link": "card-l76",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2369,7 +2491,8 @@
               "fill": "#FFFFFFEB",
               "radius": 3.78
             },
-            "id": "card-l75",
+            "id": "card-l77",
+            "link": "card-l76",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2387,7 +2510,8 @@
             "style": {
               "radius": 6.48
             },
-            "id": "card-l76",
+            "id": "card-l78",
+            "link": "card-l78",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2417,7 +2541,8 @@
             "style": {
               "radius": 3.78
             },
-            "id": "card-l77",
+            "id": "card-l79",
+            "link": "card-l78",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
@@ -2454,7 +2579,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l78",
+            "id": "card-l80",
+            "link": "card-l80",
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
@@ -2503,7 +2629,8 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l79",
+            "id": "card-l81",
+            "link": "card-l80",
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {

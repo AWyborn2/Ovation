@@ -36,17 +36,22 @@ import type {
   TemplateBoxShadow,
   TemplateFill,
   TemplateFilter,
+  TemplateDropShadow,
   BlendMode,
+  BorderSide,
 } from "@workspace/scorecard/kind-templates";
 import { MAX_BLUR_PX } from "@workspace/scorecard/kind-templates";
 import {
   parseColour,
   toHex,
   parseClipPolygon,
+  parseDropShadows,
+  parseFilterFunctions,
   parseGradient,
   parseMatrix,
   parseShadows,
   pureRotation,
+  pureSkew,
   px,
   r2,
   splitTopLevel,
@@ -395,7 +400,9 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
   };
   const shadowColour = (raw: string, el: CapturedElement, prop: string, i: number) => {
     const bShadow = bById.get(el.id)?.style[prop];
-    const twin = bShadow ? parseShadows(bShadow)[i]?.colour : undefined;
+    // A `filter`'s shadows are its drop-shadow()s.
+    const twins = prop === "filter" ? parseDropShadows(bShadow) : parseShadows(bShadow);
+    const twin = bShadow ? twins[i]?.colour : undefined;
     const match = tokeniseColour(raw, twin, palette);
     if (match?.moved && !match.token) untokenised.add(`${prop} ${raw} (element ${el.id})`);
     return match?.value ?? raw;
@@ -550,6 +557,11 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       if (opacity < 1) style.opacity = r2(opacity);
       const filters = imageFilters(tree, el, polish);
       if (filters.length) style.filter = filters;
+      // A glow round a logo, on it or on a wrapper.
+      const drops = [el, ...tree.ancestors(el)]
+        .flatMap((e) => dropShadowsOf(e, { wPct, shadowColour }))
+        .slice(0, 4);
+      if (drops.length) style.dropShadow = drops;
       // A blend on a wrapper blends the image inside it (Bold Type's photo screens onto
       // the panel behind it).
       const blend = [el, ...tree.ancestors(el)]
@@ -591,8 +603,13 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     const textStyle = text.length
       ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
       : null;
-    if (paint && skewed && typeof paint.style.fill === "string" && !text.length) {
-      // A skewed panel (Broadcast Dark's slashes): its box cut to the transformed corners.
+    // A skewed panel (Broadcast Dark's slashes): its own box, slanted about its centre.
+    const skew = paint && skewed && !text.length ? pureSkew(transform!) : null;
+    if (skew) paint!.style.skew = skew;
+    const place = (box: LayerBox): LayerBox =>
+      skew && g.size ? centred(box, g.size, W, H) : withRotate(box);
+    if (paint && skewed && !skew && typeof paint.style.fill === "string" && !text.length) {
+      // Any other transform: the box cut to its transformed corners.
       const { opacity } = paint.style;
       add(`shape:skew:${paint.key}`, {
         kind: "shape",
@@ -604,7 +621,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       } as MappedLayer["layer"]);
       continue;
     }
-    if (skewed)
+    if (skewed && !skew)
       polish.push({
         element: el.id,
         what: `transform ${el.style.transform} (skew or scale) drawn untransformed`,
@@ -622,9 +639,10 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
               ...(s.radius !== undefined ? { radius: s.radius } : {}),
               ...(s.clip ? { clip: s.clip } : {}),
               ...(s.opacity !== undefined ? { opacity: s.opacity } : {}),
+              ...(s.skew ? { skew: s.skew } : {}),
             },
           } as MappedLayer["layer"],
-          withRotate(pct(g.box)),
+          place(pct(g.box)),
         );
       });
       const m = motionFor();
@@ -635,7 +653,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
           style: paint.style,
           ...(m && !text.length ? { motion: m } : {}),
         } as MappedLayer["layer"],
-        withRotate(pct(g.box)),
+        place(pct(g.box)),
       );
     }
     for (const edge of paint?.edges ?? []) {
@@ -732,9 +750,9 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     // The pack's own fit (`data-fit`) shrinks then wraps; clipped text ends in an ellipsis,
     // after a second line unless it's kept to one (`white-space: nowrap`). Other live text
     // the worst case keeps to one line shrinks, then ends in an ellipsis, so content longer
-    // than the worst case still fits. Text the worst case wraps keeps live text's own fit
-    // (it wraps as the pack does, and shrinks only to fit its box): the v2 fit would try
-    // it on one line first and draw fewer, smaller lines than the pack.
+    // than the worst case still fits. Text the worst case wraps keeps the pack's size: one
+    // line doesn't fit, so it wraps to two as the pack does (a shrinking fit would draw
+    // fewer, smaller lines), and anything longer ends in an ellipsis after the second.
     const fit =
       el.data?.fit !== undefined || el.data?.fitRow !== undefined
         ? { minScale: 0.6, maxLines: nowrap ? 1 : 2, ellipsis: true }
@@ -742,7 +760,9 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
           ? { minScale: 1, maxLines: nowrap ? 1 : 2, ellipsis: true }
           : /\{\{/.test(content) && (nowrap || worstLines < 2)
             ? { minScale: 0.6, maxLines: 1 as const, ellipsis: true }
-            : null;
+            : /\{\{/.test(content)
+              ? { minScale: 1, maxLines: 2 as const, ellipsis: true }
+              : null;
     const m = motionFor();
     add(
       `text:${content}`,
@@ -895,9 +915,6 @@ export function fillOverBox(
 /** A fill that paints nothing. */
 const TRANSPARENT = "#00000000";
 
-/** Outlined text's stand-in fill: this share of the stroke's own opacity. */
-const OUTLINE_FILL = 0.5;
-
 /**
  * The part of a vertical gradient a box shows when the gradient is taller than
  * the box (`background-size: 100% 220%`, Gold Foil's foil, positioned by its
@@ -977,9 +994,10 @@ function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): Te
   for (const e of [el, ...tree.ancestors(el)]) {
     const value = e.style.filter;
     if (!value || value === "none") continue;
-    for (const [, name, arg] of value.matchAll(/([a-z-]+)\(([^)]*)\)/g)) {
-      const n = parseFloat(arg!);
-      const amount = arg!.endsWith("%") ? n / 100 : n;
+    for (const { name, arg } of parseFilterFunctions(value)) {
+      if (name === "drop-shadow") continue; // the layer's drop shadows (`dropShadowsOf`)
+      const n = parseFloat(arg);
+      const amount = arg.endsWith("%") ? n / 100 : n;
       if (name === "grayscale" && Number.isFinite(n))
         out.push({ preset: "grayscale", amount: r2(amount) });
       else if (name === "blur" && Number.isFinite(n))
@@ -988,7 +1006,7 @@ function imageFilters(tree: Tree, el: CapturedElement, polish: PolishItem[]): Te
       else if (name === "brightness" && Number.isFinite(n)) brightness = (brightness ?? 1) * amount;
       // The Duotone pack's gradient map (an SVG filter built from the club's colours):
       // the format's duotone preset from the Duotone palette, which draws exactly it.
-      else if (name === "url" && /#dt-duo-/.test(arg!))
+      else if (name === "url" && /#dt-duo-/.test(arg))
         out.push({ preset: "duotone", dark: "var(--dt-ink)", light: "var(--dt-p)" });
       else polish.push({ element: el.id, what: `filter ${name}(${arg}) not mapped` });
     }
@@ -1162,6 +1180,21 @@ interface StyleContext {
   clipBox?: { w: number; h: number };
 }
 
+/** An element's `filter: drop-shadow()` glows as drop shadows (the format takes four). */
+function dropShadowsOf(
+  el: CapturedElement,
+  ctx: Pick<StyleContext, "wPct" | "shadowColour">,
+): TemplateDropShadow[] {
+  return parseDropShadows(el.style.filter)
+    .slice(0, 4)
+    .map((s, i) => ({
+      x: ctx.wPct(s.x),
+      y: ctx.wPct(s.y),
+      blur: ctx.wPct(s.blur),
+      color: ctx.shadowColour(s.colour, el, "filter", i),
+    }));
+}
+
 /** A gradient as the format's fill, its colours tokenised where the twin capture allows. */
 function gradientFill(value: string, ctx: StyleContext, el: CapturedElement): TemplateFill | null {
   const g = parseGradient(value);
@@ -1221,16 +1254,32 @@ function shapeStyle(
   const drawn = sides.filter(
     (d) => Number.isFinite(d.w) && d.w > 0 && d.style !== "none" && d.style !== "hidden",
   );
-  // A border all round is the box's border; one on some sides only (a divider
-  // above a footer) is a thin strip per side, drawn as its own shape.
+  // A border that's the same on every side it's drawn on is the box's border, on those
+  // sides (a dashed divider above a footer); otherwise each side is a strip of its own.
   const edges: Edge[] = [];
-  if (drawn.length === 4) {
-    const first = drawn[0]!;
-    const col = ctx.colour(el, `border-${first.s}-color`) ?? "#000000";
+  const colourOf = (d: (typeof drawn)[number]) =>
+    ctx.colour(el, `border-${d.s}-color`) ?? "#000000";
+  const lineOf = (d: (typeof drawn)[number]) =>
+    d.style === "dashed" || d.style === "dotted" ? d.style : "solid";
+  const first = drawn[0];
+  const uniform =
+    !!first &&
+    drawn.every(
+      (d) => d.w === first.w && colourOf(d) === colourOf(first) && lineOf(d) === lineOf(first),
+    );
+  // A translucent border on some sides of a filled box keeps its strips: its alpha can't
+  // move to the layer without fading the fill.
+  const fadedSides =
+    drawn.length < 4 &&
+    !!style.fill &&
+    drawn.some((d) => ctx.translucent(el, `border-${d.s}-color`));
+  if (first && uniform && !fadedSides) {
+    const line = lineOf(first);
     style.border = {
       width: ctx.wPct(first.w),
-      color: col,
-      ...(first.style === "dashed" || first.style === "dotted" ? { style: first.style } : {}),
+      color: colourOf(first),
+      ...(line !== "solid" ? { style: line } : {}),
+      ...(drawn.length < 4 ? { sides: drawn.map((d) => d.s as BorderSide) } : {}),
     };
   } else
     for (const d of drawn) {
@@ -1257,6 +1306,12 @@ function shapeStyle(
       ...(s.inset ? { inset: true } : {}),
     }));
   if (!style.fill && !style.border && !style.boxShadow && !edges.length) return null;
+  // A glow that follows the paint (a clipped band's drop-shadow), and frosted glass.
+  const drops = dropShadowsOf(el, ctx);
+  if (drops.length) style.dropShadow = drops;
+  const frost = parseFilterFunctions(el.style["backdrop-filter"]).find((f) => f.name === "blur");
+  const frostPx = frost ? px(frost.arg) : NaN;
+  if (frostPx > 0) style.backdropBlur = Math.min(MAX_BLUR_PX, r2(frostPx));
   let opacity = num(el.style.opacity);
   // A box that paints one translucent token (a frame line at 45 % accent) draws the token,
   // its alpha moved to the layer.
@@ -1290,8 +1345,13 @@ function shapeStyle(
       clipped = true;
     }
   }
+  // What's left unmapped: a filter other than drop-shadow(), a backdrop filter other than blur().
+  const mapped = (prop: string, value: string) =>
+    (prop === "clip-path" && clipped) ||
+    (prop === "filter" && parseFilterFunctions(value).every((f) => f.name === "drop-shadow")) ||
+    (prop === "backdrop-filter" && parseFilterFunctions(value).every((f) => f.name === "blur"));
   for (const prop of ["filter", "backdrop-filter", "clip-path", "mask-image"])
-    if (el.style[prop] && el.style[prop] !== "none" && !(prop === "clip-path" && clipped))
+    if (el.style[prop] && el.style[prop] !== "none" && !mapped(prop, el.style[prop]!))
       ctx.polish.push({
         element: el.id,
         what: `${prop}: ${el.style[prop]!.slice(0, 50)} not mapped`,
@@ -1363,6 +1423,13 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
       blur: ctx.wPct(s.blur),
       color: ctx.shadowColour(s.colour, el, "text-shadow", i),
     }));
+  // An outline round the glyphs, and glows that follow them.
+  const strokePx = px(tree.style(el, "-webkit-text-stroke-width")) * scale;
+  const stroke = ctx.colour(el, "-webkit-text-stroke-color");
+  const stroked = Number.isFinite(strokePx) && strokePx > 0 && !!stroke;
+  if (stroked) style.textStroke = { width: ctx.wPct(strokePx), color: stroke! };
+  const drops = dropShadowsOf(el, ctx);
+  if (drops.length) style.dropShadow = drops;
   // Text painted with a gradient (Gold Foil's numbers).
   const clip = el.style["background-clip"] ?? el.style["-webkit-background-clip"];
   const fillColour = el.style["-webkit-text-fill-color"];
@@ -1378,18 +1445,9 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
     (fillColour && parseColour(fillColour)?.a === 0) ||
     parseColour(tree.style(el, "color"))?.a === 0
   ) {
-    // Outlined text (Bold Type's watermark numbers): v2 has no text stroke, so it's a
-    // faint fill in the stroke's colour, at half the stroke's strength.
-    const strokePx = px(tree.style(el, "-webkit-text-stroke-width"));
-    const stroke = ctx.colour(el, "-webkit-text-stroke-color");
-    if (Number.isFinite(strokePx) && strokePx > 0 && stroke) {
-      style.color = stroke;
-      style.opacity = r2((style.opacity ?? 1) * OUTLINE_FILL);
-      ctx.polish.push({
-        element: el.id,
-        what: "outlined text drawn as a faint fill (no text stroke in v2)",
-      });
-    } else ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
+    // Outlined text (Bold Type's watermark numbers): its stroke, nothing inside.
+    if (stroked) style.color = TRANSPARENT;
+    else ctx.polish.push({ element: el.id, what: "transparent text fill without a gradient" });
   }
   return style;
 }

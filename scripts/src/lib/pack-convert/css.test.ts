@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   parseColour,
   parseClipPolygon,
+  parseDropShadows,
+  parseFilterFunctions,
   parseGradient,
   parseMatrix,
   parseShadows,
   pureRotation,
+  pureSkew,
   splitTopLevel,
   toHex,
   tokeniseColour,
@@ -147,5 +150,27 @@ describe("clip polygons", () => {
     expect(parseClipPolygon("polygon(0 0, 100% 0)", 100, 100)).toBeNull();
     expect(parseClipPolygon("polygon(0 0, 1 0, 0 1)", 0, 100)).toBeNull();
     expect(parseClipPolygon(undefined, 100, 100)).toBeNull();
+  });
+});
+
+describe("filters and skew", () => {
+  it("reads filter functions whole, nested colours included, and their drop shadows", () => {
+    const value = "grayscale(1) drop-shadow(rgba(0, 0, 0, 0.5) 0px 2px 4px) blur(2px)";
+    expect(parseFilterFunctions(value).map((f) => f.name)).toEqual([
+      "grayscale",
+      "drop-shadow",
+      "blur",
+    ]);
+    expect(parseDropShadows(value)).toEqual([
+      { colour: "rgba(0, 0, 0, 0.5)", x: 0, y: 2, blur: 4, spread: 0, inset: false },
+    ]);
+    expect(parseFilterFunctions("none")).toEqual([]);
+  });
+
+  it("takes a pure skew as degrees, and nothing else", () => {
+    expect(pureSkew([1, 0, -0.404026, 1, 0, 0])).toEqual({ x: -22, y: 0 });
+    expect(pureSkew([1.2, 0, 0.4, 1, 0, 0])).toBeNull();
+    expect(pureSkew([1, 0, 0, 1, 0, 0])).toBeNull();
+    expect(pureSkew([1, 0, 10, 1, 0, 0])).toBeNull(); // past 75 degrees
   });
 });
