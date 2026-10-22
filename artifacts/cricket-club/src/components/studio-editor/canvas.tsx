@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
 import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
 import { boundsOf, snapMove, snapRotation, type Guide } from "./guides";
-import { contains, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
+import { contains, hasType, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
 import { isContainer } from "./scope";
 
 type Handle = ResizeHandle;
@@ -445,7 +445,7 @@ export function EditorCanvas({
       from,
       start: structuredClone(movable),
     };
-    setScalingType(isCorner(handle) && movable.some((l) => l.style?.fontSize || l.rows));
+    setScalingType(isCorner(handle) && movable.some(hasType));
     capturePointer(e);
   };
 
