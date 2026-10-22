@@ -25,12 +25,12 @@ Polish applied:
 - Layers: 20 shape, 7 image, 36 text.
 - Motion: `hhPulse` → loop: pulse, 1400 ms; `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 85% | none |
-| portrait | 80% | none |
-| story | 86% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 85%         | none         |
+| portrait  | 80%         | none         |
+| story     | 86%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -54,12 +54,12 @@ Polish applied:
 - Layers: 19 shape, 1 photo, 7 image, 34 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 92% | none |
-| portrait | 89% | none |
-| story | 92% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 92%         | none         |
+| portrait  | 89%         | none         |
+| story     | 92%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -84,12 +84,12 @@ Polish applied:
 - From `card.Runs`; not used: `card.Wickets`.
 - Layers: 15 shape, 7 image, 20 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 88% | none |
-| story | 92% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 88%         | none         |
+| story     | 92%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -111,12 +111,12 @@ Polish applied:
 - Layers: 16 shape, 7 image, 34 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 91% | none |
-| portrait | 85% | none |
-| story | 90% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 91%         | none         |
+| portrait  | 85%         | none         |
+| story     | 90%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -138,12 +138,12 @@ Polish applied:
 - Layers: 16 shape, 1 photo, 7 image, 27 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 85% | none |
-| portrait | 80% | none |
-| story | 86% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 85%         | none         |
+| portrait  | 80%         | none         |
+| story     | 86%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -168,12 +168,12 @@ Polish applied:
 - Layers: 19 shape, 1 photo, 7 image, 36 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 87% | none |
-| story | 91% | none |
-| landscape | 94% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 87%         | none         |
+| story     | 91%         | none         |
+| landscape | 94%         | none         |
 
 Polish:
 
@@ -198,12 +198,12 @@ Polish applied:
 - Layers: 16 shape, 1 photo, 7 image, 29 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 91% | none |
-| portrait | 88% | none |
-| story | 92% | none |
-| landscape | 94% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 91%         | none         |
+| portrait  | 88%         | none         |
+| story     | 92%         | none         |
+| landscape | 94%         | none         |
 
 Polish:
 
@@ -227,12 +227,12 @@ Polish applied:
 - From `card.single`.
 - Layers: 21 shape, 7 image, 66 text, 2 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 84% | none |
-| portrait | 81% | none |
-| story | 87% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 84%         | none         |
+| portrait  | 81%         | none         |
+| story     | 87%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -262,12 +262,12 @@ Polish applied:
 - Layers: 23 shape, 9 image, 47 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 95% | none |
-| portrait | 92% | none |
-| story | 95% | none |
-| landscape | 96% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 95%         | none         |
+| portrait  | 92%         | none         |
+| story     | 95%         | none         |
+| landscape | 96%         | none         |
 
 Polish:
 
@@ -284,12 +284,12 @@ Colours not tokenised:
 - From `title.slide`.
 - Layers: 18 shape, 1 photo, 7 image, 28 text.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 93% | none |
-| portrait | 91% | none |
-| story | 93% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 93%         | none         |
+| portrait  | 91%         | none         |
+| story     | 93%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -306,12 +306,12 @@ Colours not tokenised:
 - From `day.slide`.
 - Layers: 15 shape, 7 image, 16 text, 4 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 91% | none |
-| portrait | 86% | none |
-| story | 86% | none |
-| landscape | 87% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 91%         | none         |
+| portrait  | 86%         | none         |
+| story     | 86%         | none         |
+| landscape | 87%         | none         |
 
 Polish:
 
@@ -326,12 +326,12 @@ Colours not tokenised:
 - From `sponsors.slide`.
 - Layers: 21 shape, 1 photo, 7 image, 31 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 86% | none |
-| portrait | 80% | none |
-| story | 86% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 86%         | none         |
+| portrait  | 80%         | none         |
+| story     | 86%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -357,12 +357,12 @@ Polish applied:
 - Layers: 19 shape, 1 photo, 9 image, 40 text, 3 group; 1 stack group(s).
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 88% | none |
-| portrait | 87% | none |
-| story | 90% | none |
-| landscape | 92% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 88%         | none         |
+| portrait  | 87%         | none         |
+| story     | 90%         | none         |
+| landscape | 92%         | none         |
 
 Polish:
 
@@ -382,12 +382,12 @@ Colours not tokenised:
 - From `day.slide`.
 - Layers: 11 shape, 3 image, 16 text, 4 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 85% | none |
-| story | 85% | none |
-| landscape | 85% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 85%         | none         |
+| story     | 85%         | none         |
+| landscape | 85%         | none         |
 
 Polish:
 
@@ -409,12 +409,12 @@ Polish applied:
 - Layers: 19 shape, 1 photo, 7 image, 29 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 88% | none |
-| portrait | 82% | none |
-| story | 87% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 88%         | none         |
+| portrait  | 82%         | none         |
+| story     | 87%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -438,12 +438,12 @@ Polish applied:
 - Layers: 17 shape, 1 photo, 7 image, 28 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 84% | none |
-| portrait | 79% | none |
-| story | 85% | none |
-| landscape | 91% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 84%         | none         |
+| portrait  | 79%         | none         |
+| story     | 85%         | none         |
+| landscape | 91%         | none         |
 
 Polish:
 
@@ -468,12 +468,12 @@ Polish applied:
 - Layers: 27 shape, 1 photo, 7 image, 43 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 88% | none |
-| portrait | 83% | none |
-| story | 88% | none |
-| landscape | 93% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 88%         | none         |
+| portrait  | 83%         | none         |
+| story     | 88%         | none         |
+| landscape | 93%         | none         |
 
 Polish:
 
@@ -500,12 +500,12 @@ Polish applied:
 - Layers: 10 shape, 1 photo, 1 image, 28 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 90% | none |
-| portrait | 88% | none |
-| story | 91% | none |
-| landscape | 94% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 90%         | none         |
+| portrait  | 88%         | none         |
+| story     | 91%         | none         |
+| landscape | 94%         | none         |
 
 Polish:
 
@@ -530,12 +530,12 @@ Polish applied:
 - Layers: 16 shape, 1 photo, 7 image, 30 text.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 92% | none |
-| portrait | 86% | none |
-| story | 90% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 92%         | none         |
+| portrait  | 86%         | none         |
+| story     | 90%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -558,12 +558,12 @@ Polish applied:
 - From `team.single`; not used: `team.slide`.
 - Layers: 11 shape, 1 photo, 3 image, 21 text, 3 rows.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 93% | none |
-| portrait | 92% | none |
-| story | 95% | none |
-| landscape | 95% | none |
+| Size      | Pixel match | Fit warnings |
+| --------- | ----------- | ------------ |
+| square    | 93%         | none         |
+| portrait  | 92%         | none         |
+| story     | 95%         | none         |
+| landscape | 95%         | none         |
 
 Polish:
 
@@ -589,12 +589,12 @@ Polish applied:
 - Layers: 15 shape, 7 image, 16 text, 4 rows.
 - Motion: `hhShine` → loop: shine, 5500 ms.
 
-| Size | Pixel match | Fit warnings |
-| --- | --- | --- |
-| square | 89% | overflow; overflow |
-| portrait | 86% | overflow; overflow |
-| story | 90% | overflow; overflow |
-| landscape | 94% | overflow |
+| Size      | Pixel match | Fit warnings       |
+| --------- | ----------- | ------------------ |
+| square    | 89%         | overflow; overflow |
+| portrait  | 86%         | overflow; overflow |
+| story     | 90%         | overflow; overflow |
+| landscape | 94%         | overflow           |
 
 Polish:
 
@@ -604,4 +604,3 @@ Polish:
 Colours not tokenised:
 
 - color color(srgb 0.875765 0.344941 0.534118)
-
