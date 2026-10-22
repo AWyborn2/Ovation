@@ -1608,8 +1608,7 @@ function rowCells(
     for (const [i, run] of (el.text ?? []).entries()) {
       const field = fieldFor(el, run.text, i);
       if (!field) continue;
-      const style = textStyle(el);
-      cells.push({ field, ...lineTall(at(el), style), style });
+      cells.push({ field, ...at(el), style: textStyle(el) });
     }
   }
   const firstField = cells.find((c) => c.field)?.field ?? "";
@@ -1617,6 +1616,9 @@ function rowCells(
   // (a lost result's badge colour) overrides by key: each backdrop takes its own.
   // Keys from the cells as the pack drew them (before widening, so a pill still holds its text).
   const keys = backdropKeys(cells, rowFill !== undefined);
+  // Then each text cell is at least a line tall (a pill held its text as drawn).
+  for (const [i, c] of cells.entries())
+    if (c.field && c.show === undefined) cells[i] = lineTall(c, c.style ?? {});
   widenTextCells(cells, {
     left: ((px(row.style["padding-left"]) || 0) / row.box.w) * 100,
     right: 100 - ((px(row.style["padding-right"]) || 0) / row.box.w) * 100,
