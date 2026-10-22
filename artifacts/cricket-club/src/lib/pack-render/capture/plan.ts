@@ -348,8 +348,10 @@ export function captureVariants(packId: string): CaptureVariant[] {
         ...(preset === undefined || preset === "full" ? [BOX_RENDER] : []),
       ]);
       if (!defaultPreset) continue;
-      if (photoBranch) variant(false, true, [FULL_RENDER]);
-      if (sponsorBranch) variant(true, false, [FULL_RENDER]);
+      // The branches get a worst-case render too: a layer only a branch draws (the
+      // hashtag footer when there are no sponsors) is sized by real content.
+      if (photoBranch) variant(false, true, [FULL_RENDER, BOX_RENDER]);
+      if (sponsorBranch) variant(true, false, [FULL_RENDER, BOX_RENDER]);
     }
   }
   return out;

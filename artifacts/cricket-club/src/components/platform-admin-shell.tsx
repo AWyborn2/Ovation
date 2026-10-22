@@ -9,6 +9,7 @@ import {
   PlusCircle,
   RefreshCw,
   ShieldOff,
+  Sparkles,
   Trophy,
 } from "lucide-react";
 import {
@@ -94,6 +95,7 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
     { href: "/platform-admin/player-privacy", label: "Player privacy", icon: ShieldOff },
     { href: "/platform-admin/grade-decisions", label: "Competitions", icon: Trophy },
     { href: "/platform-admin/library", label: "Template library", icon: LayoutTemplate },
+    { href: "/platform-admin/designer", label: "AI designer", icon: Sparkles },
     { href: "/platform-admin/brand", label: "Platform brand", icon: Palette },
   ];
 
