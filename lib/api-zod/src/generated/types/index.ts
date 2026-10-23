@@ -564,6 +564,8 @@ export * from './listStatsParams';
 export * from './listStatsSortBy';
 export * from './listStatsSortOrder';
 export * from './loginRequest';
+export * from './makeCarouselSetRequest';
+export * from './makeCarouselSetRequestSetType';
 export * from './matchCardPhoto';
 export * from './matchDayFixtureContent';
 export * from './matchDayFixtureContentHomeAway';

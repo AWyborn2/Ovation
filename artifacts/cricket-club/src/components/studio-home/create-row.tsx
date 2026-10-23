@@ -3,7 +3,6 @@
  * under More, then Carousel set and Blank design.
  */
 import { useState } from "react";
-import { Link } from "wouter";
 import {
   CalendarDays,
   ChevronDown,
@@ -26,14 +25,7 @@ import {
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { WeekendCarousel } from "@/components/weekend-carousel";
+import { MakeSetDialog } from "@/components/template-library/make-set-dialog";
 import { kindLabel, type CardKind } from "@/lib/social-studio";
 import { splitPostedKinds } from "@/lib/studio-home";
 
@@ -136,26 +128,8 @@ export function CreateRow({
           )}
         </div>
       )}
-      <Dialog open={carousel} onOpenChange={setCarousel}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Carousel set</DialogTitle>
-            <DialogDescription>
-              Build a branded set with a cover, one slide per team or match and a sponsors close.
-              Send it to review, then export the saved set as one ZIP.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-wrap gap-2">
-            <WeekendCarousel />
-            <WeekendCarousel initialType="teamList" />
-            <WeekendCarousel initialType="results" />
-            <WeekendCarousel initialType="matchSummary" />
-          </div>
-          <Link href="/admin/social/sets" className="text-sm text-primary-text hover:underline">
-            Build a set slide by slide
-          </Link>
-        </DialogContent>
-      </Dialog>
+      {/* Create → Carousel set: pick the set, a look and a size, then the editor (part 4). */}
+      <MakeSetDialog open={carousel} onClose={() => setCarousel(false)} />
     </section>
   );
 }
