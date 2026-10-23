@@ -182,8 +182,16 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
-    kioskLook: {},
-    boardConfigs: {},
+    // Short timings so a browser check sees every movement quickly.
+    kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
+    // One board per movement, with a spread of transitions.
+    boardConfigs: {
+      premierships: { move: "pages", trans: "flip" },
+      "club-champions": { move: "credits", trans: "wipe", speed: 120 },
+      "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
+      "batting-records": { move: "fit", trans: "pop" },
+      "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
+    },
     composites: [],
   },
   activeSponsors: [],

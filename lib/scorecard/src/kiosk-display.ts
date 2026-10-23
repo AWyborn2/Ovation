@@ -163,10 +163,13 @@ function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: n
     case "columns":
       return { fallback: "club", max: board.columns?.length || 5 };
     case "list":
-    case "lifeMembers":
       return { fallback: 1, max: 3 };
+    // Today's TV shows two life-member cards across and as many plaques as fit
+    // (about seven on a 1080p TV); keep that look until the board sets one.
+    case "lifeMembers":
+      return { fallback: 2, max: 3 };
     case "premiership":
-      return { fallback: 3, max: 5 };
+      return { fallback: 5, max: 5 };
     default:
       return { fallback: 1, max: 1 };
   }
