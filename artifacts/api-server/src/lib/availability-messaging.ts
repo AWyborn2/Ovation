@@ -33,6 +33,8 @@ import {
 import { isUnder18OnDate, memberFirstName, perthDate, perthDayStart } from "./availability-grades";
 import { CLUB_TIME_ZONE } from "./round-schedules";
 import { logger as defaultLogger } from "./logger";
+import { clubLink } from "./tenant-origin";
+import { env } from "../config";
 
 /**
  * Member and staff messaging for the availability round and the Selection Hub.
@@ -663,7 +665,8 @@ export async function notifyStaff(
       const result = await sendEmail({
         to: settings.email,
         subject: title,
-        text: `${body}\n\n${link}`,
+        // The in-app link is a path; the email needs it on the club's own app.
+        text: `${body}\n\n${await clubLink(tenantId, link, env.RENDER_HARNESS_ORIGIN() ?? null)}`,
       });
       if (!result.sent && result.reason === "failed") {
         logger.warn(

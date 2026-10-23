@@ -2,6 +2,7 @@ import { db, notificationsTable, type NotificationRow } from "@workspace/db";
 import { env } from "../config";
 import { sendEmail } from "./integrations/email";
 import { enqueueAssetReady, kickOutbox, socialListAddresses } from "./email-outbox";
+import { clubLink } from "./tenant-origin";
 
 type Logger = { warn: (obj: unknown, msg?: string) => void };
 
@@ -125,7 +126,8 @@ export async function notifyClub(
       to: from,
       bcc: recipients,
       subject: notice.title,
-      text: `${notice.body}\n\n${notice.link}`,
+      // The in-app link is a path; the email needs it on the club's own app.
+      text: `${notice.body}\n\n${await clubLink(tenantId, notice.link, env.RENDER_HARNESS_ORIGIN() ?? null)}`,
     });
     if (!result.sent && result.reason === "failed") {
       logger.warn({ tenantId, error: result.error }, `${notice.kind} email failed`);
