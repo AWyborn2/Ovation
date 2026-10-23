@@ -21,7 +21,7 @@ import {
 import { elementDocumentErrors } from "@workspace/scorecard/kind-templates";
 import { libraryAssetPolicyErrors } from "./assets";
 import { TemplateLibraryError } from "./errors";
-import { OVATION_AUTHOR, type LibraryLookRef } from "./store";
+import { lookRef, OVATION_AUTHOR, type LibraryLookRef } from "./store";
 
 /** Elements per page: the panel shows small tiles, so twice a template page. */
 export const ELEMENT_PAGE_SIZE = 48;
@@ -82,7 +82,7 @@ function present(row: ViewRow, tenantId: number): LibraryElementView {
     mine: row.authorTenantId === tenantId,
     look:
       row.lookId !== null && row.lookSlug !== null && row.lookName !== null
-        ? { id: row.lookId, slug: row.lookSlug, name: row.lookName }
+        ? lookRef(row.lookId, row.lookSlug, row.lookName)
         : null,
     listed: row.listed,
     document: row.document,

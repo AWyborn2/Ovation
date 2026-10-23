@@ -4,7 +4,7 @@
  * kinds it covers. The confirmation names the defaults that change; kinds the
  * look doesn't cover keep theirs.
  */
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   adoptLibraryLook,
@@ -29,6 +29,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
+import { groupFamilies } from "./look-families";
 import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
 
 type Preview = LibraryPreview;
@@ -167,45 +168,55 @@ export function LooksPanel({ preview }: { preview: Preview }) {
         </div>
       )}
       <ul className="space-y-3">
-        {looks.map((look) => {
+        {groupFamilies(looks).map((look, i, all) => {
           const pack = packFor(look);
+          // A design system's looks sit together under its name (M3).
+          const familyStart = !!look.family && all[i - 1]?.family !== look.family;
           return (
-            <li
-              key={look.id}
-              className="flex flex-col gap-4 rounded-xl border border-border bg-card p-3 sm:flex-row"
-            >
-              {pack && (
-                <div className="w-full shrink-0 sm:w-56">
-                  <LookPackControls packs={packs} pack={pack} format={format} data={packData} />
-                </div>
+            <Fragment key={look.id}>
+              {familyStart && (
+                <li className="pt-2">
+                  <h3 className="text-sm font-semibold">{look.family}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {all.filter((l) => l.family === look.family).length} styles from one design
+                    system
+                  </p>
+                </li>
               )}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-medium">{look.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {look.templates.length} {look.templates.length === 1 ? "card" : "cards"} · by{" "}
-                      {look.authorName}
-                    </p>
-                    {look.description && (
-                      <p className="mt-1 text-sm text-muted-foreground">{look.description}</p>
-                    )}
+              <li className="flex flex-col gap-4 rounded-xl border border-border bg-card p-3 sm:flex-row">
+                {pack && (
+                  <div className="w-full shrink-0 sm:w-56">
+                    <LookPackControls packs={packs} pack={pack} format={format} data={packData} />
                   </div>
-                  <Button
-                    size="sm"
-                    disabled={busy === look.id || !clubQ.data}
-                    onClick={() => adopt(look)}
-                  >
-                    Adopt look
-                  </Button>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-medium">{look.name}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {look.templates.length} {look.templates.length === 1 ? "card" : "cards"} ·
+                        by {look.authorName}
+                      </p>
+                      {look.description && (
+                        <p className="mt-1 text-sm text-muted-foreground">{look.description}</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={busy === look.id || !clubQ.data}
+                      onClick={() => adopt(look)}
+                    >
+                      Adopt look
+                    </Button>
+                  </div>
+                  <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+                    {look.templates.map((t) => (
+                      <KindThumb key={t.id} look={look.slug} kind={t.kind} preview={preview} />
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-                  {look.templates.map((t) => (
-                    <KindThumb key={t.id} look={look.slug} kind={t.kind} preview={preview} />
-                  ))}
-                </div>
-              </div>
-            </li>
+              </li>
+            </Fragment>
           );
         })}
       </ul>

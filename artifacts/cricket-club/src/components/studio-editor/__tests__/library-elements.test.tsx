@@ -38,6 +38,16 @@ const element = (
 
 const KIT = { id: 1, slug: "club-kit", name: "Club Kit" };
 
+const look = (id: number, slug: string, name: string, family?: string) => ({
+  id,
+  slug,
+  name,
+  description: null,
+  authorName: "Ovation",
+  templates: [],
+  ...(family ? { family } : {}),
+});
+
 function setup(onAdd = vi.fn()) {
   const api = installApiMock({
     "/template-library/elements": {
@@ -51,14 +61,10 @@ function setup(onAdd = vi.fn()) {
     },
     "/template-library/looks": {
       looks: [
-        {
-          id: 1,
-          slug: "club-kit",
-          name: "Club Kit",
-          description: null,
-          authorName: "Ovation",
-          templates: [],
-        },
+        look(1, "club-kit", "Club Kit"),
+        look(20, "omg-broadcast", "Broadcast", "Ovation Match Graphics"),
+        look(2, "gold-foil", "Gold Foil"),
+        look(21, "omg-t20", "T20", "Ovation Match Graphics"),
       ],
     },
   });
@@ -108,6 +114,29 @@ describe("LibraryElements", () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it("lists a design system as one look, with a heading and a page per style (M4)", async () => {
+    const { api } = setup();
+    await screen.findByRole("button", { name: "Add Gold band" });
+    const group = screen.getByRole("group", { name: "Ovation Match Graphics" });
+    expect(
+      Array.from(group.querySelectorAll("option")).map((o) => [o.value, o.textContent]),
+    ).toEqual([
+      ["family:Ovation Match Graphics", "Ovation Match Graphics"],
+      ["omg-broadcast", "Ovation Match Graphics · Broadcast"],
+      ["omg-t20", "Ovation Match Graphics · T20"],
+    ]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Look" }), {
+      target: { value: "family:Ovation Match Graphics" },
+    });
+    expect(await screen.findByRole("heading", { name: "Broadcast" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "T20" })).toBeTruthy();
+    await waitFor(() => {
+      const looks = elementCalls(api.calls).map((u) => u.searchParams.get("look"));
+      expect(looks).toContain("omg-broadcast");
+      expect(looks).toContain("omg-t20");
+    });
   });
 
   it("loads the next page on request", async () => {

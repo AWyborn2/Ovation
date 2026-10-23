@@ -7,7 +7,7 @@
  *
  * Layout, one folder per look:
  *
- *   <look-slug>/look.json      { name, description?, displayOrder? }
+ *   <look-slug>/look.json      { name, description?, displayOrder?, family? }
  *   <look-slug>/<kind>.json    { name, version, listed, document }
  *
  *   elements/<look-slug>.json  the look's decorations for the element library
@@ -23,6 +23,12 @@ export type BundleLookFile = {
   name: string;
   description?: string;
   displayOrder?: number;
+  /**
+   * The design system the look belongs to ("Ovation Match Graphics"): the
+   * library shows a family's looks together, and the Elements panel lists the
+   * family as one look with a heading per style.
+   */
+  family?: string;
 };
 
 /** `<kind>.json`. */
