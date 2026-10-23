@@ -2,7 +2,8 @@
  * The Studio's card designs (ADR-011 L5-C2, T5.18): every card is drawn with
  * the club's template for its kind, managed in the template library, so the
  * Studio points there instead of listing kinds or packs per type. Saved
- * editor templates are retired; uploaded backgrounds stay.
+ * editor templates are retired; uploaded backgrounds and the post settings
+ * moved to the Settings tab.
  */
 import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
 import { screen, cleanup } from "@testing-library/react";
@@ -91,10 +92,14 @@ describe("Studio card designs", () => {
     expect(screen.queryByRole("link", { name: /Edit the .* template/ })).toBeNull();
   });
 
-  it("retires saved editor templates but keeps uploaded backgrounds", async () => {
+  it("sends post settings and uploaded backgrounds to the Settings tab", async () => {
     open();
     await screen.findByRole("heading", { name: "Card designs" });
     expect(screen.queryByText(/use Save as template/)).toBeNull();
-    expect(screen.getByText("My Uploaded Background")).toBeTruthy();
+    expect(screen.queryByText("My Uploaded Background")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Card names" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Open settings" }).getAttribute("href")).toBe(
+      "/admin/social/settings",
+    );
   });
 });
