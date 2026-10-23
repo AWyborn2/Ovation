@@ -3,6 +3,7 @@
  * row offers, and the club's recent work for Continue designing, newest first.
  * Pure, so the ordering and the posting-plan split are tested on their own.
  */
+import { setDraftLayout } from "@/lib/set-draft";
 import type {
   CardSet,
   ClubTemplateSummary,
@@ -93,8 +94,8 @@ const draftEditedAt = (d: SocialDraft): string => d.editedAt ?? d.designEditedAt
 
 /**
  * The club's work, newest first: drafts still in the queue (not posted or
- * dismissed), its own templates and its carousel sets. Carousel posts are
- * left out of drafts; they open from the queue.
+ * dismissed), its own templates and its carousel sets. A carousel set draft
+ * opens in the set editor; a queued carousel it can't open is left out.
  */
 export function recentDesigns(
   {
@@ -107,16 +108,19 @@ export function recentDesigns(
   const items: RecentDesign[] = [];
   for (const d of drafts) {
     if (d.status === "posted" || d.status === "dismissed") continue;
-    // A queued carousel (valid or not) opens from the queue, not the editor.
+    // A carousel set (a templated queued set, or a round of team lists) opens in
+    // the set editor (carousel set editor plan); any other queued carousel opens
+    // from the queue.
+    const set = setDraftLayout(d);
     const input = d.cardInput as { weekendCarousel?: unknown } | null;
-    if (input && typeof input === "object" && input.weekendCarousel != null) continue;
+    if (!set && input && typeof input === "object" && input.weekendCarousel != null) continue;
     items.push({
       type: "draft",
       id: d.id,
       kind: draftKind(d),
       size: null,
       editedAt: draftEditedAt(d),
-      href: `/admin/social/editor/${d.id}`,
+      href: set ? `/admin/social/set/${d.id}` : `/admin/social/editor/${d.id}`,
       draft: d,
     });
   }

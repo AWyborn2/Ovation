@@ -12421,6 +12421,112 @@ export const ApproveSocialDraftResponse = zod.object({
 
 
 /**
+ * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+export const GetDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetDraftSetDesignResponse = zod.object({
+  "draftId": zod.number(),
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary']),
+  "layout": zod.enum(['carousel', 'list']).describe('`carousel`: a queued set whose slides are stored (their order is the payload\'s); `list`: a list card whose slides are worked out from its data (their order is the design\'s arrangement).'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullable(),
+  "size": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullable().describe('A queued carousel\'s size; null for a list draft (it posts at every size the club has on).'),
+  "stored": zod.boolean().optional().describe('Whether the draft already holds this set design (false when assembled for this read).')
+})
+
+
+/**
+ * Stores the set design on the draft. A queued carousel's slides follow the design's arrangement (reordered, deleted, design pages added) and its size; a list draft keeps the arrangement in its design. The draft's data snapshot is unchanged. The new layout owes a check before automation, as any templated edit does.
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const SaveDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SaveDraftSetDesignBody = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullish().describe('The set template the design now comes from (switching look); absent keeps the draft\'s.'),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional().describe('A queued carousel\'s new size.')
+})
+
+export const SaveDraftSetDesignResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
  * @summary One draft, including one just opened in the editor and not yet edited
  */
 export const GetSocialDraftParams = zod.object({

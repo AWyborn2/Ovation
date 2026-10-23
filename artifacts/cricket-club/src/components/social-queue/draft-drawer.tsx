@@ -26,6 +26,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
 import { PostPackButton } from "@/components/post-pack/post-pack-button";
 import { SchedulePanel } from "./schedule-panel";
+import { SetDraftPreview } from "./set-draft-preview";
+import { draftSetDocument, setDraftLayout } from "@/lib/set-draft";
 import { useConfirm } from "@/components/confirm-dialog";
 import {
   STATUS_LABEL,
@@ -105,6 +107,8 @@ export function DraftDrawer({
 
   const status = draftStatus(current);
   const carousel = readQueuedCarousel(current.cardInput);
+  // A set saved with its own design (carousel set editor plan) previews slide by slide.
+  const setDesign = setDraftLayout(current) ? draftSetDocument(current.adjustments) : null;
   const invalidCarousel =
     !!current.cardInput &&
     typeof current.cardInput === "object" &&
@@ -165,7 +169,12 @@ export function DraftDrawer({
           )}
           <div className="ml-auto flex flex-wrap gap-2">
             {carousel && <CarouselExportButton key={current.id} draftId={current.id} />}
-            {status !== "dismissed" && !carousel && (
+            {status !== "dismissed" && setDraftLayout(current) && (
+              <Button asChild variant="outline">
+                <Link href={`/admin/social/set/${current.id}`}>Edit set</Link>
+              </Button>
+            )}
+            {status !== "dismissed" && !carousel && !setDraftLayout(current) && (
               <Button asChild variant="outline">
                 <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
               </Button>
@@ -275,8 +284,17 @@ export function DraftDrawer({
           </div>
         )}
 
-        {carousel && (
+        {carousel && !setDesign && (
           <CarouselPreview key={current.id} carousel={carousel} document={current.adjustments} />
+        )}
+        {setDesign && (
+          <SetDraftPreview
+            // Unique among the drawer's panels (they key by the draft id too).
+            key={`set-${current.id}`}
+            draft={current}
+            document={setDesign}
+            size={carousel?.size ?? "square"}
+          />
         )}
         {invalidCarousel && (
           <p role="alert" className="text-sm text-destructive">

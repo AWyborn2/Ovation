@@ -89,7 +89,7 @@ describe("recentDesigns", () => {
     expect(items[2]).toMatchObject({ kind: "milestone", href: "/admin/social/editor/1" });
   });
 
-  it("leaves out posted and dismissed drafts and queued carousels", () => {
+  it("leaves out posted and dismissed drafts and queued carousels it can't open", () => {
     const items = recentDesigns({
       drafts: [
         draft(1, { status: "dismissed" }),
@@ -98,6 +98,13 @@ describe("recentDesigns", () => {
       ],
     });
     expect(items.map((d) => d.id)).toEqual([3]);
+  });
+
+  it("opens a round of team lists in the set editor (carousel set editor plan)", () => {
+    const items = recentDesigns({
+      drafts: [draft(4, { cardInput: { kind: "teamListRound", roundLabel: "R1", teams: [] } })],
+    });
+    expect(items[0]).toMatchObject({ href: "/admin/social/set/4" });
   });
 });
 

@@ -8659,10 +8659,78 @@ export interface KindTemplateConflict {
   updatedByName?: string | null;
 }
 
+export type DraftSetDesignSetType = typeof DraftSetDesignSetType[keyof typeof DraftSetDesignSetType];
+
+
+export const DraftSetDesignSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+} as const;
+
+/**
+ * `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement).
+ */
+export type DraftSetDesignLayout = typeof DraftSetDesignLayout[keyof typeof DraftSetDesignLayout];
+
+
+export const DraftSetDesignLayout = {
+  carousel: 'carousel',
+  list: 'list',
+} as const;
+
+/**
+ * A queued carousel's size; null for a list draft (it posts at every size the club has on).
+ */
+export type DraftSetDesignSize = typeof DraftSetDesignSize[keyof typeof DraftSetDesignSize] | null;
+
+
+export const DraftSetDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
 /**
  * A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.
  */
 export interface TemplateDocument { [key: string]: unknown }
+
+export interface DraftSetDesign {
+  draftId: number;
+  setType: DraftSetDesignSetType;
+  /** `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement). */
+  layout: DraftSetDesignLayout;
+  document: TemplateDocument;
+  templateRef: TemplateRef | null;
+  /** A queued carousel's size; null for a list draft (it posts at every size the club has on). */
+  size: DraftSetDesignSize;
+  /** Whether the draft already holds this set design (false when assembled for this read). */
+  stored?: boolean;
+}
+
+/**
+ * A queued carousel's new size.
+ */
+export type SaveDraftSetDesignRequestSize = typeof SaveDraftSetDesignRequestSize[keyof typeof SaveDraftSetDesignRequestSize];
+
+
+export const SaveDraftSetDesignRequestSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export interface SaveDraftSetDesignRequest {
+  document: TemplateDocument;
+  /** The set template the design now comes from (switching look); absent keeps the draft's. */
+  templateRef?: TemplateRef | null;
+  /** A queued carousel's new size. */
+  size?: SaveDraftSetDesignRequestSize;
+}
 
 export type TemplateFitStatus = typeof TemplateFitStatus[keyof typeof TemplateFitStatus];
 
