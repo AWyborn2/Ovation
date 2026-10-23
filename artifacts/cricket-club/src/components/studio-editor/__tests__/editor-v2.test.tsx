@@ -104,9 +104,10 @@ const selectLayer = (id: string, mods: Record<string, boolean> = {}) =>
 describe("editor v2", () => {
   it("edits a page the template doesn't have yet, and saves format v2", async () => {
     const requests = open();
-    const pageSelect = await screen.findByRole("combobox", { name: "Page" });
-    expect(within(pageSelect).getByRole("option", { name: "Title page · empty" })).toBeTruthy();
-    fireEvent.change(pageSelect, { target: { value: "title" } });
+    // Match Day's pages are in the page strip (carousel set editor plan, part 2).
+    const strip = await screen.findByRole("navigation", { name: "Pages" });
+    expect(within(strip).getAllByText("· empty")).toHaveLength(3);
+    fireEvent.click(within(strip).getByRole("button", { name: "2. Title page" }));
     expect(screen.getByText(/The title page is empty/)).toBeTruthy();
     expect(document.querySelectorAll('[data-testid^="layer-"]')).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "Text" }));
@@ -125,7 +126,7 @@ describe("editor v2", () => {
 
   it("sets when a layer shows from the Layer panel", async () => {
     const requests = open();
-    await screen.findByRole("combobox", { name: "Page" });
+    await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("venue");
     fireEvent.click(screen.getByRole("button", { name: "Layer" }));
     const panel = await screen.findByTestId("layer-design-panel");
@@ -146,7 +147,7 @@ describe("editor v2", () => {
 
   it("clips a layer from the Layer panel, a drag on the clip pad undoing as one change", async () => {
     open();
-    await screen.findByRole("combobox", { name: "Page" });
+    await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("venue");
     fireEvent.click(screen.getByRole("button", { name: "Layer" }));
     const panel = await screen.findByTestId("layer-design-panel");
@@ -180,7 +181,7 @@ describe("editor v2", () => {
 
   it("stacks two layers and lists them in the stack's controls", async () => {
     const requests = open();
-    await screen.findByRole("combobox", { name: "Page" });
+    await screen.findByRole("navigation", { name: "Pages" });
     selectLayer("grade");
     selectLayer("venue", { shiftKey: true });
     fireEvent.click(screen.getByRole("button", { name: "Layer" }));
@@ -227,5 +228,81 @@ describe("editor v2", () => {
         .getAllByRole("option")
         .map((o) => o.textContent),
     ).toEqual(["Minimal", "Standard", "Full"]);
+  });
+});
+
+describe("a set template (carousel set editor plan, part 2)", () => {
+  const SET = {
+    formatVersion: 2,
+    set: "teamLists",
+    pages: [
+      {
+        id: "cover",
+        role: "fixed",
+        slot: "cover",
+        kind: "teamListRound",
+        page: "card",
+        layers: [{ id: "c1", kind: "text", name: "Title", content: "SELECTED SIDES", geometry }],
+      },
+      {
+        id: "team",
+        role: "repeat",
+        slot: "team",
+        kind: "teamList",
+        page: "team",
+        layers: [{ id: "t1", kind: "text", name: "Grade", content: "{{grade}}", geometry }],
+      },
+      {
+        id: "sponsors",
+        role: "fixed",
+        slot: "sponsors",
+        kind: "matchDay",
+        page: "sponsors",
+        layers: [{ id: "s1", kind: "text", name: "Thanks", content: "THANKS", geometry }],
+      },
+    ],
+  };
+  const setCopy = () => copy({ kind: "set:teamLists", name: "Team lists set", document: SET });
+
+  it("shows every slide in the page strip, edits the repeating page and saves the set", async () => {
+    const requests = open(setCopy());
+    const strip = await screen.findByRole("navigation", { name: "Team lists pages" });
+    const tiles = within(strip).getAllByRole("button", { name: /^\d\. / });
+    expect(tiles.map((b) => b.getAttribute("aria-label"))).toEqual([
+      "1. Cover",
+      "2. Team, repeats for each item",
+      "3. Sponsors",
+    ]);
+    fireEvent.click(tiles[1]!);
+    expect(screen.getByText(/This page repeats: one slide per team/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Sample 3" })).toBeTruthy();
+    // The team page's own layer is on the canvas; delete it and add a heading.
+    expect(document.querySelector('[data-testid="layer-t1"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Text" }));
+    const heading = screen
+      .getAllByRole("button")
+      .filter((b) => /heading/i.test(b.textContent ?? ""))[0]!;
+    fireEvent.click(heading);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    const body = await putBody(requests);
+    const saved = body.document as typeof SET;
+    expect(saved.set).toBe("teamLists");
+    expect(saved.pages.map((p) => p.id)).toEqual(["cover", "team", "sponsors"]);
+    expect(saved.pages[1]!.layers.length).toBe(2);
+    expect(saved.pages[0]!.layers).toEqual(SET.pages[0]!.layers);
+  });
+
+  it("duplicates and deletes pages from the strip", async () => {
+    const requests = open(setCopy());
+    const strip = await screen.findByRole("navigation", { name: "Team lists pages" });
+    fireEvent.click(within(strip).getByRole("button", { name: "Duplicate Cover" }));
+    await waitFor(() =>
+      expect(within(strip).getAllByRole("button", { name: /^\d\. / })).toHaveLength(4),
+    );
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. Team/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Delete Team" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    const saved = (await putBody(requests)).document as typeof SET;
+    expect(saved.pages.map((p) => p.slot)).toEqual(["cover", "page", "sponsors"]);
   });
 });

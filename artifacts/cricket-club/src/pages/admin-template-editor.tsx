@@ -25,14 +25,18 @@ import {
   CONTENT_PRESET_LABELS,
   CONTENT_PRESETS,
   isContentKind,
+  isSetDocument,
   kindFields,
   MAX_STACK_DEPTH,
   planTemplateSlides,
   primaryPage,
+  SET_TYPE_LABELS,
+  setTypeOfKind,
   type ContentPreset,
   type LayerDocument,
   type LayoutWarning,
   type PageKey,
+  type SetDocument,
 } from "@workspace/scorecard/kind-templates";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { EditorCanvas } from "@/components/studio-editor/canvas";
@@ -93,7 +97,6 @@ import {
 import {
   asAdjustments,
   depthOf,
-  editorPages,
   findLayer,
   makeStack,
   moveChild,
@@ -101,14 +104,12 @@ import {
   openTemplate,
   pageDoc,
   pageInput,
-  PAGE_LABEL,
   presetInput,
   storedDocument,
   unstack,
   updateDeep,
   withPage,
   type EditorLayer,
-  type TemplateDoc,
 } from "@/components/studio-editor/template-doc";
 import {
   align,
@@ -124,6 +125,27 @@ import {
   writeClipboard,
 } from "@/components/studio-editor/clipboard";
 import { isImageRowField } from "@/components/studio-editor/rows-panel";
+import { PageStrip, type StripItem } from "@/components/studio-editor/page-strip";
+import { PageFromTemplateDialog } from "@/components/studio-editor/page-from-template";
+import {
+  addBlankPage,
+  addRepeatPage,
+  addSetPage,
+  deleteSetPage,
+  duplicateSetPage,
+  editorPageList,
+  firstPageId,
+  missingRepeatSlots,
+  moveSetPage,
+  openSetTemplate,
+  pageRenderDocument,
+  storedSetDocument,
+  SET_SLOT_LABELS,
+  withArrangement,
+  type EditorPage,
+  type EditorSlide,
+  type EditorTemplateDoc,
+} from "@/components/studio-editor/set-doc";
 import { removeLinked, sharedLinks, syncLinks } from "@/components/studio-editor/links";
 import {
   cellAt,
@@ -144,7 +166,8 @@ import {
   resolveCardTokens,
   type FreeLayer,
 } from "@/lib/pack-render";
-import { previewSample, stressSample } from "@/lib/kind-templates/samples";
+import { previewSample, sampleItem, stressSample } from "@/lib/kind-templates/samples";
+import { PackCard } from "@/components/pack-card";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { draftInput } from "@/components/social-queue/draft-meta";
 import { kindLabel } from "@/lib/social-studio";
@@ -169,8 +192,8 @@ const scopeName = (l: EditorLayer): string =>
 
 /** The whole template with one level of one page (the page, or a group in it) replaced. */
 const withLevel = (
-  present: TemplateDoc,
-  page: PageKey,
+  present: EditorTemplateDoc,
+  page: string,
   scope: string | null,
   next: EditorDoc,
   size: CardSize,
@@ -255,6 +278,10 @@ function fitLine(t: EditorTemplate): { text: string; tone: "ok" | "wait" | "bad"
  * `/club-templates/:id`; the first saved change makes the template the club's
  * own.
  */
+/** The slot a set page repeats for. */
+const repeatSlotOf = (doc: EditorTemplateDoc, id: string) =>
+  (doc.setDesign?.pages.find((p) => p.id === id)?.slot ?? "page") as keyof typeof SET_SLOT_LABELS;
+
 export default function AdminTemplateEditor({ id: idProp }: { id?: number } = {}) {
   const params = useParams<{ id: string }>();
   const id = idProp ?? Number(params.id);
@@ -284,13 +311,17 @@ export default function AdminTemplateEditor({ id: idProp }: { id?: number } = {}
       ? centred(<p>That template isn&apos;t one of your club&apos;s.</p>)
       : centred(<QueryError onRetry={() => templateQ.refetch()} />);
   }
-  if (!kindFields(templateQ.data.kind)) {
+  if (!kindFields(templateQ.data.kind) && !setTypeOfKind(templateQ.data.kind)) {
     return centred(<p>There&apos;s no card called &ldquo;{templateQ.data.kind}&rdquo;.</p>);
   }
+  const size = new URLSearchParams(window.location.search).get("size");
   return (
     <ClubTemplateEditor
       key={templateQ.data.id}
       template={templateQ.data}
+      initialFormat={
+        size === "portrait" || size === "story" || size === "landscape" ? size : undefined
+      }
       viewport={viewport}
       onReload={async () => (await templateQ.refetch()).data}
     />
@@ -302,10 +333,12 @@ function ClubTemplateEditor({
   template,
   viewport,
   onReload,
+  initialFormat,
 }: {
   template: ClubTemplate;
   viewport: { w: number; h: number };
   onReload: () => Promise<ClubTemplate | undefined>;
+  initialFormat?: CardSize;
 }) {
   const qc = useQueryClient();
   const save = useSaveClubTemplate();
@@ -347,7 +380,12 @@ function ClubTemplateEditor({
   };
   return (
     <>
-      <TemplateEditorV2 template={template} viewport={viewport} host={host} />
+      <TemplateEditorV2
+        template={template}
+        viewport={viewport}
+        host={host}
+        initialFormat={initialFormat}
+      />
       <ApplyTemplateDialog
         copyId={template.id}
         label={kindLabel(template.kind)}
@@ -368,34 +406,89 @@ function ClubTemplateEditor({
  * The editor itself: a template's pages, edited one at a time, previewed at
  * each content preset, and saved through its `host`.
  */
+/**
+ * A set draft's real slides (carousel set editor plan, part 3): the strip
+ * shows the slides as they post, each drawn with its data on its page. A
+ * repeating page's slides share one design: editing one edits them all.
+ */
+export type EditorSlidesMode = {
+  /** The slides of the design, in posting order. */
+  slides: (doc: SetDocument) => EditorSlide[];
+  /** The size the set is drawn at; every page follows it. */
+  size?: CardSize;
+  onSize?: (size: CardSize) => void;
+  /** Extra controls beside the size (switch look). */
+  actions?: ReactNode;
+  /** What the slides are, in the empty-slide note ("this round's teams"). */
+  noun?: string;
+};
+
 export function TemplateEditorV2<T extends EditorTemplate>({
   template,
   viewport,
   host,
+  slidesMode,
+  initialFormat,
+  actions,
 }: {
   template: T;
   viewport: { w: number; h: number };
   host: EditorHost<T>;
+  /** Edit a set draft's real slides instead of the template's sample pages. */
+  slidesMode?: EditorSlidesMode;
+  /** The size the editor opens at (a new set's, picked when it was made). */
+  initialFormat?: CardSize;
+  /** Extra controls in the top bar (Make a carousel set). */
+  actions?: ReactNode;
 }) {
   const kind = template.kind;
-  const cardKind = kind as ShareCardInput["kind"];
-  const { data, clubName } = useKindTemplateData(cardKind, { club: host.club });
-
-  const opened = useMemo(() => openTemplate(template.document, kind), [template.document, kind]);
+  const open = useCallback(
+    (document: unknown) =>
+      isSetDocument(document) ? openSetTemplate(document) : openTemplate(document, kind),
+    [kind],
+  );
+  const opened = useMemo(() => open(template.document), [template.document, open]);
   const [sourceFormat, setSourceFormat] = useState(opened.sourceFormat);
-  const [history, setHistory] = useState<History<TemplateDoc>>(() => createHistory(opened.doc));
+  const [history, setHistory] = useState<History<EditorTemplateDoc>>(() =>
+    createHistory(opened.doc),
+  );
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(opened.doc));
   const [baseVersion, setBaseVersion] = useState(template.version);
   const [current, setCurrent] = useState(template);
   const full = history.present;
   const dirty = JSON.stringify(full) !== savedJson;
-  const gestureBase = useRef<TemplateDoc | null>(null);
+  const gestureBase = useRef<EditorTemplateDoc | null>(null);
 
-  const pages = editorPages(kind);
-  const [page, setPage] = useState<PageKey>(primaryPage(kind));
+  // The pages: a kind's (Match Day's four), or a set's own in slide order (part 2).
+  const pageList = editorPageList(full, kind);
+  const [pageId, setPageId] = useState(() => firstPageId(opened.doc, kind));
+  // A set draft: its real slides, and the one on show (its page is the page edited).
+  const setNow = useMemo(
+    () => (slidesMode && full.setDesign ? storedSetDocument(full) : null),
+    [slidesMode, full],
+  );
+  const realSlides = useMemo(
+    () => (slidesMode && setNow ? slidesMode.slides(setNow) : []),
+    [slidesMode, setNow],
+  );
+  const [slideKey, setSlideKey] = useState<string | null>(null);
+  const slide = realSlides.find((x) => x.key === slideKey) ?? realSlides[0] ?? null;
+  const cur: EditorPage =
+    (slide ? pageList.find((p) => p.id === slide.page.id) : undefined) ??
+    pageList.find((p) => p.id === pageId) ??
+    pageList[0]!;
+  useEffect(() => {
+    if (cur.id !== pageId) setPageId(cur.id);
+  }, [cur.id, pageId]);
+  // The kind page on show: its fields, tokens, presets and samples.
+  const page: PageKey = cur.page;
+  const pageKind = cur.kind;
+  const cardKind = pageKind as ShareCardInput["kind"];
+  const { data, clubName } = useKindTemplateData(cardKind, { club: host.club });
+  const [sample, setSample] = useState(0);
   const [preset, setPreset] = useState<ContentPreset>("standard");
-  const pageFull = pageDoc(full, page);
-  const [format, setFormat] = useState<CardSize>("square");
+  const pageFull = pageDoc(full, cur.id);
+  const [format, setFormat] = useState<CardSize>(slidesMode?.size ?? initialFormat ?? "square");
   // The level being edited: the page, or a group or list entered by double-click (A2, A3).
   const [scope, setScope] = useState<string | null>(null);
   const doc = scopeDoc(pageFull, scope, format);
@@ -425,6 +518,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const [canPaste, setCanPaste] = useState(() => readClipboard("template") !== null);
   const [pasteNote, setPasteNote] = useState<string | null>(null);
   const [stackNote, setStackNote] = useState<string | null>(null);
+  const [pickingPage, setPickingPage] = useState(false);
 
   // Load the faces the page uses, and note any that fail (KTD17).
   const fontKey = JSON.stringify(
@@ -445,10 +539,10 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   });
   const latest = useMemo(() => {
     const mine = (draftsQ.data ?? [])
-      .filter((d) => draftInput(d)?.kind === kind)
+      .filter((d) => draftInput(d)?.kind === pageKind)
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return mine[0] ? draftInput(mine[0]) : null;
-  }, [draftsQ.data, kind]);
+  }, [draftsQ.data, pageKind]);
   const sourceInput = stress
     ? stressSample(cardKind, clubName)
     : (latest ?? previewSample(cardKind, clubName));
@@ -459,16 +553,24 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     format,
   );
   const input = pageInput(
-    presetInput(plan.slides[0].input as unknown as ShareCardInput, kind, page, preset),
-    kind,
+    presetInput(
+      sampleItem(plan.slides[0].input as unknown as ShareCardInput, cur.repeat ? sample : 0),
+      pageKind,
+      page,
+      preset,
+    ),
+    pageKind,
     page,
   );
-  const values = packFieldValues(input, data, BLANK_PACK_ID);
+  // A set draft's slide draws with its own data (its photo, the club's sponsors).
+  const shownInput = slide ? slide.input : input;
+  const shownData = slide ? slide.data : data;
+  const values = packFieldValues(shownInput, shownData, BLANK_PACK_ID);
 
   // Every edit is to the page on show; the whole document is what history keeps.
   // Inside a group, `doc` is its children: an edit is written back into the group.
-  const pageRef = useRef(page);
-  pageRef.current = page;
+  const pageRef = useRef(cur.id);
+  pageRef.current = cur.id;
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
   const formatRef = useRef(format);
@@ -490,7 +592,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     setStackNote(null);
   }, []);
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
-    const nextFull = withLevel(history.present, page, scope, next, format);
+    const nextFull = withLevel(history.present, cur.id, scope, next, format);
     if (!done) {
       if (!gestureBase.current) gestureBase.current = history.present;
       setHistory((h) => replace(h, nextFull));
@@ -499,7 +601,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     const base = gestureBase.current;
     gestureBase.current = null;
     if (base) {
-      setHistory((h) => commitFrom(h, base, withLevel(h.present, page, scope, next, format)));
+      setHistory((h) => commitFrom(h, base, withLevel(h.present, cur.id, scope, next, format)));
       setAddPrompt(null);
     }
   };
@@ -516,7 +618,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   // The layer the Layer panel shows: a selected top-level layer, or a stack's child.
   const [focusId, setFocusId] = useState<string | null>(null);
   const focus = (focusId ? findLayer(doc, focusId)?.layer : null) ?? (single as EditorLayer | null);
-  useEffect(() => setFocusId(null), [selection, page]);
+  useEffect(() => setFocusId(null), [selection, cur.id]);
   const isGroup =
     selected.length > 1 && selected.every((l) => l.group && l.group === selected[0].group);
 
@@ -533,12 +635,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const acceptAddPrompt = () => {
     if (!addPrompt) return;
     setHistory((h) => {
-      const level = scopeDoc(pageDoc(h.present, page), scope, format);
+      const level = scopeDoc(pageDoc(h.present, cur.id), scope, format);
       return replace(
         h,
         withLevel(
           h.present,
-          page,
+          cur.id,
           scope,
           addToOtherSizes(level, addPrompt.ids, addPrompt.from),
           format,
@@ -573,7 +675,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     const s = stateRef.current;
     if (!clip) return;
     const r = pasteLayers(s.doc, clip, s.format, {
-      kind,
+      kind: pageKind,
       onlyOnSize: true,
       page: s.page,
     });
@@ -665,7 +767,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   }, [edit]);
 
   const onSave = async () => {
-    const v2 = sourceFormat === 2 || needsV2(full, kind);
+    if (full.setDesign) {
+      // A set saves every page, and each needs something on it.
+      const blockers = pageList
+        .filter((p) => !pageDoc(full, p.id).layers?.length)
+        .map((p) => `"${p.label}" has nothing on it yet.`);
+      setBlocked(blockers);
+      if (blockers.length) return;
+    }
+    const v2 = sourceFormat === 2 || !!full.setDesign || needsV2(full, kind);
     // A version 1 template keeps version 1's rule: every size has something on it.
     const blockers = v2 ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
     if (v2 && Object.values(full.pages).every((p) => !p?.layers.length)) {
@@ -678,7 +788,9 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     try {
       const t = await host.save(
         baseVersion,
-        storedDocument(full, kind, sourceFormat) as Record<string, unknown>,
+        (full.setDesign
+          ? storedSetDocument(full)
+          : storedDocument(full, kind, sourceFormat)) as Record<string, unknown>,
       );
       setBaseVersion(t.version);
       setCurrent(t);
@@ -698,7 +810,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const reloadTheirs = async () => {
     const t = await host.reload();
     if (!t) return;
-    const next = openTemplate(t.document, kind);
+    const next = open(t.document);
     setHistory(createHistory(next.doc));
     setSavedJson(JSON.stringify(next.doc));
     setSourceFormat(next.sourceFormat);
@@ -718,8 +830,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   ];
   const layerName = (lid: string | undefined) =>
     (lid ? findLayer(pageFull, lid)?.layer.name : undefined) ?? "a text box";
-  const keyField = keyFieldOf(kind);
-  const listPhotoField = (kindFields(kind)?.repeats ?? []).some((r) =>
+  const keyField = keyFieldOf(pageKind);
+  const listPhotoField = (kindFields(pageKind)?.repeats ?? []).some((r) =>
     r.fields.some((f) => isImageRowField(f.key)),
   );
   const path = scopePath(pageFull, scope);
@@ -756,11 +868,19 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         format={format}
         onFormat={(f) => {
           setFormat(f);
+          slidesMode?.onSize?.(f);
           setSelection([]);
           setAddPrompt(null);
         }}
         inheritedFormats={[]}
-        formatLabel={(f) => (layersOnSize(pageFull, f).length === 0 ? " · empty" : "")}
+        formatLabel={(f) => {
+          // One size for the whole design: flag a size any page has nothing on.
+          const empty = pageList.filter((p) => layersOnSize(pageDoc(full, p.id), f).length === 0);
+          if (empty.length === 0) return "";
+          return pageList.length > 1 && empty.length < pageList.length
+            ? ` · ${empty.length} ${empty.length === 1 ? "page" : "pages"} empty`
+            : " · empty";
+        }}
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}
         onUndo={() => {
@@ -777,29 +897,9 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         backHref={host.backHref}
         actions={
           <>
-            {pages.length > 1 && (
-              <label className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ed-ink2)]">
-                Page
-                <select
-                  aria-label="Page"
-                  className={selectCls}
-                  value={page}
-                  onChange={(e) => {
-                    setPage(e.target.value as PageKey);
-                    enterScope(null);
-                    setAddPrompt(null);
-                  }}
-                >
-                  {pages.map((p) => (
-                    <option key={p} value={p}>
-                      {PAGE_LABEL[p]}
-                      {full.pages[p]?.layers.length ? "" : " · empty"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {isContentKind(kind) && (
+            {slidesMode?.actions}
+            {actions}
+            {!slidesMode && isContentKind(pageKind) && (
               <label className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ed-ink2)]">
                 Preset
                 <select
@@ -837,7 +937,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           >
             {panel === "fields" && (
               <FieldsPanel
-                kind={kind}
+                kind={pageKind}
                 size={format}
                 values={values}
                 textSelected={single?.kind === "text"}
@@ -864,7 +964,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               (focus ? (
                 <LayerDesignPanel
                   layer={focus}
-                  kind={kind}
+                  kind={pageKind}
                   page={page}
                   onPatch={(patch, done) => {
                     // A drag in the panel (the clip pad) is one change, like a canvas drag.
@@ -972,7 +1072,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               />
             )}
             {single?.kind === "rows" && single.rows && (
-              <RowsPanel doc={doc} layer={single} kind={kind} size={format} onEdit={edit} />
+              <RowsPanel doc={doc} layer={single} kind={pageKind} size={format} onEdit={edit} />
             )}
             {single?.kind === "element" && (
               <ElementPropsEditor
@@ -1041,7 +1141,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 className="rounded px-1.5 py-0.5 font-semibold hover:bg-[var(--ed-card)]"
                 onClick={() => enterScope(null, [path[0]!.id])}
               >
-                {PAGE_LABEL[page]}
+                {cur.label}
               </button>
               {path.map((g, i) => (
                 <span key={g.id} className="flex items-center gap-1">
@@ -1075,13 +1175,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           <EditorCanvas
             key={`play-${playing}`}
             doc={doc}
-            renderDoc={asAdjustments(full)}
+            renderDoc={full.setDesign ? pageRenderDocument(full, cur) : asAdjustments(full)}
             animate={playing > 0}
             size={format}
             width={boardW}
-            input={input}
+            input={shownInput}
             theme={null}
-            data={data}
+            data={shownData}
+            junior={slide?.junior ?? false}
             packId={BLANK_PACK_ID}
             selection={selection}
             onSelect={(lid) => {
@@ -1116,11 +1217,48 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           />
 
           <div className="mt-4 flex w-full max-w-2xl flex-col gap-2 text-sm">
-            {page !== primaryPage(kind) && !full.pages[page]?.layers.length && (
+            {!full.setDesign && page !== primaryPage(kind) && !pageFull.layers?.length && (
               <p className="text-[var(--ed-ink2)]">
-                The {PAGE_LABEL[page].toLowerCase()} is empty. Add fields and elements to design it;
+                The {cur.label.toLowerCase()} is empty. Add fields and elements to design it;
                 carousels use it once it has something on it.
               </p>
+            )}
+            {full.setDesign && !pageFull.layers?.length && (
+              <p className="text-[var(--ed-ink2)]">
+                This page is empty. Add fields and elements to design it.
+              </p>
+            )}
+            {cur.repeat && slide && (
+              <p className="text-[var(--ed-ink2)]">
+                Every {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()} slide shares this
+                design: editing this one edits them all.
+              </p>
+            )}
+            {cur.repeat && !slide && (
+              <div className="flex flex-wrap items-center gap-2 text-[var(--ed-ink2)]">
+                <span>
+                  This page repeats: one slide per{" "}
+                  {SET_SLOT_LABELS[repeatSlotOf(full, cur.id)].toLowerCase()}. Editing it edits them
+                  all.
+                </span>
+                <span role="group" aria-label="Sample item" className="flex gap-1">
+                  {[0, 1, 2].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      aria-pressed={sample === n}
+                      onClick={() => setSample(n)}
+                      className={
+                        sample === n
+                          ? "rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-xs font-semibold text-[var(--ed-on-accent)]"
+                          : "rounded-full border border-[var(--ed-line)] px-2 py-0.5 text-xs font-semibold"
+                      }
+                    >
+                      Sample {n + 1}
+                    </button>
+                  ))}
+                </span>
+              </div>
             )}
             {plan.slides.length > 1 && (
               <p className="text-[var(--ed-ink2)]">
@@ -1128,7 +1266,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 slides.
               </p>
             )}
-            {!latest && !stress && (
+            {!slide && !latest && !stress && (
               <p className="text-[var(--ed-ink2)]">Previewing with sample data.</p>
             )}
             {fitStatus && (
@@ -1172,7 +1310,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 ))}
               </ul>
             )}
-            {page === primaryPage(kind) && keyField && !showsKeyField(pageFull, kind) && (
+            {page === primaryPage(pageKind) && keyField && !showsKeyField(pageFull, pageKind) && (
               <p role="status" className="flex items-center gap-2 text-amber-300">
                 <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
                 This template no longer shows {keyField.label.toLowerCase()}, so cards won&apos;t
@@ -1243,6 +1381,210 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           )}
         </main>
       </div>
+      {slidesMode && full.setDesign && (
+        <PageStrip
+          label="Slides"
+          items={realSlides.map((x): StripItem => ({
+            id: x.key,
+            label: x.label,
+            repeat: x.page.role === "repeat",
+            warn: layersOnSize(pageDoc(full, x.page.id), format).length === 0,
+          }))}
+          current={slide?.key ?? ""}
+          onSelect={(key) => {
+            setSlideKey(key);
+            enterScope(null);
+            setAddPrompt(null);
+          }}
+          aspect={native.w / native.h}
+          thumb={(item, w) => {
+            const x = realSlides.find((r) => r.key === item.id)!;
+            return (
+              <PackCard
+                input={x.input}
+                size={format}
+                sponsorsOn={x.sponsorsOn}
+                junior={x.junior}
+                data={x.data}
+                packId={BLANK_PACK_ID}
+                adjustments={pageRenderDocument(full, x.page)}
+                page={x.page.page}
+                width={w}
+              />
+            );
+          }}
+          onMove={(key, to) =>
+            setHistory((h) => {
+              const keys = realSlides.map((r) => r.key).filter((k) => k !== key);
+              keys.splice(to, 0, key);
+              const removed = h.present.setDesign?.arrangement?.removed ?? [];
+              return commit(h, withArrangement(h.present, { order: keys, removed }));
+            })
+          }
+          {...(slide?.design
+            ? {
+                onDuplicate: (key: string) => {
+                  const x = realSlides.find((r) => r.key === key);
+                  if (!x) return;
+                  const r = duplicateSetPage(history.present, x.page.id);
+                  setHistory((h) => commit(h, r.doc));
+                  setSlideKey(`page:${r.id}`);
+                },
+              }
+            : {})}
+          onDelete={(key) => {
+            const x = realSlides.find((r) => r.key === key);
+            if (!x) return;
+            setHistory((h) => {
+              const arr = h.present.setDesign?.arrangement ?? { order: [], removed: [] };
+              const order = arr.order.filter((k) => k !== key);
+              // A design page goes with its slide; a data slide is left out of the post.
+              return x.design
+                ? commit(h, withArrangement(deleteSetPage(h.present, x.page.id), { ...arr, order }))
+                : commit(h, withArrangement(h.present, { order, removed: [...arr.removed, key] }));
+            });
+            setSlideKey(null);
+            enterScope(null);
+          }}
+          addOptions={[
+            { id: "blank", label: "Blank page", detail: `A page drawn like ${cur.label}, no data` },
+            ...(setNow?.arrangement?.removed ?? []).map((key) => ({
+              id: `restore:${key}`,
+              label: "Restore a deleted slide",
+              detail: key.replace(/^detail:[a-z]+:|^page:/, ""),
+            })),
+          ]}
+          onAdd={(option) => {
+            if (option.startsWith("restore:")) {
+              const key = option.slice("restore:".length);
+              setHistory((h) => {
+                const arr = h.present.setDesign?.arrangement ?? { order: [], removed: [] };
+                return commit(
+                  h,
+                  withArrangement(h.present, {
+                    ...arr,
+                    removed: arr.removed.filter((k) => k !== key),
+                  }),
+                );
+              });
+              setSlideKey(key);
+              return;
+            }
+            const r = addBlankPage(history.present, cur, cur.id);
+            setHistory((h) => commit(h, r.doc));
+            setSlideKey(`page:${r.id}`);
+            enterScope(null);
+          }}
+        />
+      )}
+      {!slidesMode && (full.setDesign || pageList.length > 1) && (
+        <PageStrip
+          label={full.setDesign ? `${SET_TYPE_LABELS[full.setDesign.type]} pages` : "Pages"}
+          items={pageList.map((p): StripItem => ({
+            id: p.id,
+            label: p.label,
+            repeat: p.repeat,
+            warn: layersOnSize(pageDoc(full, p.id), format).length === 0,
+            note: pageDoc(full, p.id).layers?.length ? undefined : " · empty",
+          }))}
+          current={cur.id}
+          onSelect={(id) => {
+            setPageId(id);
+            setSample(0);
+            enterScope(null);
+            setAddPrompt(null);
+          }}
+          aspect={native.w / native.h}
+          thumb={(item, w) => {
+            const p = pageList.find((x) => x.id === item.id)!;
+            return (
+              <PackCard
+                input={pageInput(
+                  previewSample(p.kind as ShareCardInput["kind"], clubName),
+                  p.kind,
+                  p.page,
+                )}
+                size={format}
+                sponsorsOn
+                junior={p.page === "day"}
+                data={data}
+                packId={BLANK_PACK_ID}
+                adjustments={full.setDesign ? pageRenderDocument(full, p) : asAdjustments(full)}
+                page={p.page}
+                width={w}
+              />
+            );
+          }}
+          {...(full.setDesign
+            ? {
+                onMove: (id: string, to: number) =>
+                  setHistory((h) => commit(h, moveSetPage(h.present, id, to))),
+                onDuplicate: (id: string) => {
+                  const r = duplicateSetPage(history.present, id);
+                  setHistory((h) => commit(h, r.doc));
+                  setPageId(r.id);
+                  enterScope(null);
+                },
+                onDelete: (id: string) => {
+                  setHistory((h) => commit(h, deleteSetPage(h.present, id)));
+                  enterScope(null);
+                },
+                addOptions: [
+                  { id: "blank", label: "Blank page", detail: `A page drawn like ${cur.label}` },
+                  ...missingRepeatSlots(full).map((slot) => ({
+                    id: `repeat:${slot}`,
+                    label: `${SET_SLOT_LABELS[slot]} page`,
+                    detail: "Repeats for each item",
+                  })),
+                  {
+                    id: "template",
+                    label: "From another template",
+                    detail: "Copy a page of one of your templates",
+                  },
+                ],
+                onAdd: (option: string) => {
+                  if (option === "template") {
+                    setPickingPage(true);
+                    return;
+                  }
+                  const r = option.startsWith("repeat:")
+                    ? addRepeatPage(
+                        history.present,
+                        option.slice("repeat:".length) as Parameters<typeof addRepeatPage>[1],
+                        cur.id,
+                      )
+                    : addBlankPage(history.present, cur, cur.id);
+                  setHistory((h) => commit(h, r.doc));
+                  setPageId(r.id);
+                  enterScope(null);
+                },
+              }
+            : {})}
+        />
+      )}
+      {full.setDesign && (
+        <PageFromTemplateDialog
+          open={pickingPage}
+          onClose={() => setPickingPage(false)}
+          onPick={(picked) => {
+            const r = addSetPage(
+              history.present,
+              {
+                role: "fixed",
+                slot: "page",
+                kind: picked.kind,
+                page: picked.page,
+                name: picked.name,
+              },
+              picked.layers,
+              cur.id,
+            );
+            setHistory((h) => commit(h, r.doc));
+            setPageId(r.id);
+            enterScope(null);
+          }}
+        />
+      )}
       <EditorBottomBar
         zoom={zoom}
         onZoom={setZoom}

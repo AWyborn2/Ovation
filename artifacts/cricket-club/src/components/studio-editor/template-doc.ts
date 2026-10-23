@@ -30,6 +30,7 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import { isContentKind, presetFields, type ContentPreset } from "@workspace/scorecard/card-content";
 import type { CardAdjustments, FreeLayer, LayerBox } from "@/lib/pack-render";
+import { sampleDay } from "@/lib/kind-templates/samples";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { boxOf, newId, type EditorDoc } from "./document";
 
@@ -93,21 +94,29 @@ export function openTemplate(document: unknown, kind: string): OpenedTemplate {
 /** The pages the editor offers for a kind, primary first. */
 export const editorPages = (kind: string): readonly PageKey[] => kindPages(kind);
 
-/** One page as a flat editor document. */
-export function pageDoc(doc: TemplateDoc, page: PageKey): EditorDoc {
+/** One page as a flat editor document (a kind page, or a set page by id). */
+export function pageDoc(doc: TemplateDoc, page: PageKey | string): EditorDoc {
   return {
-    layers: doc.pages[page]?.layers ?? [],
+    layers: doc.pages[page as PageKey]?.layers ?? [],
     ...(doc.sponsorLock ? { sponsorLock: true } : {}),
   };
 }
 
-/** The whole document with one page replaced (an emptied page is dropped). */
-export function withPage(doc: TemplateDoc, page: PageKey, next: EditorDoc): TemplateDoc {
+/**
+ * The whole document with one page replaced. An emptied kind page is dropped;
+ * a set's page stays (it is in the set's page list until deleted from it).
+ */
+export function withPage<D extends TemplateDoc>(
+  doc: D,
+  page: PageKey | string,
+  next: EditorDoc,
+): D {
   const pages = { ...doc.pages };
   const layers = next.layers ?? [];
-  if (layers.length) pages[page] = { layers };
-  else delete pages[page];
-  const out: TemplateDoc = { ...doc, pages };
+  const key = page as PageKey;
+  if (layers.length || "setDesign" in doc) pages[key] = { layers };
+  else delete pages[key];
+  const out: D = { ...doc, pages };
   if (next.sponsorLock) out.sponsorLock = true;
   else delete out.sponsorLock;
   return out;
@@ -327,10 +336,11 @@ export function pageInput(input: ShareCardInput, kind: string, page: PageKey): S
     } as unknown as ShareCardInput;
   }
   if (page === "day") {
+    // A day page shows a few sample rows, as library thumbnails do.
     return {
       ...base,
       junior: true,
-      carouselDay: { heading: "Saturday juniors", fixtures: [], results: [] },
+      carouselDay: { ...sampleDay(input.kind), heading: "Saturday juniors" },
     } as unknown as ShareCardInput;
   }
   return input;
