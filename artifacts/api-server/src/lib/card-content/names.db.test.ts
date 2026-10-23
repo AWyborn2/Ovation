@@ -8,7 +8,7 @@
  * suite seeds its own central clubs and match (ids 978xx) and removes them.
  */
 import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import {
   db,
@@ -34,6 +34,14 @@ import {
   setTeamCrestOverride,
   setTeamNameOverride,
 } from "./names";
+
+// This suite seeds central/playhq fixtures in the tenant test database.
+// Keep reads on that same connection even when the workspace's central pool
+// points to a different database.
+vi.mock("@workspace/db/central", async (original) => ({
+  ...(await original<Record<string, unknown>>()),
+  centralDb: (await import("@workspace/db")).db,
+}));
 
 const STAMP = Date.now();
 const OWN = 97_801;
@@ -227,6 +235,28 @@ describe("resolveTeamName", () => {
       .where(eq(teamNameOverridesTable.tenantId, tenantA));
     expect(rows.map((r) => [r.gradeKey, r.shortName])).toEqual([[null, "SJ Blues"]]);
     await setTeamNameOverride(tenantA, OPP, null, "   ");
+    expect((await resolveTeamName(tenantA, OPP)).source).toBe("auto");
+  });
+
+  it("concurrent all-grades saves keep one row without affecting another tenant or grade", async () => {
+    await setTeamNameOverride(tenantB, OPP, null, "Other tenant");
+    await setTeamNameOverride(tenantA, OPP, "A Grade", "First grade");
+    await setTeamNameOverride(tenantA, OPP, "A Grade", "Updated grade");
+    await Promise.all(
+      ["Blues", "SJ Blues", "Singleton"].map((name) =>
+        setTeamNameOverride(tenantA, OPP, null, name),
+      ),
+    );
+    const rows = await db
+      .select()
+      .from(teamNameOverridesTable)
+      .where(eq(teamNameOverridesTable.tenantId, tenantA));
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row) => row.gradeKey === null)).toHaveLength(1);
+    expect(rows.find((row) => row.gradeKey === "A Grade")?.shortName).toBe("Updated grade");
+    expect((await resolveTeamName(tenantB, OPP)).name).toBe("Other tenant");
+    await setTeamNameOverride(tenantA, OPP, null, "");
+    expect((await resolveTeamName(tenantA, OPP, "A Grade")).name).toBe("Updated grade");
     expect((await resolveTeamName(tenantA, OPP)).source).toBe("auto");
   });
 });

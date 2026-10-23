@@ -9,9 +9,9 @@ import type { EmailSendStatus } from './emailSendStatus';
 
 export interface EmailSend {
   id: number;
-  /** The list sent to; null for a batch (Email all, scheduled), which spans lists */
+  /** The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained. */
   listId: number | null;
-  /** The list's name, or what sent a batch ("Email all team sheets (4 sides)") */
+  /** The list's name, Deleted list after deletion, or what sent a batch ("Email all team sheets (4 sides)") */
   listName: string;
   kind: string;
   subjectType: string;

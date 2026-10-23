@@ -248,6 +248,9 @@ import type {
   JuniorMatchDisplaySettings,
   JuniorMatchDisplaySettingsUpdate,
   JuniorMatchSummary,
+  JuniorNameReview,
+  JuniorNamesPublication,
+  JuniorNamesPublicationResult,
   JuniorOfficeBearer,
   JuniorOfficeBearerInput,
   JuniorOfficeBearerUpdate,
@@ -29851,6 +29854,142 @@ export function useGetJuniorPhotoThumb<TData = Awaited<ReturnType<typeof getJuni
 
 
 
+
+export const getListJuniorNameReviewUrl = () => {
+
+
+
+
+  return `/api/juniors/name-review`
+}
+
+export const listJuniorNameReview = async ( options?: RequestInit): Promise<JuniorNameReview[]> => {
+
+  return customFetch<JuniorNameReview[]>(getListJuniorNameReviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorNameReviewQueryKey = () => {
+    return [
+    `/api/juniors/name-review`
+    ] as const;
+    }
+
+
+export const getListJuniorNameReviewQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorNameReview>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorNameReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorNameReviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorNameReview>>> = ({ signal }) => listJuniorNameReview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorNameReview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorNameReviewQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorNameReview>>>
+export type ListJuniorNameReviewQueryError = ErrorType<void>
+
+
+
+export function useListJuniorNameReview<TData = Awaited<ReturnType<typeof listJuniorNameReview>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorNameReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorNameReviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPublishJuniorNamesUrl = () => {
+
+
+
+
+  return `/api/juniors/name-review`
+}
+
+export const publishJuniorNames = async (juniorNamesPublication: JuniorNamesPublication, options?: RequestInit): Promise<JuniorNamesPublicationResult> => {
+
+  return customFetch<JuniorNamesPublicationResult>(getPublishJuniorNamesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorNamesPublication,)
+  }
+);}
+
+
+
+
+export const getPublishJuniorNamesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishJuniorNames>>, TError,{data: BodyType<JuniorNamesPublication>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishJuniorNames>>, TError,{data: BodyType<JuniorNamesPublication>}, TContext> => {
+
+const mutationKey = ['publishJuniorNames'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishJuniorNames>>, {data: BodyType<JuniorNamesPublication>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  publishJuniorNames(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishJuniorNamesMutationResult = NonNullable<Awaited<ReturnType<typeof publishJuniorNames>>>
+    export type PublishJuniorNamesMutationBody = BodyType<JuniorNamesPublication>
+    export type PublishJuniorNamesMutationError = ErrorType<void>
+
+    export const usePublishJuniorNames = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishJuniorNames>>, TError,{data: BodyType<JuniorNamesPublication>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishJuniorNames>>,
+        TError,
+        {data: BodyType<JuniorNamesPublication>},
+        TContext
+      > => {
+      return useMutation(getPublishJuniorNamesMutationOptions(options));
+    }
 
 export const getListJuniorLibraryPhotosUrl = () => {
 

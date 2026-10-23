@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
+import { requireAdmin } from "./middlewares/require-admin";
 import internalDraftSweepRouter from "./routes/internal-draft-sweep";
 import internalPlayhqIngestRouter from "./routes/internal-playhq-ingest";
 import metaCallbacksRouter from "./routes/meta-callbacks";
@@ -99,6 +100,16 @@ app.post(
 // bodies are whole harness dumps, so it is mounted ahead of the global 100kb parser and
 // parses its own body (after the secret check) with a higher ceiling.
 app.use("/api/internal/playhq", internalPlayhqIngestRouter);
+
+// A carousel stores up to 20 editable slide/content snapshots, not just a
+// small settings patch. Authenticate before accepting the larger JSON body.
+// Only creation and editing get this allowance; actions and other API routes
+// retain the global 100kb ceiling. The route handlers still validate the draft.
+const socialDraftBodies = express.Router();
+const socialDraftJson = express.json({ limit: "2mb" });
+socialDraftBodies.post("/", tenantContext, requireAdmin, socialDraftJson);
+socialDraftBodies.patch("/:id", tenantContext, requireAdmin, socialDraftJson);
+app.use("/api/social-drafts", socialDraftBodies);
 
 // Explicit body ceilings, pinned at body-parser's own default rather than left
 // implicit. Bodies here are small JSON (settings patches, import reconcile

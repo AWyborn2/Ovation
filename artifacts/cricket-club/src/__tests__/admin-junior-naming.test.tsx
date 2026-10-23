@@ -3,6 +3,8 @@ import { screen, cleanup, waitFor, fireEvent, within } from "@testing-library/re
 import { renderAt } from "@/test/render";
 import AdminJuniorMatchDisplay from "@/pages/admin-junior-match-display";
 import AdminJuniorPlayers from "@/pages/admin-junior-players";
+import { JuniorNameReviewPanel, JuniorFullNameEditor } from "@/components/junior-name-review";
+import type { JuniorNameReview } from "@workspace/api-client-react";
 
 /**
  * Junior naming style, per-team publishing and the privacy override admin
@@ -178,5 +180,92 @@ describe("Junior players admin: privacy override (AE3)", () => {
     fireEvent.click(await screen.findByText("Sam Taylor", { selector: "span" }));
     await screen.findByText(/public profile/i);
     expect(screen.queryByRole("button", { name: /show name publicly/i })).toBeNull();
+  });
+});
+
+const NAME_REVIEW: JuniorNameReview = {
+  participantId: "different-person-guid",
+  currentName: "A Smith",
+  suggestedName: "Alex Smith",
+  status: "suggested",
+  revision: "snapshot",
+  firstSeason: "2020/21",
+  lastSeason: "2025/26",
+  teams: "Blue",
+  nameStyle: "full",
+  withheld: false,
+  publicName: "Alex Smith",
+  history: [],
+  evidence: [
+    { source: "roster", sourceId: 42, name: "Alex Smith", season: "2025/26", team: "Blue" },
+  ],
+};
+describe("Junior full names: preview and deliberate confirmation", () => {
+  it("opening evidence and cancelling a selected publication sends no writes", async () => {
+    const sent = stubApi([["/juniors/name-review", [NAME_REVIEW]]]);
+    renderAt(<JuniorNameReviewPanel />, "/admin/people/junior-players");
+    fireEvent.click(screen.getByRole("button", { name: "Preview suggested full names" }));
+    fireEvent.click(await screen.findByText(/Supporting junior records/));
+    expect(await screen.findByText(/roster #42/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Approve A Smith/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish selected (1)" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog.textContent).toContain("A Smith → Alex Smith");
+    expect(dialog.textContent).toContain("Public name");
+    fireEvent.click(within(dialog).getByRole("button", { name: /cancel/i }));
+    expect(sent).toHaveLength(0);
+  });
+  it("publishes only selected GUIDs with their preview revision", async () => {
+    const sent = stubApi([
+      [
+        "/juniors/name-review",
+        [
+          NAME_REVIEW,
+          {
+            ...NAME_REVIEW,
+            participantId: "another-person",
+            status: "conflicting",
+            suggestedName: null,
+          },
+        ],
+      ],
+    ]);
+    renderAt(<JuniorNameReviewPanel />, "/admin/people/junior-players");
+    fireEvent.click(screen.getByRole("button", { name: "Preview suggested full names" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: /Approve A Smith/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish selected (1)" }));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save and publish full names" }));
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0].body).toEqual({
+      selections: [
+        {
+          participantId: NAME_REVIEW.participantId,
+          name: "Alex Smith",
+          revision: "snapshot",
+          mode: "suggestion",
+        },
+      ],
+    });
+  });
+  it("manual entry with no evidence stays unpublished on cancel and explains withholding", async () => {
+    const sent = stubApi([]);
+    renderAt(
+      <JuniorFullNameEditor
+        row={{ ...NAME_REVIEW, evidence: [], withheld: true, status: "missing" }}
+        onChanged={() => {}}
+      />,
+      "/admin/people/junior-players",
+    );
+    fireEvent.change(screen.getByRole("textbox", { name: "Confirmed full name" }), {
+      target: { value: "Alexandra Jean-Marie de la Cruz-Smith" },
+    });
+    expect(sent).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Save and publish full name" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog.textContent).toContain("A Smith → Alexandra Jean-Marie de la Cruz-Smith");
+    expect(dialog.textContent).toContain("No public identity");
+    fireEvent.click(within(dialog).getByRole("button", { name: /cancel/i }));
+    expect(sent).toHaveLength(0);
   });
 });

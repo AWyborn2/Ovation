@@ -3,6 +3,7 @@ import matchesRouter from "./juniors-admin-matches";
 import linesRouter from "./juniors-admin-lines";
 import participantsRouter from "./juniors-admin-participants";
 import correctionsRouter from "./juniors-admin-corrections";
+import namesRouter from "./juniors-admin-names";
 
 /**
  * JUNIORS ADMIN (stat-correction) API. The junior_* tables are read-only dump
@@ -37,6 +38,7 @@ const router: IRouter = Router();
 router.use(matchesRouter);
 router.use(linesRouter);
 router.use(participantsRouter);
+router.use(namesRouter);
 router.use(correctionsRouter);
 
 export default router;

@@ -190,11 +190,11 @@ WHERE p.tenant_id = 1 AND (
     SELECT 1 FROM public.junior_matches m
     WHERE m.tenant_id = 1 AND m.id >= 200000000 AND (
       EXISTS (SELECT 1 FROM public.junior_match_batting b
-              WHERE b.match_id = m.id AND b.participant_id = p.participant_id)
+              WHERE b.match_id = m.id AND lower(b.participant_id) = lower(p.participant_id) AND b.is_halls_head)
       OR EXISTS (SELECT 1 FROM public.junior_match_bowling w
-                 WHERE w.match_id = m.id AND w.participant_id = p.participant_id)
+                 WHERE w.match_id = m.id AND lower(w.participant_id) = lower(p.participant_id) AND w.is_halls_head)
       OR EXISTS (SELECT 1 FROM public.junior_match_rosters r
-                 WHERE r.match_id = m.id AND r.participant_id = p.participant_id)
+                 WHERE r.match_id = m.id AND lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head)
     )
   )
   OR EXISTS (
@@ -214,6 +214,16 @@ SELECT c.target_id
 FROM public.junior_stat_corrections c
 WHERE c.tenant_id = 1 AND c.target_table = 'junior_participants'
   AND c.op = 'update' AND c.patch ? 'display_name';
+
+-- A GUID's letter casing is not a second identity. Refuse an already ambiguous
+-- dataset rather than choosing one, and preserve the stored GUID spelling below.
+DO $guard$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.junior_participants WHERE tenant_id = 1
+             GROUP BY lower(participant_id) HAVING count(*) > 1) THEN
+    RAISE EXCEPTION 'juniors loader: ambiguous case variants of participant GUID; admin review required';
+  END IF;
+END $guard$;
 
 -- 1. Snapshot admin-entered premiership extras (man-of-the-match + captain
 -- flags). These are NOT in the PlayHQ dump — admins add them by hand — so they
@@ -289,22 +299,25 @@ INSERT INTO public.junior_participants AS jp (
   first_season, last_season, teams
 )
 SELECT
-  1, participant_id, display_name, COALESCE(is_private, FALSE), scorecard_lines,
+  1, COALESCE((SELECT p.participant_id FROM public.junior_participants p
+               WHERE p.tenant_id = 1 AND lower(p.participant_id) = lower(s.participant_id)), s.participant_id),
+  display_name, COALESCE(is_private, FALSE), scorecard_lines,
   roster_appearances, first_season, last_season, teams
-FROM juniors_staging.junior_participants
+FROM juniors_staging.junior_participants s
+WHERE true
 ON CONFLICT (tenant_id, participant_id) DO UPDATE SET
-  display_name = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_keep_name)
+  display_name = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_keep_name)
     THEN jp.display_name ELSE EXCLUDED.display_name END,
   is_private = jp.is_private OR EXCLUDED.is_private,
-  scorecard_lines = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_synced)
+  scorecard_lines = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_synced)
     THEN jp.scorecard_lines ELSE EXCLUDED.scorecard_lines END,
-  roster_appearances = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_synced)
+  roster_appearances = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_synced)
     THEN jp.roster_appearances ELSE EXCLUDED.roster_appearances END,
-  first_season = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_synced)
+  first_season = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_synced)
     THEN jp.first_season ELSE EXCLUDED.first_season END,
-  last_season = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_synced)
+  last_season = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_synced)
     THEN jp.last_season ELSE EXCLUDED.last_season END,
-  teams = CASE WHEN jp.participant_id IN (SELECT participant_id FROM _jl_synced)
+  teams = CASE WHEN lower(jp.participant_id) IN (SELECT lower(participant_id) FROM _jl_synced)
     THEN jp.teams ELSE EXCLUDED.teams END
 WHERE jp.tenant_id = 1;
 
@@ -510,13 +523,13 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TEMP TABLE _jsc_upd ON COMMIT DROP AS
 SELECT
   c.target_table,
-  c.target_id,
+  CASE WHEN c.target_table = 'junior_participants' THEN lower(c.target_id) ELSE c.target_id END AS target_id,
   jsonb_object_agg(kv.key, kv.value ORDER BY c.id) AS eff,
   max(c.playhq_match_id) AS playhq_match_id
 FROM public.junior_stat_corrections c
 CROSS JOIN LATERAL jsonb_each(c.patch) kv
 WHERE c.tenant_id = 1 AND c.op = 'update' AND c.patch IS NOT NULL
-GROUP BY c.target_table, c.target_id;
+GROUP BY c.target_table, CASE WHEN c.target_table = 'junior_participants' THEN lower(c.target_id) ELSE c.target_id END;
 
 UPDATE public.junior_matches t
 SET
@@ -597,32 +610,32 @@ SET
 FROM _jsc_upd u
 WHERE u.target_table = 'junior_participants'
   AND t.tenant_id = 1
-  AND t.participant_id = u.target_id;
+  AND lower(t.participant_id) = lower(u.target_id);
 
 -- A corrected display name flows onto the participant's HH scorecard/roster
 -- lines on tenant 1's loader matches, matching what the admin API does at edit time.
 UPDATE public.junior_match_batting b
 SET player_name = p.display_name
 FROM _jsc_upd u
-JOIN public.junior_participants p ON p.participant_id = u.target_id AND p.tenant_id = 1
+JOIN public.junior_participants p ON lower(p.participant_id) = lower(u.target_id) AND p.tenant_id = 1
 WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
-  AND b.participant_id = p.participant_id AND b.is_halls_head
+  AND lower(b.participant_id) = lower(p.participant_id) AND b.is_halls_head
   AND b.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_bowling w
 SET player_name = p.display_name
 FROM _jsc_upd u
-JOIN public.junior_participants p ON p.participant_id = u.target_id AND p.tenant_id = 1
+JOIN public.junior_participants p ON lower(p.participant_id) = lower(u.target_id) AND p.tenant_id = 1
 WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
-  AND w.participant_id = p.participant_id AND w.is_halls_head
+  AND lower(w.participant_id) = lower(p.participant_id) AND w.is_halls_head
   AND w.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_rosters r
 SET player_name = p.display_name
 FROM _jsc_upd u
-JOIN public.junior_participants p ON p.participant_id = u.target_id AND p.tenant_id = 1
+JOIN public.junior_participants p ON lower(p.participant_id) = lower(u.target_id) AND p.tenant_id = 1
 WHERE u.target_table = 'junior_participants' AND u.eff ? 'display_name'
-  AND r.participant_id = p.participant_id AND r.is_halls_head
+  AND lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head
   AND r.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 -- 6c. Re-apply deletions last (a deleted admin-created row was re-inserted in
@@ -664,23 +677,23 @@ UPDATE public.junior_participants p SET
   scorecard_lines =
     (SELECT count(*) FROM public.junior_match_batting b
       JOIN public.junior_matches m ON m.id = b.match_id AND m.tenant_id = p.tenant_id
-      WHERE b.participant_id = p.participant_id AND b.is_halls_head)
+      WHERE lower(b.participant_id) = lower(p.participant_id) AND b.is_halls_head)
   + (SELECT count(*) FROM public.junior_match_bowling w
       JOIN public.junior_matches m ON m.id = w.match_id AND m.tenant_id = p.tenant_id
-      WHERE w.participant_id = p.participant_id AND w.is_halls_head),
+      WHERE lower(w.participant_id) = lower(p.participant_id) AND w.is_halls_head),
   roster_appearances =
     (SELECT count(*) FROM public.junior_match_rosters r
       JOIN public.junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
-      WHERE r.participant_id = p.participant_id AND r.is_halls_head),
+      WHERE lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head),
   first_season = (
     SELECT m.season FROM public.junior_matches m
     JOIN (
       SELECT match_id FROM public.junior_match_batting
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_bowling
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_rosters
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
     ) t ON t.match_id = m.id
     WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
     ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
@@ -688,11 +701,11 @@ UPDATE public.junior_participants p SET
     SELECT m.season FROM public.junior_matches m
     JOIN (
       SELECT match_id FROM public.junior_match_batting
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_bowling
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_rosters
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
     ) t ON t.match_id = m.id
     WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
     ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
@@ -700,10 +713,10 @@ UPDATE public.junior_participants p SET
     SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
     FROM public.junior_match_rosters r
     JOIN public.junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
-    WHERE r.participant_id = p.participant_id AND r.is_halls_head
+    WHERE lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head
       AND r.team_name IS NOT NULL)
 FROM _jl_synced s
-WHERE p.tenant_id = 1 AND p.participant_id = s.participant_id;
+WHERE p.tenant_id = 1 AND lower(p.participant_id) = lower(s.participant_id);
 
 -- 7. Re-apply junior profile merges (junior_participant_merges). Like the
 -- corrections journal, the map is APP-OWNED: this ETL reads it but NEVER
@@ -723,49 +736,50 @@ WHERE p.tenant_id = 1 AND p.participant_id = s.participant_id;
 -- across by 7c before the row is deleted.
 
 CREATE TEMP TABLE _jpm ON COMMIT DROP AS
-SELECT m.duplicate_participant_id AS dup, m.keeper_participant_id AS keeper
+-- Resolve the keeper by GUID identity, but retain its stored spelling when
+-- reassigning lines. The journal itself remains unchanged.
+SELECT m.duplicate_participant_id AS dup, k.participant_id AS keeper
 FROM public.junior_participant_merges m
+JOIN public.junior_participants k
+  ON k.tenant_id = 1 AND lower(k.participant_id) = lower(m.keeper_participant_id)
 WHERE m.tenant_id = 1
-  AND EXISTS (
-    SELECT 1 FROM public.junior_participants k
-    WHERE k.tenant_id = 1 AND k.participant_id = m.keeper_participant_id
-  );
+  AND lower(m.duplicate_participant_id) <> lower(k.participant_id);
 
 -- 7a. Reassign every junior line and reference from duplicate to keeper.
 UPDATE public.junior_match_batting t SET participant_id = _jpm.keeper
-FROM _jpm WHERE t.participant_id = _jpm.dup
+FROM _jpm WHERE lower(t.participant_id) = lower(_jpm.dup)
   AND t.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_bowling t SET participant_id = _jpm.keeper
-FROM _jpm WHERE t.participant_id = _jpm.dup
+FROM _jpm WHERE lower(t.participant_id) = lower(_jpm.dup)
   AND t.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_rosters t SET participant_id = _jpm.keeper
-FROM _jpm WHERE t.participant_id = _jpm.dup
+FROM _jpm WHERE lower(t.participant_id) = lower(_jpm.dup)
   AND t.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_premiership_players t SET participant_id = _jpm.keeper
-FROM _jpm WHERE t.participant_id = _jpm.dup
+FROM _jpm WHERE lower(t.participant_id) = lower(_jpm.dup)
   AND t.premiership_id IN (SELECT id FROM public.junior_premierships WHERE tenant_id = 1);
 
 UPDATE public.junior_office_bearers t SET participant_id = _jpm.keeper
-FROM _jpm WHERE t.participant_id = _jpm.dup AND t.tenant_id = 1;
+FROM _jpm WHERE lower(t.participant_id) = lower(_jpm.dup) AND t.tenant_id = 1;
 
 -- 7b. Dedupe: the duplicate and keeper often shared a match (that's why they
 -- are duplicates) — keep the lowest-id row per (participant, match) /
 -- (premiership, participant).
 DELETE FROM public.junior_match_rosters a
 USING public.junior_match_rosters b, _jpm
-WHERE a.participant_id = _jpm.keeper
-  AND b.participant_id = _jpm.keeper
+WHERE lower(a.participant_id) = lower(_jpm.keeper)
+  AND lower(b.participant_id) = lower(_jpm.keeper)
   AND a.match_id = b.match_id
   AND a.id > b.id
   AND a.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 DELETE FROM public.junior_premiership_players a
 USING public.junior_premiership_players b, _jpm
-WHERE a.participant_id = _jpm.keeper
-  AND b.participant_id = _jpm.keeper
+WHERE lower(a.participant_id) = lower(_jpm.keeper)
+  AND lower(b.participant_id) = lower(_jpm.keeper)
   AND a.premiership_id = b.premiership_id
   AND a.id > b.id
   AND a.premiership_id IN (SELECT id FROM public.junior_premierships WHERE tenant_id = 1);
@@ -776,8 +790,8 @@ UPDATE public.junior_participants k
 SET senior_player_id = COALESCE(k.senior_player_id, d.senior_player_id),
     is_private = k.is_private OR d.is_private
 FROM _jpm
-JOIN public.junior_participants d ON d.participant_id = _jpm.dup AND d.tenant_id = 1
-WHERE k.tenant_id = 1 AND k.participant_id = _jpm.keeper;
+JOIN public.junior_participants d ON lower(d.participant_id) = lower(_jpm.dup) AND d.tenant_id = 1
+WHERE k.tenant_id = 1 AND lower(k.participant_id) = lower(_jpm.keeper);
 
 -- 7d. Keeper's directory name flows onto its combined HH lines (mirrors the
 -- admin rename propagation; runs after 6b's rename refresh so the keeper's
@@ -785,31 +799,31 @@ WHERE k.tenant_id = 1 AND k.participant_id = _jpm.keeper;
 UPDATE public.junior_match_batting b
 SET player_name = k.display_name
 FROM _jpm
-JOIN public.junior_participants k ON k.participant_id = _jpm.keeper AND k.tenant_id = 1
+JOIN public.junior_participants k ON lower(k.participant_id) = lower(_jpm.keeper) AND k.tenant_id = 1
 WHERE k.display_name IS NOT NULL
-  AND b.participant_id = k.participant_id AND b.is_halls_head
+  AND lower(b.participant_id) = lower(k.participant_id) AND b.is_halls_head
   AND b.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_bowling w
 SET player_name = k.display_name
 FROM _jpm
-JOIN public.junior_participants k ON k.participant_id = _jpm.keeper AND k.tenant_id = 1
+JOIN public.junior_participants k ON lower(k.participant_id) = lower(_jpm.keeper) AND k.tenant_id = 1
 WHERE k.display_name IS NOT NULL
-  AND w.participant_id = k.participant_id AND w.is_halls_head
+  AND lower(w.participant_id) = lower(k.participant_id) AND w.is_halls_head
   AND w.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 UPDATE public.junior_match_rosters r
 SET player_name = k.display_name
 FROM _jpm
-JOIN public.junior_participants k ON k.participant_id = _jpm.keeper AND k.tenant_id = 1
+JOIN public.junior_participants k ON lower(k.participant_id) = lower(_jpm.keeper) AND k.tenant_id = 1
 WHERE k.display_name IS NOT NULL
-  AND r.participant_id = k.participant_id AND r.is_halls_head
+  AND lower(r.participant_id) = lower(k.participant_id) AND r.is_halls_head
   AND r.match_id IN (SELECT id FROM public.junior_matches WHERE tenant_id = 1 AND id < 200000000);
 
 -- 7e. Delete the resurrected duplicate profile rows: the admin merge's own effect,
 -- re-applied (the only participant rows the loader ever removes).
 DELETE FROM public.junior_participants d
-USING _jpm WHERE d.tenant_id = 1 AND d.participant_id = _jpm.dup;
+USING _jpm WHERE d.tenant_id = 1 AND lower(d.participant_id) = lower(_jpm.dup);
 
 -- 7f. Recompute the keepers' stored dump-derived metadata from their live
 -- lines (the dump's figures describe each GUID separately). Mirrors the
@@ -818,23 +832,23 @@ UPDATE public.junior_participants p SET
   scorecard_lines =
     (SELECT count(*) FROM public.junior_match_batting b
       JOIN public.junior_matches m ON m.id = b.match_id AND m.tenant_id = p.tenant_id
-      WHERE b.participant_id = p.participant_id AND b.is_halls_head)
+      WHERE lower(b.participant_id) = lower(p.participant_id) AND b.is_halls_head)
   + (SELECT count(*) FROM public.junior_match_bowling w
       JOIN public.junior_matches m ON m.id = w.match_id AND m.tenant_id = p.tenant_id
-      WHERE w.participant_id = p.participant_id AND w.is_halls_head),
+      WHERE lower(w.participant_id) = lower(p.participant_id) AND w.is_halls_head),
   roster_appearances =
     (SELECT count(*) FROM public.junior_match_rosters r
       JOIN public.junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
-      WHERE r.participant_id = p.participant_id AND r.is_halls_head),
+      WHERE lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head),
   first_season = (
     SELECT m.season FROM public.junior_matches m
     JOIN (
       SELECT match_id FROM public.junior_match_batting
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_bowling
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_rosters
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
     ) t ON t.match_id = m.id
     WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
     ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
@@ -842,11 +856,11 @@ UPDATE public.junior_participants p SET
     SELECT m.season FROM public.junior_matches m
     JOIN (
       SELECT match_id FROM public.junior_match_batting
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_bowling
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
       UNION SELECT match_id FROM public.junior_match_rosters
-        WHERE participant_id = p.participant_id AND is_halls_head
+        WHERE lower(participant_id) = lower(p.participant_id) AND is_halls_head
     ) t ON t.match_id = m.id
     WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
     ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
@@ -854,7 +868,7 @@ UPDATE public.junior_participants p SET
     SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
     FROM public.junior_match_rosters r
     JOIN public.junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
-    WHERE r.participant_id = p.participant_id AND r.is_halls_head
+    WHERE lower(r.participant_id) = lower(p.participant_id) AND r.is_halls_head
       AND r.team_name IS NOT NULL)
 FROM _jpm
-WHERE p.tenant_id = 1 AND p.participant_id = _jpm.keeper;
+WHERE p.tenant_id = 1 AND lower(p.participant_id) = lower(_jpm.keeper);
