@@ -3150,7 +3150,9 @@ paths:
       summary: Replace a draft side with the side PlayHQ has published (admin or captain)
       description: |
         Fills the draft with the side named in PlayHQ for the fixture (senior or
-        junior, as synced from PlayHQ). Each player is matched to a squad member
+        junior, as synced from PlayHQ), whatever list the fixture has published
+        (an admin's list, or a side finalised and then re-opened, does not stop
+        it). Each player is matched to a squad member
         as a draft is seeded; anyone matched to nobody, or already in another
         side of the round, is left as a named gap. Captain and keeper follow
         PlayHQ's roles. The body carries the side's version as loaded. Refused
@@ -3185,6 +3187,34 @@ paths:
           description: Side not found, or PlayHQ has published no side for it
         "409":
           description: Finalised, changed since the caller loaded it, or the match has started
+
+  /selection/playhq-fetch:
+    post:
+      operationId: requestPlayhqFetch
+      tags: [selection]
+      summary: Fetch the club's latest sides from PlayHQ now (admin)
+      description: |
+        Asks the PlayHQ sync to collect the club's matches and the sides named
+        in PlayHQ at once (juniors too when junior sync is on), instead of at the
+        next scheduled lineup fetch, and starts the sync workflow when the server
+        has a dispatch token. It changes no draft: once the fetch lands, each
+        side's "Sync from PlayHQ" applies PlayHQ's side. One request per club per
+        10 minutes.
+      responses:
+        "202":
+          description: Requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionPlayhqFetchResult"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: Captains can't start a fetch
+        "409":
+          description: The club isn't linked to the PlayHQ sync
+        "429":
+          description: A fetch was requested in the last 10 minutes
 
   /selection/{id}/reopen:
     post:
@@ -15786,6 +15816,50 @@ components:
             players: juniors' on the junior board, everyone's on the senior board.
           items:
             $ref: "#/components/schemas/SelectionParticipantMatch"
+        playhqFetch:
+          $ref: "#/components/schemas/SelectionPlayhqFetch"
+
+    SelectionPlayhqFetch:
+      type: object
+      description: The club's "Fetch latest from PlayHQ" state
+      required:
+        [available, canRequest, pending, requestedAt, requestedBy, completedAt, nextAllowedAt]
+      properties:
+        available:
+          type: boolean
+          description: The club is linked to PlayHQ with the scheduled sync on
+        canRequest:
+          type: boolean
+          description: The caller may start a fetch (admins)
+        pending:
+          type: boolean
+          description: A fetch is waiting for, or in, a sync run
+        requestedAt:
+          type: ["string", "null"]
+          format: date-time
+        requestedBy:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the last requested fetch landed
+        nextAllowedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: While the 10-minute cooldown runs, when the next fetch may be asked for
+
+    SelectionPlayhqFetchResult:
+      type: object
+      required: [fetch, wake]
+      properties:
+        fetch:
+          $ref: "#/components/schemas/SelectionPlayhqFetch"
+        wake:
+          type: string
+          enum: [dispatched, not_configured, failed]
+          description: |
+            dispatched = the sync workflow was started now; not_configured or
+            failed = the request waits for the next hourly sync run
 
     SelectionParticipantMatch:
       type: object
@@ -19201,7 +19275,7 @@ components:
                 type: string
               planName:
                 type: string
-                enum: [weekly, preweekend, matchmorn, matchday, dayafter, catchup]
+                enum: [weekly, preweekend, matchmorn, matchday, dayafter, catchup, ondemand]
               slot:
                 type: string
                 format: date-time

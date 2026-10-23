@@ -44,6 +44,7 @@ import { MoveDialog } from "@/components/selection/move-dialog";
 import { MemberStatusControl } from "@/components/selection/member-status-control";
 import { PlayerMatches } from "@/components/selection/player-matches";
 import { PlayerPool } from "@/components/selection/player-pool";
+import { PlayhqFetchButton } from "@/components/selection/playhq-fetch-button";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
 import { usePointerDrag } from "@/components/selection/use-pointer-drag";
@@ -515,13 +516,14 @@ export default function SelectionHub() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SelectionCompareLink junior={junior} />
+            <PlayhqFetchButton fetch={board.data?.playhqFetch} onRequested={() => void refetch()} />
             {/* Always shown, so they can be found; greyed out with the reason when idle. */}
             <Button
               variant="outline"
               disabled={busy || playhqReady.length === 0}
               title={
                 playhqReady.length === 0
-                  ? "PlayHQ hasn't named a side for any draft here yet (it syncs about hourly)."
+                  ? "No draft here has a side named in PlayHQ yet. Sides are collected Monday morning, Thursday and Friday evening and on match mornings; an admin can fetch them now with Fetch latest from PlayHQ."
                   : undefined
               }
               onClick={() => void doSyncAll()}

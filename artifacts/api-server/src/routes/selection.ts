@@ -42,6 +42,7 @@ import {
   renderTeamSheetHtml,
 } from "../lib/team-sheet";
 import { harnessOriginFromHeaders, renderHtmlToPdf } from "../lib/card-video-renderer";
+import { PlayhqFetchError, requestPlayhqFetch } from "../lib/playhq-fetch-request";
 
 /**
  * The Selection Hub API: the
@@ -395,5 +396,27 @@ router.put(
     }
   },
 );
+
+// "Fetch latest from PlayHQ": admins only. Records the request (the sync's next run collects
+// the club's named sides) and wakes the sync workflow; it changes no draft.
+router.post("/selection/playhq-fetch", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const actor = selectionActorOf(req);
+  if (actor.kind !== "admin") {
+    res.status(403).json({ error: "Only a club admin can fetch from PlayHQ." });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  try {
+    const { status, wake } = await requestPlayhqFetch(tenantId, actor.name);
+    req.log?.info({ tenantId, actorId: actor.id, wake }, "playhq fetch requested");
+    res.status(202).json({ fetch: { ...status, canRequest: true }, wake });
+  } catch (err) {
+    if (err instanceof PlayhqFetchError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    throw err;
+  }
+});
 
 export default router;

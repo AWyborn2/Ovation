@@ -9,6 +9,7 @@ import type { SelectionActor } from './selectionActor';
 import type { SelectionEvent } from './selectionEvent';
 import type { SelectionMember } from './selectionMember';
 import type { SelectionParticipantMatch } from './selectionParticipantMatch';
+import type { SelectionPlayhqFetch } from './selectionPlayhqFetch';
 import type { SelectionRound } from './selectionRound';
 import type { SelectionSide } from './selectionSide';
 import type { SelectionWeekends } from './selectionWeekends';
@@ -37,4 +38,5 @@ export interface SelectionBoard {
   players: juniors' on the junior board, everyone's on the senior board.
    */
   participantMatches?: SelectionParticipantMatch[];
+  playhqFetch?: SelectionPlayhqFetch;
 }

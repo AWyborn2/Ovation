@@ -116,6 +116,12 @@ export const tenantsTable = pgTable(
     // The club's junior PlayHQ organisation GUID when its juniors run under a separate
     // organisation. Null = juniors live under `playhqOrgId`. Unique when set.
     playhqJuniorOrgId: text("playhq_junior_org_id"),
+    // An admin's "Fetch latest from PlayHQ" (Selection Hub): the next sync run collects the
+    // club's matches and named sides at once, as the `ondemand` plan. Pending while
+    // `requested_at` is later than `completed_at`; the ingest of that plan stamps `completed_at`.
+    playhqFetchRequestedAt: timestamp("playhq_fetch_requested_at", { withTimezone: true }),
+    playhqFetchRequestedBy: text("playhq_fetch_requested_by"),
+    playhqFetchCompletedAt: timestamp("playhq_fetch_completed_at", { withTimezone: true }),
     // Broadcast imagery: tenant-uploaded hero and explore-card photos, keyed by
     // slot (`home`, `juniors`, `honours`, `explore.{honours,players,premierships}`),
     // each an `/api/storage/...` path or null. Null column = no imagery; heroes

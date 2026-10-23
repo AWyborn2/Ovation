@@ -114,6 +114,12 @@ export const teamListsTable = pgTable(
     // availability.ts). The sync only ever replaces its own lists — an admin's
     // or a finalised selection's list is never overwritten before the match.
     source: text("source").notNull().default("admin"),
+    // The side the club last named for this fixture in PlayHQ, kept by the sync whatever
+    // `source` says (an admin's or a finalised selection's list keeps `players`). The
+    // Selection Hub's "Sync from PlayHQ" reads it, so PlayHQ's side can be pulled into a
+    // draft at any time. Null until the sync has seen a named side.
+    playhqPlayers: jsonb("playhq_players").$type<TeamListPlayer[]>(),
+    playhqSeenAt: timestamp("playhq_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

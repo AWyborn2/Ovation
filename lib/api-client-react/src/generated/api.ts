@@ -365,6 +365,7 @@ import type {
   SelectionFinaliseBody,
   SelectionFinaliseResult,
   SelectionMatchBody,
+  SelectionPlayhqFetchResult,
   SelectionRemindBody,
   SelectionSide,
   SelectionStatusSetBody,
@@ -9676,7 +9677,9 @@ export const getSyncSelectionFromPlayhqUrl = (id: number,) => {
 
 /**
  * Fills the draft with the side named in PlayHQ for the fixture (senior or
-junior, as synced from PlayHQ). Each player is matched to a squad member
+junior, as synced from PlayHQ), whatever list the fixture has published
+(an admin's list, or a side finalised and then re-opened, does not stop
+it). Each player is matched to a squad member
 as a draft is seeded; anyone matched to nobody, or already in another
 side of the round, is left as a named gap. Captain and keeper follow
 PlayHQ's roles. The body carries the side's version as loaded. Refused
@@ -9744,6 +9747,83 @@ export const useSyncSelectionFromPlayhq = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSyncSelectionFromPlayhqMutationOptions(options));
+    }
+
+export const getRequestPlayhqFetchUrl = () => {
+
+
+
+
+  return `/api/selection/playhq-fetch`
+}
+
+/**
+ * Asks the PlayHQ sync to collect the club's matches and the sides named
+in PlayHQ at once (juniors too when junior sync is on), instead of at the
+next scheduled lineup fetch, and starts the sync workflow when the server
+has a dispatch token. It changes no draft: once the fetch lands, each
+side's "Sync from PlayHQ" applies PlayHQ's side. One request per club per
+10 minutes.
+
+ * @summary Fetch the club's latest sides from PlayHQ now (admin)
+ */
+export const requestPlayhqFetch = async ( options?: RequestInit): Promise<SelectionPlayhqFetchResult> => {
+
+  return customFetch<SelectionPlayhqFetchResult>(getRequestPlayhqFetchUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRequestPlayhqFetchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPlayhqFetch>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestPlayhqFetch>>, TError,void, TContext> => {
+
+const mutationKey = ['requestPlayhqFetch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPlayhqFetch>>, void> = () => {
+
+
+          return  requestPlayhqFetch(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestPlayhqFetchMutationResult = NonNullable<Awaited<ReturnType<typeof requestPlayhqFetch>>>
+
+    export type RequestPlayhqFetchMutationError = ErrorType<void>
+
+    /**
+ * @summary Fetch the club's latest sides from PlayHQ now (admin)
+ */
+export const useRequestPlayhqFetch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPlayhqFetch>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestPlayhqFetch>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRequestPlayhqFetchMutationOptions(options));
     }
 
 export const getReopenSelectionUrl = (id: number,) => {

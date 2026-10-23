@@ -109,6 +109,15 @@ export const env = {
   /** Shared secret for POST /api/internal/playhq/ingest; unset = endpoint closed. */
   PLAYHQ_SYNC_SECRET: () => optional("PLAYHQ_SYNC_SECRET"),
   /**
+   * Selection Hub "Fetch latest from PlayHQ": a GitHub fine-grained token (this repository
+   * only, Actions read/write) the API uses to start the PlayHQ sync workflow at once. Unset,
+   * a request still waits for the next hourly run. `PLAYHQ_DISPATCH_REPO` (owner/name,
+   * default AWyborn2/Ovation) and `PLAYHQ_DISPATCH_REF` (default main) say which workflow.
+   */
+  PLAYHQ_DISPATCH_TOKEN: () => optional("PLAYHQ_DISPATCH_TOKEN"),
+  PLAYHQ_DISPATCH_REPO: () => optional("PLAYHQ_DISPATCH_REPO"),
+  PLAYHQ_DISPATCH_REF: () => optional("PLAYHQ_DISPATCH_REF"),
+  /**
    * The playhq-scoped write role (scripts/sql/playhq-ingest-role.sql). Read by
    * @workspace/db/playhq-ingest's pool; declared here so it is listed with the rest.
    */
