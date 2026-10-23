@@ -273,6 +273,8 @@ export function renderPackCard(
             (isDocumentV2(adj)
               ? (CARD_PHOTO_SLOTS.map((slot) => withData.images[slot]).find(Boolean) ?? null)
               : null)),
+        // The photo placement sliders (the share dialog, a queued draft's photo).
+        photoTransform: data?.photoTransform ?? null,
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,
