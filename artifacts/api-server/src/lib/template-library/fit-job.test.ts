@@ -151,17 +151,17 @@ describe("the fit job", () => {
       throw new Error("no harness yet");
     });
     registerFitRunner(fitRunner(quiet, { retries: 0 }));
-    await syncBundles([fixtureBundle(`${LOOK}-b`, [fixtureTemplate("player")])]);
+    await syncBundles([fixtureBundle(`${LOOK}-boot`, [fixtureTemplate("player")])]);
     await fitChecksSettled();
-    expect((await version(`${LOOK}-b/player`)).fitStatus).toBe("pending");
+    expect((await version(`${LOOK}-boot/player`)).fitStatus).toBe("pending");
 
     // The restart: the fit job starts, the sync adds nothing new, and the boot hook asks again.
     setFitCheck(async () => report("pass"));
     registerFitRunner(fitRunner(quiet));
-    await syncBundles([fixtureBundle(`${LOOK}-b`, [fixtureTemplate("player")])]);
+    await syncBundles([fixtureBundle(`${LOOK}-boot`, [fixtureTemplate("player")])]);
     expect(await retryPendingFitsAtBoot(quiet)).toBeGreaterThanOrEqual(1);
     await fitChecksSettled();
-    expect((await version(`${LOOK}-b/player`)).fitStatus).toBe("pass");
+    expect((await version(`${LOOK}-boot/player`)).fitStatus).toBe("pass");
   });
 
   it("lets a sweep work through a whole library's checks in a few hours", () => {
