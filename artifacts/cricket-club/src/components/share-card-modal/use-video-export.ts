@@ -7,7 +7,6 @@ import {
 } from "@workspace/api-client-react";
 import {
   SIZES,
-  downloadBlob,
   cardBaseFilename,
   type CardSize,
   type PhotoTransform,
@@ -16,6 +15,7 @@ import {
 } from "@/lib/share-card";
 import { renderShareCardVideo, renderShareCardGif, canExportGif } from "@/lib/share-card-animation";
 import type { ClubBrand } from "@workspace/scorecard";
+import { saveFile } from "@/lib/save-files";
 
 const POLL_INTERVAL_MS = 700;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -87,10 +87,10 @@ export function useVideoExport({
     }
   };
 
-  // Save the reviewed clip to disk.
+  // Save the reviewed clip: to Photos on a phone or tablet, to disk on a desktop.
   const handleSaveVideo = () => {
     if (!input || !videoPreview) return;
-    downloadBlob(
+    void saveFile(
       videoPreview.blob,
       `${cardBaseFilename(input, brand)}-${SIZES[videoPreview.size].code}.${videoPreview.ext}`,
     );
@@ -115,7 +115,7 @@ export function useVideoExport({
     setGifExporting(true);
     try {
       const { blob, ext } = await renderShareCardGif(input, buildOpts(size, photoTransform));
-      downloadBlob(blob, `${cardBaseFilename(input, brand)}-${SIZES[size].code}.${ext}`);
+      await saveFile(blob, `${cardBaseFilename(input, brand)}-${SIZES[size].code}.${ext}`);
     } catch (e) {
       console.error("Card GIF export failed", e);
     } finally {
