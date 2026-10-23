@@ -107,10 +107,12 @@ function setTargets(look: string, kinds: readonly FitTarget[]): FitTarget[] {
   for (const type of BUNDLE_SET_TYPES) {
     const built = assembleSetDocument(type, (kind) => byKind.get(kind)?.document);
     if (!built) continue;
+    const parts = new Set(built.document.pages.map((p) => p.kind));
     out.push({
       id: `${look}/${setTemplateKind(type)}`,
       kind: setTemplateKind(type),
-      listed: true,
+      // Listed when every part is (bundleSetTemplates); else work in progress, reported only.
+      listed: [...parts].every((k) => byKind.get(k)?.listed === true),
       document: built.document,
       parts: built.document.pages.map((p) => ({
         pageId: p.id,

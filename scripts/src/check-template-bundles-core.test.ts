@@ -192,9 +192,17 @@ describe("set templates (carousel set editor plan, part 1)", () => {
     expect(sets).toHaveLength(looks.size * 4);
     const ids = new Set(all.map((t) => t.id));
     for (const set of sets) {
-      expect(set.listed).toBe(true);
+      // Listed exactly when every kind it is made of is.
+      const kinds = new Set(set.parts!.map((p) => p.target));
+      expect(set.listed).toBe([...kinds].every((k) => all.find((t) => t.id === k)?.listed));
       for (const part of set.parts!) expect(ids.has(part.target)).toBe(true);
     }
+  });
+
+  it("leaves a set unlisted while a part is (the starters' Team List)", () => {
+    expect(sets.find((t) => t.id === "broadcast-classic/set:teamLists")?.listed).toBe(false);
+    expect(sets.find((t) => t.id === "broadcast-classic/set:matchDay")?.listed).toBe(true);
+    expect(sets.find((t) => t.id === "gold-foil/set:teamLists")?.listed).toBe(true);
   });
 
   it("re-checks a set when a kind it is made of changed", () => {

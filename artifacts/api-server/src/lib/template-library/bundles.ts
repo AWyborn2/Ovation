@@ -87,10 +87,10 @@ export const SET_ASSEMBLY_REVISION = 1;
  * its kind bundles. Nothing new is committed: a set is exactly its kinds'
  * pages. Its version is the sum of the versions it is made of plus the
  * assembly revision, so raising any part's version (or the revision) raises
- * the set's; its hash is over the parts' hashes. Every set asks to be listed
- * and shows in the library once it passes its own fit check, as any template
- * does (a part unlisted as a single card, like the starters' Team List, is
- * still a fine set page).
+ * the set's; its hash is over the parts' hashes. A set asks to be listed
+ * when every part it uses is listed (an unlisted part, like the starters'
+ * Team List, is work in progress that doesn't fit yet), and shows in the
+ * library once it passes its own fit check, as any template does.
  */
 export function bundleSetTemplates(bundle: TemplateBundle): BundleTemplate[] {
   const byKind = new Map(bundle.templates.map((t) => [t.kind, t]));
@@ -112,7 +112,7 @@ export function bundleSetTemplates(bundle: TemplateBundle): BundleTemplate[] {
       file: {
         name: `${bundle.look.name} ${SET_TYPE_LABELS[type].toLowerCase()} set`,
         version: SET_ASSEMBLY_REVISION + parts.reduce((n, p) => n + p.file.version, 0),
-        listed: true,
+        listed: parts.every((p) => p.file.listed),
         document: built.document,
       },
     });

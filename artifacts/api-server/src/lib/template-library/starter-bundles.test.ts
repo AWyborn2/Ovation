@@ -16,6 +16,7 @@ import {
   isDocumentV2,
   primaryPage,
   templateDocumentErrors,
+  type SetDocument,
 } from "@workspace/scorecard/kind-templates";
 import { isRetiredCardKind } from "@workspace/scorecard";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
@@ -88,7 +89,11 @@ describe("syncing the committed bundles", () => {
       ]);
       for (const set of sets) {
         expect(templateDocumentErrors(set.file.document, set.kind)).toEqual([]);
-        expect(set.file.listed).toBe(true);
+        // Listed exactly when every bundle it is made of is.
+        const kinds = new Set((set.file.document as SetDocument).pages.map((p) => p.kind));
+        expect(set.file.listed).toBe(
+          [...kinds].every((k) => bundle.templates.find((t) => t.kind === k)?.file.listed),
+        );
       }
     }
   });
