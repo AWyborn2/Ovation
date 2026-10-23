@@ -298,10 +298,12 @@ describe("Junior players", () => {
     },
   ];
 
-  it("carries the public-name note, filters private players and renames in the drawer", async () => {
+  // Renaming goes through the full-name review and publication flow
+  // (admin-junior-naming.test.tsx); the drawer hosts its editor.
+  it("carries the public-name note, filters private players and opens the name editor in the drawer", async () => {
     const requests = stubApi([
       { match: /\/api\/juniors\/players/, reply: () => JUNIORS },
-      { method: "PATCH", match: /\/api\/juniors\/participants\/g-2$/, reply: () => ({}) },
+      { match: /\/api\/juniors\/name-review/, reply: () => [] },
     ]);
     renderAt(<AdminJuniorPlayers />, "/admin/people/junior-players");
     expect(screen.getByText(/Public junior pages show each player/)).toBeTruthy();
@@ -310,14 +312,10 @@ describe("Junior players", () => {
     expect(within(t).queryByText("Charlie Tan")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Private" }));
     fireEvent.click(within(t).getByText("Charlie Tan"));
-    fireEvent.change(within(drawer()).getByLabelText("Display name"), {
-      target: { value: "Charlie T" },
-    });
-    fireEvent.click(within(drawer()).getByRole("button", { name: "Rename" }));
-    await waitFor(() => {
-      const patch = requests.find((r) => r.method === "PATCH");
-      expect(patch?.body).toEqual({ displayName: "Charlie T" });
-    });
+    expect(await within(drawer()).findByText("Loading name evidence…")).toBeTruthy();
+    expect(within(drawer()).queryByRole("button", { name: "Rename" })).toBeNull();
+    // Opening the editor writes nothing.
+    expect(requests.some((r) => r.method !== "GET")).toBe(false);
   });
 });
 

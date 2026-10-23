@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db, juniorParticipantsTable, juniorStatCorrectionsTable } from "@workspace/db";
-import { ListJuniorNameReviewResponse } from "@workspace/api-zod";
+import type { ListJuniorNameReviewResponse } from "@workspace/api-zod";
 import type { z } from "zod";
 import { getJuniorNameStyle } from "./junior-helpers";
 import { formatJuniorName, isJuniorWithheld } from "./junior-names";
