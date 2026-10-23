@@ -127,16 +127,17 @@
   .nm { font: 600 calc(1.6cqw * var(--ts)) Cormorant Garamond, serif; color: var(--engrave); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nm small { display: block; font: italic 500 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; color: rgba(240,223,180,.65); }
   .fit .row { padding: .15cqw 0; }
-  .pq-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.8cqw; align-items: start; border-bottom: 0; padding: .6cqw .4cqw 1.4cqw; }
-  .plaque { text-align: center; padding: calc(1.2cqw * var(--ts)) 1cqw calc(1.1cqw * var(--ts)); color: var(--engrave); font-family: Cinzel, serif; text-transform: uppercase;
+  .pq-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.8cqw; align-items: stretch; border-bottom: 0; padding: .6cqw .4cqw 1.4cqw; }
+  .plaque { display: flex; flex-direction: column; min-height: calc(33cqw * var(--ts)); text-align: center; padding: calc(1.2cqw * var(--ts)) 1cqw calc(1.1cqw * var(--ts)); color: var(--engrave); font-family: Cinzel, serif; text-transform: uppercase;
     background: linear-gradient(180deg, rgba(216,178,94,.10), rgba(216,178,94,.03)); border: 1px solid var(--gold); outline: 1px solid rgba(216,178,94,.45); outline-offset: .35cqw;
     box-shadow: 0 .4cqw 1.2cqw rgba(0,0,0,.35); margin: .4cqw; }
   .pq-grade { font: 700 calc(1.75cqw * var(--ts))/1.1 Cinzel, serif; color: var(--gold-hi); letter-spacing: .06em; }
   .pq-meta { font: 600 calc(1.05cqw * var(--ts))/1.35 Cinzel, serif; color: var(--gold); margin: .5cqw 0 .8cqw; letter-spacing: .05em; }
   .pq-xi { list-style: none; margin: 0; padding: .7cqw 0; border-top: 1px solid rgba(216,178,94,.35); border-bottom: 1px solid rgba(216,178,94,.35);
     font: 600 calc(1.08cqw * var(--ts))/1.32 Cormorant Garamond, serif; letter-spacing: .04em; }
-  .pq-mom { font: 600 calc(.85cqw * var(--ts)) Cinzel, serif; color: var(--gold); margin-top: .7cqw; letter-spacing: .05em; }
-  .pq-result { font: 600 calc(.95cqw * var(--ts))/1.35 Cinzel, serif; margin-top: .7cqw; color: var(--engrave); }
+  .pq-xi li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pq-mom { min-height: 2.6em; display: grid; place-items: center; font: 600 calc(.85cqw * var(--ts)) Cinzel, serif; color: var(--gold); margin-top: .7cqw; letter-spacing: .05em; }
+  .pq-result { font: 600 calc(.95cqw * var(--ts))/1.35 Cinzel, serif; margin-top: auto; padding-top: .7cqw; color: var(--engrave); }
   .fit .pq-xi { padding: .3cqw 0; }
   .footer { display: flex; justify-content: space-between; align-items: center; padding-top: .9cqw; gap: 2cqw;
     font: 500 .9cqw Cinzel, serif; letter-spacing: .22em; color: var(--gold-lo); }
@@ -306,14 +307,14 @@
     const capt = (i * 3) % 11;
     const ours = 150 + ((i * 37) % 90), wk = 3 + (i % 6), theirs = ours - 6 - ((i * 13) % 40);
     return { grade, ground: GROUNDS[i % GROUNDS.length], date: `${String(8 + (i % 20)).padStart(2, "0")}/03/${year}`,
-      xi: xi.map((n, k) => k === capt ? `${n} (Capt)` : n), mom: i % 3 === 2 ? "" : xi[(capt + 4) % 11],
+      xi: xi.map((n, k) => k === capt ? `${n} (C)` : n), mom: i % 3 === 2 ? "" : xi[(capt + 4) % 11],
       result: [`Halls Head ${wk}/${ours}`, "def", `${OPPONENTS[i % OPPONENTS.length]} ${theirs}`] };
   }
   function plaque(i) {
     const p = premiership(i);
     return `<article class="plaque"><div class="pq-grade">${esc(p.grade)}</div><div class="pq-meta">${esc(p.ground)}<br>${esc(p.date)}</div>
       <ol class="pq-xi">${p.xi.map((n) => `<li>${esc(n)}</li>`).join("")}</ol>
-      ${p.mom ? `<div class="pq-mom">Man of the match · ${esc(p.mom)}</div>` : ""}
+      <div class="pq-mom">${p.mom ? `Man of the match · ${esc(p.mom)}` : ""}</div>
       <div class="pq-result">${p.result.map(esc).join("<br>")}</div></article>`;
   }
   /** Units that page, scroll and reveal: season rows, or rows of plaques. */
