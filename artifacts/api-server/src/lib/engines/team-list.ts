@@ -202,8 +202,7 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
               // A public junior can also play in a senior side and have an
               // allocated senior number. The register queried above (not the
               // roster section) determines which number this card may display.
-              if (m.isPrivate || (m.linkedPlayerId ?? 0) >= 90000)
-                blocked.add(key);
+              if (m.isPrivate || (m.linkedPlayerId ?? 0) >= 90000) blocked.add(key);
             }
           }
           for (const [key, count] of owners)

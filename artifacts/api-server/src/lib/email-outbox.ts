@@ -655,7 +655,10 @@ export async function requeueSend(tenantId: number, sendId: number, now = new Da
     .where(and(eq(emailSendsTable.id, sendId), eq(emailSendsTable.tenantId, tenantId)));
   if (!row) throw new EmailOutboxError(404, "Send not found");
   if (row.listId == null && row.kind !== BATCH_KIND) {
-    throw new EmailOutboxError(409, "This email list was deleted. Create a new list to send again.");
+    throw new EmailOutboxError(
+      409,
+      "This email list was deleted. Create a new list to send again.",
+    );
   }
   const [copy] = await db
     .insert(emailSendsTable)

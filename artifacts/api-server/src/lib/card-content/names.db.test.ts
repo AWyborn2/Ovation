@@ -247,7 +247,9 @@ describe("resolveTeamName", () => {
         setTeamNameOverride(tenantA, OPP, null, name),
       ),
     );
-    const rows = await db.select().from(teamNameOverridesTable)
+    const rows = await db
+      .select()
+      .from(teamNameOverridesTable)
       .where(eq(teamNameOverridesTable.tenantId, tenantA));
     expect(rows).toHaveLength(2);
     expect(rows.filter((row) => row.gradeKey === null)).toHaveLength(1);

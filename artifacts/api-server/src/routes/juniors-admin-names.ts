@@ -45,12 +45,10 @@ router.post(
       new Set(selections.map((s) => s.participantId.toLowerCase())).size !== selections.length ||
       selections.some((s) => !isExpandedJuniorName(cleanJuniorName(s.name)))
     ) {
-      res
-        .status(400)
-        .json({
-          error:
-            "Select each identity once and enter a full given name and surname (maximum 200 characters).",
-        });
+      res.status(400).json({
+        error:
+          "Select each identity once and enter a full given name and surname (maximum 200 characters).",
+      });
       return;
     }
     const tenantId = getTenantId(req);
@@ -135,12 +133,10 @@ router.post(
     } catch (error) {
       const e = error as Error & { code?: string; cause?: { code?: string } };
       if (e.message === "STALE_NAME_PREVIEW" || e.code === "40001" || e.cause?.code === "40001") {
-        res
-          .status(409)
-          .json({
-            error:
-              "Names, evidence or settings changed. Reload the review and confirm again; no names were published.",
-          });
+        res.status(409).json({
+          error:
+            "Names, evidence or settings changed. Reload the review and confirm again; no names were published.",
+        });
         return;
       }
       throw error;

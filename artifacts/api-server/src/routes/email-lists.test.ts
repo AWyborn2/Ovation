@@ -211,27 +211,37 @@ beforeEach(() => {
 
 describe("retired email-list history", () => {
   it("still resends and retries intentionally listless team-sheet batches", async () => {
-    const [batch] = await db.insert(emailSendsTable).values({
-      tenantId: other,
-      listId: null,
-      kind: BATCH_KIND,
-      subjectType: "batch",
-      subjectId: selectionId,
-      idempotencyKey: `${stamp}:listless-batch`,
-      payload: { selectionIds: [], reason: "email_all" },
-      status: "failed",
-      attempts: 1,
-    }).returning();
+    const [batch] = await db
+      .insert(emailSendsTable)
+      .values({
+        tenantId: other,
+        listId: null,
+        kind: BATCH_KIND,
+        subjectType: "batch",
+        subjectId: selectionId,
+        idempotencyKey: `${stamp}:listless-batch`,
+        payload: { selectionIds: [], reason: "email_all" },
+        status: "failed",
+        attempts: 1,
+      })
+      .returning();
     try {
       const log = await as(other, otherCookie).get("/api/admin/email-sends").expect(200);
-      expect(log.body.find((row: { id: number }) => row.id === batch.id))
-        .toMatchObject({ listId: null, listName: "Email all team sheets", status: "failed" });
+      expect(log.body.find((row: { id: number }) => row.id === batch.id)).toMatchObject({
+        listId: null,
+        listName: "Email all team sheets",
+        status: "failed",
+      });
       const again = await as(other, otherCookie)
-        .post(`/api/admin/email-sends/${batch.id}/resend`).expect(200);
+        .post(`/api/admin/email-sends/${batch.id}/resend`)
+        .expect(200);
       expect(again.body).toMatchObject({ kind: BATCH_KIND, listId: null, status: "queued" });
       // Both rows are claimable. Empty batches are safely skipped after claiming.
       expect(await drainOutbox({ tenantId: other })).toEqual({ sent: 0, failed: 0, skipped: 2 });
-      const [retried] = await db.select().from(emailSendsTable).where(eq(emailSendsTable.id, batch.id));
+      const [retried] = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.id, batch.id));
       expect(retried).toMatchObject({ attempts: 2, status: "skipped" });
     } finally {
       await db.delete(emailSendsTable).where(eq(emailSendsTable.tenantId, other));
@@ -248,51 +258,75 @@ describe("retired email-list history", () => {
       .post("/api/admin/email-lists", contacts)
       .expect(201);
     const listId = created.body.id;
-    const history = await db.insert(emailSendsTable).values(
-      (["sent", "failed", "skipped", "queued", "sending"] as const).map((status) => ({
-        tenantId: other,
-        listId,
-        kind: "team_sheet",
-        subjectType: "selection",
-        subjectId: selectionId,
-        idempotencyKey: `${stamp}:retired:${status}`,
-        status,
-        recipientCount: status === "sent" ? 1 : 0,
-        attempts: status === "queued" ? 0 : 1,
-        lastError: status === "failed" ? "Delivery unavailable" : null,
-        queuedAt: now,
-        claimedAt: status === "sending" ? now : null,
-        sentAt: status === "sent" ? now : null,
-      })),
-    ).returning();
+    const history = await db
+      .insert(emailSendsTable)
+      .values(
+        (["sent", "failed", "skipped", "queued", "sending"] as const).map((status) => ({
+          tenantId: other,
+          listId,
+          kind: "team_sheet",
+          subjectType: "selection",
+          subjectId: selectionId,
+          idempotencyKey: `${stamp}:retired:${status}`,
+          status,
+          recipientCount: status === "sent" ? 1 : 0,
+          attempts: status === "queued" ? 0 : 1,
+          lastError: status === "failed" ? "Delivery unavailable" : null,
+          queuedAt: now,
+          claimedAt: status === "sending" ? now : null,
+          sentAt: status === "sent" ? now : null,
+        })),
+      )
+      .returning();
     try {
       await as(other, otherCookie)
         .put(`/api/admin/email-lists/${listId}`, { ...contacts, active: false })
         .expect(200);
-      expect(await db.select().from(emailSendsTable)
-        .where(eq(emailSendsTable.tenantId, other))).toEqual(history);
+      expect(
+        await db.select().from(emailSendsTable).where(eq(emailSendsTable.tenantId, other)),
+      ).toEqual(history);
       await as(tenant, cookie).del(`/api/admin/email-lists/${listId}`).expect(404);
       await as(other, otherCookie).del(`/api/admin/email-lists/${listId}`).expect(204);
       await as(other, otherCookie).del(`/api/admin/email-lists/${listId}`).expect(404);
-      expect(await db.select().from(emailListsTable).where(eq(emailListsTable.id, listId))).toEqual([]);
-      expect(await db.select().from(emailListMembersTable).where(eq(emailListMembersTable.listId, listId))).toEqual([]);
-      expect(await db.select().from(emailListTeamsTable).where(eq(emailListTeamsTable.listId, listId))).toEqual([]);
-      const detached = await db.select().from(emailSendsTable)
+      expect(await db.select().from(emailListsTable).where(eq(emailListsTable.id, listId))).toEqual(
+        [],
+      );
+      expect(
+        await db
+          .select()
+          .from(emailListMembersTable)
+          .where(eq(emailListMembersTable.listId, listId)),
+      ).toEqual([]);
+      expect(
+        await db.select().from(emailListTeamsTable).where(eq(emailListTeamsTable.listId, listId)),
+      ).toEqual([]);
+      const detached = await db
+        .select()
+        .from(emailSendsTable)
         .where(eq(emailSendsTable.tenantId, other));
       expect(detached).toEqual(history.map((row) => ({ ...row, listId: null })));
       expect(JSON.stringify(detached)).not.toContain("@example.com");
       const log = await as(other, otherCookie).get("/api/admin/email-sends").expect(200);
       expect(log.body).toHaveLength(history.length);
-      for (const row of log.body) expect(row).toMatchObject({ listId: null, listName: "Deleted list" });
+      for (const row of log.body)
+        expect(row).toMatchObject({ listId: null, listName: "Deleted list" });
       expect(JSON.stringify(log.body)).not.toContain("@example.com");
       const mine = await as(tenant, cookie).get("/api/admin/email-sends").expect(200);
-      expect(mine.body.some((row: { id: number }) => history.some((h) => h.id === row.id))).toBe(false);
+      expect(mine.body.some((row: { id: number }) => history.some((h) => h.id === row.id))).toBe(
+        false,
+      );
       await as(tenant, cookie).post(`/api/admin/email-sends/${history[0].id}/resend`).expect(404);
-      await as(other, otherCookie).post(`/api/admin/email-sends/${history[0].id}/resend`).expect(409);
-      expect(await drainOutbox({ tenantId: other, now: new Date("2034-10-06T00:00:00Z") }))
-        .toEqual({ sent: 0, failed: 0, skipped: 2 });
+      await as(other, otherCookie)
+        .post(`/api/admin/email-sends/${history[0].id}/resend`)
+        .expect(409);
+      expect(await drainOutbox({ tenantId: other, now: new Date("2034-10-06T00:00:00Z") })).toEqual(
+        { sent: 0, failed: 0, skipped: 2 },
+      );
       expect(sent).toEqual([]);
-      const after = await db.select().from(emailSendsTable).where(eq(emailSendsTable.tenantId, other));
+      const after = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.tenantId, other));
       for (const row of history.filter((h) => ["sent", "failed", "skipped"].includes(h.status))) {
         expect(after.find((h) => h.id === row.id)).toEqual({ ...row, listId: null });
       }
@@ -307,20 +341,26 @@ describe("retired email-list history", () => {
     const created = await as(other, otherCookie)
       .post("/api/admin/email-lists", list({ gradeKeys: ["Direct delete grade"] }))
       .expect(201);
-    const [history] = await db.insert(emailSendsTable).values({
-      tenantId: other,
-      listId: created.body.id,
-      kind: "team_sheet",
-      subjectType: "selection",
-      subjectId: selectionId,
-      idempotencyKey: `${stamp}:direct-delete`,
-      status: "sent",
-      recipientCount: 2,
-      sentAt: now,
-    }).returning();
+    const [history] = await db
+      .insert(emailSendsTable)
+      .values({
+        tenantId: other,
+        listId: created.body.id,
+        kind: "team_sheet",
+        subjectType: "selection",
+        subjectId: selectionId,
+        idempotencyKey: `${stamp}:direct-delete`,
+        status: "sent",
+        recipientCount: 2,
+        sentAt: now,
+      })
+      .returning();
     try {
       await db.delete(emailListsTable).where(eq(emailListsTable.id, created.body.id));
-      const [after] = await db.select().from(emailSendsTable).where(eq(emailSendsTable.id, history.id));
+      const [after] = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.id, history.id));
       expect(after).toEqual({ ...history, listId: null });
     } finally {
       await db.delete(emailSendsTable).where(eq(emailSendsTable.id, history.id));

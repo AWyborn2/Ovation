@@ -9,12 +9,12 @@ application does **not** apply any name suggestions.
 The development read-only review found **694 profiles**, including **6 withheld**
 profiles:
 
-| Review outcome | Profiles |
-| --- | ---: |
-| One compatible expanded name, eligible for selected admin confirmation | 681 |
-| Identity details need review | 7 |
-| Abbreviated evidence only | 5 |
-| Already expanded, protected from suggested replacement | 1 |
+| Review outcome                                                         | Profiles |
+| ---------------------------------------------------------------------- | -------: |
+| One compatible expanded name, eligible for selected admin confirmation |      681 |
+| Identity details need review                                           |        7 |
+| Abbreviated evidence only                                              |        5 |
+| Already expanded, protected from suggested replacement                 |        1 |
 
 These counts include withheld profiles. A suggestion is evidence to review, not
 proof of identity or permission to publish a child's identity. The stricter

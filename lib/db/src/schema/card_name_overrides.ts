@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { pgTable, serial, integer, text, timestamp, index, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  timestamp,
+  index,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
