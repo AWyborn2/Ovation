@@ -11420,10 +11420,12 @@ export const ReportLibraryElementBody = zod.object({
 
 
 /**
+ * Card templates, and set templates (`set:<type>`, carousel set editor plan) when asked for by kind or with `includeSets`.
  * @summary The club's own templates, defaults first within each kind
  */
 export const ListClubTemplatesQueryParams = zod.object({
-  "kind": zod.coerce.string().optional()
+  "kind": zod.coerce.string().optional(),
+  "includeSets": zod.coerce.boolean().optional()
 })
 
 export const ListClubTemplatesResponse = zod.object({
@@ -11467,6 +11469,26 @@ export const CreateClubTemplateBody = zod.object({
   "libraryTemplateId": zod.number(),
   "version": zod.number().optional().describe('A library version; the current one when absent.'),
   "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * A new club set template of `setType`, saved to the club's designs. With `from`, that template's design takes the set page it fits (a cover, a team, fixture or result page, or the sponsors page; else it becomes the first page), and the other pages come from the same look's set template (Club Kit's when its look has none). A free set is the design and copies of it, with no data binding, and is never posted automatically. Without `from`, the look's set template as it is.
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const makeCarouselSetBodyNameMax = 80;
+
+
+
+export const MakeCarouselSetBody = zod.object({
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary', 'free']),
+  "from": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').optional().describe('The template to start from (one of the club\'s, or a library template).'),
+  "lookId": zod.number().optional().describe('Without `from`, the look whose set template to start from (Club Kit when absent).'),
+  "name": zod.string().min(1).max(makeCarouselSetBodyNameMax).optional()
 })
 
 
@@ -12356,6 +12378,112 @@ export const ApproveSocialDraftParams = zod.object({
 })
 
 export const ApproveSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
+ * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+export const GetDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetDraftSetDesignResponse = zod.object({
+  "draftId": zod.number(),
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary']),
+  "layout": zod.enum(['carousel', 'list']).describe('`carousel`: a queued set whose slides are stored (their order is the payload\'s); `list`: a list card whose slides are worked out from its data (their order is the design\'s arrangement).'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullable(),
+  "size": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullable().describe('A queued carousel\'s size; null for a list draft (it posts at every size the club has on).'),
+  "stored": zod.boolean().optional().describe('Whether the draft already holds this set design (false when assembled for this read).')
+})
+
+
+/**
+ * Stores the set design on the draft. A queued carousel's slides follow the design's arrangement (reordered, deleted, design pages added) and its size; a list draft keeps the arrangement in its design. The draft's data snapshot is unchanged. The new layout owes a check before automation, as any templated edit does.
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const SaveDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SaveDraftSetDesignBody = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullish().describe('The set template the design now comes from (switching look); absent keeps the draft\'s.'),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional().describe('A queued carousel\'s new size.')
+})
+
+export const SaveDraftSetDesignResponse = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
   "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
@@ -14777,6 +14905,162 @@ export const GetJuniorPhotoParams = zod.object({
  */
 export const GetJuniorPhotoThumbParams = zod.object({
   "photoId": zod.coerce.number()
+})
+
+
+/**
+ * Every junior photo with its folder fields and the children tagged in it. `displayable` is the consent rule (kiosk-photo-rotation A): at least one tagged child, and every tagged child neither photo-withheld nor private. A photo that is not displayable never leaves admin.
+ * @summary The club's junior photo library, newest first (admin)
+ */
+export const ListJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const ListJuniorLibraryPhotosResponse = zod.array(ListJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * Like the senior library's ingest: each object becomes an upright JPEG with EXIF stripped, plus a thumbnail, stored under the private junior prefix; the upload is deleted. Files fail independently. At most 50 per call.
+ * @summary Convert uploaded objects into junior library photos (admin)
+ */
+
+
+
+export const IngestJuniorLibraryPhotosBody = zod.object({
+  "objectPaths": zod.array(zod.string()).min(1),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).optional().describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),
+  "matchFormat": zod.enum(['one_day', 't20', 'two_day']).optional().describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),
+  "participantIds": zod.array(zod.string()).optional().describe('Junior players (PlayHQ participant ids) to tag on every photo.')
+})
+
+export const IngestJuniorLibraryPhotosResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "photo": zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).optional().describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.'),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
+ * A photo that stops being displayable (a withheld child tagged in, its last tag removed) is stripped from open cards in the same request.
+ * @summary Tag children, season and match format on junior library photos (admin)
+ */
+
+
+
+export const TagJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "season": zod.number().nullish().describe('Set (or with null, clear) the season. Omit to leave unchanged.'),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).optional().describe('Set (or with null, clear) the match format. Omit to leave unchanged.'),
+  "addParticipantIds": zod.array(zod.string()).optional(),
+  "removeParticipantIds": zod.array(zod.string()).optional()
+})
+
+export const TagJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const TagJuniorLibraryPhotosResponse = zod.array(TagJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary File junior photos into a library folder (grade x photo type) (admin)
+ */
+
+
+
+export const MoveJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "grade": zod.string().nullable().describe('The senior grade folder, or null for Club-wide (no grade).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
+})
+
+export const MoveJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const MoveJuniorLibraryPhotosResponse = zod.array(MoveJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary Remove photos from the junior library (admin); cards lose them at once
+ */
+
+
+
+export const DeleteJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1)
+})
+
+export const DeleteJuniorLibraryPhotosResponse = zod.object({
+  "deleted": zod.number()
 })
 
 

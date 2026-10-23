@@ -7,7 +7,11 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import {
+  expandSetSlides,
+  isSetDocument,
+  mapCarouselSlides,
   planTemplateSlides,
+  setPageRenderDocument,
   type DraftLayoutWarnings,
   type LayerDocument,
   type LayoutWarning,
@@ -24,6 +28,7 @@ import {
   resolveActivePackId,
   queuedSlideAdjustments,
   carouselPackId,
+  carouselSlideData,
 } from "@workspace/scorecard/queued-carousel";
 
 /**
@@ -136,6 +141,35 @@ export async function renderDraftSlides(
     throw new Error("Invalid saved carousel; cannot render its slides.");
   if (carousel) {
     const rendered: RenderedSlide[] = [];
+    // Drawn with a set design (carousel set editor plan): each slide by its page.
+    const set =
+      carousel.version === 3 && isSetDocument(draft.adjustments) ? draft.adjustments : null;
+    if (set) {
+      const mapped = mapCarouselSlides(set, carousel.slides);
+      const byId = new Map(carousel.slides.map((s) => [s.id, s]));
+      for (const size of sizes) {
+        for (const [i, slide] of mapped.slides.entries()) {
+          const stored = byId.get(slide.key)!;
+          const { buffer, warnings = [] } = await serialised(() =>
+            renderer(
+              slide.input,
+              {
+                size,
+                packId: carouselPackId(carousel),
+                data: carouselSlideData(carousel, stored),
+                junior: stored.junior,
+                sponsorsOn: stored.sponsorsOn,
+                strictImages: true,
+                adjustments: setPageRenderDocument(set, slide.page),
+              },
+              harnessOrigin,
+            ),
+          );
+          rendered.push({ size, png: buffer, page: i + 1, of: mapped.slides.length, warnings });
+        }
+      }
+      return rendered;
+    }
     for (const size of sizes) {
       for (const [i, slide] of carousel.slides.entries()) {
         const { buffer, warnings = [] } = await serialised(() =>
@@ -240,6 +274,47 @@ export async function renderDraftSlides(
     templated || key === "single" ? rootAdj : (rootAdj?.slides?.[key] ?? null);
 
   const rendered: RenderedSlide[] = [];
+  // A list drawn with a set design (Round Team Lists, carousel set editor plan):
+  // its cover and a slide per team on the set's pages, in the design's order.
+  const set = templated && isSetDocument(draft.adjustments) ? draft.adjustments : null;
+  if (set) {
+    const items = planCardSet(input as SetInput, { ...setOptions, cover: true }).map((s) => ({
+      key: s.key,
+      slot: s.role === "detail" || s.role === "single" ? ("team" as const) : ("cover" as const),
+      input: s.input as Record<string, unknown>,
+    }));
+    const slides = expandSetSlides(set, items, { sponsors: data.sponsors, junior });
+    for (const size of sizes) {
+      for (const [i, slide] of slides.entries()) {
+        const slideJunior = junior || slide.input.junior === true;
+        const slideAllowed = slide.input.juniorPhotoAllowed === true;
+        const slideData = slideJunior && !slideAllowed ? { ...data, photoUrl: null } : data;
+        const { buffer, warnings } = await serialised(() =>
+          renderer(
+            slide.input,
+            {
+              size,
+              sponsorsOn,
+              junior: slideJunior,
+              theme: null,
+              data: slideData,
+              packId,
+              adjustments: setPageRenderDocument(set, slide.page),
+            },
+            harnessOrigin,
+          ),
+        );
+        rendered.push({
+          size,
+          png: buffer,
+          page: i + 1,
+          of: slides.length,
+          warnings: warnings ?? [],
+        });
+      }
+    }
+    return rendered;
+  }
   for (const size of sizes) {
     // A templated list spills by its rows layer's capacity (KTD13).
     const templatePlan = templated

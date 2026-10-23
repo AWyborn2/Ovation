@@ -15,7 +15,15 @@ import {
   type ClubPhoto,
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
-import { primaryPage, type PageKey } from "@workspace/scorecard/kind-templates";
+import {
+  primaryPage,
+  setPageRenderDocument,
+  setTypeOfKind,
+  SET_TYPE_LABELS,
+  type PageKey,
+  type SetDocument,
+  type SetPage,
+} from "@workspace/scorecard/kind-templates";
 import { PackCard } from "@/components/pack-card";
 import { packPreviewPhoto } from "@/lib/gallery-photo";
 import {
@@ -27,9 +35,10 @@ import {
 } from "@/lib/pack-card-data";
 import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
+import { sampleDay } from "@/lib/kind-templates/samples";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { useHeroImage } from "@/lib/use-hero-image";
-import type { CardKind } from "@/lib/social-studio";
+import { kindLabel, type CardKind } from "@/lib/social-studio";
 
 /** What library thumbnails draw with: the club's payload per kind, and its short name. */
 export type LibraryPreview = {
@@ -79,40 +88,6 @@ export function usePreviewInput(kind: string, clubName: string | undefined): Sha
     if (input && typeof input === "object") return input as ShareCardInput;
     return sampleCardInput(kind as ShareCardInput["kind"], clubName);
   }, [q.data, kind, clubName]);
-}
-
-/** A day page's sample rows: a few results, or a few fixtures for Match Day. */
-function sampleDay(kind: ShareCardInput["kind"]) {
-  const grades = ["Under 13 Blue", "Under 15", "Under 17"];
-  const opponents = ["Harbour", "Riverside", "Northshore Colts"];
-  if (kind === "matchDay") {
-    return {
-      heading: "Saturday",
-      fixtures: grades.map((grade, i) => ({
-        grade,
-        opposition: opponents[i]!,
-        crestUrl: null,
-        monogram: opponents[i]!.slice(0, 2).toUpperCase(),
-        homeAway: i % 2 ? ("AWAY" as const) : ("HOME" as const),
-        venue: "Main Oval",
-        startTime: ["8:30am", "9:00am", "1:00pm"][i]!,
-        roundLabel: "Round 4",
-      })),
-    };
-  }
-  return {
-    heading: "Saturday",
-    results: grades.map((grade, i) => ({
-      grade,
-      opposition: opponents[i]!,
-      crestUrl: null,
-      clubScore: ["4/132", "87", "6/150"][i]!,
-      oppositionScore: ["98", "3/90", "7/149"][i]!,
-      resultWord: i === 1 ? "RESULT" : "WIN",
-      result: ["Won by 34 runs", "Lost by 7 wickets", "Won by 1 run"][i]!,
-      winner: i === 1 ? ("opposition" as const) : ("club" as const),
-    })),
-  };
 }
 
 /**
@@ -200,4 +175,36 @@ export function TemplateThumb({
       />
     </WhenVisible>
   );
+}
+
+/** A set's page drawn in the club's data, lazily (carousel set editor plan). */
+export function SetPageThumb({
+  set,
+  page,
+  preview,
+  size = "square",
+}: {
+  set: SetDocument;
+  page: SetPage;
+  preview: LibraryPreview;
+  size?: CardSize;
+}) {
+  const input = usePreviewInput(page.kind, preview.clubName);
+  const document = useMemo(() => setPageRenderDocument(set, page), [set, page]);
+  return (
+    <TemplateThumb
+      document={document}
+      kind={page.kind}
+      input={input}
+      data={preview.dataFor(page.kind)}
+      size={size}
+      page={page.page}
+    />
+  );
+}
+
+/** A template's name for its kind: a card kind, or "Team lists set". */
+export function templateKindLabel(kind: string): string {
+  const set = setTypeOfKind(kind);
+  return set ? `${SET_TYPE_LABELS[set]} set` : kindLabel(kind as CardKind);
 }

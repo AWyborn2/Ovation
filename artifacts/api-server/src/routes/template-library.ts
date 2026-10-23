@@ -14,6 +14,7 @@ import {
   GetTemplatePreviewInputQueryParams,
   ListClubTemplatesQueryParams,
   ListLibraryTemplatesQueryParams,
+  MakeCarouselSetBody,
   SaveClubTemplateBody,
   TakeClubTemplateUpdateBody,
 } from "@workspace/api-zod";
@@ -36,6 +37,7 @@ import {
   takeUpdate,
 } from "../lib/template-library/copies";
 import { TemplateLibraryError } from "../lib/template-library/errors";
+import { makeSetCopy } from "../lib/template-library/set-design";
 import { previewInputFor } from "../lib/template-library/preview";
 import { assembleCarouselPages, setTemplateKind } from "../lib/template-library/draw";
 import { resolveDraftPack } from "../lib/draft-enrich";
@@ -167,7 +169,26 @@ router.get("/club-templates", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  res.json({ templates: await listClubTemplates(getTenantId(req), parsed.data.kind) });
+  res.json({
+    templates: await listClubTemplates(getTenantId(req), parsed.data.kind, {
+      includeSets: parsed.data.includeSets === true,
+    }),
+  });
+});
+
+// Make a carousel set design from one template, or a look's set (carousel set editor plan, part 4).
+router.post("/club-templates/sets", ...writes, async (req, res): Promise<void> => {
+  const parsed = MakeCarouselSetBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  try {
+    const row = await makeSetCopy(getTenantId(req), parsed.data, adminId(req));
+    res.status(201).json(await presentCopy(row));
+  } catch (err) {
+    fail(res, err);
+  }
 });
 
 router.post("/club-templates", ...writes, async (req, res): Promise<void> => {

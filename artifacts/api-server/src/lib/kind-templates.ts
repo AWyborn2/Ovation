@@ -29,6 +29,7 @@ import {
 import {
   emptySizes,
   isRetiredPack,
+  isSetDocument,
   kindFields,
   setTypeOfKind,
   lazyDefaultSlugs,
@@ -77,6 +78,10 @@ export async function waitingDraftCounts(tenantId: number): Promise<Map<string, 
       and(
         eq(socialDraftsTable.tenantId, tenantId),
         inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
+        // Queued carousels and set designs keep their own design (applyTemplateToDrafts).
+        sql`NOT (${socialDraftsTable.cardInput} ? 'weekendCarousel')`,
+        // A set design names its set type (a pack draft's `set` is its options object).
+        sql`coalesce(jsonb_typeof(${socialDraftsTable.adjustments} -> 'set'), '') <> 'string'`,
       ),
     )
     .groupBy(kindExpr);
@@ -309,12 +314,17 @@ export async function applyTemplateToDrafts(
         eq(socialDraftsTable.tenantId, tenantId),
         inArray(socialDraftsTable.status, [...UNPOSTED_STATUSES]),
         sql`${socialDraftsTable.cardInput}->>'kind' = ${kind}`,
+        // A queued carousel (all `kind: matchDay`) is drawn with its own set
+        // design, not the kind's card: applying Match Day must not replace it.
+        sql`NOT (${socialDraftsTable.cardInput} ? 'weekendCarousel')`,
       ),
     )
     .for("update");
   let changed = 0;
   for (const draft of candidates) {
     if (draftKind(draft) !== kind) continue;
+    // A draft with a set design (a Round Team Lists set edited as one) keeps it.
+    if (isSetDocument(draft.adjustments)) continue;
     await recordDraftRevision(draft, "template", tx);
     await tx
       .update(socialDraftsTable)

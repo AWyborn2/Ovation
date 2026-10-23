@@ -20,7 +20,15 @@ import {
   type LibraryTemplate,
   type ListLibraryTemplatesSize,
 } from "@workspace/api-client-react";
-import { TEMPLATE_CARD_KINDS, type PageKey } from "@workspace/scorecard/kind-templates";
+import {
+  isSetDocument,
+  setPageLabel,
+  setTemplateKind,
+  SET_TYPE_LABELS,
+  TEMPLATE_CARD_KINDS,
+  type DataSetType,
+  type PageKey,
+} from "@workspace/scorecard/kind-templates";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,7 +41,17 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
-import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
+import { MakeSetDialog } from "./make-set-dialog";
+import {
+  SetPageThumb,
+  templateKindLabel,
+  TemplateThumb,
+  usePreviewInput,
+  type LibraryPreview,
+} from "./previews";
+
+/** The set templates the library offers (carousel set editor plan). */
+const SET_FILTERS: DataSetType[] = ["teamLists", "matchDay", "results", "matchSummary"];
 
 const SIZE_LABELS: Record<CardSize, string> = {
   square: "Square",
@@ -100,6 +118,7 @@ function TemplateTile({
   busy: boolean;
 }) {
   const input = usePreviewInput(template.kind, preview.clubName);
+  const set = isSetDocument(template.document) ? template.document : null;
   return (
     <li className="group relative rounded-xl border border-border bg-card p-2">
       <button
@@ -109,15 +128,21 @@ function TemplateTile({
         onDoubleClick={onCustomise}
         aria-label={`Open ${template.name}`}
       >
-        <TemplateThumb
-          document={template.document}
-          kind={template.kind}
-          input={input}
-          data={preview.dataFor(template.kind)}
-        />
+        {set?.pages[0] ? (
+          <SetPageThumb set={set} page={set.pages[0]} preview={preview} />
+        ) : (
+          <TemplateThumb
+            document={template.document}
+            kind={template.kind}
+            input={input}
+            data={preview.dataFor(template.kind)}
+          />
+        )}
         <p className="mt-2 truncate text-sm font-medium">{template.name}</p>
         <p className="truncate text-xs text-muted-foreground">
-          {kindLabel(template.kind)}
+          {set
+            ? `${templateKindLabel(template.kind)} · ${set.pages.length} pages`
+            : kindLabel(template.kind)}
           {template.look ? ` · ${template.look.name}` : ""} · {template.authorName}
         </p>
       </button>
@@ -151,6 +176,8 @@ export function TemplateDetailDialog({
   const [status, setStatus] = useState<string | null>(null);
   const input = usePreviewInput(template?.kind ?? "milestone", preview.clubName);
   const custom = useCustomiseTemplate();
+  const set = template && isSetDocument(template.document) ? template.document : null;
+  const [making, setMaking] = useState(false);
 
   const use = async (makeDefault: boolean) => {
     if (!template) return;
@@ -165,7 +192,7 @@ export function TemplateDetailDialog({
       await qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
       setStatus(
         makeDefault
-          ? `Added to your templates and set as your ${kindLabel(template.kind)} default.`
+          ? `Added to your templates and set as your ${templateKindLabel(template.kind)} default.`
           : "Added to your templates.",
       );
     } catch (e) {
@@ -191,24 +218,29 @@ export function TemplateDetailDialog({
             <DialogHeader>
               <DialogTitle>{template.name}</DialogTitle>
               <DialogDescription>
-                {kindLabel(template.kind)}
+                {templateKindLabel(template.kind)}
                 {template.look ? ` · ${template.look.name} look` : ""} · by {template.authorName}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {template.coverage.pages.map((page) => (
-                <section key={page} aria-label={pageLabel(page)}>
-                  <h3 className="mb-2 text-sm font-semibold">{pageLabel(page)}</h3>
+              {set?.pages.map((page, i) => (
+                <section key={page.id} aria-label={setPageLabel(page)}>
+                  <h3 className="mb-2 text-sm font-semibold">
+                    {i + 1}. {setPageLabel(page)}
+                    {page.role === "repeat" && (
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        one slide per {page.slot === "day" ? "junior day" : page.slot}
+                      </span>
+                    )}
+                  </h3>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {template.coverage.sizes.map((size) => (
                       <figure key={size}>
-                        <TemplateThumb
-                          document={template.document}
-                          kind={template.kind}
-                          input={input}
-                          data={preview.dataFor(template.kind)}
+                        <SetPageThumb
+                          set={set}
+                          page={page}
+                          preview={preview}
                           size={size as CardSize}
-                          page={page as PageKey}
                         />
                         <figcaption className="mt-1 text-center text-xs text-muted-foreground">
                           {sizeLabel(size)}
@@ -218,6 +250,29 @@ export function TemplateDetailDialog({
                   </div>
                 </section>
               ))}
+              {!set &&
+                template.coverage.pages.map((page) => (
+                  <section key={page} aria-label={pageLabel(page)}>
+                    <h3 className="mb-2 text-sm font-semibold">{pageLabel(page)}</h3>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {template.coverage.sizes.map((size) => (
+                        <figure key={size}>
+                          <TemplateThumb
+                            document={template.document}
+                            kind={template.kind}
+                            input={input}
+                            data={preview.dataFor(template.kind)}
+                            size={size as CardSize}
+                            page={page as PageKey}
+                          />
+                          <figcaption className="mt-1 text-center text-xs text-muted-foreground">
+                            {sizeLabel(size)}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </section>
+                ))}
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Button
@@ -232,6 +287,11 @@ export function TemplateDetailDialog({
               <Button variant="ghost" disabled={busy} onClick={() => use(false)}>
                 Save to my templates
               </Button>
+              {!set && (
+                <Button variant="ghost" disabled={busy} onClick={() => setMaking(true)}>
+                  Make a carousel set
+                </Button>
+              )}
               {(custom.error ?? status) && (
                 <span role="status" className="text-sm text-muted-foreground">
                   {custom.error ?? status}
@@ -241,6 +301,16 @@ export function TemplateDetailDialog({
           </>
         )}
       </DialogContent>
+      {template && !set && (
+        <MakeSetDialog
+          open={making}
+          onClose={() => setMaking(false)}
+          from={{
+            ref: { libraryTemplateId: template.id, version: template.version },
+            name: template.name,
+          }}
+        />
+      )}
     </Dialog>
   );
 }
@@ -302,6 +372,9 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
         {select("library-kind", "Card", kind, setKind, [
           ["", "Every card"],
           ...TEMPLATE_CARD_KINDS.map((k) => [k, kindLabel(k)] as [string, string]),
+          ...SET_FILTERS.map(
+            (t) => [setTemplateKind(t), `Carousel set: ${SET_TYPE_LABELS[t]}`] as [string, string],
+          ),
         ])}
         {select("library-size", "Size", size, setSize, [
           ["", "Every size"],

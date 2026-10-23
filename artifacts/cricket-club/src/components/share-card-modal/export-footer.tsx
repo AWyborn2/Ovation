@@ -11,6 +11,7 @@ import {
 import { SIZES, type CardSize } from "@/lib/share-card";
 import type { CardExport } from "./use-card-export";
 import type { useVideoExport } from "./use-video-export";
+import { saveLabel } from "@/lib/save-files";
 
 type VideoExport = ReturnType<typeof useVideoExport>;
 
@@ -130,7 +131,7 @@ export function ExportFooter({
         ) : (
           <Download className="h-4 w-4 mr-2" />
         )}
-        Download all sizes (zip)
+        {saveLabel("Download all sizes (zip)", "Save all sizes to Photos")}
       </Button>
       {onApprove && (
         <Button type="button" onClick={handleApproveAndDownload} disabled={approving || zipping}>

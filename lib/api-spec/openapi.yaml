@@ -6661,11 +6661,18 @@ paths:
       operationId: listClubTemplates
       tags: [socialCards]
       summary: The club's own templates, defaults first within each kind
+      description: >-
+        Card templates, and set templates (`set:<type>`, carousel set editor
+        plan) when asked for by kind or with `includeSets`.
       parameters:
         - name: kind
           in: query
           required: false
           schema: { type: string }
+        - name: includeSets
+          in: query
+          required: false
+          schema: { type: boolean }
       responses:
         "200":
           description: The club's templates
@@ -6694,6 +6701,37 @@ paths:
           description: Not in the library, or no such version
         "409":
           description: makeDefault while the version's fit check is pending
+
+  /club-templates/sets:
+    post:
+      operationId: makeCarouselSet
+      tags: [socialCards]
+      summary: Make a carousel set design from one template (carousel set editor plan, part 4)
+      description: >-
+        A new club set template of `setType`, saved to the club's designs. With
+        `from`, that template's design takes the set page it fits (a cover, a
+        team, fixture or result page, or the sponsors page; else it becomes the
+        first page), and the other pages come from the same look's set
+        template (Club Kit's when its look has none). A free set is the design
+        and copies of it, with no data binding, and is never posted
+        automatically. Without `from`, the look's set template as it is.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MakeCarouselSetRequest"
+      responses:
+        "201":
+          description: The club's new set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "400":
+          description: The template can't start that set
+        "404":
+          description: Not the club's template, or not in the library
 
   /club-templates/{id}:
     parameters:
@@ -7576,6 +7614,67 @@ paths:
           description: Not found
         "409":
           description: The draft is posted or dismissed
+
+  /social-drafts/{id}/set-design:
+    get:
+      operationId: getDraftSetDesign
+      tags: [socialCards]
+      summary: A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+      description: >-
+        A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as
+        its set design: one document whose pages draw every slide. A draft
+        saved before set designs gets one assembled from its own design and the
+        same look's set template; nothing is stored until it is saved.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft's set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSetDesign"
+        "404":
+          description: Not found
+        "409":
+          description: The draft isn't a carousel set, or has no design a set can be made from
+    put:
+      operationId: saveDraftSetDesign
+      tags: [socialCards]
+      summary: Save a carousel set draft's design, slide order and size (keeps a revision)
+      description: >-
+        Stores the set design on the draft. A queued carousel's slides follow
+        the design's arrangement (reordered, deleted, design pages added) and
+        its size; a list draft keeps the arrangement in its design. The draft's
+        data snapshot is unchanged. The new layout owes a check before
+        automation, as any templated edit does.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveDraftSetDesignRequest"
+      responses:
+        "200":
+          description: The updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: The design or slide order isn't valid
+        "404":
+          description: Not found
+        "409":
+          description: The draft can't be edited (posted, dismissed, or not a set)
 
   /social-drafts/{id}:
     get:
@@ -9299,6 +9398,135 @@ paths:
                 format: binary
         "404":
           description: No such photo, or the player is not allowed a photo
+
+  /juniors/photo-library:
+    get:
+      operationId: listJuniorLibraryPhotos
+      tags: [juniors]
+      summary: The club's junior photo library, newest first (admin)
+      description: >-
+        Every junior photo with its folder fields and the children tagged in it.
+        `displayable` is the consent rule (kiosk-photo-rotation A): at least one
+        tagged child, and every tagged child neither photo-withheld nor private.
+        A photo that is not displayable never leaves admin.
+      responses:
+        "200":
+          description: Junior library photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "401":
+          description: Not signed in
+
+  /juniors/photo-library/ingest:
+    post:
+      operationId: ingestJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Convert uploaded objects into junior library photos (admin)
+      description: >-
+        Like the senior library's ingest: each object becomes an upright JPEG with
+        EXIF stripped, plus a thumbnail, stored under the private junior prefix;
+        the upload is deleted. Files fail independently. At most 50 per call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestJuniorLibraryPhotosRequest"
+      responses:
+        "200":
+          description: Per-object results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestJuniorLibraryPhotosResponse"
+        "400":
+          description: Invalid body or batch too large
+        "422":
+          description: A tagged participant is not a junior player of this club
+
+  /juniors/photo-library/tags:
+    post:
+      operationId: tagJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Tag children, season and match format on junior library photos (admin)
+      description: >-
+        A photo that stops being displayable (a withheld child tagged in, its last
+        tag removed) is stripped from open cards in the same request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagJuniorLibraryPhotosRequest"
+      responses:
+        "200":
+          description: The tagged photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: A photo is not in this club's junior library
+        "422":
+          description: A tagged participant is not a junior player of this club
+
+  /juniors/photo-library/move:
+    post:
+      operationId: moveJuniorLibraryPhotos
+      tags: [juniors]
+      summary: File junior photos into a library folder (grade x photo type) (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveClubPhotosRequest"
+      responses:
+        "200":
+          description: The moved photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: A photo is not in this club's junior library
+
+  /juniors/photo-library/delete:
+    post:
+      operationId: deleteJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Remove photos from the junior library (admin); cards lose them at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteClubPhotosRequest"
+      responses:
+        "200":
+          description: Number of photos removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: integer
+        "404":
+          description: A photo is not in this club's junior library
 
   /juniors/privacy-overrides:
     get:
@@ -22978,6 +23206,71 @@ components:
         updatedAt: { type: ["string", "null"], format: date-time }
         updatedByName: { type: ["string", "null"] }
 
+    MakeCarouselSetRequest:
+      type: object
+      required: [setType]
+      properties:
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary, free]
+        from:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          description: The template to start from (one of the club's, or a library template).
+        lookId:
+          type: integer
+          description: Without `from`, the look whose set template to start from (Club Kit when absent).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    DraftSetDesign:
+      type: object
+      required: [draftId, setType, layout, document, templateRef, size]
+      properties:
+        draftId: { type: integer }
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary]
+        layout:
+          type: string
+          enum: [carousel, list]
+          description: >-
+            `carousel`: a queued set whose slides are stored (their order is the
+            payload's); `list`: a list card whose slides are worked out from its
+            data (their order is the design's arrangement).
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+        size:
+          type: string
+          nullable: true
+          enum: [square, portrait, story, landscape, null]
+          description: A queued carousel's size; null for a list draft (it posts at every size the club has on).
+        stored:
+          type: boolean
+          description: Whether the draft already holds this set design (false when assembled for this read).
+
+    SaveDraftSetDesignRequest:
+      type: object
+      required: [document]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+          description: The set template the design now comes from (switching look); absent keeps the draft's.
+        size:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: A queued carousel's new size.
+
     TemplateDocument:
       type: object
       description: >-
@@ -25957,6 +26250,144 @@ components:
         type: object
         additionalProperties:
           $ref: "#/components/schemas/JuniorTeamPublishMode"
+
+    JuniorLibraryPhotoParticipant:
+      type: object
+      required: [participantId, displayName, allowed]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+          description: The child's name (admin view; private names included).
+        allowed:
+          type: boolean
+          description: Neither photo-withheld nor private. Any one false hides the photo.
+
+    JuniorLibraryPhoto:
+      type: object
+      required:
+        [
+          id,
+          url,
+          thumbUrl,
+          width,
+          height,
+          season,
+          grade,
+          photoTypes,
+          matchFormat,
+          takenAt,
+          createdAt,
+          participants,
+          displayable,
+        ]
+      description: >-
+        A photo in the junior library. `url` and `thumbUrl` are gated: outside
+        admin they serve the image only while `displayable`.
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        thumbUrl:
+          type: string
+        width:
+          type: ["integer", "null"]
+        height:
+          type: ["integer", "null"]
+        season:
+          type: ["integer", "null"]
+        grade:
+          type: ["string", "null"]
+        photoTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubPhotoType"
+        matchFormat:
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
+        takenAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorLibraryPhotoParticipant"
+        displayable:
+          type: boolean
+
+    IngestJuniorLibraryPhotosRequest:
+      type: object
+      required: [objectPaths]
+      properties:
+        objectPaths:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        season:
+          type: integer
+        grade:
+          type: string
+        photoType:
+          $ref: "#/components/schemas/ClubPhotoType"
+        matchFormat:
+          $ref: "#/components/schemas/ClubPhotoMatchFormat"
+        participantIds:
+          type: array
+          items:
+            type: string
+          description: Junior players (PlayHQ participant ids) to tag on every photo.
+
+    IngestJuniorLibraryPhotosResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [objectPath, ok]
+            properties:
+              objectPath:
+                type: string
+              ok:
+                type: boolean
+              photo:
+                $ref: "#/components/schemas/JuniorLibraryPhoto"
+              error:
+                type: string
+
+    TagJuniorLibraryPhotosRequest:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+        season:
+          type: ["integer", "null"]
+          description: Set (or with null, clear) the season. Omit to leave unchanged.
+        matchFormat:
+          description: Set (or with null, clear) the match format. Omit to leave unchanged.
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
+        addParticipantIds:
+          type: array
+          items:
+            type: string
+        removeParticipantIds:
+          type: array
+          items:
+            type: string
 
     JuniorAdminParticipant:
       type: object

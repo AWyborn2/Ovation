@@ -38,3 +38,72 @@ the new design, not the old one.
 3. Per-board display schema + layout contract.
 4. Settings redesign with live preview + rotation builder.
 5. kiosk-photo-rotation slideshows plug into the builder; junior library in parallel.
+
+## Design direction (22 Oct 2026)
+
+- Ash chose **classic honour board** for the TV: timber, gold-leaf Cinzel titles, engraved
+  Cormorant Garamond names, gold rules. Mockup: `docs/design-handoffs/honours-kiosk-redesign/mockup.html`.
+- TV: fixed title plate + column headings; rows scroll in a clipped, masked viewport and fade
+  under the gold rule; board-level fade in, slow scroll; footer (est. year, sponsor line, board
+  N of M); page dots for paginated boards.
+- Settings: tabs Rotation · Look · Sponsors & ads · TV link. Rotation = drag list (board |
+  sponsor wall | ad | photo slideshow) + live preview of unsaved state + per-item display panel
+  (columns 1–4, scroll/turn pages, text size S–XL, rows per page, speed, transition, end hold,
+  format), each inheriting a "club default" from Look.
+- Status: awaiting Ash's sign-off on the mockup.
+
+## Motion model (Ash, 22 Oct 2026)
+
+Two separate settings per board, each inheriting a club default from Look:
+
+1. **Movement** (how a long board shows all its rows): Credits roll (continuous scroll, speed +
+   end hold) | Pages (slide-deck style, rows per page, seconds per page) | Fit (shrink to one
+   screen, no movement).
+2. **Transition** (how a board, or the next page, arrives): Fade · Slide up · Slide down ·
+   Slide left · Slide right · Pop (scale-in) · Zoom out · Flip (card turn) · Wipe (gold-rule
+   sweep) · Rows reveal (staggered, the only per-row effect) · Cut (none). Duration S/M/L.
+   Optional "Random from selected" for variety.
+
+Constraints: transform/opacity/clip-path only (cheap on TV browsers); header plate never moves
+during a page transition; Flip/Wipe are classic-board flourishes; honour
+prefers-reduced-motion → Fade/Cut.
+
+## Layout: shared season column (Ash, 23 Oct 2026)
+
+Season-keyed boards show the season once per row in a leading Season column; grade columns
+carry names (+ note) only. Frees width for more grades (mockup shows 4; settings allow 1–5).
+Rows (one per season) are the unit for paging, scrolling and the Rows reveal transition.
+
+## Working prototype (23 Oct 2026)
+
+`docs/design-handoffs/honours-kiosk-redesign/prototype.html`: interactive settings + TV player
+(sample data, localStorage only). Defines the intended behaviour for the build: per-item
+overrides with "Use club default", drag/keyboard reorder, Play rotation, fit-to-screen
+readability warning (text scale < 0.7).
+
+## Premierships as plaques (Ash, 23 Oct 2026)
+
+The Premierships board renders one engraved plaque per premiership (like the clubroom board):
+grade, ground, date, every player who played (captain marked "(C)" after the name; all plaques the same size, man-of-the-match slot reserved), man of the match when recorded,
+and the result line (e.g. "Halls Head 4/191 def Rockingham 185"). Setting "Plaques across"
+(1-5); paging/scrolling moves whole rows of plaques. Data source: premierships honour board +
+the grand final scorecard (central match + rosters) for ground, date, XI and result.
+
+## Board layout types (Ash, 23 Oct 2026)
+
+Every board picks one of six layouts; all share settings, motion and look:
+
+- **Season grid** (season + columns): Club Champions, awards, Office Bearers (role columns).
+- **Leaderboard** (rank, player, total, seasons; "Show top" 10/20/50): Most games, Most runs.
+- **Achievement list** (season, player, figures, grade, opponent; tally chip): Centuries,
+  Five-wicket hauls, Hat-tricks.
+- **Record panels** (one panel per grade, N per row): Grade records.
+- **Records table** (wicket, runs, partners, season, opponent): Partnership records.
+- **Plaques**: Premierships.
+
+Derived from central scorecards (senior only, fill-ins excluded): games, runs, centuries,
+five-fors, grade records, partnerships (where fall-of-wicket data exists). Curated: office
+bearers, hat-tricks, pre-scorecard history; curated entries override derived ones.
+Column groups (23 Oct 2026): a season grid with more columns than "columns per screen" (max 5)
+splits into balanced screens (8 at 4 → 4+4; 5 at 4 → 3+2), shown in turn with the board's
+transition; each screen's subtitle names its range ("First to Fourth Grade").

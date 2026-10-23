@@ -21,15 +21,20 @@ import {
 import { PackCard } from "@/components/pack-card";
 import { LoadingState, QueryError } from "@/components/data-states";
 import {
+  SetPageThumb,
   TemplateThumb,
   WhenVisible,
   usePreviewInput,
   type LibraryPreview,
+  templateKindLabel,
 } from "@/components/template-library/previews";
+import { isSetDocument } from "@workspace/scorecard/kind-templates";
 import { sizeLabel } from "@/components/template-library/library-browser";
 import { kindLabel } from "@/lib/social-studio";
 import { SIZES, type ShareCardInput } from "@/lib/share-card";
-import { type CardAdjustments } from "@/lib/pack-render";
+import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
+import { draftSetDocument, setDraftLayout, setDraftSlides, slideDocument } from "@/lib/set-draft";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { editedAgo, recentDesigns, type RecentDesign } from "@/lib/studio-home";
 
 /** The club's recent work, merged from its drafts, templates and sets. */
@@ -37,9 +42,10 @@ export function useRecentDesigns(limit?: number) {
   const draftsQ = useListSocialDrafts(undefined, {
     query: { queryKey: getListSocialDraftsQueryKey() },
   });
-  const templatesQ = useListClubTemplates(undefined, {
-    query: { queryKey: getListClubTemplatesQueryKey() },
-  });
+  const templatesQ = useListClubTemplates(
+    { includeSets: true },
+    { query: { queryKey: getListClubTemplatesQueryKey({ includeSets: true }) } },
+  );
   const setsQ = useListCardSets({ query: { queryKey: getListCardSetsQueryKey() } });
   const items = useMemo(
     () =>
@@ -68,6 +74,42 @@ const typeLabel = (d: RecentDesign) =>
 function DraftThumb({ draft, preview }: { draft: SocialDraft; preview: LibraryPreview }) {
   const input = draft.cardInput as ShareCardInput;
   const kind = String(input?.kind ?? "announcement");
+  // A set with its own design: its first slide, on its page.
+  const set = setDraftLayout(draft) ? draftSetDocument(draft.adjustments) : null;
+  const first = set ? setDraftSlides(draft, set, preview.dataFor("matchDay"))[0] : null;
+  if (set && first) {
+    return (
+      <WhenVisible aspect={`${SIZES.square.w} / ${SIZES.square.h}`}>
+        <PackCard
+          input={first.input}
+          size="square"
+          sponsorsOn={first.sponsorsOn}
+          junior={first.junior}
+          data={first.data}
+          packId={BLANK_PACK_ID}
+          adjustments={slideDocument(set, first)}
+        />
+      </WhenVisible>
+    );
+  }
+  const carousel = readQueuedCarousel(draft.cardInput);
+  if (carousel?.slides[0]) {
+    // A queued set not yet edited as one: its first slide on its assembled design.
+    const slide = carousel.slides[0];
+    return (
+      <WhenVisible aspect={`${SIZES.square.w} / ${SIZES.square.h}`}>
+        <PackCard
+          input={slide.input as ShareCardInput}
+          size="square"
+          sponsorsOn={slide.sponsorsOn}
+          junior={slide.junior}
+          data={slide.data as PackCardData}
+          packId={BLANK_PACK_ID}
+          adjustments={(draft.adjustments ?? null) as CardAdjustments | null}
+        />
+      </WhenVisible>
+    );
+  }
   if (draft.templateVersion != null) {
     return (
       <TemplateThumb
@@ -107,6 +149,9 @@ function ClubTemplateThumb({
   });
   const input = usePreviewInput(kind, preview.clubName);
   if (!q.data) return <div className="aspect-square rounded-md bg-muted" />;
+  // A carousel set design: its first page.
+  if (isSetDocument(q.data.document) && q.data.document.pages[0])
+    return <SetPageThumb set={q.data.document} page={q.data.document.pages[0]} preview={preview} />;
   return (
     <TemplateThumb
       document={q.data.document}
@@ -121,7 +166,7 @@ function DesignTile({ design, preview }: { design: RecentDesign; preview: Librar
   const title = design.type === "draft" ? kindLabel(design.kind) : design.name;
   const meta = [
     typeLabel(design),
-    design.type === "set" ? `${design.slides} slides` : kindLabel(design.kind),
+    design.type === "set" ? `${design.slides} slides` : templateKindLabel(design.kind),
     design.size ? sizeLabel(design.size) : null,
   ]
     .filter(Boolean)

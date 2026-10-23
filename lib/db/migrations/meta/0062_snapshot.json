@@ -1,6 +1,6 @@
 {
-  "id": "9906f150-b0df-4c24-ac0e-2e9eaca176c6",
-  "prevId": "01ea653d-b7f6-4b36-8fae-7d9aecf105b7",
+  "id": "01ea653d-b7f6-4b36-8fae-7d9aecf105b7",
+  "prevId": "a11b12cb-59dc-4937-848c-84e6d859628f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -8898,7 +8898,7 @@
           "name": "participant_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "object_path": {
           "name": "object_path",
@@ -8930,6 +8930,37 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "season": {
+          "name": "season",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade": {
+          "name": "grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_types": {
+          "name": "photo_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "match_format": {
+          "name": "match_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "taken_at": {
+          "name": "taken_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_by": {
           "name": "created_by",
@@ -8966,6 +8997,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "junior_photos_tenant_created_idx": {
+          "name": "junior_photos_tenant_created_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -8986,7 +9038,16 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "junior_photos_photo_types_check": {
+          "name": "junior_photos_photo_types_check",
+          "value": "\"photo_types\" <@ ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']::text[]"
+        },
+        "junior_photos_match_format_check": {
+          "name": "junior_photos_match_format_check",
+          "value": "\"match_format\" IS NULL OR \"match_format\" = ANY (ARRAY['one_day', 't20', 'two_day']::text[])"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.junior_premiership_players": {
@@ -15739,322 +15800,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.library_element_reports": {
-      "name": "library_element_reports",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "element_id": {
-          "name": "element_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "admin_id": {
-          "name": "admin_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "reason": {
-          "name": "reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "resolved_at": {
-          "name": "resolved_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "library_element_reports_element_tenant": {
-          "name": "library_element_reports_element_tenant",
-          "columns": [
-            {
-              "expression": "element_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "library_element_reports_element_id_library_elements_id_fk": {
-          "name": "library_element_reports_element_id_library_elements_id_fk",
-          "tableFrom": "library_element_reports",
-          "tableTo": "library_elements",
-          "columnsFrom": [
-            "element_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "library_element_reports_tenant_id_tenants_id_fk": {
-          "name": "library_element_reports_tenant_id_tenants_id_fk",
-          "tableFrom": "library_element_reports",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.library_elements": {
-      "name": "library_elements",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category": {
-          "name": "category",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tags": {
-          "name": "tags",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::text[]"
-        },
-        "look_id": {
-          "name": "look_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "origin": {
-          "name": "origin",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "author_tenant_id": {
-          "name": "author_tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by_admin_id": {
-          "name": "created_by_admin_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "document": {
-          "name": "document",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "signature": {
-          "name": "signature",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "bundle_hash": {
-          "name": "bundle_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "thumbnail_url": {
-          "name": "thumbnail_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "listed": {
-          "name": "listed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "unlisted_at": {
-          "name": "unlisted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "unlisted_by": {
-          "name": "unlisted_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "unlist_reason": {
-          "name": "unlist_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "library_elements_category_listed": {
-          "name": "library_elements_category_listed",
-          "columns": [
-            {
-              "expression": "category",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "listed",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "library_elements_author": {
-          "name": "library_elements_author",
-          "columns": [
-            {
-              "expression": "author_tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "library_elements_look_id_template_looks_id_fk": {
-          "name": "library_elements_look_id_template_looks_id_fk",
-          "tableFrom": "library_elements",
-          "tableTo": "template_looks",
-          "columnsFrom": [
-            "look_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "library_elements_author_tenant_id_tenants_id_fk": {
-          "name": "library_elements_author_tenant_id_tenants_id_fk",
-          "tableFrom": "library_elements",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "author_tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "library_elements_slug_unique": {
-          "name": "library_elements_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "library_elements_origin_check": {
-          "name": "library_elements_origin_check",
-          "value": "\"origin\" IN ('bundle', 'console', 'club')"
-        },
-        "library_elements_category_check": {
-          "name": "library_elements_category_check",
-          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks')"
-        },
-        "library_elements_unlisted_by_check": {
-          "name": "library_elements_unlisted_by_check",
-          "value": "\"unlisted_by\" IS NULL OR \"unlisted_by\" IN ('author', 'ovation')"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.library_template_versions": {
       "name": "library_template_versions",
       "schema": "",
@@ -16573,6 +16318,114 @@
           "value": "\"origin\" IN ('bundle', 'console', 'club')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.junior_photo_participants": {
+      "name": "junior_photo_participants",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "photo_id": {
+          "name": "photo_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "junior_photo_participants_photo_participant_unique": {
+          "name": "junior_photo_participants_photo_participant_unique",
+          "columns": [
+            {
+              "expression": "photo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "junior_photo_participants_tenant_participant_idx": {
+          "name": "junior_photo_participants_tenant_participant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "junior_photo_participants_tenant_id_tenants_id_fk": {
+          "name": "junior_photo_participants_tenant_id_tenants_id_fk",
+          "tableFrom": "junior_photo_participants",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "junior_photo_participants_photo_id_junior_photos_id_fk": {
+          "name": "junior_photo_participants_photo_id_junior_photos_id_fk",
+          "tableFrom": "junior_photo_participants",
+          "tableTo": "junior_photos",
+          "columnsFrom": [
+            "photo_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

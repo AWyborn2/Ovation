@@ -8659,10 +8659,102 @@ export interface KindTemplateConflict {
   updatedByName?: string | null;
 }
 
+export type MakeCarouselSetRequestSetType = typeof MakeCarouselSetRequestSetType[keyof typeof MakeCarouselSetRequestSetType];
+
+
+export const MakeCarouselSetRequestSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+  free: 'free',
+} as const;
+
+export interface MakeCarouselSetRequest {
+  setType: MakeCarouselSetRequestSetType;
+  /** The template to start from (one of the club's, or a library template). */
+  from?: TemplateRef;
+  /** Without `from`, the look whose set template to start from (Club Kit when absent). */
+  lookId?: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export type DraftSetDesignSetType = typeof DraftSetDesignSetType[keyof typeof DraftSetDesignSetType];
+
+
+export const DraftSetDesignSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+} as const;
+
+/**
+ * `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement).
+ */
+export type DraftSetDesignLayout = typeof DraftSetDesignLayout[keyof typeof DraftSetDesignLayout];
+
+
+export const DraftSetDesignLayout = {
+  carousel: 'carousel',
+  list: 'list',
+} as const;
+
+/**
+ * A queued carousel's size; null for a list draft (it posts at every size the club has on).
+ */
+export type DraftSetDesignSize = typeof DraftSetDesignSize[keyof typeof DraftSetDesignSize] | null;
+
+
+export const DraftSetDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
 /**
  * A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.
  */
 export interface TemplateDocument { [key: string]: unknown }
+
+export interface DraftSetDesign {
+  draftId: number;
+  setType: DraftSetDesignSetType;
+  /** `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement). */
+  layout: DraftSetDesignLayout;
+  document: TemplateDocument;
+  templateRef: TemplateRef | null;
+  /** A queued carousel's size; null for a list draft (it posts at every size the club has on). */
+  size: DraftSetDesignSize;
+  /** Whether the draft already holds this set design (false when assembled for this read). */
+  stored?: boolean;
+}
+
+/**
+ * A queued carousel's new size.
+ */
+export type SaveDraftSetDesignRequestSize = typeof SaveDraftSetDesignRequestSize[keyof typeof SaveDraftSetDesignRequestSize];
+
+
+export const SaveDraftSetDesignRequestSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export interface SaveDraftSetDesignRequest {
+  document: TemplateDocument;
+  /** The set template the design now comes from (switching look); absent keeps the draft's. */
+  templateRef?: TemplateRef | null;
+  /** A queued carousel's new size. */
+  size?: SaveDraftSetDesignRequestSize;
+}
 
 export type TemplateFitStatus = typeof TemplateFitStatus[keyof typeof TemplateFitStatus];
 
@@ -11164,6 +11256,74 @@ export const JuniorTeamPublishMode = {
  */
 export interface JuniorTeamPublishing {[key: string]: {[key: string]: JuniorTeamPublishMode}}
 
+export interface JuniorLibraryPhotoParticipant {
+  participantId: string;
+  /** The child's name (admin view; private names included). */
+  displayName: string;
+  /** Neither photo-withheld nor private. Any one false hides the photo. */
+  allowed: boolean;
+}
+
+/**
+ * A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.
+ */
+export interface JuniorLibraryPhoto {
+  id: number;
+  url: string;
+  thumbUrl: string;
+  /** @nullable */
+  width: number | null;
+  /** @nullable */
+  height: number | null;
+  /** @nullable */
+  season: number | null;
+  /** @nullable */
+  grade: string | null;
+  photoTypes: ClubPhotoType[];
+  matchFormat: ClubPhotoMatchFormat | null;
+  /** @nullable */
+  takenAt: string | null;
+  createdAt: string;
+  participants: JuniorLibraryPhotoParticipant[];
+  displayable: boolean;
+}
+
+export interface IngestJuniorLibraryPhotosRequest {
+  /** @minItems 1 */
+  objectPaths: string[];
+  season?: number;
+  grade?: string;
+  photoType?: ClubPhotoType;
+  matchFormat?: ClubPhotoMatchFormat;
+  /** Junior players (PlayHQ participant ids) to tag on every photo. */
+  participantIds?: string[];
+}
+
+export type IngestJuniorLibraryPhotosResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  photo?: JuniorLibraryPhoto;
+  error?: string;
+};
+
+export interface IngestJuniorLibraryPhotosResponse {
+  results: IngestJuniorLibraryPhotosResponseResultsItem[];
+}
+
+export interface TagJuniorLibraryPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+  /**
+     * Set (or with null, clear) the season. Omit to leave unchanged.
+     * @nullable
+     */
+  season?: number | null;
+  /** Set (or with null, clear) the match format. Omit to leave unchanged. */
+  matchFormat?: ClubPhotoMatchFormat | null;
+  addParticipantIds?: string[];
+  removeParticipantIds?: string[];
+}
+
 export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
@@ -12029,6 +12189,7 @@ cursor?: number;
 
 export type ListClubTemplatesParams = {
 kind?: string;
+includeSets?: boolean;
 };
 
 export type ListClubPhotosParams = {
@@ -12134,6 +12295,10 @@ export type GetJuniorMatchParams = {
  * Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.
  */
 includePrivate?: boolean;
+};
+
+export type DeleteJuniorLibraryPhotos200 = {
+  deleted: number;
 };
 
 export type ListJuniorStatCorrectionsParams = {

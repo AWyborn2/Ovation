@@ -164,11 +164,12 @@ function present(
 
 /**
  * A tenant's copies, defaults first within each kind. Set templates
- * (`set:<type>`) list only when asked for by kind, as the library's do.
+ * (`set:<type>`) list only when asked for by kind or with `includeSets`.
  */
 export async function listClubTemplates(
   tenantId: number,
   kind?: string,
+  opts: { includeSets?: boolean } = {},
 ): Promise<ClubTemplateView[]> {
   const rows = await db
     .select()
@@ -178,7 +179,9 @@ export async function listClubTemplates(
         kindRows(tenantId),
         kind
           ? eq(cardTemplatesTable.baseKind, kind)
-          : notLike(cardTemplatesTable.baseKind, `${SET_KIND_PREFIX}%`),
+          : opts.includeSets
+            ? undefined
+            : notLike(cardTemplatesTable.baseKind, `${SET_KIND_PREFIX}%`),
       ),
     )
     .orderBy(

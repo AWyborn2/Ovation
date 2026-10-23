@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
+import { SaveFilesDialog } from "@/components/save-files-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
@@ -57,6 +58,7 @@ const AdminReset = lazy(() => import("@/pages/admin-reset"));
 const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
 const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
 const AdminTemplateEditor = lazy(() => import("@/pages/admin-template-editor"));
+const AdminSetDraftEditor = lazy(() => import("@/pages/admin-set-draft-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -386,6 +388,12 @@ export function Router() {
             <AdminTemplateEditor />
           </AdminShell>
         </Route>
+        {/* A carousel set draft in the same editor, slide by slide with its real data. */}
+        <Route path="/admin/social/set/:id">
+          <AdminShell bare>
+            <AdminSetDraftEditor />
+          </AdminShell>
+        </Route>
         {/* A card kind's default template in the same editor, full-screen like the Studio editor. */}
         <Route path="/admin/social/templates/:kind">
           <AdminShell bare>
@@ -413,6 +421,7 @@ function App() {
                 <Router />
               </WouterRouter>
               <Toaster />
+              <SaveFilesDialog />
             </ConfirmProvider>
           </TooltipProvider>
         </BrandProvider>

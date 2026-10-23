@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import JSZip from "jszip";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListCardSets,
@@ -22,12 +21,12 @@ import {
   SIZES,
   renderShareCard,
   isAnimatedCard,
-  downloadBlob,
   type CardSize,
   type ShareCardInput,
   type RenderOptions,
 } from "@/lib/share-card";
 import { renderShareCardVideo, canExportVideo } from "@/lib/share-card-animation";
+import { saveFiles, toFile } from "@/lib/save-files";
 import { type PackCardData } from "@/lib/pack-render";
 import {
   buildPackData,
@@ -342,7 +341,7 @@ export function useSetEditor(id: number) {
     if (slides.length < MIN_SLIDES) return;
     setExporting(true);
     try {
-      const zip = new JSZip();
+      const files: File[] = [];
       const size = platformSize;
       const videoOk = canExportVideo();
       let i = 1;
@@ -353,13 +352,13 @@ export function useSetEditor(id: number) {
           // Pack slide: pixel-true branded PNG via the server harness, matching
           // the single-card path. Pack cards are static (KTD10) — no video clip.
           const blob = await renderPackStill(slide, size);
-          zip.file(`${base}.png`, blob);
+          files.push(toFile(blob, `${base}.png`));
           i++;
           continue;
         }
         const opts = buildSlideOpts(slide, size);
         const blob = await renderShareCard(slide.input, opts);
-        zip.file(`${base}.png`, blob);
+        files.push(toFile(blob, `${base}.png`));
         const animated = isAnimatedCard({
           size,
           template: null,
@@ -368,19 +367,19 @@ export function useSetEditor(id: number) {
         if (animated && videoOk) {
           try {
             const { blob: vblob, ext } = await renderShareCardVideo(slide.input, opts);
-            zip.file(`${base}.${ext}`, vblob);
+            files.push(toFile(vblob, `${base}.${ext}`));
           } catch {
             // still PNG already included; skip the clip on failure
           }
         }
         i++;
       }
-      const zipBlob = await zip.generateAsync({ type: "blob" });
       const safe = (name.trim() || "carousel")
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
-      downloadBlob(zipBlob, `${safe || "carousel"}-${SIZES[size].code}.zip`);
+      // A phone or tablet saves each slide as its own image; a desktop gets one zip.
+      await saveFiles(files, { zipName: `${safe || "carousel"}-${SIZES[size].code}.zip` });
     } finally {
       setExporting(false);
     }

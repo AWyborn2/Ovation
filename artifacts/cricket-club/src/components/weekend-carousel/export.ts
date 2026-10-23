@@ -1,8 +1,11 @@
-import JSZip from "jszip";
-import { downloadBlob, SIZES, type CardSize } from "@/lib/share-card";
+import { SIZES, type CardSize } from "@/lib/share-card";
+import { saveFiles, toFile } from "@/lib/save-files";
 import type { WeekendSlide } from "./model";
 
-/** Fail before downloading, never deliver a ZIP missing a selected slide. */
+/**
+ * Fail before saving, never deliver a set missing a selected slide. A phone or
+ * tablet saves each slide as its own image; a desktop gets one ZIP.
+ */
 export async function downloadWeekendZip(
   slides: WeekendSlide[],
   size: CardSize,
@@ -10,7 +13,7 @@ export async function downloadWeekendZip(
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
   if (slides.length < 3) throw new Error("Select at least one fixture before exporting.");
-  const zip = new JSZip();
+  const files: File[] = [];
   onProgress?.(0, slides.length);
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i];
@@ -23,16 +26,13 @@ export async function downloadWeekendZip(
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-|-$/g, "") || slide.id;
-      zip.file(`${String(i + 1).padStart(3, "0")}-${name}.png`, blob);
+      files.push(toFile(blob, `${String(i + 1).padStart(3, "0")}-${name}.png`));
       onProgress?.(i + 1, slides.length);
     } catch (error) {
       throw new Error(
-        `Slide ${i + 1} (${slide.label}) could not be exported. No ZIP was downloaded. ${error instanceof Error ? error.message : "Please retry."}`,
+        `Slide ${i + 1} (${slide.label}) could not be exported. Nothing was saved. ${error instanceof Error ? error.message : "Please retry."}`,
       );
     }
   }
-  downloadBlob(
-    await zip.generateAsync({ type: "blob" }),
-    `weekend-match-day-${SIZES[size].code}.zip`,
-  );
+  await saveFiles(files, { zipName: `weekend-match-day-${SIZES[size].code}.zip` });
 }

@@ -1,5 +1,5 @@
 /**
- * Migration 0060 carries the pilot over (ADR-011 T3.2). Real-DB test (needs
+ * Migration 0061 carries the pilot over (ADR-011 T3.2). Real-DB test (needs
  * DATABASE_URL): inside a rolled-back transaction it rebuilds the pre-0060
  * card_templates state, runs the migration twice and checks the result.
  */
@@ -12,7 +12,7 @@ import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 
 const ROOT = path.resolve(__dirname, "../../../../..");
 const MIGRATION = readFileSync(
-  path.join(ROOT, "lib/db/migrations/0060_template_library.sql"),
+  path.join(ROOT, "lib/db/migrations/0061_template_library.sql"),
   "utf8",
 );
 const statements = MIGRATION.split("--> statement-breakpoint")
@@ -51,7 +51,7 @@ const indexExists = async (tx: typeof db | Tx, name: string) =>
     )
   ).rows.length > 0;
 
-describe("migration 0060", () => {
+describe("migration 0061", () => {
   it("marks the pilot's kind rows as defaults, unchanged, and swaps the unique index", async () => {
     const seen: Record<string, unknown> = {};
     await db

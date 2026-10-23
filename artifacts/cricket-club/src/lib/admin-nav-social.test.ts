@@ -17,6 +17,7 @@ describe("Social Media Studio tabs", () => {
       "Junior cards",
       "Email lists",
       "Photo library",
+      "Junior photo library",
       "Cards",
       "Settings",
     ]);

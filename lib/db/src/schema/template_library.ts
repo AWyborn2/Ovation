@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
 import { tenantsTable } from "./tenants";
 
 /**
- * Social template library (ADR-011, migration 0060).
+ * Social template library (ADR-011, migration 0061).
  *
  * The library tables hold only shareable data: nothing in them references a
  * tenant's assets, and library reads never return `card_templates` rows. A
@@ -193,7 +193,7 @@ export type LibraryElementCategory =
   | "data-blocks";
 
 /**
- * Library elements (editable-elements plan, Stream D; migration 0062): shared
+ * Library elements (editable-elements plan, Stream D; migration 0063): shared
  * decorations every club can insert. Like the library templates, a shared
  * table: an element is a fragment of v2 layers holding no club's assets, and
  * a club's save is public (decision E1). Inserting copies the layers into a

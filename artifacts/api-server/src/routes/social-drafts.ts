@@ -28,6 +28,7 @@ import {
   CreateTrackedLinkBody,
   GenerateRecapsBody,
   SaveDraftAsTemplateBody,
+  SaveDraftSetDesignBody,
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
@@ -65,6 +66,7 @@ import {
   setTemplateKind,
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
+import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
 import { resolveDraftPack } from "../lib/draft-enrich";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
@@ -831,6 +833,68 @@ router.patch(
       return row;
     });
     res.json(presentDraft(updated));
+  },
+);
+
+// A carousel set draft as one multi-page design (carousel set editor plan, part 3).
+router.get("/social-drafts/:id/set-design", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const draft = await loadDraft(tenantId, id);
+  if (!draft) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  try {
+    res.json(await loadDraftSetDesign(tenantId, draft));
+  } catch (err) {
+    if (err instanceof TemplateLibraryError) {
+      res.status(err.status).json(err.body);
+      return;
+    }
+    throw err;
+  }
+});
+
+router.put(
+  "/social-drafts/:id/set-design",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const parsed = SaveDraftSetDesignBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    try {
+      const updated = await saveDraftSetDesign(tenantId, draft, {
+        document: parsed.data.document,
+        templateRef: parsed.data.templateRef ?? undefined,
+        size: parsed.data.size,
+      });
+      res.json(presentDraft(updated));
+    } catch (err) {
+      if (err instanceof TemplateLibraryError) {
+        res.status(err.status).json(err.body);
+        return;
+      }
+      throw err;
+    }
   },
 );
 
