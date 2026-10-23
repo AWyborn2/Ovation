@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { renderAt } from "../test/render";
-import { installApiMock } from "../test/mock-api";
+import { renderAt } from "../../test/render";
+import { installApiMock } from "../../test/mock-api";
+import { LooksTab, PACK_LOOKS } from "../../test/looks-panel-harness";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import type { CardTemplate } from "@workspace/api-client-react";
-import AdminSocialStudio from "./admin-social-studio";
 
 /**
- * Design packs tile switch: "Club colours" (default) / "Pack's own look". The
+ * Templates → Looks, a look's design pack switch: "Club colours" (default) / "Pack's own look". The
  * switch saves the pack's mode through PATCH /social-settings, and the tile's
  * live preview repaints in the new mode.
  */
@@ -73,6 +73,8 @@ function setupApi() {
     "/card-themes": [],
     // Sunset is a hidden legacy pack (P9): even listed, it gets no tile.
     "/card-templates": [packRow(1, "broadcast-dark-v1", ["matchSummary"]), packRow(2, "sunset-v1")],
+    "/template-library/looks": PACK_LOOKS,
+    "/club-templates": { templates: [] },
   });
   const base = globalThis.fetch as unknown as (
     input: RequestInfo | URL,
@@ -113,7 +115,7 @@ describe("Design packs colour-mode switch", () => {
     const patches = setupApi();
     renderAt(
       <ConfirmProvider>
-        <AdminSocialStudio />
+        <LooksTab />
       </ConfirmProvider>,
     );
     const toggle = await screen.findByRole("switch", {
@@ -140,6 +142,6 @@ describe("Design packs colour-mode switch", () => {
 
     // No tile for the hidden pack.
     expect(screen.queryByRole("switch", { name: "Sunset: use club colours" })).toBeNull();
-    // The whole Studio page mounts here; give it room on a loaded runner.
+    // Give the live previews room on a loaded runner.
   }, 15_000);
 });

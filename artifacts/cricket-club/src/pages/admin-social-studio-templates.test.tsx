@@ -90,6 +90,9 @@ describe("Studio card designs", () => {
     ).toBe("/admin/social/template-library");
     expect(screen.queryByText("Pack per card type")).toBeNull();
     expect(screen.queryByRole("link", { name: /Edit the .* template/ })).toBeNull();
+    // Design packs moved to Templates → Looks.
+    expect(screen.queryByRole("heading", { name: "Design packs" })).toBeNull();
+    expect(screen.queryByText("Use for every card")).toBeNull();
   });
 
   it("sends post settings and uploaded backgrounds to the Settings tab", async () => {

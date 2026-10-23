@@ -1,17 +1,18 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
-import { renderAt } from "../test/render";
-import { installApiMock } from "../test/mock-api";
+import { renderAt } from "../../test/render";
+import { installApiMock } from "../../test/mock-api";
+import { LooksTab, PACK_LOOKS } from "../../test/looks-panel-harness";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { packName } from "@/lib/social-studio";
 import type { CardTemplate } from "@workspace/api-client-react";
 import { LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
-import AdminSocialStudio from "./admin-social-studio";
 
 /**
  * U3 — Studio pack switcher (R2, R5, R7). The per-kind selector (R1, R6) went with
- * the template library (ADR-011 T5.18); the design packs bulk action stays.
+ * the template library (ADR-011 T5.18); the design packs bulk action stays, now on
+ * each look card in Templates → Looks.
  *
  * These are state round-trips, not a visual check: what the selector reads,
  * what a selection PATCHes, and what the bulk action tells the admin BEFORE it
@@ -163,6 +164,8 @@ function setupApi(templates: CardTemplate[]): Write[] {
     "/social-settings": BUNDLE,
     "/card-themes": [],
     "/card-templates": templates,
+    "/template-library/looks": PACK_LOOKS,
+    "/club-templates": { templates: [] },
   });
   const base = globalThis.fetch as unknown as (
     input: RequestInfo | URL,
@@ -192,14 +195,14 @@ async function renderStudio(templates: CardTemplate[]) {
   const writes = setupApi(templates);
   renderAt(
     <ConfirmProvider>
-      <AdminSocialStudio />
+      <LooksTab />
     </ConfirmProvider>,
   );
-  await screen.findByRole("heading", { name: "Card designs" });
+  await screen.findByLabelText("Use Club Kit for every card");
   return writes;
 }
 
-describe("admin social studio — legacy packs are hidden (P9)", () => {
+describe("Looks tab — legacy packs are hidden (P9)", () => {
   it("offers no legacy pack anywhere, and shows a legacy claim as Club Kit", async () => {
     const f = fixtureTemplates();
     // A list that still carries legacy pack rows (the API hides them; this is the
@@ -222,7 +225,7 @@ describe("admin social studio — legacy packs are hidden (P9)", () => {
   });
 });
 
-describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
+describe("Looks tab — pack rows stop masquerading (R5, R6)", () => {
   it("no gallery card captions a pack row as the default template", async () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
@@ -234,7 +237,7 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
   });
 });
 
-describe("admin social studio — bulk apply is gated (R2, R7)", () => {
+describe("Looks tab — bulk apply is gated (R2, R7)", () => {
   it("cancelling the confirm dialog issues no PATCH", async () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
