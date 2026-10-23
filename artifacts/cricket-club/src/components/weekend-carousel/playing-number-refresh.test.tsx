@@ -9,7 +9,7 @@ import type {
   SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cache";
-import { ACTIVE_PACK_IDS, LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { CAROUSEL_PICKS } from "@/test/carousel-template-stub";
 import { slideContentFor, sourcesFor } from "@/test/carousel-sources";
 
 const api = vi.hoisted(() => ({ sources: vi.fn(), settings: vi.fn(), queue: vi.fn() }));
@@ -29,6 +29,10 @@ vi.mock("@workspace/api-client-react", () => ({
   getListSocialDraftsQueryKey: () => ["drafts"],
   getGetPendingSocialDraftCountQueryKey: () => ["pending"],
 }));
+
+vi.mock("./template-choice", async () =>
+  (await import("@/test/carousel-template-stub")).carouselTemplateStub(),
+);
 
 const { useWeekendCarousel } = await import("./use-weekend-carousel");
 const fixtures = [
@@ -151,15 +155,13 @@ describe("fresh playing numbers in carousel previews", () => {
     });
     api.sources.mockResolvedValue(fresh);
     await act(() => hook.result.current.generate());
-    for (const pack of ACTIVE_PACK_IDS) {
-      act(() => hook.result.current.setPackId(pack));
-      expect(
-        teamInput(hook)
-          .players.slice(0, 6)
-          .map((p) => p.shirtNumber),
-      ).toEqual(recovered);
-      expect(teamInput(hook).players[6]).not.toHaveProperty("shirtNumber");
-    }
+    act(() => hook.result.current.setPicked(CAROUSEL_PICKS.other));
+    expect(
+      teamInput(hook)
+        .players.slice(0, 6)
+        .map((p) => p.shirtNumber),
+    ).toEqual(recovered);
+    expect(teamInput(hook).players[6]).not.toHaveProperty("shirtNumber");
     await act(() => hook.result.current.runQueue());
     const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
     // Version 2: the slide saves the content it was built from (ADR-010 P7).
@@ -181,13 +183,8 @@ describe("fresh playing numbers in carousel previews", () => {
     expect(teamInput(hook).players[0].shirtNumber).toBe("88");
     expect(teamInput(hook).players[1]).not.toHaveProperty("shirtNumber");
     expect(hook.result.current.stale).toBe(false);
-    for (const pack of ACTIVE_PACK_IDS) {
-      act(() => hook.result.current.setPackId(pack));
-      expect(teamInput(hook).players[0].shirtNumber).toBe("88");
-    }
-    // A hidden legacy pack (P9) can't be chosen.
-    for (const pack of LEGACY_PACK_IDS)
-      expect(() => hook.result.current.setPackId(pack)).toThrow(/registered built-in/);
+    act(() => hook.result.current.setPicked(CAROUSEL_PICKS.other));
+    expect(teamInput(hook).players[0].shirtNumber).toBe("88");
     await act(() => hook.result.current.runQueue());
     const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
     expect(saved.slides[1].content.source.players[0].shirtNumber).toBe("88");
@@ -199,7 +196,7 @@ describe("fresh playing numbers in carousel previews", () => {
     expect(teamInput(hook).players[0].shirtNumber).toBe("88");
   });
 
-  it("marks a register-invalidated preview stale and regenerates without losing photo/crop/order/pack choices", async () => {
+  it("marks a register-invalidated preview stale and regenerates without losing photo/crop/order/template choices", async () => {
     setup();
     const hook = await mount();
     await act(() => hook.result.current.generate());
@@ -209,7 +206,7 @@ describe("fresh playing numbers in carousel previews", () => {
         transform: { focalX: 0.2, focalY: 0.7, zoom: 1.8 },
       });
       hook.result.current.moveTeamAt(0, 1);
-      hook.result.current.setPackId("broadcast-dark-v1");
+      hook.result.current.setPicked(CAROUSEL_PICKS.other);
       hook.result.current.setSize("story");
       hook.result.current.setCaption("Keep this caption");
     });
@@ -224,7 +221,7 @@ describe("fresh playing numbers in carousel previews", () => {
       transform: { focalX: 0.2, focalY: 0.7, zoom: 1.8 },
       content: { source: { players: [{ shirtNumber: "88" }, {}] } },
     });
-    expect(hook.result.current.packId).toBe("broadcast-dark-v1");
+    expect(hook.result.current.picked).toEqual(CAROUSEL_PICKS.other);
     expect(hook.result.current.size).toBe("story");
     expect(hook.result.current.caption).toBe("Keep this caption");
   });

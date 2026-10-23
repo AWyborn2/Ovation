@@ -82,7 +82,11 @@ export function PreviewTabs({
               data={buildPackData(renderTransform)}
               packId={packId}
               slideWidth={s === "story" ? 180 : 240}
-              slides={templateDoc ? modalSlides(input, s, templateDoc) : undefined}
+              slides={
+                templateDoc
+                  ? modalSlides(input, s, templateDoc, buildPackData(renderTransform))
+                  : undefined
+              }
             />
           ) : (
             <div

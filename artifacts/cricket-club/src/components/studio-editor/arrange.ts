@@ -11,7 +11,7 @@
 import { layerOnSize } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer, LayerBox } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
-import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
+import { boxOf, childrenOf, clamp, layersOf, placeBox, setBoxes, type EditorDoc } from "./document";
 import { boundsOf } from "./guides";
 
 type Rect = Pick<LayerBox, "x" | "y" | "w" | "h">;
@@ -87,12 +87,18 @@ const scaleNum = (v: number | undefined, s: number, lo: number, hi: number) =>
 /**
  * A layer's type scaled by `s` (a corner group resize). Font sizes are one
  * setting for every size, so the text changes wherever the layer is. List
- * rows scale their height and gap with their cells' type. Limits match the
- * template validator.
+ * rows scale their height and gap with their cells' type, and a group's
+ * layers scale theirs, at every depth. Limits match the template validator.
  */
 export function scaleLayerType(layer: FreeLayer, s: number): FreeLayer {
   if (s === 1) return layer;
   const next: FreeLayer = { ...layer };
+  const kids = childrenOf(layer);
+  if (kids.length) {
+    (next as FreeLayer & { children: FreeLayer[] }).children = kids.map((c) =>
+      scaleLayerType(c, s),
+    );
+  }
   if (layer.style?.fontSize !== undefined) {
     next.style = { ...layer.style, fontSize: scaleNum(layer.style.fontSize, s, 0.2, 80) };
   }
@@ -147,16 +153,15 @@ export function resizeGroup(
       const box = base && boxOf(base, size);
       if (!base || !box) return l;
       const typed = scaleType ? scaleLayerType(base, s) : base;
-      return {
-        ...l,
-        style: typed.style,
-        rows: typed.rows,
-        geometry: { ...l.geometry, [size]: mapBox(box, from, to) },
-        editedAt: { ...l.editedAt, [size]: now },
-      };
+      // From the gesture's start, so a group's children are placed from where they began.
+      return placeBox(typed, size, mapBox(box, from, to), now);
     }),
   };
 }
+
+/** Whether a layer has type a corner resize scales (its own, a list's, or a group's layers'). */
+export const hasType = (l: FreeLayer): boolean =>
+  !!l.style?.fontSize || !!l.rows || childrenOf(l).some(hasType);
 
 export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 

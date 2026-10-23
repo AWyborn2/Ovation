@@ -6,6 +6,8 @@ import { useEntitlements } from "@/lib/entitlements";
 import { ADMIN_NAV, activeTab } from "@/lib/admin-nav";
 const AdminSocial = lazy(() => import("@/pages/admin-social"));
 const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
+const AdminSocialSettings = lazy(() => import("@/pages/admin-social-settings"));
+const AdminTemplateLibrary = lazy(() => import("@/pages/admin-template-library"));
 const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
 const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
@@ -112,6 +114,7 @@ export function AdminSocialGroup() {
       groupKey="social"
       pages={{
         studio: <AdminSocialStudio />,
+        "template-library": <AdminTemplateLibrary />,
         plan: <AdminSocialPlan />,
         cards: <AdminSocial />,
         create: <AdminSocialCreate />,
@@ -123,6 +126,7 @@ export function AdminSocialGroup() {
         "email-lists": <AdminEmailLists />,
         library: <AdminPhotoLibrary />,
         "junior-library": <AdminJuniorPhotoLibrary />,
+        settings: <AdminSocialSettings />,
       }}
     />
   );

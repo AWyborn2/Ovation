@@ -5545,6 +5545,8 @@ export interface CardSet {
   season?: number | null;
   /** @nullable */
   grade?: string | null;
+  /** When the set was last saved. */
+  updatedAt?: string;
 }
 
 export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeof GenerateCardSetBodyKind];
@@ -6613,6 +6615,87 @@ export interface PlayhqWatchdogResponse {
   resolved: PlayhqWatchdogResponseResolvedItem[];
   /** Incidents still open after this run. */
   open: number;
+}
+
+export interface StartTemplateGenerationRequest {
+  /** The card kind to design. */
+  kind: string;
+  /** @maxLength 2000 */
+  brief?: string;
+  /** A reference image (PNG or JPEG, at most 5 MB). */
+  image?: Blob;
+}
+
+export type TemplateGenerationStatus = typeof TemplateGenerationStatus[keyof typeof TemplateGenerationStatus];
+
+
+export const TemplateGenerationStatus = {
+  queued: 'queued',
+  running: 'running',
+  done: 'done',
+  failed: 'failed',
+} as const;
+
+export type TemplateGenerationTokens = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+};
+
+/**
+ * The unlisted console template the design was saved as.
+ */
+export type TemplateGenerationResult = {
+  libraryTemplateId: number;
+  version: number;
+} | null;
+
+export interface TemplateGeneration {
+  id: number;
+  kind: string;
+  model: string;
+  status: TemplateGenerationStatus;
+  /**
+     * pass, warnings, invalid, refused or provider_error; null until it finishes.
+     * @nullable
+     */
+  outcome: string | null;
+  attempts: number;
+  /**
+     * The first reply was valid and fitted; null when no fit check ran.
+     * @nullable
+     */
+  firstTryFit: boolean | null;
+  tokens: TemplateGenerationTokens;
+  /** @nullable */
+  costUsd: number | null;
+  /** The unlisted console template the design was saved as. */
+  result: TemplateGenerationResult;
+  /** Why the last reply was invalid, while the server remembers it. */
+  errors: string[];
+  createdAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+/**
+ * Over the first 50 finished designs (the 70% bar counts first-try fits).
+ */
+export type TemplateDesignerQuality = {
+  counted: number;
+  firstTryFit: number;
+  /** @nullable */
+  meanCostUsd: number | null;
+};
+
+export interface TemplateDesigner {
+  /** Whether the Claude API key is set. */
+  configured: boolean;
+  model: string;
+  /** Over the first 50 finished designs (the 70% bar counts first-try fits). */
+  quality: TemplateDesignerQuality;
+  generations: TemplateGeneration[];
 }
 
 export type PlatformPlayhqSyncOrgsItemState = typeof PlatformPlayhqSyncOrgsItemState[keyof typeof PlatformPlayhqSyncOrgsItemState];
@@ -8505,6 +8588,15 @@ export interface UpdateSocialDraftRequest {
  */
 export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
 
+/**
+ * A template a draft or carousel is drawn with (ADR-011): one of the club's templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.
+ */
+export interface TemplateRef {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
+}
+
 export interface CreateSocialDraftRequest {
   /**
      * Optional caption supplied with a manually queued card or carousel.
@@ -8521,6 +8613,7 @@ export interface CreateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
+  templateRef?: TemplateRef;
 }
 
 export interface SaveDraftTemplateRequest {
@@ -8545,57 +8638,6 @@ export interface EditorTemplate {
   createdAt: string;
 }
 
-export interface KindTemplateSummary {
-  kind: string;
-  version: number;
-  /** @nullable */
-  updatedAt: string | null;
-  /**
-     * The retired design pack this template replaced, if any (R19).
-     * @nullable
-     */
-  replacedPackId: string | null;
-  noticeDismissed: boolean;
-  /** Unposted drafts of this kind an apply would change. */
-  waitingDrafts: number;
-}
-
-export interface KindTemplateList {
-  /** Whether card kind templates are switched on for this club. */
-  enabled: boolean;
-  templates: KindTemplateSummary[];
-}
-
-export type KindTemplate = KindTemplateSummary & ({
-  document: CardAdjustments;
-  /**
-     * Who saved the current version.
-     * @nullable
-     */
-  updatedByName?: string | null;
-});
-
-export interface SaveKindTemplateRequest {
-  /** The version this edit started from. */
-  baseVersion: number;
-  document: CardAdjustments;
-}
-
-export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestStarter[keyof typeof StartKindTemplateRequestStarter];
-
-
-export const StartKindTemplateRequestStarter = {
-  'club-kit': 'club-kit',
-  broadcast: 'broadcast',
-  clubhouse: 'clubhouse',
-} as const;
-
-export interface StartKindTemplateRequest {
-  starter: StartKindTemplateRequestStarter;
-  /** Required when the kind already has a template. */
-  baseVersion?: number;
-}
-
 export interface ApplyKindTemplateRequest {
   /** The saved template version to apply. */
   version: number;
@@ -8615,6 +8657,649 @@ export interface KindTemplateConflict {
   updatedAt?: string | null;
   /** @nullable */
   updatedByName?: string | null;
+}
+
+export type MakeCarouselSetRequestSetType = typeof MakeCarouselSetRequestSetType[keyof typeof MakeCarouselSetRequestSetType];
+
+
+export const MakeCarouselSetRequestSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+  free: 'free',
+} as const;
+
+export interface MakeCarouselSetRequest {
+  setType: MakeCarouselSetRequestSetType;
+  /** The template to start from (one of the club's, or a library template). */
+  from?: TemplateRef;
+  /** Without `from`, the look whose set template to start from (Club Kit when absent). */
+  lookId?: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export type DraftSetDesignSetType = typeof DraftSetDesignSetType[keyof typeof DraftSetDesignSetType];
+
+
+export const DraftSetDesignSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+} as const;
+
+/**
+ * `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement).
+ */
+export type DraftSetDesignLayout = typeof DraftSetDesignLayout[keyof typeof DraftSetDesignLayout];
+
+
+export const DraftSetDesignLayout = {
+  carousel: 'carousel',
+  list: 'list',
+} as const;
+
+/**
+ * A queued carousel's size; null for a list draft (it posts at every size the club has on).
+ */
+export type DraftSetDesignSize = typeof DraftSetDesignSize[keyof typeof DraftSetDesignSize] | null;
+
+
+export const DraftSetDesignSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+/**
+ * A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.
+ */
+export interface TemplateDocument { [key: string]: unknown }
+
+export interface DraftSetDesign {
+  draftId: number;
+  setType: DraftSetDesignSetType;
+  /** `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement). */
+  layout: DraftSetDesignLayout;
+  document: TemplateDocument;
+  templateRef: TemplateRef | null;
+  /** A queued carousel's size; null for a list draft (it posts at every size the club has on). */
+  size: DraftSetDesignSize;
+  /** Whether the draft already holds this set design (false when assembled for this read). */
+  stored?: boolean;
+}
+
+/**
+ * A queued carousel's new size.
+ */
+export type SaveDraftSetDesignRequestSize = typeof SaveDraftSetDesignRequestSize[keyof typeof SaveDraftSetDesignRequestSize];
+
+
+export const SaveDraftSetDesignRequestSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export interface SaveDraftSetDesignRequest {
+  document: TemplateDocument;
+  /** The set template the design now comes from (switching look); absent keeps the draft's. */
+  templateRef?: TemplateRef | null;
+  /** A queued carousel's new size. */
+  size?: SaveDraftSetDesignRequestSize;
+}
+
+export type TemplateFitStatus = typeof TemplateFitStatus[keyof typeof TemplateFitStatus];
+
+
+export const TemplateFitStatus = {
+  pending: 'pending',
+  pass: 'pass',
+  fail: 'fail',
+} as const;
+
+/**
+ * The fit check's warnings per page, size and preset; null until a check has run.
+ * @nullable
+ */
+export type TemplateFitReport = { [key: string]: unknown } | null;
+
+export interface TemplateCoverage {
+  pages: string[];
+  sizes: string[];
+}
+
+export interface LibraryLookRef {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+export type LibraryTemplateOrigin = typeof LibraryTemplateOrigin[keyof typeof LibraryTemplateOrigin];
+
+
+export const LibraryTemplateOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface LibraryTemplate {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  kind: string;
+  name: string;
+  origin: LibraryTemplateOrigin;
+  /** Ovation, or the club that published it. */
+  authorName: string;
+  look: LibraryLookRef | null;
+  /** The template's current version. */
+  version: number;
+  coverage: TemplateCoverage;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReport | null;
+  listed: boolean;
+  document: TemplateDocument;
+}
+
+export interface LibraryTemplatePage {
+  templates: LibraryTemplate[];
+  /**
+     * Pass as `cursor` for the next page; null on the last page.
+     * @nullable
+     */
+  nextCursor: number | null;
+}
+
+/**
+ * The Elements panel's categories (`ELEMENT_CATEGORIES`).
+ */
+export type LibraryElementCategory = typeof LibraryElementCategory[keyof typeof LibraryElementCategory];
+
+
+export const LibraryElementCategory = {
+  frames: 'frames',
+  bands: 'bands',
+  badges: 'badges',
+  rules: 'rules',
+  glows: 'glows',
+  'crest-frames': 'crest-frames',
+  'sponsor-strips': 'sponsor-strips',
+  'data-blocks': 'data-blocks',
+} as const;
+
+/**
+ * A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.
+ */
+export interface LibraryElementDocument { [key: string]: unknown }
+
+export type LibraryElementOrigin = typeof LibraryElementOrigin[keyof typeof LibraryElementOrigin];
+
+
+export const LibraryElementOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface LibraryElement {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  name: string;
+  category: LibraryElementCategory;
+  tags: string[];
+  origin: LibraryElementOrigin;
+  /** Ovation, or the club that saved it. */
+  authorName: string;
+  /** This club saved it, so it can unlist it. */
+  mine: boolean;
+  look: LibraryLookRef | null;
+  listed: boolean;
+  document: LibraryElementDocument;
+  /**
+     * A library image; null when the panel draws the element live.
+     * @nullable
+     */
+  thumbnailUrl: string | null;
+  createdAt: string;
+}
+
+export interface LibraryElementPage {
+  elements: LibraryElement[];
+  /**
+     * Pass as `cursor` for the next page; null on the last page.
+     * @nullable
+     */
+  nextCursor: number | null;
+}
+
+export interface SaveLibraryElementRequest {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  category: LibraryElementCategory;
+  /** @maxItems 12 */
+  tags?: string[];
+  document: LibraryElementDocument;
+}
+
+export interface ReportLibraryElementRequest {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export type ConsoleLibraryElementOrigin = typeof ConsoleLibraryElementOrigin[keyof typeof ConsoleLibraryElementOrigin];
+
+
+export const ConsoleLibraryElementOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ConsoleLibraryElementUnlistedBy = typeof ConsoleLibraryElementUnlistedBy[keyof typeof ConsoleLibraryElementUnlistedBy] | null;
+
+
+export const ConsoleLibraryElementUnlistedBy = {
+  author: 'author',
+  ovation: 'ovation',
+} as const;
+
+export interface ConsoleLibraryElement {
+  id: number;
+  /** @nullable */
+  slug: string | null;
+  name: string;
+  category: LibraryElementCategory;
+  tags: string[];
+  origin: ConsoleLibraryElementOrigin;
+  /** Ovation, or the club that saved it. */
+  authorName: string;
+  /**
+     * The club that saved it; null for Ovation's.
+     * @nullable
+     */
+  authorTenantId: number | null;
+  look: LibraryLookRef | null;
+  listed: boolean;
+  /** @nullable */
+  unlistedBy: ConsoleLibraryElementUnlistedBy;
+  /** @nullable */
+  unlistReason: string | null;
+  /** @nullable */
+  unlistedAt: string | null;
+  /** Reports not yet resolved. */
+  openReports: number;
+  document: LibraryElementDocument;
+  createdAt: string;
+}
+
+export interface ConsoleLibraryElementPage {
+  elements: ConsoleLibraryElement[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface LibraryElementReport {
+  id: number;
+  clubName: string;
+  reason: string;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export interface LibraryElementReportList {
+  reports: LibraryElementReport[];
+}
+
+export interface UnlistConsoleLibraryElementRequest {
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export interface LibraryLookTemplate {
+  id: number;
+  kind: string;
+  name: string;
+  version: number;
+  coverage: TemplateCoverage;
+}
+
+export interface LibraryLook {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  authorName: string;
+  templates: LibraryLookTemplate[];
+}
+
+export interface LibraryLookList {
+  looks: LibraryLook[];
+}
+
+/**
+ * @nullable
+ */
+export type ConsoleLibraryTemplateUnlistedBy = typeof ConsoleLibraryTemplateUnlistedBy[keyof typeof ConsoleLibraryTemplateUnlistedBy] | null;
+
+
+export const ConsoleLibraryTemplateUnlistedBy = {
+  author: 'author',
+  ovation: 'ovation',
+} as const;
+
+export type ConsoleLibraryTemplate = LibraryTemplate & ({
+  /** A bundle template; the console duplicates it to edit. */
+  readOnly: boolean;
+  /** @nullable */
+  unlistedBy: ConsoleLibraryTemplateUnlistedBy;
+  /** @nullable */
+  unlistReason: string | null;
+  updatedAt: string;
+});
+
+export interface ConsoleLibraryTemplateList {
+  templates: ConsoleLibraryTemplate[];
+}
+
+export interface CreateConsoleLibraryTemplateRequest {
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @nullable */
+  lookId?: number | null;
+  document: TemplateDocument;
+}
+
+export interface SaveConsoleLibraryTemplateRequest {
+  baseVersion: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /** @nullable */
+  lookId?: number | null;
+  document?: TemplateDocument;
+}
+
+export interface DuplicateConsoleLibraryTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export interface UnlistConsoleLibraryTemplateRequest {
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export type ConsoleLibraryLookOrigin = typeof ConsoleLibraryLookOrigin[keyof typeof ConsoleLibraryLookOrigin];
+
+
+export const ConsoleLibraryLookOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export interface ConsoleLibraryLook {
+  id: number;
+  slug: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  origin: ConsoleLibraryLookOrigin;
+  displayOrder: number;
+  /** Library templates in this look, listed or not. */
+  templates: number;
+}
+
+export interface ConsoleLibraryLookList {
+  looks: ConsoleLibraryLook[];
+}
+
+export interface CreateConsoleLibraryLookRequest {
+  /** @maxLength 60 */
+  slug: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+}
+
+export type CarouselAssemblyRequestSetType = typeof CarouselAssemblyRequestSetType[keyof typeof CarouselAssemblyRequestSetType];
+
+
+export const CarouselAssemblyRequestSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
+} as const;
+
+export interface CarouselAssemblyRequest {
+  setType: CarouselAssemblyRequestSetType;
+  /**
+     * The pages the set's slides draw; the title and sponsors pages are added.
+     * @maxItems 20
+     */
+  pages: string[];
+  /** The picked template; absent for the club's default. */
+  templateRef?: TemplateRef | null;
+}
+
+export interface CarouselAssembly {
+  document: TemplateDocument;
+  templateRef: TemplateRef;
+}
+
+export interface ImportFigmaTemplateRequest {
+  /**
+     * A Figma design link (with or without node-id), or a bare file key.
+     * @minLength 1
+     * @maxLength 2000
+     */
+  fileUrl: string;
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /** @nullable */
+  lookId?: number | null;
+}
+
+export type FigmaReportLineLevel = typeof FigmaReportLineLevel[keyof typeof FigmaReportLineLevel];
+
+
+export const FigmaReportLineLevel = {
+  warn: 'warn',
+  info: 'info',
+} as const;
+
+export interface FigmaReportLine {
+  level: FigmaReportLineLevel;
+  page?: string;
+  sizes?: string[];
+  /** The layer's name path in Figma. */
+  layer?: string;
+  message: string;
+}
+
+export type FigmaFrameMatchBy = typeof FigmaFrameMatchBy[keyof typeof FigmaFrameMatchBy];
+
+
+export const FigmaFrameMatchBy = {
+  name: 'name',
+  dimensions: 'dimensions',
+} as const;
+
+export interface FigmaFrameMatch {
+  nodeId: string;
+  name: string;
+  page: string;
+  size: string;
+  by: FigmaFrameMatchBy;
+}
+
+export type FigmaImportResultFontsItem = {
+  from: string;
+  to: string;
+};
+
+export type FigmaImportResultRendered = {
+  vectors: number;
+  images: number;
+};
+
+export interface FigmaImportResult {
+  template: ConsoleLibraryTemplate;
+  fileName: string;
+  frames: FigmaFrameMatch[];
+  report: FigmaReportLine[];
+  /** Figma fonts outside the catalogue and what they became. */
+  fonts: FigmaImportResultFontsItem[];
+  rendered: FigmaImportResultRendered;
+}
+
+export interface AdoptLookChange {
+  kind: string;
+  copyId: number;
+  /** Whether a new copy was made (else an unedited one was reused). */
+  created: boolean;
+}
+
+export type AdoptLookResultUnchangedItem = {
+  kind: string;
+  copyId: number;
+};
+
+export interface AdoptLookResult {
+  look: LibraryLookRef;
+  changed: AdoptLookChange[];
+  unchanged: AdoptLookResultUnchangedItem[];
+}
+
+export type TemplatePreviewInputSource = typeof TemplatePreviewInputSource[keyof typeof TemplatePreviewInputSource];
+
+
+export const TemplatePreviewInputSource = {
+  draft: 'draft',
+  sample: 'sample',
+} as const;
+
+export interface TemplatePreviewInput {
+  kind: string;
+  source: TemplatePreviewInputSource;
+  draftId?: number;
+  /** The draft's card input (ShareCardInput JSON); null for `sample`. */
+  input: unknown;
+}
+
+export interface ClubTemplateOrigin {
+  templateId: number;
+  /** The library version this copy was taken from. */
+  version: number;
+  name: string;
+  authorName: string;
+  look: LibraryLookRef | null;
+}
+
+/**
+ * A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise.
+ */
+export type ClubTemplateSummaryUpdateAvailable = {
+  version: number;
+} | null;
+
+export interface ClubTemplateSummary {
+  id: number;
+  kind: string;
+  name: string;
+  /** The copy's own save counter. */
+  version: number;
+  /** New drafts of this kind copy this template. */
+  isDefault: boolean;
+  basedOn: ClubTemplateOrigin | null;
+  /** The club saved changes to it, so it is its own (no update prompts). */
+  edited: boolean;
+  /** A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise. */
+  updateAvailable: ClubTemplateSummaryUpdateAvailable;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReport | null;
+  coverage: TemplateCoverage;
+  /** @nullable */
+  updatedAt: string | null;
+  /** For a default, the unposted drafts of its kind an apply would change; else 0. */
+  waitingDrafts: number;
+}
+
+export type ClubTemplate = ClubTemplateSummary & ({
+  document: TemplateDocument;
+  /** @nullable */
+  updatedByName?: string | null;
+});
+
+export interface ClubTemplateList {
+  templates: ClubTemplateSummary[];
+}
+
+export interface CreateClubTemplateRequest {
+  libraryTemplateId: number;
+  /** A library version; the current one when absent. */
+  version?: number;
+  /** Also make the copy its kind's default (Use as default). */
+  makeDefault?: boolean;
+}
+
+export interface TakeTemplateUpdateRequest {
+  /** The template version the admin was looking at. */
+  baseVersion: number;
+}
+
+export interface SaveClubTemplateRequest {
+  /** The version this edit started from. */
+  baseVersion: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  document?: TemplateDocument;
 }
 
 export type LayoutWarningReason = typeof LayoutWarningReason[keyof typeof LayoutWarningReason];
@@ -8769,6 +9454,8 @@ export interface SocialDraft {
      * @nullable
      */
   templateVersion?: number | null;
+  /** The template this draft's design was copied from; null for a pack draft. */
+  templateRef?: TemplateRef | null;
   /**
      * When an admin last edited this templated draft's design by hand.
      * @nullable
@@ -11447,6 +12134,64 @@ family?: string;
 grade?: string;
 };
 
+export type ListLibraryTemplatesParams = {
+/**
+ * Words that must each appear in the template's name, its kind or its look's name.
+ * @maxLength 60
+ */
+q?: string;
+kind?: string;
+size?: ListLibraryTemplatesSize;
+/**
+ * A look's slug.
+ */
+look?: string;
+/**
+ * The previous page's `nextCursor`.
+ */
+cursor?: number;
+};
+
+export type ListLibraryTemplatesSize = typeof ListLibraryTemplatesSize[keyof typeof ListLibraryTemplatesSize];
+
+
+export const ListLibraryTemplatesSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export type GetTemplatePreviewInputParams = {
+kind: string;
+};
+
+export type ListLibraryElementsParams = {
+/**
+ * Words that must each appear in the element's name or tags.
+ * @maxLength 60
+ */
+q?: string;
+category?: LibraryElementCategory;
+/**
+ * A look's slug.
+ */
+look?: string;
+/**
+ * Only the elements this club saved, listed or not.
+ */
+mine?: boolean;
+/**
+ * The previous page's `nextCursor`.
+ */
+cursor?: number;
+};
+
+export type ListClubTemplatesParams = {
+kind?: string;
+includeSets?: boolean;
+};
+
 export type ListClubPhotosParams = {
 playerId?: number;
 grade?: string;
@@ -11618,6 +12363,49 @@ ageGroup?: string;
 export type CheckSlugAvailableParams = {
 slug: string;
 };
+
+export type ListConsoleLibraryTemplatesParams = {
+kind?: string;
+origin?: ListConsoleLibraryTemplatesOrigin;
+listed?: boolean;
+};
+
+export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplatesOrigin[keyof typeof ListConsoleLibraryTemplatesOrigin];
+
+
+export const ListConsoleLibraryTemplatesOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
+
+export type ListConsoleLibraryElementsParams = {
+/**
+ * Words that must each appear in the name or tags.
+ * @maxLength 60
+ */
+q?: string;
+origin?: ListConsoleLibraryElementsOrigin;
+/**
+ * Only elements with an open report.
+ */
+reported?: boolean;
+listed?: boolean;
+/**
+ * Page number, from 1.
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type ListConsoleLibraryElementsOrigin = typeof ListConsoleLibraryElementsOrigin[keyof typeof ListConsoleLibraryElementsOrigin];
+
+
+export const ListConsoleLibraryElementsOrigin = {
+  bundle: 'bundle',
+  console: 'console',
+  club: 'club',
+} as const;
 
 export type GetPlatformPlayerPrivacyParams = {
 q?: string;

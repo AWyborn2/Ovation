@@ -29,6 +29,7 @@ import type {
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
+  AdoptLookResult,
   ApplyKindTemplateRequest,
   ApplyKindTemplateResult,
   AutoseedCardSetBody,
@@ -107,6 +108,8 @@ import type {
   CardThemeUpdate,
   CardVideoJob,
   CardVideoJobInput,
+  CarouselAssembly,
+  CarouselAssemblyRequest,
   Century,
   CheckSlugAvailableParams,
   CheckoutBody,
@@ -123,8 +126,19 @@ import type {
   ClubRoleInput,
   ClubRoleUpdate,
   ClubSeasonGradeLeaders,
+  ClubTemplate,
+  ClubTemplateList,
   CommitImportInput,
   CommitImportResult,
+  ConsoleLibraryElement,
+  ConsoleLibraryElementPage,
+  ConsoleLibraryLook,
+  ConsoleLibraryLookList,
+  ConsoleLibraryTemplate,
+  ConsoleLibraryTemplateList,
+  CreateClubTemplateRequest,
+  CreateConsoleLibraryLookRequest,
+  CreateConsoleLibraryTemplateRequest,
   CreateFixtureBody,
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
@@ -137,8 +151,10 @@ import type {
   DeleteClubPhotosRequest,
   DeleteJuniorLibraryPhotos200,
   DirectoryClub,
+  DraftSetDesign,
   DraftSweepRequest,
   DraftSweepResponse,
+  DuplicateConsoleLibraryTemplateRequest,
   DuplicatePair,
   DuplicateReview,
   DuplicateReviewBody,
@@ -152,6 +168,7 @@ import type {
   ErrorEnvelope,
   FetchGoogleDriveFilesRequest,
   FetchGoogleDriveFilesResponse,
+  FigmaImportResult,
   FiveWicketHaul,
   Fixture,
   FixtureForecast,
@@ -178,6 +195,7 @@ import type {
   GetSocialLadderPrefillParams,
   GetSocialRoundResultsPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GetTemplatePreviewInputParams,
   GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
   GradeDecisionList,
@@ -201,6 +219,7 @@ import type {
   HonourDisplayBundle,
   HonourDisplaySettings,
   HonourDisplaySettingsUpdate,
+  ImportFigmaTemplateRequest,
   ImportPreview,
   ImportRecord,
   ImportSquadBody,
@@ -248,17 +267,24 @@ import type {
   JuniorShirtNumberWriteResult,
   JuniorSocialMilestone,
   JuniorStatCorrection,
-  KindTemplate,
   KindTemplateConflict,
-  KindTemplateList,
   KioskTokenInput,
   KioskTokenResponse,
   KnownCardCrestList,
   LadderCardRow,
+  LibraryElement,
+  LibraryElementPage,
+  LibraryElementReportList,
+  LibraryLookList,
+  LibraryTemplate,
+  LibraryTemplatePage,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
   ListClubPhotosParams,
+  ListClubTemplatesParams,
+  ListConsoleLibraryElementsParams,
+  ListConsoleLibraryTemplatesParams,
   ListEmailSendsParams,
   ListFixturesParams,
   ListFixturesResultsParams,
@@ -268,6 +294,8 @@ import type {
   ListJuniorPlayersParams,
   ListJuniorShirtNumbersParams,
   ListJuniorStatCorrectionsParams,
+  ListLibraryElementsParams,
+  ListLibraryTemplatesParams,
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
@@ -275,6 +303,7 @@ import type {
   ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
+  MakeCarouselSetRequest,
   MatchCardPhoto,
   MatchDetail,
   MatchDisplaySettings,
@@ -355,11 +384,15 @@ import type {
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
+  ReportLibraryElementRequest,
   ReschedulePublicationRequest,
   RoundResults,
   SaveCardPhotoRulesRequest,
+  SaveClubTemplateRequest,
+  SaveConsoleLibraryTemplateRequest,
+  SaveDraftSetDesignRequest,
   SaveDraftTemplateRequest,
-  SaveKindTemplateRequest,
+  SaveLibraryElementRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SearchSquadPlayersParams,
@@ -415,7 +448,7 @@ import type {
   SquadMemberUpdate,
   SquadPlayerSearchHit,
   SquadSeasonSeedResult,
-  StartKindTemplateRequest,
+  StartTemplateGenerationRequest,
   Stat,
   StatInput,
   StatListResponse,
@@ -425,6 +458,7 @@ import type {
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
   TagJuniorLibraryPhotosRequest,
+  TakeTemplateUpdateRequest,
   TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
@@ -434,6 +468,9 @@ import type {
   TeamOfDecadeMemberUpdate,
   TeamSheetPreview,
   TeamSheetPrintBody,
+  TemplateDesigner,
+  TemplateGeneration,
+  TemplatePreviewInput,
   TenantBrand,
   TenantPlan,
   TenantPlayhqSyncStatus,
@@ -444,6 +481,8 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UnlistConsoleLibraryElementRequest,
+  UnlistConsoleLibraryTemplateRequest,
   UnscheduleDraftRequest,
   UpdateAdminTenantBrandBody,
   UpdateFixtureBody,
@@ -20904,21 +20943,28 @@ export const useDeleteEditorTemplate = <TError = ErrorType<void>,
       return useMutation(getDeleteEditorTemplateMutationOptions(options));
     }
 
-export const getListKindTemplatesUrl = () => {
+export const getListLibraryTemplatesUrl = (params?: ListLibraryTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/kind-templates`
+  return stringifiedParams.length > 0 ? `/api/template-library?${stringifiedParams}` : `/api/template-library`
 }
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look, or matching search words. Library reads never return any club's own templates.
+ * @summary Browse the template library
  */
-export const listKindTemplates = async ( options?: RequestInit): Promise<KindTemplateList> => {
+export const listLibraryTemplates = async (params?: ListLibraryTemplatesParams, options?: RequestInit): Promise<LibraryTemplatePage> => {
 
-  return customFetch<KindTemplateList>(getListKindTemplatesUrl(),
+  return customFetch<LibraryTemplatePage>(getListLibraryTemplatesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -20931,45 +20977,45 @@ export const listKindTemplates = async ( options?: RequestInit): Promise<KindTem
 
 
 
-export const getListKindTemplatesQueryKey = () => {
+export const getListLibraryTemplatesQueryKey = (params?: ListLibraryTemplatesParams,) => {
     return [
-    `/api/kind-templates`
+    `/api/template-library`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListKindTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListLibraryTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryTemplates>>, TError = ErrorType<unknown>>(params?: ListLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListKindTemplatesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryTemplatesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKindTemplates>>> = ({ signal }) => listKindTemplates({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryTemplates>>> = ({ signal }) => listLibraryTemplates(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type ListKindTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listKindTemplates>>>
-export type ListKindTemplatesQueryError = ErrorType<unknown>
+export type ListLibraryTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryTemplates>>>
+export type ListLibraryTemplatesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary The club's card kind templates and whether the feature is on
+ * @summary Browse the template library
  */
 
-export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListLibraryTemplates<TData = Awaited<ReturnType<typeof listLibraryTemplates>>, TError = ErrorType<unknown>>(
+ params?: ListLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListKindTemplatesQueryOptions(options)
+  const queryOptions = getListLibraryTemplatesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -20982,20 +21028,20 @@ export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindT
 
 
 
-export const getGetKindTemplateUrl = (kind: string,) => {
+export const getListLibraryLooksUrl = () => {
 
 
 
 
-  return `/api/kind-templates/${kind}`
+  return `/api/template-library/looks`
 }
 
 /**
- * @summary One card kind's template
+ * @summary The library's looks and the kinds each covers
  */
-export const getKindTemplate = async (kind: string, options?: RequestInit): Promise<KindTemplate> => {
+export const listLibraryLooks = async ( options?: RequestInit): Promise<LibraryLookList> => {
 
-  return customFetch<KindTemplate>(getGetKindTemplateUrl(kind),
+  return customFetch<LibraryLookList>(getListLibraryLooksUrl(),
   {
     ...options,
     method: 'GET'
@@ -21008,45 +21054,45 @@ export const getKindTemplate = async (kind: string, options?: RequestInit): Prom
 
 
 
-export const getGetKindTemplateQueryKey = (kind: string,) => {
+export const getListLibraryLooksQueryKey = () => {
     return [
-    `/api/kind-templates/${kind}`
+    `/api/template-library/looks`
     ] as const;
     }
 
 
-export const getGetKindTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListLibraryLooksQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryLooks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetKindTemplateQueryKey(kind);
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryLooksQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKindTemplate>>> = ({ signal }) => getKindTemplate(kind, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryLooks>>> = ({ signal }) => listLibraryLooks({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: !!(kind), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetKindTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getKindTemplate>>>
-export type GetKindTemplateQueryError = ErrorType<void>
+export type ListLibraryLooksQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryLooks>>>
+export type ListLibraryLooksQueryError = ErrorType<unknown>
 
 
 /**
- * @summary One card kind's template
+ * @summary The library's looks and the kinds each covers
  */
 
-export function useGetKindTemplate<TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(
- kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListLibraryLooks<TData = Awaited<ReturnType<typeof listLibraryLooks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetKindTemplateQueryOptions(kind,options)
+  const queryOptions = getListLibraryLooksQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -21059,164 +21105,21 @@ export function useGetKindTemplate<TData = Awaited<ReturnType<typeof getKindTemp
 
 
 
-export const getSaveKindTemplateUrl = (kind: string,) => {
+export const getAdoptLibraryLookUrl = (id: number,) => {
 
 
 
 
-  return `/api/kind-templates/${kind}`
+  return `/api/template-library/looks/${id}/adopt`
 }
 
 /**
- * @summary Save a card kind's template (rejected when another admin saved first)
+ * For every kind the look covers, reuses the club's unedited copy of the look's template at its current version, or creates one, and makes it the kind's default, in one transaction. Kinds the look doesn't cover keep their defaults.
+ * @summary Make a look's templates the club's defaults
  */
-export const saveKindTemplate = async (kind: string,
-    saveKindTemplateRequest: SaveKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
+export const adoptLibraryLook = async (id: number, options?: RequestInit): Promise<AdoptLookResult> => {
 
-  return customFetch<KindTemplate>(getSaveKindTemplateUrl(kind),
-  {
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      saveKindTemplateRequest,)
-  }
-);}
-
-
-
-
-export const getSaveKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext> => {
-
-const mutationKey = ['saveKindTemplate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveKindTemplate>>, {kind: string;data: BodyType<SaveKindTemplateRequest>}> = (props) => {
-          const {kind,data} = props ?? {};
-
-          return  saveKindTemplate(kind,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SaveKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveKindTemplate>>>
-    export type SaveKindTemplateMutationBody = BodyType<SaveKindTemplateRequest>
-    export type SaveKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
-
-    /**
- * @summary Save a card kind's template (rejected when another admin saved first)
- */
-export const useSaveKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof saveKindTemplate>>,
-        TError,
-        {kind: string;data: BodyType<SaveKindTemplateRequest>},
-        TContext
-      > => {
-      return useMutation(getSaveKindTemplateMutationOptions(options));
-    }
-
-export const getStartKindTemplateUrl = (kind: string,) => {
-
-
-
-
-  return `/api/kind-templates/${kind}/start`
-}
-
-/**
- * @summary Start (or restart) a card kind's template from a starter design
- */
-export const startKindTemplate = async (kind: string,
-    startKindTemplateRequest: StartKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
-
-  return customFetch<KindTemplate>(getStartKindTemplateUrl(kind),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      startKindTemplateRequest,)
-  }
-);}
-
-
-
-
-export const getStartKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext> => {
-
-const mutationKey = ['startKindTemplate'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startKindTemplate>>, {kind: string;data: BodyType<StartKindTemplateRequest>}> = (props) => {
-          const {kind,data} = props ?? {};
-
-          return  startKindTemplate(kind,data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type StartKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof startKindTemplate>>>
-    export type StartKindTemplateMutationBody = BodyType<StartKindTemplateRequest>
-    export type StartKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
-
-    /**
- * @summary Start (or restart) a card kind's template from a starter design
- */
-export const useStartKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof startKindTemplate>>,
-        TError,
-        {kind: string;data: BodyType<StartKindTemplateRequest>},
-        TContext
-      > => {
-      return useMutation(getStartKindTemplateMutationOptions(options));
-    }
-
-export const getDismissKindTemplateNoticeUrl = (kind: string,) => {
-
-
-
-
-  return `/api/kind-templates/${kind}/dismiss-notice`
-}
-
-/**
- * @summary Dismiss the "your retired design pack was replaced" notice for a kind
- */
-export const dismissKindTemplateNotice = async (kind: string, options?: RequestInit): Promise<void> => {
-
-  return customFetch<void>(getDismissKindTemplateNoticeUrl(kind),
+  return customFetch<AdoptLookResult>(getAdoptLibraryLookUrl(id),
   {
     ...options,
     method: 'POST'
@@ -21228,11 +21131,11 @@ export const dismissKindTemplateNotice = async (kind: string, options?: RequestI
 
 
 
-export const getDismissKindTemplateNoticeMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext> => {
+export const getAdoptLibraryLookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext> => {
 
-const mutationKey = ['dismissKindTemplateNotice'];
+const mutationKey = ['adoptLibraryLook'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -21242,10 +21145,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, {kind: string}> = (props) => {
-          const {kind} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adoptLibraryLook>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
 
-          return  dismissKindTemplateNotice(kind,requestOptions)
+          return  adoptLibraryLook(id,requestOptions)
         }
 
 
@@ -21255,40 +21158,1315 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type DismissKindTemplateNoticeMutationResult = NonNullable<Awaited<ReturnType<typeof dismissKindTemplateNotice>>>
+    export type AdoptLibraryLookMutationResult = NonNullable<Awaited<ReturnType<typeof adoptLibraryLook>>>
 
-    export type DismissKindTemplateNoticeMutationError = ErrorType<void>
+    export type AdoptLibraryLookMutationError = ErrorType<void>
 
     /**
- * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ * @summary Make a look's templates the club's defaults
  */
-export const useDismissKindTemplateNotice = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useAdoptLibraryLook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adoptLibraryLook>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof dismissKindTemplateNotice>>,
+        Awaited<ReturnType<typeof adoptLibraryLook>>,
         TError,
-        {kind: string},
+        {id: number},
         TContext
       > => {
-      return useMutation(getDismissKindTemplateNoticeMutationOptions(options));
+      return useMutation(getAdoptLibraryLookMutationOptions(options));
     }
 
-export const getApplyKindTemplateUrl = (kind: string,) => {
+export const getGetTemplatePreviewInputUrl = (params: GetTemplatePreviewInputParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/kind-templates/${kind}/apply`
+  return stringifiedParams.length > 0 ? `/api/template-library/preview-input?${stringifiedParams}` : `/api/template-library/preview-input`
 }
 
 /**
- * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
- * @summary Apply a saved template version to this kind's unposted drafts
+ * The club's latest senior draft input of the kind. Never a junior draft. With none, `source` is `sample` and the client draws the kind's sample in the club's identity.
+ * @summary The card input library thumbnails draw with
  */
-export const applyKindTemplate = async (kind: string,
+export const getTemplatePreviewInput = async (params: GetTemplatePreviewInputParams, options?: RequestInit): Promise<TemplatePreviewInput> => {
+
+  return customFetch<TemplatePreviewInput>(getGetTemplatePreviewInputUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplatePreviewInputQueryKey = (params?: GetTemplatePreviewInputParams,) => {
+    return [
+    `/api/template-library/preview-input`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTemplatePreviewInputQueryOptions = <TData = Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError = ErrorType<void>>(params: GetTemplatePreviewInputParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplatePreviewInputQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplatePreviewInput>>> = ({ signal }) => getTemplatePreviewInput(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplatePreviewInputQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplatePreviewInput>>>
+export type GetTemplatePreviewInputQueryError = ErrorType<void>
+
+
+/**
+ * @summary The card input library thumbnails draw with
+ */
+
+export function useGetTemplatePreviewInput<TData = Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError = ErrorType<void>>(
+ params: GetTemplatePreviewInputParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplatePreviewInput>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplatePreviewInputQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAssembleCarouselTemplateUrl = () => {
+
+
+
+
+  return `/api/template-library/carousel-assembly`
+}
+
+/**
+ * The same assembly a version 3 carousel gets when it's saved: the set's pages from the picked template (or the club's default for the set's kind), its title and sponsors pages from the same look's Match Day template or the club's default Match Day, and the club's pack look as a whole template when the picked one lacks a page. For previews only; nothing is saved.
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const assembleCarouselTemplate = async (carouselAssemblyRequest: CarouselAssemblyRequest, options?: RequestInit): Promise<CarouselAssembly> => {
+
+  return customFetch<CarouselAssembly>(getAssembleCarouselTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      carouselAssemblyRequest,)
+  }
+);}
+
+
+
+
+export const getAssembleCarouselTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext> => {
+
+const mutationKey = ['assembleCarouselTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assembleCarouselTemplate>>, {data: BodyType<CarouselAssemblyRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  assembleCarouselTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssembleCarouselTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof assembleCarouselTemplate>>>
+    export type AssembleCarouselTemplateMutationBody = BodyType<CarouselAssemblyRequest>
+    export type AssembleCarouselTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const useAssembleCarouselTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assembleCarouselTemplate>>, TError,{data: BodyType<CarouselAssemblyRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assembleCarouselTemplate>>,
+        TError,
+        {data: BodyType<CarouselAssemblyRequest>},
+        TContext
+      > => {
+      return useMutation(getAssembleCarouselTemplateMutationOptions(options));
+    }
+
+export const getGetLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}`
+}
+
+/**
+ * A listed template, or one the club holds a copy of (listed or not).
+ * @summary One library template at its current version
+ */
+export const getLibraryTemplate = async (id: number, options?: RequestInit): Promise<LibraryTemplate> => {
+
+  return customFetch<LibraryTemplate>(getGetLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/template-library/${id}`
+    ] as const;
+    }
+
+
+export const getGetLibraryTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryTemplate>>> = ({ signal }) => getLibraryTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLibraryTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryTemplate>>>
+export type GetLibraryTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library template at its current version
+ */
+
+export function useGetLibraryTemplate<TData = Awaited<ReturnType<typeof getLibraryTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLibraryTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListLibraryElementsUrl = (params?: ListLibraryElementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/template-library/elements?${stringifiedParams}` : `/api/template-library/elements`
+}
+
+/**
+ * Listed library elements (decorations from every look and those clubs saved), 48 a page, optionally for one category or look, or matching a search across names and tags. Every element is shared with every club.
+ * @summary Browse and search the element library
+ */
+export const listLibraryElements = async (params?: ListLibraryElementsParams, options?: RequestInit): Promise<LibraryElementPage> => {
+
+  return customFetch<LibraryElementPage>(getListLibraryElementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryElementsQueryKey = (params?: ListLibraryElementsParams,) => {
+    return [
+    `/api/template-library/elements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListLibraryElementsQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryElements>>, TError = ErrorType<unknown>>(params?: ListLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryElementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryElements>>> = ({ signal }) => listLibraryElements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryElementsQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryElements>>>
+export type ListLibraryElementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Browse and search the element library
+ */
+
+export function useListLibraryElements<TData = Awaited<ReturnType<typeof listLibraryElements>>, TError = ErrorType<unknown>>(
+ params?: ListLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryElementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveLibraryElementUrl = () => {
+
+
+
+
+  return `/api/template-library/elements`
+}
+
+/**
+ * Publishes the layers to every club at once (decision E1). The document may only use tokens, slots and library images: no club upload, photo or sponsor art.
+ * @summary Save layers as a public library element
+ */
+export const saveLibraryElement = async (saveLibraryElementRequest: SaveLibraryElementRequest, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getSaveLibraryElementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getSaveLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['saveLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveLibraryElement>>, {data: BodyType<SaveLibraryElementRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveLibraryElement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof saveLibraryElement>>>
+    export type SaveLibraryElementMutationBody = BodyType<SaveLibraryElementRequest>
+    export type SaveLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Save layers as a public library element
+ */
+export const useSaveLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveLibraryElement>>, TError,{data: BodyType<SaveLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveLibraryElement>>,
+        TError,
+        {data: BodyType<SaveLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveLibraryElementMutationOptions(options));
+    }
+
+export const getGetLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}`
+}
+
+/**
+ * A listed element, or one this club saved (listed or not). Inserting copies its layers into the card; nothing links back to the element.
+ * @summary One library element, to insert
+ */
+export const getLibraryElement = async (id: number, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getGetLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLibraryElementQueryKey = (id: number,) => {
+    return [
+    `/api/template-library/elements/${id}`
+    ] as const;
+    }
+
+
+export const getGetLibraryElementQueryOptions = <TData = Awaited<ReturnType<typeof getLibraryElement>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLibraryElementQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLibraryElement>>> = ({ signal }) => getLibraryElement(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLibraryElementQueryResult = NonNullable<Awaited<ReturnType<typeof getLibraryElement>>>
+export type GetLibraryElementQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library element, to insert
+ */
+
+export function useGetLibraryElement<TData = Awaited<ReturnType<typeof getLibraryElement>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLibraryElement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLibraryElementQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUnlistLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}/unlist`
+}
+
+/**
+ * Other clubs stop seeing it. Cards it was already inserted into keep their copies of its layers.
+ * @summary Take an element this club saved out of the library
+ */
+export const unlistLibraryElement = async (id: number, options?: RequestInit): Promise<LibraryElement> => {
+
+  return customFetch<LibraryElement>(getUnlistLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnlistLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unlistLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistLibraryElement>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unlistLibraryElement(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof unlistLibraryElement>>>
+
+    export type UnlistLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Take an element this club saved out of the library
+ */
+export const useUnlistLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistLibraryElement>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnlistLibraryElementMutationOptions(options));
+    }
+
+export const getReportLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/elements/${id}/report`
+}
+
+/**
+ * One report per club and element; reporting again replaces the reason. A club cannot report its own element (it can unlist it instead).
+ * @summary Report a library element to Ovation
+ */
+export const reportLibraryElement = async (id: number,
+    reportLibraryElementRequest: ReportLibraryElementRequest, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getReportLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reportLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getReportLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['reportLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportLibraryElement>>, {id: number;data: BodyType<ReportLibraryElementRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportLibraryElement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof reportLibraryElement>>>
+    export type ReportLibraryElementMutationBody = BodyType<ReportLibraryElementRequest>
+    export type ReportLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Report a library element to Ovation
+ */
+export const useReportLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryElement>>, TError,{id: number;data: BodyType<ReportLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportLibraryElement>>,
+        TError,
+        {id: number;data: BodyType<ReportLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getReportLibraryElementMutationOptions(options));
+    }
+
+export const getListClubTemplatesUrl = (params?: ListClubTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-templates?${stringifiedParams}` : `/api/club-templates`
+}
+
+/**
+ * Card templates, and set templates (`set:<type>`, carousel set editor plan) when asked for by kind or with `includeSets`.
+ * @summary The club's own templates, defaults first within each kind
+ */
+export const listClubTemplates = async (params?: ListClubTemplatesParams, options?: RequestInit): Promise<ClubTemplateList> => {
+
+  return customFetch<ClubTemplateList>(getListClubTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubTemplatesQueryKey = (params?: ListClubTemplatesParams,) => {
+    return [
+    `/api/club-templates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListClubTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listClubTemplates>>, TError = ErrorType<unknown>>(params?: ListClubTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubTemplates>>> = ({ signal }) => listClubTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listClubTemplates>>>
+export type ListClubTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's own templates, defaults first within each kind
+ */
+
+export function useListClubTemplates<TData = Awaited<ReturnType<typeof listClubTemplates>>, TError = ErrorType<unknown>>(
+ params?: ListClubTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClubTemplateUrl = () => {
+
+
+
+
+  return `/api/club-templates`
+}
+
+/**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const createClubTemplate = async (createClubTemplateRequest: CreateClubTemplateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getCreateClubTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getCreateClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['createClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubTemplate>>, {data: BodyType<CreateClubTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createClubTemplate>>>
+    export type CreateClubTemplateMutationBody = BodyType<CreateClubTemplateRequest>
+    export type CreateClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const useCreateClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubTemplate>>, TError,{data: BodyType<CreateClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubTemplate>>,
+        TError,
+        {data: BodyType<CreateClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateClubTemplateMutationOptions(options));
+    }
+
+export const getMakeCarouselSetUrl = () => {
+
+
+
+
+  return `/api/club-templates/sets`
+}
+
+/**
+ * A new club set template of `setType`, saved to the club's designs. With `from`, that template's design takes the set page it fits (a cover, a team, fixture or result page, or the sponsors page; else it becomes the first page), and the other pages come from the same look's set template (Club Kit's when its look has none). A free set is the design and copies of it, with no data binding, and is never posted automatically. Without `from`, the look's set template as it is.
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const makeCarouselSet = async (makeCarouselSetRequest: MakeCarouselSetRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getMakeCarouselSetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      makeCarouselSetRequest,)
+  }
+);}
+
+
+
+
+export const getMakeCarouselSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext> => {
+
+const mutationKey = ['makeCarouselSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof makeCarouselSet>>, {data: BodyType<MakeCarouselSetRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  makeCarouselSet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MakeCarouselSetMutationResult = NonNullable<Awaited<ReturnType<typeof makeCarouselSet>>>
+    export type MakeCarouselSetMutationBody = BodyType<MakeCarouselSetRequest>
+    export type MakeCarouselSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const useMakeCarouselSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof makeCarouselSet>>,
+        TError,
+        {data: BodyType<MakeCarouselSetRequest>},
+        TContext
+      > => {
+      return useMutation(getMakeCarouselSetMutationOptions(options));
+    }
+
+export const getGetClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+export const getClubTemplate = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getGetClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/club-templates/${id}`
+    ] as const;
+    }
+
+
+export const getGetClubTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getClubTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubTemplate>>> = ({ signal }) => getClubTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getClubTemplate>>>
+export type GetClubTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+
+export function useGetClubTemplate<TData = Awaited<ReturnType<typeof getClubTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * A new document is the club's edit: the first one makes the template its own (no more update prompts), and every one starts a fit check. Renaming alone is neither.
+ * @summary Save one of the club's templates (rejected when someone saved first)
+ */
+export const saveClubTemplate = async (id: number,
+    saveClubTemplateRequest: SaveClubTemplateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getSaveClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveClubTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveClubTemplate>>, {id: number;data: BodyType<SaveClubTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveClubTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveClubTemplate>>>
+    export type SaveClubTemplateMutationBody = BodyType<SaveClubTemplateRequest>
+    export type SaveClubTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save one of the club's templates (rejected when someone saved first)
+ */
+export const useSaveClubTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClubTemplate>>, TError,{id: number;data: BodyType<SaveClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveClubTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveClubTemplateMutationOptions(options));
+    }
+
+export const getDeleteClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}`
+}
+
+/**
+ * @summary Delete one of the club's templates (never a kind's default)
+ */
+export const deleteClubTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClubTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubTemplate>>>
+
+    export type DeleteClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete one of the club's templates (never a kind's default)
+ */
+export const useDeleteClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClubTemplateMutationOptions(options));
+    }
+
+export const getDuplicateClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/duplicate`
+}
+
+/**
+ * @summary Duplicate one of the club's templates
+ */
+export const duplicateClubTemplate = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getDuplicateClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDuplicateClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['duplicateClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateClubTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  duplicateClubTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateClubTemplate>>>
+
+    export type DuplicateClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Duplicate one of the club's templates
+ */
+export const useDuplicateClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateClubTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateClubTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDuplicateClubTemplateMutationOptions(options));
+    }
+
+export const getSetClubTemplateDefaultUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/default`
+}
+
+/**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const setClubTemplateDefault = async (id: number, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getSetClubTemplateDefaultUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetClubTemplateDefaultMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['setClubTemplateDefault'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setClubTemplateDefault>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  setClubTemplateDefault(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetClubTemplateDefaultMutationResult = NonNullable<Awaited<ReturnType<typeof setClubTemplateDefault>>>
+
+    export type SetClubTemplateDefaultMutationError = ErrorType<void>
+
+    /**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const useSetClubTemplateDefault = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubTemplateDefault>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setClubTemplateDefault>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSetClubTemplateDefaultMutationOptions(options));
+    }
+
+export const getTakeClubTemplateUpdateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/update`
+}
+
+/**
+ * Replaces the template's document with the library template's current version. The template stays unedited. Refused for a template the club has changed (it is the club's own) and when there is no newer version.
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const takeClubTemplateUpdate = async (id: number,
+    takeTemplateUpdateRequest: TakeTemplateUpdateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getTakeClubTemplateUpdateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      takeTemplateUpdateRequest,)
+  }
+);}
+
+
+
+
+export const getTakeClubTemplateUpdateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext> => {
+
+const mutationKey = ['takeClubTemplateUpdate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, {id: number;data: BodyType<TakeTemplateUpdateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  takeClubTemplateUpdate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TakeClubTemplateUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof takeClubTemplateUpdate>>>
+    export type TakeClubTemplateUpdateMutationBody = BodyType<TakeTemplateUpdateRequest>
+    export type TakeClubTemplateUpdateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take the library's newer version into an unedited club template
+ */
+export const useTakeClubTemplateUpdate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof takeClubTemplateUpdate>>, TError,{id: number;data: BodyType<TakeTemplateUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof takeClubTemplateUpdate>>,
+        TError,
+        {id: number;data: BodyType<TakeTemplateUpdateRequest>},
+        TContext
+      > => {
+      return useMutation(getTakeClubTemplateUpdateMutationOptions(options));
+    }
+
+export const getApplyClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/apply`
+}
+
+/**
+ * Replaces the design of every unposted draft of the template's kind; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply one of the club's templates to its kind's unposted drafts
+ */
+export const applyClubTemplate = async (id: number,
     applyKindTemplateRequest: ApplyKindTemplateRequest, options?: RequestInit): Promise<ApplyKindTemplateResult> => {
 
-  return customFetch<ApplyKindTemplateResult>(getApplyKindTemplateUrl(kind),
+  return customFetch<ApplyKindTemplateResult>(getApplyClubTemplateUrl(id),
   {
     ...options,
     method: 'POST',
@@ -21301,11 +22479,11 @@ export const applyKindTemplate = async (kind: string,
 
 
 
-export const getApplyKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext> => {
+export const getApplyClubTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext> => {
 
-const mutationKey = ['applyKindTemplate'];
+const mutationKey = ['applyClubTemplate'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -21315,10 +22493,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyKindTemplate>>, {kind: string;data: BodyType<ApplyKindTemplateRequest>}> = (props) => {
-          const {kind,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyClubTemplate>>, {id: number;data: BodyType<ApplyKindTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  applyKindTemplate(kind,data,requestOptions)
+          return  applyClubTemplate(id,data,requestOptions)
         }
 
 
@@ -21328,22 +22506,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ApplyKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyKindTemplate>>>
-    export type ApplyKindTemplateMutationBody = BodyType<ApplyKindTemplateRequest>
-    export type ApplyKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+    export type ApplyClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyClubTemplate>>>
+    export type ApplyClubTemplateMutationBody = BodyType<ApplyKindTemplateRequest>
+    export type ApplyClubTemplateMutationError = ErrorType<void | KindTemplateConflict>
 
     /**
- * @summary Apply a saved template version to this kind's unposted drafts
+ * @summary Apply one of the club's templates to its kind's unposted drafts
  */
-export const useApplyKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useApplyClubTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyClubTemplate>>, TError,{id: number;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof applyKindTemplate>>,
+        Awaited<ReturnType<typeof applyClubTemplate>>,
         TError,
-        {kind: string;data: BodyType<ApplyKindTemplateRequest>},
+        {id: number;data: BodyType<ApplyKindTemplateRequest>},
         TContext
       > => {
-      return useMutation(getApplyKindTemplateMutationOptions(options));
+      return useMutation(getApplyClubTemplateMutationOptions(options));
     }
 
 export const getRunDraftSweepUrl = () => {
@@ -21917,6 +23095,240 @@ export function useGetPlatformPlayhqSync<TData = Awaited<ReturnType<typeof getPl
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPlatformPlayhqSyncQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTemplateDesignerUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer`
+}
+
+/**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+export const getTemplateDesigner = async ( options?: RequestInit): Promise<TemplateDesigner> => {
+
+  return customFetch<TemplateDesigner>(getGetTemplateDesignerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplateDesignerQueryKey = () => {
+    return [
+    `/api/platform/admin/library/designer`
+    ] as const;
+    }
+
+
+export const getGetTemplateDesignerQueryOptions = <TData = Awaited<ReturnType<typeof getTemplateDesigner>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplateDesignerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplateDesigner>>> = ({ signal }) => getTemplateDesigner({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplateDesignerQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplateDesigner>>>
+export type GetTemplateDesignerQueryError = ErrorType<void>
+
+
+/**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+
+export function useGetTemplateDesigner<TData = Awaited<ReturnType<typeof getTemplateDesigner>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateDesigner>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplateDesignerQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStartTemplateGenerationUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer/generations`
+}
+
+/**
+ * Runs in the background; poll the design until its status is done or failed. The result is saved as an unlisted console template in the library. The image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent.
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const startTemplateGeneration = async (startTemplateGenerationRequest: StartTemplateGenerationRequest, options?: RequestInit): Promise<TemplateGeneration> => {
+    const formData = new FormData();
+formData.append(`kind`, startTemplateGenerationRequest.kind);
+if(startTemplateGenerationRequest.brief !== undefined) {
+ formData.append(`brief`, startTemplateGenerationRequest.brief);
+ }
+if(startTemplateGenerationRequest.image !== undefined) {
+ formData.append(`image`, startTemplateGenerationRequest.image);
+ }
+
+  return customFetch<TemplateGeneration>(getStartTemplateGenerationUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getStartTemplateGenerationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext> => {
+
+const mutationKey = ['startTemplateGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startTemplateGeneration>>, {data: BodyType<StartTemplateGenerationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startTemplateGeneration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartTemplateGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof startTemplateGeneration>>>
+    export type StartTemplateGenerationMutationBody = BodyType<StartTemplateGenerationRequest>
+    export type StartTemplateGenerationMutationError = ErrorType<void>
+
+    /**
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const useStartTemplateGeneration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startTemplateGeneration>>,
+        TError,
+        {data: BodyType<StartTemplateGenerationRequest>},
+        TContext
+      > => {
+      return useMutation(getStartTemplateGenerationMutationOptions(options));
+    }
+
+export const getGetTemplateGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/designer/generations/${id}`
+}
+
+/**
+ * @summary One AI design
+ */
+export const getTemplateGeneration = async (id: number, options?: RequestInit): Promise<TemplateGeneration> => {
+
+  return customFetch<TemplateGeneration>(getGetTemplateGenerationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTemplateGenerationQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/designer/generations/${id}`
+    ] as const;
+    }
+
+
+export const getGetTemplateGenerationQueryOptions = <TData = Awaited<ReturnType<typeof getTemplateGeneration>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplateGenerationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplateGeneration>>> = ({ signal }) => getTemplateGeneration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTemplateGenerationQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplateGeneration>>>
+export type GetTemplateGenerationQueryError = ErrorType<void>
+
+
+/**
+ * @summary One AI design
+ */
+
+export function useGetTemplateGeneration<TData = Awaited<ReturnType<typeof getTemplateGeneration>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTemplateGenerationQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -23275,6 +24687,234 @@ export const useApproveSocialDraft = <TError = ErrorType<void>,
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
     }
+
+export const getGetDraftSetDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/set-design`
+}
+
+/**
+ * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+export const getDraftSetDesign = async (id: number, options?: RequestInit): Promise<DraftSetDesign> => {
+
+  return customFetch<DraftSetDesign>(getGetDraftSetDesignUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDraftSetDesignQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}/set-design`
+    ] as const;
+    }
+
+
+export const getGetDraftSetDesignQueryOptions = <TData = Awaited<ReturnType<typeof getDraftSetDesign>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDraftSetDesignQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDraftSetDesign>>> = ({ signal }) => getDraftSetDesign(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDraftSetDesignQueryResult = NonNullable<Awaited<ReturnType<typeof getDraftSetDesign>>>
+export type GetDraftSetDesignQueryError = ErrorType<void>
+
+
+/**
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+
+export function useGetDraftSetDesign<TData = Awaited<ReturnType<typeof getDraftSetDesign>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDraftSetDesignQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveDraftSetDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/set-design`
+}
+
+/**
+ * Stores the set design on the draft. A queued carousel's slides follow the design's arrangement (reordered, deleted, design pages added) and its size; a list draft keeps the arrangement in its design. The draft's data snapshot is unchanged. The new layout owes a check before automation, as any templated edit does.
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const saveDraftSetDesign = async (id: number,
+    saveDraftSetDesignRequest: SaveDraftSetDesignRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getSaveDraftSetDesignUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveDraftSetDesignRequest,)
+  }
+);}
+
+
+
+
+export const getSaveDraftSetDesignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext> => {
+
+const mutationKey = ['saveDraftSetDesign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDraftSetDesign>>, {id: number;data: BodyType<SaveDraftSetDesignRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveDraftSetDesign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDraftSetDesignMutationResult = NonNullable<Awaited<ReturnType<typeof saveDraftSetDesign>>>
+    export type SaveDraftSetDesignMutationBody = BodyType<SaveDraftSetDesignRequest>
+    export type SaveDraftSetDesignMutationError = ErrorType<void>
+
+    /**
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const useSaveDraftSetDesign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDraftSetDesign>>,
+        TError,
+        {id: number;data: BodyType<SaveDraftSetDesignRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveDraftSetDesignMutationOptions(options));
+    }
+
+export const getGetSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}`
+}
+
+/**
+ * @summary One draft, including one just opened in the editor and not yet edited
+ */
+export const getSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getGetSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialDraftQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}`
+    ] as const;
+    }
+
+
+export const getGetSocialDraftQueryOptions = <TData = Awaited<ReturnType<typeof getSocialDraft>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialDraftQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialDraft>>> = ({ signal }) => getSocialDraft(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialDraftQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialDraft>>>
+export type GetSocialDraftQueryError = ErrorType<void>
+
+
+/**
+ * @summary One draft, including one just opened in the editor and not yet edited
+ */
+
+export function useGetSocialDraft<TData = Awaited<ReturnType<typeof getSocialDraft>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialDraftQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getUpdateSocialDraftUrl = (id: number,) => {
 
@@ -32395,6 +34035,1122 @@ export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
+    }
+
+export const getListConsoleLibraryTemplatesUrl = (params?: ListConsoleLibraryTemplatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/admin/library/templates?${stringifiedParams}` : `/api/platform/admin/library/templates`
+}
+
+/**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+export const listConsoleLibraryTemplates = async (params?: ListConsoleLibraryTemplatesParams, options?: RequestInit): Promise<ConsoleLibraryTemplateList> => {
+
+  return customFetch<ConsoleLibraryTemplateList>(getListConsoleLibraryTemplatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryTemplatesQueryKey = (params?: ListConsoleLibraryTemplatesParams,) => {
+    return [
+    `/api/platform/admin/library/templates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError = ErrorType<void>>(params?: ListConsoleLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryTemplatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>> = ({ signal }) => listConsoleLibraryTemplates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>>
+export type ListConsoleLibraryTemplatesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+
+export function useListConsoleLibraryTemplates<TData = Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError = ErrorType<void>>(
+ params?: ListConsoleLibraryTemplatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryTemplatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateConsoleLibraryTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/templates`
+}
+
+/**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const createConsoleLibraryTemplate = async (createConsoleLibraryTemplateRequest: CreateConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getCreateConsoleLibraryTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getCreateConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['createConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, {data: BodyType<CreateConsoleLibraryTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConsoleLibraryTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>>
+    export type CreateConsoleLibraryTemplateMutationBody = BodyType<CreateConsoleLibraryTemplateRequest>
+    export type CreateConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const useCreateConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryTemplate>>, TError,{data: BodyType<CreateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConsoleLibraryTemplate>>,
+        TError,
+        {data: BodyType<CreateConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getGetConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}`
+}
+
+/**
+ * @summary One library template at its current version
+ */
+export const getConsoleLibraryTemplate = async (id: number, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getGetConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConsoleLibraryTemplateQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/templates/${id}`
+    ] as const;
+    }
+
+
+export const getGetConsoleLibraryTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConsoleLibraryTemplateQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>> = ({ signal }) => getConsoleLibraryTemplate(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConsoleLibraryTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>>
+export type GetConsoleLibraryTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One library template at its current version
+ */
+
+export function useGetConsoleLibraryTemplate<TData = Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConsoleLibraryTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConsoleLibraryTemplateQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}`
+}
+
+/**
+ * A new document becomes the template's next version and starts its fit check; earlier versions stay, so clubs' copies see an update. A name or look alone changes no version. Bundle templates are refused: they change with a deploy, and the console duplicates them instead.
+ * @summary Save a console template; a new document is a new version
+ */
+export const saveConsoleLibraryTemplate = async (id: number,
+    saveConsoleLibraryTemplateRequest: SaveConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getSaveConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, {id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>>
+    export type SaveConsoleLibraryTemplateMutationBody = BodyType<SaveConsoleLibraryTemplateRequest>
+    export type SaveConsoleLibraryTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save a console template; a new document is a new version
+ */
+export const useSaveConsoleLibraryTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>, TError,{id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getDuplicateConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/duplicate`
+}
+
+/**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const duplicateConsoleLibraryTemplate = async (id: number,
+    duplicateConsoleLibraryTemplateRequest?: DuplicateConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getDuplicateConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      duplicateConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getDuplicateConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['duplicateConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, {id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  duplicateConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>>
+    export type DuplicateConsoleLibraryTemplateMutationBody = BodyType<DuplicateConsoleLibraryTemplateRequest> | undefined
+    export type DuplicateConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const useDuplicateConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data?: BodyType<DuplicateConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getDuplicateConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/list`
+}
+
+/**
+ * Refused unless the current version passed a real fit check (every page, size and preset). A bundle template follows its bundle file, so this only undoes an Ovation unlisting.
+ * @summary List a template in the library
+ */
+export const listConsoleLibraryTemplate = async (id: number, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getListConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getListConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['listConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  listConsoleLibraryTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ListConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>>
+
+    export type ListConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary List a template in the library
+ */
+export const useListConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof listConsoleLibraryTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getListConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getUnlistConsoleLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/unlist`
+}
+
+/**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const unlistConsoleLibraryTemplate = async (id: number,
+    unlistConsoleLibraryTemplateRequest?: UnlistConsoleLibraryTemplateRequest, options?: RequestInit): Promise<ConsoleLibraryTemplate> => {
+
+  return customFetch<ConsoleLibraryTemplate>(getUnlistConsoleLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unlistConsoleLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getUnlistConsoleLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['unlistConsoleLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, {id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  unlistConsoleLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistConsoleLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>>
+    export type UnlistConsoleLibraryTemplateMutationBody = BodyType<UnlistConsoleLibraryTemplateRequest> | undefined
+    export type UnlistConsoleLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const useUnlistConsoleLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistConsoleLibraryTemplate>>,
+        TError,
+        {id: number;data?: BodyType<UnlistConsoleLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getUnlistConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListConsoleLibraryElementsUrl = (params?: ListConsoleLibraryElementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/admin/library/elements?${stringifiedParams}` : `/api/platform/admin/library/elements`
+}
+
+/**
+ * For moderation (editable-elements plan, D5): every element with its author and how many reports are open, most-reported first, then newest. 100 a page.
+ * @summary Every library element, listed or not, with its open reports
+ */
+export const listConsoleLibraryElements = async (params?: ListConsoleLibraryElementsParams, options?: RequestInit): Promise<ConsoleLibraryElementPage> => {
+
+  return customFetch<ConsoleLibraryElementPage>(getListConsoleLibraryElementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryElementsQueryKey = (params?: ListConsoleLibraryElementsParams,) => {
+    return [
+    `/api/platform/admin/library/elements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryElementsQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError = ErrorType<void>>(params?: ListConsoleLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryElementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryElements>>> = ({ signal }) => listConsoleLibraryElements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryElementsQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElements>>>
+export type ListConsoleLibraryElementsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every library element, listed or not, with its open reports
+ */
+
+export function useListConsoleLibraryElements<TData = Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError = ErrorType<void>>(
+ params?: ListConsoleLibraryElementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryElementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListConsoleLibraryElementReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/reports`
+}
+
+/**
+ * @summary Every report of an element, open first
+ */
+export const listConsoleLibraryElementReports = async (id: number, options?: RequestInit): Promise<LibraryElementReportList> => {
+
+  return customFetch<LibraryElementReportList>(getListConsoleLibraryElementReportsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryElementReportsQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/elements/${id}/reports`
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryElementReportsQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryElementReportsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>> = ({ signal }) => listConsoleLibraryElementReports(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryElementReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>>
+export type ListConsoleLibraryElementReportsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every report of an element, open first
+ */
+
+export function useListConsoleLibraryElementReports<TData = Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryElementReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryElementReportsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUnlistConsoleLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/unlist`
+}
+
+/**
+ * No club sees it any more; cards it was added to keep their copies. Its open reports are resolved. A bundle sync keeps it unlisted.
+ * @summary Take an element out of the library, as Ovation
+ */
+export const unlistConsoleLibraryElement = async (id: number,
+    unlistConsoleLibraryElementRequest?: UnlistConsoleLibraryElementRequest, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getUnlistConsoleLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unlistConsoleLibraryElementRequest,)
+  }
+);}
+
+
+
+
+export const getUnlistConsoleLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext> => {
+
+const mutationKey = ['unlistConsoleLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, {id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  unlistConsoleLibraryElement(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistConsoleLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>>
+    export type UnlistConsoleLibraryElementMutationBody = BodyType<UnlistConsoleLibraryElementRequest> | undefined
+    export type UnlistConsoleLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Take an element out of the library, as Ovation
+ */
+export const useUnlistConsoleLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistConsoleLibraryElement>>, TError,{id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistConsoleLibraryElement>>,
+        TError,
+        {id: number;data?: BodyType<UnlistConsoleLibraryElementRequest>},
+        TContext
+      > => {
+      return useMutation(getUnlistConsoleLibraryElementMutationOptions(options));
+    }
+
+export const getListConsoleLibraryElementUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/list`
+}
+
+/**
+ * Undoes either unlisting, the author's or Ovation's.
+ * @summary Put an element back in the library
+ */
+export const listConsoleLibraryElement = async (id: number, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getListConsoleLibraryElementUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getListConsoleLibraryElementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['listConsoleLibraryElement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof listConsoleLibraryElement>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  listConsoleLibraryElement(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ListConsoleLibraryElementMutationResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryElement>>>
+
+    export type ListConsoleLibraryElementMutationError = ErrorType<void>
+
+    /**
+ * @summary Put an element back in the library
+ */
+export const useListConsoleLibraryElement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof listConsoleLibraryElement>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof listConsoleLibraryElement>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getListConsoleLibraryElementMutationOptions(options));
+    }
+
+export const getDismissConsoleLibraryElementReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/elements/${id}/reports/dismiss`
+}
+
+/**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const dismissConsoleLibraryElementReports = async (id: number, options?: RequestInit): Promise<ConsoleLibraryElement> => {
+
+  return customFetch<ConsoleLibraryElement>(getDismissConsoleLibraryElementReportsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissConsoleLibraryElementReportsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['dismissConsoleLibraryElementReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  dismissConsoleLibraryElementReports(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissConsoleLibraryElementReportsMutationResult = NonNullable<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>>
+
+    export type DismissConsoleLibraryElementReportsMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const useDismissConsoleLibraryElementReports = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissConsoleLibraryElementReports>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDismissConsoleLibraryElementReportsMutationOptions(options));
+    }
+
+export const getListConsoleLibraryLooksUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/looks`
+}
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+export const listConsoleLibraryLooks = async ( options?: RequestInit): Promise<ConsoleLibraryLookList> => {
+
+  return customFetch<ConsoleLibraryLookList>(getListConsoleLibraryLooksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConsoleLibraryLooksQueryKey = () => {
+    return [
+    `/api/platform/admin/library/looks`
+    ] as const;
+    }
+
+
+export const getListConsoleLibraryLooksQueryOptions = <TData = Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConsoleLibraryLooksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConsoleLibraryLooks>>> = ({ signal }) => listConsoleLibraryLooks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConsoleLibraryLooksQueryResult = NonNullable<Awaited<ReturnType<typeof listConsoleLibraryLooks>>>
+export type ListConsoleLibraryLooksQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+
+export function useListConsoleLibraryLooks<TData = Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConsoleLibraryLooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConsoleLibraryLooksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateConsoleLibraryLookUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/looks`
+}
+
+/**
+ * @summary A new console look
+ */
+export const createConsoleLibraryLook = async (createConsoleLibraryLookRequest: CreateConsoleLibraryLookRequest, options?: RequestInit): Promise<ConsoleLibraryLook> => {
+
+  return customFetch<ConsoleLibraryLook>(getCreateConsoleLibraryLookUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createConsoleLibraryLookRequest,)
+  }
+);}
+
+
+
+
+export const getCreateConsoleLibraryLookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext> => {
+
+const mutationKey = ['createConsoleLibraryLook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConsoleLibraryLook>>, {data: BodyType<CreateConsoleLibraryLookRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConsoleLibraryLook(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConsoleLibraryLookMutationResult = NonNullable<Awaited<ReturnType<typeof createConsoleLibraryLook>>>
+    export type CreateConsoleLibraryLookMutationBody = BodyType<CreateConsoleLibraryLookRequest>
+    export type CreateConsoleLibraryLookMutationError = ErrorType<void>
+
+    /**
+ * @summary A new console look
+ */
+export const useCreateConsoleLibraryLook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConsoleLibraryLook>>, TError,{data: BodyType<CreateConsoleLibraryLookRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConsoleLibraryLook>>,
+        TError,
+        {data: BodyType<CreateConsoleLibraryLookRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateConsoleLibraryLookMutationOptions(options));
+    }
+
+export const getImportFigmaTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/import/figma`
+}
+
+/**
+ * Reads the link's frames (named <page>/<size>, or card-shaped) with Ovation's read-only Figma token, maps them to the template format, exports vectors as SVG and copies images to the library, then saves an unlisted console template, validated and sent to the fit job. The report lists everything that was changed or left out. Colours bound to styles named ovation/* become the club's colour tokens.
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const importFigmaTemplate = async (importFigmaTemplateRequest: ImportFigmaTemplateRequest, options?: RequestInit): Promise<FigmaImportResult> => {
+
+  return customFetch<FigmaImportResult>(getImportFigmaTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      importFigmaTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getImportFigmaTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext> => {
+
+const mutationKey = ['importFigmaTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importFigmaTemplate>>, {data: BodyType<ImportFigmaTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importFigmaTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportFigmaTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof importFigmaTemplate>>>
+    export type ImportFigmaTemplateMutationBody = BodyType<ImportFigmaTemplateRequest>
+    export type ImportFigmaTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const useImportFigmaTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaTemplate>>, TError,{data: BodyType<ImportFigmaTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importFigmaTemplate>>,
+        TError,
+        {data: BodyType<ImportFigmaTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getImportFigmaTemplateMutationOptions(options));
     }
 
 export const getGetPlatformGradeDecisionsUrl = () => {

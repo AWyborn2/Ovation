@@ -151,7 +151,9 @@ export function bindInput(
       if (input.carouselDetail === true) bindInningsDetail(input, values, team);
       if (input.carouselDay) {
         set(values, "dayHeading", input.carouselDay.heading);
-        input.carouselDay.results.forEach((r, i) => {
+        // A stored day slide without its list draws its heading only.
+        const results = input.carouselDay.results ?? [];
+        results.forEach((r, i) => {
           values[`day${i}.grade`] = comp(r.grade);
           values[`day${i}.opposition`] = team(r.opposition);
           values[`day${i}.result`] = r.result;
@@ -160,6 +162,23 @@ export function bindInput(
           values[`day${i}.oppScore`] = r.oppositionScore;
           const rowCrest = crest(r.opposition, r.crestUrl);
           if (rowCrest) images[`day${i}.crest`] = rowCrest;
+        });
+        // The same results as a repeat, for template rows layers (format v2 `dayRows`).
+        rows["dayRows"] = results.map((r) => {
+          const opposition = team(r.opposition);
+          return {
+            variant: r.winner === "club" ? "won" : r.winner === "opposition" ? "lost" : "draw",
+            values: {
+              grade: comp(r.grade),
+              opposition,
+              monogram: teamMonogram(opposition),
+              crest: crest(r.opposition, r.crestUrl) ?? "",
+              word: r.resultWord,
+              result: r.result,
+              clubScore: r.clubScore,
+              oppScore: r.oppositionScore,
+            },
+          };
         });
       }
       break;
@@ -258,6 +277,15 @@ export function bindInput(
           set(values, `weekendSponsorName${i}`, s.name);
           if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
         });
+        // The page's dates, by the name templates use (format v2 `dateRange`).
+        set(values, "dateRange", input.date);
+        // The sponsors as a repeat for template rows layers (format v2); the
+        // first `majorCount` are the larger tier.
+        const majors = input.carouselPage.majorCount ?? 0;
+        rows["sponsors"] = input.carouselPage.sponsors.map((s, i) => ({
+          ...(i < majors ? { variant: "major" } : {}),
+          values: { name: s.name, logo: s.logoUrl ?? "" },
+        }));
         // The sponsors page's optional blocks (P6); always bound, so an absent
         // one is empty and its box drops (never a template sample).
         const page = input.carouselPage;
@@ -277,13 +305,28 @@ export function bindInput(
       if (input.carouselDay) {
         // A junior day slide (ADR-010 P3): content-built, so names are final.
         set(values, "dayHeading", input.carouselDay.heading);
-        input.carouselDay.fixtures.forEach((r, i) => {
+        const fixtures = input.carouselDay.fixtures ?? [];
+        fixtures.forEach((r, i) => {
           values[`day${i}.grade`] = r.grade;
           values[`day${i}.opposition`] = r.opposition;
           values[`day${i}.time`] = r.startTime;
           values[`day${i}.meta`] = [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" · ");
           if (r.crestUrl) images[`day${i}.crest`] = r.crestUrl;
         });
+        // The same fixtures as a repeat, for template rows layers (format v2 `dayRows`).
+        rows["dayRows"] = fixtures.map((r) => ({
+          values: {
+            grade: r.grade,
+            opposition: r.opposition,
+            monogram: r.monogram ?? teamMonogram(r.opposition),
+            crest: r.crestUrl ?? "",
+            time: r.startTime,
+            venue: r.venue,
+            homeAway: r.homeAway,
+            round: r.roundLabel,
+            meta: [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" · "),
+          },
+        }));
       }
       // Explicitly clear absent labels on historical frozen covers rather than
       // allowing sample data to supply a made-up round.

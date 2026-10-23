@@ -1,7 +1,8 @@
 /**
- * Card kind templates U8 — the template editor: starter choice, add to other
- * sizes as one undo step, text style and field tokens through save, save
- * rules, version conflicts, the apply dialog, and the phone fallback.
+ * The template editor (card kind templates U8; editor v2, ADR-011 L5-B): a
+ * card kind's default club template, add to other sizes as one undo step,
+ * text style and field tokens through save, save rules, version conflicts,
+ * the apply dialog, and the phone fallback.
  */
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
@@ -37,19 +38,27 @@ const FULL_DOC = {
   ],
 };
 
+const COPY_ID = 7;
+
 const template = (over: Record<string, unknown> = {}) => ({
+  id: COPY_ID,
   kind: "century",
+  name: "Century template",
   version: 1,
+  isDefault: true,
+  basedOn: null,
+  edited: false,
+  updateAvailable: null,
+  fitStatus: "pass",
+  fitReport: null,
+  coverage: { pages: ["card"], sizes: ["square", "portrait", "story", "landscape"] },
   updatedAt: null,
-  replacedPackId: null,
-  noticeDismissed: false,
   waitingDrafts: 0,
   document: FULL_DOC,
   ...over,
 });
 
 type Api = {
-  platformAdmin?: boolean;
   template?: Record<string, unknown> | null;
   waiting?: number;
   saveStatus?: number;
@@ -69,32 +78,21 @@ function stubApi(api: Api = {}): Req[] {
       requests.push({ method, url, body });
       let status = 200;
       let payload: unknown = [];
-      if (/platform\/auth\/me/.test(url)) {
-        status = api.platformAdmin ? 200 : 401;
-        payload = api.platformAdmin ? { id: 1, email: "ops@example.test" } : { error: "no" };
-      } else if (/\/api\/kind-templates$/.test(url)) {
-        payload = {
-          enabled: true,
-          templates: [{ ...template(), waitingDrafts: api.waiting ?? 0 }],
-        };
-      } else if (method === "POST" && /kind-templates\/century\/start$/.test(url)) {
-        const base = (body as { baseVersion?: number } | undefined)?.baseVersion;
-        payload = template({
-          version: base ? base + 1 : 1,
-          waitingDrafts: base ? (api.waiting ?? 0) : 0,
-        });
-      } else if (method === "POST" && /kind-templates\/century\/apply$/.test(url)) {
+      if (/\/api\/club-templates\?kind=century/.test(url)) {
+        payload = { templates: current ? [{ ...current, document: undefined }] : [] };
+      } else if (method === "POST" && /club-templates\/7\/apply$/.test(url)) {
         payload = { changed: 2, skipped: 1 };
-      } else if (method === "PUT" && /kind-templates\/century$/.test(url)) {
+      } else if (method === "PUT" && /club-templates\/7$/.test(url)) {
         status = api.saveStatus ?? 200;
         payload =
           api.saveBody ??
           template({
             version: 2,
+            edited: true,
             document: (body as { document: unknown }).document,
             waitingDrafts: api.waiting ?? 0,
           });
-      } else if (/kind-templates\/century$/.test(url)) {
+      } else if (/club-templates\/7$/.test(url)) {
         if (current === null) status = 404;
         payload = current ?? { error: "Not found" };
       } else if (/social-settings/.test(url)) {
@@ -129,15 +127,10 @@ const format = (value: string) =>
 const saved = (requests: Req[]) => requests.filter((r) => r.method === "PUT");
 
 describe("template editor", () => {
-  it("offers the starters when the kind has no template, and starts from the pick", async () => {
-    const requests = open({ template: null });
-    fireEvent.click(await screen.findByRole("button", { name: "Start from Club Kit" }));
-    await waitFor(() =>
-      expect(requests.some((r) => r.method === "POST" && /start$/.test(r.url))).toBe(true),
-    );
-    const start = requests.find((r) => /start$/.test(r.url))!;
-    expect(start.body).toEqual({ starter: "club-kit" });
-    expect(await screen.findByRole("combobox", { name: "Format" })).toBeTruthy();
+  it("sends a card kind with no default to the library", async () => {
+    open({ template: null });
+    expect(await screen.findByText(/Your club has no century design yet/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open the template library" })).toBeTruthy();
   });
 
   it("adds an element to every size as one undo step (AE5)", async () => {
@@ -280,35 +273,6 @@ describe("template editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(saved(requests)).toHaveLength(1));
     expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("shows Export as starter to platform admins only (T6.2)", async () => {
-    open();
-    await screen.findByRole("combobox", { name: "Format" });
-    expect(screen.queryByRole("button", { name: "Export as starter" })).toBeNull();
-    cleanup();
-    vi.unstubAllGlobals();
-    open({ platformAdmin: true });
-    expect(await screen.findByRole("button", { name: "Export as starter" })).toBeTruthy();
-  });
-
-  it("starts the template over from a starter as a new version", async () => {
-    const requests = open({ waiting: 2 });
-    await screen.findByRole("combobox", { name: "Format" });
-    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
-    const dialog = await screen.findByRole("dialog", { name: /Start Century over/i });
-    expect(within(dialog).getByText(/saved as version 2/)).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Start from Broadcast" }));
-    await waitFor(() =>
-      expect(requests.some((r) => r.method === "POST" && /start$/.test(r.url))).toBe(true),
-    );
-    expect(requests.find((r) => /start$/.test(r.url))!.body).toEqual({
-      starter: "broadcast",
-      baseVersion: 1,
-    });
-    // The new version is in place, and waiting cards can take it.
-    expect(await screen.findByText("Template · v2")).toBeTruthy();
-    expect(await screen.findByRole("dialog", { name: /Update 2 waiting cards/ })).toBeTruthy();
   });
 
   it("tells a phone to use a computer or tablet", async () => {

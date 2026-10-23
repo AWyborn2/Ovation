@@ -49,16 +49,23 @@
     "test": "vitest run && node --test playhq-sync/runner.test.mjs playhq-sync/harness.test.mjs",
     "link-hh-cap-only-players": "tsx ./src/link-hh-cap-only-players.ts",
     "selection-crosswalk-backfill": "tsx ./src/selection-crosswalk-backfill.ts",
-    "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts"
+    "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts",
+    "spike-template-schema": "tsx ./src/spike-template-schema.ts",
+    "convert-pack": "tsx ./src/convert-pack.ts",
+    "refresh-worst-case-names": "tsx ./src/refresh-worst-case-names.ts",
+    "check-template-bundles": "tsx ./src/check-template-bundles.ts",
+    "extract-elements": "tsx ./src/extract-elements.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/scorecard": "workspace:*",
     "drizzle-orm": "catalog:",
     "xlsx": "^0.18.5",
-    "pg": "catalog:"
+    "pg": "catalog:",
+    "puppeteer-core": "^25.10.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
     "@types/node": "catalog:",
     "tsx": "catalog:",
     "vitest": "^4.1.7",

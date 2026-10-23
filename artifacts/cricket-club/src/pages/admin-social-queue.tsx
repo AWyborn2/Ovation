@@ -1,6 +1,8 @@
 import type { LayerDocument } from "@workspace/scorecard/kind-templates";
 import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { draftSetDocument, setDraftLayout, setDraftSlides } from "@/lib/set-draft";
+import type { PackCardData } from "@/lib/pack-render";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { Link, useLocation, useSearch } from "wouter";
 import {
@@ -76,6 +78,9 @@ function playerIdFromAppPath(appPath?: string | null): number | null {
 /** How many slides a draft posts as (a big round is a balanced card set). */
 function slideCount(d: SocialDraft): number {
   const carousel = readQueuedCarousel(d.cardInput);
+  const setDesign = setDraftLayout(d) ? draftSetDocument(d.adjustments) : null;
+  // A set with its own design (carousel set editor plan) posts its arranged slides.
+  if (setDesign) return setDraftSlides(d, setDesign, {} as PackCardData).length;
   if (carousel) return carousel.slides.length;
   const input = draftInput(d);
   if (!input) return 1;

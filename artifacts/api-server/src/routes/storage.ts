@@ -4,6 +4,7 @@ import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-z
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { isJuniorPhotoPath } from "../lib/photo-store";
+import { readLocalPublicObject } from "../lib/template-library/assets";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -121,6 +122,15 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
   try {
     const raw = req.params.filePath;
     const filePath = Array.isArray(raw) ? raw.join("/") : raw;
+    // Dev stack only: library assets kept on disk (LOCAL_OBJECT_STORAGE_DIR).
+    const local = await readLocalPublicObject(filePath);
+    if (local) {
+      res.setHeader("Content-Type", local.contentType);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      setSafeObjectHeaders(res);
+      res.end(local.bytes);
+      return;
+    }
     const file = await objectStorageService.searchPublicObject(filePath);
     if (!file) {
       res.status(404).json({ error: "File not found" });

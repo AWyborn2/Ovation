@@ -17,6 +17,18 @@ const server = app.listen(config.PORT, (err) => {
     process.exit(1);
   }
   logger.info({ port: config.PORT }, "Server listening");
+  // The template fit job first, so versions the bundle sync adds are checked
+  // (L2-B); then Ovation's template bundles into the library (ADR-011). Logs,
+  // never throws.
+  void import("./lib/template-library/fit-job")
+    .then((m) => m.startFitJob())
+    .catch((err: unknown) => logger.error({ err }, "template fit job didn't start"))
+    .then(() => import("./lib/template-library/bundles"))
+    .then((m) => m.syncBundlesAtBoot());
+  // AI designer jobs don't survive a restart: mark any left running as failed (L7-B).
+  void import("./lib/template-ai/jobs")
+    .then((m) => m.failInterruptedGenerations())
+    .catch((err: unknown) => logger.error({ err }, "AI designer: couldn't mark interrupted jobs"));
 });
 
 /**

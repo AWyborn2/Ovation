@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
+import type { PageKey } from "@workspace/scorecard/kind-templates";
 import type { ShareCardInput, CardSize } from "@/lib/share-card";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
@@ -47,6 +48,12 @@ export interface PackCardProps {
   adjustments?: CardAdjustments | null;
   /** Play free-layer entrance animations (editor preview, video export). */
   animate?: boolean;
+  /**
+   * The template page to draw (format v2). Omitted: the page the input is (a
+   * carousel title, sponsors or day slide, else the kind's own card); a v1
+   * document always draws its one page.
+   */
+  page?: PageKey;
   /** Explicit display width (px). When omitted the card fills its parent. */
   width?: number;
   className?: string;
@@ -81,6 +88,7 @@ export function PackCard({
   packId: savedPackId,
   adjustments,
   animate = false,
+  page,
   width,
   className,
 }: PackCardProps) {
@@ -105,8 +113,9 @@ export function PackCard({
     () =>
       renderPackCard(input, size, sponsorsOn, tokens, junior, data, packId, adjustments, {
         animate,
+        page,
       }),
-    [input, size, sponsorsOn, tokens, junior, data, packId, adjustments, animate],
+    [input, size, sponsorsOn, tokens, junior, data, packId, adjustments, animate, page],
   );
 
   // Decorative pack fonts (Anton, Bebas Neue, Teko, Archivo Black, …) load on

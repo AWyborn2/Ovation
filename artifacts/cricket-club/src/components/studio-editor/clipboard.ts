@@ -11,10 +11,22 @@
  * a list still lists the same rows, and the card photo is still the one card
  * photo (a photo per player is a list cell, set in List settings).
  */
-import { placeBoxOnSize, templateDocumentErrors } from "@workspace/scorecard/kind-templates";
+import {
+  placeBoxOnSize,
+  templateDocumentErrors,
+  type PageKey,
+} from "@workspace/scorecard/kind-templates";
 import type { FreeLayer, LayerBox } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
-import { boxOf, layersOf, newId, type EditorDoc } from "./document";
+import {
+  boxOf,
+  childrenOf,
+  layersOf,
+  newId,
+  placeBox,
+  withNewIds,
+  type EditorDoc,
+} from "./document";
 import { onlyOnSize } from "./template-ops";
 
 export type ClipboardMode = "template" | "draft";
@@ -30,6 +42,21 @@ export type EditorClipboard = {
 
 /** Paste offset when a copy would land exactly on a layer already there, in percent. */
 export const PASTE_OFFSET = 2;
+
+/**
+ * A layer as copied at `size`: its box there only, and (in a group) its
+ * children's boxes there only, so a paste on another size places them all
+ * from the same size.
+ */
+function atSize(l: FreeLayer, size: CardSize): FreeLayer {
+  const box = boxOf(l, size);
+  const copy: FreeLayer = { ...l, geometry: box ? { [size]: { ...box } } : {} };
+  delete copy.editedAt;
+  const kids = childrenOf(l);
+  return kids.length
+    ? ({ ...copy, children: kids.map((c) => atSize(c, size)) } as FreeLayer)
+    : copy;
+}
 
 const storageKey = (mode: ClipboardMode) => `ovation.studio-editor.clipboard.${mode}`;
 const memory: Partial<Record<ClipboardMode, EditorClipboard>> = {};
@@ -47,8 +74,7 @@ export function copyLayers(
     if (l.sizes && !l.sizes.includes(size)) continue;
     const box = boxOf(l, size);
     if (!box) continue;
-    const copy: FreeLayer = { ...structuredClone(l), geometry: { [size]: { ...box } } };
-    delete copy.editedAt;
+    const copy = atSize(structuredClone(l), size);
     delete copy.sizes;
     layers.push(copy);
   }
@@ -98,19 +124,26 @@ export type PasteResult = {
  * pastes cascade. With `kind` (a template, or a draft made from one), copies
  * using fields or a list that card doesn't have are skipped; with
  * `onlyOnSize` (the template editor) a copy lands on this size only, like an
- * added element, and the editor then offers the other sizes.
+ * added element, and the editor then offers the other sizes. With `page`
+ * (the template editor) copies are checked as format v2 layers of that page,
+ * so groups, stacks and vectors paste too. A group's children get new ids
+ * and move with it, and copies get new link ids, shared between the copies
+ * of one paste.
  */
 export function pasteLayers(
   doc: EditorDoc,
   clip: EditorClipboard,
   size: CardSize,
-  opts: { kind?: string; onlyOnSize?: boolean } = {},
+  opts: { kind?: string; onlyOnSize?: boolean; page?: PageKey } = {},
   now = Date.now(),
 ): PasteResult {
-  const { kind } = opts;
-  const usable = kind
-    ? clip.layers.filter((l) => templateDocumentErrors({ layers: [l] }, kind).length === 0)
-    : clip.layers;
+  const { kind, page } = opts;
+  const valid = (l: FreeLayer) =>
+    templateDocumentErrors(
+      page ? { formatVersion: 2, pages: { [page]: { layers: [l] } } } : { layers: [l] },
+      kind!,
+    ).length === 0;
+  const usable = kind ? clip.layers.filter(valid) : clip.layers;
   const placed = usable.map((l) => {
     const box = l.geometry[clip.size];
     return box ? placeBoxOnSize(box, clip.size, size) : null;
@@ -126,6 +159,7 @@ export function pasteLayers(
   }
 
   const groups = new Map<string, string>();
+  const links = new Map<string, string>();
   const copies: FreeLayer[] = [];
   usable.forEach((l, i) => {
     const box = placed[i];
@@ -135,9 +169,10 @@ export function pasteLayers(
       group = groups.get(l.group) ?? newId("g");
       groups.set(l.group, group);
     }
+    // New ids at every depth, and a group's children moved with it.
+    const moved = placeBox(withNewIds(structuredClone(l), links), size, at(box), now);
     const copy: FreeLayer = {
-      ...structuredClone(l),
-      id: newId(),
+      ...moved,
       group,
       locked: false,
       hidden: false,

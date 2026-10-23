@@ -81,3 +81,65 @@ export function stressSample(
     stress(structuredClone(sampleCardInput(kind, clubName)), null) as ShareCardInput,
   );
 }
+
+/** A day page's sample rows: a few results, or a few fixtures for Match Day. */
+export function sampleDay(kind: ShareCardInput["kind"]) {
+  const grades = ["Under 13 Blue", "Under 15", "Under 17"];
+  const opponents = ["Harbour", "Riverside", "Northshore Colts"];
+  if (kind === "matchDay") {
+    return {
+      heading: "Saturday",
+      fixtures: grades.map((grade, i) => ({
+        grade,
+        opposition: opponents[i]!,
+        crestUrl: null,
+        monogram: opponents[i]!.slice(0, 2).toUpperCase(),
+        homeAway: i % 2 ? ("AWAY" as const) : ("HOME" as const),
+        venue: "Main Oval",
+        startTime: ["8:30am", "9:00am", "1:00pm"][i]!,
+        roundLabel: "Round 4",
+      })),
+    };
+  }
+  return {
+    heading: "Saturday",
+    results: grades.map((grade, i) => ({
+      grade,
+      opposition: opponents[i]!,
+      crestUrl: null,
+      clubScore: ["4/132", "87", "6/150"][i]!,
+      oppositionScore: ["98", "3/90", "7/149"][i]!,
+      resultWord: i === 1 ? "RESULT" : "WIN",
+      result: ["Won by 34 runs", "Lost by 7 wickets", "Won by 1 run"][i]!,
+      winner: i === 1 ? ("opposition" as const) : ("club" as const),
+    })),
+  };
+}
+
+/** Sample grades a repeating page's items are told apart by. */
+const SAMPLE_GRADES = ["A Grade", "B Grade", "C Grade"];
+
+/**
+ * Sample item `n` (0-based) of a repeating set page (carousel set editor
+ * plan, part 2): the sample with its grade changed wherever it is named (in
+ * the sample's own case) and its list rotated, so three items read as three
+ * teams, fixtures or results drawn by one design.
+ */
+export function sampleItem(input: ShareCardInput, n: number): ShareCardInput {
+  if (n === 0) return input;
+  const grade = SAMPLE_GRADES[n % SAMPLE_GRADES.length]!;
+  const out = { ...input } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(out)) {
+    if (typeof value === "string")
+      out[key] = value.replace(/\bA Grade\b/gi, (m) =>
+        m === m.toUpperCase() ? grade.toUpperCase() : grade,
+      );
+    else if (Array.isArray(value) && value.length > 2 && value.every(isRecord)) {
+      const k = (n * 3) % value.length;
+      out[key] = [...value.slice(k), ...value.slice(0, k)].map((row, i) =>
+        typeof row.order === "number" ? { ...row, order: i + 1 } : row,
+      );
+    }
+  }
+  return out as ShareCardInput;
+}

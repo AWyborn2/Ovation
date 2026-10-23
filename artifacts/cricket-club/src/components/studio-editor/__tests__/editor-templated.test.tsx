@@ -65,6 +65,7 @@ function open(): Req[] {
       requests.push({ method, url, body });
       let payload: unknown = [];
       if (method === "PATCH") payload = { ...DRAFT, ...(body as object) };
+      else if (/\/api\/social-drafts\/11$/.test(url)) payload = DRAFT;
       else if (/\/api\/social-drafts(\?|$)/.test(url)) payload = [DRAFT];
       else if (/social-settings/.test(url))
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };

@@ -4,7 +4,7 @@ import type { CardSize } from "@/lib/share-card";
 import { isSponsorSlot } from "@/lib/pack-render/adjustments";
 import { cn } from "@/lib/utils";
 import { newId, type EditorDoc } from "./document";
-import { ElementLibrary } from "./element-library";
+import { LibraryElements } from "./library-elements";
 
 const input =
   "h-9 w-full rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2.5 text-sm text-[var(--ed-ink)] placeholder:text-[var(--ed-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ed-accent)]";
@@ -199,24 +199,24 @@ const SHAPES = [
 ];
 
 /**
- * Basic shapes, then the Club Kit element library — every piece of the Club
- * Kit pack, insertable on any card in the club's colours.
+ * Basic shapes, then the element library: every look's decorations (Club
+ * Kit's panel pieces among them) and the elements clubs saved, added as
+ * native layers.
  */
 export function ElementsPanel({
   size,
   onAdd,
-  paletteVars = "",
-  crestUrl = null,
+  onAddLayers,
 }: {
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
-  paletteVars?: string;
-  crestUrl?: string | null;
+  /** Adds a library element's layers together and selects them. */
+  onAddLayers: (layers: FreeLayer[]) => void;
 }) {
   return (
     <>
       <BasicShapes size={size} onAdd={onAdd} />
-      <ElementLibrary size={size} paletteVars={paletteVars} crestUrl={crestUrl} onAdd={onAdd} />
+      <LibraryElements size={size} onAdd={onAddLayers} />
     </>
   );
 }

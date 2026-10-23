@@ -28,6 +28,7 @@ import {
   CreateTrackedLinkBody,
   GenerateRecapsBody,
   SaveDraftAsTemplateBody,
+  SaveDraftSetDesignBody,
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
@@ -58,7 +59,15 @@ import {
   draftPublishing,
   publicationsByDraft,
 } from "../lib/publishing/publications";
-import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
+import { BLANK_PACK_ID, templatedDesignFor, type TemplatedDesign } from "../lib/kind-templates";
+import {
+  assembleCarouselDocument,
+  designFromRef,
+  setTemplateKind,
+} from "../lib/template-library/draw";
+import { TemplateLibraryError } from "../lib/template-library/errors";
+import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
+import { resolveDraftPack } from "../lib/draft-enrich";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
@@ -213,6 +222,33 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     .from(socialDraftsTable)
     .where(and(...conditions));
   res.json({ count: Number(row?.count ?? 0) });
+});
+
+/**
+ * One draft, as the list presents it. Unlike the list it includes a draft
+ * just opened in the editor and not yet edited (`notAnUntouchedEditorDraft`),
+ * which the Studio editor must be able to load.
+ */
+router.get("/social-drafts/:id", requireAdmin, async (req, res, next): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (id === null || String(id) !== req.params.id) {
+    next();
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const row = await loadDraft(tenantId, id);
+  if (!row) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const autoPost = await loadAutoPost(tenantId);
+  const pubs = await publicationsByDraft(tenantId, [row.id]);
+  const names = await creatorNames(tenantId, [row]);
+  res.json({
+    ...presentDraft(row, autoPost, new Date()),
+    ...draftPublishing(pubs.get(row.id)),
+    createdBy: row.createdByAdminId != null ? (names.get(row.createdByAdminId) ?? null) : null,
+  });
 });
 
 /** Mark a draft ready to post (the endpoint keeps its original "approve" name). */
@@ -447,7 +483,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { cardInput, templateId } = parsed.data;
+    const { cardInput, templateId, templateRef } = parsed.data;
     if (typeof cardInput.kind !== "string" || !cardInput.kind) {
       res.status(400).json({ error: "cardInput.kind is required" });
       return;
@@ -496,7 +532,8 @@ router.post(
       }
       // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
       // Set on the saved payload itself: a version 2 read returns a normalised copy.
-      if (carousel.packId === undefined && packId !== null) {
+      // A templated (version 3) carousel names a template, never a pack.
+      if (carousel.version !== 3 && carousel.packId === undefined && packId !== null) {
         carousel.packId = packId;
         (cardInput.weekendCarousel as Record<string, unknown>).packId = packId;
       }
@@ -519,6 +556,15 @@ router.post(
         return;
       }
     }
+    if (
+      templateRef !== undefined &&
+      (carousel || templateId !== undefined || parsed.data.adjustments)
+    ) {
+      res.status(400).json({
+        error: "A picked template can't be combined with a saved layout or a carousel payload.",
+      });
+      return;
+    }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {
       const template = await loadEditorTemplate(tenantId, templateId);
@@ -532,10 +578,42 @@ router.post(
     // With card kind templates on, a card started from the club's design
     // (not a blank canvas, a saved template or a supplied layout) copies the
     // kind's template (ADR-002).
-    const templated =
-      !carousel && templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
-        ? await templatedDesignFor(tenantId, cardInput.kind, packId)
-        : null;
+    // A template picked for this one post (ADR-011) is copied as it is; the
+    // club's default doesn't change. A templated (version 3) carousel stores
+    // its assembled document.
+    let templated: TemplatedDesign | null = null;
+    try {
+      if (templateRef !== undefined) {
+        templated = await designFromRef(tenantId, cardInput.kind, templateRef);
+      } else if (carousel?.version === 3) {
+        const assembled = await assembleCarouselDocument(tenantId, carousel, {
+          templateRef: carousel.templateRef,
+          packId: await resolveDraftPack(tenantId, setTemplateKind(carousel.setType)),
+        });
+        // The set may have fallen back to the pack look; the payload names what drew it.
+        (cardInput.weekendCarousel as Record<string, unknown>).templateRef = assembled.templateRef;
+        templated = {
+          packId: BLANK_PACK_ID,
+          adjustments: assembled.document,
+          templateVersion: assembled.templateRef.version,
+          templateRef: assembled.templateRef,
+          layoutCheckPending: true,
+        };
+      } else if (
+        !carousel &&
+        templateId === undefined &&
+        adjustments === null &&
+        packId !== BLANK_PACK_ID
+      ) {
+        templated = await templatedDesignFor(tenantId, cardInput.kind, packId);
+      }
+    } catch (err) {
+      if (err instanceof TemplateLibraryError) {
+        res.status(err.status).json(err.body);
+        return;
+      }
+      throw err;
+    }
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
@@ -755,6 +833,68 @@ router.patch(
       return row;
     });
     res.json(presentDraft(updated));
+  },
+);
+
+// A carousel set draft as one multi-page design (carousel set editor plan, part 3).
+router.get("/social-drafts/:id/set-design", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const draft = await loadDraft(tenantId, id);
+  if (!draft) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  try {
+    res.json(await loadDraftSetDesign(tenantId, draft));
+  } catch (err) {
+    if (err instanceof TemplateLibraryError) {
+      res.status(err.status).json(err.body);
+      return;
+    }
+    throw err;
+  }
+});
+
+router.put(
+  "/social-drafts/:id/set-design",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const parsed = SaveDraftSetDesignBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    try {
+      const updated = await saveDraftSetDesign(tenantId, draft, {
+        document: parsed.data.document,
+        templateRef: parsed.data.templateRef ?? undefined,
+        size: parsed.data.size,
+      });
+      res.json(presentDraft(updated));
+    } catch (err) {
+      if (err instanceof TemplateLibraryError) {
+        res.status(err.status).json(err.body);
+        return;
+      }
+      throw err;
+    }
   },
 );
 

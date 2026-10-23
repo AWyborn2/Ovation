@@ -48,7 +48,10 @@ function stubApi(): Req[] {
       let payload: unknown = [];
       if (method === "PATCH" && /social-drafts\/7$/.test(url))
         payload = { ...DRAFT, ...(body as object) };
-      else if (/\/api\/social-drafts(\?|$)/.test(url)) payload = [DRAFT];
+      // The editor loads its draft by id. The queue list leaves out a draft
+      // just opened in the editor and not yet edited, so it doesn't list it here.
+      else if (/\/api\/social-drafts\/7$/.test(url)) payload = DRAFT;
+      else if (/\/api\/social-drafts(\?|$)/.test(url)) payload = [];
       else if (/social-settings/.test(url))
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };
       return new Response(JSON.stringify(payload), {

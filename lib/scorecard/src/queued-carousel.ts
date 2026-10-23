@@ -5,7 +5,13 @@
  * (`content` + `visibleFields`): what was approved is what posts. Each slide's
  * render input is derived from that content when the carousel is read, so
  * every reader (queue preview, publish render, junior photo check) still sees
- * `slide.input`. Version 1 payloads are read and rendered unchanged. */
+ * `slide.input`. Version 1 payloads are read and rendered unchanged.
+ *
+ * Version 3 (template library, ADR-011) is version 2 drawn with a template
+ * instead of a pack: `templateRef` names the club template or library version
+ * the set was built from, and the assembled document (one document, its pages
+ * the set's slides need) sits in the draft's `adjustments`. Its slides render
+ * on the blank base (`carouselPackId` answers "blank"). */
 import { contentInput } from "./card-content/render-input";
 import { readCardContent } from "./card-content/validate";
 import { readContentOverride, type ContentOverride } from "./card-content/settings";
@@ -28,14 +34,26 @@ export {
   isLegacyPackId,
   resolveActivePackId,
 } from "./pack-ids";
+/** The base a templated (version 3) carousel's slides render on. */
+export const CAROUSEL_TEMPLATE_BASE = "blank";
 /** Only absence means legacy. Explicit invalid selections must not fall back. */
-export function carouselPackId(carousel: { packId?: unknown }): string {
+export function carouselPackId(carousel: { packId?: unknown; version?: unknown }): string {
+  if (carousel.version === 3) return CAROUSEL_TEMPLATE_BASE;
   if (carousel.packId === undefined) return LEGACY_CAROUSEL_PACK_ID;
   if (!isCarouselPackId(carousel.packId))
     throw new Error("Unknown carousel design pack. Choose a registered built-in pack.");
   return carousel.packId;
 }
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
+/** The card kind whose template draws a carousel set (ADR-011 T3.20). */
+export function carouselTemplateKind(setType: CarouselSetType | undefined): string {
+  return setType === "teamList"
+    ? "teamList"
+    : setType === "results" || setType === "matchSummary"
+      ? "matchSummary"
+      : "matchDay";
+}
+
 export const CAROUSEL_LABELS: Record<CarouselSetType, string> = {
   matchDay: "Match day",
   teamList: "Team lists",
@@ -57,10 +75,25 @@ export interface QueuedCarouselSlide {
   visibleFields?: string[];
   /** Version 2: the photo chosen for the slide (a junior stock image's id authorises it). */
   photoId?: number | null;
+  /**
+   * Version 3 drawn with a set design (carousel set editor plan, part 3): the
+   * set page that draws this slide. Absent: the page of its slot. A slide with
+   * a page and no content is a design page (the club's brand only).
+   */
+  pageId?: string;
+}
+/** The template a version 3 carousel was built from: a club copy or a library version. */
+export interface CarouselTemplateRef {
+  copyId?: number;
+  libraryTemplateId?: number;
+  version: number;
 }
 export interface QueuedCarousel {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
+  /** Versions 1 and 2 only. */
   packId?: string;
+  /** Version 3 only. */
+  templateRef?: CarouselTemplateRef;
   setType?: CarouselSetType;
   submissionId: string;
   size: CarouselSize;
@@ -137,11 +170,34 @@ function readSlideV2(s: unknown): Record<string, unknown> | null {
  * A legacy pack id (`LEGACY_PACK_IDS`) reads as Club Kit; the stored payload is
  * left as saved.
  */
+const positiveInt = (v: unknown): v is number => Number.isSafeInteger(v) && Number(v) > 0;
+
+/** A version 3 carousel's template ref: exactly one of a club copy or a library template. */
+export function readCarouselTemplateRef(ref: unknown): CarouselTemplateRef | null {
+  if (!object(ref) || !positiveInt(ref.version)) return null;
+  const keys = Object.keys(ref);
+  if (keys.some((k) => !["copyId", "libraryTemplateId", "version"].includes(k))) return null;
+  const copy = ref.copyId !== undefined;
+  const library = ref.libraryTemplateId !== undefined;
+  if (copy === library) return null;
+  if (copy && !positiveInt(ref.copyId)) return null;
+  if (library && !positiveInt(ref.libraryTemplateId)) return null;
+  return copy
+    ? { copyId: ref.copyId as number, version: ref.version }
+    : { libraryTemplateId: ref.libraryTemplateId as number, version: ref.version };
+}
+
 export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
   if (!object(input) || !object(input.weekendCarousel)) return null;
   let c = input.weekendCarousel;
   if (isLegacyPackId(c.packId)) c = { ...c, packId: resolveActivePackId(c.packId as string) };
-  if (c.version === 2) {
+  if (c.version === 3) {
+    // A templated set names its template, never a pack.
+    const ref = readCarouselTemplateRef(c.templateRef);
+    if (!ref || c.packId !== undefined) return null;
+    c = { ...c, templateRef: ref };
+  }
+  if (c.version === 2 || c.version === 3) {
     if (!Array.isArray(c.slides) || (c.contentOverride !== undefined && !object(c.contentOverride)))
       return null;
     const slides = c.slides.map(readSlideV2);
@@ -158,19 +214,48 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
       : c.setType === "results" || c.setType === "matchSummary"
         ? "matchSummary"
         : "matchDay";
+  // A templated set (v3) can be rearranged in the set editor (part 3): its
+  // slides in any order, the bookends optional, down to one slide.
+  const arranged = c.version === 3;
   if (
-    (c.version !== 1 && c.version !== 2) ||
+    (c.version !== 1 && c.version !== 2 && c.version !== 3) ||
     typeof c.submissionId !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(c.submissionId) ||
     !["square", "portrait", "story", "landscape"].includes(String(c.size)) ||
     !Array.isArray(c.slides) ||
-    c.slides.length < 3 ||
+    c.slides.length < (arranged ? 1 : 3) ||
     c.slides.length > 20
   )
     return null;
   const ids = new Set<string>();
   for (const [index, s] of c.slides.entries()) {
-    const bookend = index === 0 || index === c.slides.length - 1;
+    const bookend = arranged
+      ? object(s) && object(s.input) && object(s.input.carouselPage)
+      : index === 0 || index === c.slides.length - 1;
+    // A design page (v3): a set page with no data, drawn with the club's brand.
+    if (arranged && object(s) && s.pageId !== undefined) {
+      if (typeof s.pageId !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(s.pageId)) return null;
+      if (s.content === undefined) {
+        if (
+          typeof s.id !== "string" ||
+          !s.id ||
+          ids.has(s.id) ||
+          typeof s.label !== "string" ||
+          !object(s.input) ||
+          typeof s.input.kind !== "string" ||
+          Object.keys(s.input).some((k) => k !== "kind" && k !== "junior") ||
+          !object(s.data) ||
+          Object.keys(s.data).length > 0 ||
+          typeof s.junior !== "boolean" ||
+          s.input.junior !== (s.junior ? true : undefined) ||
+          typeof s.sponsorsOn !== "boolean" ||
+          !Array.isArray(s.warnings)
+        )
+          return null;
+        ids.add(s.id);
+        continue;
+      }
+    }
     if (
       !object(s) ||
       typeof s.id !== "string" ||
@@ -248,10 +333,23 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
   const first = c.slides[0] as QueuedCarouselSlide;
   const last = c.slides[c.slides.length - 1] as QueuedCarouselSlide;
   if (
-    !object(first.input.carouselPage) ||
-    first.input.carouselPage.page !== "title" ||
-    !object(last.input.carouselPage) ||
-    last.input.carouselPage.page !== "sponsors"
+    !arranged &&
+    (!object(first.input.carouselPage) ||
+      first.input.carouselPage.page !== "title" ||
+      !object(last.input.carouselPage) ||
+      last.input.carouselPage.page !== "sponsors")
+  )
+    return null;
+  // A bookend is a title or sponsors page, wherever it sits.
+  if (
+    arranged &&
+    c.slides.some(
+      (s: Record<string, unknown>) =>
+        object(s.input) &&
+        object(s.input.carouselPage) &&
+        s.input.carouselPage.page !== "title" &&
+        s.input.carouselPage.page !== "sponsors",
+    )
   )
     return null;
   return c as unknown as QueuedCarousel;
@@ -282,4 +380,21 @@ function validDaySlide(day: unknown, kind: string): boolean {
 export function queuedSlideAdjustments(slide: QueuedCarouselSlide, size: CarouselSize) {
   const t = slide.data.photoTransform;
   return object(t) ? { photo: { [size]: t } } : null;
+}
+
+/**
+ * The card data a slide draws with. A design page (v3, carousel set editor
+ * plan) stores none: it draws with the set's brand, the first data slide's
+ * payload without its photo or photo placement, so it shows the club and
+ * nothing about a player or match.
+ */
+export function carouselSlideData(
+  carousel: Pick<QueuedCarousel, "slides">,
+  slide: QueuedCarouselSlide,
+): Record<string, unknown> {
+  if (slide.pageId === undefined || Object.keys(slide.data).length > 0) return slide.data;
+  const source = carousel.slides.find((s) => Object.keys(s.data).length > 0);
+  if (!source) return slide.data;
+  const { photoUrl: _photo, photoTransform: _transform, ...brand } = source.data;
+  return brand;
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
@@ -14,7 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import {
-  useListSocialDrafts,
+  useGetSocialDraft,
+  getGetSocialDraftQueryKey,
   getListSocialDraftsQueryKey,
   useUpdateSocialDraft,
   useGetSocialSettings,
@@ -23,8 +24,6 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
-  useListKindTemplates,
-  getListKindTemplatesQueryKey,
   type CardTemplate,
   type CardTheme as ApiCardTheme,
   type SocialSettingsBundle,
@@ -52,9 +51,10 @@ import {
 } from "@/components/studio-editor/content-panels";
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
+import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
-import { SaveTemplateButton } from "@/components/studio-editor/save-template";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import {
   commit,
@@ -119,7 +119,6 @@ import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/li
 import { planTemplateSlides, type LayerDocument } from "@workspace/scorecard/kind-templates";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
-import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { renderablePackId } from "@/lib/pack-templates/registry";
 import { useBrand } from "@/lib/brand-context";
@@ -138,7 +137,7 @@ import {
   draftInput,
   draftStatus,
 } from "@/components/social-queue/draft-meta";
-import { cardBaseFilename, type CardSize } from "@/lib/share-card";
+import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
 
 /** Below this width the editor shows the card with a larger-screen notice. */
 export const EDITOR_MIN_WIDTH = 1024;
@@ -172,19 +171,25 @@ function useViewportWidth(): number {
 export default function AdminStudioEditor() {
   const { id } = useParams<{ id: string }>();
   const draftId = Number(id);
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+  // By id, not from the queue list: the list leaves out a draft just opened
+  // here and not yet edited, which is exactly what Create hands the editor.
+  const draftQ = useGetSocialDraft(draftId, {
+    query: {
+      queryKey: getGetSocialDraftQueryKey(draftId),
+      enabled: Number.isInteger(draftId),
+      retry: false,
+    },
   });
-  const draft = (draftsQ.data ?? []).find((d) => d.id === draftId) ?? null;
+  const draft = draftQ.data ?? null;
 
-  if (draftsQ.isError) {
+  if (draftQ.isError && (draftQ.error as { status?: number } | null)?.status !== 404) {
     return (
       <div className="studio-editor grid min-h-screen place-items-center">
-        <QueryError onRetry={() => draftsQ.refetch()} />
+        <QueryError onRetry={() => draftQ.refetch()} />
       </div>
     );
   }
-  if (draftsQ.isLoading) {
+  if (draftQ.isLoading) {
     return (
       <div className="studio-editor grid min-h-screen place-items-center">
         <LoadingState label="Opening the editor…" />
@@ -205,10 +210,10 @@ function EditorApp({ draftId }: { draftId: number }) {
   const qc = useQueryClient();
   const brand = useBrand();
   const viewport = useViewportWidth();
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+  const draftQ = useGetSocialDraft(draftId, {
+    query: { queryKey: getGetSocialDraftQueryKey(draftId) },
   });
-  const draft = (draftsQ.data ?? []).find((d) => d.id === draftId)!;
+  const draft = draftQ.data!;
   const input = draftInput(draft)!;
 
   const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
@@ -217,10 +222,6 @@ function EditorApp({ draftId }: { draftId: number }) {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
   const theme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
   const templatesQ = useListCardTemplates({ query: { queryKey: getListCardTemplatesQueryKey() } });
-  // Save as template is retired once card kind templates are on (R20).
-  const kindTemplatesOn =
-    useListKindTemplates({ query: { queryKey: getListKindTemplatesQueryKey() } }).data?.enabled ===
-    true;
   // A draft saved with a hidden legacy pack (P9) edits as Club Kit.
   const packId = renderablePackId(
     draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind),
@@ -252,7 +253,12 @@ function EditorApp({ draftId }: { draftId: number }) {
   const rootDoc = history.present;
   const dirty = JSON.stringify(rootDoc) !== savedJson;
 
-  const [format, setFormat] = useState<CardSize>("square");
+  // The size the design was started at (Studio home's Create picker), else square.
+  const search = useSearch();
+  const [format, setFormat] = useState<CardSize>(() => {
+    const asked = new URLSearchParams(search).get("format");
+    return asked && asked in SIZES ? (asked as CardSize) : "square";
+  });
   // Balanced card sets (plan 2026-10-01-001): the slides this card posts as
   // at the current format, and the one being edited.
   // A templated draft is one design on every slide, its list split by the
@@ -278,6 +284,7 @@ function EditorApp({ draftId }: { draftId: number }) {
   const slideInput = slide.input;
   const slideJunior = isJuniorSlide(slide, false);
   const [selection, setSelection] = useState<string[]>([]);
+  const [savingElement, setSavingElement] = useState(false);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>("content");
   const [layersOpen, setLayersOpen] = useState(false);
@@ -308,6 +315,7 @@ function EditorApp({ draftId }: { draftId: number }) {
       onSuccess: () => {
         setSavedJson(JSON.stringify(rootDoc));
         qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draftId) });
       },
     },
   });
@@ -439,10 +447,7 @@ function EditorApp({ draftId }: { draftId: number }) {
       ? { ...data, photoUrl: undefined }
       : data;
   const fieldValues = packFieldValues(slideInput, slideData, packId);
-  // The club's Club Kit palette, for the element library's thumbnails.
-  const elementPalette = clubKitVars(
-    clubKitPaletteFor(resolveCardTokens({ theme, junior: slideJunior, data, packId }), data?.brand),
-  );
+  const cardTokens = resolveCardTokens({ theme, junior: slideJunior, data, packId });
 
   const native = packNativeSize(format);
   const title = draftHeading(draft);
@@ -511,16 +516,6 @@ function EditorApp({ draftId }: { draftId: number }) {
               }}
               baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
             />
-            {!kindTemplatesOn && (
-              <SaveTemplateButton
-                draftId={draftId}
-                beforeSave={() =>
-                  dirty
-                    ? update.mutateAsync({ id: draftId, data: { adjustments: rootDoc } })
-                    : Promise.resolve()
-                }
-              />
-            )}
           </>
         }
       />
@@ -546,12 +541,7 @@ function EditorApp({ draftId }: { draftId: number }) {
             )}
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
             {panel === "elements" && (
-              <ElementsPanel
-                size={format}
-                onAdd={addFreeLayer}
-                paletteVars={elementPalette}
-                crestUrl={(bundle?.brand ?? brand).logoUrl ?? null}
-              />
+              <ElementsPanel size={format} onAdd={addFreeLayer} onAddLayers={addGroup} />
             )}
             {panel === "cricket" && (
               <CricketPanel
@@ -633,12 +623,20 @@ function EditorApp({ draftId }: { draftId: number }) {
               onCopy={copySelection}
               onPaste={pasteClipboard}
               canPaste={canPaste}
+              onSaveElement={() => setSavingElement(true)}
               arrange={{
                 count: unitCount(doc, format, selection, inside),
                 onAlign: (to) => edit(align(doc, format, selection, to, inside)),
                 onDistribute: (axis) => edit(distribute(doc, format, selection, axis, inside)),
                 onMatch: (dim, ref) => edit(matchSize(doc, format, selection, dim, ref, inside)),
               }}
+            />
+            <SaveElementDialog
+              layers={selected}
+              context={elementSaveContext(data, cardTokens)}
+              clubName={data?.brand?.name || "your club"}
+              open={savingElement}
+              onClose={() => setSavingElement(false)}
             />
             {pasteNote && (
               <p role="status" className="mt-2 text-sm text-amber-300">
