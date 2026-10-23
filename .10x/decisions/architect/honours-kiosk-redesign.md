@@ -104,4 +104,6 @@ Every board picks one of six layouts; all share settings, motion and look:
 Derived from central scorecards (senior only, fill-ins excluded): games, runs, centuries,
 five-fors, grade records, partnerships (where fall-of-wicket data exists). Curated: office
 bearers, hat-tricks, pre-scorecard history; curated entries override derived ones.
-Open: column groups for clubs with more grades/roles than fit on one screen.
+Column groups (23 Oct 2026): a season grid with more columns than "columns per screen" (max 5)
+splits into balanced screens (8 at 4 → 4+4; 5 at 4 → 3+2), shown in turn with the board's
+transition; each screen's subtitle names its range ("First to Fourth Grade").

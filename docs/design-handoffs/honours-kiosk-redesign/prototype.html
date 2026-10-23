@@ -229,7 +229,7 @@
   const NAMES = ["J. Whitfield","M. Harrington","D. O'Connell","S. Pemberton","R. Castellano","T. Ashworth","L. Brennan","K. Morrissey","A. Fairbanks","P. Delaney","G. Holloway","C. Rutherford","B. Kingsley","N. Galloway","F. Lindqvist","H. Prendergast","W. Ashby","E. Thornton"];
   const NOTES = ["412 runs · 31 wkts","Captain","38 wkts","506 runs","","Wicketkeeper · 44 dismissals","","29 wkts · 301 runs","Player of the final",""];
   const BOARDS = {
-    champions: { title: "Club Champions", sub: "Awarded to the season's outstanding all-round contributor", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade","Colts"], seasons: 24 },
+    champions: { title: "Club Champions", sub: "Awarded to the season's outstanding all-round contributor", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"], seasons: 24 },
     premierships: { title: "Premierships", sub: "Peel Cricket Association premiership winning sides", cols: ["1","2","3","4","5"], seasons: 9, kind: "prem" },
     life: { title: "Life Members", sub: "Honoured for outstanding service to the club", cols: ["Life Member","Elected for"], seasons: 18, kind: "life" },
     batting: { title: "Batting Records", sub: "Highest individual scores, all grades", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 20 },
@@ -301,7 +301,7 @@
     if (item.type === "board") {
       const b = BOARDS[item.board];
       return { move: o.move ?? L.move, trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, size: o.size ?? L.size, speed: o.speed ?? L.speed,
-        perPage: o.perPage ?? L.perPage, pageSecs: o.pageSecs ?? L.pageSecs, hold: o.hold ?? L.hold, cols: Math.max(1, Math.min(o.cols ?? L.cols, b.cols.length || 1)), top: o.top ?? 20 };
+        perPage: o.perPage ?? L.perPage, pageSecs: o.pageSecs ?? L.pageSecs, hold: o.hold ?? L.hold, cols: Math.max(1, Math.min(o.cols ?? L.cols, b.cols.length || 1, 5)), top: o.top ?? 20 };
     }
     return { trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, secs: o.secs ?? 8, ...o };
   }
@@ -315,7 +315,7 @@
         : b.kind === "list" ? `${b.entries} entries`
         : b.kind === "partner" ? "10 wickets"
         : b.kind === "life" ? `${r.cols} col${r.cols > 1 ? "s" : ""}`
-        : `season + ${r.cols} column${r.cols > 1 ? "s" : ""}`;
+        : groupsFor(item).length > 1 ? `${b.cols.length} columns over ${groupsFor(item).length} screens` : `season + ${Math.min(r.cols, b.cols.length)} column${r.cols > 1 ? "s" : ""}`;
       return `Board · ${lead} · ${MOVES.find((m) => m[0] === r.move)[1].toLowerCase()}`;
     }
     if (item.type === "sponsor") return `Sponsor wall · ${state.sponsors.length} sponsors · ${r.secs}s`;
@@ -433,13 +433,34 @@
     if (b.kind === "partner") return partnerRows(item, from, to);
     return seasonRows(item, from, to);
   }
+  /** The column group each board is showing right now (item id -> { start, n }). */
+  const GROUP = new Map();
+  /**
+   * Splits a season grid's columns into screens of at most `cols` each,
+   * balanced so 5 grades at 4 per screen become 3 + 2, not 4 + 1.
+   */
+  function groupsFor(item) {
+    const b = BOARDS[item.board], r = resolved(item), len = b.cols.length;
+    if (b.kind || len <= r.cols) return [{ start: 0, n: Math.min(r.cols, len || r.cols) }];
+    const count = Math.ceil(len / r.cols), size = Math.ceil(len / count);
+    return Array.from({ length: count }, (_, i) => ({ start: i * size, n: Math.min(size, len - i * size) }));
+  }
+  const groupOf = (item) => GROUP.get(item.id) || groupsFor(item)[0];
+  function groupLabel(b, g, total) {
+    if (total < 2) return "";
+    const first = b.cols[g.start], last = b.cols[g.start + g.n - 1];
+    const strip = (x) => x.replace(/ Grade$/, "");
+    const label = g.n === 1 ? first : / Grade$/.test(first) && / Grade$/.test(last) ? `${strip(first)} to ${last}` : `${first} to ${last}`;
+    return `<span class="tally">${esc(label)}</span>`;
+  }
   function seasonRows(item, from, to) {
     const b = BOARDS[item.board], r = resolved(item);
     let h = "";
     for (let i = from; i < to; i++) {
       const y = 2025 - i;
       let cells = "";
-      for (let c = 0; c < r.cols; c++) {
+      const g = groupOf(item);
+      for (let c = g.start; c < g.start + g.n; c++) {
         const n = NAMES[(i * 3 + c * 5 + b.title.length) % NAMES.length];
         let note = NOTES[(i + c) % NOTES.length];
         if (b.kind === "prem") note = c === 0 ? "" : note;
@@ -455,10 +476,13 @@
     if (b.kind === "prem" || b.kind === "panels") return "<div></div>";
     const t = tableSpec(b);
     if (t) return `<div class="cols-head">${t.head.map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
-    return `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(0, r.cols).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
+    const g = r.group || { start: 0, n: r.cols };
+    return `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(g.start, g.start + g.n).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
   }
   function boardScreen(item, idx, total) {
-    const b = BOARDS[item.board], r = resolved(item);
+    const b = BOARDS[item.board], r = { ...resolved(item) };
+    const groups = groupsFor(item), g = groupOf(item);
+    if (!b.kind) { r.group = g; r.cols = g.n; }
     const el = document.createElement("div");
     el.className = "screen timber";
     const spec = tableSpec(b);
@@ -467,7 +491,7 @@
     el.style.setProperty("--cols", r.cols);
     el.innerHTML = `<div class="board">
       <div class="plate"><div class="crest">HH</div>
-        <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}${b.tally ? ` <span class="tally">${b.entries} ${esc(b.tally)}</span>` : ""}</div></div>
+        <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}${b.tally ? ` <span class="tally">${b.entries} ${esc(b.tally)}</span>` : ""}${b.kind ? "" : groupLabel(b, g, groups.length)}</div></div>
         <div class="dots"></div></div>
       <div class="viewport">${headHtml(b, r)}<div class="rows"></div></div>
       ${state.look.footer ? `<div class="footer"><span>EST. <b>1983</b></span><span>${state.sponsorStrip ? `PROUDLY SUPPORTED BY <b>${esc((state.sponsors[0] || "OUR SPONSORS").toUpperCase())}</b>` : ""}</span><span>${total ? `BOARD <b>${idx + 1}</b> OF <b>${total}</b>` : ""}</span></div>` : ""}
@@ -553,6 +577,23 @@
     const { sig, idx = 0, total = 0, loop = false, enter = true } = opts;
     const r = resolved(item);
     if (item.type === "board") {
+      const groups = groupsFor(item), one = groups.length === 1;
+      for (let gi = 0; ; ) {
+        GROUP.set(item.id, groups[gi]);
+        await playBoardScreen(tv, item, { sig, idx, total, loop: one && loop, enter: gi === 0 ? enter : true });
+        if (sig.aborted || one) return;
+        gi++;
+        if (gi >= groups.length) { if (!loop) return; gi = 0; }
+      }
+    }
+    return playOther(tv, item, opts);
+  }
+
+  /** One screen of a board (one column group), with its movement. */
+  async function playBoardScreen(tv, item, opts) {
+    const { sig, idx = 0, total = 0, loop = false, enter = true } = opts;
+    const r = resolved(item);
+    {
       const b = BOARDS[item.board];
       const screen = boardScreen(item, idx, total);
       await swap(tv, screen, enter ? pickTrans(r.trans) : "cut", r.dur);
@@ -600,6 +641,11 @@
       }
       return;
     }
+  }
+
+  async function playOther(tv, item, opts) {
+    const { sig, loop = false, enter = true } = opts;
+    const r = resolved(item);
     if (item.type === "photos") {
       let n = 0;
       await swap(tv, photoScreen(item, n), enter ? pickTrans(r.trans) : "cut", r.dur);
@@ -653,13 +699,13 @@
   function boardFields(item, target) {
     const r = target === "look" ? state.look : resolved(item);
     const b = item ? BOARDS[item.board] : null;
-    const maxCols = b ? b.cols.length : 5;
+    const maxCols = b ? Math.min(5, b.cols.length) : 5;
     const colOpts = Array.from({ length: maxCols }, (_, i) => [i + 1, String(i + 1)]);
     const f = (label, key, html) => `<div class="f"><span class="lbl">${label}</span>${html}${inheritNote(item, key)}</div>`;
     return `<div class="fields">
       ${b && b.kind === "leader" ? f("Show top", "top", seg("top", [[10,"10"],[20,"20"],[50,"50"]], r.top))
         : b && tableSpec(b) ? ""
-        : f(b && b.kind === "prem" ? "Plaques across" : b && b.kind === "panels" ? "Grades per row" : b && b.kind === "life" ? "Columns" : b && b.cols[0] === "President" ? "Role columns" : "Grade columns", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
+        : f(b && b.kind === "prem" ? "Plaques across" : b && b.kind === "panels" ? "Grades per row" : b && b.kind === "life" ? "Columns" : b && b.cols[0] === "President" ? "Role columns per screen" : "Grade columns per screen", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
       ${f("Long boards", "move", seg("move", MOVES, r.move))}
       ${f("Transition", "trans", `<select data-field="trans">${TRANS.map(([v, l]) => `<option value="${v}" ${v === r.trans ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
       ${f("Transition length", "dur", seg("dur", DURS, r.dur))}
