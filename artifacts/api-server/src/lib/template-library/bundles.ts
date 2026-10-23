@@ -13,6 +13,7 @@
  * Bundle-owned rows are read-only to the console (its "Edit" makes a console
  * duplicate), so this sync never overwrites a designer's work.
  */
+import { createHash } from "node:crypto";
 import { and, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import {
   db,
@@ -20,8 +21,20 @@ import {
   libraryTemplateVersionsTable,
   templateLooksTable,
 } from "@workspace/db";
-import { kindFields, templateDocumentErrors } from "@workspace/scorecard/kind-templates";
-import { TEMPLATE_BUNDLES, type TemplateBundle } from "@workspace/template-bundles";
+import {
+  assembleSetDocument,
+  kindFields,
+  setTemplateKind,
+  setTypeOfKind,
+  SET_TYPE_LABELS,
+  templateDocumentErrors,
+  type DataSetType,
+} from "@workspace/scorecard/kind-templates";
+import {
+  TEMPLATE_BUNDLES,
+  type BundleTemplate,
+  type TemplateBundle,
+} from "@workspace/template-bundles";
 import { logger } from "../logger";
 import { libraryAssetPolicyErrors } from "./assets";
 import { documentCoverage } from "./coverage";
@@ -43,7 +56,8 @@ function bundleTemplateProblem(
   kind: string,
   file: TemplateBundle["templates"][number]["file"],
 ): string | null {
-  if (!kindFields(kind)) return `"${kind}" isn't a card kind templates support`;
+  if (!kindFields(kind) && !setTypeOfKind(kind))
+    return `"${kind}" isn't a card kind templates support`;
   if (!Number.isInteger(file.version) || file.version < 1)
     return "version must be a whole number from 1";
   if (typeof file.name !== "string" || !file.name.trim()) return "the template needs a name";
@@ -52,6 +66,58 @@ function bundleTemplateProblem(
     ...libraryAssetPolicyErrors(file.document),
   ];
   return errors.length > 0 ? errors.slice(0, 3).join(" ") : null;
+}
+
+/** The data sets every look gets a set template for (part 1). */
+export const BUNDLE_SET_TYPES: readonly DataSetType[] = [
+  "teamLists",
+  "matchDay",
+  "results",
+  "matchSummary",
+];
+
+/**
+ * Bump to re-version every assembled set template (a change to how sets are
+ * assembled from the same kind bundles).
+ */
+export const SET_ASSEMBLY_REVISION = 1;
+
+/**
+ * A look's set templates (carousel set editor plan, part 1), assembled from
+ * its kind bundles. Nothing new is committed: a set is exactly its kinds'
+ * pages. Its version is the sum of the versions it is made of plus the
+ * assembly revision, so raising any part's version (or the revision) raises
+ * the set's; its hash is over the parts' hashes. Every set asks to be listed
+ * and shows in the library once it passes its own fit check, as any template
+ * does (a part unlisted as a single card, like the starters' Team List, is
+ * still a fine set page).
+ */
+export function bundleSetTemplates(bundle: TemplateBundle): BundleTemplate[] {
+  const byKind = new Map(bundle.templates.map((t) => [t.kind, t]));
+  const out: BundleTemplate[] = [];
+  for (const type of BUNDLE_SET_TYPES) {
+    const used = new Set<string>();
+    const built = assembleSetDocument(type, (kind) => {
+      const t = byKind.get(kind);
+      return t?.file.document;
+    });
+    if (!built) continue;
+    for (const source of built.sources) used.add(source.split(".")[0]!);
+    const parts = [...used].sort().map((k) => byKind.get(k)!);
+    out.push({
+      kind: setTemplateKind(type),
+      hash: createHash("sha256")
+        .update(`set:${SET_ASSEMBLY_REVISION}:` + parts.map((p) => `${p.kind}=${p.hash}`).join(","))
+        .digest("hex"),
+      file: {
+        name: `${bundle.look.name} ${SET_TYPE_LABELS[type].toLowerCase()} set`,
+        version: SET_ASSEMBLY_REVISION + parts.reduce((n, p) => n + p.file.version, 0),
+        listed: true,
+        document: built.document,
+      },
+    });
+  }
+  return out;
 }
 
 export async function syncBundles(
@@ -96,7 +162,7 @@ export async function syncBundles(
     }
     summary.looks += 1;
 
-    for (const t of bundle.templates) {
+    for (const t of [...bundle.templates, ...bundleSetTemplates(bundle)]) {
       const slug = `${bundle.slug}/${t.kind}`;
       seen.push(slug);
       const problem = bundleTemplateProblem(t.kind, t.file);

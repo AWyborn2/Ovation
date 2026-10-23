@@ -8,7 +8,7 @@
  * `edited_at`, after which the copy is standalone. Using a template, setting
  * a default or adopting a look never counts as an edit.
  */
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, notLike, sql } from "drizzle-orm";
 import {
   db,
   cardTemplatesTable,
@@ -21,7 +21,12 @@ import {
   type TemplateFitReportColumn,
   type TemplateFitStatus,
 } from "@workspace/db";
-import { isDocumentV2, templateDocumentErrors } from "@workspace/scorecard/kind-templates";
+import {
+  isDocumentV2,
+  SET_KIND_PREFIX,
+  setTypeOfKind,
+  templateDocumentErrors,
+} from "@workspace/scorecard/kind-templates";
 import {
   applyTemplateToDrafts,
   isTemplateKind,
@@ -157,7 +162,10 @@ function present(
   return view;
 }
 
-/** A tenant's copies, defaults first within each kind. */
+/**
+ * A tenant's copies, defaults first within each kind. Set templates
+ * (`set:<type>`) list only when asked for by kind, as the library's do.
+ */
 export async function listClubTemplates(
   tenantId: number,
   kind?: string,
@@ -165,7 +173,14 @@ export async function listClubTemplates(
   const rows = await db
     .select()
     .from(cardTemplatesTable)
-    .where(and(kindRows(tenantId), kind ? eq(cardTemplatesTable.baseKind, kind) : undefined))
+    .where(
+      and(
+        kindRows(tenantId),
+        kind
+          ? eq(cardTemplatesTable.baseKind, kind)
+          : notLike(cardTemplatesTable.baseKind, `${SET_KIND_PREFIX}%`),
+      ),
+    )
     .orderBy(
       asc(cardTemplatesTable.baseKind),
       sql`${cardTemplatesTable.isKindDefault} desc`,
@@ -325,7 +340,7 @@ const pendingDefault = () =>
 
 /** Check a document a club saves: the v1 rules as today, or the format's own rules for v2. */
 function validateCopyDocument(document: unknown, kind: string): unknown {
-  if (!isDocumentV2(document)) return validateDocument(document, kind);
+  if (!isDocumentV2(document) && !setTypeOfKind(kind)) return validateDocument(document, kind);
   const problems = templateDocumentErrors(document, kind);
   if (problems.length > 0) {
     throw new TemplateLibraryError(400, { error: problems[0], problems: problems.slice(0, 20) });

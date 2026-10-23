@@ -30,6 +30,7 @@ import {
   emptySizes,
   isRetiredPack,
   kindFields,
+  setTypeOfKind,
   lazyDefaultSlugs,
   lookTemplateSlug,
   starterLookForPack,
@@ -61,9 +62,9 @@ export class KindTemplateError extends Error {
   }
 }
 
-/** Whether a kind is one templates support. */
+/** Whether a kind is one templates support: a card kind, or a set's (`set:<type>`). */
 export function isTemplateKind(kind: string): boolean {
-  return kindFields(kind) !== null;
+  return kindFields(kind) !== null || setTypeOfKind(kind) !== null;
 }
 
 /** Unposted drafts of a kind, per kind, for one tenant. */

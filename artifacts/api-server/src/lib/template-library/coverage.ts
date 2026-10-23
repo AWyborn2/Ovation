@@ -7,7 +7,9 @@
  */
 import {
   documentPages,
+  isSetDocument,
   normaliseDocument,
+  setTypeOfKind,
   sizesWithLayers,
   TEMPLATE_SIZE_ORDER,
   type PageKey,
@@ -17,6 +19,19 @@ import {
 export type TemplateCoverage = { pages: PageKey[]; sizes: TemplateSize[] };
 
 export function documentCoverage(document: unknown, kind: string): TemplateCoverage {
+  // A set (carousel set editor plan): the kind pages its pages draw, and the
+  // sizes every one of its pages designs.
+  if (setTypeOfKind(kind)) {
+    if (!isSetDocument(document)) return { pages: [], sizes: [] };
+    const pages = document.pages.filter((p) => Array.isArray(p.layers) && p.layers.length > 0);
+    if (pages.length === 0) return { pages: [], sizes: [] };
+    return {
+      pages: [...new Set(pages.map((p) => p.page))],
+      sizes: TEMPLATE_SIZE_ORDER.filter((size) =>
+        pages.every((p) => sizesWithLayers({ layers: p.layers }).includes(size)),
+      ),
+    };
+  }
   const doc = normaliseDocument(document, kind);
   const pages = documentPages(doc).filter((page) => (doc.pages[page]?.layers.length ?? 0) > 0);
   if (pages.length === 0) return { pages: [], sizes: [] };

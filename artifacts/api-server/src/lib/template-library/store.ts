@@ -8,7 +8,8 @@
  * open an unlisted template it already holds a copy of (to see its credit and,
  * from L6, an update).
  */
-import { and, asc, eq, gt, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, ilike, inArray, notLike, or, sql, type SQL } from "drizzle-orm";
+import { SET_KIND_PREFIX } from "@workspace/scorecard/kind-templates";
 import {
   db,
   cardTemplatesTable,
@@ -125,7 +126,10 @@ export async function listLibraryTemplates(
   q: LibraryListQuery,
 ): Promise<{ templates: LibraryTemplateView[]; nextCursor: number | null }> {
   const where: SQL[] = [visible()];
+  // Set templates (`set:<type>`) list only when asked for by kind: the library's
+  // card browser shows card kinds, the set picker asks for its set type.
   if (q.kind) where.push(eq(libraryTemplatesTable.kind, q.kind));
+  else where.push(notLike(libraryTemplatesTable.kind, `${SET_KIND_PREFIX}%`));
   if (q.size) where.push(sql`${libraryTemplateVersionsTable.coverage}->'sizes' ? ${q.size}`);
   if (q.look) where.push(eq(templateLooksTable.slug, q.look));
   for (const word of (q.q ?? "").toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6)) {
@@ -267,8 +271,9 @@ export async function listLibraryLooks(): Promise<LibraryLookView[]> {
       name: look.name,
       description: look.description,
       authorName: look.authorName ?? OVATION_AUTHOR,
+      // A look's card templates; its set templates open from the set picker.
       templates: templates
-        .filter((t) => t.lookId === look.id)
+        .filter((t) => t.lookId === look.id && !t.kind.startsWith(SET_KIND_PREFIX))
         .map((t) => ({
           id: t.id,
           kind: t.kind,

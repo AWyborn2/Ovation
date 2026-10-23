@@ -55,6 +55,50 @@ const rowsFor = async (slug: string) => {
   return { template: t, versions };
 };
 
+describe("set templates from a look's bundles (carousel set editor plan)", () => {
+  const look = `${LOOK}-sets`;
+  const parts = (teamListVersion: number) => [
+    fixtureTemplate("matchDay", {
+      version: 2,
+      document: v2Document("matchDay", ["title", "sponsors"]),
+    }),
+    fixtureTemplate("teamList", { version: teamListVersion, document: v2Document("teamList") }),
+  ];
+
+  it("syncs each set the look can make, versioned by its parts", async () => {
+    const s = await syncBundles([fixtureBundle(look, parts(1))]);
+    expect(s.skipped).toEqual([]);
+    const team = await rowsFor(`${look}/set:teamLists`);
+    expect(team.template?.kind).toBe("set:teamLists");
+    // Revision 1 + matchDay 2 + teamList 1.
+    expect(team.template?.currentVersion).toBe(4);
+    expect(team.versions[0]!.coverage.pages).toEqual(["title", "team", "sponsors"]);
+    expect((await rowsFor(`${look}/set:matchDay`)).template?.currentVersion).toBe(3);
+    // No results set: the look has no Match Summary.
+    expect((await rowsFor(`${look}/set:results`)).template).toBeUndefined();
+
+    // A part's new version is a new version of every set made of it.
+    const again = await syncBundles([fixtureBundle(look, parts(2))]);
+    expect(again.skipped).toEqual([]);
+    expect((await rowsFor(`${look}/set:teamLists`)).template?.currentVersion).toBe(5);
+    expect((await rowsFor(`${look}/set:matchDay`)).versions).toHaveLength(1);
+  });
+
+  it("lists sets only when asked for by kind", async () => {
+    const all = await listLibraryTemplates({ look });
+    expect(all.templates.map((t) => t.kind).sort()).toEqual(["matchDay", "teamList"]);
+    const sets = await listLibraryTemplates({ look, kind: "set:teamLists" });
+    expect(sets.templates.map((t) => t.kind)).toEqual(["set:teamLists"]);
+    const looks = await listLibraryLooks();
+    expect(
+      looks
+        .find((l) => l.slug === look)
+        ?.templates.map((t) => t.kind)
+        .sort(),
+    ).toEqual(["matchDay", "teamList"]);
+  });
+});
+
 describe("syncBundles", () => {
   it("loads looks and templates, and a second (or parallel) boot changes nothing", async () => {
     const bundles = [

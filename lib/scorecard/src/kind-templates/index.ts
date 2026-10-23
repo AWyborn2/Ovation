@@ -19,3 +19,4 @@ export * from "./warnings";
 export * from "./validate";
 export * from "./worst-case";
 export * from "./worst-case-names";
+export * from "./set-document";
