@@ -15,6 +15,7 @@ import {
   fixturesTable,
   socialSettingsTable,
   socialDraftsTable,
+  cardTemplatesTable,
   captionTemplatesTable,
   type FixtureRow,
 } from "@workspace/db";
@@ -83,6 +84,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+  await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
   await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, tenantId));
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));

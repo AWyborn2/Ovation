@@ -362,89 +362,103 @@
     {
       "idx": 51,
       "version": "7",
-      "when": 1792467199632,
-      "tag": "0051_card_name_overrides",
-      "breakpoints": true
-    },
-    {
-      "idx": 52,
-      "version": "7",
-      "when": 1792474763002,
-      "tag": "0052_card_content_settings",
-      "breakpoints": true
-    },
-    {
-      "idx": 53,
-      "version": "7",
-      "when": 1792478707687,
+      "when": 1792465777969,
       "tag": "0053_email_lists",
-      "breakpoints": true
-    },
-    {
-      "idx": 54,
-      "version": "7",
-      "when": 1792482920757,
-      "tag": "0054_photo_usage",
-      "breakpoints": true
-    },
-    {
-      "idx": 55,
-      "version": "7",
-      "when": 1792483889790,
-      "tag": "0055_sponsors_page",
       "breakpoints": true
     },
     {
       "idx": 56,
       "version": "7",
-      "when": 1792483949790,
+      "when": 1792465777970,
       "tag": "0056_social_email_lists",
       "breakpoints": true
     },
     {
       "idx": 57,
       "version": "7",
-      "when": 1792554718867,
-      "tag": "0057_email_send_batches",
+      "when": 1792467199632,
+      "tag": "0051_card_name_overrides",
       "breakpoints": true
     },
     {
       "idx": 58,
+      "version": "7",
+      "when": 1792474763002,
+      "tag": "0052_card_content_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792482920757,
+      "tag": "0054_photo_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792483889790,
+      "tag": "0055_sponsors_page",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792555900290,
+      "tag": "0061_team_name_all_grades_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792557638982,
+      "tag": "0057_email_send_batches",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
       "version": "7",
       "when": 1792562203058,
       "tag": "0058_card_crest_and_junior_names",
       "breakpoints": true
     },
     {
-      "idx": 59,
+      "idx": 64,
+      "version": "7",
+      "when": 1792567924904,
+      "tag": "0064_preserve_email_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
       "version": "7",
       "when": 1792712966670,
       "tag": "0059_selection_playhq_anytime",
       "breakpoints": true
     },
     {
-      "idx": 60,
+      "idx": 66,
       "version": "7",
       "when": 1792727503531,
       "tag": "0060_junior_photo_library",
       "breakpoints": true
     },
     {
-      "idx": 61,
+      "idx": 67,
       "version": "7",
       "when": 1792727504531,
       "tag": "0061_template_library",
       "breakpoints": true
     },
     {
-      "idx": 62,
+      "idx": 68,
       "version": "7",
       "when": 1792727505531,
       "tag": "0062_card_templates_tenant_cascade",
       "breakpoints": true
     },
     {
-      "idx": 63,
+      "idx": 69,
       "version": "7",
       "when": 1792727506531,
       "tag": "0063_library_elements",

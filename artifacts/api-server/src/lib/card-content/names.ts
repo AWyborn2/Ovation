@@ -188,11 +188,16 @@ export async function setTeamNameOverride(
     .insert(teamNameOverridesTable)
     .values({ tenantId, centralClubId, gradeKey: grade, shortName: name })
     .onConflictDoUpdate({
-      target: [
-        teamNameOverridesTable.tenantId,
-        teamNameOverridesTable.centralClubId,
-        teamNameOverridesTable.gradeKey,
-      ],
+      // Target the portable partial unique index for all-grades overrides.
+      // Publish may introspect the three-column constraint as ordinary UNIQUE.
+      target: grade === null
+        ? [teamNameOverridesTable.tenantId, teamNameOverridesTable.centralClubId]
+        : [
+            teamNameOverridesTable.tenantId,
+            teamNameOverridesTable.centralClubId,
+            teamNameOverridesTable.gradeKey,
+          ],
+      targetWhere: grade === null ? isNull(teamNameOverridesTable.gradeKey) : undefined,
       set: { shortName: name, updatedAt: sql`now()` },
     });
 }

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "team_name_overrides_all_grades_unique" ON "team_name_overrides" USING btree ("tenant_id","central_club_id") WHERE "team_name_overrides"."grade_key" IS NULL;

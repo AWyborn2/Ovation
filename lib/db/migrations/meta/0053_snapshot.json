@@ -1,6 +1,6 @@
 {
   "id": "89efd7cc-e9d8-4235-a00e-67eccf913d31",
-  "prevId": "50f239a2-eaf4-4def-9b57-64de42d3b8d7",
+  "prevId": "e1de8322-82f7-4cf2-bd47-e2d6a311e704",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5224,19 +5224,6 @@
         "posting_schedule": {
           "name": "posting_schedule",
           "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "card_content": {
-          "name": "card_content",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{\"matchDay\":{\"preset\":\"standard\",\"fields\":{},\"juniorConsolidateByDay\":true}}'::jsonb"
-        },
-        "livestream_url": {
-          "name": "livestream_url",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -14560,165 +14547,6 @@
           "value": "\"category\" IN ('men', 'female')"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.competition_label_overrides": {
-      "name": "competition_label_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "grade_key": {
-          "name": "grade_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "competition_label_overrides_tenant_id_tenants_id_fk": {
-          "name": "competition_label_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "competition_label_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "competition_label_overrides_tenant_grade_unique": {
-          "name": "competition_label_overrides_tenant_grade_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "grade_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.team_name_overrides": {
-      "name": "team_name_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "central_club_id": {
-          "name": "central_club_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "grade_key": {
-          "name": "grade_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "short_name": {
-          "name": "short_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "team_name_overrides_tenant_idx": {
-          "name": "team_name_overrides_tenant_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "team_name_overrides_tenant_id_tenants_id_fk": {
-          "name": "team_name_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "team_name_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "team_name_overrides_tenant_club_grade_unique": {
-          "name": "team_name_overrides_tenant_club_grade_unique",
-          "nullsNotDistinct": true,
-          "columns": [
-            "tenant_id",
-            "central_club_id",
-            "grade_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.email_list_members": {

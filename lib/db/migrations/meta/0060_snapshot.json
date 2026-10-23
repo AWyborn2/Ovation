@@ -1,6 +1,6 @@
 {
-  "id": "48767a91-ad7f-4895-bc10-b97fb3d22574",
-  "prevId": "2b281ddc-74ff-4f0b-9d9b-2e911596707f",
+  "id": "196ffdc2-2545-4e91-8cb3-598ec631381d",
+  "prevId": "b82220a3-2f54-4b33-afd1-29522f3bd1a5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5800,18 +5800,6 @@
           "notNull": true,
           "default": "'admin'"
         },
-        "playhq_players": {
-          "name": "playhq_players",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "playhq_seen_at": {
-          "name": "playhq_seen_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -8820,114 +8808,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.junior_photo_participants": {
-      "name": "junior_photo_participants",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "photo_id": {
-          "name": "photo_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "participant_id": {
-          "name": "participant_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "junior_photo_participants_photo_participant_unique": {
-          "name": "junior_photo_participants_photo_participant_unique",
-          "columns": [
-            {
-              "expression": "photo_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "participant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "junior_photo_participants_tenant_participant_idx": {
-          "name": "junior_photo_participants_tenant_participant_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "participant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "junior_photo_participants_tenant_id_tenants_id_fk": {
-          "name": "junior_photo_participants_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_photo_participants",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "junior_photo_participants_photo_id_junior_photos_id_fk": {
-          "name": "junior_photo_participants_photo_id_junior_photos_id_fk",
-          "tableFrom": "junior_photo_participants",
-          "tableTo": "junior_photos",
-          "columnsFrom": [
-            "photo_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.junior_photos": {
       "name": "junior_photos",
       "schema": "",
@@ -8949,7 +8829,7 @@
           "name": "participant_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "object_path": {
           "name": "object_path",
@@ -8981,37 +8861,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "season": {
-          "name": "season",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "grade": {
-          "name": "grade",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "photo_types": {
-          "name": "photo_types",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
-        },
-        "match_format": {
-          "name": "match_format",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "taken_at": {
-          "name": "taken_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_by": {
           "name": "created_by",
@@ -9048,27 +8897,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "junior_photos_tenant_created_idx": {
-          "name": "junior_photos_tenant_created_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -9089,16 +8917,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "junior_photos_photo_types_check": {
-          "name": "junior_photos_photo_types_check",
-          "value": "\"photo_types\" <@ ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']::text[]"
-        },
-        "junior_photos_match_format_check": {
-          "name": "junior_photos_match_format_check",
-          "value": "\"match_format\" IS NULL OR \"match_format\" = ANY (ARRAY['one_day', 't20', 'two_day']::text[])"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.junior_premiership_players": {
@@ -9367,18 +9186,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'admin'"
-        },
-        "playhq_players": {
-          "name": "playhq_players",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "playhq_seen_at": {
-          "name": "playhq_seen_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -9880,24 +9687,6 @@
         "playhq_junior_org_id": {
           "name": "playhq_junior_org_id",
           "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "playhq_fetch_requested_at": {
-          "name": "playhq_fetch_requested_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "playhq_fetch_requested_by": {
-          "name": "playhq_fetch_requested_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "playhq_fetch_completed_at": {
-          "name": "playhq_fetch_completed_at",
-          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -14872,80 +14661,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.team_crest_overrides": {
-      "name": "team_crest_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "central_club_id": {
-          "name": "central_club_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "crest_source": {
-          "name": "crest_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "crest_url": {
-          "name": "crest_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "team_crest_overrides_tenant_id_tenants_id_fk": {
-          "name": "team_crest_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "team_crest_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "team_crest_overrides_tenant_club_unique": {
-          "name": "team_crest_overrides_tenant_club_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "central_club_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.team_name_overrides": {
       "name": "team_name_overrides",
       "schema": "",
@@ -15030,216 +14745,6 @@
             "tenant_id",
             "central_club_id",
             "grade_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.junior_competition_label_overrides": {
-      "name": "junior_competition_label_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "grade_key": {
-          "name": "grade_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "junior_competition_label_overrides_tenant_id_tenants_id_fk": {
-          "name": "junior_competition_label_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_competition_label_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "junior_competition_label_overrides_tenant_grade_unique": {
-          "name": "junior_competition_label_overrides_tenant_grade_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "grade_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.junior_team_crest_overrides": {
-      "name": "junior_team_crest_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "team_key": {
-          "name": "team_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "crest_source": {
-          "name": "crest_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "crest_url": {
-          "name": "crest_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "junior_team_crest_overrides_tenant_id_tenants_id_fk": {
-          "name": "junior_team_crest_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_team_crest_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "junior_team_crest_overrides_tenant_team_unique": {
-          "name": "junior_team_crest_overrides_tenant_team_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "team_key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.junior_team_name_overrides": {
-      "name": "junior_team_name_overrides",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "team_key": {
-          "name": "team_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "short_name": {
-          "name": "short_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "junior_team_name_overrides_tenant_id_tenants_id_fk": {
-          "name": "junior_team_name_overrides_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_team_name_overrides",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "junior_team_name_overrides_tenant_team_unique": {
-          "name": "junior_team_name_overrides_tenant_team_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "tenant_id",
-            "team_key"
           ]
         }
       },
@@ -15563,7 +15068,7 @@
           "name": "list_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "kind": {
           "name": "kind",

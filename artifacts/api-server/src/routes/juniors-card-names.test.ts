@@ -12,6 +12,7 @@ import {
   type FixtureRow,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
+import { centralCardClubs } from "@workspace/db/central-queries";
 import { cardNameKey, resolveCardTeamName } from "@workspace/scorecard/card-names";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
@@ -40,8 +41,12 @@ describe("junior card names", () => {
   let t3: number;
   let cookie2: string;
   let cookie3: string;
+  let centralClubName: string;
 
   beforeAll(async () => {
+    const [club] = await centralCardClubs([MANDURAH]);
+    if (!club?.name) throw new Error("Junior card names fixture club is missing");
+    centralClubName = club.name;
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-junior-names";
     const tenants = await db
       .insert(tenantsTable)
@@ -214,7 +219,7 @@ describe("junior card names", () => {
 
     // The senior map and the settings bundle carry no junior name.
     const senior = await loadCardNames(t2);
-    expect(senior.teams?.[cardNameKey("Mandurah Cricket Club")]).toBe("Senior Mandurah");
+    expect(senior.teams?.[cardNameKey(centralClubName)]).toBe("Senior Mandurah");
     expect(JSON.stringify(senior)).not.toContain("Junior Mandurah");
     expect(JSON.stringify(senior)).not.toContain(UPLOAD);
     const bundle = await as(t2, null).get("/api/social-settings").expect(200);
@@ -225,7 +230,7 @@ describe("junior card names", () => {
       id,
       tenantId: t2,
       grade,
-      opponentName: "Mandurah Cricket Club",
+      opponentName: id > 0 ? centralClubName : "Mandurah Cricket Club",
       opponentClubId: null,
       opponentLogoUrl: "https://img.test/register.png",
       startAt: new Date("2026-11-07T01:30:00Z"),

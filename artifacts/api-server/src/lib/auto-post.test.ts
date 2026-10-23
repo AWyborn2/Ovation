@@ -4,7 +4,7 @@
  * integration test (needs DATABASE_URL); email goes through a stub transport,
  * to the club's social email list (one "card ready" email per card).
  */
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import request from "supertest";
 import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -24,7 +24,14 @@ import { upsertDraftByKey } from "./draft-upsert";
 import { effectiveDraftStatus } from "./effective-draft-state";
 import { runDraftSweep } from "./draft-sweep";
 import { setEmailTransport, type EmailMessage } from "./integrations/email";
-import { settleOutbox } from "./email-outbox";
+import { setCardPngRenderer, settleOutbox } from "./email-outbox";
+
+// Deadline/email tests use legacy pack drafts, not template layout checks or
+// Chromium. Their behaviour must not depend on the workspace's template rollout.
+vi.mock("./kind-templates", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  templatedDesignFor: async () => null,
+}));
 
 const STAMP = Date.now();
 const log = { error: () => {}, warn: () => {}, info: () => {} };
@@ -99,7 +106,7 @@ beforeAll(async () => {
     autoPostWindowHours: 12,
     notificationEmail: "studio@club.example",
   });
-  // What migration 0056 makes of the notification address.
+  // What migration 0053 makes of the notification address.
   process.env.EMAIL_FROM ??= "club@example.com";
   const [list] = await db
     .insert(emailListsTable)
@@ -117,6 +124,7 @@ beforeAll(async () => {
   setEmailTransport(async (m) => {
     sent.push(m);
   });
+  setCardPngRenderer(async () => [Buffer.from("test-png")]);
 });
 
 afterEach(() => {
@@ -124,6 +132,8 @@ afterEach(() => {
 });
 
 afterAll(async () => {
+  await settleOutbox();
+  setCardPngRenderer(null);
   setEmailTransport(null);
   await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantId));
   await db.delete(emailListsTable).where(eq(emailListsTable.tenantId, tenantId));

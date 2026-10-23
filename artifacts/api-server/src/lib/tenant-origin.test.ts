@@ -75,6 +75,7 @@ describe("clubLink", () => {
       `https://origin-${stamp}.ovationcc.app/admin/selection`,
     );
     delete process.env.PLATFORM_BASE_DOMAIN;
+    delete process.env.PLATFORM_HOSTS;
     expect(await clubLink(plain, "/admin/selection", "https://ovationcc.app")).toBe(
       "https://ovationcc.app/admin/selection",
     );

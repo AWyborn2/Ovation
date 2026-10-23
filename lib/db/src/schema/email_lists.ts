@@ -114,7 +114,8 @@ export const emailSendsTable = pgTable(
     tenantId: tenantIdColumn(),
     // NULL for a batch ("team_sheet_batch": Email all, scheduled), which spans
     // lists and is sent per recipient group, each sheet set in one PDF.
-    listId: integer("list_id").references(() => emailListsTable.id, { onDelete: "cascade" }),
+    // Also NULL after list deletion: retain counts/status, not recipient contacts.
+    listId: integer("list_id").references(() => emailListsTable.id, { onDelete: "set null" }),
     // "team_sheet" (PR1); social kinds follow in PR2.
     kind: text("kind").notNull(),
     subjectType: text("subject_type").notNull(),

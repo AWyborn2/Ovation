@@ -706,7 +706,7 @@ async function reapplyMerges(
     await tx.execute(sql`
       update ${sql.raw(table)} t set player_name = p.display_name
       from junior_participants p
-      where p.tenant_id = ${tenantId} and p.participant_id = t.participant_id
+      where p.tenant_id = ${tenantId} and lower(p.participant_id) = lower(t.participant_id)
         and p.display_name is not null and t.is_halls_head and t.match_id = ${matchId}
         and t.player_name is distinct from p.display_name`);
 }

@@ -183,7 +183,6 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
                 lastName: squadMembersTable.lastName,
                 preferredName: squadMembersTable.preferredName,
                 isPrivate: squadMembersTable.isPrivate,
-                section: squadMembersTable.section,
                 linkedPlayerId: squadMembersTable.linkedPlayerId,
               })
               .from(squadMembersTable)
@@ -200,7 +199,10 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
             ]);
             for (const key of keys) {
               owners.set(key, (owners.get(key) ?? 0) + 1);
-              if (m.isPrivate || m.section !== "senior" || (m.linkedPlayerId ?? 0) >= 90000)
+              // A public junior can also play in a senior side and have an
+              // allocated senior number. The register queried above (not the
+              // roster section) determines which number this card may display.
+              if (m.isPrivate || (m.linkedPlayerId ?? 0) >= 90000)
                 blocked.add(key);
             }
           }

@@ -1,4 +1,4 @@
-import { and, eq, type SQL } from "drizzle-orm";
+import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   db,
@@ -34,7 +34,7 @@ export function juniorParticipantJoin(
   tenant: number | AnyPgColumn,
 ): SQL {
   return and(
-    eq(juniorParticipantsTable.participantId, participantIdColumn),
+    sql`lower(${juniorParticipantsTable.participantId}) = lower(${participantIdColumn})`,
     eq(juniorParticipantsTable.tenantId, tenant),
   ) as SQL;
 }
