@@ -118,6 +118,8 @@ export function AdminSocialGroup() {
         fixtures: <AdminFixtures />,
         juniors: <AdminJuniorSocial />,
         queue: <AdminSocialQueue />,
+        // The same lists page as Selection Hub → Email lists: social lists live there too.
+        "email-lists": <AdminEmailLists />,
         library: <AdminPhotoLibrary />,
       }}
     />

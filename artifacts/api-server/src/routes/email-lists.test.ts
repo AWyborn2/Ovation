@@ -429,10 +429,18 @@ describe("social lists (PR2)", () => {
     });
     const id = await addDraft("norender");
     await as(tenant, cookie).post(`/api/social-drafts/${id}/approve`).expect(200);
-    await drainOutbox({ tenantId: tenant });
+    // The link goes to the club's own app (slug.<apex>), never the render origin.
+    process.env.PLATFORM_BASE_DOMAIN = "ovation.test";
+    try {
+      await drainOutbox({ tenantId: tenant });
+    } finally {
+      delete process.env.PLATFORM_BASE_DOMAIN;
+    }
     expect(sent).toHaveLength(1);
     expect(sent[0].attachments ?? []).toEqual([]);
-    expect(sent[0].text).toContain(`/admin/social/queue?ids=${id}`);
+    expect(sent[0].text).toContain(
+      `https://email-lists-${stamp}.ovation.test/admin/social/queue?ids=${id}`,
+    );
     const row = (await socialSends()).find((r) => r.subjectId === id);
     expect(row?.status).toBe("sent");
     expect(row?.lastError).toContain("harness unreachable");

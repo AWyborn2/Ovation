@@ -109,6 +109,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       },
       { value: "queue", label: "Queue", path: "/admin/social/queue", feature: "socialStudio" },
       {
+        value: "email-lists",
+        label: "Email lists",
+        path: "/admin/social/email-lists",
+        feature: "socialStudio",
+      },
+      {
         value: "library",
         label: "Photo library",
         path: "/admin/social/library",

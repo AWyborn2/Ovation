@@ -9,6 +9,7 @@ import {
   getGetMetaConnectionQueryKey,
   type SocialSettings,
 } from "@workspace/api-client-react";
+import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { SaveBar, SettingsCard, SettingsRow } from "@/components/admin-ui";
@@ -176,8 +177,17 @@ export function AutoPostCard({ settings }: { settings: SocialSettings | undefine
           </SettingsRow>
         )}
         <SettingsRow
-          label="Notification email"
-          helper="Leave empty for in-app notifications only"
+          label="Admin notices email"
+          helper={
+            <>
+              Selection and PlayHQ sync notices. Leave empty for in-app only. Cards to post are
+              emailed to your{" "}
+              <Link href="/admin/social/email-lists" className="underline">
+                social email lists
+              </Link>
+              .
+            </>
+          }
           htmlFor="auto-post-email"
         >
           <Input

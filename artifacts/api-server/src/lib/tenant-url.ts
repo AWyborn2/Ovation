@@ -3,12 +3,11 @@ import type { TenantRow } from "@workspace/db";
 import { env } from "../config";
 
 /**
- * The platform's registrable apex domain, used to build tenant subdomain URLs
- * (e.g. `mandurah.ovation.app`). Prefers the explicit `PLATFORM_BASE_DOMAIN`, then
- * the first `PLATFORM_HOSTS` entry (minus a leading `www.`), then falls back to
- * dropping the left-most label of the request host.
+ * The apex domain from configuration alone (`PLATFORM_BASE_DOMAIN`, else the
+ * first `PLATFORM_HOSTS` entry minus `www.`), or null when neither is set. For
+ * links built with no request to read a host from (background emails).
  */
-export function platformBaseDomain(req: Request): string {
+export function configuredBaseDomain(): string | null {
   const explicit = env.PLATFORM_BASE_DOMAIN()?.trim().toLowerCase();
   if (explicit) return explicit;
   const fromHosts = (env.PLATFORM_HOSTS() ?? "")
@@ -16,7 +15,18 @@ export function platformBaseDomain(req: Request): string {
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean)
     .map((h) => h.replace(/^www\./, ""))[0];
-  if (fromHosts) return fromHosts;
+  return fromHosts || null;
+}
+
+/**
+ * The platform's registrable apex domain, used to build tenant subdomain URLs
+ * (e.g. `mandurah.ovation.app`). Prefers the explicit `PLATFORM_BASE_DOMAIN`, then
+ * the first `PLATFORM_HOSTS` entry (minus a leading `www.`), then falls back to
+ * dropping the left-most label of the request host.
+ */
+export function platformBaseDomain(req: Request): string {
+  const configured = configuredBaseDomain();
+  if (configured) return configured;
   const host = (req.headers.host ?? "").split(":")[0]?.toLowerCase() ?? "";
   const parts = host.split(".");
   return parts.length > 2 ? parts.slice(1).join(".") : host;

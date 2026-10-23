@@ -1025,7 +1025,8 @@ describe("messageMember / notifyStaff (DB)", () => {
       {
         to: "committee@example.com",
         subject: "Draft sides are ready",
-        text: "3 grades have draft sides.\n\n/admin/selection",
+        // The link is on the club's own app (slug.<PLATFORM_BASE_DOMAIN>), so it works in an email.
+        text: `3 grades have draft sides.\n\nhttps://${slug}.ovation.test/admin/selection`,
       },
     ]);
   });
