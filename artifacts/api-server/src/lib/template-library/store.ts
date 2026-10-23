@@ -8,7 +8,7 @@
  * open an unlisted template it already holds a copy of (to see its credit and,
  * from L6, an update).
  */
-import { and, asc, eq, gt, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import {
   db,
   cardTemplatesTable,
@@ -104,11 +104,15 @@ function present(row: ViewRow): LibraryTemplateView {
   };
 }
 
+const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
 /** Listed, and its current version passed the fit check: what clubs see. */
 const visible = (): SQL =>
   and(eq(libraryTemplatesTable.listed, true), eq(libraryTemplateVersionsTable.fitStatus, "pass"))!;
 
 export type LibraryListQuery = {
+  /** Words that must each appear in the name, the kind or the look's name. */
+  q?: string;
   kind?: string;
   size?: string;
   /** A look's slug. */
@@ -124,6 +128,16 @@ export async function listLibraryTemplates(
   if (q.kind) where.push(eq(libraryTemplatesTable.kind, q.kind));
   if (q.size) where.push(sql`${libraryTemplateVersionsTable.coverage}->'sizes' ? ${q.size}`);
   if (q.look) where.push(eq(templateLooksTable.slug, q.look));
+  for (const word of (q.q ?? "").toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6)) {
+    const pattern = `%${likeEscape(word)}%`;
+    where.push(
+      or(
+        ilike(libraryTemplatesTable.name, pattern),
+        ilike(libraryTemplatesTable.kind, pattern),
+        ilike(templateLooksTable.name, pattern),
+      )!,
+    );
+  }
   if (q.cursor !== undefined) where.push(gt(libraryTemplatesTable.id, q.cursor));
   const rows = await viewQuery()
     .where(and(...where))

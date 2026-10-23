@@ -5545,6 +5545,8 @@ export interface CardSet {
   season?: number | null;
   /** @nullable */
   grade?: string | null;
+  /** When the set was last saved. */
+  updatedAt?: string;
 }
 
 export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeof GenerateCardSetBodyKind];
@@ -11973,6 +11975,11 @@ grade?: string;
 };
 
 export type ListLibraryTemplatesParams = {
+/**
+ * Words that must each appear in the template's name, its kind or its look's name.
+ * @maxLength 60
+ */
+q?: string;
 kind?: string;
 size?: ListLibraryTemplatesSize;
 /**

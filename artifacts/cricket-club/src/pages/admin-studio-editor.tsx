@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
@@ -136,7 +136,7 @@ import {
   draftInput,
   draftStatus,
 } from "@/components/social-queue/draft-meta";
-import { cardBaseFilename, type CardSize } from "@/lib/share-card";
+import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
 
 /** Below this width the editor shows the card with a larger-screen notice. */
 export const EDITOR_MIN_WIDTH = 1024;
@@ -246,7 +246,12 @@ function EditorApp({ draftId }: { draftId: number }) {
   const rootDoc = history.present;
   const dirty = JSON.stringify(rootDoc) !== savedJson;
 
-  const [format, setFormat] = useState<CardSize>("square");
+  // The size the design was started at (Studio home's Create picker), else square.
+  const search = useSearch();
+  const [format, setFormat] = useState<CardSize>(() => {
+    const asked = new URLSearchParams(search).get("format");
+    return asked && asked in SIZES ? (asked as CardSize) : "square";
+  });
   // Balanced card sets (plan 2026-10-01-001): the slides this card posts as
   // at the current format, and the one being edited.
   // A templated draft is one design on every slide, its list split by the
