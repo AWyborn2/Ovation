@@ -250,6 +250,12 @@ decision table (M1–M13), is `docs/plans/2026-10-23-ovation-match-graphics-plan
 
 Decisions from each slice's PR are added below as they land.
 
+- **G3 (#503):** families come from the bundle files, with no migration (M14).
+- **G4 (converter and bundles):** the looks are captured with real text (M15). Broadcast keeps
+  its result bar on landscape, and Panel's header carries the competition (M16). Family looks have
+  no carousel sets (M17). Match graphics content makes a draft v2 (M18). The fidelity table and
+  the side-by-side shots are in the plan.
+
 ## Waiting on Ash
 
 - Sign-off on each of the seven looks (Club Kit, Broadcast Dark, Duotone, Gold Foil, Bold Type, Neon Night, Sunset). Each one's `report.md` says "pending Ash sign-off"
