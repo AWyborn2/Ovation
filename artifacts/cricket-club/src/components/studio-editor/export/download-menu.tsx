@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { downloadBlob, SIZES } from "@/lib/share-card";
+import { SIZES } from "@/lib/share-card";
+import { saveFile } from "@/lib/save-files";
 import { cn } from "@/lib/utils";
 import {
   DOWNLOAD_FORMATS,
@@ -52,7 +53,8 @@ export function DownloadMenu({ card, baseName }: { card: CardRender; baseName: s
     abort.current = ctrl;
     try {
       const blob = await renderDownload(card, format, scale, setProgress, ctrl.signal);
-      downloadBlob(blob, downloadFilename(baseName, card.size, format, scale));
+      // To Photos on a phone or tablet; a plain download on a desktop.
+      await saveFile(blob, downloadFilename(baseName, card.size, format, scale));
     } catch (e) {
       if ((e as { name?: string }).name !== "AbortError") {
         setError(e instanceof Error ? e.message : "Download failed");

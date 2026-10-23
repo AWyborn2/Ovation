@@ -11,6 +11,7 @@ import { useSetEditor } from "./use-set-editor";
 import { Filmstrip } from "./filmstrip";
 import { SlideDesignPanel } from "./slide-design-panel";
 import { SlideSourcePicker } from "./sources";
+import { saveLabel } from "@/lib/save-files";
 
 /** Editor for one carousel set (plan.md §5.6 split of admin-social-sets). */
 export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
@@ -97,7 +98,7 @@ export function SetEditor({ id, onBack }: { id: number; onBack: () => void }) {
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
-            Export set (zip)
+            {saveLabel("Export set (zip)", "Save set to Photos")}
           </Button>
         </div>
       </div>

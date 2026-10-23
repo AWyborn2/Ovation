@@ -1,5 +1,4 @@
 import { useState } from "react";
-import JSZip from "jszip";
 import {
   useCreateCardRenderStill,
   type SocialSettingsBundle,
@@ -8,13 +7,13 @@ import {
 import {
   SIZES,
   renderShareCard,
-  downloadBlob,
   cardBaseFilename,
   type CardSize,
   type PhotoTransform,
   type RenderOptions,
 } from "@/lib/share-card";
 import { renderShareCardVideo, renderShareCardGif } from "@/lib/share-card-animation";
+import { isShareDevice, saveFile, saveFiles, toFile } from "@/lib/save-files";
 import type { PackCardData } from "@/lib/pack-render";
 import { isJuniorSlide } from "@/lib/card-sets/plan";
 import type { LayerDocument } from "@workspace/scorecard/kind-templates";
@@ -132,17 +131,15 @@ export function useCardExport({
       const name = `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}`;
       if (isPackCard) {
         const slides = await renderPackSlides(size);
-        if (slides.length > 1) {
-          // A card set downloads as one zip of numbered slides.
-          const zip = new JSZip();
-          for (const s of slides) zip.file(`${name}${s.suffix}.png`, s.blob);
-          downloadBlob(await zip.generateAsync({ type: "blob" }), `${name}-slides.zip`);
-        } else {
-          downloadBlob(slides[0].blob, `${name}.png`);
-        }
+        // A card set saves as numbered slides: separate images on a phone or
+        // tablet, one zip on a desktop.
+        await saveFiles(
+          slides.map((s) => toFile(s.blob, `${name}${s.suffix}.png`)),
+          { zipName: `${name}-slides.zip` },
+        );
       } else {
         const blob = await renderShareCard(input, buildOpts(size, photoTransform));
-        downloadBlob(blob, `${name}.png`);
+        await saveFile(blob, `${name}.png`);
       }
     } catch (e) {
       console.error("Card download failed", e);
@@ -158,7 +155,7 @@ export function useCardExport({
     setExportError(null);
     const skipped: string[] = [];
     try {
-      const zip = new JSZip();
+      const files: File[] = [];
       const base = cardBaseFilename(input, bundle?.brand);
       // Still posters render fast, so do them serially. A single size's render
       // failure shouldn't abort the whole zip (matches the video/GIF blocks
@@ -168,11 +165,11 @@ export function useCardExport({
           // Pack cards render server-side (PNG); BYO templates use the canvas.
           if (isPackCard) {
             for (const s of await renderPackSlides(size)) {
-              zip.file(`${base}-${SIZES[size].code}${s.suffix}.png`, s.blob);
+              files.push(toFile(s.blob, `${base}-${SIZES[size].code}${s.suffix}.png`));
             }
           } else {
             const blob = await renderShareCard(input, buildOpts(size, photoTransform));
-            zip.file(`${base}-${SIZES[size].code}.png`, blob);
+            files.push(toFile(blob, `${base}-${SIZES[size].code}.png`));
           }
         } catch (e) {
           console.error(`Card PNG export failed for size ${size}`, e);
@@ -199,7 +196,7 @@ export function useCardExport({
           ),
         );
         for (const r of results) {
-          if (r) zip.file(`${base}-${SIZES[r.size].code}.${r.ext}`, r.blob);
+          if (r) files.push(toFile(r.blob, `${base}-${SIZES[r.size].code}.${r.ext}`));
         }
       }
       // Admins additionally get a looping GIF per size (heavier, so admin-only).
@@ -216,19 +213,23 @@ export function useCardExport({
           ),
         );
         for (const r of gifs) {
-          if (r) zip.file(`${base}-${SIZES[r.size].code}.${r.ext}`, r.blob);
+          if (r) files.push(toFile(r.blob, `${base}-${SIZES[r.size].code}.${r.ext}`));
         }
       }
-      if (bundle?.settings.captionsEnabled) {
+      // Caption text files go in the desktop zip only: Photos can't hold them,
+      // and the captions stay in the dialog to copy.
+      if (bundle?.settings.captionsEnabled && !isShareDevice()) {
         for (const p of PLATFORMS) {
           const caption = captionDrafts[p.value];
-          if (caption) zip.file(`caption-${p.value}.txt`, caption);
+          if (caption)
+            files.push(
+              toFile(new Blob([caption], { type: "text/plain" }), `caption-${p.value}.txt`),
+            );
         }
       }
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      downloadBlob(zipBlob, `${cardBaseFilename(input, bundle?.brand)}-all.zip`);
+      await saveFiles(files, { zipName: `${base}-all.zip` });
       if (skipped.length > 0) {
-        setExportError(`Zip downloaded, but skipped: ${skipped.join(", ")}`);
+        setExportError(`Saved, but skipped: ${skipped.join(", ")}`);
       }
     } catch (e) {
       console.error("Card zip export failed", e);

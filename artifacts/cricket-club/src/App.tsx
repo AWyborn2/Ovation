@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
+import { SaveFilesDialog } from "@/components/save-files-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { Layout } from "@/components/layout";
@@ -406,6 +407,7 @@ function App() {
                 <Router />
               </WouterRouter>
               <Toaster />
+              <SaveFilesDialog />
             </ConfirmProvider>
           </TooltipProvider>
         </BrandProvider>
