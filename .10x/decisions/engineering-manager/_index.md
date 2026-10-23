@@ -10,3 +10,4 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - [selection-side-size](selection-side-size.md) — PR A foundation (migration 0049, shape helper), then PR B size + PR C overseas in parallel, then PR D cards/public; ~15 hd (planned 20 Oct 2026)
 - [match-day-carousel-content](match-day-carousel-content.md) — P0 preview fix + P1 names now (parallel), P2 content contract foundation, then P3–P6 in parallel (≤2), P7 other kinds, P8 new pack, P9 retire packs; ~36 hd; migrations 0050–0053 (planned 20 Oct 2026)
 - [selection-hub-redesign](selection-hub-redesign.md) — 2 sequential PRs (layout T1.1–T1.7, interaction T2.1–T2.7), client only, no migration (Planning complete 21 Oct 2026)
+- [honours-kiosk-redesign](honours-kiosk-redesign.md) — kiosk redesign + photo slideshows on integration branch `wyborn21/kiosk-redesign` (milestones A–D, single merge); junior photo library as a parallel stream to main (planned 23 Oct 2026)

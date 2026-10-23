@@ -1,5 +1,24 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** Senior Engineer / SDE
+**Feature:** honours-kiosk-redesign (+ kiosk-photo-rotation)
+
+## Context
+
+- Plan: `.10x/decisions/engineering-manager/honours-kiosk-redesign.md`. Design:
+  `.10x/decisions/architect/honours-kiosk-redesign.md`. Approved behaviour:
+  `docs/design-handoffs/honours-kiosk-redesign/prototype.html` (open it; it is the spec for motion,
+  layouts, settings and column groups).
+- Cut integration branch `wyborn21/kiosk-redesign` from `main`. Slice PRs target it and merge on
+  green. Never merge it to `main` until Ash approves the finished branch.
+- Start with A0 (local kiosk harness) then A1 to A4. Test on the real TV at Milestone A.
+- Parallel stream: junior photo library on its own branch to `main` (separate session).
+
+## Handoff History
+
+### Previous (Architect to Staff/EM, honours-kiosk-redesign)
+
 **From:** Principal Architect
 **To:** Staff Engineer / Engineering Manager
 **Feature:** kiosk-photo-rotation
@@ -18,8 +37,6 @@
 - Integration points: `honour_display_settings`, `routes/honour-display.ts`,
   `lib/honour-display/assemble.ts`, `lib/junior-photos.ts`, `routes/juniors-photos.ts`,
   `lib/api-spec/openapi.yaml` (spec first), production migration SQL by hand.
-
-## Handoff History
 
 ### Previous (PM → Architect, kiosk-photo-rotation)
 
