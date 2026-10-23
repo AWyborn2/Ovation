@@ -228,6 +228,27 @@ Copied from the "Decisions for Ash" section of each merged stream PR (#461–#48
 3. **The trading card's 96.2% match** is the lowest. The difference is its photo's edge treatment, and it's an editable starting point, not a fixed render.
 4. **The 4 duplicates go uncredited to Club Kit**: they stay in Club Kit Classic, where the extraction found them first.
 
+## Ovation Match Graphics: decisions (23 Oct 2026)
+
+Bringing Ash's Ovation Match Graphics design system into the Studio. The plan, with the full
+decision table (M1–M13), is `docs/plans/2026-10-23-ovation-match-graphics-plan.md`. In short:
+
+- **M2:** the layers come from rendering the real React components and converting the DOM
+  with the pack converter's walker and mapping. They aren't hand-written.
+- **M3, M4:** seven template looks (one per style), grouped by a new look `family`
+  (migration 0063). The 51 layer components become elements credited to their style's look.
+  The Elements panel shows the family as one "Ovation Match Graphics" entry, with a heading per
+  style.
+- **M5–M8:** a new `match` palette (`--mt-*`) carries both teams', the winner's and the loser's
+  colours and their shades, so every club gets its own colours. Ovation has no association
+  branding, so the competition slots use the club's own colours and crest.
+- **M9:** Match Summary gains innings-ordered scores, venue, competition, and batting, bowling
+  and paired rows, bound from the match.
+- **M10, M11:** new `italic` and `stretch` text styles for the scoreboards and T20. Landscape
+  is drawn at 90% on the 1200×630 card. Story isn't designed.
+
+Decisions from each slice's PR are added below as they land.
+
 ## Waiting on Ash
 
 - Sign-off on each of the seven looks (Club Kit, Broadcast Dark, Duotone, Gold Foil, Bold Type, Neon Night, Sunset). Each one's `report.md` says "pending Ash sign-off"
