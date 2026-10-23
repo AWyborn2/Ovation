@@ -88,3 +88,20 @@ grade, ground, date, every player who played (captain marked "(C)" after the nam
 and the result line (e.g. "Halls Head 4/191 def Rockingham 185"). Setting "Plaques across"
 (1-5); paging/scrolling moves whole rows of plaques. Data source: premierships honour board +
 the grand final scorecard (central match + rosters) for ground, date, XI and result.
+
+## Board layout types (Ash, 23 Oct 2026)
+
+Every board picks one of six layouts; all share settings, motion and look:
+
+- **Season grid** (season + columns): Club Champions, awards, Office Bearers (role columns).
+- **Leaderboard** (rank, player, total, seasons; "Show top" 10/20/50): Most games, Most runs.
+- **Achievement list** (season, player, figures, grade, opponent; tally chip): Centuries,
+  Five-wicket hauls, Hat-tricks.
+- **Record panels** (one panel per grade, N per row): Grade records.
+- **Records table** (wicket, runs, partners, season, opponent): Partnership records.
+- **Plaques**: Premierships.
+
+Derived from central scorecards (senior only, fill-ins excluded): games, runs, centuries,
+five-fors, grade records, partnerships (where fall-of-wicket data exists). Curated: office
+bearers, hat-tricks, pre-scorecard history; curated entries override derived ones.
+Open: column groups for clubs with more grades/roles than fit on one screen.

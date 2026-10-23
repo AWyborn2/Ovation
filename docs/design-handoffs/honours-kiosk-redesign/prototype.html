@@ -127,6 +127,18 @@
   .nm { font: 600 calc(1.6cqw * var(--ts)) Cormorant Garamond, serif; color: var(--engrave); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nm small { display: block; font: italic 500 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; color: rgba(240,223,180,.65); }
   .fit .row { padding: .15cqw 0; }
+  .tbl .cols-head, .t-row { grid-template-columns: var(--tmpl); }
+  .rk { font: 700 calc(1.4cqw * var(--ts)) Cinzel, serif; color: var(--gold); }
+  .fig { font: 700 calc(1.6cqw * var(--ts)) Cinzel, serif; color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+  .nm.sm { font-size: calc(1.3cqw * var(--ts)); color: rgba(240,223,180,.8); }
+  .tally { display: inline-block; margin-left: .8cqw; padding: .1cqw .9cqw; border: 1px solid var(--gold-lo); border-radius: 99px; font: 600 1cqw Cinzel, serif; font-style: normal; color: var(--gold-hi); letter-spacing: .08em; text-transform: uppercase; vertical-align: middle; }
+  .plaque.rec { text-align: left; min-height: 0; }
+  .plaque.rec .pq-grade { text-align: center; margin-bottom: .6cqw; }
+  .rec-list { margin: 0; display: grid; gap: .5cqw; border-top: 1px solid rgba(216,178,94,.35); padding-top: .6cqw; }
+  .rec-list div { display: grid; grid-template-columns: 1fr; }
+  .rec-list dt { font: 600 calc(.75cqw * var(--ts)) Cinzel, serif; color: var(--gold); letter-spacing: .06em; }
+  .rec-list dd { margin: 0; font: 600 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rec-list dd b { font: 700 calc(1.05cqw * var(--ts)) Cinzel, serif; color: var(--gold-hi); margin-right: .3cqw; }
   .pq-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.8cqw; align-items: stretch; border-bottom: 0; padding: .6cqw .4cqw 1.4cqw; }
   .plaque { display: flex; flex-direction: column; min-height: calc(33cqw * var(--ts)); text-align: center; padding: calc(1.2cqw * var(--ts)) 1cqw calc(1.1cqw * var(--ts)); color: var(--engrave); font-family: Cinzel, serif; text-transform: uppercase;
     background: linear-gradient(180deg, rgba(216,178,94,.10), rgba(216,178,94,.03)); border: 1px solid var(--gold); outline: 1px solid rgba(216,178,94,.45); outline-offset: .35cqw;
@@ -223,7 +235,16 @@
     batting: { title: "Batting Records", sub: "Highest individual scores, all grades", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 20 },
     bowling: { title: "Bowling Awards", sub: "Leading wicket-taker each season", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 22 },
     fielding: { title: "Fielding Awards", sub: "Best fielder each season", cols: ["First Grade","Second Grade","Third Grade"], seasons: 15 },
+    office: { title: "Office Bearers", sub: "The committee that ran the club each season", cols: ["President","Vice President","Secretary","Treasurer","Registrar"], seasons: 20, layout: "Season grid" },
+    games: { title: "Most Games", sub: "Senior games played for the club, all grades", kind: "leader", stat: "Games", layout: "Leaderboard", entries: 50 },
+    runs: { title: "Most Runs", sub: "Senior career runs for the club, all grades", kind: "leader", stat: "Runs", layout: "Leaderboard", entries: 50 },
+    centuries: { title: "Centuries", sub: "Every century scored for the club", kind: "list", fig: "Score", layout: "Achievement list", entries: 47, tally: "Centuries" },
+    fivewkts: { title: "Five Wicket Hauls", sub: "Five or more wickets in an innings", kind: "list", fig: "Figures", layout: "Achievement list", entries: 63, tally: "Five-wicket hauls" },
+    hattricks: { title: "Hat-tricks", sub: "Three wickets in three balls", kind: "list", fig: "Figures", layout: "Achievement list", entries: 4, tally: "Hat-tricks" },
+    records: { title: "Grade Records", sub: "Best individual and team performances in each grade", kind: "panels", cols: ["1","2","3","4","5"], layout: "Record panels", grades: ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"] },
+    partnerships: { title: "Partnership Records", sub: "Highest partnership for each wicket · First Grade", kind: "partner", layout: "Records table", entries: 10 },
   };
+  for (const b of Object.values(BOARDS)) { b.layout ??= b.kind === "prem" ? "Plaques" : b.kind === "life" ? "Season grid" : "Season grid"; b.cols ??= []; }
   const BOARD_LABEL = (id) => BOARDS[id].title;
   const PHOTO_SETS = { folder: "Folder: Clubroom TV", tags: "Tags: Premiership, Team", recent: "Recent: last 21 days", picked: "Hand-picked (8)", all: "Whole library, random" };
   const PHOTO_CAPS = ["Grand final day, 2025/26","First Grade celebrate the flag","Colts debut, Round 4","Presentation night","Season opener at home","Twilight T20 under lights","Under 13s squad photo","Club captain's century"];
@@ -246,7 +267,12 @@
       { id: id(), type: "board", board: "champions", o: {} },
       { id: id(), type: "sponsor", o: { secs: 10, perRow: 3 } },
       { id: id(), type: "photos", o: { source: "recent", count: 6, secs: 5, trans: "fade", captions: true } },
-      { id: id(), type: "board", board: "batting", o: { size: 1.18 } },
+      { id: id(), type: "board", board: "office", o: {} },
+      { id: id(), type: "board", board: "runs", o: { move: "credits", top: 20 } },
+      { id: id(), type: "board", board: "centuries", o: { move: "credits" } },
+      { id: id(), type: "board", board: "hattricks", o: { move: "fit" } },
+      { id: id(), type: "board", board: "records", o: { cols: 4 } },
+      { id: id(), type: "board", board: "partnerships", o: { move: "fit" } },
       { id: id(), type: "ad", o: { secs: 8, name: "Membership drive" } },
     ],
   });
@@ -275,7 +301,7 @@
     if (item.type === "board") {
       const b = BOARDS[item.board];
       return { move: o.move ?? L.move, trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, size: o.size ?? L.size, speed: o.speed ?? L.speed,
-        perPage: o.perPage ?? L.perPage, pageSecs: o.pageSecs ?? L.pageSecs, hold: o.hold ?? L.hold, cols: Math.min(o.cols ?? L.cols, b.cols.length) };
+        perPage: o.perPage ?? L.perPage, pageSecs: o.pageSecs ?? L.pageSecs, hold: o.hold ?? L.hold, cols: Math.max(1, Math.min(o.cols ?? L.cols, b.cols.length || 1)), top: o.top ?? 20 };
     }
     return { trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, secs: o.secs ?? 8, ...o };
   }
@@ -283,7 +309,13 @@
     const r = resolved(item);
     if (item.type === "board") {
       const b = BOARDS[item.board];
-      const lead = b.kind === "prem" ? `${r.cols} plaque${r.cols > 1 ? "s" : ""} across` : b.kind ? `${r.cols} col${r.cols > 1 ? "s" : ""}` : `season + ${r.cols} grade${r.cols > 1 ? "s" : ""}`;
+      const lead = b.kind === "prem" ? `${r.cols} plaque${r.cols > 1 ? "s" : ""} across`
+        : b.kind === "panels" ? `${r.cols} grade${r.cols > 1 ? "s" : ""} per row`
+        : b.kind === "leader" ? `top ${r.top}`
+        : b.kind === "list" ? `${b.entries} entries`
+        : b.kind === "partner" ? "10 wickets"
+        : b.kind === "life" ? `${r.cols} col${r.cols > 1 ? "s" : ""}`
+        : `season + ${r.cols} column${r.cols > 1 ? "s" : ""}`;
       return `Board · ${lead} · ${MOVES.find((m) => m[0] === r.move)[1].toLowerCase()}`;
     }
     if (item.type === "sponsor") return `Sponsor wall · ${state.sponsors.length} sponsors · ${r.secs}s`;
@@ -317,8 +349,67 @@
       <div class="pq-mom">${p.mom ? `Man of the match · ${esc(p.mom)}` : ""}</div>
       <div class="pq-result">${p.result.map(esc).join("<br>")}</div></article>`;
   }
-  /** Units that page, scroll and reveal: season rows, or rows of plaques. */
-  function rowCount(item) { const b = BOARDS[item.board]; return b.kind === "prem" ? Math.ceil(b.seasons / resolved(item).cols) : b.seasons; }
+  const OPP = ["Rockingham","Mandurah","Pinjarra","Baldivis","Waroona","Lakelands","Port Kennedy","Secret Harbour"];
+  const GRADES8 = ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"];
+  const season = (y) => `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+  const fullName = (i) => NAMES[i % NAMES.length].replace(/^(\w)\. /, (m, a) => ["Shane ","Jeff ","Ian ","Paul ","Peter ","Mark ","Ashley ","Wayne ","Jamie ","Roger ","Luke "][(i * 7) % 11]);
+  /** Column layout + headings for table-style boards. */
+  function tableSpec(b) {
+    if (b.kind === "leader") return { tmpl: "5cqw minmax(0,2.4fr) 8cqw minmax(0,1fr)", head: ["#", "Player", b.stat, "Seasons"] };
+    if (b.kind === "list") return { tmpl: "var(--season-w) minmax(0,2fr) 7cqw minmax(0,1fr) minmax(0,1.3fr)", head: ["Season", "Player", b.fig, "Grade", "Opponent"] };
+    if (b.kind === "partner") return { tmpl: "6cqw 6cqw minmax(0,3fr) var(--season-w) minmax(0,1.4fr)", head: ["Wkt", "Runs", "Partners", "Season", "Opponent"] };
+    return null;
+  }
+  function leaderRows(item, from, to) {
+    const b = BOARDS[item.board];
+    let h = "", val = b.stat === "Runs" ? 9840 : 312;
+    for (let i = 0; i < to; i++) {
+      val -= b.stat === "Runs" ? 140 + ((i * 53) % 220) : 4 + ((i * 7) % 9);
+      if (i < from) continue;
+      const first = 1984 + ((i * 5) % 25), last = Math.min(2025, first + 8 + ((i * 3) % 14));
+      h += `<div class="row t-row"><span class="rk">${i + 1}</span><span class="nm">${esc(fullName(i * 3 + 1))}</span><span class="fig">${val.toLocaleString("en-AU")}</span><span class="nm sm">${first}–${String(last).slice(2)}</span></div>`;
+    }
+    return h;
+  }
+  function listRows(item, from, to) {
+    const b = BOARDS[item.board];
+    let h = "";
+    for (let i = from; i < to; i++) {
+      const y = 2025 - Math.floor(i * (b.entries > 10 ? 0.6 : 7));
+      let fig = b.title === "Centuries" ? `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}` : b.title === "Hat-tricks" ? `${4 + (i % 3)}/${18 + ((i * 11) % 30)}` : `${5 + (i % 3 === 2 ? 1 : 0) + (i % 7 === 3 ? 2 : 0)}/${14 + ((i * 13) % 50)}`;
+      h += `<div class="row t-row"><span class="yr">${season(y)}</span><span class="nm">${esc(fullName(i * 5 + 2))}</span><span class="fig">${fig}</span><span class="nm sm">${GRADES8[(i * 3) % 6]}</span><span class="nm sm">v ${OPP[i % OPP.length]}</span></div>`;
+    }
+    return h;
+  }
+  function partnerRows(item, from, to) {
+    const runs = [212, 187, 176, 158, 149, 133, 121, 98, 87, 74];
+    let h = "";
+    for (let i = from; i < to; i++) {
+      h += `<div class="row t-row"><span class="rk">${["1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th"][i]}</span><span class="fig">${runs[i]}${i % 3 === 0 ? "*" : ""}</span><span class="nm">${esc(fullName(i * 2))} &amp; ${esc(fullName(i * 2 + 5))}</span><span class="yr">${season(2024 - i * 3)}</span><span class="nm sm">v ${OPP[i % OPP.length]}</span></div>`;
+    }
+    return h;
+  }
+  function recordPanel(g, k) {
+    const lines = [
+      ["Highest score", `${148 + ((k * 23) % 80)}${k % 2 ? "*" : ""}`, fullName(k * 3)],
+      ["Best bowling", `${7 + (k % 3)}/${12 + ((k * 7) % 30)}`, fullName(k * 3 + 4)],
+      ["Most runs, season", `${640 + ((k * 61) % 300)}`, fullName(k * 3 + 7)],
+      ["Most wickets, season", `${38 + ((k * 5) % 20)}`, fullName(k * 3 + 9)],
+      ["Highest team total", `${310 + ((k * 29) % 120)}/${3 + (k % 6)}`, `v ${OPP[k % OPP.length]}`],
+      ["Lowest team total", `${31 + ((k * 13) % 40)}`, `v ${OPP[(k + 3) % OPP.length]}`],
+    ];
+    return `<article class="plaque rec"><div class="pq-grade">${esc(g)}</div>
+      <dl class="rec-list">${lines.map(([a, v, who]) => `<div><dt>${a}</dt><dd><b>${v}</b> ${esc(who)}</dd></div>`).join("")}</dl></article>`;
+  }
+  /** Units that page, scroll and reveal: season rows, table rows, or rows of plaques/panels. */
+  function rowCount(item) {
+    const b = BOARDS[item.board], r = resolved(item);
+    if (b.kind === "prem") return Math.ceil(b.seasons / r.cols);
+    if (b.kind === "panels") return Math.ceil(b.grades.length / r.cols);
+    if (b.kind === "leader") return Math.min(r.top, b.entries);
+    if (b.kind === "list" || b.kind === "partner") return b.entries;
+    return b.seasons;
+  }
   function boardRows(item, from, to) {
     if (BOARDS[item.board].kind === "prem") {
       const b = BOARDS[item.board], per = resolved(item).cols;
@@ -330,6 +421,16 @@
       }
       return h;
     }
+    const b = BOARDS[item.board];
+    if (b.kind === "panels") {
+      const per = resolved(item).cols;
+      let h = "";
+      for (let rI = from; rI < to; rI++) h += `<div class="row pq-row">${b.grades.slice(rI * per, (rI + 1) * per).map((g, j) => recordPanel(g, rI * per + j)).join("")}</div>`;
+      return h;
+    }
+    if (b.kind === "leader") return leaderRows(item, from, to);
+    if (b.kind === "list") return listRows(item, from, to);
+    if (b.kind === "partner") return partnerRows(item, from, to);
     return seasonRows(item, from, to);
   }
   function seasonRows(item, from, to) {
@@ -342,6 +443,7 @@
         const n = NAMES[(i * 3 + c * 5 + b.title.length) % NAMES.length];
         let note = NOTES[(i + c) % NOTES.length];
         if (b.kind === "prem") note = c === 0 ? "" : note;
+        if (b.cols[0] === "President") note = "";
         const val = b.kind === "prem" && c === 0 ? ["First Grade","Second Grade","Third Grade","Colts"][i % 4] : b.kind === "life" && c === 1 ? ["Service as president","30 years scoring","Groundsman","Coaching juniors","Treasurer"][i % 5] : n;
         cells += `<span class="nm">${esc(val)}${note && !(b.kind === "life" && c === 1) ? `<small>${esc(note)}</small>` : ""}</span>`;
       }
@@ -349,17 +451,25 @@
     }
     return h;
   }
+  function headHtml(b, r) {
+    if (b.kind === "prem" || b.kind === "panels") return "<div></div>";
+    const t = tableSpec(b);
+    if (t) return `<div class="cols-head">${t.head.map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
+    return `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(0, r.cols).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
+  }
   function boardScreen(item, idx, total) {
     const b = BOARDS[item.board], r = resolved(item);
     const el = document.createElement("div");
     el.className = "screen timber";
+    const spec = tableSpec(b);
+    if (spec) { el.style.setProperty("--tmpl", spec.tmpl); el.classList.add("tbl"); }
     el.style.setProperty("--ts", r.size);
     el.style.setProperty("--cols", r.cols);
     el.innerHTML = `<div class="board">
       <div class="plate"><div class="crest">HH</div>
-        <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}</div></div>
+        <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}${b.tally ? ` <span class="tally">${b.entries} ${esc(b.tally)}</span>` : ""}</div></div>
         <div class="dots"></div></div>
-      <div class="viewport">${b.kind === "prem" ? "<div></div>" : `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(0, r.cols).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`}<div class="rows"></div></div>
+      <div class="viewport">${headHtml(b, r)}<div class="rows"></div></div>
       ${state.look.footer ? `<div class="footer"><span>EST. <b>1983</b></span><span>${state.sponsorStrip ? `PROUDLY SUPPORTED BY <b>${esc((state.sponsors[0] || "OUR SPONSORS").toUpperCase())}</b>` : ""}</span><span>${total ? `BOARD <b>${idx + 1}</b> OF <b>${total}</b>` : ""}</span></div>` : ""}
     </div>`;
     return el;
@@ -547,12 +657,14 @@
     const colOpts = Array.from({ length: maxCols }, (_, i) => [i + 1, String(i + 1)]);
     const f = (label, key, html) => `<div class="f"><span class="lbl">${label}</span>${html}${inheritNote(item, key)}</div>`;
     return `<div class="fields">
-      ${f(b && b.kind === "prem" ? "Plaques across" : b && b.kind ? "Columns" : "Grade columns", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
+      ${b && b.kind === "leader" ? f("Show top", "top", seg("top", [[10,"10"],[20,"20"],[50,"50"]], r.top))
+        : b && tableSpec(b) ? ""
+        : f(b && b.kind === "prem" ? "Plaques across" : b && b.kind === "panels" ? "Grades per row" : b && b.kind === "life" ? "Columns" : b && b.cols[0] === "President" ? "Role columns" : "Grade columns", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
       ${f("Long boards", "move", seg("move", MOVES, r.move))}
       ${f("Transition", "trans", `<select data-field="trans">${TRANS.map(([v, l]) => `<option value="${v}" ${v === r.trans ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
       ${f("Transition length", "dur", seg("dur", DURS, r.dur))}
       ${f("Text size", "size", seg("size", SIZES, r.size))}
-      ${f(b && b.kind === "prem" ? "Rows of plaques per page" : "Seasons per page", "perPage", `<select data-field="perPage">${(b && b.kind === "prem" ? [[0, "Fit to screen"], [1, "1"], [2, "2"]] : [[0, "Fit to screen"], [4, "4"], [6, "6"], [8, "8"], [10, "10"], [12, "12"]]).map(([v, l]) => `<option value="${v}" ${+v === +r.perPage ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
+      ${f(b && (b.kind === "prem" || b.kind === "panels") ? "Rows of panels per page" : b && tableSpec(b) ? "Rows per page" : "Seasons per page", "perPage", `<select data-field="perPage">${(b && (b.kind === "prem" || b.kind === "panels") ? [[0, "Fit to screen"], [1, "1"], [2, "2"]] : [[0, "Fit to screen"], [4, "4"], [6, "6"], [8, "8"], [10, "10"], [12, "12"]]).map(([v, l]) => `<option value="${v}" ${+v === +r.perPage ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
       ${f(r.move === "credits" ? "Pause at start" : "Seconds per page", "pageSecs", `<input type="range" min="2" max="15" step="1" value="${r.pageSecs}" data-field="pageSecs" aria-label="Seconds per page"><span class="hint">${r.pageSecs} s</span>`)}
       ${f("Credits speed", "speed", seg("speed", SPEEDS, r.speed))}
       ${f("Hold at end", "hold", `<input type="range" min="0" max="10" step="1" value="${r.hold}" data-field="hold" aria-label="Hold at end"><span class="hint">${r.hold} s</span>`)}
@@ -589,7 +701,7 @@
     return `<p class="section-h">Rotation · drag to reorder</p>
       ${state.items.length ? `<ul class="list" id="list">${items}</ul>` : '<div class="empty">Nothing in the rotation yet. Add a board below.</div>'}
       <div class="add-row"><p class="section-h">Add to rotation</p>
-        <select id="addBoard" aria-label="Add a board"><option value="">+ Board…</option>${Object.keys(BOARDS).map((k) => `<option value="${k}">${BOARDS[k].title}${unused.includes(k) ? "" : " (again)"}</option>`).join("")}</select>
+        <select id="addBoard" aria-label="Add a board"><option value="">+ Board…</option>${[...new Set(Object.values(BOARDS).map((b) => b.layout))].map((L) => `<optgroup label="${L}">${Object.keys(BOARDS).filter((k) => BOARDS[k].layout === L).map((k) => `<option value="${k}">${BOARDS[k].title}${unused.includes(k) ? "" : " (again)"}</option>`).join("")}</optgroup>`).join("")}</select>
         <button type="button" class="btn" data-add="sponsor">+ Sponsor wall</button>
         <button type="button" class="btn" data-add="ad">+ Ad</button>
         <button type="button" class="btn" data-add="photos">+ Photo slideshow</button>
@@ -602,7 +714,7 @@
   }
   function renderRotation() {
     const item = state.items.find((x) => x.id === ui.sel);
-    const settings = item ? `<div class="panel-h"><h3>${esc(itemTitle(item))}</h3><span class="k">${item.type === "board" ? "Board display" : item.type === "photos" ? "Photo slideshow" : item.type === "sponsor" ? "Sponsor wall" : "Advert"}</span></div>
+    const settings = item ? `<div class="panel-h"><h3>${esc(itemTitle(item))}</h3><span class="k">${item.type === "board" ? `Layout: ${BOARDS[item.board].layout}` : item.type === "photos" ? "Photo slideshow" : item.type === "sponsor" ? "Sponsor wall" : "Advert"}</span></div>
       <div id="fields">${item.type === "board" ? boardFields(item) : otherFields(item)}</div>
       ${item.type === "board" ? '<p class="warn" id="fitWarn" hidden>This board has too many seasons to fit on one screen at a readable size. Try Pages or Credits roll instead.</p>' : ""}
       ${item.type === "board" ? '<p class="hint">Settings marked “Club default” follow the Look tab. Change one here to override it for this board only.</p>' : ""}`
@@ -655,7 +767,7 @@
 
   // ---------------------------------------------------------------- events
   function setField(field, raw) {
-    const num = ["cols","dur","size","speed","perPage","pageSecs","hold","secs","count","perRow"];
+    const num = ["cols","dur","size","speed","perPage","pageSecs","hold","secs","count","perRow","top"];
     let v = raw === "true" ? true : raw === "false" ? false : num.includes(field) ? +raw : raw;
     if (ui.tab === "look") { state.look[field] = v; }
     else if (ui.tab === "sponsors" && field === "sponsorStrip") state.sponsorStrip = v;
