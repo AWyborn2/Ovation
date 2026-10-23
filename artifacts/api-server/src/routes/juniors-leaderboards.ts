@@ -344,7 +344,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   const rows = Array.from(aggByPlayer.values()).map((a) => ({
     participantId: a.participantId,
     displayName: a.displayName,
-    matches: rosterGames.get(a.participantId) ?? 0,
+    matches: rosterGames.get(a.participantId.toLowerCase()) ?? 0,
     innings: a.innings,
     notOuts: a.notOuts,
     runs: a.runs,

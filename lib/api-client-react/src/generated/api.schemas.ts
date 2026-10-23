@@ -4071,9 +4071,9 @@ export const EmailSendStatus = {
 
 export interface EmailSend {
   id: number;
-  /** The list sent to; null for a batch (Email all, scheduled), which spans lists */
+  /** The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained. */
   listId: number | null;
-  /** The list's name, or what sent a batch ("Email all team sheets (4 sides)") */
+  /** The list's name, Deleted list after deletion, or what sent a batch ("Email all team sheets (4 sides)") */
   listName: string;
   kind: string;
   subjectType: string;
@@ -11202,6 +11202,118 @@ export interface JuniorAdminRosterEntry {
   playerName?: string | null;
 }
 
+export type JuniorNameEvidenceSource = typeof JuniorNameEvidenceSource[keyof typeof JuniorNameEvidenceSource];
+
+
+export const JuniorNameEvidenceSource = {
+  roster: 'roster',
+  batting: 'batting',
+  bowling: 'bowling',
+  premiership: 'premiership',
+} as const;
+
+export interface JuniorNameEvidence {
+  source: JuniorNameEvidenceSource;
+  sourceId: number;
+  name: string;
+  /** @nullable */
+  season: string | null;
+  /** @nullable */
+  team: string | null;
+}
+
+export type JuniorNameReviewStatus = typeof JuniorNameReviewStatus[keyof typeof JuniorNameReviewStatus];
+
+
+export const JuniorNameReviewStatus = {
+  suggested: 'suggested',
+  conflicting: 'conflicting',
+  abbreviated: 'abbreviated',
+  missing: 'missing',
+  protected: 'protected',
+  expanded: 'expanded',
+  identity_review: 'identity_review',
+} as const;
+
+/**
+ * How public junior surfaces name the club's players: full name, first name and surname initial ("Ollie G"), or first name only.
+ */
+export type JuniorNameStyle = typeof JuniorNameStyle[keyof typeof JuniorNameStyle];
+
+
+export const JuniorNameStyle = {
+  full: 'full',
+  first_initial: 'first_initial',
+  first: 'first',
+} as const;
+
+export interface JuniorNameHistory {
+  id: number;
+  /** @nullable */
+  before: string | null;
+  /** @nullable */
+  after: string | null;
+  /** @nullable */
+  by: string | null;
+  at: string;
+}
+
+export interface JuniorNameReview {
+  participantId: string;
+  currentName: string;
+  /** @nullable */
+  suggestedName: string | null;
+  status: JuniorNameReviewStatus;
+  evidence: JuniorNameEvidence[];
+  revision: string;
+  /** @nullable */
+  firstSeason: string | null;
+  /** @nullable */
+  lastSeason: string | null;
+  /** @nullable */
+  teams: string | null;
+  nameStyle: JuniorNameStyle;
+  withheld: boolean;
+  publicName: string;
+  history: JuniorNameHistory[];
+}
+
+export type JuniorNameSelectionMode = typeof JuniorNameSelectionMode[keyof typeof JuniorNameSelectionMode];
+
+
+export const JuniorNameSelectionMode = {
+  suggestion: 'suggestion',
+  manual: 'manual',
+} as const;
+
+export interface JuniorNameSelection {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  participantId: string;
+  revision: string;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  name: string;
+  mode: JuniorNameSelectionMode;
+}
+
+export interface JuniorNamesPublication {
+  /**
+     * @minItems 1
+     * @maxItems 750
+     */
+  selections: JuniorNameSelection[];
+}
+
+export interface JuniorNamesPublicationResult {
+  published: number;
+  skipped: number;
+}
+
 export interface UpdateJuniorParticipantBody {
   /** @minLength 1 */
   displayName?: string;
@@ -11230,18 +11342,6 @@ export interface AddJuniorPhotoBody {
   objectPath: string;
   makeDefault?: boolean;
 }
-
-/**
- * How public junior surfaces name the club's players: full name, first name and surname initial ("Ollie G"), or first name only.
- */
-export type JuniorNameStyle = typeof JuniorNameStyle[keyof typeof JuniorNameStyle];
-
-
-export const JuniorNameStyle = {
-  full: 'full',
-  first_initial: 'first_initial',
-  first: 'first',
-} as const;
 
 export type JuniorTeamPublishMode = typeof JuniorTeamPublishMode[keyof typeof JuniorTeamPublishMode];
 

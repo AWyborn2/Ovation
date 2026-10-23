@@ -91,7 +91,7 @@ function LeaderRow({
             {rank}
           </Body>
           <View style={{ flex: 1 }}>
-            <Body size={13} bold numberOfLines={1}>
+            <Body size={13} bold>
               {name}
             </Body>
             {sub ? (
@@ -193,7 +193,7 @@ export default function JuniorPlayersScreen() {
               <Card style={{ marginBottom: 6, padding: 12 }}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <View style={{ flex: 1 }}>
-                    <Body size={13} bold numberOfLines={1}>
+                    <Body size={13} bold>
                       {p.displayName}
                     </Body>
                     <Body muted size={11} style={{ marginTop: 2 }}>

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { randomUUID, randomInt } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
   tenantsTable,
@@ -502,6 +502,53 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
         .update(squadMembersTable)
         .set({ playhqProfileId: profiles[0].toUpperCase() })
         .where(eq(squadMembersTable.id, memberIds[0]));
+    }
+  });
+
+  it("reads public juniors' senior numbers, including updated assignments and mismatched player IDs", async () => {
+    await legacy();
+    await db
+      .update(squadMembersTable)
+      .set({ section: "junior" })
+      .where(eq(squadMembersTable.id, memberIds[5]));
+    try {
+      const saved = structuredClone((await list()).players);
+      expect((await sources()).content[fixtureId].players[5].shirtNumber).toBe("88");
+      const registerEntry = and(
+        eq(shirtNumbersTable.tenantId, tenant),
+        eq(shirtNumbersTable.season, 2034),
+        eq(shirtNumbersTable.participantId, profiles[5]),
+      );
+      await db.update(shirtNumbersTable).set({ number: "1" }).where(registerEntry);
+      expect((await sources()).content[fixtureId].players[5].shirtNumber).toBe("1");
+      await db
+        .update(shirtNumbersTable)
+        .set({ playerId: -18502, number: "70" })
+        .where(registerEntry);
+      const body = await sources();
+      expect(body.content[fixtureId].players[5].shirtNumber).toBe("70");
+      expect((await list()).players).toEqual(saved);
+
+      await db
+        .update(squadMembersTable)
+        .set({ isPrivate: true })
+        .where(eq(squadMembersTable.id, memberIds[5]));
+      expect((await sources()).content[fixtureId].players[5]).not.toHaveProperty("shirtNumber");
+    } finally {
+      await db
+        .update(squadMembersTable)
+        .set({ section: "senior", isPrivate: false })
+        .where(eq(squadMembersTable.id, memberIds[5]));
+      await db
+        .update(shirtNumbersTable)
+        .set({ playerId: -18501, number: "88" })
+        .where(
+          and(
+            eq(shirtNumbersTable.tenantId, tenant),
+            eq(shirtNumbersTable.season, 2034),
+            eq(shirtNumbersTable.participantId, profiles[5]),
+          ),
+        );
     }
   });
 

@@ -11,11 +11,23 @@ import {
   squadMembersTable,
   availabilityRoundsTable,
   emailSendsTable,
+  emailListsTable,
+  emailListMembersTable,
+  emailListTeamsTable,
+  captainsTable,
+  captainGradePermissionsTable,
+  availabilitySettingsTable,
+  type SelectionRule,
   socialDraftsTable,
   juniorFixturesTable,
 } from "@workspace/db";
 import app from "../app";
-import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import {
+  encodeSession,
+  SESSION_COOKIE,
+  encodeCaptainSession,
+  CAPTAIN_SESSION_COOKIE,
+} from "../lib/auth";
 import { finaliseSelection, reopenSelection } from "../lib/selection-board";
 import {
   BATCH_KIND,
@@ -60,6 +72,7 @@ vi.mock("../lib/card-video-renderer", async (original) => ({
 const stamp = randomUUID();
 const now = new Date("2034-10-05T00:00:00Z");
 let tenant: number, other: number, selectionId: number, cookie: string, otherCookie: string;
+let ownCaptainCookie: string, otherGradeCaptainCookie: string;
 const actor = { kind: "admin" as const, id: 0, name: "Test Admin" };
 const sent: EmailMessage[] = [];
 
@@ -125,6 +138,28 @@ beforeAll(async () => {
     `${SESSION_COOKIE}=${encodeSession({ adminId: id, issuedAt: Date.now() })}`;
   cookie = session(admins[0].id);
   otherCookie = session(admins[1].id);
+  const captains = await db
+    .insert(captainsTable)
+    .values(
+      ["A Grade", "B Grade"].map((grade) => ({
+        tenantId: tenant,
+        username: `email-cap-${grade}-${stamp}`,
+        displayName: grade,
+        passwordHash: "x",
+      })),
+    )
+    .returning();
+  await db.insert(captainGradePermissionsTable).values(
+    captains.map((captain, i) => ({
+      captainId: captain.id,
+      grade: i === 0 ? "A Grade" : "B Grade",
+    })),
+  );
+  const captainSession = (id: number) =>
+    `${CAPTAIN_SESSION_COOKIE}=${encodeCaptainSession({ captainId: id, issuedAt: Date.now() })}`;
+  ownCaptainCookie = captainSession(captains[0].id);
+  otherGradeCaptainCookie = captainSession(captains[1].id);
+  await db.insert(availabilitySettingsTable).values({ tenantId: tenant });
 
   const members = await db
     .insert(squadMembersTable)
@@ -172,6 +207,166 @@ afterAll(async () => {
 
 beforeEach(() => {
   sent.length = 0;
+});
+
+describe("retired email-list history", () => {
+  it("still resends and retries intentionally listless team-sheet batches", async () => {
+    const [batch] = await db
+      .insert(emailSendsTable)
+      .values({
+        tenantId: other,
+        listId: null,
+        kind: BATCH_KIND,
+        subjectType: "batch",
+        subjectId: selectionId,
+        idempotencyKey: `${stamp}:listless-batch`,
+        payload: { selectionIds: [], reason: "email_all" },
+        status: "failed",
+        attempts: 1,
+      })
+      .returning();
+    try {
+      const log = await as(other, otherCookie).get("/api/admin/email-sends").expect(200);
+      expect(log.body.find((row: { id: number }) => row.id === batch.id)).toMatchObject({
+        listId: null,
+        listName: "Email all team sheets",
+        status: "failed",
+      });
+      const again = await as(other, otherCookie)
+        .post(`/api/admin/email-sends/${batch.id}/resend`)
+        .expect(200);
+      expect(again.body).toMatchObject({ kind: BATCH_KIND, listId: null, status: "queued" });
+      // Both rows are claimable. Empty batches are safely skipped after claiming.
+      expect(await drainOutbox({ tenantId: other })).toEqual({ sent: 0, failed: 0, skipped: 2 });
+      const [retried] = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.id, batch.id));
+      expect(retried).toMatchObject({ attempts: 2, status: "skipped" });
+    } finally {
+      await db.delete(emailSendsTable).where(eq(emailSendsTable.tenantId, other));
+    }
+  });
+
+  it("keeps status/count history on retirement, then detaches it on deletion without keeping contacts", async () => {
+    const contacts = list({
+      name: "Retiring contacts",
+      gradeKeys: ["Retired Grade"],
+      members: [{ name: "Private contact", email: "private-retired@example.com" }],
+    });
+    const created = await as(other, otherCookie)
+      .post("/api/admin/email-lists", contacts)
+      .expect(201);
+    const listId = created.body.id;
+    const history = await db
+      .insert(emailSendsTable)
+      .values(
+        (["sent", "failed", "skipped", "queued", "sending"] as const).map((status) => ({
+          tenantId: other,
+          listId,
+          kind: "team_sheet",
+          subjectType: "selection",
+          subjectId: selectionId,
+          idempotencyKey: `${stamp}:retired:${status}`,
+          status,
+          recipientCount: status === "sent" ? 1 : 0,
+          attempts: status === "queued" ? 0 : 1,
+          lastError: status === "failed" ? "Delivery unavailable" : null,
+          queuedAt: now,
+          claimedAt: status === "sending" ? now : null,
+          sentAt: status === "sent" ? now : null,
+        })),
+      )
+      .returning();
+    try {
+      await as(other, otherCookie)
+        .put(`/api/admin/email-lists/${listId}`, { ...contacts, active: false })
+        .expect(200);
+      expect(
+        await db.select().from(emailSendsTable).where(eq(emailSendsTable.tenantId, other)),
+      ).toEqual(history);
+      await as(tenant, cookie).del(`/api/admin/email-lists/${listId}`).expect(404);
+      await as(other, otherCookie).del(`/api/admin/email-lists/${listId}`).expect(204);
+      await as(other, otherCookie).del(`/api/admin/email-lists/${listId}`).expect(404);
+      expect(await db.select().from(emailListsTable).where(eq(emailListsTable.id, listId))).toEqual(
+        [],
+      );
+      expect(
+        await db
+          .select()
+          .from(emailListMembersTable)
+          .where(eq(emailListMembersTable.listId, listId)),
+      ).toEqual([]);
+      expect(
+        await db.select().from(emailListTeamsTable).where(eq(emailListTeamsTable.listId, listId)),
+      ).toEqual([]);
+      const detached = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.tenantId, other));
+      expect(detached).toEqual(history.map((row) => ({ ...row, listId: null })));
+      expect(JSON.stringify(detached)).not.toContain("@example.com");
+      const log = await as(other, otherCookie).get("/api/admin/email-sends").expect(200);
+      expect(log.body).toHaveLength(history.length);
+      for (const row of log.body)
+        expect(row).toMatchObject({ listId: null, listName: "Deleted list" });
+      expect(JSON.stringify(log.body)).not.toContain("@example.com");
+      const mine = await as(tenant, cookie).get("/api/admin/email-sends").expect(200);
+      expect(mine.body.some((row: { id: number }) => history.some((h) => h.id === row.id))).toBe(
+        false,
+      );
+      await as(tenant, cookie).post(`/api/admin/email-sends/${history[0].id}/resend`).expect(404);
+      await as(other, otherCookie)
+        .post(`/api/admin/email-sends/${history[0].id}/resend`)
+        .expect(409);
+      expect(await drainOutbox({ tenantId: other, now: new Date("2034-10-06T00:00:00Z") })).toEqual(
+        { sent: 0, failed: 0, skipped: 2 },
+      );
+      expect(sent).toEqual([]);
+      const after = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.tenantId, other));
+      for (const row of history.filter((h) => ["sent", "failed", "skipped"].includes(h.status))) {
+        expect(after.find((h) => h.id === row.id)).toEqual({ ...row, listId: null });
+      }
+    } finally {
+      // Other suites expect this tenant to have no send history.
+      await db.delete(emailSendsTable).where(eq(emailSendsTable.tenantId, other));
+      await db.delete(emailListsTable).where(eq(emailListsTable.id, listId));
+    }
+  });
+
+  it("preserves history even when a list is deleted directly in the database", async () => {
+    const created = await as(other, otherCookie)
+      .post("/api/admin/email-lists", list({ gradeKeys: ["Direct delete grade"] }))
+      .expect(201);
+    const [history] = await db
+      .insert(emailSendsTable)
+      .values({
+        tenantId: other,
+        listId: created.body.id,
+        kind: "team_sheet",
+        subjectType: "selection",
+        subjectId: selectionId,
+        idempotencyKey: `${stamp}:direct-delete`,
+        status: "sent",
+        recipientCount: 2,
+        sentAt: now,
+      })
+      .returning();
+    try {
+      await db.delete(emailListsTable).where(eq(emailListsTable.id, created.body.id));
+      const [after] = await db
+        .select()
+        .from(emailSendsTable)
+        .where(eq(emailSendsTable.id, history.id));
+      expect(after).toEqual({ ...history, listId: null });
+    } finally {
+      await db.delete(emailSendsTable).where(eq(emailSendsTable.id, history.id));
+      await db.delete(emailListsTable).where(eq(emailListsTable.id, created.body.id));
+    }
+  });
 });
 
 describe("email lists", () => {
@@ -286,6 +481,37 @@ describe("email lists", () => {
     await as(other, otherCookie)
       .post(`/api/admin/email-sends/${log.body[0].id}/resend`)
       .expect(404);
+  });
+});
+
+describe("manual team-sheet email permissions", () => {
+  it.each<{
+    rule: SelectionRule;
+    role: "own" | "other" | "admin";
+    status: number;
+  }>([
+    { rule: "captains_own_grade", role: "own", status: 200 },
+    { rule: "captains_own_grade", role: "other", status: 403 },
+    { rule: "admins_only", role: "own", status: 403 },
+    { rule: "admins_only", role: "other", status: 403 },
+    { rule: "captains_all_grades", role: "other", status: 200 },
+    { rule: "admins_only", role: "admin", status: 200 },
+  ])("$rule: $role returns $status", async ({ rule, role, status }) => {
+    await db
+      .update(availabilitySettingsTable)
+      .set({ selectionRule: rule })
+      .where(eq(availabilitySettingsTable.tenantId, tenant));
+    const before = (await sendsFor()).length;
+    const auth =
+      role === "admin" ? cookie : role === "own" ? ownCaptainCookie : otherGradeCaptainCookie;
+    await as(tenant, auth).post(`/api/selection/${selectionId}/email`).expect(status);
+    const after = (await sendsFor()).length;
+    expect(after - before).toBe(status === 200 ? 2 : 0);
+  });
+
+  it("requires authentication and refuses another club's captain", async () => {
+    await as(tenant, null).post(`/api/selection/${selectionId}/email`).expect(401);
+    await as(other, ownCaptainCookie).post(`/api/selection/${selectionId}/email`).expect(401);
   });
 });
 

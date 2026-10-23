@@ -49,7 +49,7 @@ export async function renameClubLines(
     .where(
       and(
         inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchBattingTable.participantId, participantId),
+        sql`lower(${juniorMatchBattingTable.participantId}) = ${participantId.toLowerCase()}`,
         eq(juniorMatchBattingTable.isHallsHead, true),
       ),
     );
@@ -59,7 +59,7 @@ export async function renameClubLines(
     .where(
       and(
         inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchBowlingTable.participantId, participantId),
+        sql`lower(${juniorMatchBowlingTable.participantId}) = ${participantId.toLowerCase()}`,
         eq(juniorMatchBowlingTable.isHallsHead, true),
       ),
     );
@@ -69,7 +69,7 @@ export async function renameClubLines(
     .where(
       and(
         inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchRostersTable.participantId, participantId),
+        sql`lower(${juniorMatchRostersTable.participantId}) = ${participantId.toLowerCase()}`,
         eq(juniorMatchRostersTable.isHallsHead, true),
       ),
     );
@@ -91,6 +91,7 @@ export type JournalEntry = {
   playhqMatchId?: string | null;
   participantId?: string | null;
   createdBy?: string | null;
+  note?: string | null;
 };
 
 /**
@@ -113,6 +114,7 @@ export async function journal(tx: Tx, entry: JournalEntry): Promise<number> {
       playhqMatchId: entry.playhqMatchId ?? null,
       participantId: entry.participantId ?? null,
       createdBy: entry.createdBy ?? null,
+      note: entry.note ?? null,
     })
     .returning({ id: juniorStatCorrectionsTable.id });
   return row.id;

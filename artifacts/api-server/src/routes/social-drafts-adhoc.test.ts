@@ -110,6 +110,66 @@ const adjustments = {
 };
 
 describe("POST /social-drafts (ad-hoc)", () => {
+  it("sends a 10-slide carousel larger than 100kb for review and allows editing it", async () => {
+    const slides = Array.from({ length: 10 }, (_, index) => ({
+      id: index === 0 ? "title" : index === 9 ? "sponsors" : `fixture-${index}`,
+      label: `Slide ${index + 1}`,
+      junior: false,
+      sponsorsOn: false,
+      warnings: [],
+      input: {
+        kind: "matchDay",
+        ...(index === 0 || index === 9
+          ? { carouselPage: { page: index === 0 ? "title" : "sponsors", sponsors: [] } }
+          : { grade: "A Grade", oppositionName: "Visitors" }),
+      },
+      // Long signed/image URLs and slide content can exceed the general body
+      // limit without uploading image bytes in JSON.
+      data: { photoUrl: `https://images.example/photo-${index}.jpg?q=${"a".repeat(12000)}` },
+    }));
+    const body = {
+      packId: "club-kit-v1",
+      caption: "MATCH DAY",
+      cardInput: {
+        kind: "matchDay",
+        weekendCarousel: {
+          version: 1,
+          packId: "club-kit-v1",
+          submissionId: randomUUID(),
+          size: "square",
+          slides,
+        },
+      },
+    };
+    expect(Buffer.byteLength(JSON.stringify(body))).toBeGreaterThan(100 * 1024);
+    const created = await as(0).post("/social-drafts", body);
+    expect(created.status).toBe(201);
+    expect(created.body.status).toBe("awaiting_review");
+    expect(created.body.cardInput).toEqual(body.cardInput);
+    const edited = await request(app)
+      .patch(`/api/social-drafts/${created.body.id}`)
+      .set("Cookie", cookies[0])
+      .set("x-tenant-id", String(tenantIds[0]))
+      .send({ cardInput: body.cardInput, caption: "Updated match day" });
+    expect(edited.status).toBe(200);
+    expect(edited.body.cardInput).toEqual(body.cardInput);
+  });
+
+  it("authenticates large social draft requests and keeps a bounded body limit", async () => {
+    const large = { cardInput: { ...signing, headline: "x".repeat(110 * 1024) } };
+    const anonymous = await request(app)
+      .post("/api/social-drafts")
+      .set("x-tenant-id", String(tenantIds[0]))
+      .send(large);
+    expect(anonymous.status).toBe(401);
+    const oversized = await as(0).post("/social-drafts", {
+      cardInput: { ...signing, headline: "x".repeat(2 * 1024 * 1024) },
+    });
+    expect(oversized.status).toBe(413);
+    const unrelated = await as(0).post("/social-drafts/999999/approve", large);
+    expect(unrelated.status).toBe(413);
+  });
+
   it("accepts exactly the server's registered built-in pack identities", () => {
     expect([...CAROUSEL_PACK_IDS].sort()).toEqual(PACKS.map((p) => p.id).sort());
   });

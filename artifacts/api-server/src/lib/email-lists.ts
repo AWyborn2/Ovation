@@ -207,6 +207,7 @@ export async function saveEmailList(
   return view ?? null;
 }
 
+/** Delete contacts/grade links; the FK detaches, rather than deletes, send history. */
 export async function deleteEmailList(tenantId: number, id: number): Promise<boolean> {
   const rows = await db
     .delete(emailListsTable)
