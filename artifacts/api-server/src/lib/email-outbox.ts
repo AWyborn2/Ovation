@@ -49,6 +49,7 @@ import {
 import { fixtureSection } from "./availability-grades";
 import { juniorSideLabel, loadSideFixture, sideSection } from "./selection-fixtures";
 import { getTenantBrand } from "./tenant-brand";
+import { tenantOrigin } from "./tenant-origin";
 
 export { sendModeOf, teamSheetEmail, teamSheetKey };
 
@@ -973,7 +974,7 @@ async function deliverAssetReady(row: ListSendRow): Promise<SendOutcome> {
   const { subject, text } = assetReadyEmail({
     clubName: brand.name ?? "Club",
     draft,
-    link: queueLink(origin, [draft.id]),
+    link: queueLink((await tenantOrigin(row.tenantId)) ?? origin, [draft.id]),
     attached: pngs.length > 0,
   });
   const result = await sendEmail({
@@ -1023,8 +1024,9 @@ async function deliverDigest(
     kind,
     clubName: brand.name ?? "Club",
     drafts,
+    // Links go to the club's own app; the render origin may be the platform apex.
     link: queueLink(
-      payloadOrigin(row),
+      (await tenantOrigin(row.tenantId)) ?? payloadOrigin(row),
       drafts.map((d) => d.id),
     ),
   });

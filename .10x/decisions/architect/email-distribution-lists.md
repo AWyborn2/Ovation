@@ -234,3 +234,15 @@ Team-sheet emails (per list and batches) are sent from `TEAM_SHEET_EMAIL_FROM` w
 `EMAIL_FROM`, with an optional `TEAM_SHEET_EMAIL_REPLY_TO`. The sender's domain must be verified in
 Resend. Every other email (social, availability, alerts) keeps `EMAIL_FROM`. The transport gained a
 per-message `from` and `replyTo` (`reply_to`).
+
+## As built: email links and findability (23 Oct 2026)
+
+- `RENDER_HARNESS_ORIGIN` is only where card images are drawn. It can be the platform apex
+  (`https://ovationcc.app`) for every club, because the render payload carries the club's data.
+- Links in emails sent without a request (queue links in social emails, and admin notice emails)
+  are built on the club's own app: its custom domain, else `<slug>.<PLATFORM_BASE_DOMAIN or first
+PLATFORM_HOSTS>` (`lib/tenant-origin.ts`). The render origin is the last fallback. Notice emails
+  previously carried a bare path, which isn't clickable in an email.
+- Email lists is also a Social Media Studio tab (`/admin/social/email-lists`), on the same page as
+  Selection Hub → Email lists. The auto-post card's "Notification email" field is relabelled "Admin
+  notices email" (it still gets selection and PlayHQ sync notices) and points to the social lists.

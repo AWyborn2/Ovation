@@ -92,7 +92,7 @@ describe("AutoPostCard", () => {
     );
     fireEvent.click(screen.getByRole("switch", { name: "Move drafts to Ready automatically" }));
     fireEvent.change(screen.getByLabelText("Review window"), { target: { value: "6" } });
-    fireEvent.change(screen.getByLabelText("Notification email"), {
+    fireEvent.change(screen.getByLabelText("Admin notices email"), {
       target: { value: "studio@club.example" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
