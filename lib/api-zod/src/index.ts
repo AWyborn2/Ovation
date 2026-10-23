@@ -3,6 +3,9 @@ export * from "./generated/api";
 // names because `UploadPlaycricketCsvBody` collides with the zod schema of
 // the same name in `./generated/api` (orval emits both for multipart bodies).
 export type {
+  BoardDisplayConfig,
+  DisplayBoardLayout,
+  KioskLook,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,

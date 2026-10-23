@@ -13,7 +13,8 @@
     "./ladder-input": "./src/ladder-input.ts",
     "./selection-shape": "./src/selection-shape.ts",
     "./card-names": "./src/card-names.ts",
-    "./card-content": "./src/card-content/index.ts"
+    "./card-content": "./src/card-content/index.ts",
+    "./kiosk-display": "./src/kiosk-display.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

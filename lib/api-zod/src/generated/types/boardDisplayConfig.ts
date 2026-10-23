@@ -6,8 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BoardDisplayConfigDensity } from './boardDisplayConfigDensity';
+import type { BoardDisplayConfigDur } from './boardDisplayConfigDur';
+import type { BoardDisplayConfigMove } from './boardDisplayConfigMove';
+import type { BoardDisplayConfigSize } from './boardDisplayConfigSize';
 import type { BoardDisplayConfigSort } from './boardDisplayConfigSort';
 import type { BoardDisplayConfigTextSize } from './boardDisplayConfigTextSize';
+import type { BoardDisplayConfigTop } from './boardDisplayConfigTop';
+import type { BoardDisplayConfigTrans } from './boardDisplayConfigTrans';
 import type { BoardDisplayConfigTransition } from './boardDisplayConfigTransition';
 import type { HonourBackground } from './honourBackground';
 
@@ -15,6 +20,46 @@ import type { HonourBackground } from './honourBackground';
  * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
  */
 export interface BoardDisplayConfig {
+  /** How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen. */
+  move?: BoardDisplayConfigMove;
+  /** How a board, or its next page, arrives. */
+  trans?: BoardDisplayConfigTrans;
+  /** Transition length (short, medium, long). */
+  dur?: BoardDisplayConfigDur;
+  /** Text size. */
+  size?: BoardDisplayConfigSize;
+  /**
+     * Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.
+     * @minimum 0
+     * @maximum 20
+     */
+  perPage?: number;
+  /**
+     * Seconds per page, or the pause before a credits roll starts.
+     * @minimum 1
+     * @maximum 60
+     */
+  pageSecs?: number;
+  /**
+     * Credits-roll speed in px/sec.
+     * @minimum 5
+     * @maximum 200
+     */
+  speed?: number;
+  /**
+     * Seconds held at the end of a board before the next item.
+     * @minimum 0
+     * @maximum 60
+     */
+  hold?: number;
+  /**
+     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.
+     * @minimum 1
+     * @maximum 5
+     */
+  columnsPerScreen?: number;
+  /** Leaderboards only - how many players to show. */
+  top?: BoardDisplayConfigTop;
   /**
      * @minimum 1
      * @maximum 3
