@@ -134,6 +134,21 @@ describe("migration 0060", () => {
             ),
           );
         seen.copies = copies.length;
+
+        // Re-running after a club has made copies never promotes a copy or breaks
+        // the one-default rule (the dev stack re-ran it after a renumbering).
+        for (const stmt of statements) await tx.execute(sql.raw(stmt));
+        const rerun = await tx
+          .select()
+          .from(cardTemplatesTable)
+          .where(
+            and(
+              eq(cardTemplatesTable.tenantId, tenantId),
+              eq(cardTemplatesTable.baseKind, "milestone"),
+            ),
+          );
+        seen.defaultsAfterRerun = rerun.filter((r) => r.isKindDefault).map((r) => r.id);
+        seen.pilotMilestone = pilot.find((p) => p.baseKind === "milestone")!.id;
         await expect(
           tx.transaction(async (inner) => {
             await inner.insert(cardTemplatesTable).values({
@@ -151,7 +166,8 @@ describe("migration 0060", () => {
       .catch((err) => {
         if (!(err instanceof Rollback)) throw err;
       });
-    expect(seen).toEqual({ oldIndex: false, newIndex: true, copies: 2 });
+    expect(seen.defaultsAfterRerun).toEqual([seen.pilotMilestone]);
+    expect(seen).toMatchObject({ oldIndex: false, newIndex: true, copies: 2 });
   });
 });
 

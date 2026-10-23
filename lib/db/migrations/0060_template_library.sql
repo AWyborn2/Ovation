@@ -21,7 +21,7 @@
 --
 -- Idempotent (production was push-built and baselined at 0000): CREATE ... IF NOT EXISTS,
 -- ADD COLUMN IF NOT EXISTS, each constraint dropped if present and re-added, and the UPDATE
--- only touches rows not yet marked.
+-- only marks a kind that has no default yet.
 
 CREATE TABLE IF NOT EXISTS "template_looks" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -122,7 +122,20 @@ ALTER TABLE "card_templates" DROP CONSTRAINT IF EXISTS "card_templates_origin_te
 ALTER TABLE "card_templates" ADD CONSTRAINT "card_templates_origin_template_id_library_templates_id_fk" FOREIGN KEY ("origin_template_id") REFERENCES "public"."library_templates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "social_drafts" ADD COLUMN IF NOT EXISTS "template_ref" jsonb;--> statement-breakpoint
 -- Pilot carry-over: today's kind rows (one per tenant and kind, under the old index) become
--- each kind's default. Ids, versions and documents are untouched.
-UPDATE "card_templates" SET "is_kind_default" = true WHERE "source" = 'kind' AND NOT "is_kind_default";--> statement-breakpoint
+-- each kind's default. Ids, versions and documents are untouched. Safe to re-run: a kind
+-- that already has a default keeps it, so copies a club made since are never promoted, and
+-- if a tenant somehow has several unmarked rows for a kind only the oldest becomes default.
+UPDATE "card_templates" AS t SET "is_kind_default" = true
+WHERE t."source" = 'kind' AND NOT t."is_kind_default"
+  AND NOT EXISTS (
+    SELECT 1 FROM "card_templates" d
+    WHERE d."source" = 'kind' AND d."is_kind_default"
+      AND d."tenant_id" IS NOT DISTINCT FROM t."tenant_id" AND d."base_kind" IS NOT DISTINCT FROM t."base_kind"
+  )
+  AND t."id" = (
+    SELECT min(c."id") FROM "card_templates" c
+    WHERE c."source" = 'kind' AND NOT c."is_kind_default"
+      AND c."tenant_id" IS NOT DISTINCT FROM t."tenant_id" AND c."base_kind" IS NOT DISTINCT FROM t."base_kind"
+  );--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "card_templates_kind_default_unique" ON "card_templates" USING btree ("tenant_id","base_kind") WHERE source = 'kind' and is_kind_default;--> statement-breakpoint
 DROP INDEX IF EXISTS "card_templates_kind_unique";
