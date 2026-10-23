@@ -49,7 +49,7 @@ library.
 | **G2. Format, binding and renderer** | Text styles `italic` and `stretch`, loaded with their axes. The editor's font picker gets the four families. The `match` derived palette (`--mt-*`). The new Match Summary result-page tokens and repeats, bound from the card input                                                                                |
 | **G3. Look families**                | `look.json` gains `family`, and the API returns it from the bundle files, with no migration (M14). The Elements panel lists a family as one look with a sub-heading per style, and the Templates tab groups the family's looks                                                                                      |
 | **G4. Converter and bundles**        | The source vendored under `scripts/src/data/ovation-match-graphics/`. A converter renders every component with sentinel props and captures it with the pack walker, then maps it with `mapCapture`. It writes the seven looks' Match Summary templates and the 51 elements, with side-by-side screenshots in the PR |
-| **G5. Dev-stack check**              | As Halls Head, check the Elements panel, insertion and the seven templates with real match data                                                                                                                                                                                                                     |
+| **G5. Dev-stack check**              | **Dropped by Ash (23 Oct 2026).** Done is G4 merged with CI green, the fit check passing and side-by-side shots in the PR                                                                                                                                                                                           |
 
 ## Decisions
 
@@ -95,7 +95,9 @@ Every template passes the fit check (`check-template-bundles`, 42 variants each)
 
 ## Done means
 
-On the dev stack (localhost:5180), as Halls Head, the Elements panel shows an "Ovation Match
-Graphics" look with all 51 layer elements, and each one inserts as editable layers in the
-club's colours. The Templates tab lists the seven new Match Summary looks, and each opens in the
-editor with real match data. CI is green, the fit check passes, and the PRs carry screenshots.
+G5, the dev-stack check, was dropped by Ash on 23 Oct 2026. Done means:
+
+- G4 is merged into the integration branch with CI green.
+- Every new template passes the fit check.
+- The PR has side-by-side shots, taken from the converter's captures and renders (the fidelity table above).
+- One PR, "Ovation Match Graphics", is open from the integration branch to `main` for Ash to merge.
