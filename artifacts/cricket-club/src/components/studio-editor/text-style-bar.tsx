@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import type { TemplateTextStyle } from "@workspace/scorecard/kind-templates";
+import type { TemplateStyleV2, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
 import { loadFontCatalogue, primaryFamily, type CatalogueEntry } from "@/lib/document-fonts";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,21 @@ const iconBtn =
 const DEFAULT_FONT = "Card default";
 const WEIGHTS = [300, 400, 500, 600, 700, 800, 900];
 const MAX_RESULTS = 60;
+
+/**
+ * Families the picker lists first, before any search: the Ovation Match
+ * Graphics design system's four (plan 2026-10-23, M10).
+ */
+export const FEATURED_FONTS = {
+  label: "Match graphics",
+  families: ["Barlow Condensed", "Barlow Semi Condensed", "Montserrat", "Archivo"],
+} as const;
+
+/** The featured families, in their order, as the catalogue has them. */
+export function featuredFonts(catalogue: readonly CatalogueEntry[]): CatalogueEntry[] {
+  const byFamily = new Map(catalogue.map((f) => [f.family, f]));
+  return FEATURED_FONTS.families.flatMap((family) => byFamily.get(family) ?? []);
+}
 
 /** Families whose name matches `query`: the exact name, then prefixes, then the rest. */
 export function searchFonts(catalogue: readonly CatalogueEntry[], query: string): CatalogueEntry[] {
@@ -81,6 +96,7 @@ export function FontPicker({
     () => (catalogue ? searchFonts(catalogue, query) : []),
     [catalogue, query],
   );
+  const featured = useMemo(() => (catalogue ? featuredFonts(catalogue) : []), [catalogue]);
   const close = () => {
     setOpen(false);
     setQuery("");
@@ -138,6 +154,35 @@ export function FontPicker({
             {!catalogue && !failed && (
               <li className="px-2 py-1.5 text-sm text-[var(--ed-ink2)]">Loading fonts…</li>
             )}
+            {!query.trim() && catalogue && featured.length > 0 && (
+              <li role="presentation">
+                <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
+                  {FEATURED_FONTS.label}
+                </p>
+                <ul role="group" aria-label={FEATURED_FONTS.label}>
+                  {featured.map((f) => (
+                    <li key={f.family}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={primaryFamily(value) === f.family}
+                        className="w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-[var(--ed-card)]"
+                        onClick={() => {
+                          onChange(fontFamilyValue(f));
+                          close();
+                        }}
+                      >
+                        {f.family}
+                        <span className="ml-2 text-xs text-[var(--ed-ink2)]">{f.category}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="px-2 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
+                  All fonts
+                </p>
+              </li>
+            )}
             {results.map((f) => (
               <li key={f.family}>
                 <button
@@ -170,14 +215,38 @@ export function FontPicker({
  * alignment, letter spacing and colour. Sizes are percent of the card width so
  * text scales with each size.
  */
+/** What the bar sets: v1's text style, plus v2's italic and width (`stretch`). */
+export type TextBarStyle = TemplateTextStyle & Pick<TemplateStyleV2, "italic" | "stretch">;
+
+/** The width axis of `fontFamily`'s family, from the catalogue (null without one). */
+function useWidthAxis(fontFamily: string | undefined): [number, number] | null {
+  const family = primaryFamily(fontFamily);
+  const [axis, setAxis] = useState<[number, number] | null>(null);
+  useEffect(() => {
+    if (!family) return void setAxis(null);
+    let live = true;
+    loadFontCatalogue()
+      .then((c) => live && setAxis(c.find((f) => f.family === family)?.width ?? null))
+      .catch(() => live && setAxis(null));
+    return () => {
+      live = false;
+    };
+  }, [family]);
+  return axis;
+}
+
 export function TextStyleBar({
   style,
   onStyle,
+  v2Styles = true,
 }: {
-  style: TemplateTextStyle | undefined;
-  onStyle: (patch: Partial<TemplateTextStyle>) => void;
+  style: TextBarStyle | undefined;
+  onStyle: (patch: Partial<TextBarStyle>) => void;
+  /** Offer italic and width, which only format v2 holds (off for a v1-only surface). */
+  v2Styles?: boolean;
 }) {
   const s = style ?? {};
+  const widthAxis = useWidthAxis(s.fontFamily);
   const num = (v: string): number | undefined => {
     const n = Number(v);
     return v.trim() === "" || !Number.isFinite(n) ? undefined : n;
@@ -248,6 +317,41 @@ export function TextStyleBar({
       >
         AA
       </button>
+      {v2Styles && (
+        <button
+          type="button"
+          aria-label="Italic"
+          aria-pressed={s.italic === true}
+          title="Set the text in italics"
+          onClick={() => onStyle({ italic: s.italic ? undefined : true })}
+          className={cn(
+            iconBtn,
+            "w-auto px-2 text-xs font-bold italic",
+            s.italic && "bg-[var(--ed-card)]",
+          )}
+        >
+          I
+        </button>
+      )}
+      {v2Styles && widthAxis && (
+        <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+          Width
+          <input
+            type="number"
+            aria-label="Font width"
+            title={`Percent of the font's normal width (${widthAxis[0]}–${widthAxis[1]})`}
+            min={widthAxis[0]}
+            max={widthAxis[1]}
+            step={5}
+            value={s.stretch ?? 100}
+            onChange={(e) => {
+              const n = num(e.target.value);
+              onStyle({ stretch: n === undefined || n === 100 ? undefined : n });
+            }}
+            className={cn(field, "w-16")}
+          />
+        </label>
+      )}
       <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
         Spacing
         <input

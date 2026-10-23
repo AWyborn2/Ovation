@@ -149,6 +149,7 @@ export function bindInput(
         );
       }
       if (input.carouselDetail === true) bindInningsDetail(input, values, team);
+      bindMatchGraphics(input, { values, images, rows }, { team, comp, crest });
       if (input.carouselDay) {
         set(values, "dayHeading", input.carouselDay.heading);
         // A stored day slide without its list draws its heading only.
@@ -878,6 +879,109 @@ export function leaderTitle(category: string): [string, string] {
  * under it says who won.
  */
 export const resultWord = summaryResultWord;
+
+/** A hidden (private) player keeps the name the input gives (`********`). */
+const hiddenName = (n: string) => !n.trim() || n.trim().startsWith("*");
+
+/** "Kane Standing" → "Standing" (the T20 look's surnames). */
+export function surnameOf(name: string): string {
+  if (hiddenName(name)) return name;
+  const parts = name.trim().split(/\s+/);
+  return parts.length < 2 ? name.trim() : parts.slice(1).join(" ");
+}
+
+/** "Kane Standing" → "K Standing", or "K.Standing" with `sep` "." (the scoreboards). */
+export function initialNameOf(name: string, sep = " "): string {
+  if (hiddenName(name)) return name;
+  const parts = name.trim().split(/\s+/);
+  return parts.length < 2 ? name.trim() : `${parts[0]![0]}${sep}${parts.slice(1).join(" ")}`;
+}
+
+const batterRow = (b: MatchSummaryInnings["topBatters"][number]): Record<string, string> => ({
+  name: b.name,
+  initialName: initialNameOf(b.name),
+  initialDotName: initialNameOf(b.name, "."),
+  surname: surnameOf(b.name),
+  runs: `${b.runs}${b.notOut ? "*" : ""}`,
+  runsOnly: String(b.runs),
+  notOut: b.notOut ? "*" : "",
+  balls: b.balls != null ? String(b.balls) : "",
+});
+
+const bowlerRow = (b: MatchSummaryInnings["topBowlers"][number]): Record<string, string> => ({
+  name: b.name,
+  initialName: initialNameOf(b.name),
+  initialDotName: initialNameOf(b.name, "."),
+  surname: surnameOf(b.name),
+  figures: `${b.wickets}/${b.runs}`,
+  figuresDash: `${b.wickets}-${b.runs}`,
+  overs: b.overs,
+});
+
+const prefixed = (prefix: string, row: Record<string, string>) =>
+  Object.fromEntries(
+    Object.entries(row).map(([k, v]) => [`${prefix}${k[0]!.toUpperCase()}${k.slice(1)}`, v]),
+  );
+
+/**
+ * The match graphics content (Ovation Match Graphics, plan 2026-10-23, M9):
+ * the venue and competition, the innings in batting order with their scores
+ * (W/R and W-R), and each innings' batting, bowling and paired rows. The
+ * club's side is the home side (`club.short` first in a title).
+ */
+function bindMatchGraphics(
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  out: BoundInput,
+  fns: {
+    team: (name: string) => string;
+    comp: (label: string) => string;
+    crest: (name: string, logoUrl: string | null | undefined) => string | null;
+  },
+): void {
+  const { values, images, rows } = out;
+  const side = (key: "club" | "opposition") => (key === "club" ? input.club : input.opposition);
+  const name = (key: "club" | "opposition") => fns.team(side(key).name);
+  const short = (key: "club" | "opposition") => {
+    const s = side(key);
+    return (s.shortName ?? "").trim() || teamMonogram(name(key));
+  };
+  const logo = (key: "club" | "opposition") => fns.crest(side(key).name, side(key).logoUrl);
+  set(values, "club.short", short("club"));
+  set(values, "opposition.short", short("opposition"));
+  set(values, "competition", fns.comp(input.matchTitle.split(/\s+[•·]\s+/)[0] ?? ""));
+  set(values, "venue", input.venue);
+  set(values, "date", input.date);
+  const winner = input.resultWinner === "opposition" ? "opposition" : "club";
+  if (input.resultWinner !== "draw") set(values, "winner.name", name(winner));
+  const loser = winner === "club" ? "opposition" : "club";
+  const winLogo = logo(winner);
+  const loseLogo = logo(loser);
+  if (winLogo) images["winner.logo"] = winLogo;
+  if (loseLogo) images["loser.logo"] = loseLogo;
+  input.innings.slice(0, 2).forEach((inn, i) => {
+    const p = `innings${i + 1}`;
+    set(values, `${p}.team`, name(inn.teamKey));
+    set(values, `${p}.short`, short(inn.teamKey));
+    set(values, `${p}.score`, inningsScore(inn));
+    set(values, `${p}.scoreDash`, inningsScore(inn).replace("/", "-"));
+    set(values, `${p}.overs`, inn.overs);
+    const crestUrl = logo(inn.teamKey);
+    if (crestUrl) images[`${p}.logo`] = crestUrl;
+    const batting = inn.topBatters.map(batterRow);
+    const bowling = inn.topBowlers.map(bowlerRow);
+    rows[`${p}.batting`] = batting.map((values) => ({ values }));
+    rows[`${p}.bowling`] = bowling.map((values) => ({ values }));
+    rows[`${p}.pairs`] = Array.from(
+      { length: Math.max(batting.length, bowling.length) },
+      (_, k) => ({
+        values: {
+          ...prefixed("bat", batting[k] ?? {}),
+          ...prefixed("bowl", bowling[k] ?? {}),
+        },
+      }),
+    );
+  });
+}
 
 /**
  * Detailed carousel match card: one value set per innings, in input order,

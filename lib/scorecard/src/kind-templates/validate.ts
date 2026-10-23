@@ -102,6 +102,8 @@ export const V2_RANGES = {
   lineHeight: [0.5, 3],
   /** Text stroke width, percent of the artboard width. */
   textStrokeWidth: [0, 5],
+  /** Font width (`stretch`), percent of the family's normal width. */
+  stretch: [50, 200],
   /** Skew along each axis, degrees. */
   skew: [-75, 75],
   /** Backdrop blur, pixels at native card size. */
@@ -396,7 +398,7 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
     } else if (k === "fontSize") numberIn(errors, at, value, 0.2, 80);
     else if (k === "fontWeight") numberIn(errors, at, value, 100, 1000);
     else if (k === "letterSpacing") numberIn(errors, at, value, -1, 3);
-    else if (k === "uppercase") {
+    else if (k === "uppercase" || k === "italic") {
       if (typeof value !== "boolean") errors.push(`${at} must be true or false.`);
     } else if (k === "radius") numberIn(errors, at, value, 0, 10000);
     else if (k === "opacity") numberIn(errors, at, value, 0, 1);
@@ -438,6 +440,7 @@ function checkStyle(errors: Errors, where: string, v: unknown, v2 = false): void
         inRange(errors, `${at}.scale`, value.scale, V2_RANGES.overlayScale);
       }
     } else if (k === "lineHeight") numberIn(errors, at, value, ...V2_RANGES.lineHeight);
+    else if (k === "stretch") numberIn(errors, at, value, ...V2_RANGES.stretch);
     else if (k === "clip") checkClip(errors, at, value);
   }
 }
