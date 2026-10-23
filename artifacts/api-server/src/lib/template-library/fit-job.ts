@@ -117,8 +117,29 @@ export function startFitJob(log: Logger = appLogger): boolean {
   return true;
 }
 
-/** How many pending checks one sweep queues again. */
-export const FIT_RETRIES_PER_SWEEP = 20;
+/**
+ * How many pending checks one sweep queues again. A check takes about 3 s, so
+ * 100 is about five minutes of harness time an hour, behind card renders.
+ */
+export const FIT_RETRIES_PER_SWEEP = 100;
+
+/**
+ * How many pending checks a restart queues again: all of them, in practice.
+ * The bundle sync only asks for versions it has just added, so without this a
+ * library left pending (a first publish whose checks outran the harness)
+ * waited for the hourly sweep to work through it.
+ */
+export const FIT_RETRIES_AT_BOOT = 1000;
+
+/** Boot hook, after the bundle sync: queue every check still pending. Logs, never throws. */
+export async function retryPendingFitsAtBoot(log: Logger = appLogger): Promise<number> {
+  try {
+    return await retryPendingFits(FIT_RETRIES_AT_BOOT, log);
+  } catch (err) {
+    log.error({ err }, "template fit checks: couldn't queue the pending ones at boot");
+    return 0;
+  }
+}
 
 /**
  * Queue again the checks still pending (T2.7): library versions first (they
