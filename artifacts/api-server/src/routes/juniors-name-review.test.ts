@@ -19,7 +19,7 @@ import {
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { classifyJuniorName, isExpandedJuniorName } from "../lib/junior-name-review";
-import { ListJuniorNameReviewResponse } from "@workspace/api-zod";
+import type { ListJuniorNameReviewResponse } from "@workspace/api-zod";
 import type { z } from "zod";
 type Review = z.infer<typeof ListJuniorNameReviewResponse>[number];
 
