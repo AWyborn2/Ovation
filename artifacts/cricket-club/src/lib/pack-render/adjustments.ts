@@ -336,6 +336,12 @@ export interface FreeLayerContext {
   /** The card photo for `photo` layers; null/absent draws nothing. */
   photoUrl?: string | null;
   /**
+   * The card's photo placement sliders (focal point 0–1, zoom). Once moved off
+   * the centre they win over a `photo` layer's own focal point and zoom; left
+   * centred, the layer's own are kept, as in the pack path.
+   */
+  photoTransform?: { focalX: number; focalY: number; zoom?: number } | null;
+  /**
    * The card's bound images (crests, sponsor logos, the club logo), for v2
    * image tokens and conditions. Photos are already left out of a junior
    * card the server hasn't cleared.
@@ -485,16 +491,27 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
 }
 
+/** The card's sliders as a layer's photo adjust (percent focal point); null while untouched. */
+function sliderPhoto(t: FreeLayerContext["photoTransform"]): PhotoAdjust | null {
+  if (!t) return null;
+  const zoom = t.zoom ?? 1;
+  const centred = Math.abs(t.focalX - 0.5) < 0.005 && Math.abs(t.focalY - 0.5) < 0.005;
+  if (centred && Math.abs(zoom - 1) < 0.005) return null;
+  const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 10;
+  return { focalX: pct(t.focalX), focalY: pct(t.focalY), zoom };
+}
+
 /** A `photo` layer: the card photo at this size's focal point and zoom. */
 function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
   // A junior card shows a photo only when the server marked it allowed — a junior
   // player's own photo the family consented to (ADR-007); never from the document alone.
   if ((ctx.junior && !ctx.juniorPhotoAllowed) || !ctx.photoUrl) return null;
-  const t = resolveGeometry(layer.photo, undefined, size)?.value ?? {
-    focalX: 50,
-    focalY: 50,
-    zoom: 1,
-  };
+  const t = sliderPhoto(ctx.photoTransform) ??
+    resolveGeometry(layer.photo, undefined, size)?.value ?? {
+      focalX: 50,
+      focalY: 50,
+      zoom: 1,
+    };
   const radius = layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : "";
   const fx = num(t.focalX, 50);
   const fy = num(t.focalY, 50);

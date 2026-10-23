@@ -133,6 +133,31 @@ describe("photo layer", () => {
     expect(render(player, { layers: [photo] })).not.toContain('data-layer-id="p1"');
   });
 
+  // The share dialog's photo placement sliders (0–1 focal point, zoom) reach v2 photo layers.
+  const withSliders = (photoTransform: { focalX: number; focalY: number; zoom: number }) =>
+    renderPackCard(
+      player,
+      "square",
+      true,
+      tokens,
+      false,
+      { photoUrl: "https://example.test/sam.jpg", photoTransform } as never,
+      BLANK_PACK_ID,
+      { layers: [photo] },
+    );
+
+  it("follows the photo placement sliders once they're moved", () => {
+    const html = withSliders({ focalX: 0.75, focalY: 0.4, zoom: 1.5 });
+    expect(html).toContain("object-position:75% 40%");
+    expect(html).toContain("scale(1.5)");
+  });
+
+  it("keeps the layer's own focal point while the sliders are centred", () => {
+    const html = withSliders({ focalX: 0.5, focalY: 0.5, zoom: 1 });
+    expect(html).toContain("object-position:30% 20%");
+    expect(html).toContain("scale(1.2)");
+  });
+
   it("never draws a photo on a junior card (AE6)", () => {
     const html = render(
       player,
