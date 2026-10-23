@@ -253,6 +253,31 @@ const SINGLE_PAGE_EXTRA_IMAGES: Record<string, PageImageToken[]> = {
   ],
 };
 
+/**
+ * The Match Summary's match graphics content (M9) exists in format v2 only: a
+ * layer that binds any of it (an Ovation Match Graphics element inserted into
+ * a v1 draft) makes the document v2, as v2 styles do.
+ */
+// Keys no v1 document holds (`venue` and `competition` are older tokens elsewhere).
+const MATCH_GRAPHICS_KEYS = [
+  "club.short",
+  "opposition.short",
+  "winner.name",
+  "winner.logo",
+  "loser.logo",
+  "innings1.",
+  "innings2.",
+];
+
+/** Whether a layer binds the match graphics content (tokens or rows), which only v2 holds. */
+export function usesMatchGraphicsContent(layer: unknown): boolean {
+  const json = JSON.stringify(layer ?? null);
+  return MATCH_GRAPHICS_KEYS.some(
+    (k) =>
+      json.includes(`{{${k}`) || json.includes(`"bind":"${k}`) || json.includes(`"repeat":"${k}`),
+  );
+}
+
 /** Repeats `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
 const SINGLE_PAGE_EXTRA_REPEATS: Record<string, PageRepeat[]> = {
   matchSummary: [...INNINGS_REPEATS(1), ...INNINGS_REPEATS(2)],

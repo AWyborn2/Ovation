@@ -20,6 +20,7 @@ import {
   type TemplateFill,
   type TemplateFilter,
   type TemplateLayerV2,
+  usesMatchGraphicsContent,
   V2_STYLE_KEYS,
   type TemplateStyleV2,
 } from "@workspace/scorecard/kind-templates";
@@ -434,8 +435,22 @@ export function overlayHtml(style: TemplateStyleV2 | undefined): string {
  */
 export function layerNeedsV2(layer: TemplateLayerV2): boolean {
   if (layer.kind === "group" || layer.kind === "vector") return true;
-  const style = layer.style as Record<string, unknown> | undefined;
-  return !!style && V2_STYLE_KEYS.some((k) => style[k] !== undefined);
+  // A text fit (shrink, wrap, end in "…") is v2's: an inserted element keeps it.
+  if (layer.kind === "text" && (layer as { fit?: unknown }).fit) return true;
+  // Match graphics content (an innings' rows, a team's logo) is v2's.
+  if (usesMatchGraphicsContent(layer)) return true;
+  const v2Style = (style: unknown) =>
+    !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
+  if (v2Style(layer.style)) return true;
+  // A list whose cells or row styles use v2's (italic, a glow).
+  const rows = (layer as { rows?: { cells?: Array<{ style?: unknown }>; variants?: object } }).rows;
+  return (
+    !!rows &&
+    ((rows.cells ?? []).some((c) => v2Style(c.style)) ||
+      Object.values(rows.variants ?? {}).some((cells) =>
+        Object.values(cells as object).some(v2Style),
+      ))
+  );
 }
 
 /** The palette a template overlay carries: Club Kit's, plus the club stage. */

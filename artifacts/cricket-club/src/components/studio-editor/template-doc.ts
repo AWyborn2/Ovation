@@ -20,6 +20,8 @@ import {
   primaryPage,
   tokenContentField,
   isCoreContentField,
+  templateDocumentErrors,
+  usesMatchGraphicsContent,
   V2_STYLE_KEYS,
   type LayerMotion,
   type PageKey,
@@ -117,6 +119,7 @@ export function withPage(doc: TemplateDoc, page: PageKey, next: EditorDoc): Temp
 export function layerIsV2Only(layer: EditorLayer): boolean {
   if (layer.kind === "group" || layer.kind === "vector") return true;
   if (layer.showWhen || layer.fit || layer.motion || layer.stack || layer.children) return true;
+  if (usesMatchGraphicsContent(layer)) return true;
   const v2Style = (style: unknown) =>
     !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
   if (v2Style(layer.style)) return true;
@@ -133,11 +136,17 @@ export function layerIsV2Only(layer: EditorLayer): boolean {
 export function needsV2(doc: TemplateDoc, kind: string): boolean {
   const primary = primaryPage(kind);
   if (doc.timeline || doc.palettes?.length) return true;
-  return Object.entries(doc.pages).some(
-    ([page, p]) =>
-      (page !== primary && (p?.layers.length ?? 0) > 0) ||
-      (p?.layers ?? []).some((l) => layerIsV2Only(l as EditorLayer)),
-  );
+  if (
+    Object.entries(doc.pages).some(
+      ([page, p]) =>
+        (page !== primary && (p?.layers.length ?? 0) > 0) ||
+        (p?.layers ?? []).some((l) => layerIsV2Only(l as EditorLayer)),
+    )
+  )
+    return true;
+  // A v1 form that wouldn't validate (an inserted element binds the venue or an
+  // innings, which only v2's catalogue holds) is stored as v2.
+  return templateDocumentErrors({ layers: doc.pages[primary]?.layers ?? [] }, kind).length > 0;
 }
 
 /** What is saved: version 1 when it was and still can be, else version 2. */

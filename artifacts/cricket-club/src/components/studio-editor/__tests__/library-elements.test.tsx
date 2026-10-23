@@ -4,7 +4,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderAt } from "../../../test/render";
 import { installApiMock } from "../../../test/mock-api";
 import type { FreeLayer } from "@/lib/pack-render";
-import { LibraryElements } from "../library-elements";
+import { LibraryElements, showsMatch } from "../library-elements";
 
 const element = (
   id: number,
@@ -152,5 +152,16 @@ describe("LibraryElements", () => {
     const tile = (await screen.findByRole("button", { name: "Add Glass panel" })) as HTMLElement;
     expect(tile.textContent).toMatch(/Subtle/);
     expect(screen.getByRole("button", { name: "Add Gold band" }).textContent).not.toMatch(/Subtle/);
+  });
+});
+
+describe("showsMatch", () => {
+  it("draws an Ovation Match Graphics element on a sample match, with its live data", () => {
+    const doc = (layers: unknown[]) => ({ document: { formatVersion: 2, layers } }) as never;
+    expect(showsMatch(doc([{ kind: "text", content: "{{innings1.team}}" }]))).toBe(true);
+    expect(showsMatch(doc([{ kind: "rows", rows: { repeat: "innings2.pairs" } }]))).toBe(true);
+    expect(showsMatch(doc([{ kind: "text", content: "{{venue}} · {{date}}" }]))).toBe(true);
+    expect(showsMatch(doc([{ kind: "shape", style: { fill: "var(--gold)" } }]))).toBe(false);
+    expect(showsMatch(doc([{ kind: "text", content: "{{clubName}}" }]))).toBe(false);
   });
 });

@@ -408,6 +408,24 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
     return match?.value ?? raw;
   };
 
+  const stopColour = (
+    el: CapturedElement,
+    prop: string,
+    layer: number,
+    stop: number,
+    raw: string,
+  ): string | undefined => {
+    const bEl = bById.get(el.id);
+    const bValue = bEl && bTree ? bTree.style(bEl, prop) : undefined;
+    const bLayer = bValue
+      ? splitTopLevel(bValue).filter((p) => !p.startsWith("url("))[layer]
+      : undefined;
+    const twin = bLayer ? parseGradient(bLayer)?.stops[stop]?.colour : undefined;
+    const match = tokeniseColour(raw, twin, twin ? palette : { a: palette.a, b: null });
+    if (match?.moved && !match.token) untokenised.add(`${prop} stop ${raw} (element ${el.id})`);
+    return match?.value;
+  };
+
   // Elements handled as part of a repeat (their rows layer draws them).
   const consumed = new Set<number>();
   // The field an ancestor's `data-drop-if-field` names.
@@ -436,6 +454,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       repeat,
       W,
       colour,
+      stopColour,
       fit: true,
       twin,
       twinValues: opts.geometry?.rows?.[repeat]?.map((r) => r.values),
@@ -463,6 +482,7 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       repeat: indexed.repeat,
       W,
       colour,
+      stopColour,
       fit: true,
       cellField: indexed.cellField,
       twin,
@@ -598,10 +618,11 @@ export function mapCapture(cap: PackCapture, opts: MapOptions = {}): MapResult {
       polish,
       cap,
       clipBox,
+      stopColour,
     });
     const text = el.text ?? [];
     const textStyle = text.length
-      ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap })
+      ? textStyleOf(tree, el, { colour, translucent, shadowColour, wPct, polish, cap, stopColour })
       : null;
     // A skewed panel (Broadcast Dark's slashes): its own box, slanted about its centre.
     const skew = paint && skewed && !text.length ? pureSkew(transform!) : null;
@@ -1147,8 +1168,13 @@ function contentBox(el: CapturedElement, styled: CapturedElement = el) {
 
 /** The element's corner radius in px (the largest corner; uneven corners are reported elsewhere). */
 function radiusOf(tree: Tree, el: CapturedElement): number | undefined {
+  // A percentage (a round logo frame's 50%) is of the box's shorter side.
+  const corner = (e: CapturedElement, raw: string | undefined) =>
+    (raw ?? "").trim().endsWith("%")
+      ? (parseFloat(raw!) / 100) * Math.min(e.box.w, e.box.h)
+      : px(raw);
   const corners = ["top-left", "top-right", "bottom-right", "bottom-left"].map((c) =>
-    px(el.style[`border-${c}-radius`]),
+    corner(el, el.style[`border-${c}-radius`]),
   );
   // A clipping parent's radius rounds an image too.
   const parent = el.parent === null ? undefined : tree.byId.get(el.parent);
@@ -1158,7 +1184,7 @@ function radiusOf(tree: Tree, el: CapturedElement): number | undefined {
     const pr = Math.max(
       0,
       ...["top-left", "top-right", "bottom-right", "bottom-left"]
-        .map((c) => px(parent.style[`border-${c}-radius`]))
+        .map((c) => corner(parent, parent.style[`border-${c}-radius`]))
         .filter(Number.isFinite),
     );
     if (pr) return r2(pr);
@@ -1178,6 +1204,14 @@ interface StyleContext {
   cap: PackCapture;
   /** The box a polygon clip's lengths resolve against, when not the element's own. */
   clipBox?: { w: number; h: number };
+  /** A gradient stop's colour, matched with its palette-B twin (`layer` of `prop`, stop `stop`). */
+  stopColour?: (
+    el: CapturedElement,
+    prop: string,
+    layer: number,
+    stop: number,
+    raw: string,
+  ) => string | undefined;
 }
 
 /** An element's `filter: drop-shadow()` glows as drop shadows (the format takes four). */
@@ -1196,14 +1230,21 @@ function dropShadowsOf(
 }
 
 /** A gradient as the format's fill, its colours tokenised where the twin capture allows. */
-function gradientFill(value: string, ctx: StyleContext, el: CapturedElement): TemplateFill | null {
+function gradientFill(
+  value: string,
+  ctx: StyleContext,
+  el: CapturedElement,
+  at: { prop: string; layer: number } = { prop: "background-image", layer: 0 },
+): TemplateFill | null {
   const g = parseGradient(value);
   if (!g) return null;
-  const stops = g.stops.map((s) => {
-    const match = tokeniseColour(s.colour, undefined, { a: ctx.cap.rootColours, b: null });
-    return { color: match?.value ?? "#00000000", ...(s.at !== undefined ? { at: r2(s.at) } : {}) };
+  const stops = g.stops.map((s, i) => {
+    // With the palette-B twin, a stop is the token that matches in both palettes.
+    const value = ctx.stopColour
+      ? ctx.stopColour(el, at.prop, at.layer, i, s.colour)
+      : tokeniseColour(s.colour, undefined, { a: ctx.cap.rootColours, b: null })?.value;
+    return { color: value ?? "#00000000", ...(s.at !== undefined ? { at: r2(s.at) } : {}) };
   });
-  void el;
   return g.type === "linear"
     ? { type: "linear", ...(g.angle !== undefined ? { angle: g.angle } : {}), stops }
     : {
@@ -1227,8 +1268,10 @@ function shapeStyle(
   const fills: TemplateFill[] = [];
   const image = el.style["background-image"];
   if (image && image !== "none") {
-    for (const layer of splitTopLevel(image).filter((p) => !p.startsWith("url("))) {
-      const gradient = gradientFill(layer, ctx, el);
+    for (const [i, layer] of splitTopLevel(image)
+      .filter((p) => !p.startsWith("url("))
+      .entries()) {
+      const gradient = gradientFill(layer, ctx, el, { prop: "background-image", layer: i });
       if (gradient) fills.push(gradient);
       else ctx.polish.push({ element: el.id, what: `background ${layer.slice(0, 50)} not mapped` });
     }
@@ -1381,6 +1424,15 @@ export function fontFamilyOf(value: string | undefined): string | undefined {
   return `'${first}',${generic}`;
 }
 
+/** Italic text and its width (`font-stretch`), when either isn't the family's normal. */
+function fontShape(tree: Tree, el: CapturedElement): Pick<TemplateStyleV2, "italic" | "stretch"> {
+  const out: Pick<TemplateStyleV2, "italic" | "stretch"> = {};
+  if (/italic|oblique/.test(tree.style(el, "font-style") ?? "")) out.italic = true;
+  const stretch = parseFloat(tree.style(el, "font-stretch") ?? "");
+  if (Number.isFinite(stretch) && Math.abs(stretch - 100) > 0.5) out.stretch = r2(stretch);
+  return out;
+}
+
 /** The text style of an element with its own text. */
 function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): TemplateStyleV2 {
   const W = ctx.cap.native.w;
@@ -1397,6 +1449,7 @@ function textStyleOf(tree: Tree, el: CapturedElement, ctx: StyleContext): Templa
   const spacing = px(tree.style(el, "letter-spacing")) * scale;
   if (Number.isFinite(spacing) && spacing !== 0) style.letterSpacing = r2(spacing / fontPx);
   if (tree.style(el, "text-transform") === "uppercase") style.uppercase = true;
+  Object.assign(style, fontShape(tree, el));
   const align = tree.style(el, "text-align");
   const justify = el.style["justify-content"];
   style.align =
@@ -1456,6 +1509,8 @@ interface RowsOptions {
   repeat: string;
   W: number;
   colour: (el: CapturedElement, prop: string) => string | undefined;
+  /** A gradient stop's colour as a token, matched with its palette-B twin. */
+  stopColour?: StyleContext["stopColour"];
   fit: boolean;
   /** Indexed rows: an element's own field key → the row field. */
   cellField?: (el: CapturedElement) => string | null;
@@ -1491,7 +1546,11 @@ function rowsSpec(
   if (!first || first.box.h <= 0) return null;
   // Geometry from the worst-case twins when every row has one.
   const twinned = rows.map((r) => opts.twin?.(r));
-  const geo = twinned.every((t, i) => t && t !== rows[i] && t.box.h > 0)
+  // A twin counts only where it starts its row's column (a twin found in another
+  // element, such as a cell of another row, would move the list).
+  const geo = twinned.every(
+    (t, i) => t && t !== rows[i] && t.box.h > 0 && Math.abs(t.box.x - rows[i]!.box.x) < 4,
+  )
     ? (twinned as CapturedElement[])
     : rows;
   const columnsX = [...new Set(geo.map((r) => Math.round(r.box.x)))];
@@ -1690,19 +1749,56 @@ function rowCells(
     const weight = parseInt(tree.style(el, "font-weight") ?? "", 10);
     if (Number.isFinite(weight)) st.fontWeight = weight;
     if (tree.style(el, "text-transform") === "uppercase") st.uppercase = true;
+    Object.assign(st, fontShape(tree, el));
     const spacing = px(tree.style(el, "letter-spacing")) * scale;
     if (Number.isFinite(spacing) && spacing) st.letterSpacing = r2(spacing / fontPx);
+    // A glow round the cell's text (the scoreboards' LED type).
+    const shadows = parseShadows(tree.style(el, "text-shadow"));
+    if (shadows.length)
+      (st as TemplateStyleV2).textShadow = shadows.map((s) => ({
+        x: r2((s.x / opts.W) * 100),
+        y: r2((s.y / opts.W) * 100),
+        blur: r2((s.blur / opts.W) * 100),
+        color:
+          opts.colour(el, "text-shadow") ??
+          toHex(parseColour(s.colour) ?? { r: 0, g: 0, b: 0, a: 1 }),
+      }));
     const align = tree.style(el, "text-align");
     st.align =
       align === "center" ? "center" : align === "right" || align === "end" ? "right" : "left";
     return st;
   };
   const cells: RowsCell[] = [];
-  const rowFill = row.style["background-color"] ? opts.colour(row, "background-color") : undefined;
+  // A row painted with a gradient (T20's black rows) gets its middle stop: a row
+  // backdrop takes one colour.
+  const gradientMid = (el: CapturedElement): string | undefined => {
+    const image = el.style["background-image"];
+    const g = image && image !== "none" ? parseGradient(splitTopLevel(image)[0] ?? "") : null;
+    if (!g?.stops.length) return undefined;
+    const index = g.stops
+      .map((stop, i) => ({ i, d: Math.abs((stop.at ?? 50) - 50) }))
+      .sort((a, b) => a.d - b.d)[0]!.i;
+    const raw = g.stops[index]!.colour;
+    const c = parseColour(raw);
+    if (!c || c.a === 0) return undefined;
+    return opts.stopColour?.(el, "background-image", 0, index, raw) ?? toHex(c);
+  };
+  // A row wrapped in a box of its own size (a component marker) is painted by that box.
+  const only = tree.children.get(row.id) ?? [];
+  const painted =
+    only.length === 1 &&
+    !row.style["background-color"] &&
+    Math.abs(only[0]!.box.w - row.box.w) < 1 &&
+    Math.abs(only[0]!.box.h - row.box.h) < 1
+      ? only[0]!
+      : row;
+  const rowFill = painted.style["background-color"]
+    ? opts.colour(painted, "background-color")
+    : gradientMid(painted);
   for (const el of [row, ...tree.descendants(row)]) {
     if (el.hidden === "display" || el.box.w <= 0) continue;
     // A box behind the row's content, or a text's own (an outcome pill): a backdrop.
-    if (el !== row && el.style["background-color"]) {
+    if (el !== row && el !== painted && el.style["background-color"]) {
       const bg = opts.colour(el, "background-color");
       const r = cornerPx(el);
       if (bg)

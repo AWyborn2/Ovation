@@ -52,6 +52,7 @@
     "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts",
     "spike-template-schema": "tsx ./src/spike-template-schema.ts",
     "convert-pack": "tsx ./src/convert-pack.ts",
+    "convert-match-graphics": "tsx ./src/convert-match-graphics.ts",
     "refresh-worst-case-names": "tsx ./src/refresh-worst-case-names.ts",
     "check-template-bundles": "tsx ./src/check-template-bundles.ts",
     "extract-elements": "tsx ./src/extract-elements.ts"
