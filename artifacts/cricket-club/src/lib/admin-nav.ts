@@ -120,6 +120,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         path: "/admin/social/library",
         feature: "socialStudio",
       },
+      {
+        value: "settings",
+        label: "Settings",
+        path: "/admin/social/settings",
+        feature: "socialStudio",
+      },
     ],
   },
   {

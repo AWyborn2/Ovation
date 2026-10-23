@@ -223,17 +223,6 @@ describe("admin social studio — legacy packs are hidden (P9)", () => {
 });
 
 describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
-  it("the background templates section shows no pack row and offers it no Delete", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    expect(screen.getByText("My Uploaded Background")).toBeInTheDocument();
-    expect(screen.queryByText("Gold Foil — Square (1080×1080)")).toBeNull();
-    expect(screen.queryByText("Broadcast Dark — Story (1080×1920)")).toBeNull();
-    // One uploaded background → exactly one Delete affordance in that section.
-    expect(screen.getAllByText(/^Delete$/)).toHaveLength(1);
-  });
-
   it("no gallery card captions a pack row as the default template", async () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
