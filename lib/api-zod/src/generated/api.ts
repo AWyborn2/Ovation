@@ -11420,10 +11420,12 @@ export const ReportLibraryElementBody = zod.object({
 
 
 /**
+ * Card templates, and set templates (`set:<type>`, carousel set editor plan) when asked for by kind or with `includeSets`.
  * @summary The club's own templates, defaults first within each kind
  */
 export const ListClubTemplatesQueryParams = zod.object({
-  "kind": zod.coerce.string().optional()
+  "kind": zod.coerce.string().optional(),
+  "includeSets": zod.coerce.boolean().optional()
 })
 
 export const ListClubTemplatesResponse = zod.object({
@@ -11467,6 +11469,26 @@ export const CreateClubTemplateBody = zod.object({
   "libraryTemplateId": zod.number(),
   "version": zod.number().optional().describe('A library version; the current one when absent.'),
   "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * A new club set template of `setType`, saved to the club's designs. With `from`, that template's design takes the set page it fits (a cover, a team, fixture or result page, or the sponsors page; else it becomes the first page), and the other pages come from the same look's set template (Club Kit's when its look has none). A free set is the design and copies of it, with no data binding, and is never posted automatically. Without `from`, the look's set template as it is.
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const makeCarouselSetBodyNameMax = 80;
+
+
+
+export const MakeCarouselSetBody = zod.object({
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary', 'free']),
+  "from": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').optional().describe('The template to start from (one of the club\'s, or a library template).'),
+  "lookId": zod.number().optional().describe('Without `from`, the look whose set template to start from (Club Kit when absent).'),
+  "name": zod.string().min(1).max(makeCarouselSetBodyNameMax).optional()
 })
 
 

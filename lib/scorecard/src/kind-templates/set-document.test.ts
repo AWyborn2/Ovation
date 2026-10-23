@@ -5,6 +5,7 @@ import {
   assembleSetDocument,
   freeSetFromDocument,
   isSetDocument,
+  setFromDesign,
   setPageDocument,
   setTemplateKind,
   setTypeOfKind,
@@ -145,5 +146,47 @@ describe("set validation", () => {
     expect(templateDocumentErrors(base(), setTemplateKind("results")).join(" ")).toMatch(
       /results set/,
     );
+  });
+});
+
+describe("a set made from one design (part 4)", () => {
+  const kit = looks().find((l) => l.look === "club-kit")!;
+  const gold = looks().find((l) => l.look === "gold-foil")!;
+  const base = assembleSetDocument("teamLists", (k) => kit.docs.get(k))!.document;
+
+  it("puts a Team List design on the team page, the look's other pages around it", () => {
+    const set = setFromDesign("teamLists", base, "teamList", gold.docs.get("teamList"))!;
+    const gl = gold.docs.get("teamList") as { pages: Record<string, { layers: unknown }> };
+    expect(set.pages.find((p) => p.slot === "team")!.layers).toEqual(gl.pages.team!.layers);
+    expect(set.pages.find((p) => p.slot === "cover")!.layers).toEqual(base.pages[0]!.layers);
+    expect(templateDocumentErrors(set, setTemplateKind("teamLists"))).toEqual([]);
+  });
+
+  it("makes a Match Day design the cover and sponsors of any set", () => {
+    const md = gold.docs.get("matchDay") as { pages: Record<string, { layers: unknown }> };
+    const set = setFromDesign("teamLists", base, "matchDay", md)!;
+    expect(set.pages[0]).toMatchObject({ slot: "cover", kind: "matchDay", page: "title" });
+    expect(set.pages[0]!.layers).toEqual(md.pages.title!.layers);
+    expect(set.pages.at(-1)!.layers).toEqual(md.pages.sponsors!.layers);
+    expect(templateDocumentErrors(set, setTemplateKind("teamLists"))).toEqual([]);
+  });
+
+  it("opens with a design that fills no page, in place of the cover", () => {
+    const set = setFromDesign("teamLists", base, "player", gold.docs.get("player"))!;
+    expect(set.pages.map((p) => p.slot)).toEqual(["page", "team", "sponsors"]);
+    expect(set.pages[0]).toMatchObject({ kind: "player", page: "card", name: "Cover" });
+    expect(templateDocumentErrors(set, setTemplateKind("teamLists"))).toEqual([]);
+  });
+
+  it("makes a free set of the design and two copies", () => {
+    const set = setFromDesign("free", null, "player", gold.docs.get("player"))!;
+    expect(set.pages.map((p) => p.slot)).toEqual(["page", "page", "page"]);
+    expect(templateDocumentErrors(set, setTemplateKind("free"))).toEqual([]);
+  });
+
+  it("needs the set's own base for a data set", () => {
+    expect(setFromDesign("teamLists", null, "player", gold.docs.get("player"))).toBeNull();
+    const md = assembleSetDocument("matchDay", (k) => kit.docs.get(k))!.document;
+    expect(setFromDesign("teamLists", md, "player", gold.docs.get("player"))).toBeNull();
   });
 });

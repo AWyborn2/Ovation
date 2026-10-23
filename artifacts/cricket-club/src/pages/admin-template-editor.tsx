@@ -168,6 +168,7 @@ import {
 } from "@/lib/pack-render";
 import { previewSample, sampleItem, stressSample } from "@/lib/kind-templates/samples";
 import { PackCard } from "@/components/pack-card";
+import { MakeSetDialog } from "@/components/template-library/make-set-dialog";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { draftInput } from "@/components/social-queue/draft-meta";
 import { kindLabel } from "@/lib/social-studio";
@@ -340,6 +341,7 @@ function ClubTemplateEditor({
   onReload: () => Promise<ClubTemplate | undefined>;
   initialFormat?: CardSize;
 }) {
+  const [making, setMaking] = useState(false);
   const qc = useQueryClient();
   const save = useSaveClubTemplate();
   const [current, setCurrent] = useState(template);
@@ -385,7 +387,26 @@ function ClubTemplateEditor({
         viewport={viewport}
         host={host}
         initialFormat={initialFormat}
+        actions={
+          // A card template can start a carousel set (part 4); a set already is one.
+          setTypeOfKind(template.kind) ? undefined : (
+            <button
+              type="button"
+              onClick={() => setMaking(true)}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
+            >
+              <Layers3 className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+            </button>
+          )
+        }
       />
+      {!setTypeOfKind(template.kind) && (
+        <MakeSetDialog
+          open={making}
+          onClose={() => setMaking(false)}
+          from={{ ref: { copyId: current.id, version: current.version }, name: current.name }}
+        />
+      )}
       <ApplyTemplateDialog
         copyId={template.id}
         label={kindLabel(template.kind)}

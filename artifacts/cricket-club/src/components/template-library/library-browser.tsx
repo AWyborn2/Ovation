@@ -41,6 +41,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
+import { MakeSetDialog } from "./make-set-dialog";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -176,6 +177,7 @@ export function TemplateDetailDialog({
   const input = usePreviewInput(template?.kind ?? "milestone", preview.clubName);
   const custom = useCustomiseTemplate();
   const set = template && isSetDocument(template.document) ? template.document : null;
+  const [making, setMaking] = useState(false);
 
   const use = async (makeDefault: boolean) => {
     if (!template) return;
@@ -285,6 +287,11 @@ export function TemplateDetailDialog({
               <Button variant="ghost" disabled={busy} onClick={() => use(false)}>
                 Save to my templates
               </Button>
+              {!set && (
+                <Button variant="ghost" disabled={busy} onClick={() => setMaking(true)}>
+                  Make a carousel set
+                </Button>
+              )}
               {(custom.error ?? status) && (
                 <span role="status" className="text-sm text-muted-foreground">
                   {custom.error ?? status}
@@ -294,6 +301,16 @@ export function TemplateDetailDialog({
           </>
         )}
       </DialogContent>
+      {template && !set && (
+        <MakeSetDialog
+          open={making}
+          onClose={() => setMaking(false)}
+          from={{
+            ref: { libraryTemplateId: template.id, version: template.version },
+            name: template.name,
+          }}
+        />
+      )}
     </Dialog>
   );
 }

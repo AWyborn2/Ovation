@@ -6661,11 +6661,18 @@ paths:
       operationId: listClubTemplates
       tags: [socialCards]
       summary: The club's own templates, defaults first within each kind
+      description: >-
+        Card templates, and set templates (`set:<type>`, carousel set editor
+        plan) when asked for by kind or with `includeSets`.
       parameters:
         - name: kind
           in: query
           required: false
           schema: { type: string }
+        - name: includeSets
+          in: query
+          required: false
+          schema: { type: boolean }
       responses:
         "200":
           description: The club's templates
@@ -6694,6 +6701,37 @@ paths:
           description: Not in the library, or no such version
         "409":
           description: makeDefault while the version's fit check is pending
+
+  /club-templates/sets:
+    post:
+      operationId: makeCarouselSet
+      tags: [socialCards]
+      summary: Make a carousel set design from one template (carousel set editor plan, part 4)
+      description: >-
+        A new club set template of `setType`, saved to the club's designs. With
+        `from`, that template's design takes the set page it fits (a cover, a
+        team, fixture or result page, or the sponsors page; else it becomes the
+        first page), and the other pages come from the same look's set
+        template (Club Kit's when its look has none). A free set is the design
+        and copies of it, with no data binding, and is never posted
+        automatically. Without `from`, the look's set template as it is.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MakeCarouselSetRequest"
+      responses:
+        "201":
+          description: The club's new set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "400":
+          description: The template can't start that set
+        "404":
+          description: Not the club's template, or not in the library
 
   /club-templates/{id}:
     parameters:
@@ -23038,6 +23076,25 @@ components:
         currentVersion: { type: integer }
         updatedAt: { type: ["string", "null"], format: date-time }
         updatedByName: { type: ["string", "null"] }
+
+    MakeCarouselSetRequest:
+      type: object
+      required: [setType]
+      properties:
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary, free]
+        from:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          description: The template to start from (one of the club's, or a library template).
+        lookId:
+          type: integer
+          description: Without `from`, the look whose set template to start from (Club Kit when absent).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
 
     DraftSetDesign:
       type: object

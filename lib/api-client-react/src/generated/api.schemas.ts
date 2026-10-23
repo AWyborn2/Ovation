@@ -8659,6 +8659,30 @@ export interface KindTemplateConflict {
   updatedByName?: string | null;
 }
 
+export type MakeCarouselSetRequestSetType = typeof MakeCarouselSetRequestSetType[keyof typeof MakeCarouselSetRequestSetType];
+
+
+export const MakeCarouselSetRequestSetType = {
+  teamLists: 'teamLists',
+  results: 'results',
+  matchDay: 'matchDay',
+  matchSummary: 'matchSummary',
+  free: 'free',
+} as const;
+
+export interface MakeCarouselSetRequest {
+  setType: MakeCarouselSetRequestSetType;
+  /** The template to start from (one of the club's, or a library template). */
+  from?: TemplateRef;
+  /** Without `from`, the look whose set template to start from (Club Kit when absent). */
+  lookId?: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
 export type DraftSetDesignSetType = typeof DraftSetDesignSetType[keyof typeof DraftSetDesignSetType];
 
 
@@ -12097,6 +12121,7 @@ cursor?: number;
 
 export type ListClubTemplatesParams = {
 kind?: string;
+includeSets?: boolean;
 };
 
 export type ListClubPhotosParams = {

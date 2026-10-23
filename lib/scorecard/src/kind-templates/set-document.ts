@@ -399,3 +399,74 @@ export function freeSetFromDocument(
     ...(d.sponsorLock === true ? { sponsorLock: true } : {}),
   };
 }
+
+/** Whether a kind page can be a set's cover (a Match Day title, a list card). */
+function canCover(kind: string, page: PageKey): boolean {
+  return (
+    (kind === "matchDay" && page === "title") ||
+    (LIST_COVER_KINDS.includes(kind) && page === "card")
+  );
+}
+
+/**
+ * A set started from one design (part 4, "Make a carousel set"): `base` is
+ * the look's set template; the design takes every page of it that it can
+ * draw (a cover, a team, fixture or result page, the sponsors page), as a
+ * Match Day template fills the Match Day set's pages. A design that draws none
+ * of them (a player card) becomes the set's first page, in place of its cover,
+ * with no data. A free set is the design and copies of it.
+ */
+export function setFromDesign(
+  type: SetType,
+  base: SetDocument | null,
+  kind: string,
+  doc: unknown,
+): SetDocument | null {
+  const page = primaryPage(kind);
+  if (type === "free") return freeSetFromDocument(kind, page, doc);
+  if (!base || base.set !== type) return null;
+  const d = doc as { palettes?: unknown; sponsorLock?: unknown };
+  const palettes = new Set<DerivedPalette>(base.palettes ?? []);
+  if (Array.isArray(d.palettes)) for (const p of d.palettes) palettes.add(p as DerivedPalette);
+  let used = false;
+  const pages = base.pages.map((p) => {
+    // A cover may be any title page or list cover; other slots draw their own kind page.
+    const fromPage =
+      p.slot === "cover"
+        ? canCover(kind, page)
+          ? page
+          : kind === "matchDay" && kindDocPage(doc, "title")
+            ? "title"
+            : null
+        : templateKindFor(kind) === templateKindFor(p.kind)
+          ? p.page
+          : null;
+    const layers = fromPage ? kindDocPage(doc, fromPage) : null;
+    if (!fromPage || !layers) return p;
+    used = true;
+    return p.slot === "cover"
+      ? { ...p, kind, page: fromPage, layers: clone(layers) }
+      : { ...p, layers: clone(layers) };
+  });
+  if (!used) {
+    const own = kindDocPage(doc, page);
+    if (!own) return null;
+    const first: SetPage = {
+      id: "design",
+      name: "Cover",
+      role: "fixed",
+      slot: "page",
+      kind,
+      page,
+      layers: clone(own),
+    };
+    const rest = pages.filter((p) => p.slot !== "cover");
+    pages.splice(0, pages.length, first, ...rest);
+  }
+  return {
+    ...base,
+    pages,
+    ...(palettes.size ? { palettes: [...palettes].sort() } : {}),
+    ...(base.sponsorLock || d.sponsorLock === true ? { sponsorLock: true } : {}),
+  };
+}

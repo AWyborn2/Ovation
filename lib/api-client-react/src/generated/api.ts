@@ -299,6 +299,7 @@ import type {
   ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
+  MakeCarouselSetRequest,
   MatchCardPhoto,
   MatchDetail,
   MatchDisplaySettings,
@@ -21800,6 +21801,7 @@ export const getListClubTemplatesUrl = (params?: ListClubTemplatesParams,) => {
 }
 
 /**
+ * Card templates, and set templates (`set:<type>`, carousel set editor plan) when asked for by kind or with `includeSets`.
  * @summary The club's own templates, defaults first within each kind
  */
 export const listClubTemplates = async (params?: ListClubTemplatesParams, options?: RequestInit): Promise<ClubTemplateList> => {
@@ -21937,6 +21939,78 @@ export const useCreateClubTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateClubTemplateMutationOptions(options));
+    }
+
+export const getMakeCarouselSetUrl = () => {
+
+
+
+
+  return `/api/club-templates/sets`
+}
+
+/**
+ * A new club set template of `setType`, saved to the club's designs. With `from`, that template's design takes the set page it fits (a cover, a team, fixture or result page, or the sponsors page; else it becomes the first page), and the other pages come from the same look's set template (Club Kit's when its look has none). A free set is the design and copies of it, with no data binding, and is never posted automatically. Without `from`, the look's set template as it is.
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const makeCarouselSet = async (makeCarouselSetRequest: MakeCarouselSetRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getMakeCarouselSetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      makeCarouselSetRequest,)
+  }
+);}
+
+
+
+
+export const getMakeCarouselSetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext> => {
+
+const mutationKey = ['makeCarouselSet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof makeCarouselSet>>, {data: BodyType<MakeCarouselSetRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  makeCarouselSet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MakeCarouselSetMutationResult = NonNullable<Awaited<ReturnType<typeof makeCarouselSet>>>
+    export type MakeCarouselSetMutationBody = BodyType<MakeCarouselSetRequest>
+    export type MakeCarouselSetMutationError = ErrorType<void>
+
+    /**
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const useMakeCarouselSet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof makeCarouselSet>>, TError,{data: BodyType<MakeCarouselSetRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof makeCarouselSet>>,
+        TError,
+        {data: BodyType<MakeCarouselSetRequest>},
+        TContext
+      > => {
+      return useMutation(getMakeCarouselSetMutationOptions(options));
     }
 
 export const getGetClubTemplateUrl = (id: number,) => {

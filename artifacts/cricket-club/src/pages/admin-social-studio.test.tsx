@@ -202,6 +202,23 @@ describe("Studio home", () => {
     );
   });
 
+  it("Create → Carousel set picks the set, a look and a size, then opens the editor", async () => {
+    const { writes, url } = open();
+    const create = screen.getByRole("heading", { name: "Create" }).closest("section")!;
+    fireEvent.click(await within(create).findByRole("button", { name: "Carousel set" }));
+    const dialog = await screen.findByRole("dialog", { name: "Make a carousel set" });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Match day/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Club Kit" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Feed portrait" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Make the set" }));
+    await waitFor(() => expect(writes.some((w) => /club-templates\/sets$/.test(w.url))).toBe(true));
+    expect(writes.find((w) => /club-templates\/sets$/.test(w.url))!.body).toEqual({
+      setType: "matchDay",
+      lookId: 10,
+    });
+    await waitFor(() => expect(url()).toBe("/admin/social/template/99?size=portrait"));
+  });
+
   it("searches card types, templates, elements and the club's designs, grouped", async () => {
     open();
     fireEvent.change(screen.getByPlaceholderText("Search templates, elements and your designs"), {

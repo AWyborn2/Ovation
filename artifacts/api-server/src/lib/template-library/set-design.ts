@@ -21,10 +21,12 @@
  */
 import { and, eq } from "drizzle-orm";
 import {
+  cardTemplatesTable,
   db,
   libraryTemplatesTable,
   libraryTemplateVersionsTable,
   socialDraftsTable,
+  type CardTemplateRow,
   type DraftTemplateRefColumn,
   type SocialDraftRow,
 } from "@workspace/db";
@@ -33,10 +35,13 @@ import {
   assembleSetDocument,
   isSetDocument,
   lookForPack,
+  setFromDesign,
   setTemplateKind,
   setTypeOfKind,
+  SET_TYPE_LABELS,
   templateDocumentErrors,
   type DataSetType,
+  type SetType,
   type SetDocument,
   type SetPage,
 } from "@workspace/scorecard/kind-templates";
@@ -47,7 +52,9 @@ import {
 } from "@workspace/scorecard/queued-carousel";
 import { recordDraftRevision } from "../draft-revisions";
 import { normalizeDraftStatus } from "../draft-status";
-import { BLANK_PACK_ID } from "../kind-templates";
+import { BLANK_PACK_ID, KIND_SOURCE } from "../kind-templates";
+import { MAX_TEMPLATE_NAME } from "./copies";
+import { initialFit, requestFit } from "./fit";
 import { libraryAssetPolicyErrors } from "./assets";
 import { resolveTemplateRef } from "./draw";
 import { TemplateLibraryError } from "./errors";
@@ -308,4 +315,79 @@ export async function saveDraftSetDesign(
       .returning();
     return row!;
   });
+}
+
+// ── Make a carousel set (part 4) ────────────────────────────────────────────
+
+export type MakeCarouselSet = {
+  setType: SetType;
+  from?: { copyId?: number; libraryTemplateId?: number; version: number };
+  lookId?: number;
+  name?: string;
+};
+
+/**
+ * A new club set design (`set:<type>`), saved to the club's designs: one
+ * template's design on the pages it fits and the same look's set template
+ * around it (`setFromDesign`), or a look's set template as it is. Made from a
+ * design, it is the club's own (edited, standalone); taken from a look as it
+ * is, it is an unedited copy that can take the look's updates. Never the
+ * default: making it doesn't change what the club's sets are drawn with.
+ */
+export async function makeSetCopy(
+  tenantId: number,
+  body: MakeCarouselSet,
+  adminId: number | null,
+): Promise<CardTemplateRow> {
+  const type = body.setType;
+  let document: SetDocument | null;
+  let origin: DraftTemplateRefColumn | null = null;
+  if (body.from) {
+    const t = await resolveTemplateRef(tenantId, body.from);
+    if (setTypeOfKind(t.kind)) throw invalid("Start a set from a card template.");
+    const base =
+      type === "free"
+        ? null
+        : ((t.lookId !== null ? await lookSetTemplate({ lookId: t.lookId }, type) : null) ??
+          (await lookSetTemplate({ slug: `club-kit/${setTemplateKind(type)}` }, type)));
+    document = setFromDesign(type, base?.document ?? null, t.kind, t.document);
+    if (!document) throw invalid("That template can't start this set.");
+  } else {
+    if (type === "free") throw invalid("A free set starts from a template.");
+    const base =
+      (body.lookId !== undefined ? await lookSetTemplate({ lookId: body.lookId }, type) : null) ??
+      (await lookSetTemplate({ slug: `club-kit/${setTemplateKind(type)}` }, type));
+    if (!base) throw new TemplateLibraryError(404, { error: "That look has no such set yet." });
+    document = base.document;
+    origin = base.ref;
+  }
+  const kind = setTemplateKind(type);
+  const errors = templateDocumentErrors(document, kind);
+  if (errors.length > 0) throw invalid(errors[0]!, errors.slice(0, 20));
+  const fit = initialFit();
+  const [row] = await db
+    .insert(cardTemplatesTable)
+    .values({
+      tenantId,
+      name: (
+        body.name?.trim() ||
+        (type === "free" ? SET_TYPE_LABELS.free : `${SET_TYPE_LABELS[type]} set`)
+      ).slice(0, MAX_TEMPLATE_NAME),
+      source: KIND_SOURCE,
+      baseKind: kind,
+      cardKinds: [kind],
+      adjustments: document,
+      version: 1,
+      updatedAt: new Date(),
+      updatedByAdminId: adminId,
+      isKindDefault: false,
+      originTemplateId: origin?.libraryTemplateId ?? null,
+      originVersion: origin?.version ?? null,
+      // A set made from a design is the club's own from the start.
+      editedAt: origin ? null : new Date(),
+      ...fit,
+    })
+    .returning();
+  requestFit({ kind: "copy", tenantId, copyId: row!.id, version: 1 }, document, kind);
+  return row!;
 }

@@ -8,4 +8,5 @@
 
 export type ListClubTemplatesParams = {
 kind?: string;
+includeSets?: boolean;
 };

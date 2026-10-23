@@ -33,8 +33,14 @@ import { Button } from "@/components/ui/button";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { kindLabel } from "@/lib/social-studio";
-import { TemplateThumb, usePreviewInput, type LibraryPreview } from "./previews";
+import { isSetDocument } from "@workspace/scorecard/kind-templates";
+import {
+  SetPageThumb,
+  templateKindLabel,
+  TemplateThumb,
+  usePreviewInput,
+  type LibraryPreview,
+} from "./previews";
 
 type Preview = LibraryPreview;
 
@@ -155,7 +161,9 @@ function CopyRow({
   return (
     <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
       <div className="w-20 shrink-0">
-        {q.data ? (
+        {q.data && isSetDocument(q.data.document) && q.data.document.pages[0] ? (
+          <SetPageThumb set={q.data.document} page={q.data.document.pages[0]} preview={preview} />
+        ) : q.data ? (
           <TemplateThumb
             document={q.data.document}
             kind={template.kind}
@@ -236,9 +244,11 @@ function CopyRow({
 export function YourTemplates({ preview }: { preview: Preview }) {
   const qc = useQueryClient();
   const confirm = useConfirm();
-  const q = useListClubTemplates(undefined, {
-    query: { queryKey: getListClubTemplatesQueryKey() },
-  });
+  // Card templates and the club's carousel set designs (part 4).
+  const q = useListClubTemplates(
+    { includeSets: true },
+    { query: { queryKey: getListClubTemplatesQueryKey({ includeSets: true }) } },
+  );
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -258,7 +268,7 @@ export function YourTemplates({ preview }: { preview: Preview }) {
     try {
       if (action === "default") {
         await setClubTemplateDefault(t.id);
-        setStatus(`"${t.name}" is now your ${kindLabel(t.kind)} default.`);
+        setStatus(`"${t.name}" is now your ${templateKindLabel(t.kind)} default.`);
       } else if (action === "duplicate") {
         await duplicateClubTemplate(t.id);
         setStatus(`Duplicated "${t.name}".`);
@@ -293,8 +303,8 @@ export function YourTemplates({ preview }: { preview: Preview }) {
         </p>
       )}
       {kinds.map((kind) => (
-        <section key={kind} aria-label={kindLabel(kind)}>
-          <h3 className="mb-2 text-sm font-semibold">{kindLabel(kind)}</h3>
+        <section key={kind} aria-label={templateKindLabel(kind)}>
+          <h3 className="mb-2 text-sm font-semibold">{templateKindLabel(kind)}</h3>
           <ul className="space-y-2">
             {templates
               .filter((t) => t.kind === kind)

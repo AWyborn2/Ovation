@@ -414,3 +414,65 @@ describe("applying a Match Day template to waiting drafts", () => {
     expect((await api("get", `/social-drafts/${id}`)).body.adjustments).toEqual(before);
   });
 });
+
+describe("making a carousel set from one template (part 4)", () => {
+  it("puts a Team List design on the team page of its look's set, as the club's own", async () => {
+    const res = await api("post", "/club-templates/sets").send({
+      setType: "teamLists",
+      from: { libraryTemplateId: lib["l1:teamList"], version: 1 },
+      name: "Our team lists",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      kind: "set:teamLists",
+      name: "Our team lists",
+      isDefault: false,
+      edited: true,
+    });
+    const doc = res.body.document as SetDocument;
+    expect(doc.pages.map((p) => p.layers[0]!.id)).toEqual([
+      "l1-tlr-card",
+      "l1-tl-team",
+      "l1-md-sponsors",
+    ]);
+    // It's in the club's designs (asked for with sets), not among its card templates.
+    const all = await api("get", "/club-templates?includeSets=true");
+    expect(all.body.templates.map((t: { id: number }) => t.id)).toContain(res.body.id);
+    const cards = await api("get", "/club-templates");
+    expect(cards.body.templates.map((t: { id: number }) => t.id)).not.toContain(res.body.id);
+  });
+
+  it("makes a free set from any card template, and refuses a free set from nothing", async () => {
+    const free = await api("post", "/club-templates/sets").send({
+      setType: "free",
+      from: { libraryTemplateId: lib["l0:matchDay"], version: 1 },
+    });
+    expect(free.status).toBe(201);
+    expect((free.body.document as SetDocument).pages).toHaveLength(3);
+    expect(free.body.name).toBe("Free set");
+    const none = await api("post", "/club-templates/sets").send({ setType: "free" });
+    expect(none.status).toBe(400);
+  });
+
+  it("takes a look's set as it is, an unedited copy that follows the look", async () => {
+    const [look] = await db
+      .select({ id: templateLooksTable.id })
+      .from(templateLooksTable)
+      .where(eq(templateLooksTable.slug, LOOKS[1]!));
+    const res = await api("post", "/club-templates/sets").send({
+      setType: "matchDay",
+      lookId: look!.id,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.edited).toBe(false);
+    expect(res.body.basedOn).toMatchObject({ templateId: lib["l1:set:matchDay"] });
+  });
+
+  it("won't start a set from a set", async () => {
+    const res = await api("post", "/club-templates/sets").send({
+      setType: "matchDay",
+      from: { libraryTemplateId: lib["l0:set:matchDay"], version: 1 },
+    });
+    expect(res.status).toBe(400);
+  });
+});
