@@ -6365,9 +6365,14 @@ paths:
       summary: Browse the template library
       description: >-
         Listed templates whose current version passed the fit check (ADR-011),
-        24 a page, optionally for one card kind, card size or look. Library
-        reads never return any club's own templates.
+        24 a page, optionally for one card kind, card size or look, or matching
+        search words. Library reads never return any club's own templates.
       parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the template's name, its kind or its look's name.
+          schema: { type: string, maxLength: 60 }
         - name: kind
           in: query
           required: false
@@ -19072,6 +19077,10 @@ components:
           type: ["integer", "null"]
         grade:
           type: ["string", "null"]
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the set was last saved.
 
     GenerateCardSetBody:
       type: object

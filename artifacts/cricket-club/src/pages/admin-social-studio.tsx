@@ -1,67 +1,54 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { WeekendCarousel } from "@/components/weekend-carousel";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
+import { CalendarClock, Inbox, LayoutTemplate, Settings } from "lucide-react";
+import { useLibraryPreviewData } from "@/components/template-library/previews";
+import { HomeHero } from "@/components/studio-home/home-hero";
+import { CreateRow } from "@/components/studio-home/create-row";
+import { CreatePicker } from "@/components/studio-home/create-picker";
+import { ContinueDesigning, YourDesigns } from "@/components/studio-home/recent-designs";
+import { TemplatesStrip } from "@/components/studio-home/templates-strip";
+import type { CardKind } from "@/lib/social-studio";
+
+const QUICK_LINKS = [
+  { href: "/admin/social/queue", label: "Queue", icon: Inbox },
+  { href: "/admin/social/plan", label: "Posting plan", icon: CalendarClock },
+  { href: "/admin/social/template-library", label: "Templates", icon: LayoutTemplate },
+  { href: "/admin/social/settings", label: "Settings", icon: Settings },
+];
 
 /**
- * The Studio tab. Design packs moved to Templates → Looks and the post
- * settings to the Settings tab; what's left points there and launches the
- * on-demand carousel sets.
+ * Social Media Studio home, laid out like Canva's: search, create something
+ * new, pick up recent work, templates for the club, and quick links. Design
+ * packs live in Templates → Looks and post settings on the Settings tab.
+ * `/admin/social/designs` shows every design ("See all").
  */
 export default function AdminSocialStudio() {
+  const [location] = useLocation();
+  const preview = useLibraryPreviewData();
+  const [target, setTarget] = useState<{ kind: string } | { blank: true } | null>(null);
+  const pickKind = (kind: CardKind) => setTarget({ kind });
+
+  if (location === "/admin/social/designs") return <YourDesigns preview={preview} />;
+
   return (
     <div className="space-y-8">
-      {/* Each card kind's design: the club's default templates, in the template library (ADR-011) */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="min-w-0 space-y-1">
-            <h2 className="text-lg font-semibold">Card designs</h2>
-            <p className="text-sm text-muted-foreground">
-              Every card is drawn with your club&rsquo;s template for its kind. Pick, edit and
-              manage them in the template library, and choose design packs and club colours under
-              Looks.
-            </p>
-          </div>
-          <Button size="sm" asChild>
-            <Link href="/admin/social/template-library">Open the template library</Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Card names, card content, match summary settings and the old
-          upload-based backgrounds live on the Settings tab. */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="min-w-0 space-y-1">
-            <h2 className="text-lg font-semibold">Post settings</h2>
-            <p className="text-sm text-muted-foreground">
-              Card names, card content and match summary carousels are on the Settings tab.
-            </p>
-          </div>
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/admin/social/settings">Open settings</Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Weekend match-day carousel entry */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">On-demand carousel sets</h2>
-        <Card>
-          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Build a branded set with a cover, one slide per team or match and a sponsors close.
-              Send it to review, then export the saved set as one ZIP.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <WeekendCarousel />
-              <WeekendCarousel initialType="teamList" />
-              <WeekendCarousel initialType="results" />
-              <WeekendCarousel initialType="matchSummary" />
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+      <HomeHero preview={preview} onPickKind={pickKind} />
+      <CreateRow onPickKind={pickKind} onBlank={() => setTarget({ blank: true })} />
+      <ContinueDesigning preview={preview} />
+      <TemplatesStrip preview={preview} />
+      <nav aria-label="Studio shortcuts" className="flex flex-wrap gap-2">
+        {QUICK_LINKS.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="bc-lift inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium"
+          >
+            <Icon className="h-4 w-4 text-primary-text" aria-hidden />
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <CreatePicker target={target} preview={preview} onClose={() => setTarget(null)} />
     </div>
   );
 }

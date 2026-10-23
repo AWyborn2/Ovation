@@ -20951,7 +20951,7 @@ export const getListLibraryTemplatesUrl = (params?: ListLibraryTemplatesParams,)
 }
 
 /**
- * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look. Library reads never return any club's own templates.
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look, or matching search words. Library reads never return any club's own templates.
  * @summary Browse the template library
  */
 export const listLibraryTemplates = async (params?: ListLibraryTemplatesParams, options?: RequestInit): Promise<LibraryTemplatePage> => {

@@ -168,6 +168,22 @@ describe("browsing the library", () => {
     );
   });
 
+  it("searches by every word across the name, the kind and the look's name", async () => {
+    const words = async (q: string) =>
+      (await me().get(`/template-library?look=${OTHER_LOOK}&q=${encodeURIComponent(q)}`)).body
+        .templates as { name: string }[];
+    expect((await words("other")).map((t) => t.name)).toEqual(["Other milestone"]);
+    expect((await words("MILESTONE")).map((t) => t.name)).toEqual(["Other milestone"]);
+    expect(await words("milestone nope")).toEqual([]);
+    // A LIKE wildcard is a literal character, not "match anything".
+    expect(await words("%")).toEqual([]);
+    const byLook = await me().get(`/template-library?q=${encodeURIComponent("test look")}`);
+    const ours = (byLook.body.templates as { slug: string }[])
+      .map((t) => t.slug)
+      .filter((slug) => slug.startsWith(`rt-${STAMP}`));
+    expect(ours.sort()).toEqual([`${LOOK}/matchDay`, `${LOOK}/milestone`]);
+  });
+
   it("lists looks with the kinds each covers", async () => {
     const res = await me().get("/template-library/looks");
     const look = res.body.looks.find((l: { slug: string }) => l.slug === LOOK);

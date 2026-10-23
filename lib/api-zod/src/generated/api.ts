@@ -7751,7 +7751,8 @@ export const ListCardSetsResponseItem = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 export const ListCardSetsResponse = zod.array(ListCardSetsResponseItem)
 
@@ -7894,7 +7895,8 @@ export const GenerateCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 
 
@@ -7972,7 +7974,8 @@ export const AutoseedCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })),
   "skipped": zod.string().optional()
 })
@@ -8107,7 +8110,8 @@ export const UpdateCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 
 
@@ -11112,10 +11116,15 @@ export const DeleteEditorTemplateParams = zod.object({
 
 
 /**
- * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look. Library reads never return any club's own templates.
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look, or matching search words. Library reads never return any club's own templates.
  * @summary Browse the template library
  */
+export const listLibraryTemplatesQueryQMax = 60;
+
+
+
 export const ListLibraryTemplatesQueryParams = zod.object({
+  "q": zod.coerce.string().max(listLibraryTemplatesQueryQMax).optional().describe('Words that must each appear in the template\'s name, its kind or its look\'s name.'),
   "kind": zod.coerce.string().optional(),
   "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional(),
   "look": zod.coerce.string().optional().describe('A look\'s slug.'),

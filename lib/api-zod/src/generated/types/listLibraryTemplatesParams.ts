@@ -8,6 +8,11 @@
 import type { ListLibraryTemplatesSize } from './listLibraryTemplatesSize';
 
 export type ListLibraryTemplatesParams = {
+/**
+ * Words that must each appear in the template's name, its kind or its look's name.
+ * @maxLength 60
+ */
+q?: string;
 kind?: string;
 size?: ListLibraryTemplatesSize;
 /**
