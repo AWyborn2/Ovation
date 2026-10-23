@@ -75,3 +75,7 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 
 - kiosk-photo-rotation scoped; awaiting alignment, then architect.
 - Architect: kiosk-photo-rotation design proposed (junior library + kiosk slideshows).
+
+## Kiosk redesign (23 Oct 2026)
+
+- Design + prototype approved; delivery plan written (EM). Phase: Planning complete. Next: A0 on integration branch `wyborn21/kiosk-redesign`; junior photo library stream in parallel.
