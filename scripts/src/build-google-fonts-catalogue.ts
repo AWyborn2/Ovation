@@ -4,8 +4,9 @@
  *
  * Source: Google Fonts' public family metadata, https://fonts.google.com/metadata/fonts
  * (no API key). Output: artifacts/cricket-club/src/lib/google-fonts-catalogue.json,
- * committed. Each entry keeps the family, its category and its upright weights,
- * sorted by popularity so the picker shows common families first.
+ * committed. Each entry keeps the family, its category, its upright weights,
+ * whether it has italics and its width axis (if any), sorted by popularity so
+ * the picker shows common families first.
  *
  *   pnpm --filter @workspace/scripts run build-google-fonts-catalogue
  */
@@ -24,11 +25,18 @@ type FamilyMetadata = {
   category: string;
   popularity: number;
   fonts: Record<string, unknown>;
+  axes?: Array<{ tag: string; min: number; max: number }>;
   isOpenSource?: boolean;
   isBrandFont?: boolean;
 };
 
-export type CatalogueEntry = { family: string; category: string; weights: number[] };
+export type CatalogueEntry = {
+  family: string;
+  category: string;
+  weights: number[];
+  italic?: boolean;
+  width?: [number, number];
+};
 
 /** Build catalogue entries from the metadata response body. */
 export function buildCatalogue(body: string): CatalogueEntry[] {
@@ -40,14 +48,19 @@ export function buildCatalogue(body: string): CatalogueEntry[] {
       // Only families anyone may load through the Google Fonts CSS API.
       .filter((f) => f.isOpenSource !== false && !f.isBrandFont)
       .sort((a, b) => a.popularity - b.popularity)
-      .map((f) => ({
-        family: f.family,
-        category: f.category,
-        weights: Object.keys(f.fonts)
-          .filter((k) => /^\d+$/.test(k))
-          .map(Number)
-          .sort((a, b) => a - b),
-      }))
+      .map((f) => {
+        const wdth = f.axes?.find((a) => a.tag === "wdth");
+        return {
+          family: f.family,
+          category: f.category,
+          weights: Object.keys(f.fonts)
+            .filter((k) => /^\d+$/.test(k))
+            .map(Number)
+            .sort((a, b) => a - b),
+          ...(Object.keys(f.fonts).some((k) => /^\d+i$/.test(k)) ? { italic: true } : {}),
+          ...(wdth ? { width: [wdth.min, wdth.max] as [number, number] } : {}),
+        };
+      })
       .filter((f) => f.weights.length > 0)
   );
 }

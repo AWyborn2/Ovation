@@ -34,19 +34,21 @@ export type PageKey = (typeof PAGE_KEYS)[number];
 /**
  * The colour tokens a document may name as `var(--token)`: the card's own
  * palette (`--gold` is the accent), and the derived palettes Club Kit
- * (`--ck-*`) and Duotone (`--dt-*`) emit. A colour is a hex or one of these.
+ * (`--ck-*`), Duotone (`--dt-*`) and the match palette (`--mt-*`) emit. A colour is a hex or one of these.
  */
 export const COLOUR_TOKENS = ["--gold", "--panel", "--panel-2", "--ink", "--accent-ink"] as const;
 export type ColourToken = (typeof COLOUR_TOKENS)[number];
 
 /** Derived palettes a document can use; the renderer emits a palette's variables when used. */
-export const DERIVED_PALETTES = ["club-kit", "duotone"] as const;
+export const DERIVED_PALETTES = ["club-kit", "duotone", "match"] as const;
 export type DerivedPalette = (typeof DERIVED_PALETTES)[number];
 
 /** The variable prefix each derived palette emits (`var(--ck-stage)`, `var(--dt-p)`). */
 export const DERIVED_PALETTE_PREFIX: Record<DerivedPalette, string> = {
   "club-kit": "--ck-",
   duotone: "--dt-",
+  // Both teams' colours on a match card (`match-palette.ts`).
+  match: "--mt-",
 };
 
 /** A colour: `#rgb`, `#rrggbb`, `#rrggbbaa`, or `var(--token)`. */
@@ -200,6 +202,14 @@ export type TemplateStyleV2 = TemplateTextStyle & {
   backdropBlur?: number;
   /** Shadows that follow what the layer draws, clip included. */
   dropShadow?: TemplateDropShadow[];
+  /** Text in the family's italic (the scoreboards' type). */
+  italic?: boolean;
+  /**
+   * Text set wider or narrower (CSS `font-stretch`), in percent of the
+   * family's normal width: Archivo at 125%. A family without a width axis
+   * draws at its normal width.
+   */
+  stretch?: number;
 };
 
 /**
@@ -222,6 +232,8 @@ export const V2_STYLE_KEYS = [
   "skew",
   "backdropBlur",
   "dropShadow",
+  "italic",
+  "stretch",
 ] as const satisfies ReadonlyArray<keyof TemplateStyleV2>;
 
 // ── Layout, conditions and fit ──────────────────────────────────────────────

@@ -39,6 +39,8 @@ export default tseslint.config(
       "**/*.config.{js,mjs,ts}",
       "**/build.mjs",
       "artifacts/api-server/src/data/**",
+      // Ash's Ovation Match Graphics design system, vendored as published (plan 2026-10-23, M1).
+      "scripts/src/data/ovation-match-graphics/**",
     ],
   },
   js.configs.recommended,

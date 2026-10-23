@@ -23346,6 +23346,9 @@ components:
         id: { type: integer }
         slug: { type: string }
         name: { type: string }
+        family:
+          type: string
+          description: The design system the look belongs to (a bundle look's `family`), when it has one.
 
     LibraryTemplate:
       type: object
@@ -23565,6 +23568,11 @@ components:
         name: { type: string }
         description: { type: ["string", "null"] }
         authorName: { type: string }
+        family:
+          type: string
+          description: >-
+            The design system the look belongs to ("Ovation Match Graphics"), when it has one.
+            The library shows a family's looks together.
         templates:
           type: array
           items:

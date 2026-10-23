@@ -20,6 +20,7 @@ import {
   type TemplateFill,
   type TemplateFilter,
   type TemplateLayerV2,
+  usesMatchGraphicsContent,
   V2_STYLE_KEYS,
   type TemplateStyleV2,
 } from "@workspace/scorecard/kind-templates";
@@ -37,6 +38,8 @@ import {
   type DuotonePalette,
 } from "./duotone-vars";
 import type { PackCardData, PackTokens } from "./types";
+import { matchTokensIn, matchVars, type MatchColours } from "@workspace/scorecard/match-palette";
+import { cardMatchColours } from "./match-vars";
 
 // ── Values ──────────────────────────────────────────────────────────────────
 
@@ -432,8 +435,22 @@ export function overlayHtml(style: TemplateStyleV2 | undefined): string {
  */
 export function layerNeedsV2(layer: TemplateLayerV2): boolean {
   if (layer.kind === "group" || layer.kind === "vector") return true;
-  const style = layer.style as Record<string, unknown> | undefined;
-  return !!style && V2_STYLE_KEYS.some((k) => style[k] !== undefined);
+  // A text fit (shrink, wrap, end in "…") is v2's: an inserted element keeps it.
+  if (layer.kind === "text" && (layer as { fit?: unknown }).fit) return true;
+  // Match graphics content (an innings' rows, a team's logo) is v2's.
+  if (usesMatchGraphicsContent(layer)) return true;
+  const v2Style = (style: unknown) =>
+    !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
+  if (v2Style(layer.style)) return true;
+  // A list whose cells or row styles use v2's (italic, a glow).
+  const rows = (layer as { rows?: { cells?: Array<{ style?: unknown }>; variants?: object } }).rows;
+  return (
+    !!rows &&
+    ((rows.cells ?? []).some((c) => v2Style(c.style)) ||
+      Object.values(rows.variants ?? {}).some((cells) =>
+        Object.values(cells as object).some(v2Style),
+      ))
+  );
 }
 
 /** The palette a template overlay carries: Club Kit's, plus the club stage. */
@@ -445,12 +462,14 @@ const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStag
  * an overlay with an element gets it, as does one whose styles name it
  * (`var(--ck-stage)`) or, in v2, declares it. A v2 document that declares or
  * uses the Duotone palette (`var(--dt-p)`) gets `--dt-*`, as does a v1 one
- * whose v2 layers (an inserted library element) use it.
+ * whose v2 layers (an inserted library element) use it. Layers that name the
+ * match palette (`var(--mt-win-colour)`) get just those tokens, from the
+ * card's match (`ctx.match`), else the club against a neutral opposition.
  */
 export function paletteVars(
   doc: NormalisedDocument,
   layers: readonly TemplateLayerV2[],
-  ctx: { tokens?: PackTokens; brand?: PackCardData["brand"] | null },
+  ctx: { tokens?: PackTokens; brand?: PackCardData["brand"] | null; match?: MatchColours },
 ): string {
   if (!ctx.tokens) return "";
   const json = JSON.stringify(layers);
@@ -464,8 +483,13 @@ export function paletteVars(
     (json.includes("var(--dt-") &&
       (doc.sourceFormat === 2 ||
         layers.some((l) => layerNeedsV2(l) && JSON.stringify(l).includes("var(--dt-"))));
+  // The match palette: only the `--mt-*` tokens the layers name, each computed from its name.
+  const match = json.includes("var(--mt-")
+    ? matchVars(ctx.match ?? cardMatchColours(null, ctx.tokens, ctx.brand), matchTokensIn(json))
+    : "";
   return [
     usesClubKit ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}` : "",
     usesDuotone ? `;${duotoneVars(duotonePaletteFor(ctx.tokens, ctx.brand))}` : "",
+    match ? `;${match}` : "",
   ].join("");
 }

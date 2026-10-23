@@ -44,6 +44,11 @@ import {
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
+import {
+  FAMILY_PREFIX,
+  groupFamilies,
+  lookFamilies,
+} from "@/components/template-library/look-families";
 import { elementBounds, elementLayers, type ElementDocumentLike } from "./element-insert";
 
 /** The look select's value for the club's own elements, listed or not. */
@@ -56,7 +61,21 @@ const TILE = { w: 128, h: 80 };
 const PREVIEW_KIND = "milestone";
 
 /** What every tile draws with: the club's colours, crest and sample card. */
-type ThumbData = { input: ShareCardInput; data: PackCardData };
+type ThumbData = {
+  input: ShareCardInput;
+  data: PackCardData;
+  /** A sample match, for elements that show a match's innings, rows or venue. */
+  match?: { input: ShareCardInput; data: PackCardData };
+};
+
+/** The sample a match element draws (Ovation Match Graphics): a Match Summary. */
+const MATCH_PREVIEW_KIND = "matchSummary";
+
+/** Whether an element shows a match's content: its innings, players, venue or result. */
+export const showsMatch = (element: Pick<LibraryElement, "document">): boolean =>
+  /\{\{(innings[12]\.|venue|result|competition|winner\.|loser\.)|"repeat":"innings[12]\./.test(
+    JSON.stringify(element.document),
+  );
 
 const layersOfElement = (element: LibraryElement, size: CardSize, now?: number) =>
   elementLayers(element.document as ElementDocumentLike, size, now);
@@ -124,13 +143,16 @@ function ElementThumb({
 }) {
   const layers = useMemo(() => layersOfElement(element, size, 0), [element, size]);
   const view = useMemo(() => tileView(layers, size), [layers, size]);
+  // A match element draws on a sample match (its page is the result), with its live data.
+  const sample = showsMatch(element) && thumb.match ? thumb.match : thumb;
+  const page = sample === thumb ? "card" : "result";
   const document = useMemo(
     () => ({
       formatVersion: 2,
-      pages: { card: { layers: view ? [backdrop(size, view.window), ...layers] : layers } },
+      pages: { [page]: { layers: view ? [backdrop(size, view.window), ...layers] : layers } },
       ...(element.document.palettes ? { palettes: element.document.palettes } : {}),
     }),
-    [layers, element, view, size],
+    [layers, element, view, size, page],
   );
   if (!view) return <div className="h-20 rounded-md bg-[#10151B]" aria-hidden />;
   return (
@@ -138,11 +160,11 @@ function ElementThumb({
       <div aria-hidden className="relative h-full w-full overflow-hidden">
         <div className="absolute" style={{ left: view.left, top: view.top }}>
           <PackCard
-            input={thumb.input}
+            input={sample.input}
             size={size}
             sponsorsOn
             junior={false}
-            data={thumb.data}
+            data={sample.data}
             packId={BLANK_PACK_ID}
             adjustments={document as unknown as CardAdjustments}
             width={view.width}
@@ -249,6 +271,44 @@ function ElementPage({
   );
 }
 
+/** One look's elements under its family heading, a page at a time. */
+function PagedElements({
+  params,
+  size,
+  thumb,
+  onAdd,
+  onUnlist,
+  onReport,
+}: {
+  params: ListLibraryElementsParams;
+  size: CardSize;
+  thumb: ThumbData;
+  onAdd: (layers: FreeLayer[]) => void;
+  onUnlist: (element: LibraryElement) => void;
+  onReport: (element: LibraryElement) => void;
+}) {
+  const [cursors, setCursors] = useState<Array<number | undefined>>([undefined]);
+  const key = JSON.stringify(params);
+  useEffect(() => setCursors([undefined]), [key]);
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {cursors.map((cursor, i) => (
+        <ElementPage
+          key={cursor ?? "first"}
+          params={cursor === undefined ? params : { ...params, cursor }}
+          size={size}
+          thumb={thumb}
+          last={i === cursors.length - 1}
+          onMore={(next) => setCursors((c) => [...c, next])}
+          onAdd={onAdd}
+          onUnlist={onUnlist}
+          onReport={onReport}
+        />
+      ))}
+    </div>
+  );
+}
+
 /** Report another club's element to Ovation (decision E1). */
 function ReportElementDialog({
   element,
@@ -337,7 +397,15 @@ export function LibraryElements({
   // `dataFor` caches per kind, so the same data comes back until the club's settings change.
   const data = preview.dataFor(PREVIEW_KIND);
   const input = useMemo(() => sampleCardInput(PREVIEW_KIND, preview.clubName), [preview.clubName]);
-  const thumb = useMemo<ThumbData>(() => ({ input, data }), [input, data]);
+  const matchData = preview.dataFor(MATCH_PREVIEW_KIND);
+  const matchInput = useMemo(
+    () => sampleCardInput(MATCH_PREVIEW_KIND, preview.clubName),
+    [preview.clubName],
+  );
+  const thumb = useMemo<ThumbData>(
+    () => ({ input, data, match: { input: matchInput, data: matchData } }),
+    [input, data, matchInput, matchData],
+  );
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [look, setLook] = useState("");
@@ -352,9 +420,15 @@ export function LibraryElements({
   // A new filter starts from the first page.
   useEffect(() => setCursors([undefined]), [search, look, category]);
 
+  const looks = looksQ.data?.looks ?? [];
+  const families = lookFamilies(looks);
+  // A family lists each of its looks under its own heading (M4).
+  const family = look.startsWith(FAMILY_PREFIX)
+    ? (families.find((f) => f.family === look.slice(FAMILY_PREFIX.length)) ?? null)
+    : null;
   const base: ListLibraryElementsParams = {
     ...(search ? { q: search } : {}),
-    ...(look === MINE ? { mine: true } : look ? { look } : {}),
+    ...(look === MINE ? { mine: true } : look && !family ? { look } : {}),
     ...(category ? { category } : {}),
   };
   const queryClient = useQueryClient();
@@ -364,7 +438,6 @@ export function LibraryElements({
     await unlist.mutateAsync({ id: element.id });
     await queryClient.invalidateQueries({ queryKey: getListLibraryElementsQueryKey() });
   };
-  const looks = looksQ.data?.looks ?? [];
 
   return (
     <section aria-label="Element library" className="mt-5">
@@ -389,11 +462,28 @@ export function LibraryElements({
       >
         <option value="">Every look</option>
         <option value={MINE}>Your club&apos;s elements</option>
-        {looks.map((l) => (
-          <option key={l.id} value={l.slug}>
-            {l.name}
-          </option>
-        ))}
+        {groupFamilies(looks).map((l, i, all) => {
+          if (!l.family) {
+            return (
+              <option key={l.id} value={l.slug}>
+                {l.name}
+              </option>
+            );
+          }
+          // A family is one group: the whole family, then each of its styles.
+          if (i > 0 && all[i - 1]!.family === l.family) return null;
+          const members = all.filter((m) => m.family === l.family);
+          return (
+            <optgroup key={`family-${l.family}`} label={l.family}>
+              <option value={`${FAMILY_PREFIX}${l.family}`}>{l.family}</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.slug}>
+                  {`${l.family} · ${m.name}`}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
       </select>
       <div
         className="mt-2 flex flex-wrap gap-1"
@@ -420,21 +510,39 @@ export function LibraryElements({
           </button>
         ))}
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {cursors.map((cursor, i) => (
-          <ElementPage
-            key={cursor ?? "first"}
-            params={cursor === undefined ? base : { ...base, cursor }}
-            size={size}
-            thumb={thumb}
-            last={i === cursors.length - 1}
-            onMore={(next) => setCursors((c) => [...c, next])}
-            onAdd={onAdd}
-            onUnlist={onUnlist}
-            onReport={setReporting}
-          />
-        ))}
-      </div>
+      {family ? (
+        family.looks.map((member) => (
+          <div key={member.id} className="mt-3">
+            <h4 className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--ed-ink2)]">
+              {member.name}
+            </h4>
+            <PagedElements
+              params={{ ...base, look: member.slug }}
+              size={size}
+              thumb={thumb}
+              onAdd={onAdd}
+              onUnlist={onUnlist}
+              onReport={setReporting}
+            />
+          </div>
+        ))
+      ) : (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {cursors.map((cursor, i) => (
+            <ElementPage
+              key={cursor ?? "first"}
+              params={cursor === undefined ? base : { ...base, cursor }}
+              size={size}
+              thumb={thumb}
+              last={i === cursors.length - 1}
+              onMore={(next) => setCursors((c) => [...c, next])}
+              onAdd={onAdd}
+              onUnlist={onUnlist}
+              onReport={setReporting}
+            />
+          ))}
+        </div>
+      )}
       <ReportElementDialog element={reporting} onClose={() => setReporting(null)} />
     </section>
   );

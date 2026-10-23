@@ -10,6 +10,7 @@
  */
 import { and, asc, eq, gt, ilike, inArray, notLike, or, sql, type SQL } from "drizzle-orm";
 import { SET_KIND_PREFIX } from "@workspace/scorecard/kind-templates";
+import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
   db,
   cardTemplatesTable,
@@ -27,7 +28,27 @@ import { libraryNotFound } from "./errors";
 /** Templates per library page (PM: 24 a page). */
 export const LIBRARY_PAGE_SIZE = 24;
 
-export type LibraryLookRef = { id: number; slug: string; name: string };
+export type LibraryLookRef = {
+  id: number;
+  slug: string;
+  name: string;
+  /** The design system a bundle look belongs to (`look.json` `family`), when it has one. */
+  family?: string;
+};
+
+/** Each bundle look's family, from its `look.json` (Ovation's own looks only). */
+const LOOK_FAMILIES = new Map(
+  TEMPLATE_BUNDLES.flatMap((b) => (b.look.family ? [[b.slug, b.look.family] as const] : [])),
+);
+
+/** The family a look belongs to, or null. */
+export const lookFamily = (slug: string): string | null => LOOK_FAMILIES.get(slug) ?? null;
+
+/** A look reference, with its family when it has one. */
+export function lookRef(id: number, slug: string, name: string): LibraryLookRef {
+  const family = lookFamily(slug);
+  return { id, slug, name, ...(family ? { family } : {}) };
+}
 
 export type LibraryTemplateView = {
   id: number;
@@ -94,7 +115,7 @@ function present(row: ViewRow): LibraryTemplateView {
     authorName: row.authorName ?? OVATION_AUTHOR,
     look:
       row.lookId !== null && row.lookSlug !== null && row.lookName !== null
-        ? { id: row.lookId, slug: row.lookSlug, name: row.lookName }
+        ? lookRef(row.lookId, row.lookSlug, row.lookName)
         : null,
     version: row.version,
     coverage: row.coverage ?? { pages: [], sizes: [] },
@@ -229,6 +250,8 @@ export type LibraryLookView = {
   name: string;
   description: string | null;
   authorName: string;
+  /** The design system the look belongs to, when it has one ("Ovation Match Graphics"). */
+  family?: string;
   /** The look's visible templates, one per kind. */
   templates: Array<{
     id: number;
@@ -271,6 +294,7 @@ export async function listLibraryLooks(): Promise<LibraryLookView[]> {
       name: look.name,
       description: look.description,
       authorName: look.authorName ?? OVATION_AUTHOR,
+      ...(lookFamily(look.slug) ? { family: lookFamily(look.slug)! } : {}),
       // A look's card templates; its set templates open from the set picker.
       templates: templates
         .filter((t) => t.lookId === look.id && !t.kind.startsWith(SET_KIND_PREFIX))

@@ -25,7 +25,7 @@ import { libraryAssetPolicyErrors } from "./assets";
 import { documentCoverage } from "./coverage";
 import { TemplateLibraryError, libraryNotFound } from "./errors";
 import { initialFit, requestFit } from "./fit";
-import { OVATION_AUTHOR, type LibraryTemplateView } from "./store";
+import { lookRef, OVATION_AUTHOR, type LibraryTemplateView } from "./store";
 
 export const MAX_LIBRARY_NAME = 80;
 export const MAX_UNLIST_REASON = 300;
@@ -88,7 +88,7 @@ function present(row: Row): ConsoleTemplateView {
     authorName: row.authorName ?? OVATION_AUTHOR,
     look:
       row.lookId !== null && row.lookSlug !== null && row.lookName !== null
-        ? { id: row.lookId, slug: row.lookSlug, name: row.lookName }
+        ? lookRef(row.lookId, row.lookSlug, row.lookName)
         : null,
     version: row.version,
     coverage: row.coverage ?? { pages: [], sizes: [] },

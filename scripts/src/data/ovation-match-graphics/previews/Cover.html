@@ -1,0 +1,44 @@
+<!-- @dsCard height=288 -->
+<div class="cover">
+  <!--
+    blocks: bc-teal 380×108, sb-navy 220×108, team-b-colour 160×108, team-a-colour 140×108, competition-colour 60×108 (radius-none)
+    arrangement: top-band skeleton — a strip of unequal broadcast bands, like the innings bars stacked edge to edge
+    pattern: stripes skewed −14° (the Classic/T20 glass stripes) — "glass stripes skewed −14° / −30°" is this system's own surface
+    scales: band height 108; stripe width row-gap-portrait 20px, pitch 3 × row-gap-portrait; corners radius-none
+  -->
+  <svg class="art" viewBox="0 0 960 108" width="960" height="108" aria-hidden="true">
+    <rect class="teal" x="0" y="0" width="380" height="108"/>
+    <rect class="navy" x="380" y="0" width="220" height="108"/>
+    <rect class="amber" x="600" y="0" width="160" height="108"/>
+    <rect class="purple" x="760" y="0" width="140" height="108"/>
+    <rect class="comp" x="900" y="0" width="60" height="108"/>
+    <g class="stripes" transform="skewX(-14)">
+      <rect class="amber glass" x="96" y="0" width="20" height="108"/>
+      <rect class="paper glass2" x="156" y="0" width="8" height="108"/>
+      <rect class="amber glass" x="216" y="0" width="20" height="108"/>
+      <rect class="teal" x="470" y="0" width="20" height="108"/>
+      <rect class="paper glass2" x="530" y="0" width="8" height="108"/>
+      <rect class="purple glass" x="700" y="0" width="20" height="108"/>
+    </g>
+  </svg>
+  <div class="text">
+    <div class="name">Ovation Match Graphics</div>
+    <div class="tag">Seven broadcast looks for grassroots cricket match summaries.</div>
+  </div>
+</div>
+<style>
+  html, body { margin: 0; }
+  .cover { position: relative; width: 960px; height: 288px; background: var(--canvas); overflow: hidden; }
+  .art { position: absolute; left: 0; top: 0; display: block; }
+  .teal { fill: var(--bc-teal); }
+  .navy { fill: var(--sb-navy); }
+  .amber { fill: var(--team-b-colour); }
+  .purple { fill: var(--team-a-colour); }
+  .comp { fill: var(--competition-colour); }
+  .paper { fill: var(--paper); }
+  .glass { opacity: .75; }
+  .glass2 { opacity: .35; }
+  .text { position: absolute; left: 40px; right: 40px; bottom: 36px; }
+  .name { font-family: var(--font-broadcast); font-weight: 700; font-size: 64px; line-height: .95; text-transform: uppercase; color: var(--paper); white-space: nowrap; }
+  .tag { margin-top: 10px; font-family: var(--font-panel); font-weight: 500; font-size: 14px; color: var(--clean-muted); letter-spacing: .04em; }
+</style>
