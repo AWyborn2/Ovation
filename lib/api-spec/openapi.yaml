@@ -7577,6 +7577,67 @@ paths:
         "409":
           description: The draft is posted or dismissed
 
+  /social-drafts/{id}/set-design:
+    get:
+      operationId: getDraftSetDesign
+      tags: [socialCards]
+      summary: A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+      description: >-
+        A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as
+        its set design: one document whose pages draw every slide. A draft
+        saved before set designs gets one assembled from its own design and the
+        same look's set template; nothing is stored until it is saved.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft's set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSetDesign"
+        "404":
+          description: Not found
+        "409":
+          description: The draft isn't a carousel set, or has no design a set can be made from
+    put:
+      operationId: saveDraftSetDesign
+      tags: [socialCards]
+      summary: Save a carousel set draft's design, slide order and size (keeps a revision)
+      description: >-
+        Stores the set design on the draft. A queued carousel's slides follow
+        the design's arrangement (reordered, deleted, design pages added) and
+        its size; a list draft keeps the arrangement in its design. The draft's
+        data snapshot is unchanged. The new layout owes a check before
+        automation, as any templated edit does.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveDraftSetDesignRequest"
+      responses:
+        "200":
+          description: The updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: The design or slide order isn't valid
+        "404":
+          description: Not found
+        "409":
+          description: The draft can't be edited (posted, dismissed, or not a set)
+
   /social-drafts/{id}:
     get:
       operationId: getSocialDraft
@@ -22977,6 +23038,52 @@ components:
         currentVersion: { type: integer }
         updatedAt: { type: ["string", "null"], format: date-time }
         updatedByName: { type: ["string", "null"] }
+
+    DraftSetDesign:
+      type: object
+      required: [draftId, setType, layout, document, templateRef, size]
+      properties:
+        draftId: { type: integer }
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary]
+        layout:
+          type: string
+          enum: [carousel, list]
+          description: >-
+            `carousel`: a queued set whose slides are stored (their order is the
+            payload's); `list`: a list card whose slides are worked out from its
+            data (their order is the design's arrangement).
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+        size:
+          type: string
+          nullable: true
+          enum: [square, portrait, story, landscape, null]
+          description: A queued carousel's size; null for a list draft (it posts at every size the club has on).
+        stored:
+          type: boolean
+          description: Whether the draft already holds this set design (false when assembled for this read).
+
+    SaveDraftSetDesignRequest:
+      type: object
+      required: [document]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+          description: The set template the design now comes from (switching look); absent keeps the draft's.
+        size:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: A queued carousel's new size.
 
     TemplateDocument:
       type: object

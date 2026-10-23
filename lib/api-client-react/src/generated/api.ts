@@ -150,6 +150,7 @@ import type {
   DeleteClubPhotos200,
   DeleteClubPhotosRequest,
   DirectoryClub,
+  DraftSetDesign,
   DraftSweepRequest,
   DraftSweepResponse,
   DuplicateConsoleLibraryTemplateRequest,
@@ -384,6 +385,7 @@ import type {
   SaveCardPhotoRulesRequest,
   SaveClubTemplateRequest,
   SaveConsoleLibraryTemplateRequest,
+  SaveDraftSetDesignRequest,
   SaveDraftTemplateRequest,
   SaveLibraryElementRequest,
   SchedulePublicationsRequest,
@@ -24605,6 +24607,157 @@ export const useApproveSocialDraft = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
+    }
+
+export const getGetDraftSetDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/set-design`
+}
+
+/**
+ * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+export const getDraftSetDesign = async (id: number, options?: RequestInit): Promise<DraftSetDesign> => {
+
+  return customFetch<DraftSetDesign>(getGetDraftSetDesignUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDraftSetDesignQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}/set-design`
+    ] as const;
+    }
+
+
+export const getGetDraftSetDesignQueryOptions = <TData = Awaited<ReturnType<typeof getDraftSetDesign>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDraftSetDesignQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDraftSetDesign>>> = ({ signal }) => getDraftSetDesign(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDraftSetDesignQueryResult = NonNullable<Awaited<ReturnType<typeof getDraftSetDesign>>>
+export type GetDraftSetDesignQueryError = ErrorType<void>
+
+
+/**
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+
+export function useGetDraftSetDesign<TData = Awaited<ReturnType<typeof getDraftSetDesign>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDraftSetDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDraftSetDesignQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveDraftSetDesignUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/set-design`
+}
+
+/**
+ * Stores the set design on the draft. A queued carousel's slides follow the design's arrangement (reordered, deleted, design pages added) and its size; a list draft keeps the arrangement in its design. The draft's data snapshot is unchanged. The new layout owes a check before automation, as any templated edit does.
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const saveDraftSetDesign = async (id: number,
+    saveDraftSetDesignRequest: SaveDraftSetDesignRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getSaveDraftSetDesignUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveDraftSetDesignRequest,)
+  }
+);}
+
+
+
+
+export const getSaveDraftSetDesignMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext> => {
+
+const mutationKey = ['saveDraftSetDesign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDraftSetDesign>>, {id: number;data: BodyType<SaveDraftSetDesignRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveDraftSetDesign(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDraftSetDesignMutationResult = NonNullable<Awaited<ReturnType<typeof saveDraftSetDesign>>>
+    export type SaveDraftSetDesignMutationBody = BodyType<SaveDraftSetDesignRequest>
+    export type SaveDraftSetDesignMutationError = ErrorType<void>
+
+    /**
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const useSaveDraftSetDesign = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftSetDesign>>, TError,{id: number;data: BodyType<SaveDraftSetDesignRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDraftSetDesign>>,
+        TError,
+        {id: number;data: BodyType<SaveDraftSetDesignRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveDraftSetDesignMutationOptions(options));
     }
 
 export const getGetSocialDraftUrl = (id: number,) => {

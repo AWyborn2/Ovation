@@ -29,7 +29,9 @@ import {
 import { sizeLabel } from "@/components/template-library/library-browser";
 import { kindLabel } from "@/lib/social-studio";
 import { SIZES, type ShareCardInput } from "@/lib/share-card";
-import { type CardAdjustments } from "@/lib/pack-render";
+import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
+import { draftSetDocument, setDraftLayout, setDraftSlides, slideDocument } from "@/lib/set-draft";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { editedAgo, recentDesigns, type RecentDesign } from "@/lib/studio-home";
 
 /** The club's recent work, merged from its drafts, templates and sets. */
@@ -68,6 +70,42 @@ const typeLabel = (d: RecentDesign) =>
 function DraftThumb({ draft, preview }: { draft: SocialDraft; preview: LibraryPreview }) {
   const input = draft.cardInput as ShareCardInput;
   const kind = String(input?.kind ?? "announcement");
+  // A set with its own design: its first slide, on its page.
+  const set = setDraftLayout(draft) ? draftSetDocument(draft.adjustments) : null;
+  const first = set ? setDraftSlides(draft, set, preview.dataFor("matchDay"))[0] : null;
+  if (set && first) {
+    return (
+      <WhenVisible aspect={`${SIZES.square.w} / ${SIZES.square.h}`}>
+        <PackCard
+          input={first.input}
+          size="square"
+          sponsorsOn={first.sponsorsOn}
+          junior={first.junior}
+          data={first.data}
+          packId={BLANK_PACK_ID}
+          adjustments={slideDocument(set, first)}
+        />
+      </WhenVisible>
+    );
+  }
+  const carousel = readQueuedCarousel(draft.cardInput);
+  if (carousel?.slides[0]) {
+    // A queued set not yet edited as one: its first slide on its assembled design.
+    const slide = carousel.slides[0];
+    return (
+      <WhenVisible aspect={`${SIZES.square.w} / ${SIZES.square.h}`}>
+        <PackCard
+          input={slide.input as ShareCardInput}
+          size="square"
+          sponsorsOn={slide.sponsorsOn}
+          junior={slide.junior}
+          data={slide.data as PackCardData}
+          packId={BLANK_PACK_ID}
+          adjustments={(draft.adjustments ?? null) as CardAdjustments | null}
+        />
+      </WhenVisible>
+    );
+  }
   if (draft.templateVersion != null) {
     return (
       <TemplateThumb
