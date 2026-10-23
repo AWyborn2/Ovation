@@ -121,9 +121,9 @@ function basePlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
         scorecards: "none",
         lineups: "upcoming",
       };
+    // ondemand: an admin asked from the Selection Hub for the sides named in PlayHQ now.
     case "preweekend":
     case "matchmorn":
-    // ondemand — an admin asked from the Selection Hub for the sides named in PlayHQ now.
     case "ondemand":
       // Sides are usually named Thursday–Saturday morning: pick them up for the Team List card.
       return {
