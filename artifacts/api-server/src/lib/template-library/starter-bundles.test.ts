@@ -12,10 +12,15 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { inArray } from "drizzle-orm";
 import { db, libraryTemplatesTable, templateLooksTable } from "@workspace/db";
-import { isDocumentV2, primaryPage } from "@workspace/scorecard/kind-templates";
+import {
+  isDocumentV2,
+  primaryPage,
+  templateDocumentErrors,
+  type SetDocument,
+} from "@workspace/scorecard/kind-templates";
 import { isRetiredCardKind } from "@workspace/scorecard";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
-import { syncBundles } from "./bundles";
+import { bundleSetTemplates, syncBundles } from "./bundles";
 
 const STARTER_LOOKS = ["club-kit-classic", "broadcast-classic", "clubhouse"];
 /** The pages L4-D adds to a starter's carousel templates. */
@@ -56,7 +61,9 @@ describe("syncing the committed bundles", () => {
     await db.delete(libraryTemplatesTable).where(
       inArray(
         libraryTemplatesTable.slug,
-        TEMPLATE_BUNDLES.flatMap((b) => b.templates.map((t) => `${b.slug}/${t.kind}`)),
+        TEMPLATE_BUNDLES.flatMap((b) =>
+          [...b.templates, ...bundleSetTemplates(b)].map((t) => `${b.slug}/${t.kind}`),
+        ),
       ),
     );
     await db.delete(templateLooksTable).where(inArray(templateLooksTable.slug, slugs));
@@ -66,6 +73,28 @@ describe("syncing the committed bundles", () => {
     const summary = await syncBundles();
     expect(summary.skipped).toEqual([]);
     expect(summary.looks).toBe(TEMPLATE_BUNDLES.length);
-    expect(summary.templates).toBe(TEMPLATE_BUNDLES.reduce((n, b) => n + b.templates.length, 0));
+    expect(summary.templates).toBe(
+      TEMPLATE_BUNDLES.reduce((n, b) => n + b.templates.length + bundleSetTemplates(b).length, 0),
+    );
+  });
+
+  it("assembles the four set templates for every look (carousel set editor plan)", () => {
+    for (const bundle of TEMPLATE_BUNDLES) {
+      const sets = bundleSetTemplates(bundle);
+      expect(sets.map((s) => s.kind).sort()).toEqual([
+        "set:matchDay",
+        "set:matchSummary",
+        "set:results",
+        "set:teamLists",
+      ]);
+      for (const set of sets) {
+        expect(templateDocumentErrors(set.file.document, set.kind)).toEqual([]);
+        // Listed exactly when every bundle it is made of is.
+        const kinds = new Set((set.file.document as SetDocument).pages.map((p) => p.kind));
+        expect(set.file.listed).toBe(
+          [...kinds].every((k) => bundle.templates.find((t) => t.kind === k)?.file.listed),
+        );
+      }
+    }
   });
 });

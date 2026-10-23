@@ -10,6 +10,7 @@ import {
   readBundleTargets,
   renderReport,
   selectChanged,
+  setReportFromParts,
   type FitTarget,
 } from "./check-template-bundles-core";
 
@@ -178,5 +179,66 @@ describe("what fails the check", () => {
   it("reads each bundle's listed flag", () => {
     bundle("neon-night", "player", { layers: [] });
     expect(readBundleTargets(root).find((x) => x.id === "neon-night/player")?.listed).toBe(true);
+  });
+});
+
+describe("set templates (carousel set editor plan, part 1)", () => {
+  const repo = path.resolve(__dirname, "../..");
+  const all = readBundleTargets(repo);
+  const sets = all.filter((t) => t.parts);
+
+  it("lists four set templates for every look, each page a kind target of the look", () => {
+    const looks = new Set(all.filter((t) => !t.parts).map((t) => t.id.split("/")[0]));
+    expect(sets).toHaveLength(looks.size * 4);
+    const ids = new Set(all.map((t) => t.id));
+    for (const set of sets) {
+      // Listed exactly when every kind it is made of is.
+      const kinds = new Set(set.parts!.map((p) => p.target));
+      expect(set.listed).toBe([...kinds].every((k) => all.find((t) => t.id === k)?.listed));
+      for (const part of set.parts!) expect(ids.has(part.target)).toBe(true);
+    }
+  });
+
+  it("leaves a set unlisted while a part is (the starters' Team List)", () => {
+    expect(sets.find((t) => t.id === "broadcast-classic/set:teamLists")?.listed).toBe(false);
+    expect(sets.find((t) => t.id === "broadcast-classic/set:matchDay")?.listed).toBe(true);
+    expect(sets.find((t) => t.id === "gold-foil/set:teamLists")?.listed).toBe(true);
+  });
+
+  it("re-checks a set when a kind it is made of changed", () => {
+    const picked = selectChanged(all, ["lib/template-bundles/gold-foil/teamList.json"]).map(
+      (t) => t.id,
+    );
+    expect(picked).toEqual(["gold-foil/teamList", "gold-foil/set:teamLists"]);
+  });
+
+  it("takes each page's result from its kind's report, issues renamed by page", () => {
+    const set = sets.find((t) => t.id === "club-kit/set:matchDay")!;
+    const report = (issues: TemplateFitReport["issues"]): TemplateFitReport => ({
+      kind: "matchDay",
+      status: issues.length ? "fail" : "pass",
+      variants: 40,
+      issues,
+      renderer: "r",
+      fonts: "f",
+      checkedAt: "t",
+    });
+    expect(setReportFromParts(set, new Map())).toBeNull();
+    const pass = setReportFromParts(set, new Map([["club-kit/matchDay", report([])]]));
+    expect(pass?.status).toBe("pass");
+    expect(pass?.variants).toBeGreaterThan(0);
+    const fail = setReportFromParts(
+      set,
+      new Map([
+        [
+          "club-kit/matchDay",
+          report([
+            { variant: "fixture.square", page: "fixture", size: "square", reason: "overflow" },
+          ]),
+        ],
+      ]),
+    );
+    expect(fail?.status).toBe("fail");
+    expect(fail?.issues.map((i) => i.variant)).toEqual(["fixture:fixture.square"]);
   });
 });

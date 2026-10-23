@@ -26,6 +26,7 @@ import {
   readBundleTargets,
   renderReport,
   selectChanged,
+  setReportFromParts,
   type CheckedTemplate,
   type KnownFailures,
 } from "./check-template-bundles-core";
@@ -105,14 +106,27 @@ export async function checkTemplateBundles(opts: CheckOptions): Promise<CheckedT
       { baseUrl: opts.baseUrl ?? undefined, skipBuild: opts.skipBuild, require: ["fitCheck"] },
       async (session) => {
         const page = await session.openPage();
-        for (const target of targets) {
+        const reports = new Map<string, TemplateFitReport>();
+        // Kinds first, so a set made of checked kind pages takes their results.
+        const ordered = [...targets.filter((t) => !t.parts), ...targets.filter((t) => t.parts)];
+        for (const target of ordered) {
           const started = Date.now();
+          const fromParts = setReportFromParts(target, reports);
+          if (fromParts) {
+            checked.push({ target, report: fromParts });
+            process.stderr.write(
+              `[fit] ${target.id}: ${fitReportSummary(fromParts)} (from its pages' kinds)
+`,
+            );
+            continue;
+          }
           try {
             const report = await callHarness<TemplateFitReport>(page, "fitCheck", {
               document: target.document,
               kind: target.kind,
             });
             checked.push({ target, report });
+            reports.set(target.id, report);
             process.stderr.write(
               `[fit] ${target.id}: ${fitReportSummary(report)} (${Date.now() - started} ms)\n`,
             );

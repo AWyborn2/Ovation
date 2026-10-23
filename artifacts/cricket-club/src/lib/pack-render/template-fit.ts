@@ -20,11 +20,14 @@ import {
   fitReport,
   fitVariantLabel,
   flattenLayers,
+  isSetDocument,
   layerTokens,
   missingCoreFields,
   normaliseDocument,
   pageLayersOnSize,
   pageRepeatCapacities,
+  setPageDocument,
+  setTypeOfKind,
   templateKindFor,
   tokenHidden,
   worstCaseCard,
@@ -179,6 +182,7 @@ export async function runTemplateFit(
   mount: FitMount,
   opts: { fonts?: string; onVariant?: (done: number, total: number) => void } = {},
 ): Promise<TemplateFitReport> {
+  if (setTypeOfKind(kind)) return runSetTemplateFit(document, kind, mount, opts);
   const doc = normaliseDocument(document, kind);
   const variants = fitMatrix(doc, kind);
   const issues = checkFitRules(doc, kind, variants);
@@ -211,4 +215,30 @@ export async function runTemplateFit(
     opts.onVariant?.(i + 1, variants.length);
   }
   return fitReport(kind, variants.length, issues, { fonts: opts.fonts ?? "unknown" });
+}
+
+/**
+ * A set template's fit check (carousel set editor plan, part 1): every page
+ * checked as the one-page kind document it renders as, with that kind's
+ * variants. An issue's variant names its page: `<page id>:<variant>`.
+ */
+async function runSetTemplateFit(
+  document: unknown,
+  kind: string,
+  mount: FitMount,
+  opts: { fonts?: string; onVariant?: (done: number, total: number) => void },
+): Promise<TemplateFitReport> {
+  if (!isSetDocument(document)) throw new Error("Not a set document.");
+  const issues: FitIssue[] = [];
+  let variants = 0;
+  for (const page of document.pages) {
+    const report = await runTemplateFit(setPageDocument(document, page), page.kind, mount, {
+      fonts: opts.fonts,
+    });
+    variants += report.variants;
+    for (const issue of report.issues)
+      issues.push({ ...issue, variant: `${page.id}:${issue.variant}` });
+  }
+  opts.onVariant?.(variants, variants);
+  return fitReport(kind, variants, issues, { fonts: opts.fonts ?? "unknown" });
 }

@@ -46,6 +46,20 @@ import {
 } from "./format";
 import { kindHasPage } from "./pages";
 import { pageRepeat, pageTokenKeys } from "./page-tokens";
+import {
+  isRepeatSlot,
+  isSetType,
+  MAX_SET_DOCUMENT_BYTES,
+  MAX_SET_PAGES,
+  SET_FIXED_SLOTS,
+  SET_REPEAT_SLOTS,
+  setPageDocument,
+  setPageLabel,
+  setPageSourceProblem,
+  setTypeOfKind,
+  type SetPage,
+  type SetType,
+} from "./set-document";
 import { isColourTokenName, sanitiseSvg } from "./svg";
 
 /** A v1 document's layer limit (the v1 editor's clipboard reads it too). */
@@ -938,6 +952,9 @@ const claimsV2 = (doc: Record<string, unknown>) => "formatVersion" in doc || "pa
  * empty when it is valid. (Empty sizes are checked separately, KTD15.)
  */
 export function templateDocumentErrors(doc: unknown, kind: string): string[] {
+  const setType = setTypeOfKind(kind);
+  if (setType) return setDocumentErrors(doc, setType);
+  if (kind.startsWith("set:")) return [`"${kind.slice(0, 40)}" isn't a set type.`];
   if (isObject(doc) && claimsV2(doc)) return v2DocumentErrors(doc, kind);
   const errors: Errors = [];
   if (!isObject(doc) || !Array.isArray(doc.layers)) return ["A template needs a list of layers."];
@@ -958,5 +975,110 @@ export function templateDocumentErrors(doc: unknown, kind: string): string[] {
       ids.add(id);
     }
   });
+  return errors;
+}
+
+const SET_SLOTS: ReadonlySet<string> = new Set([...SET_FIXED_SLOTS, ...SET_REPEAT_SLOTS]);
+const SLIDE_KEY = /^[A-Za-z0-9:._ -]{1,120}$/;
+
+/**
+ * Every problem with a set document of `type` (`set-document.ts`), in plain
+ * language; empty when it is valid. Each page is checked as the one-page kind
+ * document it renders as, so a page holds exactly what its kind's card may.
+ */
+export function setDocumentErrors(doc: unknown, type: SetType): string[] {
+  if (!isObject(doc)) return ["A set needs a list of pages."];
+  const errors: Errors = [];
+  knownKeys(
+    errors,
+    "The set",
+    doc,
+    new Set(["formatVersion", "set", "pages", "palettes", "sponsorLock", "arrangement"]),
+  );
+  if (doc.formatVersion !== FORMAT_VERSION) errors.push(`formatVersion must be ${FORMAT_VERSION}.`);
+  if (!isSetType(doc.set) || doc.set !== type) errors.push(`The set must say it is a ${type} set.`);
+  flag(errors, "sponsorLock", doc.sponsorLock);
+  if (doc.palettes !== undefined) {
+    if (
+      !Array.isArray(doc.palettes) ||
+      doc.palettes.some((p) => !(DERIVED_PALETTES as readonly unknown[]).includes(p)) ||
+      new Set(doc.palettes).size !== doc.palettes.length
+    )
+      errors.push(`palettes must list ${DERIVED_PALETTES.join(" or ")} once each.`);
+  }
+  if (doc.arrangement !== undefined) {
+    const a = doc.arrangement;
+    const keys = (v: unknown) =>
+      Array.isArray(v) &&
+      v.length <= 200 &&
+      v.every((k) => typeof k === "string" && SLIDE_KEY.test(k));
+    if (!isObject(a) || !keys(a.order) || !keys(a.removed))
+      errors.push("The set's slide order must list slide keys.");
+    else knownKeys(errors, "The slide order", a, new Set(["order", "removed"]));
+  }
+  if (!Array.isArray(doc.pages) || doc.pages.length === 0)
+    return [...errors, "A set needs at least one page."];
+  if (doc.pages.length > MAX_SET_PAGES)
+    return [...errors, `A set can hold at most ${MAX_SET_PAGES} pages.`];
+  if (JSON.stringify(doc).length > MAX_SET_DOCUMENT_BYTES)
+    return [...errors, `A set can be at most ${MAX_SET_DOCUMENT_BYTES / 1024 / 1024} MB.`];
+  const ids = new Set<string>();
+  const once = new Set<string>();
+  doc.pages.forEach((raw, i) => {
+    const where = `Page ${i + 1}`;
+    if (!isObject(raw)) {
+      errors.push(`${where} isn't a page.`);
+      return;
+    }
+    knownKeys(
+      errors,
+      where,
+      raw,
+      new Set(["id", "name", "role", "slot", "kind", "page", "layers"]),
+    );
+    if (typeof raw.id !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(raw.id))
+      errors.push(`${where} needs a short id (letters, digits, - or _).`);
+    else if (ids.has(raw.id)) errors.push(`${where} repeats the id of another page.`);
+    else ids.add(raw.id);
+    if (raw.name !== undefined && (typeof raw.name !== "string" || raw.name.length > 60))
+      errors.push(`${where}'s name must be text of at most 60 characters.`);
+    if (raw.role !== "fixed" && raw.role !== "repeat")
+      errors.push(`${where} must be fixed or repeating.`);
+    if (typeof raw.slot !== "string" || !SET_SLOTS.has(raw.slot)) {
+      errors.push(`${where} has an unknown slot.`);
+      return;
+    }
+    if (typeof raw.kind !== "string" || !kindFields(raw.kind)) {
+      errors.push(`${where} draws a kind templates don't support.`);
+      return;
+    }
+    if (typeof raw.page !== "string" || !(PAGE_KEYS as readonly string[]).includes(raw.page)) {
+      errors.push(`${where} names an unknown page.`);
+      return;
+    }
+    const page = raw as unknown as SetPage;
+    const label = `${where} (${setPageLabel(page)})`;
+    const problem = setPageSourceProblem(type, page);
+    if (problem) errors.push(`${label}: ${problem}.`);
+    // One cover, one sponsors page and one design per repeating slot (C2).
+    if (page.slot !== "page") {
+      if (once.has(page.slot)) errors.push(`${label}: a set has one ${page.slot} page.`);
+      once.add(page.slot);
+    }
+    if (!Array.isArray(raw.layers)) {
+      errors.push(`${label} needs a list of layers.`);
+      return;
+    }
+    const pageDoc = setPageDocument(
+      { palettes: doc.palettes as never, sponsorLock: doc.sponsorLock === true },
+      page,
+    );
+    for (const e of templateDocumentErrors(pageDoc, page.kind)) errors.push(`${label}: ${e}`);
+  });
+  if (
+    type !== "free" &&
+    !doc.pages.some((p) => isObject(p) && typeof p.slot === "string" && isRepeatSlot(p.slot))
+  )
+    errors.push("A data set needs at least one team, fixture or result page.");
   return errors;
 }
