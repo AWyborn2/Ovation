@@ -78,6 +78,11 @@ const AdminAvailability = lazy(() => import("@/pages/admin-availability"));
 // The personal availability link a player or parent opens from their SMS/email.
 const AvailabilityRespond = lazy(() => import("@/pages/availability-respond"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
+// Dev-only kiosk harness on sample data; compiled out of production builds.
+const KioskFixtureHarness =
+  import.meta.env.MODE === "development"
+    ? lazy(() => import("@/pages/kiosk-fixture-harness"))
+    : null;
 const AdminStarterProofs = lazy(() => import("@/pages/admin-starter-proofs"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
 const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
@@ -330,7 +335,15 @@ export function Router() {
   // it BEFORE the platform-loading gate below: gating it behind usePlatform()'s
   // loading state let the headless renderer hang until the 30s waitForFunction
   // timeout whenever the brand request was slow in that (cookieless) context.
+  const [isKioskFixture] = useRoute("/__kiosk-fixture");
   const [isCardRenderHarness] = useRoute("/__card-render");
+  if (KioskFixtureHarness && isKioskFixture) {
+    return (
+      <RouteSuspense>
+        <KioskFixtureHarness />
+      </RouteSuspense>
+    );
+  }
   if (isCardRenderHarness) {
     return (
       <RouteSuspense>
