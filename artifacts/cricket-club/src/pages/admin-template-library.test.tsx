@@ -1,13 +1,13 @@
 /** Studio → Templates (ADR-011 T5.6): browse, use, adopt a look, defaults. */
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type {
   ClubTemplateSummary,
   LibraryLookList,
   LibraryTemplate,
 } from "@workspace/api-client-react";
 import { placeholderDocument } from "@workspace/scorecard/kind-templates";
-import { renderAt } from "../test/render";
+import { renderAt, renderWithHistory } from "../test/render";
 import { installApiMock } from "../test/mock-api";
 import AdminTemplateLibrary from "./admin-template-library";
 import { defaultsAdoptionChanges } from "@/components/template-library/looks-panel";
@@ -101,6 +101,9 @@ const CLUB = {
   ],
 };
 
+/** The latest location of the page `setup()` rendered. */
+let currentUrl: () => string = () => "";
+
 function setup() {
   installApiMock({
     "/template-library/looks": LOOKS,
@@ -140,7 +143,7 @@ function setup() {
       return base(input, init);
     }),
   );
-  renderAt(<AdminTemplateLibrary />);
+  currentUrl = renderWithHistory(<AdminTemplateLibrary />, "/admin/social/template-library").url;
   return writes;
 }
 
@@ -150,7 +153,7 @@ describe("Studio → Templates", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Open Club Kit milestone" }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/Club Kit look · by Ovation/)).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Use" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save to my templates" }));
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]).toMatchObject({
       method: "POST",
@@ -161,6 +164,32 @@ describe("Studio → Templates", () => {
     await waitFor(() => expect(writes).toHaveLength(2));
     expect(writes[1]!.body).toMatchObject({ makeDefault: true });
     expect(await within(dialog).findByRole("status")).toHaveTextContent("set as your");
+  });
+
+  it("customises a template from its dialog: a club copy, opened in the editor", async () => {
+    const writes = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Open Club Kit milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Customise this template" }));
+    await waitFor(() => expect(currentUrl()).toBe("/admin/social/template/100"));
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({
+      method: "POST",
+      body: { libraryTemplateId: 1, version: 2, makeDefault: false },
+    });
+  });
+
+  it("customises straight from the grid with Edit or a double-click", async () => {
+    const writes = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Club Kit record" }));
+    await waitFor(() => expect(currentUrl()).toBe("/admin/social/template/100"));
+    expect(writes[0]!.body).toMatchObject({ libraryTemplateId: 2, makeDefault: false });
+
+    cleanup();
+    const again = setup();
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Open Club Kit milestone" }));
+    await waitFor(() => expect(currentUrl()).toBe("/admin/social/template/100"));
+    expect(again[0]!.body).toMatchObject({ libraryTemplateId: 1, makeDefault: false });
   });
 
   it("adopts a look after naming the defaults that change", async () => {
