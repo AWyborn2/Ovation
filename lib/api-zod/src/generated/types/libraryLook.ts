@@ -14,5 +14,7 @@ export interface LibraryLook {
   /** @nullable */
   description: string | null;
   authorName: string;
+  /** The design system the look belongs to ("Ovation Match Graphics"), when it has one. The library shows a family's looks together. */
+  family?: string;
   templates: LibraryLookTemplate[];
 }

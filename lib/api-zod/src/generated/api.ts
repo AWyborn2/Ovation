@@ -11142,7 +11142,8 @@ export const ListLibraryTemplatesResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -11168,6 +11169,7 @@ export const ListLibraryLooksResponse = zod.object({
   "name": zod.string(),
   "description": zod.string().nullable(),
   "authorName": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (\"Ovation Match Graphics\"), when it has one. The library shows a family\'s looks together.'),
   "templates": zod.array(zod.object({
   "id": zod.number(),
   "kind": zod.string(),
@@ -11194,7 +11196,8 @@ export const AdoptLibraryLookResponse = zod.object({
   "look": zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),
   "changed": zod.array(zod.object({
   "kind": zod.string(),
@@ -11270,7 +11273,8 @@ export const GetLibraryTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -11313,7 +11317,8 @@ export const ListLibraryElementsResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
@@ -11364,7 +11369,8 @@ export const GetLibraryElementResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
@@ -11393,7 +11399,8 @@ export const UnlistLibraryElementResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
@@ -11443,7 +11450,8 @@ export const ListClubTemplatesResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
@@ -11513,7 +11521,8 @@ export const GetClubTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
@@ -11566,7 +11575,8 @@ export const SaveClubTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
@@ -11624,7 +11634,8 @@ export const SetClubTemplateDefaultResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
@@ -11671,7 +11682,8 @@ export const TakeClubTemplateUpdateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()])
 }),zod.null()]),
   "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
@@ -16463,7 +16475,8 @@ export const ListConsoleLibraryTemplatesResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -16515,7 +16528,8 @@ export const GetConsoleLibraryTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -16563,7 +16577,8 @@ export const SaveConsoleLibraryTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -16616,7 +16631,8 @@ export const ListConsoleLibraryTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -16660,7 +16676,8 @@ export const UnlistConsoleLibraryTemplateResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "version": zod.number().describe('The template\'s current version.'),
   "coverage": zod.object({
@@ -16709,7 +16726,8 @@ export const ListConsoleLibraryElementsResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -16771,7 +16789,8 @@ export const UnlistConsoleLibraryElementResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -16803,7 +16822,8 @@ export const ListConsoleLibraryElementResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -16834,7 +16854,8 @@ export const DismissConsoleLibraryElementReportsResponse = zod.object({
   "look": zod.union([zod.object({
   "id": zod.number(),
   "slug": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
 }),zod.null()]),
   "listed": zod.boolean(),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),

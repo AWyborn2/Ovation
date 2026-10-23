@@ -236,7 +236,7 @@ decision table (M1–M13), is `docs/plans/2026-10-23-ovation-match-graphics-plan
 - **M2:** the layers come from rendering the real React components and converting the DOM
   with the pack converter's walker and mapping. They aren't hand-written.
 - **M3, M4:** seven template looks (one per style), grouped by a new look `family`
-  (migration 0063). The 51 layer components become elements credited to their style's look.
+  (read from the bundle files, so no migration: M14). The 51 layer components become elements credited to their style's look.
   The Elements panel shows the family as one "Ovation Match Graphics" entry, with a heading per
   style.
 - **M5–M8:** a new `match` palette (`--mt-*`) carries both teams', the winner's and the loser's
