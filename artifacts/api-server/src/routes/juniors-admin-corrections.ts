@@ -88,10 +88,9 @@ router.delete(
       correction.targetTable === "junior_participants"
         ? sql`lower(${juniorStatCorrectionsTable.targetId}) = lower(${correction.targetId})`
         : eq(juniorStatCorrectionsTable.targetId, correction.targetId);
-    const participantKey = and(
-      eq(juniorParticipantsTable.tenantId, tenantId),
-      sql`lower(${juniorParticipantsTable.participantId}) = lower(${correction.targetId})`,
-    );
+    // The participant, matched case-insensitively. Every query below names the
+    // tenant beside it, so the juniors tenant-scope guard can see it.
+    const sameParticipant = sql`lower(${juniorParticipantsTable.participantId}) = lower(${correction.targetId})`;
     const [newer] = await db
       .select({ id: juniorStatCorrectionsTable.id })
       .from(juniorStatCorrectionsTable)
@@ -124,7 +123,7 @@ router.delete(
         const locked = await tx
           .select()
           .from(juniorParticipantsTable)
-          .where(participantKey)
+          .where(and(eq(juniorParticipantsTable.tenantId, tenantId), sameParticipant))
           .for("update");
         if (locked.length !== 1) return false;
         const [latest] = await tx
@@ -158,11 +157,11 @@ router.delete(
                 privacyOverride: juniorParticipantsTable.privacyOverride,
               })
               .from(juniorParticipantsTable)
-              .where(participantKey);
+              .where(and(eq(juniorParticipantsTable.tenantId, tenantId), sameParticipant));
             await tx
               .update(juniorParticipantsTable)
               .set(current ? guardRevertedPrivacy(set, current) : set)
-              .where(participantKey);
+              .where(and(eq(juniorParticipantsTable.tenantId, tenantId), sameParticipant));
             // The rename flowed onto this club's stored line names (PATCH
             // /juniors/participants/:id), so a reverted name flows back the same way.
             if (typeof set.displayName === "string") {

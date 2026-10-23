@@ -18,6 +18,7 @@ import {
   captionTemplatesTable,
   emailListsTable,
   emailListMembersTable,
+  emailSendsTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "./auth";
 import { upsertDraftByKey } from "./draft-upsert";
@@ -136,6 +137,8 @@ afterAll(async () => {
   setCardPngRenderer(null);
   setEmailTransport(null);
   await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantId));
+  // Sends outlive their list (ON DELETE set null keeps the history), so they go first.
+  await db.delete(emailSendsTable).where(eq(emailSendsTable.tenantId, tenantId));
   await db.delete(emailListsTable).where(eq(emailListsTable.tenantId, tenantId));
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
