@@ -50,13 +50,13 @@ export async function rosterGamesByParticipant(
   if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
   const rows = await db
     .select({
-      pid: juniorMatchRostersTable.participantId,
+      pid: sql<string>`lower(${juniorMatchRostersTable.participantId})`,
       games: sql<number>`count(distinct ${juniorMatchRostersTable.matchId})::int`,
     })
     .from(juniorMatchRostersTable)
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
     .where(and(ofTenant(tenantId), ...conds))
-    .groupBy(juniorMatchRostersTable.participantId);
+    .groupBy(sql`lower(${juniorMatchRostersTable.participantId})`);
   return new Map(
     rows
       .filter((r): r is { pid: string; games: number } => r.pid != null)
@@ -148,7 +148,7 @@ export async function bowlingLeaders(
     participantId: r.participantId,
     displayName: formatJuniorName(r.displayName, style),
     wickets: r.wickets,
-    matches: rosterGames.get(r.participantId) ?? 0,
+    matches: rosterGames.get(r.participantId.toLowerCase()) ?? 0,
     bestWickets: r.bestWickets,
     economy: r.balls > 0 ? Math.round((r.runs / (r.balls / BALLS_PER_OVER)) * 100) / 100 : null,
   }));

@@ -654,6 +654,12 @@ export async function requeueSend(tenantId: number, sendId: number, now = new Da
     .from(emailSendsTable)
     .where(and(eq(emailSendsTable.id, sendId), eq(emailSendsTable.tenantId, tenantId)));
   if (!row) throw new EmailOutboxError(404, "Send not found");
+  if (row.listId == null && row.kind !== BATCH_KIND) {
+    throw new EmailOutboxError(
+      409,
+      "This email list was deleted. Create a new list to send again.",
+    );
+  }
   const [copy] = await db
     .insert(emailSendsTable)
     .values({
@@ -689,6 +695,11 @@ type SendOutcome =
 async function recipientsFor(
   row: ListSendRow,
 ): Promise<{ from: string; recipients: string[] } | SendOutcome> {
+  const [list] = await db
+    .select({ active: emailListsTable.active })
+    .from(emailListsTable)
+    .where(and(eq(emailListsTable.id, row.listId), eq(emailListsTable.tenantId, row.tenantId)));
+  if (!list?.active) return { status: "skipped", reason: "The email list is inactive or deleted." };
   const members = await db
     .select({ email: emailListMembersTable.email })
     .from(emailListMembersTable)
@@ -1073,7 +1084,8 @@ export async function drainOutbox(
   const claimed = await db.transaction(async (tx) => {
     const ids = await tx.execute<{ id: number }>(sql`
       SELECT id FROM email_sends
-      WHERE (status = 'queued'
+      WHERE (list_id IS NOT NULL OR kind = ${BATCH_KIND} OR status IN ('queued', 'sending'))
+        AND (status = 'queued'
          OR (status = 'failed' AND attempts < ${MAX_EMAIL_ATTEMPTS})
          OR (status = 'sending' AND claimed_at < ${staleBefore}))
       ${tenantFilter}
@@ -1182,6 +1194,8 @@ export async function listSends(tenantId: number, opts: { listId?: number; limit
     ...r,
     listName:
       r.listName ??
-      `${reason === "scheduled" ? "Scheduled team sheets" : "Email all team sheets"}${sheets ? ` (${sheets} ${sheets === 1 ? "side" : "sides"})` : ""}`,
+      (r.kind === BATCH_KIND
+        ? `${reason === "scheduled" ? "Scheduled team sheets" : "Email all team sheets"}${sheets ? ` (${sheets} ${sheets === 1 ? "side" : "sides"})` : ""}`
+        : "Deleted list"),
   }));
 }

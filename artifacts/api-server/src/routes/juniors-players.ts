@@ -104,7 +104,12 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
       res.json([]);
       return;
     }
-    conds.push(inArray(juniorParticipantsTable.participantId, ids));
+    conds.push(
+      inArray(
+        sql`lower(${juniorParticipantsTable.participantId})`,
+        ids.map((id) => id.toLowerCase()),
+      ),
+    );
   }
 
   const participants = await db
@@ -140,22 +145,22 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const [runsRows, wktsRows, matchesBy] = await Promise.all([
     db
       .select({
-        pid: juniorMatchBattingTable.participantId,
+        pid: sql<string>`lower(${juniorMatchBattingTable.participantId})`,
         runs: sql<number>`coalesce(sum(${juniorMatchBattingTable.runs}),0)::int`,
       })
       .from(juniorMatchBattingTable)
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(eq(juniorMatchesTable.tenantId, tenantId), ...battingAggConds))
-      .groupBy(juniorMatchBattingTable.participantId),
+      .groupBy(sql`lower(${juniorMatchBattingTable.participantId})`),
     db
       .select({
-        pid: juniorMatchBowlingTable.participantId,
+        pid: sql<string>`lower(${juniorMatchBowlingTable.participantId})`,
         wickets: sql<number>`coalesce(sum(${juniorMatchBowlingTable.wickets}),0)::int`,
       })
       .from(juniorMatchBowlingTable)
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(eq(juniorMatchesTable.tenantId, tenantId), ...bowlingAggConds))
-      .groupBy(juniorMatchBowlingTable.participantId),
+      .groupBy(sql`lower(${juniorMatchBowlingTable.participantId})`),
     rosterGamesByParticipant(tenantId, { season, ageGroup }),
   ]);
 
@@ -180,9 +185,9 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         firstSeason: p.firstSeason,
         lastSeason: p.lastSeason,
         teams: p.teams,
-        matches: matchesBy.get(p.participantId) ?? 0,
-        runs: runsBy.get(p.participantId) ?? 0,
-        wickets: wktsBy.get(p.participantId) ?? 0,
+        matches: matchesBy.get(p.participantId.toLowerCase()) ?? 0,
+        runs: runsBy.get(p.participantId.toLowerCase()) ?? 0,
+        wickets: wktsBy.get(p.participantId.toLowerCase()) ?? 0,
         seniorPlayerId: p.seniorPlayerId,
         photoUrl: photos.get(p.participantId.toLowerCase())?.url ?? null,
         ...(withPrivate
@@ -337,7 +342,12 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     const [row] = await db
       .select()
       .from(juniorParticipantsTable)
-      .where(juniorParticipantKey(tenantId, id));
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, tenantId),
+          sql`lower(${juniorParticipantsTable.participantId}) = ${id.toLowerCase()}`,
+        ),
+      );
     return row;
   };
 
@@ -379,6 +389,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     return;
   }
   const publicName = formatJuniorName(participant.displayName, await getJuniorNameStyle(tenantId));
+  pid = participant.participantId;
 
   // All HH batting/bowling lines for this player, joined to their match context.
   const battingRows = await db
@@ -391,7 +402,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(juniorMatchesTable.tenantId, tenantId),
-        eq(juniorMatchBattingTable.participantId, pid),
+        sql`lower(${juniorMatchBattingTable.participantId}) = ${pid.toLowerCase()}`,
         eq(juniorMatchBattingTable.isHallsHead, true),
       ),
     );
@@ -405,7 +416,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(juniorMatchesTable.tenantId, tenantId),
-        eq(juniorMatchBowlingTable.participantId, pid),
+        sql`lower(${juniorMatchBowlingTable.participantId}) = ${pid.toLowerCase()}`,
         eq(juniorMatchBowlingTable.isHallsHead, true),
       ),
     );
@@ -416,7 +427,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .where(
       and(
         eq(juniorMatchesTable.tenantId, tenantId),
-        eq(juniorMatchRostersTable.participantId, pid),
+        sql`lower(${juniorMatchRostersTable.participantId}) = ${pid.toLowerCase()}`,
         eq(juniorMatchRostersTable.isHallsHead, true),
       ),
     );

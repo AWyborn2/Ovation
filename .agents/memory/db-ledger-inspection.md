@@ -22,3 +22,9 @@ Production schema changes applied manually may exist without corresponding Drizz
 **Why:** Production already contained later schema additions while its migration ledger still stopped at an earlier point. Recording only the newest migration could cause a future runner to skip older, unverified migrations.
 
 **How to apply:** Do not advance or rewrite the production ledger merely to match development. Prefer managed publish-time schema updates; keep Agent production checks read-only.
+
+When explicitly asked to execute only selected development SQL files, do not advance the timestamp-based migration ledger past older pending entries.
+
+**Why:** Drizzle uses the highest recorded timestamp to select future migrations. Recording a newer subset can silently skip earlier migrations outside the authorized scope.
+
+**How to apply:** Execute the authorized files transactionally and verify their schema effects. Leave the ledger unchanged when earlier entries remain pending; distinguish direct SQL execution from running the full migration runner.

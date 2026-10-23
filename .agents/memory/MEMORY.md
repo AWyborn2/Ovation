@@ -85,3 +85,7 @@
 - [Environment-triggered workflow restarts](environment-workflow-restarts.md) — setting changes can restart services; avoid racing them with manual restarts.
 - [Mobile/web React peers](mobile-web-react-peers.md) — keep per-app React versions; shared API hooks must resolve the same Query instance as each app's provider.
 - [Tenant committee roles](tenant-committee-roles.md) — clubs define their own committee titles and relative display priority; avoid a fixed platform-wide hierarchy.
+- [Large SQL payloads](large-sql-payloads.md) — large executeSql requests can hit OS argument limits; use a verified development client for file-based rehearsals.
+- [SQL Console transaction safety](sql-console-transactions.md) — console batches own transactions; never remove preview rollback protection just to make a script run.
+- [Confirmed junior names](confirmed-junior-name-boundaries.md) — admin knowledge can resolve evidence conflicts; identity confirmation is not consent, and production application must remain owner-controlled.
+- [Email history retention](email-history-retention.md) — preserve non-identifying delivery history; distinguish deleted lists from intentional listless batches.
