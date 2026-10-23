@@ -16,7 +16,7 @@ import {
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
 import type { DisplayBoard } from "@/components/honours-display/types";
-import type { Sponsor, KioskAd } from "@workspace/api-client-react";
+import type { HonourDisplayBundle, Sponsor, KioskAd } from "@workspace/api-client-react";
 import {
   useApproachingBoard,
   applyBoardConfig,
@@ -133,7 +133,7 @@ function paginate(board: DisplayBoard, rowsPerPage: number): DisplayBoard[] {
   return [board];
 }
 
-export default function HonoursKiosk() {
+export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundle } = {}) {
   // A kiosk token (issued by an admin) drives the public, login-free kiosk feed
   // for a fixed clubroom TV. It arrives via the short `/tv/:token` path, or the
   // legacy `?token=` query for older saved links. Without one we're the in-app
@@ -144,18 +144,22 @@ export default function HonoursKiosk() {
     [routeParams.token],
   );
   const adminQ = useGetHonourDisplay({
-    query: { enabled: !kioskToken, queryKey: getGetHonourDisplayQueryKey() },
+    query: { enabled: !kioskToken && !fixture, queryKey: getGetHonourDisplayQueryKey() },
   });
   const tokenQ = useGetKioskDisplay(
     { token: kioskToken ?? "" },
     {
       query: {
-        enabled: !!kioskToken,
+        enabled: !!kioskToken && !fixture,
         queryKey: getGetKioskDisplayQueryKey({ token: kioskToken ?? "" }),
       },
     },
   );
-  const { data, refetch, dataUpdatedAt, isError } = kioskToken ? tokenQ : adminQ;
+  const live = kioskToken ? tokenQ : adminQ;
+  // The dev-only harness (`/__kiosk-fixture`) passes sample data instead of fetching.
+  const { data, refetch, dataUpdatedAt, isError } = fixture
+    ? { data: fixture, refetch: live.refetch, dataUpdatedAt: Date.now(), isError: false }
+    : live;
   const approachingBoard = useApproachingBoard();
   const [, navigate] = useLocation();
   const [index, setIndex] = useState(0);
