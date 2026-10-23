@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kiosk Settings Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --page: #f4f1ec; --ink: #1d1a16; --muted: #6b645a; --line: #ddd5c8; --card: #ffffff;
+    --accent: #8a6a2c; --club: #0e3b2e;
+    --timber-1: #2b1a0f; --timber-2: #3d2615; --timber-3: #24150b;
+    --gold: #d8b25e; --gold-hi: #f3dc9b; --gold-lo: #9a7428; --engrave: #f0dfb4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 Inter, system-ui, sans-serif; }
+  button { font: inherit; color: inherit; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 24px 16px 60px; }
+  .intro { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font: 600 22px/1.2 Inter; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0; max-width: 760px; font-size: 13px; }
+
+  /* ---------- App shell ---------- */
+  .app { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+  .app-top { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .app-top h2 { font: 600 16px Inter; margin: 0; flex: 1; }
+  .dirty { font-size: 12px; color: var(--accent); }
+  .dirty.clean { color: var(--muted); }
+  .tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { padding: 12px 14px; font-weight: 500; color: var(--muted); border: 0; border-bottom: 2px solid transparent; background: none; white-space: nowrap; cursor: pointer; }
+  .tab[aria-selected="true"] { color: var(--ink); border-color: var(--club); }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 12px; font: 500 13px Inter; cursor: pointer; }
+  .btn:hover { border-color: #b9ad99; }
+  .btn.primary { background: var(--club); border-color: var(--club); color: #fff; }
+  .btn.primary[disabled] { opacity: .45; cursor: default; }
+  .btn:focus-visible, .opt:focus-visible, .item:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .body { display: grid; grid-template-columns: 330px 1fr; min-height: 640px; }
+  .rail { border-right: 1px solid var(--line); padding: 16px; background: #faf8f5; }
+  .section-h { font: 600 12px Inter; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .panel { padding: 16px 20px 24px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+  .single { padding: 16px 20px 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+
+  /* Rotation list */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .item { display: grid; grid-template-columns: 16px 40px 1fr auto; align-items: center; gap: 10px; background: #fff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 8px 8px 10px; margin-bottom: 6px; cursor: pointer; }
+  .item.sel { border-color: var(--club); box-shadow: 0 0 0 2px rgba(14,59,46,.15); }
+  .item.playing .t::after { content: " ●"; color: #2bb673; }
+  .item.dragging { opacity: .4; }
+  .item.drop-before { box-shadow: 0 -3px 0 var(--club); }
+  .item.drop-after { box-shadow: 0 3px 0 var(--club); }
+  .grip { color: #b5ab9c; letter-spacing: -2px; cursor: grab; user-select: none; }
+  .thumb { width: 40px; height: 24px; border-radius: 3px; background: linear-gradient(180deg, var(--timber-2), var(--timber-1)); border: 1px solid var(--gold-lo); }
+  .thumb.t-sponsor { background: #e9e4da; border-color: var(--line); }
+  .thumb.t-ad { background: linear-gradient(135deg, #c2410c, #7c2d12); border-color: transparent; }
+  .thumb.t-photos { background: linear-gradient(135deg, #7aa38f, #2f5d4b); border-color: transparent; }
+  .item .t { font-weight: 500; font-size: 13px; line-height: 1.2; }
+  .item .k { font-size: 11px; color: var(--muted); }
+  .item-actions { display: flex; gap: 2px; }
+  .icon { border: 0; background: none; width: 24px; height: 24px; border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 13px; line-height: 1; }
+  .icon:hover { background: #f1ece3; color: var(--ink); }
+  .add-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .add-row .section-h { width: 100%; margin: 6px 0 0; }
+  .empty { padding: 16px; border: 1px dashed #c9bfae; border-radius: 8px; color: var(--muted); font-size: 13px; text-align: center; }
+
+  /* Fields */
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 18px; }
+  .f > label, .f > .lbl { display: block; font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+  .opts { display: flex; flex-wrap: wrap; gap: 4px; }
+  .opt { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 4px 9px; font: 500 12px Inter; cursor: pointer; }
+  .opt[aria-pressed="true"] { background: var(--club); border-color: var(--club); color: #fff; }
+  .opt.inherit-mark { border-style: dashed; }
+  select, input[type=text] { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font: 13px Inter; background: #fff; }
+  input[type=range] { width: 100%; accent-color: var(--club); }
+  .hint { font-size: 11px; color: var(--muted); }
+  .f .hint + .hint, .f .hint + .inherit { margin-left: 6px; }
+  .inherit { font-size: 11px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; }
+  .inherit.custom { color: var(--muted); }
+  .panel-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .panel-h h3 { margin: 0; font: 600 15px Inter; }
+  .panel-h .k { font-size: 12px; color: var(--muted); }
+
+  /* Preview chrome */
+  .preview-bar { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .live { display: inline-flex; align-items: center; gap: 6px; color: var(--club); font-weight: 600; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2bb673; }
+  .preview-ctrls { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---------- TV ---------- */
+  .tv { aspect-ratio: 16/9; width: 100%; border-radius: 10px; overflow: hidden; position: relative; isolation: isolate;
+    background: #1a0f07; container-type: inline-size; color: var(--engrave);
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); --ts: 1; --cols: 4; --season-w: 7.2cqw; }
+  .screen { position: absolute; inset: 0; }
+  .timber { background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 2px, transparent 2px 9px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 23px),
+      linear-gradient(180deg, var(--timber-2), var(--timber-1) 60%, var(--timber-3));
+    box-shadow: inset 0 0 0 .6cqw #1a0f07, inset 0 0 0 .75cqw var(--gold-lo), inset 0 0 0 .9cqw #1a0f07; }
+  .board { position: absolute; inset: .9cqw; display: grid; grid-template-rows: auto 1fr auto; padding: 2.6cqw 3.6cqw 1.8cqw; }
+  .plate { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2.2cqw; padding-bottom: 1.2cqw; position: relative; z-index: 2; }
+  .plate::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold) 12%, var(--gold-hi) 50%, var(--gold) 88%, transparent); }
+  .crest { width: 6cqw; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 45%, var(--gold-lo));
+    color: var(--timber-1); font: 700 2cqw Cinzel, serif; box-shadow: 0 0 0 .25cqw #1a0f07, 0 0 0 .45cqw var(--gold-lo); }
+  .titles { text-align: center; min-width: 0; }
+  .club-name { font: 500 1cqw Cinzel, serif; letter-spacing: .35em; color: var(--gold); }
+  .board-title { font: 700 3.4cqw/1.05 Cinzel, serif; letter-spacing: .06em; margin: .3cqw 0;
+    background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 .15cqw 0 rgba(0,0,0,.6)); }
+  .board-sub { font: italic 500 1.3cqw Cormorant Garamond, serif; opacity: .85; }
+  .dots { display: flex; gap: .5cqw; min-width: 6cqw; justify-content: flex-end; }
+  .dots i { width: .7cqw; height: .7cqw; border-radius: 50%; background: var(--gold-lo); }
+  .dots i.on { background: var(--gold-hi); }
+  .viewport { position: relative; overflow: hidden; margin-top: 1.1cqw; display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+  .cols-head { display: grid; grid-template-columns: var(--season-w) repeat(var(--cols), minmax(0, 1fr)); gap: 2.2cqw; position: relative; z-index: 2;
+    font: 600 calc(1cqw * var(--ts)) Cinzel, serif; letter-spacing: .18em; color: var(--gold); padding-bottom: .6cqw; }
+  .cols-head span { border-bottom: 1px solid rgba(216,178,94,.35); padding-bottom: .5cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rows { position: relative; overflow: hidden; min-height: 0; }
+  .rows.masked { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 2cqw, #000 calc(100% - 2cqw), transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 2cqw, #000 calc(100% - 2cqw), transparent 100%); }
+  .page { position: absolute; left: 0; right: 0; top: 0; backface-visibility: hidden; }
+  .row { display: grid; grid-template-columns: var(--season-w) repeat(var(--cols), minmax(0, 1fr)); gap: 0 2.2cqw; align-items: baseline;
+    padding: calc(.5cqw * var(--ts)) 0; border-bottom: 1px dotted rgba(216,178,94,.18); }
+  .yr { font: 600 calc(1.4cqw * var(--ts)) Cormorant Garamond, serif; color: var(--gold); }
+  .nm { font: 600 calc(1.6cqw * var(--ts)) Cormorant Garamond, serif; color: var(--engrave); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nm small { display: block; font: italic 500 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; color: rgba(240,223,180,.65); }
+  .fit .row { padding: .15cqw 0; }
+  .tbl .cols-head, .t-row { grid-template-columns: var(--tmpl); }
+  .rk { font: 700 calc(1.4cqw * var(--ts)) Cinzel, serif; color: var(--gold); }
+  .fig { font: 700 calc(1.6cqw * var(--ts)) Cinzel, serif; color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+  .nm.sm { font-size: calc(1.3cqw * var(--ts)); color: rgba(240,223,180,.8); }
+  .tally { display: inline-block; margin-left: .8cqw; padding: .1cqw .9cqw; border: 1px solid var(--gold-lo); border-radius: 99px; font: 600 1cqw Cinzel, serif; font-style: normal; color: var(--gold-hi); letter-spacing: .08em; text-transform: uppercase; vertical-align: middle; }
+  .plaque.rec { text-align: left; min-height: 0; }
+  .plaque.rec .pq-grade { text-align: center; margin-bottom: .6cqw; }
+  .rec-list { margin: 0; display: grid; gap: .5cqw; border-top: 1px solid rgba(216,178,94,.35); padding-top: .6cqw; }
+  .rec-list div { display: grid; grid-template-columns: 1fr; }
+  .rec-list dt { font: 600 calc(.75cqw * var(--ts)) Cinzel, serif; color: var(--gold); letter-spacing: .06em; }
+  .rec-list dd { margin: 0; font: 600 calc(1.05cqw * var(--ts)) Cormorant Garamond, serif; text-transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rec-list dd b { font: 700 calc(1.05cqw * var(--ts)) Cinzel, serif; color: var(--gold-hi); margin-right: .3cqw; }
+  .pq-row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.8cqw; align-items: stretch; border-bottom: 0; padding: .6cqw .4cqw 1.4cqw; }
+  .plaque { display: flex; flex-direction: column; min-height: calc(33cqw * var(--ts)); text-align: center; padding: calc(1.2cqw * var(--ts)) 1cqw calc(1.1cqw * var(--ts)); color: var(--engrave); font-family: Cinzel, serif; text-transform: uppercase;
+    background: linear-gradient(180deg, rgba(216,178,94,.10), rgba(216,178,94,.03)); border: 1px solid var(--gold); outline: 1px solid rgba(216,178,94,.45); outline-offset: .35cqw;
+    box-shadow: 0 .4cqw 1.2cqw rgba(0,0,0,.35); margin: .4cqw; }
+  .pq-grade { font: 700 calc(1.75cqw * var(--ts))/1.1 Cinzel, serif; color: var(--gold-hi); letter-spacing: .06em; }
+  .pq-meta { font: 600 calc(1.05cqw * var(--ts))/1.35 Cinzel, serif; color: var(--gold); margin: .5cqw 0 .8cqw; letter-spacing: .05em; }
+  .pq-xi { list-style: none; margin: 0; padding: .7cqw 0; border-top: 1px solid rgba(216,178,94,.35); border-bottom: 1px solid rgba(216,178,94,.35);
+    font: 600 calc(1.08cqw * var(--ts))/1.32 Cormorant Garamond, serif; letter-spacing: .04em; }
+  .pq-xi li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pq-mom { min-height: 2.6em; display: grid; place-items: center; font: 600 calc(.85cqw * var(--ts)) Cinzel, serif; color: var(--gold); margin-top: .7cqw; letter-spacing: .05em; }
+  .pq-result { font: 600 calc(.95cqw * var(--ts))/1.35 Cinzel, serif; margin-top: auto; padding-top: .7cqw; color: var(--engrave); }
+  .fit .pq-xi { padding: .3cqw 0; }
+  .footer { display: flex; justify-content: space-between; align-items: center; padding-top: .9cqw; gap: 2cqw;
+    font: 500 .9cqw Cinzel, serif; letter-spacing: .22em; color: var(--gold-lo); }
+  .footer b { color: var(--gold); font-weight: 500; }
+  .wipe-bar { position: absolute; top: 0; bottom: 0; width: .35cqw; background: linear-gradient(180deg, transparent, var(--gold-hi), var(--gold), transparent);
+    box-shadow: 0 0 1.4cqw var(--gold); z-index: 5; pointer-events: none; }
+
+  /* Sponsor / ad / photo screens */
+  .sp-wall { position: absolute; inset: .9cqw; display: grid; grid-template-rows: auto 1fr; padding: 3cqw 4cqw; gap: 2.4cqw; }
+  .sp-title { text-align: center; font: 700 2.6cqw Cinzel, serif; letter-spacing: .1em; color: var(--gold); }
+  .sp-grid { display: grid; grid-template-columns: repeat(var(--spc, 3), 1fr); gap: 1.6cqw; align-content: center; }
+  .sp { aspect-ratio: 3/2; border-radius: .8cqw; background: #f6efe0; color: var(--timber-1); display: grid; place-items: center; text-align: center;
+    font: 700 1.7cqw Inter, sans-serif; padding: 1cqw; box-shadow: 0 0 0 .2cqw var(--gold-lo); }
+  .ad { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: #fff;
+    background: radial-gradient(circle at 30% 20%, #ea580c, #7c2d12 70%); }
+  .ad b { display: block; font: 800 6cqw/1 Inter, sans-serif; letter-spacing: -.02em; }
+  .ad span { font: 500 2cqw Inter, sans-serif; opacity: .9; }
+  .photo { position: absolute; inset: 0; display: grid; align-items: end; }
+  .photo .cap { margin: 0 3cqw 3cqw; padding: .8cqw 1.4cqw; background: rgba(0,0,0,.45); border-left: .3cqw solid var(--gold); font: 600 1.6cqw Cormorant Garamond, serif; color: #fff; width: max-content; max-width: 70%; }
+  .photo .crest { position: absolute; top: 2cqw; right: 2cqw; width: 4.6cqw; font-size: 1.5cqw; }
+  .photo .fake { position: absolute; inset: 0; }
+
+  /* Look / sponsor / link tabs */
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fff; }
+  .sp-list { display: grid; gap: 6px; }
+  .sp-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .link { font: 13px ui-monospace, Menlo, monospace; background: #f6f3ee; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.on { opacity: 1; }
+  .warn { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: #fdf3e2; border: 1px solid #ecd3a6; color: #7a4f12; font-size: 12px; }
+  .warn[hidden] { display: none; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (max-width: 560px) {
+    .item { grid-template-columns: 16px 1fr; }
+    .item .thumb { display: none; }
+    .item-actions { grid-column: 2; }
+  }
+  @media (max-width: 900px) {
+    .body, .single { grid-template-columns: 1fr; }
+    .rail { border-right: 0; border-bottom: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <h1>TV kiosk settings: working prototype</h1>
+      <p class="lede">Everything here works: drag the rotation list, pick an item to change its settings, change club defaults under Look, and press <b>Play rotation</b> to watch it as the TV would. It uses sample data, and Save keeps your setup in this browser only.</p>
+    </div>
+    <button class="btn" id="resetAll">Reset prototype</button>
+  </div>
+
+  <div class="app">
+    <div class="app-top">
+      <h2>TV kiosk</h2>
+      <span class="dirty clean" id="dirty" aria-live="polite">All changes saved</span>
+      <button class="btn" id="discard">Discard</button>
+      <button class="btn primary" id="save" disabled>Save</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="rotation" aria-selected="true">Rotation</button>
+      <button class="tab" role="tab" data-tab="look" aria-selected="false">Look</button>
+      <button class="tab" role="tab" data-tab="sponsors" aria-selected="false">Sponsors &amp; ads</button>
+      <button class="tab" role="tab" data-tab="link" aria-selected="false">TV link</button>
+    </div>
+    <div id="view"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<p class="sr" id="announce" aria-live="assertive"></p>
+
+<script>
+(() => {
+  // ---------------------------------------------------------------- data
+  const NAMES = ["J. Whitfield","M. Harrington","D. O'Connell","S. Pemberton","R. Castellano","T. Ashworth","L. Brennan","K. Morrissey","A. Fairbanks","P. Delaney","G. Holloway","C. Rutherford","B. Kingsley","N. Galloway","F. Lindqvist","H. Prendergast","W. Ashby","E. Thornton"];
+  const NOTES = ["412 runs · 31 wkts","Captain","38 wkts","506 runs","","Wicketkeeper · 44 dismissals","","29 wkts · 301 runs","Player of the final",""];
+  const BOARDS = {
+    champions: { title: "Club Champions", sub: "Awarded to the season's outstanding all-round contributor", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"], seasons: 24 },
+    premierships: { title: "Premierships", sub: "Peel Cricket Association premiership winning sides", cols: ["1","2","3","4","5"], seasons: 9, kind: "prem" },
+    life: { title: "Life Members", sub: "Honoured for outstanding service to the club", cols: ["Life Member","Elected for"], seasons: 18, kind: "life" },
+    batting: { title: "Batting Records", sub: "Highest individual scores, all grades", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 20 },
+    bowling: { title: "Bowling Awards", sub: "Leading wicket-taker each season", cols: ["First Grade","Second Grade","Third Grade","Fourth Grade"], seasons: 22 },
+    fielding: { title: "Fielding Awards", sub: "Best fielder each season", cols: ["First Grade","Second Grade","Third Grade"], seasons: 15 },
+    office: { title: "Office Bearers", sub: "The committee that ran the club each season", cols: ["President","Vice President","Secretary","Treasurer","Registrar"], seasons: 20, layout: "Season grid" },
+    games: { title: "Most Games", sub: "Senior games played for the club, all grades", kind: "leader", stat: "Games", layout: "Leaderboard", entries: 50 },
+    runs: { title: "Most Runs", sub: "Senior career runs for the club, all grades", kind: "leader", stat: "Runs", layout: "Leaderboard", entries: 50 },
+    centuries: { title: "Centuries", sub: "Every century scored for the club", kind: "list", fig: "Score", layout: "Achievement list", entries: 47, tally: "Centuries" },
+    fivewkts: { title: "Five Wicket Hauls", sub: "Five or more wickets in an innings", kind: "list", fig: "Figures", layout: "Achievement list", entries: 63, tally: "Five-wicket hauls" },
+    hattricks: { title: "Hat-tricks", sub: "Three wickets in three balls", kind: "list", fig: "Figures", layout: "Achievement list", entries: 4, tally: "Hat-tricks" },
+    records: { title: "Grade Records", sub: "Best individual and team performances in each grade", kind: "panels", cols: ["1","2","3","4","5"], layout: "Record panels", grades: ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"] },
+    partnerships: { title: "Partnership Records", sub: "Highest partnership for each wicket · First Grade", kind: "partner", layout: "Records table", entries: 10 },
+  };
+  for (const b of Object.values(BOARDS)) { b.layout ??= b.kind === "prem" ? "Plaques" : b.kind === "life" ? "Season grid" : "Season grid"; b.cols ??= []; }
+  const BOARD_LABEL = (id) => BOARDS[id].title;
+  const PHOTO_SETS = { folder: "Folder: Clubroom TV", tags: "Tags: Premiership, Team", recent: "Recent: last 21 days", picked: "Hand-picked (8)", all: "Whole library, random" };
+  const PHOTO_CAPS = ["Grand final day, 2025/26","First Grade celebrate the flag","Colts debut, Round 4","Presentation night","Season opener at home","Twilight T20 under lights","Under 13s squad photo","Club captain's century"];
+  const PHOTO_GRADS = [["#5b7c6b","#1f3b2f"],["#8a6a2c","#2b1a0f"],["#3b5b7c","#0f1f33"],["#7c3b4a","#2a0f17"],["#6b7c3b","#22300f"],["#4a3b7c","#170f2a"]];
+
+  const MOVES = [["pages","Pages"],["credits","Credits roll"],["fit","Fit to screen"]];
+  const TRANS = [["fade","Fade"],["up","Slide up"],["down","Slide down"],["left","Slide left"],["right","Slide right"],["pop","Pop"],["zoom","Zoom out"],["flip","Flip"],["wipe","Wipe"],["rows","Rows reveal"],["cut","Cut"],["random","Random"]];
+  const RANDOMISABLE = ["fade","up","down","left","right","pop","zoom","flip","wipe"];
+  const DURS = [[400,"Short"],[800,"Medium"],[1400,"Long"]];
+  const SIZES = [[0.85,"S"],[1,"M"],[1.18,"L"],[1.36,"XL"]];
+  const SPEEDS = [[20,"Slow"],[36,"Medium"],[60,"Fast"]];
+
+  const DEFAULT_STATE = () => ({
+    look: { move: "pages", trans: "fade", dur: 800, size: 1, speed: 36, perPage: 0, pageSecs: 6, hold: 3, cols: 4, theme: "Classic timber", footer: true },
+    sponsors: ["Peel Plumbing","Coastal Realty","Mandurah Marine","Halls Head Bakery","Estuary Physio","Sunset Motors"],
+    sponsorStrip: true,
+    items: [
+      { id: id(), type: "board", board: "premierships", o: { cols: 3, move: "credits" } },
+      { id: id(), type: "board", board: "life", o: { cols: 2, trans: "flip" } },
+      { id: id(), type: "board", board: "champions", o: {} },
+      { id: id(), type: "sponsor", o: { secs: 10, perRow: 3 } },
+      { id: id(), type: "photos", o: { source: "recent", count: 6, secs: 5, trans: "fade", captions: true } },
+      { id: id(), type: "board", board: "office", o: {} },
+      { id: id(), type: "board", board: "runs", o: { move: "credits", top: 20 } },
+      { id: id(), type: "board", board: "centuries", o: { move: "credits" } },
+      { id: id(), type: "board", board: "hattricks", o: { move: "fit" } },
+      { id: id(), type: "board", board: "records", o: { cols: 4 } },
+      { id: id(), type: "board", board: "partnerships", o: { move: "fit" } },
+      { id: id(), type: "ad", o: { secs: 8, name: "Membership drive" } },
+    ],
+  });
+  function id() { return Math.random().toString(36).slice(2, 9); }
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+
+  const KEY = "ovation-kiosk-prototype-v1";
+  function loadSaved() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch { return null; } }
+  function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); return true; } catch { return false; } }
+
+  let saved = loadSaved() || DEFAULT_STATE();
+  let state = clone(saved);
+  let ui = { tab: "rotation", sel: state.items[2]?.id || state.items[0]?.id, playing: false };
+
+  // ---------------------------------------------------------------- helpers
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const toast = (m) => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 1600); };
+  const announce = (m) => { $("#announce").textContent = m; };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sleep = (ms, sig) => new Promise((res) => { const t = setTimeout(res, ms); sig?.addEventListener("abort", () => { clearTimeout(t); res(); }); });
+
+  /** Item settings with club defaults filled in. */
+  function resolved(item) {
+    const L = state.look, o = item.o || {};
+    if (item.type === "board") {
+      const b = BOARDS[item.board];
+      return { move: o.move ?? L.move, trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, size: o.size ?? L.size, speed: o.speed ?? L.speed,
+        perPage: o.perPage ?? L.perPage, pageSecs: o.pageSecs ?? L.pageSecs, hold: o.hold ?? L.hold, cols: Math.max(1, Math.min(o.cols ?? L.cols, b.cols.length || 1, 5)), top: o.top ?? 20 };
+    }
+    return { trans: o.trans ?? L.trans, dur: o.dur ?? L.dur, secs: o.secs ?? 8, ...o };
+  }
+  function summary(item) {
+    const r = resolved(item);
+    if (item.type === "board") {
+      const b = BOARDS[item.board];
+      const lead = b.kind === "prem" ? `${r.cols} plaque${r.cols > 1 ? "s" : ""} across`
+        : b.kind === "panels" ? `${r.cols} grade${r.cols > 1 ? "s" : ""} per row`
+        : b.kind === "leader" ? `top ${r.top}`
+        : b.kind === "list" ? `${b.entries} entries`
+        : b.kind === "partner" ? "10 wickets"
+        : b.kind === "life" ? `${r.cols} col${r.cols > 1 ? "s" : ""}`
+        : groupsFor(item).length > 1 ? `${b.cols.length} columns over ${groupsFor(item).length} screens` : `season + ${Math.min(r.cols, b.cols.length)} column${r.cols > 1 ? "s" : ""}`;
+      return `Board · ${lead} · ${MOVES.find((m) => m[0] === r.move)[1].toLowerCase()}`;
+    }
+    if (item.type === "sponsor") return `Sponsor wall · ${state.sponsors.length} sponsors · ${r.secs}s`;
+    if (item.type === "ad") return `Ad · ${r.secs}s`;
+    return `Photo slideshow · ${PHOTO_SETS[r.source].split(":")[0].toLowerCase()} · ${r.count} × ${r.secs}s`;
+  }
+  const itemTitle = (it) => it.type === "board" ? BOARD_LABEL(it.board) : it.type === "sponsor" ? "Sponsor wall" : it.type === "ad" ? (it.o.name || "Advert") : (it.o.title || "Photo slideshow");
+
+  function markDirty() {
+    const dirty = JSON.stringify(state) !== JSON.stringify(saved);
+    $("#save").disabled = !dirty;
+    const d = $("#dirty"); d.textContent = dirty ? "Unsaved changes" : "All changes saved"; d.classList.toggle("clean", !dirty);
+  }
+
+  // ---------------------------------------------------------------- TV rendering
+  const GROUNDS = ["Rushton Park","Peelwood Reserve","Lakelands Oval","Meadow Springs","Falcon Reserve","Coodanup Oval"];
+  const OPPONENTS = ["Rockingham","Mandurah","Pinjarra","Baldivis","Waroona","Lakelands"];
+  function premiership(i) {
+    const year = 2025 - i * 3, grade = ["A Grade","B Grade","C Grade","Colts"][i % 4];
+    const xi = Array.from({ length: 11 }, (_, k) => NAMES[(i * 5 + k * 7) % NAMES.length].replace(/^(\w)\. /, (m, a) => ["Shane ","Jeff ","Ian ","Paul ","Peter ","Mark ","Ashley ","Wayne ","Jamie ","Roger ","Luke "][(k + i) % 11]));
+    const capt = (i * 3) % 11;
+    const ours = 150 + ((i * 37) % 90), wk = 3 + (i % 6), theirs = ours - 6 - ((i * 13) % 40);
+    return { grade, ground: GROUNDS[i % GROUNDS.length], date: `${String(8 + (i % 20)).padStart(2, "0")}/03/${year}`,
+      xi: xi.map((n, k) => k === capt ? `${n} (C)` : n), mom: i % 3 === 2 ? "" : xi[(capt + 4) % 11],
+      result: [`Halls Head ${wk}/${ours}`, "def", `${OPPONENTS[i % OPPONENTS.length]} ${theirs}`] };
+  }
+  function plaque(i) {
+    const p = premiership(i);
+    return `<article class="plaque"><div class="pq-grade">${esc(p.grade)}</div><div class="pq-meta">${esc(p.ground)}<br>${esc(p.date)}</div>
+      <ol class="pq-xi">${p.xi.map((n) => `<li>${esc(n)}</li>`).join("")}</ol>
+      <div class="pq-mom">${p.mom ? `Man of the match · ${esc(p.mom)}` : ""}</div>
+      <div class="pq-result">${p.result.map(esc).join("<br>")}</div></article>`;
+  }
+  const OPP = ["Rockingham","Mandurah","Pinjarra","Baldivis","Waroona","Lakelands","Port Kennedy","Secret Harbour"];
+  const GRADES8 = ["First Grade","Second Grade","Third Grade","Fourth Grade","Fifth Grade","Sixth Grade","Colts","Women"];
+  const season = (y) => `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+  const fullName = (i) => NAMES[i % NAMES.length].replace(/^(\w)\. /, (m, a) => ["Shane ","Jeff ","Ian ","Paul ","Peter ","Mark ","Ashley ","Wayne ","Jamie ","Roger ","Luke "][(i * 7) % 11]);
+  /** Column layout + headings for table-style boards. */
+  function tableSpec(b) {
+    if (b.kind === "leader") return { tmpl: "5cqw minmax(0,2.4fr) 8cqw minmax(0,1fr)", head: ["#", "Player", b.stat, "Seasons"] };
+    if (b.kind === "list") return { tmpl: "var(--season-w) minmax(0,2fr) 7cqw minmax(0,1fr) minmax(0,1.3fr)", head: ["Season", "Player", b.fig, "Grade", "Opponent"] };
+    if (b.kind === "partner") return { tmpl: "6cqw 6cqw minmax(0,3fr) var(--season-w) minmax(0,1.4fr)", head: ["Wkt", "Runs", "Partners", "Season", "Opponent"] };
+    return null;
+  }
+  function leaderRows(item, from, to) {
+    const b = BOARDS[item.board];
+    let h = "", val = b.stat === "Runs" ? 9840 : 312;
+    for (let i = 0; i < to; i++) {
+      val -= b.stat === "Runs" ? 140 + ((i * 53) % 220) : 4 + ((i * 7) % 9);
+      if (i < from) continue;
+      const first = 1984 + ((i * 5) % 25), last = Math.min(2025, first + 8 + ((i * 3) % 14));
+      h += `<div class="row t-row"><span class="rk">${i + 1}</span><span class="nm">${esc(fullName(i * 3 + 1))}</span><span class="fig">${val.toLocaleString("en-AU")}</span><span class="nm sm">${first}–${String(last).slice(2)}</span></div>`;
+    }
+    return h;
+  }
+  function listRows(item, from, to) {
+    const b = BOARDS[item.board];
+    let h = "";
+    for (let i = from; i < to; i++) {
+      const y = 2025 - Math.floor(i * (b.entries > 10 ? 0.6 : 7));
+      let fig = b.title === "Centuries" ? `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}` : b.title === "Hat-tricks" ? `${4 + (i % 3)}/${18 + ((i * 11) % 30)}` : `${5 + (i % 3 === 2 ? 1 : 0) + (i % 7 === 3 ? 2 : 0)}/${14 + ((i * 13) % 50)}`;
+      h += `<div class="row t-row"><span class="yr">${season(y)}</span><span class="nm">${esc(fullName(i * 5 + 2))}</span><span class="fig">${fig}</span><span class="nm sm">${GRADES8[(i * 3) % 6]}</span><span class="nm sm">v ${OPP[i % OPP.length]}</span></div>`;
+    }
+    return h;
+  }
+  function partnerRows(item, from, to) {
+    const runs = [212, 187, 176, 158, 149, 133, 121, 98, 87, 74];
+    let h = "";
+    for (let i = from; i < to; i++) {
+      h += `<div class="row t-row"><span class="rk">${["1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th"][i]}</span><span class="fig">${runs[i]}${i % 3 === 0 ? "*" : ""}</span><span class="nm">${esc(fullName(i * 2))} &amp; ${esc(fullName(i * 2 + 5))}</span><span class="yr">${season(2024 - i * 3)}</span><span class="nm sm">v ${OPP[i % OPP.length]}</span></div>`;
+    }
+    return h;
+  }
+  function recordPanel(g, k) {
+    const lines = [
+      ["Highest score", `${148 + ((k * 23) % 80)}${k % 2 ? "*" : ""}`, fullName(k * 3)],
+      ["Best bowling", `${7 + (k % 3)}/${12 + ((k * 7) % 30)}`, fullName(k * 3 + 4)],
+      ["Most runs, season", `${640 + ((k * 61) % 300)}`, fullName(k * 3 + 7)],
+      ["Most wickets, season", `${38 + ((k * 5) % 20)}`, fullName(k * 3 + 9)],
+      ["Highest team total", `${310 + ((k * 29) % 120)}/${3 + (k % 6)}`, `v ${OPP[k % OPP.length]}`],
+      ["Lowest team total", `${31 + ((k * 13) % 40)}`, `v ${OPP[(k + 3) % OPP.length]}`],
+    ];
+    return `<article class="plaque rec"><div class="pq-grade">${esc(g)}</div>
+      <dl class="rec-list">${lines.map(([a, v, who]) => `<div><dt>${a}</dt><dd><b>${v}</b> ${esc(who)}</dd></div>`).join("")}</dl></article>`;
+  }
+  /** Units that page, scroll and reveal: season rows, table rows, or rows of plaques/panels. */
+  function rowCount(item) {
+    const b = BOARDS[item.board], r = resolved(item);
+    if (b.kind === "prem") return Math.ceil(b.seasons / r.cols);
+    if (b.kind === "panels") return Math.ceil(b.grades.length / r.cols);
+    if (b.kind === "leader") return Math.min(r.top, b.entries);
+    if (b.kind === "list" || b.kind === "partner") return b.entries;
+    return b.seasons;
+  }
+  function boardRows(item, from, to) {
+    if (BOARDS[item.board].kind === "prem") {
+      const b = BOARDS[item.board], per = resolved(item).cols;
+      let h = "";
+      for (let rI = from; rI < to; rI++) {
+        let cells = "";
+        for (let k = rI * per; k < Math.min(b.seasons, (rI + 1) * per); k++) cells += plaque(k);
+        h += `<div class="row pq-row">${cells}</div>`;
+      }
+      return h;
+    }
+    const b = BOARDS[item.board];
+    if (b.kind === "panels") {
+      const per = resolved(item).cols;
+      let h = "";
+      for (let rI = from; rI < to; rI++) h += `<div class="row pq-row">${b.grades.slice(rI * per, (rI + 1) * per).map((g, j) => recordPanel(g, rI * per + j)).join("")}</div>`;
+      return h;
+    }
+    if (b.kind === "leader") return leaderRows(item, from, to);
+    if (b.kind === "list") return listRows(item, from, to);
+    if (b.kind === "partner") return partnerRows(item, from, to);
+    return seasonRows(item, from, to);
+  }
+  /** The column group each board is showing right now (item id -> { start, n }). */
+  const GROUP = new Map();
+  /**
+   * Splits a season grid's columns into screens of at most `cols` each,
+   * balanced so 5 grades at 4 per screen become 3 + 2, not 4 + 1.
+   */
+  function groupsFor(item) {
+    const b = BOARDS[item.board], r = resolved(item), len = b.cols.length;
+    if (b.kind || len <= r.cols) return [{ start: 0, n: Math.min(r.cols, len || r.cols) }];
+    const count = Math.ceil(len / r.cols), size = Math.ceil(len / count);
+    return Array.from({ length: count }, (_, i) => ({ start: i * size, n: Math.min(size, len - i * size) }));
+  }
+  const groupOf = (item) => GROUP.get(item.id) || groupsFor(item)[0];
+  function groupLabel(b, g, total) {
+    if (total < 2) return "";
+    const first = b.cols[g.start], last = b.cols[g.start + g.n - 1];
+    const strip = (x) => x.replace(/ Grade$/, "");
+    const label = g.n === 1 ? first : / Grade$/.test(first) && / Grade$/.test(last) ? `${strip(first)} to ${last}` : `${first} to ${last}`;
+    return `<span class="tally">${esc(label)}</span>`;
+  }
+  function seasonRows(item, from, to) {
+    const b = BOARDS[item.board], r = resolved(item);
+    let h = "";
+    for (let i = from; i < to; i++) {
+      const y = 2025 - i;
+      let cells = "";
+      const g = groupOf(item);
+      for (let c = g.start; c < g.start + g.n; c++) {
+        const n = NAMES[(i * 3 + c * 5 + b.title.length) % NAMES.length];
+        let note = NOTES[(i + c) % NOTES.length];
+        if (b.kind === "prem") note = c === 0 ? "" : note;
+        if (b.cols[0] === "President") note = "";
+        const val = b.kind === "prem" && c === 0 ? ["First Grade","Second Grade","Third Grade","Colts"][i % 4] : b.kind === "life" && c === 1 ? ["Service as president","30 years scoring","Groundsman","Coaching juniors","Treasurer"][i % 5] : n;
+        cells += `<span class="nm">${esc(val)}${note && !(b.kind === "life" && c === 1) ? `<small>${esc(note)}</small>` : ""}</span>`;
+      }
+      h += `<div class="row"><span class="yr">${y}/${String((y + 1) % 100).padStart(2, "0")}</span>${cells}</div>`;
+    }
+    return h;
+  }
+  function headHtml(b, r) {
+    if (b.kind === "prem" || b.kind === "panels") return "<div></div>";
+    const t = tableSpec(b);
+    if (t) return `<div class="cols-head">${t.head.map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
+    const g = r.group || { start: 0, n: r.cols };
+    return `<div class="cols-head"><span>${b.kind === "life" ? "ELECTED" : "SEASON"}</span>${b.cols.slice(g.start, g.start + g.n).map((c) => `<span>${esc(c.toUpperCase())}</span>`).join("")}</div>`;
+  }
+  function boardScreen(item, idx, total) {
+    const b = BOARDS[item.board], r = { ...resolved(item) };
+    const groups = groupsFor(item), g = groupOf(item);
+    if (!b.kind) { r.group = g; r.cols = g.n; }
+    const el = document.createElement("div");
+    el.className = "screen timber";
+    const spec = tableSpec(b);
+    if (spec) { el.style.setProperty("--tmpl", spec.tmpl); el.classList.add("tbl"); }
+    el.style.setProperty("--ts", r.size);
+    el.style.setProperty("--cols", r.cols);
+    el.innerHTML = `<div class="board">
+      <div class="plate"><div class="crest">HH</div>
+        <div class="titles"><div class="club-name">HALLS HEAD CRICKET CLUB</div><div class="board-title">${esc(b.title.toUpperCase())}</div><div class="board-sub">${esc(b.sub)}${b.tally ? ` <span class="tally">${b.entries} ${esc(b.tally)}</span>` : ""}${b.kind ? "" : groupLabel(b, g, groups.length)}</div></div>
+        <div class="dots"></div></div>
+      <div class="viewport">${headHtml(b, r)}<div class="rows"></div></div>
+      ${state.look.footer ? `<div class="footer"><span>EST. <b>1983</b></span><span>${state.sponsorStrip ? `PROUDLY SUPPORTED BY <b>${esc((state.sponsors[0] || "OUR SPONSORS").toUpperCase())}</b>` : ""}</span><span>${total ? `BOARD <b>${idx + 1}</b> OF <b>${total}</b>` : ""}</span></div>` : ""}
+    </div>`;
+    return el;
+  }
+  function sponsorScreen(item) {
+    const r = resolved(item);
+    const el = document.createElement("div");
+    el.className = "screen timber";
+    el.innerHTML = `<div class="sp-wall" style="--spc:${r.perRow || 3}"><div class="sp-title">PROUDLY SUPPORTED BY</div><div class="sp-grid">${state.sponsors.map((s) => `<div class="sp">${esc(s)}</div>`).join("") || '<div class="sp">Add sponsors under Sponsors &amp; ads</div>'}</div></div>`;
+    return el;
+  }
+  function adScreen(item) {
+    const el = document.createElement("div");
+    el.className = "screen";
+    el.innerHTML = `<div class="ad"><div><b>${esc(item.o.name || "Advert")}</b><span>Sample advert artwork</span></div></div>`;
+    return el;
+  }
+  function photoScreen(item, n) {
+    const r = resolved(item), g = PHOTO_GRADS[n % PHOTO_GRADS.length];
+    const el = document.createElement("div");
+    el.className = "screen";
+    el.innerHTML = `<div class="photo"><div class="fake" style="background:radial-gradient(circle at ${20 + (n * 23) % 60}% ${30 + (n * 17) % 40}%, ${g[0]}, ${g[1]} 75%)"></div>
+      <div class="crest">HH</div>${r.captions ? `<div class="cap">${esc(PHOTO_CAPS[n % PHOTO_CAPS.length])}</div>` : ""}</div>`;
+    return el;
+  }
+
+  // ---------------------------------------------------------------- transitions
+  function pickTrans(t) { if (t === "random") t = RANDOMISABLE[Math.floor(Math.random() * RANDOMISABLE.length)]; return reduce && t !== "cut" ? "fade" : t; }
+  async function swap(host, next, t, d) {
+    const old = [...host.children].filter((c) => c !== next && !c.classList.contains("wipe-bar"));
+    host.appendChild(next);
+    if (!old.length || t === "cut") { old.forEach((o) => o.remove()); return; }
+    const prev = old[old.length - 1];
+    old.slice(0, -1).forEach((o) => o.remove());
+    const ease = "cubic-bezier(.2,.7,.2,1)";
+    const both = (inF, outF) => Promise.all([next.animate(inF, { duration: d, easing: ease }).finished, prev.animate(outF, { duration: d, easing: ease, fill: "forwards" }).finished]);
+    try {
+      switch (t) {
+        case "up": await both([{ transform: "translateY(100%)" }, { transform: "none" }], [{ transform: "none" }, { transform: "translateY(-100%)" }]); break;
+        case "down": await both([{ transform: "translateY(-100%)" }, { transform: "none" }], [{ transform: "none" }, { transform: "translateY(100%)" }]); break;
+        case "left": await both([{ transform: "translateX(100%)" }, { transform: "none" }], [{ transform: "none" }, { transform: "translateX(-100%)" }]); break;
+        case "right": await both([{ transform: "translateX(-100%)" }, { transform: "none" }], [{ transform: "none" }, { transform: "translateX(100%)" }]); break;
+        case "pop": await both([{ opacity: 0, transform: "scale(.82)" }, { opacity: 1, transform: "scale(1.03)", offset: .7 }, { opacity: 1, transform: "none" }], [{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }]); break;
+        case "zoom": await both([{ opacity: 0, transform: "scale(1.18)" }, { opacity: 1, transform: "none" }], [{ opacity: 1 }, { opacity: 0, transform: "scale(.94)" }]); break;
+        case "flip": {
+          host.style.perspective = "1400px"; next.style.visibility = "hidden";
+          await prev.animate([{ transform: "none" }, { transform: "rotateX(90deg)" }], { duration: d / 2, easing: "ease-in", fill: "forwards" }).finished;
+          prev.remove(); next.style.visibility = "";
+          await next.animate([{ transform: "rotateX(-90deg)" }, { transform: "none" }], { duration: d / 2, easing: "ease-out" }).finished;
+          break;
+        }
+        case "wipe": {
+          const bar = document.createElement("div"); bar.className = "wipe-bar"; host.appendChild(bar);
+          const o = { duration: d * 1.3, easing: "ease-in-out" };
+          prev.animate([{ clipPath: "inset(0 0 0 0)" }, { clipPath: "inset(0 0 0 100%)" }], { ...o, fill: "forwards" });
+          bar.animate([{ left: "0%" }, { left: "100%" }], o);
+          await next.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], o).finished;
+          bar.remove(); break;
+        }
+        case "rows": {
+          next.style.visibility = "hidden";
+          await prev.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d / 2, fill: "forwards" }).finished;
+          prev.remove(); next.style.visibility = "";
+          const rs = [...next.querySelectorAll(".row")];
+          if (rs.length) await Promise.all(rs.map((r, i) => r.animate([{ opacity: 0, transform: "translateY(.8cqw)" }, { opacity: 1, transform: "none" }], { duration: d, delay: i * (d / 6), easing: ease, fill: "backwards" }).finished));
+          else await next.animate([{ opacity: 0 }, { opacity: 1 }], { duration: d }).finished;
+          break;
+        }
+        default: await both([{ opacity: 0 }, { opacity: 1 }], [{ opacity: 1 }, { opacity: 0 }]);
+      }
+    } catch { /* cancelled */ }
+    prev.remove(); host.style.perspective = "";
+  }
+
+  // ---------------------------------------------------------------- player
+  /**
+   * Plays one item on a TV element. Resolves when the item has finished
+   * (or straight away when `loop` keeps it going until aborted).
+   */
+  async function playItem(tv, item, opts) {
+    const { sig, idx = 0, total = 0, loop = false, enter = true } = opts;
+    const r = resolved(item);
+    if (item.type === "board") {
+      const groups = groupsFor(item), one = groups.length === 1;
+      for (let gi = 0; ; ) {
+        GROUP.set(item.id, groups[gi]);
+        await playBoardScreen(tv, item, { sig, idx, total, loop: one && loop, enter: gi === 0 ? enter : true });
+        if (sig.aborted || one) return;
+        gi++;
+        if (gi >= groups.length) { if (!loop) return; gi = 0; }
+      }
+    }
+    return playOther(tv, item, opts);
+  }
+
+  /** One screen of a board (one column group), with its movement. */
+  async function playBoardScreen(tv, item, opts) {
+    const { sig, idx = 0, total = 0, loop = false, enter = true } = opts;
+    const r = resolved(item);
+    {
+      const b = BOARDS[item.board];
+      const screen = boardScreen(item, idx, total);
+      await swap(tv, screen, enter ? pickTrans(r.trans) : "cut", r.dur);
+      const rowsEl = $(".rows", screen), dots = $(".dots", screen);
+      if (r.move === "fit") {
+        const p = document.createElement("div"); p.className = "page fit"; p.innerHTML = boardRows(item, 0, rowCount(item)); rowsEl.appendChild(p);
+        // Shrink the type until every season fits on one screen.
+        let ts = r.size;
+        while (p.scrollHeight > rowsEl.clientHeight && ts > 0.35) { ts -= 0.04; screen.style.setProperty("--ts", ts.toFixed(2)); }
+        const warn = $("#fitWarn");
+        if (warn) warn.hidden = ts >= 0.7;
+        do { await sleep(r.pageSecs * 1000, sig); } while (loop && !sig.aborted);
+        return;
+      }
+      if (r.move === "credits") {
+        rowsEl.classList.add("masked");
+        const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, 0, rowCount(item)); rowsEl.appendChild(p);
+        do {
+          p.style.transform = "none";
+          await sleep(1500, sig); if (sig.aborted) return;
+          const dist = Math.max(0, p.scrollHeight - rowsEl.clientHeight + 8);
+          const px = r.speed * (tv.clientWidth / 1280);
+          if (dist > 0 && !reduce) {
+            const a = p.animate([{ transform: "none" }, { transform: `translateY(${-dist}px)` }], { duration: (dist / px) * 1000, easing: "linear", fill: "forwards" });
+            sig.addEventListener("abort", () => a.cancel());
+            try { await a.finished; } catch { return; }
+          }
+          await sleep(r.hold * 1000, sig);
+        } while (loop && !sig.aborted);
+        return;
+      }
+      // Pages: work out how many seasons fit, unless the board says how many.
+      const probe = document.createElement("div"); probe.className = "page"; probe.style.visibility = "hidden"; probe.innerHTML = boardRows(item, 0, 1); rowsEl.appendChild(probe);
+      const rowH = probe.firstElementChild.getBoundingClientRect().height || 1; probe.remove();
+      const per = r.perPage || Math.max(1, Math.floor(rowsEl.clientHeight / rowH));
+      const nRows = rowCount(item), pages = Math.ceil(nRows / per);
+      const mk = (n) => { const p = document.createElement("div"); p.className = "page"; p.innerHTML = boardRows(item, n * per, Math.min(nRows, (n + 1) * per)); return p; };
+      const setDots = (n) => { dots.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) => `<i class="${i === n ? "on" : ""}"></i>`).join("") : ""; };
+      let n = 0; setDots(0); rowsEl.appendChild(mk(0));
+      while (!sig.aborted) {
+        await sleep(r.pageSecs * 1000, sig); if (sig.aborted) return;
+        if (n + 1 >= pages && !loop) return;
+        n = (n + 1) % pages; setDots(n);
+        if (pages > 1) await swap(rowsEl, mk(n), pickTrans(r.trans), r.dur);
+      }
+      return;
+    }
+  }
+
+  async function playOther(tv, item, opts) {
+    const { sig, loop = false, enter = true } = opts;
+    const r = resolved(item);
+    if (item.type === "photos") {
+      let n = 0;
+      await swap(tv, photoScreen(item, n), enter ? pickTrans(r.trans) : "cut", r.dur);
+      while (!sig.aborted) {
+        await sleep(r.secs * 1000, sig); if (sig.aborted) return;
+        n++; if (n >= r.count && !loop) return;
+        await swap(tv, photoScreen(item, n % r.count), pickTrans(r.trans), r.dur);
+      }
+      return;
+    }
+    await swap(tv, item.type === "sponsor" ? sponsorScreen(item) : adScreen(item), enter ? pickTrans(r.trans) : "cut", r.dur);
+    do { await sleep(r.secs * 1000, sig); } while (loop && !sig.aborted);
+  }
+
+  let ctrl = null;
+  function stopPlayer() { if (ctrl) ctrl.abort(); ctrl = null; }
+  async function startPreview() {
+    stopPlayer();
+    const tv = $("#tv"); if (!tv) return;
+    const c = (ctrl = new AbortController());
+    const sig = c.signal;
+    if (ui.playing) {
+      if (!state.items.length) { tv.innerHTML = ""; return; }
+      let i = Math.max(0, state.items.findIndex((x) => x.id === ui.sel));
+      let first = true;
+      while (!sig.aborted) {
+        const it = state.items[i % state.items.length];
+        ui.sel = it.id; paintSelection(); setNowPlaying(it, i % state.items.length);
+        await playItem(tv, it, { sig, idx: i % state.items.length, total: state.items.length, enter: !first });
+        first = false; i++;
+      }
+      return;
+    }
+    const item = state.items.find((x) => x.id === ui.sel) || (ui.tab === "look" ? lookSample() : null);
+    if (!item) { tv.innerHTML = '<div class="screen timber"></div>'; return; }
+    setNowPlaying(item, state.items.indexOf(item));
+    await playItem(tv, item, { sig, idx: Math.max(0, state.items.indexOf(item)), total: state.items.length, loop: true, enter: false });
+  }
+  const lookSample = () => ({ id: "look", type: "board", board: "champions", o: {} });
+  function setNowPlaying(it, i) { const n = $("#nowPlaying"); if (n) n.textContent = `${itemTitle(it)}${i >= 0 ? ` · ${i + 1} of ${state.items.length}` : " · sample board"}`; }
+
+  // ---------------------------------------------------------------- controls
+  function seg(name, options, value, inherited) {
+    return `<div class="opts" role="group" data-field="${name}">${options.map(([v, l]) => `<button type="button" class="opt" data-v="${v}" aria-pressed="${String(v) === String(value)}">${l}</button>`).join("")}</div>`;
+  }
+  function inheritNote(item, key) {
+    if (!item || item.id === "look") return "";
+    const has = item.o && item.o[key] !== undefined;
+    return has ? `<button type="button" class="inherit" data-reset="${key}">Use club default</button>` : `<span class="hint">Club default</span>`;
+  }
+  function boardFields(item, target) {
+    const r = target === "look" ? state.look : resolved(item);
+    const b = item ? BOARDS[item.board] : null;
+    const maxCols = b ? Math.min(5, b.cols.length) : 5;
+    const colOpts = Array.from({ length: maxCols }, (_, i) => [i + 1, String(i + 1)]);
+    const f = (label, key, html) => `<div class="f"><span class="lbl">${label}</span>${html}${inheritNote(item, key)}</div>`;
+    return `<div class="fields">
+      ${b && b.kind === "leader" ? f("Show top", "top", seg("top", [[10,"10"],[20,"20"],[50,"50"]], r.top))
+        : b && tableSpec(b) ? ""
+        : f(b && b.kind === "prem" ? "Plaques across" : b && b.kind === "panels" ? "Grades per row" : b && b.kind === "life" ? "Columns" : b && b.cols[0] === "President" ? "Role columns per screen" : "Grade columns per screen", "cols", seg("cols", colOpts, Math.min(r.cols, maxCols)))}
+      ${f("Long boards", "move", seg("move", MOVES, r.move))}
+      ${f("Transition", "trans", `<select data-field="trans">${TRANS.map(([v, l]) => `<option value="${v}" ${v === r.trans ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
+      ${f("Transition length", "dur", seg("dur", DURS, r.dur))}
+      ${f("Text size", "size", seg("size", SIZES, r.size))}
+      ${f(b && (b.kind === "prem" || b.kind === "panels") ? "Rows of panels per page" : b && tableSpec(b) ? "Rows per page" : "Seasons per page", "perPage", `<select data-field="perPage">${(b && (b.kind === "prem" || b.kind === "panels") ? [[0, "Fit to screen"], [1, "1"], [2, "2"]] : [[0, "Fit to screen"], [4, "4"], [6, "6"], [8, "8"], [10, "10"], [12, "12"]]).map(([v, l]) => `<option value="${v}" ${+v === +r.perPage ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
+      ${f(r.move === "credits" ? "Pause at start" : "Seconds per page", "pageSecs", `<input type="range" min="2" max="15" step="1" value="${r.pageSecs}" data-field="pageSecs" aria-label="Seconds per page"><span class="hint">${r.pageSecs} s</span>`)}
+      ${f("Credits speed", "speed", seg("speed", SPEEDS, r.speed))}
+      ${f("Hold at end", "hold", `<input type="range" min="0" max="10" step="1" value="${r.hold}" data-field="hold" aria-label="Hold at end"><span class="hint">${r.hold} s</span>`)}
+    </div>`;
+  }
+  function otherFields(item) {
+    const r = resolved(item);
+    const f = (label, key, html, inh) => `<div class="f"><span class="lbl">${label}</span>${html}${inh ? inheritNote(item, key) : ""}</div>`;
+    const trans = f("Transition in", "trans", `<select data-field="trans">${TRANS.map(([v, l]) => `<option value="${v}" ${v === r.trans ? "selected" : ""}>${l}</option>`).join("")}</select>`, true)
+      + f("Transition length", "dur", seg("dur", DURS, r.dur), true);
+    if (item.type === "sponsor") return `<div class="fields">${f("On screen for", "secs", `<input type="range" min="4" max="30" value="${r.secs}" data-field="secs" aria-label="Seconds on screen"><span class="hint">${r.secs} s</span>`)}${f("Logos per row", "perRow", seg("perRow", [[2,"2"],[3,"3"],[4,"4"]], r.perRow || 3))}${trans}</div><p class="hint">Edit the sponsor list under the Sponsors &amp; ads tab.</p>`;
+    if (item.type === "ad") return `<div class="fields">${f("Advert name", "name", `<input type="text" data-field="name" value="${esc(r.name || "")}">`)}${f("On screen for", "secs", `<input type="range" min="4" max="30" value="${r.secs}" data-field="secs" aria-label="Seconds on screen"><span class="hint">${r.secs} s</span>`)}${trans}</div><p class="hint">In the app you'd upload the artwork or video here.</p>`;
+    return `<div class="fields">
+      ${f("Photos from", "source", `<select data-field="source">${Object.entries(PHOTO_SETS).map(([v, l]) => `<option value="${v}" ${v === r.source ? "selected" : ""}>${l}</option>`).join("")}</select>`)}
+      ${f("Photos each time", "count", `<input type="range" min="2" max="20" value="${r.count}" data-field="count" aria-label="Photos each time"><span class="hint">${r.count} photos</span>`)}
+      ${f("Seconds per photo", "secs", `<input type="range" min="2" max="15" value="${r.secs}" data-field="secs" aria-label="Seconds per photo"><span class="hint">${r.secs} s</span>`)}
+      ${f("Captions", "captions", seg("captions", [[true,"On"],[false,"Off"]], !!r.captions))}
+      ${trans}
+    </div><p class="hint">Junior photos only show when every child tagged in them has photo consent.</p>`;
+  }
+
+  // ---------------------------------------------------------------- views
+  function railHtml() {
+    const items = state.items.map((it) => `<li class="item${it.id === ui.sel ? " sel" : ""}" draggable="true" tabindex="0" data-id="${it.id}" aria-label="${esc(itemTitle(it))}. ${esc(summary(it))}">
+        <span class="grip" aria-hidden="true">⋮⋮</span><span class="thumb t-${it.type}"></span>
+        <div><div class="t">${esc(itemTitle(it))}</div><div class="k">${esc(summary(it))}</div></div>
+        <span class="item-actions">
+          <button type="button" class="icon" data-act="up" title="Move up" aria-label="Move up">↑</button>
+          <button type="button" class="icon" data-act="down" title="Move down" aria-label="Move down">↓</button>
+          <button type="button" class="icon" data-act="dup" title="Duplicate" aria-label="Duplicate">⧉</button>
+          <button type="button" class="icon" data-act="del" title="Remove" aria-label="Remove">✕</button>
+        </span></li>`).join("");
+    const unused = Object.keys(BOARDS).filter((k) => !state.items.some((i) => i.type === "board" && i.board === k));
+    return `<p class="section-h">Rotation · drag to reorder</p>
+      ${state.items.length ? `<ul class="list" id="list">${items}</ul>` : '<div class="empty">Nothing in the rotation yet. Add a board below.</div>'}
+      <div class="add-row"><p class="section-h">Add to rotation</p>
+        <select id="addBoard" aria-label="Add a board"><option value="">+ Board…</option>${[...new Set(Object.values(BOARDS).map((b) => b.layout))].map((L) => `<optgroup label="${L}">${Object.keys(BOARDS).filter((k) => BOARDS[k].layout === L).map((k) => `<option value="${k}">${BOARDS[k].title}${unused.includes(k) ? "" : " (again)"}</option>`).join("")}</optgroup>`).join("")}</select>
+        <button type="button" class="btn" data-add="sponsor">+ Sponsor wall</button>
+        <button type="button" class="btn" data-add="ad">+ Ad</button>
+        <button type="button" class="btn" data-add="photos">+ Photo slideshow</button>
+      </div>`;
+  }
+  function previewHtml(label) {
+    return `<div><div class="preview-bar"><span class="live">${label}</span><span id="nowPlaying"></span>
+      <span class="preview-ctrls"><button type="button" class="btn" id="play">${ui.playing ? "■ Stop rotation" : "▶ Play rotation"}</button><button type="button" class="btn" id="replay">↺ Replay item</button></span></div>
+      <div class="tv" id="tv"></div></div>`;
+  }
+  function renderRotation() {
+    const item = state.items.find((x) => x.id === ui.sel);
+    const settings = item ? `<div class="panel-h"><h3>${esc(itemTitle(item))}</h3><span class="k">${item.type === "board" ? `Layout: ${BOARDS[item.board].layout}` : item.type === "photos" ? "Photo slideshow" : item.type === "sponsor" ? "Sponsor wall" : "Advert"}</span></div>
+      <div id="fields">${item.type === "board" ? boardFields(item) : otherFields(item)}</div>
+      ${item.type === "board" ? '<p class="warn" id="fitWarn" hidden>This board has too many seasons to fit on one screen at a readable size. Try Pages or Credits roll instead.</p>' : ""}
+      ${item.type === "board" ? '<p class="hint">Settings marked “Club default” follow the Look tab. Change one here to override it for this board only.</p>' : ""}`
+      : '<p class="hint">Select an item in the rotation to change how it shows.</p>';
+    $("#view").innerHTML = `<div class="body"><aside class="rail" id="rail">${railHtml()}</aside><section class="panel">${previewHtml("Live preview: your unsaved changes")}<div>${settings}</div></section></div>`;
+  }
+  function renderLook() {
+    const L = state.look;
+    $("#view").innerHTML = `<div class="single">
+      <div><div class="panel-h" style="margin-bottom:12px"><h3>Club defaults</h3><span class="k">Every board uses these unless it has its own setting</span></div>
+        <div id="fields">${boardFields(null, "look").replace(/Grade columns/, "Grade columns (max)")}</div>
+        <div class="fields" style="margin-top:14px">
+          <div class="f"><span class="lbl">Board style</span><select data-field="theme"><option>Classic timber</option><option disabled>Gold on navy (coming)</option><option disabled>Club colours (coming)</option></select></div>
+          <div class="f"><span class="lbl">Footer bar</span>${seg("footer", [[true,"Show"],[false,"Hide"]], L.footer)}</div>
+        </div></div>
+      <div>${previewHtml("Preview: sample board with club defaults")}</div></div>`;
+  }
+  function renderSponsors() {
+    $("#view").innerHTML = `<div class="single">
+      <div class="card"><div class="panel-h" style="margin-bottom:10px"><h3>Sponsors</h3><span class="k">${state.sponsors.length} listed</span></div>
+        <div class="sp-list" id="spList">${state.sponsors.map((s, i) => `<div class="sp-row"><input type="text" value="${esc(s)}" data-sp="${i}" aria-label="Sponsor ${i + 1}"><button type="button" class="btn" data-spdel="${i}">Remove</button></div>`).join("")}</div>
+        <div class="add-row"><button type="button" class="btn" id="spAdd">+ Add sponsor</button></div>
+        <div class="f" style="margin-top:14px"><span class="lbl">“Proudly supported by” line in the board footer</span>${seg("sponsorStrip", [[true,"Show"],[false,"Hide"]], state.sponsorStrip)}</div>
+      </div>
+      <div class="card"><div class="panel-h" style="margin-bottom:6px"><h3>Ads</h3></div><p class="hint" style="margin:0 0 8px">Ads are rotation items. Add one from the Rotation tab, then set its artwork and timing there.</p>
+        ${state.items.filter((i) => i.type === "ad").map((a) => `<div class="k" style="font-size:13px">• ${esc(a.o.name || "Advert")} · ${resolved(a).secs}s</div>`).join("") || '<p class="hint">No ads in the rotation.</p>'}</div>
+    </div>`;
+  }
+  function renderLink() {
+    $("#view").innerHTML = `<div class="single"><div class="card">
+      <div class="panel-h" style="margin-bottom:10px"><h3>Clubroom TV link</h3></div>
+      <p class="hint" style="margin-top:0">Open this link in the TV's browser and set it to full screen. Anyone with the link can view the boards, so keep it to the clubroom.</p>
+      <div class="link" id="tvlink">https://hallshead.ovationcc.app/tv/3f9c2a7e-sample</div>
+      <div class="add-row"><button type="button" class="btn" id="copy">Copy link</button><button type="button" class="btn" id="rotate">Make a new link</button></div>
+      <p class="hint">Making a new link stops the old one working. Use it if the link has been shared further than the clubroom.</p>
+    </div></div>`;
+  }
+  function render() {
+    stopPlayer();
+    document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === ui.tab)));
+    if (ui.tab !== "rotation") ui.playing = false;
+    ({ rotation: renderRotation, look: renderLook, sponsors: renderSponsors, link: renderLink })[ui.tab]();
+    markDirty();
+    if (ui.tab === "rotation" || ui.tab === "look") startPreview();
+  }
+  function paintSelection() {
+    document.querySelectorAll(".item").forEach((li) => { li.classList.toggle("sel", li.dataset.id === ui.sel); li.classList.toggle("playing", ui.playing && li.dataset.id === ui.sel); });
+  }
+  function refreshRail() { const rail = $("#rail"); if (rail) { rail.innerHTML = railHtml(); paintSelection(); } }
+
+  // ---------------------------------------------------------------- events
+  function setField(field, raw) {
+    const num = ["cols","dur","size","speed","perPage","pageSecs","hold","secs","count","perRow","top"];
+    let v = raw === "true" ? true : raw === "false" ? false : num.includes(field) ? +raw : raw;
+    if (ui.tab === "look") { state.look[field] = v; }
+    else if (ui.tab === "sponsors" && field === "sponsorStrip") state.sponsorStrip = v;
+    else { const it = state.items.find((x) => x.id === ui.sel); if (!it) return; it.o = it.o || {}; it.o[field] = v; }
+  }
+  document.querySelector(".tabs").addEventListener("click", (e) => { const t = e.target.closest(".tab"); if (t) { ui.tab = t.dataset.tab; render(); } });
+  $("#view").addEventListener("click", (e) => {
+    const opt = e.target.closest(".opt");
+    if (opt) { setField(opt.closest("[data-field]").dataset.field, opt.dataset.v); afterChange(); return; }
+    const reset = e.target.closest("[data-reset]");
+    if (reset) { const it = state.items.find((x) => x.id === ui.sel); delete it.o[reset.dataset.reset]; afterChange(); return; }
+    const act = e.target.closest("[data-act]");
+    if (act) {
+      const li = act.closest(".item"), i = state.items.findIndex((x) => x.id === li.dataset.id);
+      const a = act.dataset.act;
+      if (a === "up" && i > 0) [state.items[i - 1], state.items[i]] = [state.items[i], state.items[i - 1]];
+      if (a === "down" && i < state.items.length - 1) [state.items[i + 1], state.items[i]] = [state.items[i], state.items[i + 1]];
+      if (a === "dup") { const c = clone(state.items[i]); c.id = id(); state.items.splice(i + 1, 0, c); ui.sel = c.id; }
+      if (a === "del") { const gone = state.items.splice(i, 1)[0]; if (ui.sel === gone.id) ui.sel = state.items[Math.min(i, state.items.length - 1)]?.id; toast(`Removed ${itemTitle(gone)}`); }
+      announce(a === "up" || a === "down" ? `Moved to position ${state.items.findIndex((x) => x.id === li.dataset.id) + 1}` : "");
+      ui.playing = false; render(); return;
+    }
+    const li = e.target.closest(".item");
+    if (li) { ui.sel = li.dataset.id; ui.playing = false; render(); return; }
+    const add = e.target.closest("[data-add]");
+    if (add) {
+      const type = add.dataset.add;
+      const it = { id: id(), type, o: type === "photos" ? { source: "all", count: 6, secs: 5, captions: true } : type === "ad" ? { secs: 8, name: "New advert" } : { secs: 10, perRow: 3 } };
+      const at = Math.max(0, state.items.findIndex((x) => x.id === ui.sel)) + 1;
+      state.items.splice(state.items.length ? at : 0, 0, it); ui.sel = it.id; ui.playing = false; render(); toast(`Added ${itemTitle(it)}`); return;
+    }
+    if (e.target.id === "play") { ui.playing = !ui.playing; $("#play").textContent = ui.playing ? "■ Stop rotation" : "▶ Play rotation"; paintSelection(); startPreview(); return; }
+    if (e.target.id === "replay") { ui.playing = false; $("#play").textContent = "▶ Play rotation"; paintSelection(); startPreview(); return; }
+    if (e.target.id === "spAdd") { state.sponsors.push("New sponsor"); render(); return; }
+    if (e.target.dataset.spdel !== undefined) { state.sponsors.splice(+e.target.dataset.spdel, 1); render(); return; }
+    if (e.target.id === "copy") { try { navigator.clipboard.writeText($("#tvlink").textContent); } catch {} toast("Link copied"); return; }
+    if (e.target.id === "rotate") { $("#tvlink").textContent = `https://hallshead.ovationcc.app/tv/${id()}${id()}`; toast("New link made. The old one no longer works."); }
+  });
+  $("#view").addEventListener("change", (e) => {
+    if (e.target.id === "addBoard" && e.target.value) {
+      const it = { id: id(), type: "board", board: e.target.value, o: {} };
+      const at = Math.max(0, state.items.findIndex((x) => x.id === ui.sel)) + 1;
+      state.items.splice(state.items.length ? at : 0, 0, it); ui.sel = it.id; ui.playing = false; render(); toast(`Added ${itemTitle(it)}`); return;
+    }
+    const fld = e.target.dataset.field; if (fld && e.target.tagName === "SELECT") { setField(fld, e.target.value); afterChange(); }
+  });
+  $("#view").addEventListener("input", (e) => {
+    const fld = e.target.dataset.field;
+    if (fld && e.target.type === "range") { setField(fld, e.target.value); const h = e.target.nextElementSibling; if (h) h.textContent = fld === "count" ? `${e.target.value} photos` : `${e.target.value} s`; debouncedChange(); }
+    if (fld && e.target.type === "text") { setField(fld, e.target.value); refreshRail(); markDirty(); debouncedChange(); }
+    if (e.target.dataset.sp !== undefined) { state.sponsors[+e.target.dataset.sp] = e.target.value; markDirty(); }
+  });
+  $("#view").addEventListener("keydown", (e) => {
+    const li = e.target.closest?.(".item"); if (!li || e.target !== li) return;
+    const i = state.items.findIndex((x) => x.id === li.dataset.id);
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ui.sel = li.dataset.id; ui.playing = false; render(); $(`.item[data-id="${ui.sel}"]`)?.focus(); }
+    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault(); const j = e.key === "ArrowUp" ? i - 1 : i + 1; if (j < 0 || j >= state.items.length) return;
+      [state.items[i], state.items[j]] = [state.items[j], state.items[i]]; render(); $(`.item[data-id="${li.dataset.id}"]`)?.focus(); announce(`Moved to position ${j + 1}`);
+    }
+  });
+  // Drag and drop reordering.
+  let dragId = null;
+  $("#view").addEventListener("dragstart", (e) => { const li = e.target.closest(".item"); if (!li) return; dragId = li.dataset.id; li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", dragId); } catch {} });
+  $("#view").addEventListener("dragover", (e) => {
+    const li = e.target.closest(".item"); if (!li || !dragId) return; e.preventDefault();
+    document.querySelectorAll(".drop-before,.drop-after").forEach((x) => x.classList.remove("drop-before", "drop-after"));
+    const r = li.getBoundingClientRect(); li.classList.add(e.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after");
+  });
+  $("#view").addEventListener("drop", (e) => {
+    const li = e.target.closest(".item"); if (!li || !dragId) return; e.preventDefault();
+    const before = li.classList.contains("drop-before");
+    const from = state.items.findIndex((x) => x.id === dragId); const moved = state.items.splice(from, 1)[0];
+    let to = state.items.findIndex((x) => x.id === li.dataset.id); if (!before) to++;
+    state.items.splice(to, 0, moved); dragId = null; ui.playing = false; render(); toast(`Moved ${itemTitle(moved)}`);
+  });
+  $("#view").addEventListener("dragend", () => { dragId = null; document.querySelectorAll(".dragging,.drop-before,.drop-after").forEach((x) => x.classList.remove("dragging", "drop-before", "drop-after")); });
+
+  function afterChange() {
+    const fields = $("#fields");
+    if (fields && ui.tab !== "sponsors") {
+      const item = ui.tab === "look" ? null : state.items.find((x) => x.id === ui.sel);
+      fields.innerHTML = ui.tab === "look" ? boardFields(null, "look").replace(/Grade columns/, "Grade columns (max)") : item.type === "board" ? boardFields(item) : otherFields(item);
+      if (ui.tab === "look") render(); else { refreshRail(); markDirty(); startPreview(); }
+      return;
+    }
+    render();
+  }
+  let deb; function debouncedChange() { clearTimeout(deb); deb = setTimeout(() => { refreshRail(); markDirty(); startPreview(); }, 250); }
+
+  $("#save").addEventListener("click", () => { saved = clone(state); const ok = persist(saved); markDirty(); toast(ok ? "Saved. The TV picks this up on its next refresh." : "Saved for this visit (browser storage is off)."); });
+  $("#discard").addEventListener("click", () => { state = clone(saved); if (!state.items.some((x) => x.id === ui.sel)) ui.sel = state.items[0]?.id; render(); toast("Changes discarded"); });
+  $("#resetAll").addEventListener("click", () => { try { localStorage.removeItem(KEY); } catch {} saved = DEFAULT_STATE(); state = clone(saved); ui.sel = state.items[2].id; ui.tab = "rotation"; ui.playing = false; render(); toast("Prototype reset"); });
+  addEventListener("beforeunload", (e) => { if (JSON.stringify(state) !== JSON.stringify(saved)) { e.preventDefault(); e.returnValue = ""; } });
+
+  render();
+})();
+</script>
+</body>
+</html>
