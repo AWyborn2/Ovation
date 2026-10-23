@@ -120,6 +120,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         path: "/admin/social/library",
         feature: "socialStudio",
       },
+      {
+        value: "junior-library",
+        label: "Junior photo library",
+        path: "/admin/social/junior-library",
+        feature: "socialStudio",
+      },
     ],
   },
   {

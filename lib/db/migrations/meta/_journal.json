@@ -421,6 +421,13 @@
       "when": 1792712966670,
       "tag": "0059_selection_playhq_anytime",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792727503531,
+      "tag": "0060_junior_photo_library",
+      "breakpoints": true
     }
   ]
 }

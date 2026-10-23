@@ -1,6 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, desc, eq } from "drizzle-orm";
-import { db, juniorParticipantsTable, juniorPhotosTable, type JuniorPhotoRow } from "@workspace/db";
+import {
+  db,
+  juniorParticipantsTable,
+  juniorPhotoParticipantsTable,
+  juniorPhotosTable,
+  type JuniorPhotoRow,
+} from "@workspace/db";
 import {
   AddJuniorPhotoBody,
   AddJuniorPhotoParams,
@@ -12,11 +18,15 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin, resolveAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { juniorParticipantJoin, juniorParticipantKey } from "../lib/junior-participant-scope";
+import { juniorParticipantKey } from "../lib/junior-participant-scope";
 import { adminName } from "../lib/junior-admin-helpers";
 import { IngestError, ingestImage, withTenantSlot } from "../lib/image-ingest";
 import { JUNIOR_PHOTO_PREFIX, photoStore } from "../lib/photo-store";
-import { juniorPhotoAllowed, juniorPhotoThumbUrl, juniorPhotoUrl } from "../lib/junior-photos";
+import {
+  juniorLibraryPhotoAllowed,
+  juniorPhotoThumbUrl,
+  juniorPhotoUrl,
+} from "../lib/junior-photos";
 
 /**
  * Junior players' photos (plan 2026-10-16-001, ADR-007).
@@ -26,17 +36,18 @@ import { juniorPhotoAllowed, juniorPhotoThumbUrl, juniorPhotoUrl } from "../lib/
  * (EXIF stripped, thumbnail) and stores the copies under the private `library/juniors/`
  * prefix, which the public storage route refuses.
  *
- * Public: `GET /juniors/photos/:photoId[/thumb]` streams the image only while the player
- * is allowed a photo — not withheld, not private — or to a signed-in admin of the club.
+ * Public: `GET /juniors/photos/:photoId[/thumb]` streams the image only while the photo
+ * passes `juniorLibraryPhotoAllowed` — tagged, and every tagged child neither withheld nor
+ * private — or to a signed-in admin of the club.
  * Cards and the public profile use these URLs, so withdrawing consent cuts the image off
  * everywhere at once.
  */
 const router: IRouter = Router();
 
-function present(p: JuniorPhotoRow) {
+function present(p: JuniorPhotoRow, participantId: string) {
   return {
     id: p.id,
-    participantId: p.participantId,
+    participantId: p.participantId ?? participantId,
     url: juniorPhotoUrl(p.id),
     thumbUrl: p.thumbPath ? juniorPhotoThumbUrl(p.id) : null,
     isDefault: p.isDefault,
@@ -79,7 +90,11 @@ router.get(
       res.status(404).json({ error: "Participant not found" });
       return;
     }
-    res.json((await photosOf(tenantId, participant.participantId)).map(present));
+    res.json(
+      (await photosOf(tenantId, participant.participantId)).map((p) =>
+        present(p, participant.participantId),
+      ),
+    );
   },
 );
 
@@ -147,6 +162,11 @@ router.post(
               createdBy: adminName(req),
             })
             .returning();
+          // The library's tag: who the photo shows (the consent rule reads this).
+          await tx
+            .insert(juniorPhotoParticipantsTable)
+            .values({ tenantId, photoId: r.id, participantId: participant.participantId })
+            .onConflictDoNothing();
           return r;
         });
         // The converted copy is the photo; the upload (possibly with GPS EXIF) is not kept.
@@ -155,7 +175,7 @@ router.post(
         });
         return inserted;
       });
-      res.status(201).json(present(row));
+      res.status(201).json(present(row, participant.participantId));
     } catch (err) {
       if (err instanceof IngestError) {
         res.status(422).json({ error: err.message });
@@ -267,32 +287,25 @@ router.post(
       res.status(404).json({ error: "Photo not found" });
       return;
     }
-    res.json(present(updated));
+    res.json(present(updated, participant.participantId));
   },
 );
 
 // ---------------------------------------------------------------------------
-// Public, gated serving (R3, R8): the image only while the player is allowed a photo,
+// Public, gated serving (R3, R8): the image only while the photo passes the consent rule,
 // or to a signed-in admin. A refused request is a 404, never a hint that a photo exists.
 // ---------------------------------------------------------------------------
 
 async function serve(req: Request, res: Response, photoId: number, thumb: boolean) {
   const tenantId = getTenantId(req);
   const [row] = await db
-    .select({
-      objectPath: juniorPhotosTable.objectPath,
-      thumbPath: juniorPhotosTable.thumbPath,
-      photoWithheld: juniorParticipantsTable.photoWithheld,
-      isPrivate: juniorParticipantsTable.isPrivate,
-      privacyOverride: juniorParticipantsTable.privacyOverride,
-    })
+    .select({ objectPath: juniorPhotosTable.objectPath, thumbPath: juniorPhotosTable.thumbPath })
     .from(juniorPhotosTable)
-    .innerJoin(
-      juniorParticipantsTable,
-      juniorParticipantJoin(juniorPhotosTable.participantId, tenantId),
-    )
     .where(and(eq(juniorPhotosTable.tenantId, tenantId), eq(juniorPhotosTable.id, photoId)));
-  if (!row || (!juniorPhotoAllowed(row) && !(await resolveAdmin(req)))) {
+  if (
+    !row ||
+    (!(await juniorLibraryPhotoAllowed(tenantId, photoId)) && !(await resolveAdmin(req)))
+  ) {
     res.status(404).json({ error: "Not found" });
     return;
   }
