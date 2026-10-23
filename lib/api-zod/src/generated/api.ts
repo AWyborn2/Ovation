@@ -10053,6 +10053,32 @@ export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
 
+export const getHonourDisplayResponseSettingsKioskLookPerPageMin = 0;
+export const getHonourDisplayResponseSettingsKioskLookPerPageMax = 20;
+
+export const getHonourDisplayResponseSettingsKioskLookPageSecsMax = 60;
+
+export const getHonourDisplayResponseSettingsKioskLookSpeedMin = 5;
+export const getHonourDisplayResponseSettingsKioskLookSpeedMax = 200;
+
+export const getHonourDisplayResponseSettingsKioskLookHoldMin = 0;
+export const getHonourDisplayResponseSettingsKioskLookHoldMax = 60;
+
+export const getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+
+export const getHonourDisplayResponseSettingsBoardConfigsPerPageMin = 0;
+export const getHonourDisplayResponseSettingsBoardConfigsPerPageMax = 20;
+
+export const getHonourDisplayResponseSettingsBoardConfigsPageSecsMax = 60;
+
+export const getHonourDisplayResponseSettingsBoardConfigsSpeedMin = 5;
+export const getHonourDisplayResponseSettingsBoardConfigsSpeedMax = 200;
+
+export const getHonourDisplayResponseSettingsBoardConfigsHoldMin = 0;
+export const getHonourDisplayResponseSettingsBoardConfigsHoldMax = 60;
+
+export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
 export const getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMin = 2;
@@ -10213,7 +10239,28 @@ export const GetHonourDisplayResponse = zod.object({
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "kioskLook": zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(getHonourDisplayResponseSettingsKioskLookPerPageMin).max(getHonourDisplayResponseSettingsKioskLookPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(getHonourDisplayResponseSettingsKioskLookSpeedMin).max(getHonourDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(getHonourDisplayResponseSettingsKioskLookHoldMin).max(getHonourDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+}).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsPerPageMin).max(getHonourDisplayResponseSettingsBoardConfigsPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsSpeedMin).max(getHonourDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsHoldMin).max(getHonourDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10324,6 +10371,32 @@ export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
+
+export const getKioskDisplayResponseSettingsKioskLookPerPageMin = 0;
+export const getKioskDisplayResponseSettingsKioskLookPerPageMax = 20;
+
+export const getKioskDisplayResponseSettingsKioskLookPageSecsMax = 60;
+
+export const getKioskDisplayResponseSettingsKioskLookSpeedMin = 5;
+export const getKioskDisplayResponseSettingsKioskLookSpeedMax = 200;
+
+export const getKioskDisplayResponseSettingsKioskLookHoldMin = 0;
+export const getKioskDisplayResponseSettingsKioskLookHoldMax = 60;
+
+export const getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+
+export const getKioskDisplayResponseSettingsBoardConfigsPerPageMin = 0;
+export const getKioskDisplayResponseSettingsBoardConfigsPerPageMax = 20;
+
+export const getKioskDisplayResponseSettingsBoardConfigsPageSecsMax = 60;
+
+export const getKioskDisplayResponseSettingsBoardConfigsSpeedMin = 5;
+export const getKioskDisplayResponseSettingsBoardConfigsSpeedMax = 200;
+
+export const getKioskDisplayResponseSettingsBoardConfigsHoldMin = 0;
+export const getKioskDisplayResponseSettingsBoardConfigsHoldMax = 60;
+
+export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10485,7 +10558,28 @@ export const GetKioskDisplayResponse = zod.object({
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "kioskLook": zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(getKioskDisplayResponseSettingsKioskLookPerPageMin).max(getKioskDisplayResponseSettingsKioskLookPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(getKioskDisplayResponseSettingsKioskLookSpeedMin).max(getKioskDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(getKioskDisplayResponseSettingsKioskLookHoldMin).max(getKioskDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+}).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsPerPageMin).max(getKioskDisplayResponseSettingsBoardConfigsPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsSpeedMin).max(getKioskDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsHoldMin).max(getKioskDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10608,6 +10702,32 @@ export const RevokeKioskTokenResponse = zod.object({
 /**
  * @summary Update the Honour Boards Display + kiosk settings (admin)
  */
+export const updateHonourDisplaySettingsBodyKioskLookPerPageMin = 0;
+export const updateHonourDisplaySettingsBodyKioskLookPerPageMax = 20;
+
+export const updateHonourDisplaySettingsBodyKioskLookPageSecsMax = 60;
+
+export const updateHonourDisplaySettingsBodyKioskLookSpeedMin = 5;
+export const updateHonourDisplaySettingsBodyKioskLookSpeedMax = 200;
+
+export const updateHonourDisplaySettingsBodyKioskLookHoldMin = 0;
+export const updateHonourDisplaySettingsBodyKioskLookHoldMax = 60;
+
+export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 5;
+
+
+export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMin = 0;
+export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMax = 20;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsPageSecsMax = 60;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsSpeedMin = 5;
+export const updateHonourDisplaySettingsBodyBoardConfigsSpeedMax = 200;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsHoldMin = 0;
+export const updateHonourDisplaySettingsBodyBoardConfigsHoldMax = 60;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 5;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
@@ -10620,6 +10740,17 @@ export const updateHonourDisplaySettingsBodyCustomGridsItemWrapBlocksMax = 4;
 
 
 export const UpdateHonourDisplaySettingsBody = zod.object({
+  "kioskLook": zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(updateHonourDisplaySettingsBodyKioskLookPerPageMin).max(updateHonourDisplaySettingsBodyKioskLookPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(updateHonourDisplaySettingsBodyKioskLookSpeedMin).max(updateHonourDisplaySettingsBodyKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(updateHonourDisplaySettingsBodyKioskLookHoldMin).max(updateHonourDisplaySettingsBodyKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+}).optional().describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "defaultTemplate": zod.string().optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
   "kioskDwellMs": zod.number().optional(),
@@ -10637,6 +10768,16 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsPerPageMin).max(updateHonourDisplaySettingsBodyBoardConfigsPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsSpeedMin).max(updateHonourDisplaySettingsBodyBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsHoldMin).max(updateHonourDisplaySettingsBodyBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10712,6 +10853,32 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 })
 
 
+export const updateHonourDisplaySettingsResponseKioskLookPerPageMin = 0;
+export const updateHonourDisplaySettingsResponseKioskLookPerPageMax = 20;
+
+export const updateHonourDisplaySettingsResponseKioskLookPageSecsMax = 60;
+
+export const updateHonourDisplaySettingsResponseKioskLookSpeedMin = 5;
+export const updateHonourDisplaySettingsResponseKioskLookSpeedMax = 200;
+
+export const updateHonourDisplaySettingsResponseKioskLookHoldMin = 0;
+export const updateHonourDisplaySettingsResponseKioskLookHoldMax = 60;
+
+export const updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax = 5;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMin = 0;
+export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMax = 20;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsPageSecsMax = 60;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsSpeedMin = 5;
+export const updateHonourDisplaySettingsResponseBoardConfigsSpeedMax = 200;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsHoldMin = 0;
+export const updateHonourDisplaySettingsResponseBoardConfigsHoldMax = 60;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 5;
+
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMin = 2;
@@ -10740,7 +10907,28 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
+  "kioskLook": zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(updateHonourDisplaySettingsResponseKioskLookPerPageMin).max(updateHonourDisplaySettingsResponseKioskLookPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(updateHonourDisplaySettingsResponseKioskLookSpeedMin).max(updateHonourDisplaySettingsResponseKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(updateHonourDisplaySettingsResponseKioskLookHoldMin).max(updateHonourDisplaySettingsResponseKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+}).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
+  "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
+  "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
+  "dur": zod.enum(['S', 'M', 'L']).optional().describe('Transition length (short, medium, long).'),
+  "size": zod.enum(['S', 'M', 'L', 'XL']).optional().describe('Text size.'),
+  "perPage": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsPerPageMin).max(updateHonourDisplaySettingsResponseBoardConfigsPerPageMax).optional().describe('Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.'),
+  "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
+  "speed": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsSpeedMin).max(updateHonourDisplaySettingsResponseBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
+  "hold": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsHoldMin).max(updateHonourDisplaySettingsResponseBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),

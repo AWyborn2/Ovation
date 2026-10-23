@@ -18,11 +18,58 @@ export interface HonourBackgroundJson {
   value?: string | null;
 }
 
+// Kiosk motion + sizing settings shared by the club defaults (kiosk_look) and
+// each board's override (board_configs). All optional: unset inherits the club
+// default, then the built-in default (see resolveKioskDisplay in
+// @workspace/scorecard/kiosk-display). Times are whole seconds.
+export interface KioskMotionJson {
+  // How a long board shows all its rows.
+  move?: "pages" | "credits" | "fit";
+  // How a board, or its next page, arrives.
+  trans?:
+    | "fade"
+    | "up"
+    | "down"
+    | "left"
+    | "right"
+    | "pop"
+    | "zoom"
+    | "flip"
+    | "wipe"
+    | "rows"
+    | "cut"
+    | "random";
+  // Transition length.
+  dur?: "S" | "M" | "L";
+  // Text size.
+  size?: "S" | "M" | "L" | "XL";
+  // Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.
+  perPage?: number;
+  // Seconds per page ("pages"), or the pause before a credits roll starts.
+  pageSecs?: number;
+  // Credits-roll speed in px/sec.
+  speed?: number;
+  // Seconds held at the end of a board before the next item.
+  hold?: number;
+  // Columns shown at once: grade/role columns, plaques across, list columns.
+  columnsPerScreen?: number;
+}
+
+// Club-wide kiosk defaults edited on the Look tab (kiosk_look).
+export type KioskLookJson = KioskMotionJson;
+
 // Per-board display override (all optional; unset falls back to the board's
 // natural default). Stored keyed by board id in board_configs.
-export interface BoardDisplayConfigJson {
+export interface BoardDisplayConfigJson extends KioskMotionJson {
+  // Leaderboards: how many players to show (10, 20 or 50).
+  top?: number;
+  // Legacy list column count; read as a fallback for `columnsPerScreen`.
   columns?: number;
+  // Legacy fill mode, read only as a fallback for `move` (scroll → credits,
+  // slide → pages, wrap → fit). The new settings screen writes `move`.
   transition?: "scroll" | "slide" | "wrap";
+  // Legacy full-width flag. The kiosk is always full width now, so it is not
+  // read for `move` (it never meant "shrink to one screen").
   fit?: boolean;
   // Side-by-side block count for the "wrap" fill mode (grid boards), 2..4.
   wrapBlocks?: number;
@@ -33,6 +80,7 @@ export interface BoardDisplayConfigJson {
   footnote?: string | null;
   heading?: string | null;
   subtitle?: string | null;
+  // Legacy text scale; read as a fallback for `size` (sm/md/lg → S/M/L).
   textSize?: "sm" | "md" | "lg";
   density?: "comfortable" | "compact";
   font?: string | null;
@@ -156,6 +204,9 @@ export const honourDisplaySettingsTable = pgTable(
     // Pi load the kiosk rotation without an admin login. NULL = no link issued
     // (kiosk token access disabled). Rotating/clearing this revokes old links.
     kioskToken: text("kiosk_token"),
+    // Club-wide kiosk motion/size defaults; each board's board_configs entry
+    // overrides them. {} = derive from the legacy kiosk_* timing columns.
+    kioskLook: jsonb("kiosk_look").$type<KioskLookJson>().notNull().default({}),
     // Per-board display overrides keyed by board id (column count, transition, fit).
     boardConfigs: jsonb("board_configs")
       .$type<Record<string, BoardDisplayConfigJson>>()

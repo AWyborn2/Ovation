@@ -12,8 +12,10 @@ import type { HonourDisplaySettingsUpdateBoardConfigs } from './honourDisplaySet
 import type { HonourDisplaySettingsUpdateKioskSponsorSlideStyle } from './honourDisplaySettingsUpdateKioskSponsorSlideStyle';
 import type { HonourSkin } from './honourSkin';
 import type { KioskAd } from './kioskAd';
+import type { KioskLook } from './kioskLook';
 
 export interface HonourDisplaySettingsUpdate {
+  kioskLook?: KioskLook;
   defaultTemplate?: string;
   kioskSequence?: string[];
   kioskDwellMs?: number;

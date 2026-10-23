@@ -182,6 +182,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
+    kioskLook: {},
     boardConfigs: {},
     composites: [],
   },

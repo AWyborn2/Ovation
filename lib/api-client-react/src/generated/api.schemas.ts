@@ -7233,6 +7233,178 @@ export interface HonourBackground {
   value?: string | null;
 }
 
+/**
+ * How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.
+ */
+export type KioskLookMove = typeof KioskLookMove[keyof typeof KioskLookMove];
+
+
+export const KioskLookMove = {
+  pages: 'pages',
+  credits: 'credits',
+  fit: 'fit',
+} as const;
+
+/**
+ * How a board, or its next page, arrives.
+ */
+export type KioskLookTrans = typeof KioskLookTrans[keyof typeof KioskLookTrans];
+
+
+export const KioskLookTrans = {
+  fade: 'fade',
+  up: 'up',
+  down: 'down',
+  left: 'left',
+  right: 'right',
+  pop: 'pop',
+  zoom: 'zoom',
+  flip: 'flip',
+  wipe: 'wipe',
+  rows: 'rows',
+  cut: 'cut',
+  random: 'random',
+} as const;
+
+/**
+ * Transition length (short, medium, long).
+ */
+export type KioskLookDur = typeof KioskLookDur[keyof typeof KioskLookDur];
+
+
+export const KioskLookDur = {
+  S: 'S',
+  M: 'M',
+  L: 'L',
+} as const;
+
+/**
+ * Text size.
+ */
+export type KioskLookSize = typeof KioskLookSize[keyof typeof KioskLookSize];
+
+
+export const KioskLookSize = {
+  S: 'S',
+  M: 'M',
+  L: 'L',
+  XL: 'XL',
+} as const;
+
+/**
+ * Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board's BoardDisplayConfig overrides them.
+ */
+export interface KioskLook {
+  /** How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen. */
+  move?: KioskLookMove;
+  /** How a board, or its next page, arrives. */
+  trans?: KioskLookTrans;
+  /** Transition length (short, medium, long). */
+  dur?: KioskLookDur;
+  /** Text size. */
+  size?: KioskLookSize;
+  /**
+     * Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.
+     * @minimum 0
+     * @maximum 20
+     */
+  perPage?: number;
+  /**
+     * Seconds per page, or the pause before a credits roll starts.
+     * @minimum 1
+     * @maximum 60
+     */
+  pageSecs?: number;
+  /**
+     * Credits-roll speed in px/sec.
+     * @minimum 5
+     * @maximum 200
+     */
+  speed?: number;
+  /**
+     * Seconds held at the end of a board before the next item.
+     * @minimum 0
+     * @maximum 60
+     */
+  hold?: number;
+  /**
+     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.
+     * @minimum 1
+     * @maximum 5
+     */
+  columnsPerScreen?: number;
+}
+
+/**
+ * How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.
+ */
+export type BoardDisplayConfigMove = typeof BoardDisplayConfigMove[keyof typeof BoardDisplayConfigMove];
+
+
+export const BoardDisplayConfigMove = {
+  pages: 'pages',
+  credits: 'credits',
+  fit: 'fit',
+} as const;
+
+/**
+ * How a board, or its next page, arrives.
+ */
+export type BoardDisplayConfigTrans = typeof BoardDisplayConfigTrans[keyof typeof BoardDisplayConfigTrans];
+
+
+export const BoardDisplayConfigTrans = {
+  fade: 'fade',
+  up: 'up',
+  down: 'down',
+  left: 'left',
+  right: 'right',
+  pop: 'pop',
+  zoom: 'zoom',
+  flip: 'flip',
+  wipe: 'wipe',
+  rows: 'rows',
+  cut: 'cut',
+  random: 'random',
+} as const;
+
+/**
+ * Transition length (short, medium, long).
+ */
+export type BoardDisplayConfigDur = typeof BoardDisplayConfigDur[keyof typeof BoardDisplayConfigDur];
+
+
+export const BoardDisplayConfigDur = {
+  S: 'S',
+  M: 'M',
+  L: 'L',
+} as const;
+
+/**
+ * Text size.
+ */
+export type BoardDisplayConfigSize = typeof BoardDisplayConfigSize[keyof typeof BoardDisplayConfigSize];
+
+
+export const BoardDisplayConfigSize = {
+  S: 'S',
+  M: 'M',
+  L: 'L',
+  XL: 'XL',
+} as const;
+
+/**
+ * Leaderboards only - how many players to show.
+ */
+export type BoardDisplayConfigTop = typeof BoardDisplayConfigTop[keyof typeof BoardDisplayConfigTop];
+
+
+export const BoardDisplayConfigTop = {
+  NUMBER_10: 10,
+  NUMBER_20: 20,
+  NUMBER_50: 50,
+} as const;
+
 export type BoardDisplayConfigTransition = typeof BoardDisplayConfigTransition[keyof typeof BoardDisplayConfigTransition];
 
 
@@ -7280,6 +7452,46 @@ export const BoardDisplayConfigSort = {
  * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
  */
 export interface BoardDisplayConfig {
+  /** How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen. */
+  move?: BoardDisplayConfigMove;
+  /** How a board, or its next page, arrives. */
+  trans?: BoardDisplayConfigTrans;
+  /** Transition length (short, medium, long). */
+  dur?: BoardDisplayConfigDur;
+  /** Text size. */
+  size?: BoardDisplayConfigSize;
+  /**
+     * Rows (seasons, or rows of panels) per page; 0 = as many as fit the screen.
+     * @minimum 0
+     * @maximum 20
+     */
+  perPage?: number;
+  /**
+     * Seconds per page, or the pause before a credits roll starts.
+     * @minimum 1
+     * @maximum 60
+     */
+  pageSecs?: number;
+  /**
+     * Credits-roll speed in px/sec.
+     * @minimum 5
+     * @maximum 200
+     */
+  speed?: number;
+  /**
+     * Seconds held at the end of a board before the next item.
+     * @minimum 0
+     * @maximum 60
+     */
+  hold?: number;
+  /**
+     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.
+     * @minimum 1
+     * @maximum 5
+     */
+  columnsPerScreen?: number;
+  /** Leaderboards only - how many players to show. */
+  top?: BoardDisplayConfigTop;
   /**
      * @minimum 1
      * @maximum 3
@@ -7621,6 +7833,7 @@ export interface HonourDisplaySettings {
   kioskAds?: KioskAd[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
+  kioskLook: KioskLook;
   /** Per-board display overrides keyed by board id. */
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */
@@ -7658,6 +7871,7 @@ export const HonourDisplaySettingsUpdateKioskSponsorSlideStyle = {
 export type HonourDisplaySettingsUpdateBoardConfigs = {[key: string]: BoardDisplayConfig};
 
 export interface HonourDisplaySettingsUpdate {
+  kioskLook?: KioskLook;
   defaultTemplate?: string;
   kioskSequence?: string[];
   kioskDwellMs?: number;
