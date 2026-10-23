@@ -14,7 +14,8 @@ import {
   Users,
 } from "lucide-react";
 import {
-  useListSocialDrafts,
+  useGetSocialDraft,
+  getGetSocialDraftQueryKey,
   getListSocialDraftsQueryKey,
   useUpdateSocialDraft,
   useGetSocialSettings,
@@ -170,19 +171,25 @@ function useViewportWidth(): number {
 export default function AdminStudioEditor() {
   const { id } = useParams<{ id: string }>();
   const draftId = Number(id);
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+  // By id, not from the queue list: the list leaves out a draft just opened
+  // here and not yet edited, which is exactly what Create hands the editor.
+  const draftQ = useGetSocialDraft(draftId, {
+    query: {
+      queryKey: getGetSocialDraftQueryKey(draftId),
+      enabled: Number.isInteger(draftId),
+      retry: false,
+    },
   });
-  const draft = (draftsQ.data ?? []).find((d) => d.id === draftId) ?? null;
+  const draft = draftQ.data ?? null;
 
-  if (draftsQ.isError) {
+  if (draftQ.isError && (draftQ.error as { status?: number } | null)?.status !== 404) {
     return (
       <div className="studio-editor grid min-h-screen place-items-center">
-        <QueryError onRetry={() => draftsQ.refetch()} />
+        <QueryError onRetry={() => draftQ.refetch()} />
       </div>
     );
   }
-  if (draftsQ.isLoading) {
+  if (draftQ.isLoading) {
     return (
       <div className="studio-editor grid min-h-screen place-items-center">
         <LoadingState label="Opening the editor…" />
@@ -203,10 +210,10 @@ function EditorApp({ draftId }: { draftId: number }) {
   const qc = useQueryClient();
   const brand = useBrand();
   const viewport = useViewportWidth();
-  const draftsQ = useListSocialDrafts(undefined, {
-    query: { queryKey: getListSocialDraftsQueryKey() },
+  const draftQ = useGetSocialDraft(draftId, {
+    query: { queryKey: getGetSocialDraftQueryKey(draftId) },
   });
-  const draft = (draftsQ.data ?? []).find((d) => d.id === draftId)!;
+  const draft = draftQ.data!;
   const input = draftInput(draft)!;
 
   const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
@@ -308,6 +315,7 @@ function EditorApp({ draftId }: { draftId: number }) {
       onSuccess: () => {
         setSavedJson(JSON.stringify(rootDoc));
         qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draftId) });
       },
     },
   });

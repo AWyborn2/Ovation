@@ -7578,6 +7578,24 @@ paths:
           description: The draft is posted or dismissed
 
   /social-drafts/{id}:
+    get:
+      operationId: getSocialDraft
+      tags: [socialCards]
+      summary: One draft, including one just opened in the editor and not yet edited
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
     patch:
       operationId: updateSocialDraft
       tags: [socialCards]

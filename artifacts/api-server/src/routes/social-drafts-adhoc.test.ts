@@ -529,6 +529,17 @@ describe("POST /social-drafts (ad-hoc)", () => {
     expect(list.find((d) => d.id === res.body.id)?.createdBy).toBe("A");
   });
 
+  it("opens by id in the editor before it is edited, and only for its own club", async () => {
+    const res = await as(0).post("/social-drafts", { cardInput: signing, packId: null });
+    const one = await as(0).get(`/social-drafts/${res.body.id}`);
+    expect(one.status).toBe(200);
+    expect(one.body).toMatchObject({ id: res.body.id, engine: "adhoc", createdBy: "A" });
+    expect((await as(1).get(`/social-drafts/${res.body.id}`)).status).toBe(404);
+    expect((await as(0).get("/social-drafts/999999999")).status).toBe(404);
+    // The static routes beside it still answer.
+    expect((await as(0).get("/social-drafts/pending-count")).status).toBe(200);
+  });
+
   it("a blank canvas keeps the blank pack and its layers", async () => {
     const res = await as(0).post("/social-drafts", {
       cardInput: signing,

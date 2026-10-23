@@ -24607,6 +24607,83 @@ export const useApproveSocialDraft = <TError = ErrorType<void>,
       return useMutation(getApproveSocialDraftMutationOptions(options));
     }
 
+export const getGetSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}`
+}
+
+/**
+ * @summary One draft, including one just opened in the editor and not yet edited
+ */
+export const getSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getGetSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialDraftQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}`
+    ] as const;
+    }
+
+
+export const getGetSocialDraftQueryOptions = <TData = Awaited<ReturnType<typeof getSocialDraft>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialDraftQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialDraft>>> = ({ signal }) => getSocialDraft(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialDraftQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialDraft>>>
+export type GetSocialDraftQueryError = ErrorType<void>
+
+
+/**
+ * @summary One draft, including one just opened in the editor and not yet edited
+ */
+
+export function useGetSocialDraft<TData = Awaited<ReturnType<typeof getSocialDraft>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialDraftQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getUpdateSocialDraftUrl = (id: number,) => {
 
 

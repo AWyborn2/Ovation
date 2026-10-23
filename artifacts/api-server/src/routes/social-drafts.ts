@@ -222,6 +222,33 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
   res.json({ count: Number(row?.count ?? 0) });
 });
 
+/**
+ * One draft, as the list presents it. Unlike the list it includes a draft
+ * just opened in the editor and not yet edited (`notAnUntouchedEditorDraft`),
+ * which the Studio editor must be able to load.
+ */
+router.get("/social-drafts/:id", requireAdmin, async (req, res, next): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (id === null || String(id) !== req.params.id) {
+    next();
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const row = await loadDraft(tenantId, id);
+  if (!row) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const autoPost = await loadAutoPost(tenantId);
+  const pubs = await publicationsByDraft(tenantId, [row.id]);
+  const names = await creatorNames(tenantId, [row]);
+  res.json({
+    ...presentDraft(row, autoPost, new Date()),
+    ...draftPublishing(pubs.get(row.id)),
+    createdBy: row.createdByAdminId != null ? (names.get(row.createdByAdminId) ?? null) : null,
+  });
+});
+
 /** Mark a draft ready to post (the endpoint keeps its original "approve" name). */
 router.post(
   "/social-drafts/:id/approve",
