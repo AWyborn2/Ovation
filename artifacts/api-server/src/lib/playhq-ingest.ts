@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { db, fixturesTable, teamListsTable, tenantsTable } from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
@@ -36,6 +36,7 @@ import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
 import { runDraftSweep } from "./draft-sweep";
 import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
+import { FETCH_REQUEST_TTL_MS } from "./playhq-fetch-request";
 import { recomputeParticipantMetadata } from "./junior-admin-helpers";
 import { clearMilestonesCache } from "./milestones-cache";
 import { env } from "../config";
@@ -284,6 +285,11 @@ export async function ingestPlayhqDump(
         `shirt-number held-entry link failed: ${err instanceof Error ? err.message : err}`,
       );
     }
+
+  // An admin's "Fetch latest from PlayHQ" is answered once its run has loaded (a failed run
+  // leaves it pending, and the plan stays due).
+  if (meta.planName === "ondemand" && meta.status !== "failed")
+    await markFetchRequestsDone(rows, warnings, log);
 
   let status = meta.status ?? "ok";
   if (warnings.length && status === "ok") status = "partial";
@@ -612,8 +618,79 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
   );
   return {
     now: now.toISOString(),
-    plans: duePlans(now, orgIds, matches, lastRuns, juniorOrgIds),
+    plans: duePlans(
+      now,
+      orgIds,
+      matches,
+      lastRuns,
+      juniorOrgIds,
+      await pendingFetchRequests(now, new Set(orgIds)),
+    ),
   };
+}
+
+/**
+ * Admins' pending "Fetch latest from PlayHQ" requests (Selection Hub), as `ondemand` plans for
+ * the club's organisation and, with junior sync on, its junior organisation.
+ */
+async function pendingFetchRequests(now: Date, orgIds: ReadonlySet<string>) {
+  const rows = await db
+    .select({
+      orgId: tenantsTable.playhqOrgId,
+      juniorOrgId: tenantsTable.playhqJuniorOrgId,
+      juniorSync: tenantsTable.juniorSyncEnabled,
+      at: tenantsTable.playhqFetchRequestedAt,
+    })
+    .from(tenantsTable)
+    .where(
+      and(
+        isNotNull(tenantsTable.playhqFetchRequestedAt),
+        gt(tenantsTable.playhqFetchRequestedAt, new Date(now.getTime() - FETCH_REQUEST_TTL_MS)),
+        or(
+          isNull(tenantsTable.playhqFetchCompletedAt),
+          lt(tenantsTable.playhqFetchCompletedAt, tenantsTable.playhqFetchRequestedAt),
+        ),
+      ),
+    );
+  return rows.flatMap((r) =>
+    [r.orgId, r.juniorSync ? r.juniorOrgId : null]
+      .map((o) => o?.toLowerCase())
+      .filter((o): o is string => !!o && orgIds.has(o))
+      .map((orgId) => ({ orgId, at: r.at! })),
+  );
+}
+
+/** Stamp the hub fetch requests this `ondemand` run answered (its plan's organisation). */
+async function markFetchRequestsDone(
+  rows: LoadRows,
+  warnings: string[],
+  log: Logger,
+): Promise<void> {
+  const orgs = [
+    ...new Set(
+      rows.runs
+        .map((r) => (typeof r.org_id === "string" ? r.org_id.toLowerCase() : null))
+        .filter((o): o is string => !!o),
+    ),
+  ];
+  if (orgs.length === 0) return;
+  try {
+    await db
+      .update(tenantsTable)
+      .set({ playhqFetchCompletedAt: new Date() })
+      .where(
+        and(
+          isNotNull(tenantsTable.playhqFetchRequestedAt),
+          or(
+            inArray(sql<string>`lower(${tenantsTable.playhqOrgId})`, orgs),
+            inArray(sql<string>`lower(${tenantsTable.playhqJuniorOrgId})`, orgs),
+          ),
+        ),
+      );
+  } catch (err) {
+    log.error({ err }, "playhq ingest: marking fetch requests done failed");
+    warnings.push(`fetch request completion failed: ${err instanceof Error ? err.message : err}`);
+  }
 }
 
 /** The run's team-list updates with each club's name, for the sync's run log. */

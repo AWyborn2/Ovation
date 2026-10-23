@@ -479,6 +479,10 @@ export const juniorTeamListsTable = pgTable(
     players: jsonb("players").$type<JuniorTeamListPlayer[]>().notNull().default([]),
     isPublished: boolean("is_published").notNull().default(false),
     source: text("source").$type<JuniorTeamListSource>().notNull().default("admin"),
+    // The side the club last named in PlayHQ, kept by the sync whatever `source` says,
+    // for the Selection Hub's "Sync from PlayHQ" (see `team_lists.playhq_players`).
+    playhqPlayers: jsonb("playhq_players").$type<JuniorTeamListPlayer[]>(),
+    playhqSeenAt: timestamp("playhq_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

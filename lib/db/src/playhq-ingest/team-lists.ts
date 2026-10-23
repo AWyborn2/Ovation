@@ -433,11 +433,22 @@ export async function projectTeamLists(
       if (players.length === 0) continue;
       summary.selections++;
       const current = existingOf.get(f.id);
+      // PlayHQ's side is kept on the row whatever its source, so the Selection Hub can pull it
+      // into a draft at any time (even over a finalised-then-reopened side or an admin's list).
+      const recordCopy = () =>
+        db
+          .update(teamListsTable)
+          .set({ playhqPlayers: players, playhqSeenAt: now })
+          .where(and(eq(teamListsTable.tenantId, t.id), eq(teamListsTable.fixtureId, f.id)));
       if (current && current.source !== "playhq") {
         summary.keptAdmin++;
+        await recordCopy();
         continue;
       }
-      if (current && current.isPublished && sameTeamList(current.players, players)) continue;
+      if (current && current.isPublished && sameTeamList(current.players, players)) {
+        await recordCopy();
+        continue;
+      }
       await db
         .insert(teamListsTable)
         .values({ tenantId: t.id, fixtureId: f.id, players, isPublished: true, source: "playhq" })
@@ -447,6 +458,8 @@ export async function projectTeamLists(
           // Never over an admin's list, even one saved since it was read above.
           setWhere: sql`${teamListsTable.source} = 'playhq'`,
         });
+      // After the upsert the row exists, whichever source won the race.
+      await recordCopy();
       summary.written++;
       summary.updates.push({
         fixtureId: f.id,

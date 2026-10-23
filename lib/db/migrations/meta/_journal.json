@@ -414,6 +414,13 @@
       "when": 1792562203058,
       "tag": "0058_card_crest_and_junior_names",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792712966670,
+      "tag": "0059_selection_playhq_anytime",
+      "breakpoints": true
     }
   ]
 }

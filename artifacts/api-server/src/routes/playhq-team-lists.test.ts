@@ -299,6 +299,8 @@ describe("PlayHQ named side → team list → Team List draft", () => {
       expect.objectContaining({ tenantId, players: 2, change: "changed" }),
     ]);
     expect((await teamList()).list.players).toHaveLength(2);
+    // The sync's own copy of PlayHQ's side, for the Selection Hub (migration 0059).
+    expect((await teamList()).list.playhqPlayers).toHaveLength(2);
 
     const { fx } = await teamList();
     const mine = [{ order: 1, displayName: "Admin Pick" }];
@@ -311,6 +313,9 @@ describe("PlayHQ named side → team list → Team List draft", () => {
     const { list } = await teamList();
     expect(list.source).toBe("admin");
     expect(list.players).toEqual(mine);
+    // The admin's list stands, but PlayHQ's newest side is kept beside it for the Hub.
+    expect(list.playhqPlayers).toEqual([expect.objectContaining({ displayName: "Nina Newcomer" })]);
+    expect(list.playhqSeenAt).not.toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import request from "supertest";
+import { eq } from "drizzle-orm";
 import app from "../app";
 import {
   db,
@@ -217,5 +218,56 @@ describe("Selection Hub: use PlayHQ's published side", () => {
       participantId: pid(3),
     });
     expect(after.captainMemberId).toBe(j[2]);
+  });
+
+  // Migration 0059: the sync keeps PlayHQ's side on the row whatever its source, so a side
+  // finalised and then re-opened (its "selection" list still published) syncs at any time.
+  it("syncs a re-opened side from PlayHQ's copy, whatever list the fixture has published", async () => {
+    const side = (await sides("senior"))[0];
+    await db
+      .update(teamListsTable)
+      .set({
+        source: "selection",
+        players: [{ order: 1, displayName: "Chris Smith" }],
+        playhqPlayers: [
+          { order: 1, displayName: "Adam Smith", role: "C" },
+          { order: 2, displayName: "Brett Smith", role: "WK" },
+        ],
+      })
+      .where(eq(teamListsTable.tenantId, tenantId));
+    expect((await sides("senior"))[0].playhqPlayers).toBe(2);
+    const res = await asAdmin(request(app).post(`/api/selection/${side.id}/playhq-sync`))
+      .send({ version: side.version })
+      .expect(200);
+    const after = res.body as Side;
+    expect(after.slots.slice(0, 2).map((x) => x.memberId)).toEqual([s[1], s[2]]);
+    expect(after.captainMemberId).toBe(s[1]);
+
+    const jr = (await sides("junior"))[0];
+    await db
+      .update(juniorTeamListsTable)
+      .set({
+        source: "selection",
+        players: [],
+        playhqPlayers: [{ order: 1, participantId: pid(1), role: "C" }],
+      })
+      .where(eq(juniorTeamListsTable.tenantId, tenantId));
+    expect((await sides("junior"))[0].playhqPlayers).toBe(1);
+    const jres = await asAdmin(request(app).post(`/api/selection/${jr.id}/playhq-sync`))
+      .send({ version: jr.version })
+      .expect(200);
+    expect((jres.body as Side).slots[0].memberId).toBe(j[1]);
+  });
+
+  it("offers nothing for a list PlayHQ never named (an admin's list, no copy)", async () => {
+    await db
+      .update(teamListsTable)
+      .set({ source: "admin", playhqPlayers: null })
+      .where(eq(teamListsTable.tenantId, tenantId));
+    const side = (await sides("senior"))[0];
+    expect(side.playhqPlayers).toBeNull();
+    await asAdmin(request(app).post(`/api/selection/${side.id}/playhq-sync`))
+      .send({ version: side.version })
+      .expect(404);
   });
 });
