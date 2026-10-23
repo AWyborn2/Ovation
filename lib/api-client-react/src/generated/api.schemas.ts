@@ -8780,6 +8780,8 @@ export interface LibraryLookRef {
   id: number;
   slug: string;
   name: string;
+  /** The design system the look belongs to (a bundle look's `family`), when it has one. */
+  family?: string;
 }
 
 export type LibraryTemplateOrigin = typeof LibraryTemplateOrigin[keyof typeof LibraryTemplateOrigin];
@@ -8991,6 +8993,8 @@ export interface LibraryLook {
   /** @nullable */
   description: string | null;
   authorName: string;
+  /** The design system the look belongs to ("Ovation Match Graphics"), when it has one. The library shows a family's looks together. */
+  family?: string;
   templates: LibraryLookTemplate[];
 }
 
