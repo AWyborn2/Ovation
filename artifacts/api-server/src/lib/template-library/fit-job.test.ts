@@ -17,7 +17,15 @@ import { serialisedFitCheck, serialisedRender } from "../draft-render";
 import { syncBundles } from "./bundles";
 import { fixtureBundle, fixtureTemplate } from "./bundles.test-helpers";
 import { registerFitRunner } from "./fit";
-import { fitChecksSettled, fitRunner, retryPendingFits, setFitCheck, startFitJob } from "./fit-job";
+import {
+  FIT_RETRIES_PER_SWEEP,
+  fitChecksSettled,
+  fitRunner,
+  retryPendingFits,
+  retryPendingFitsAtBoot,
+  setFitCheck,
+  startFitJob,
+} from "./fit-job";
 
 const STAMP = Date.now();
 const LOOK = `t-fit-${STAMP}`;
@@ -135,6 +143,29 @@ describe("the fit job", () => {
     expect(queued).toBeGreaterThanOrEqual(1);
     await fitChecksSettled();
     expect((await version(`${LOOK}-c/player`)).fitStatus).toBe("pass");
+  });
+
+  it("asks again at boot for a check left pending before the restart", async () => {
+    // A first publish: the version is added, but its check can't run before the restart.
+    setFitCheck(async () => {
+      throw new Error("no harness yet");
+    });
+    registerFitRunner(fitRunner(quiet, { retries: 0 }));
+    await syncBundles([fixtureBundle(`${LOOK}-b`, [fixtureTemplate("player")])]);
+    await fitChecksSettled();
+    expect((await version(`${LOOK}-b/player`)).fitStatus).toBe("pending");
+
+    // The restart: the fit job starts, the sync adds nothing new, and the boot hook asks again.
+    setFitCheck(async () => report("pass"));
+    registerFitRunner(fitRunner(quiet));
+    await syncBundles([fixtureBundle(`${LOOK}-b`, [fixtureTemplate("player")])]);
+    expect(await retryPendingFitsAtBoot(quiet)).toBeGreaterThanOrEqual(1);
+    await fitChecksSettled();
+    expect((await version(`${LOOK}-b/player`)).fitStatus).toBe("pass");
+  });
+
+  it("lets a sweep work through a whole library's checks in a few hours", () => {
+    expect(FIT_RETRIES_PER_SWEEP).toBeGreaterThanOrEqual(100);
   });
 
   it("queues one check per target, however often it's asked", async () => {
