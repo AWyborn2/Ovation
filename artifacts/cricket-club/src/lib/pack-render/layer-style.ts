@@ -37,6 +37,8 @@ import {
   type DuotonePalette,
 } from "./duotone-vars";
 import type { PackCardData, PackTokens } from "./types";
+import { matchTokensIn, matchVars, type MatchColours } from "@workspace/scorecard/match-palette";
+import { cardMatchColours } from "./match-vars";
 
 // ── Values ──────────────────────────────────────────────────────────────────
 
@@ -445,12 +447,14 @@ const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStag
  * an overlay with an element gets it, as does one whose styles name it
  * (`var(--ck-stage)`) or, in v2, declares it. A v2 document that declares or
  * uses the Duotone palette (`var(--dt-p)`) gets `--dt-*`, as does a v1 one
- * whose v2 layers (an inserted library element) use it.
+ * whose v2 layers (an inserted library element) use it. Layers that name the
+ * match palette (`var(--mt-win-colour)`) get just those tokens, from the
+ * card's match (`ctx.match`), else the club against a neutral opposition.
  */
 export function paletteVars(
   doc: NormalisedDocument,
   layers: readonly TemplateLayerV2[],
-  ctx: { tokens?: PackTokens; brand?: PackCardData["brand"] | null },
+  ctx: { tokens?: PackTokens; brand?: PackCardData["brand"] | null; match?: MatchColours },
 ): string {
   if (!ctx.tokens) return "";
   const json = JSON.stringify(layers);
@@ -464,8 +468,13 @@ export function paletteVars(
     (json.includes("var(--dt-") &&
       (doc.sourceFormat === 2 ||
         layers.some((l) => layerNeedsV2(l) && JSON.stringify(l).includes("var(--dt-"))));
+  // The match palette: only the `--mt-*` tokens the layers name, each computed from its name.
+  const match = json.includes("var(--mt-")
+    ? matchVars(ctx.match ?? cardMatchColours(null, ctx.tokens, ctx.brand), matchTokensIn(json))
+    : "";
   return [
     usesClubKit ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}` : "",
     usesDuotone ? `;${duotoneVars(duotonePaletteFor(ctx.tokens, ctx.brand))}` : "",
+    match ? `;${match}` : "",
   ].join("");
 }

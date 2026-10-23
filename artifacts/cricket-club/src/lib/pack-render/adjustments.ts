@@ -26,6 +26,7 @@ import {
   type RowsSpec,
   type TemplateDocumentV2,
   type TemplateLayerV2,
+  type TemplateStyleV2,
   type TemplateTextStyle,
   type TemplateTimeline,
   type TextLayerV2,
@@ -59,6 +60,7 @@ import { duotonePaletteFor } from "./duotone-vars";
 import { renderVector } from "./layer-vector";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import type { PackCardData, PackTokens } from "./types";
+import type { MatchColours } from "@workspace/scorecard/match-palette";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
@@ -348,6 +350,8 @@ export interface FreeLayerContext {
   formatVersion?: 1 | 2;
   /** Whether the card is animated (loops that run on the text need it). Set by `renderFreeLayers`. */
   animate?: boolean;
+  /** Both teams' colours, for the match palette (`--mt-*`); absent → the club against a neutral side. */
+  match?: MatchColours;
 }
 
 const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
@@ -363,6 +367,12 @@ export function substituteTokens(text: string, values: Record<string, string>): 
 
 /** A fittable element's designed size in cqw, for `FIT_ATTR`. */
 const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
+
+/** A v2 text width as `font-stretch`, or "" (none, or not a number). */
+function stretchCss(stretch: unknown): string {
+  if (typeof stretch !== "number" || !Number.isFinite(stretch)) return "";
+  return `font-stretch:${+Math.min(200, Math.max(50, stretch)).toFixed(1)}%`;
+}
 
 /**
  * Inline CSS for a text box (text layers and list-row cells): `extra` before
@@ -393,6 +403,9 @@ function textCss(
     "white-space:pre-wrap",
     s.letterSpacing != null ? `letter-spacing:${num(s.letterSpacing)}em` : "",
     s.uppercase === true ? "text-transform:uppercase" : "",
+    // v2 only (a v1 style can't hold them): the family's italic and its width.
+    (raw as TemplateStyleV2 | undefined)?.italic === true ? "font-style:italic" : "",
+    stretchCss((raw as TemplateStyleV2 | undefined)?.stretch),
     s.background ? `background:${s.background}` : "",
     s.radius != null ? `border-radius:${num(s.radius)}px` : "",
     ...after,
@@ -468,7 +481,12 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       // Cells stay on one line so an overflow shows as width, which the fit
       // step shrinks and, failing that, reports (KTD9). In format v2 it then
       // ends the text in "…" after its last whole word that fits.
-      const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
+      // A v2 cell draws its text shadows, stroke, text fill and line height too.
+      const after = ctx.formatVersion === 2 ? textStyleCss(style as TemplateStyleV2) : [];
+      const css = textCss(style, place, after).replace(
+        "white-space:pre-wrap",
+        "white-space:nowrap",
+      );
       const words = ctx.formatVersion === 2 ? ` ${FIT_WORDS_ATTR}="1"` : "";
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}"${words} style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });

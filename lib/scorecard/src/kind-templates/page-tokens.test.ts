@@ -32,8 +32,34 @@ describe("page token catalogues", () => {
       const v1 = KIND_FIELDS[kind];
       for (const f of v1.fields) expect(cat.fields.map((t) => t.key)).toContain(f.key);
       for (const i of v1.images) expect(cat.images.map((t) => t.key)).toContain(i.key);
-      expect(cat.repeats.map((r) => r.key)).toEqual(v1.repeats.map((r) => r.key));
+      // Match Summary's match graphics rows come after the kind's own (M9).
+      expect(cat.repeats.map((r) => r.key).slice(0, v1.repeats.length)).toEqual(
+        v1.repeats.map((r) => r.key),
+      );
     }
+  });
+
+  it("gives Match Summary's card the match graphics content (M9)", () => {
+    const cat = pageTokens("matchSummary", "result")!;
+    expect(cat.repeats.map((r) => r.key)).toEqual([
+      "innings1.batting",
+      "innings1.bowling",
+      "innings1.pairs",
+      "innings2.batting",
+      "innings2.bowling",
+      "innings2.pairs",
+    ]);
+    const keys = cat.fields.map((f) => f.key);
+    for (const k of ["venue", "competition", "innings1.score", "innings2.scoreDash", "club.short"])
+      expect(keys).toContain(k);
+    expect(cat.images.map((i) => i.key)).toEqual(
+      expect.arrayContaining(["innings1.logo", "innings2.logo", "winner.logo", "loser.logo"]),
+    );
+    const pairs = cat.repeats.find((r) => r.key === "innings1.pairs")!;
+    expect(pairs.fields.map((f) => f.key)).toEqual(
+      expect.arrayContaining(["batSurname", "batRuns", "bowlFiguresDash", "bowlOvers"]),
+    );
+    expect(pairs.content).toBe("result.performers");
   });
 
   it("lists each token once per page", () => {

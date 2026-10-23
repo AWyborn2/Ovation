@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CardAdjustments } from "@/lib/pack-render";
 import {
+  documentFontStyles,
   documentFontUsage,
   ensureDocumentFonts,
   googleFontsHref,
@@ -14,6 +15,19 @@ const catalogue: CatalogueEntry[] = [
   { family: "Barlow Condensed", category: "Sans Serif", weights: [400, 600, 800] },
   { family: "Playfair Display", category: "Serif", weights: [400, 700, 900] },
   { family: "Oswald", category: "Sans Serif", weights: [400, 700] },
+  {
+    family: "Archivo",
+    category: "Sans Serif",
+    weights: [400, 500, 700, 800],
+    italic: true,
+    width: [62, 125],
+  },
+  {
+    family: "Barlow Semi Condensed",
+    category: "Sans Serif",
+    weights: [600, 700, 800],
+    italic: true,
+  },
 ];
 
 const doc = (styles: Array<{ fontFamily?: string; fontWeight?: number }>): CardAdjustments => ({
@@ -97,6 +111,32 @@ describe("planning requests", () => {
     expect(planFontRequests(usage, catalogue)).toEqual([
       { family: "Barlow Condensed", weights: [800] },
     ]);
+  });
+
+  it("asks for italics and widths only where the family has them (M10)", () => {
+    const adj = doc([
+      { fontFamily: "Archivo", fontWeight: 800, stretch: 125 } as never,
+      { fontFamily: "Barlow Semi Condensed", fontWeight: 700, italic: true } as never,
+      { fontFamily: "Playfair Display", fontWeight: 400, italic: true } as never,
+    ]);
+    const styles = documentFontStyles(adj);
+    expect(styles.get("Archivo")).toEqual({ italic: false, widths: new Set([125]) });
+    expect(planFontRequests(documentFontUsage(adj), catalogue, styles)).toEqual([
+      { family: "Archivo", weights: [800], widths: [100, 125] },
+      { family: "Barlow Semi Condensed", weights: [700], italic: true },
+      // Playfair has no italics in this catalogue: asking would fail the stylesheet.
+      { family: "Playfair Display", weights: [400] },
+    ]);
+  });
+
+  it("builds a CSS API url with the italic and width axes", () => {
+    expect(
+      googleFontsHref([
+        { family: "Archivo", weights: [500, 800], widths: [100, 125], italic: true },
+      ]),
+    ).toBe(
+      "https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100,500;0,100,800;0,125,500;0,125,800;1,100,500;1,100,800;1,125,500;1,125,800&display=block",
+    );
   });
 
   it("builds a CSS API url with encoded family names", () => {

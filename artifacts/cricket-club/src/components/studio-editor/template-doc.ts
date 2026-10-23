@@ -117,8 +117,16 @@ export function withPage(doc: TemplateDoc, page: PageKey, next: EditorDoc): Temp
 export function layerIsV2Only(layer: EditorLayer): boolean {
   if (layer.kind === "group" || layer.kind === "vector") return true;
   if (layer.showWhen || layer.fit || layer.motion || layer.stack || layer.children) return true;
-  const style = (layer.style ?? {}) as Record<string, unknown>;
-  return V2_STYLE_KEYS.some((k) => style[k] !== undefined);
+  const v2Style = (style: unknown) =>
+    !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
+  if (v2Style(layer.style)) return true;
+  // A list's cells and row styles (italic row text) count too.
+  const rows = layer.rows;
+  return (
+    !!rows &&
+    ((rows.cells ?? []).some((c) => v2Style(c.style)) ||
+      Object.values(rows.variants ?? {}).some((cells) => Object.values(cells).some(v2Style)))
+  );
 }
 
 /** Whether the document needs format v2 to be stored. */
