@@ -71,7 +71,7 @@ export default function AdminSocialSettings() {
     <div className="space-y-8">
       <nav aria-label="Settings sections" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {jumps.map((j) => (
-          <a key={j.id} href={`#${j.id}`} className="text-primary hover:underline">
+          <a key={j.id} href={`#${j.id}`} className="text-primary-text hover:underline">
             {j.label}
           </a>
         ))}
