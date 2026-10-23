@@ -4306,8 +4306,8 @@ export const ListEmailSendsQueryParams = zod.object({
 
 export const ListEmailSendsResponseItem = zod.object({
   "id": zod.number(),
-  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
-  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.'),
+  "listName": zod.string().describe('The list\'s name, Deleted list after deletion, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
@@ -4330,8 +4330,8 @@ export const ResendEmailSendParams = zod.object({
 
 export const ResendEmailSendResponse = zod.object({
   "id": zod.number(),
-  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
-  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.'),
+  "listName": zod.string().describe('The list\'s name, Deleted list after deletion, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
@@ -14905,6 +14905,60 @@ export const GetJuniorPhotoParams = zod.object({
  */
 export const GetJuniorPhotoThumbParams = zod.object({
   "photoId": zod.coerce.number()
+})
+
+
+export const ListJuniorNameReviewResponseItem = zod.object({
+  "participantId": zod.string(),
+  "currentName": zod.string(),
+  "suggestedName": zod.string().nullable(),
+  "status": zod.enum(['suggested', 'conflicting', 'abbreviated', 'missing', 'protected', 'expanded', 'identity_review']),
+  "evidence": zod.array(zod.object({
+  "source": zod.enum(['roster', 'batting', 'bowling', 'premiership']),
+  "sourceId": zod.number(),
+  "name": zod.string(),
+  "season": zod.string().nullable(),
+  "team": zod.string().nullable()
+})),
+  "revision": zod.string(),
+  "firstSeason": zod.string().nullable(),
+  "lastSeason": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "withheld": zod.boolean(),
+  "publicName": zod.string(),
+  "history": zod.array(zod.object({
+  "id": zod.number(),
+  "before": zod.string().nullable(),
+  "after": zod.string().nullable(),
+  "by": zod.string().nullable(),
+  "at": zod.string()
+}))
+})
+export const ListJuniorNameReviewResponse = zod.array(ListJuniorNameReviewResponseItem)
+
+
+export const publishJuniorNamesBodySelectionsItemParticipantIdMax = 150;
+
+export const publishJuniorNamesBodySelectionsItemNameMin = 3;
+export const publishJuniorNamesBodySelectionsItemNameMax = 200;
+
+export const publishJuniorNamesBodySelectionsMax = 750;
+
+
+
+export const PublishJuniorNamesBody = zod.object({
+  "selections": zod.array(zod.object({
+  "participantId": zod.string().min(1).max(publishJuniorNamesBodySelectionsItemParticipantIdMax),
+  "revision": zod.string(),
+  "name": zod.string().min(publishJuniorNamesBodySelectionsItemNameMin).max(publishJuniorNamesBodySelectionsItemNameMax),
+  "mode": zod.enum(['suggestion', 'manual'])
+})).min(1).max(publishJuniorNamesBodySelectionsMax)
+})
+
+export const PublishJuniorNamesResponse = zod.object({
+  "published": zod.number(),
+  "skipped": zod.number()
 })
 
 

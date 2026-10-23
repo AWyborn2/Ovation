@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { randomInt, randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
@@ -223,9 +223,16 @@ afterAll(async () => {
 });
 
 beforeEach(() => {
+  // Exercise the default sender regardless of the workspace's configured sender.
+  vi.stubEnv("TEAM_SHEET_EMAIL_FROM", undefined);
+  vi.stubEnv("TEAM_SHEET_EMAIL_REPLY_TO", undefined);
   sent.length = 0;
   failFor = null;
   vi.mocked(renderHtmlToPdf).mockClear();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe("Email all", () => {

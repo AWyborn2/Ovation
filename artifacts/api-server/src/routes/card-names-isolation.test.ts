@@ -3,6 +3,7 @@ import request from "supertest";
 import { eq } from "drizzle-orm";
 import app from "../app";
 import { db, tenantsTable, adminsTable, teamNameOverridesTable } from "@workspace/db";
+import { centralCardClubs } from "@workspace/db/central-queries";
 import { cardNameKey } from "@workspace/scorecard/card-names";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
@@ -23,8 +24,12 @@ describe("card names routes", () => {
   let t3: number;
   let cookie2: string;
   let cookie3: string;
+  let centralClubName: string;
 
   beforeAll(async () => {
+    const [club] = await centralCardClubs([MANDURAH]);
+    if (!club?.name) throw new Error("Card names fixture club is missing");
+    centralClubName = club.name;
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-card-names";
     const tenants = await db
       .insert(tenantsTable)
@@ -115,7 +120,7 @@ describe("card names routes", () => {
       })
       .expect(200);
 
-    const key = cardNameKey("Mandurah Cricket Club");
+    const key = cardNameKey(centralClubName);
     const bundle2 = await as(t2, null).get("/api/social-settings").expect(200);
     expect(bundle2.body.cardNames.teams[key]).toBe("T2 Mandurah");
     expect(bundle2.body.cardNames.competitions[cardNameKey("A Grade")]).toBe("T2 A");
@@ -155,7 +160,7 @@ describe("card names routes", () => {
     expect(
       saved.body.teams.find((t: { centralClubId: number }) => t.centralClubId === MANDURAH),
     ).toMatchObject({ crestUrl: UPLOAD, crestSource: "upload" });
-    const key = cardNameKey("Mandurah Cricket Club");
+    const key = cardNameKey(centralClubName);
     const bundle2 = await as(t2, null).get("/api/social-settings").expect(200);
     expect(bundle2.body.cardNames.crestOverrides[key]).toBe(UPLOAD);
     const bundle3 = await as(t3, null).get("/api/social-settings").expect(200);
@@ -200,6 +205,6 @@ describe("card names routes", () => {
       cleared.body.teams.find((t: { centralClubId: number }) => t.centralClubId === MANDURAH),
     ).toBeUndefined();
     const bundle2 = await as(t2, null).get("/api/social-settings").expect(200);
-    expect(bundle2.body.cardNames?.teams?.[cardNameKey("Mandurah Cricket Club")]).toBeUndefined();
+    expect(bundle2.body.cardNames?.teams?.[cardNameKey(centralClubName)]).toBeUndefined();
   });
 });

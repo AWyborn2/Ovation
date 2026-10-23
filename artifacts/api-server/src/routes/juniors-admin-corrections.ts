@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import {
   db,
   type juniorMatchesTable,
@@ -19,7 +19,6 @@ import {
   serializeCorrection,
   SNAKE_TO_TABLE,
 } from "../lib/junior-admin-helpers";
-import { juniorParticipantKey } from "../lib/junior-participant-scope";
 import { guardRevertedPrivacy } from "../lib/junior-privacy";
 
 /**
@@ -85,6 +84,14 @@ router.delete(
 
     // Reverts must run newest-first per target row: restoring an older
     // pre-image over a newer correction would silently wipe the newer edit.
+    const sameTarget =
+      correction.targetTable === "junior_participants"
+        ? sql`lower(${juniorStatCorrectionsTable.targetId}) = lower(${correction.targetId})`
+        : eq(juniorStatCorrectionsTable.targetId, correction.targetId);
+    const participantKey = and(
+      eq(juniorParticipantsTable.tenantId, tenantId),
+      sql`lower(${juniorParticipantsTable.participantId}) = lower(${correction.targetId})`,
+    );
     const [newer] = await db
       .select({ id: juniorStatCorrectionsTable.id })
       .from(juniorStatCorrectionsTable)
@@ -92,7 +99,7 @@ router.delete(
         and(
           eq(juniorStatCorrectionsTable.tenantId, tenantId),
           eq(juniorStatCorrectionsTable.targetTable, correction.targetTable),
-          eq(juniorStatCorrectionsTable.targetId, correction.targetId),
+          sameTarget,
           gt(juniorStatCorrectionsTable.id, correction.id),
         ),
       );
@@ -109,7 +116,31 @@ router.delete(
       return;
     }
 
-    await db.transaction(async (tx) => {
+    const reverted = await db.transaction(async (tx) => {
+      // Publication serialises on the participant row. Re-check the journal
+      // after acquiring that lock, rather than restoring an old pre-image over
+      // a name that was confirmed while this request waited.
+      if (correction.targetTable === "junior_participants") {
+        const locked = await tx
+          .select()
+          .from(juniorParticipantsTable)
+          .where(participantKey)
+          .for("update");
+        if (locked.length !== 1) return false;
+        const [latest] = await tx
+          .select({ id: juniorStatCorrectionsTable.id })
+          .from(juniorStatCorrectionsTable)
+          .where(
+            and(
+              eq(juniorStatCorrectionsTable.tenantId, tenantId),
+              eq(juniorStatCorrectionsTable.targetTable, correction.targetTable),
+              sameTarget,
+            ),
+          )
+          .orderBy(desc(juniorStatCorrectionsTable.id))
+          .limit(1);
+        if (latest?.id !== correction.id) return false;
+      }
       if (correction.op === "update") {
         const prev = (correction.prevValues ?? {}) as Record<string, unknown>;
         const set: Record<string, unknown> = {};
@@ -127,11 +158,11 @@ router.delete(
                 privacyOverride: juniorParticipantsTable.privacyOverride,
               })
               .from(juniorParticipantsTable)
-              .where(juniorParticipantKey(tenantId, correction.targetId));
+              .where(participantKey);
             await tx
               .update(juniorParticipantsTable)
               .set(current ? guardRevertedPrivacy(set, current) : set)
-              .where(juniorParticipantKey(tenantId, correction.targetId));
+              .where(participantKey);
             // The rename flowed onto this club's stored line names (PATCH
             // /juniors/participants/:id), so a reverted name flows back the same way.
             if (typeof set.displayName === "string") {
@@ -168,7 +199,15 @@ router.delete(
       await tx
         .delete(juniorStatCorrectionsTable)
         .where(eq(juniorStatCorrectionsTable.id, correction.id));
+      return true;
     });
+    if (!reverted) {
+      res.status(409).json({
+        error:
+          "The participant changed. Reload the corrections journal and revert the newest correction first.",
+      });
+      return;
+    }
 
     res.status(204).end();
   },

@@ -1,4 +1,5 @@
-import { pgTable, serial, integer, text, timestamp, index, unique } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, serial, integer, text, timestamp, index, unique, uniqueIndex } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -11,6 +12,8 @@ import { tenantIdColumn } from "./_tenant";
  * season to season, the club id does not. `grade_key` (an app grade, "A Grade",
  * "Female A Grade") narrows a name to one grade; NULL covers every grade.
  * UNIQUE NULLS NOT DISTINCT, so a club has at most one all-grades name.
+ * The additional partial unique index preserves that rule through publishing
+ * tools that introspect the constraint as ordinary UNIQUE.
  *
  * Tenant-curated content: every read filters on `tenant_id`, every write sets it
  * from the request. Never written to `central`. A club with no row here gets the
@@ -30,6 +33,9 @@ export const teamNameOverridesTable = pgTable(
     uqTenantClubGrade: unique("team_name_overrides_tenant_club_grade_unique")
       .on(t.tenantId, t.centralClubId, t.gradeKey)
       .nullsNotDistinct(),
+    uqAllGrades: uniqueIndex("team_name_overrides_all_grades_unique")
+      .on(t.tenantId, t.centralClubId)
+      .where(sql`${t.gradeKey} IS NULL`),
     idxTenant: index("team_name_overrides_tenant_idx").on(t.tenantId),
   }),
 );

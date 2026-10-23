@@ -257,7 +257,8 @@ export default function AdminEmailLists() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={resendM.isPending}
+                      disabled={resendM.isPending || (s.listId == null && s.kind !== "team_sheet_batch")}
+                      title={s.listId == null && s.kind !== "team_sheet_batch" ? "This contact list was deleted" : undefined}
                       onClick={() => resend(s.id)}
                       aria-label={`Send ${s.listName} again`}
                     >

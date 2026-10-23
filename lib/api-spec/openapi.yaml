@@ -3142,6 +3142,8 @@ paths:
           description: Not signed in as this club's admin
         "404":
           description: Send not found
+        "409":
+          description: The contact list was deleted; this send cannot be resent.
 
   /selection/{id}/playhq-sync:
     post:
@@ -9398,6 +9400,44 @@ paths:
                 format: binary
         "404":
           description: No such photo, or the player is not allowed a photo
+
+  /juniors/name-review:
+    get:
+      operationId: listJuniorNameReview
+      tags: [juniors]
+      responses:
+        "200":
+          description: Admin-only read-only name evidence and publication previews for this club.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorNameReview"
+        "401":
+          description: Admin required
+    post:
+      operationId: publishJuniorNames
+      tags: [juniors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorNamesPublication"
+      responses:
+        "200":
+          description: Atomic publication completed; repeated submissions are skipped.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorNamesPublicationResult"
+        "400":
+          description: Invalid full name or selection
+        "401":
+          description: Admin required
+        "409":
+          description: Preview is stale; reload before confirming
 
   /juniors/photo-library:
     get:
@@ -17262,10 +17302,10 @@ components:
         listId:
           type: integer
           nullable: true
-          description: The list sent to; null for a batch (Email all, scheduled), which spans lists
+          description: The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.
         listName:
           type: string
-          description: The list's name, or what sent a batch ("Email all team sheets (4 sides)")
+          description: The list's name, Deleted list after deletion, or what sent a batch ("Email all team sheets (4 sides)")
         kind:
           type: string
         subjectType:
@@ -26178,6 +26218,105 @@ components:
         playerName:
           type: ["string", "null"]
 
+    JuniorNameEvidence:
+      type: object
+      required: [source, sourceId, name, season, team]
+      properties:
+        source:
+          type: string
+          enum: [roster, batting, bowling, premiership]
+        sourceId:
+          type: integer
+        name:
+          type: string
+        season:
+          type: ["string", "null"]
+        team:
+          type: ["string", "null"]
+    JuniorNameReview:
+      type: object
+      required: [participantId, currentName, suggestedName, status, evidence, revision, firstSeason, lastSeason, teams, nameStyle, withheld, publicName, history]
+      properties:
+        participantId:
+          type: string
+        currentName:
+          type: string
+        suggestedName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [suggested, conflicting, abbreviated, missing, protected, expanded, identity_review]
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorNameEvidence"
+        revision:
+          type: string
+        firstSeason:
+          type: ["string", "null"]
+        lastSeason:
+          type: ["string", "null"]
+        teams:
+          type: ["string", "null"]
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        withheld:
+          type: boolean
+        publicName:
+          type: string
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorNameHistory"
+    JuniorNameHistory:
+      type: object
+      required: [id, before, after, by, at]
+      properties:
+        id:
+          type: integer
+        before:
+          type: ["string", "null"]
+        after:
+          type: ["string", "null"]
+        by:
+          type: ["string", "null"]
+        at:
+          type: string
+    JuniorNamesPublication:
+      type: object
+      required: [selections]
+      properties:
+        selections:
+          type: array
+          minItems: 1
+          maxItems: 750
+          items:
+            $ref: "#/components/schemas/JuniorNameSelection"
+    JuniorNameSelection:
+      type: object
+      required: [participantId, revision, name, mode]
+      properties:
+        participantId:
+          type: string
+          minLength: 1
+          maxLength: 150
+        revision:
+          type: string
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        mode:
+          type: string
+          enum: [suggestion, manual]
+    JuniorNamesPublicationResult:
+      type: object
+      required: [published, skipped]
+      properties:
+        published:
+          type: integer
+        skipped:
+          type: integer
     UpdateJuniorParticipantBody:
       type: object
       properties:

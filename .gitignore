@@ -91,3 +91,4 @@ artifacts/cricket-mobile/static-build/
 /exports/
 # Report folders the ops scripts write when run from scripts/ (cut-over previews, cap checks).
 /scripts/exports/
+/generated-artifacts/
