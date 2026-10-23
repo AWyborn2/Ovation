@@ -73,22 +73,18 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     icon: Image,
     feature: "socialStudio",
     badge: "social-queue",
-    description: "Branded share-card factory, card builders, junior cards and the review queue.",
+    description:
+      "Design and post branded cards: a Studio home to create and pick up designs, templates, carousel sets, junior cards and the review queue.",
     tabs: [
-      { value: "studio", label: "Studio", path: "/admin/social", feature: "socialStudio" },
+      // Home is the Canva-style Studio home (plan 2026-10-23); Cards holds the
+      // posting, theme, sponsor and caption settings, and the old upload cards.
+      { value: "studio", label: "Home", path: "/admin/social", feature: "socialStudio" },
       {
         value: "template-library",
         label: "Templates",
         path: "/admin/social/template-library",
         feature: "socialStudio",
       },
-      {
-        value: "plan",
-        label: "Posting Plan",
-        path: "/admin/social/plan",
-        feature: "socialStudio",
-      },
-      { value: "cards", label: "Cards", path: "/admin/social/cards", feature: "socialStudio" },
       {
         value: "create",
         label: "Create a card",
@@ -102,6 +98,13 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         feature: "socialStudio",
       },
       {
+        value: "plan",
+        label: "Posting Plan",
+        path: "/admin/social/plan",
+        feature: "socialStudio",
+      },
+      { value: "queue", label: "Queue", path: "/admin/social/queue", feature: "socialStudio" },
+      {
         value: "fixtures",
         label: "Fixtures",
         path: "/admin/social/fixtures",
@@ -113,13 +116,13 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         path: "/admin/social/juniors",
         feature: "socialStudio",
       },
-      { value: "queue", label: "Queue", path: "/admin/social/queue", feature: "socialStudio" },
       {
         value: "library",
         label: "Photo library",
         path: "/admin/social/library",
         feature: "socialStudio",
       },
+      { value: "cards", label: "Cards", path: "/admin/social/cards", feature: "socialStudio" },
       {
         value: "settings",
         label: "Settings",
