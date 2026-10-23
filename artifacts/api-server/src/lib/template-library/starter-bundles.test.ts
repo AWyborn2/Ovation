@@ -81,6 +81,11 @@ describe("syncing the committed bundles", () => {
   it("assembles the four set templates for every look (carousel set editor plan)", () => {
     for (const bundle of TEMPLATE_BUNDLES) {
       const sets = bundleSetTemplates(bundle);
+      // A design system's looks (a `family`) design one kind each, so they assemble no sets (M17).
+      if (bundle.look.family) {
+        expect(sets).toEqual([]);
+        continue;
+      }
       expect(sets.map((s) => s.kind).sort()).toEqual([
         "set:matchDay",
         "set:matchSummary",

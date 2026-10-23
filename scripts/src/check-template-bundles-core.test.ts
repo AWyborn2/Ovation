@@ -1,5 +1,5 @@
 /** The bundle fit check's selection and report (L2-B, T2.8). */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -188,7 +188,22 @@ describe("set templates (carousel set editor plan, part 1)", () => {
   const sets = all.filter((t) => t.parts);
 
   it("lists four set templates for every look, each page a kind target of the look", () => {
-    const looks = new Set(all.filter((t) => !t.parts).map((t) => t.id.split("/")[0]));
+    // A design system's looks (a `family`, Ovation Match Graphics) design one kind each,
+    // so they assemble no sets.
+    const family = (look: string) =>
+      !!(
+        JSON.parse(
+          readFileSync(path.join(repo, "lib/template-bundles", look, "look.json"), "utf8"),
+        ) as {
+          family?: string;
+        }
+      ).family;
+    const looks = new Set(
+      all
+        .filter((t) => !t.parts)
+        .map((t) => t.id.split("/")[0]!)
+        .filter((look) => !family(look)),
+    );
     expect(sets).toHaveLength(looks.size * 4);
     const ids = new Set(all.map((t) => t.id));
     for (const set of sets) {
