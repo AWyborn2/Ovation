@@ -11256,6 +11256,74 @@ export const JuniorTeamPublishMode = {
  */
 export interface JuniorTeamPublishing {[key: string]: {[key: string]: JuniorTeamPublishMode}}
 
+export interface JuniorLibraryPhotoParticipant {
+  participantId: string;
+  /** The child's name (admin view; private names included). */
+  displayName: string;
+  /** Neither photo-withheld nor private. Any one false hides the photo. */
+  allowed: boolean;
+}
+
+/**
+ * A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.
+ */
+export interface JuniorLibraryPhoto {
+  id: number;
+  url: string;
+  thumbUrl: string;
+  /** @nullable */
+  width: number | null;
+  /** @nullable */
+  height: number | null;
+  /** @nullable */
+  season: number | null;
+  /** @nullable */
+  grade: string | null;
+  photoTypes: ClubPhotoType[];
+  matchFormat: ClubPhotoMatchFormat | null;
+  /** @nullable */
+  takenAt: string | null;
+  createdAt: string;
+  participants: JuniorLibraryPhotoParticipant[];
+  displayable: boolean;
+}
+
+export interface IngestJuniorLibraryPhotosRequest {
+  /** @minItems 1 */
+  objectPaths: string[];
+  season?: number;
+  grade?: string;
+  photoType?: ClubPhotoType;
+  matchFormat?: ClubPhotoMatchFormat;
+  /** Junior players (PlayHQ participant ids) to tag on every photo. */
+  participantIds?: string[];
+}
+
+export type IngestJuniorLibraryPhotosResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  photo?: JuniorLibraryPhoto;
+  error?: string;
+};
+
+export interface IngestJuniorLibraryPhotosResponse {
+  results: IngestJuniorLibraryPhotosResponseResultsItem[];
+}
+
+export interface TagJuniorLibraryPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+  /**
+     * Set (or with null, clear) the season. Omit to leave unchanged.
+     * @nullable
+     */
+  season?: number | null;
+  /** Set (or with null, clear) the match format. Omit to leave unchanged. */
+  matchFormat?: ClubPhotoMatchFormat | null;
+  addParticipantIds?: string[];
+  removeParticipantIds?: string[];
+}
+
 export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
@@ -12227,6 +12295,10 @@ export type GetJuniorMatchParams = {
  * Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.
  */
 includePrivate?: boolean;
+};
+
+export type DeleteJuniorLibraryPhotos200 = {
+  deleted: number;
 };
 
 export type ListJuniorStatCorrectionsParams = {

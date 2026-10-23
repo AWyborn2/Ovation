@@ -14909,6 +14909,162 @@ export const GetJuniorPhotoThumbParams = zod.object({
 
 
 /**
+ * Every junior photo with its folder fields and the children tagged in it. `displayable` is the consent rule (kiosk-photo-rotation A): at least one tagged child, and every tagged child neither photo-withheld nor private. A photo that is not displayable never leaves admin.
+ * @summary The club's junior photo library, newest first (admin)
+ */
+export const ListJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const ListJuniorLibraryPhotosResponse = zod.array(ListJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * Like the senior library's ingest: each object becomes an upright JPEG with EXIF stripped, plus a thumbnail, stored under the private junior prefix; the upload is deleted. Files fail independently. At most 50 per call.
+ * @summary Convert uploaded objects into junior library photos (admin)
+ */
+
+
+
+export const IngestJuniorLibraryPhotosBody = zod.object({
+  "objectPaths": zod.array(zod.string()).min(1),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).optional().describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),
+  "matchFormat": zod.enum(['one_day', 't20', 'two_day']).optional().describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),
+  "participantIds": zod.array(zod.string()).optional().describe('Junior players (PlayHQ participant ids) to tag on every photo.')
+})
+
+export const IngestJuniorLibraryPhotosResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "photo": zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).optional().describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.'),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
+ * A photo that stops being displayable (a withheld child tagged in, its last tag removed) is stripped from open cards in the same request.
+ * @summary Tag children, season and match format on junior library photos (admin)
+ */
+
+
+
+export const TagJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "season": zod.number().nullish().describe('Set (or with null, clear) the season. Omit to leave unchanged.'),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).optional().describe('Set (or with null, clear) the match format. Omit to leave unchanged.'),
+  "addParticipantIds": zod.array(zod.string()).optional(),
+  "removeParticipantIds": zod.array(zod.string()).optional()
+})
+
+export const TagJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const TagJuniorLibraryPhotosResponse = zod.array(TagJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary File junior photos into a library folder (grade x photo type) (admin)
+ */
+
+
+
+export const MoveJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "grade": zod.string().nullable().describe('The senior grade folder, or null for Club-wide (no grade).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
+})
+
+export const MoveJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const MoveJuniorLibraryPhotosResponse = zod.array(MoveJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary Remove photos from the junior library (admin); cards lose them at once
+ */
+
+
+
+export const DeleteJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1)
+})
+
+export const DeleteJuniorLibraryPhotosResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
  * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
  */
 export const ListJuniorPrivacyOverridesResponseItem = zod.object({

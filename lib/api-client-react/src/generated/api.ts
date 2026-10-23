@@ -149,6 +149,7 @@ import type {
   DebutEntry,
   DeleteClubPhotos200,
   DeleteClubPhotosRequest,
+  DeleteJuniorLibraryPhotos200,
   DirectoryClub,
   DraftSetDesign,
   DraftSweepRequest,
@@ -224,6 +225,8 @@ import type {
   ImportSquadBody,
   IngestClubPhotosRequest,
   IngestClubPhotosResponse,
+  IngestJuniorLibraryPhotosRequest,
+  IngestJuniorLibraryPhotosResponse,
   IssueAdminResetBody,
   JuniorAdminBattingLine,
   JuniorAdminBowlingLine,
@@ -240,6 +243,7 @@ import type {
   JuniorFixtureDetail,
   JuniorLeaderboardRow,
   JuniorLeaderboards,
+  JuniorLibraryPhoto,
   JuniorMatchDetail,
   JuniorMatchDisplaySettings,
   JuniorMatchDisplaySettingsUpdate,
@@ -453,6 +457,7 @@ import type {
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
+  TagJuniorLibraryPhotosRequest,
   TakeTemplateUpdateRequest,
   TeamList,
   TeamOfDecadeBoard,
@@ -29846,6 +29851,370 @@ export function useGetJuniorPhotoThumb<TData = Awaited<ReturnType<typeof getJuni
 
 
 
+
+export const getListJuniorLibraryPhotosUrl = () => {
+
+
+
+
+  return `/api/juniors/photo-library`
+}
+
+/**
+ * Every junior photo with its folder fields and the children tagged in it. `displayable` is the consent rule (kiosk-photo-rotation A): at least one tagged child, and every tagged child neither photo-withheld nor private. A photo that is not displayable never leaves admin.
+ * @summary The club's junior photo library, newest first (admin)
+ */
+export const listJuniorLibraryPhotos = async ( options?: RequestInit): Promise<JuniorLibraryPhoto[]> => {
+
+  return customFetch<JuniorLibraryPhoto[]>(getListJuniorLibraryPhotosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorLibraryPhotosQueryKey = () => {
+    return [
+    `/api/juniors/photo-library`
+    ] as const;
+    }
+
+
+export const getListJuniorLibraryPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorLibraryPhotos>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorLibraryPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorLibraryPhotosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorLibraryPhotos>>> = ({ signal }) => listJuniorLibraryPhotos({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorLibraryPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorLibraryPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorLibraryPhotos>>>
+export type ListJuniorLibraryPhotosQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's junior photo library, newest first (admin)
+ */
+
+export function useListJuniorLibraryPhotos<TData = Awaited<ReturnType<typeof listJuniorLibraryPhotos>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorLibraryPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorLibraryPhotosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getIngestJuniorLibraryPhotosUrl = () => {
+
+
+
+
+  return `/api/juniors/photo-library/ingest`
+}
+
+/**
+ * Like the senior library's ingest: each object becomes an upright JPEG with EXIF stripped, plus a thumbnail, stored under the private junior prefix; the upload is deleted. Files fail independently. At most 50 per call.
+ * @summary Convert uploaded objects into junior library photos (admin)
+ */
+export const ingestJuniorLibraryPhotos = async (ingestJuniorLibraryPhotosRequest: IngestJuniorLibraryPhotosRequest, options?: RequestInit): Promise<IngestJuniorLibraryPhotosResponse> => {
+
+  return customFetch<IngestJuniorLibraryPhotosResponse>(getIngestJuniorLibraryPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ingestJuniorLibraryPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getIngestJuniorLibraryPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>, TError,{data: BodyType<IngestJuniorLibraryPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>, TError,{data: BodyType<IngestJuniorLibraryPhotosRequest>}, TContext> => {
+
+const mutationKey = ['ingestJuniorLibraryPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>, {data: BodyType<IngestJuniorLibraryPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestJuniorLibraryPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestJuniorLibraryPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>>
+    export type IngestJuniorLibraryPhotosMutationBody = BodyType<IngestJuniorLibraryPhotosRequest>
+    export type IngestJuniorLibraryPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Convert uploaded objects into junior library photos (admin)
+ */
+export const useIngestJuniorLibraryPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>, TError,{data: BodyType<IngestJuniorLibraryPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestJuniorLibraryPhotos>>,
+        TError,
+        {data: BodyType<IngestJuniorLibraryPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestJuniorLibraryPhotosMutationOptions(options));
+    }
+
+export const getTagJuniorLibraryPhotosUrl = () => {
+
+
+
+
+  return `/api/juniors/photo-library/tags`
+}
+
+/**
+ * A photo that stops being displayable (a withheld child tagged in, its last tag removed) is stripped from open cards in the same request.
+ * @summary Tag children, season and match format on junior library photos (admin)
+ */
+export const tagJuniorLibraryPhotos = async (tagJuniorLibraryPhotosRequest: TagJuniorLibraryPhotosRequest, options?: RequestInit): Promise<JuniorLibraryPhoto[]> => {
+
+  return customFetch<JuniorLibraryPhoto[]>(getTagJuniorLibraryPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tagJuniorLibraryPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getTagJuniorLibraryPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>, TError,{data: BodyType<TagJuniorLibraryPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>, TError,{data: BodyType<TagJuniorLibraryPhotosRequest>}, TContext> => {
+
+const mutationKey = ['tagJuniorLibraryPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>, {data: BodyType<TagJuniorLibraryPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  tagJuniorLibraryPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TagJuniorLibraryPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>>
+    export type TagJuniorLibraryPhotosMutationBody = BodyType<TagJuniorLibraryPhotosRequest>
+    export type TagJuniorLibraryPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Tag children, season and match format on junior library photos (admin)
+ */
+export const useTagJuniorLibraryPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>, TError,{data: BodyType<TagJuniorLibraryPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof tagJuniorLibraryPhotos>>,
+        TError,
+        {data: BodyType<TagJuniorLibraryPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getTagJuniorLibraryPhotosMutationOptions(options));
+    }
+
+export const getMoveJuniorLibraryPhotosUrl = () => {
+
+
+
+
+  return `/api/juniors/photo-library/move`
+}
+
+/**
+ * @summary File junior photos into a library folder (grade x photo type) (admin)
+ */
+export const moveJuniorLibraryPhotos = async (moveClubPhotosRequest: MoveClubPhotosRequest, options?: RequestInit): Promise<JuniorLibraryPhoto[]> => {
+
+  return customFetch<JuniorLibraryPhoto[]>(getMoveJuniorLibraryPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      moveClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getMoveJuniorLibraryPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['moveJuniorLibraryPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>, {data: BodyType<MoveClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  moveJuniorLibraryPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MoveJuniorLibraryPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>>
+    export type MoveJuniorLibraryPhotosMutationBody = BodyType<MoveClubPhotosRequest>
+    export type MoveJuniorLibraryPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary File junior photos into a library folder (grade x photo type) (admin)
+ */
+export const useMoveJuniorLibraryPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof moveJuniorLibraryPhotos>>,
+        TError,
+        {data: BodyType<MoveClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getMoveJuniorLibraryPhotosMutationOptions(options));
+    }
+
+export const getDeleteJuniorLibraryPhotosUrl = () => {
+
+
+
+
+  return `/api/juniors/photo-library/delete`
+}
+
+/**
+ * @summary Remove photos from the junior library (admin); cards lose them at once
+ */
+export const deleteJuniorLibraryPhotos = async (deleteClubPhotosRequest: DeleteClubPhotosRequest, options?: RequestInit): Promise<DeleteJuniorLibraryPhotos200> => {
+
+  return customFetch<DeleteJuniorLibraryPhotos200>(getDeleteJuniorLibraryPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getDeleteJuniorLibraryPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['deleteJuniorLibraryPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>, {data: BodyType<DeleteClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteJuniorLibraryPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorLibraryPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>>
+    export type DeleteJuniorLibraryPhotosMutationBody = BodyType<DeleteClubPhotosRequest>
+    export type DeleteJuniorLibraryPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove photos from the junior library (admin); cards lose them at once
+ */
+export const useDeleteJuniorLibraryPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorLibraryPhotos>>,
+        TError,
+        {data: BodyType<DeleteClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorLibraryPhotosMutationOptions(options));
+    }
 
 export const getListJuniorPrivacyOverridesUrl = () => {
 
