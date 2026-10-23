@@ -3748,6 +3748,32 @@ export interface SelectionParticipantMatch {
   createdAt: string;
 }
 
+/**
+ * The club's "Fetch latest from PlayHQ" state
+ */
+export interface SelectionPlayhqFetch {
+  /** The club is linked to PlayHQ with the scheduled sync on */
+  available: boolean;
+  /** The caller may start a fetch (admins) */
+  canRequest: boolean;
+  /** A fetch is waiting for, or in, a sync run */
+  pending: boolean;
+  /** @nullable */
+  requestedAt: string | null;
+  /** @nullable */
+  requestedBy: string | null;
+  /**
+     * When the last requested fetch landed
+     * @nullable
+     */
+  completedAt: string | null;
+  /**
+     * While the 10-minute cooldown runs, when the next fetch may be asked for
+     * @nullable
+     */
+  nextAllowedAt: string | null;
+}
+
 export interface SelectionBoard {
   section: SquadSection;
   /** The club uses availability requests. Off, the Hub stands alone: the
@@ -3771,6 +3797,29 @@ export interface SelectionBoard {
   players: juniors' on the junior board, everyone's on the senior board.
    */
   participantMatches?: SelectionParticipantMatch[];
+  playhqFetch?: SelectionPlayhqFetch;
+}
+
+/**
+ * dispatched = the sync workflow was started now; not_configured or
+failed = the request waits for the next hourly sync run
+
+ */
+export type SelectionPlayhqFetchResultWake = typeof SelectionPlayhqFetchResultWake[keyof typeof SelectionPlayhqFetchResultWake];
+
+
+export const SelectionPlayhqFetchResultWake = {
+  dispatched: 'dispatched',
+  not_configured: 'not_configured',
+  failed: 'failed',
+} as const;
+
+export interface SelectionPlayhqFetchResult {
+  fetch: SelectionPlayhqFetch;
+  /** dispatched = the sync workflow was started now; not_configured or
+  failed = the request waits for the next hourly sync run
+   */
+  wake: SelectionPlayhqFetchResultWake;
 }
 
 export interface SelectionMatchBody {
@@ -6517,6 +6566,7 @@ export const PlayhqDuePlansResponsePlansItemPlanName = {
   matchday: 'matchday',
   dayafter: 'dayafter',
   catchup: 'catchup',
+  ondemand: 'ondemand',
 } as const;
 
 /**

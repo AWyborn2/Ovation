@@ -47,7 +47,7 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["tenant_id", "category", "cap_number"],
     replaces: ["cap_register_category_cap_number_unique"],
   },
-  // Template library (migration 0059): bundle looks and templates sync by slug.
+  // Template library (migration 0060): bundle looks and templates sync by slug.
   { table: "template_looks", name: "template_looks_slug_unique", columns: ["slug"] },
   { table: "library_templates", name: "library_templates_slug_unique", columns: ["slug"] },
   {
@@ -300,7 +300,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "sponsors_tier_check",
     sql: `"tier" IN ('major', 'standard')`,
   },
-  // Template library (migration 0059).
+  // Template library (migration 0060).
   {
     table: "template_looks",
     name: "template_looks_origin_check",
@@ -371,7 +371,7 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           WHERE source_key IS NOT NULL AND status != 'dismissed'`,
   },
   // Card kind templates: one DEFAULT kind template per tenant and card kind
-  // (template library, ADR-011, migration 0059). It replaced migration 0035's
+  // (template library, ADR-011, migration 0060). It replaced migration 0035's
   // one-row-per-kind `card_templates_kind_unique`, which must never come back:
   // a club now holds many copies of a kind.
   {
@@ -600,7 +600,7 @@ async function indexExists(name: string): Promise<boolean> {
 const ABSENT_INDEXES: { name: string; why: string }[] = [
   {
     name: "card_templates_kind_unique",
-    why: "one kind row per tenant; migration 0059 replaced it with card_templates_kind_default_unique so a club can hold many copies of a kind",
+    why: "one kind row per tenant; migration 0060 replaced it with card_templates_kind_default_unique so a club can hold many copies of a kind",
   },
 ];
 

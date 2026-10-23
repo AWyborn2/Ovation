@@ -232,3 +232,46 @@ describe("duePlans — junior sync (junior sync plan U4, KTD2, R7)", () => {
     ]);
   });
 });
+
+describe("duePlans — on demand (Selection Hub fetch)", () => {
+  // Tuesday: nothing else is due (last Monday's weekly ran).
+  const now = perth("2026-10-06 10:30");
+  const weekly = ran("weekly", "2026-10-05 06:02");
+  const ask = (at: string, orgId = ORG) => [{ orgId, at: perth(at) }];
+
+  it("is due from the request until an ondemand run loads, fetching the named sides", () => {
+    const plans = duePlans(now, [ORG], [round1], [weekly], [], ask("2026-10-06 10:20"));
+    expect(plans.map((p) => p.planName)).toEqual(["ondemand"]);
+    expect(plans[0].slot).toBe(perth("2026-10-06 10:20").toISOString());
+    expect(plans[0].plan).toMatchObject({ kinds: ["matches"], lineups: "upcoming" });
+    expect(
+      duePlans(
+        now,
+        [ORG],
+        [round1],
+        [weekly, ran("ondemand", "2026-10-06 10:25")],
+        [],
+        ask("2026-10-06 10:20"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("is due again for a newer request, and carries junior grades for a junior-sync org", () => {
+    const plans = duePlans(
+      now,
+      [ORG],
+      [round1],
+      [weekly, ran("ondemand", "2026-10-06 09:00")],
+      [ORG],
+      ask("2026-10-06 10:20"),
+    );
+    expect(plans.map((p) => p.planName)).toEqual(["ondemand"]);
+    expect(plans[0].plan.includeJuniors).toBe(true);
+  });
+
+  it("ignores a request for an organisation the sync doesn't cover", () => {
+    expect(duePlans(now, [ORG], [round1], [weekly], [], ask("2026-10-06 10:20", OTHER))).toEqual(
+      [],
+    );
+  });
+});

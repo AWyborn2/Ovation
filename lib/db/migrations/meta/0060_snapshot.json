@@ -1,6 +1,6 @@
 {
-  "id": "beeb093e-9315-4f7d-ab36-2da94e29fc75",
-  "prevId": "47352d67-f5c6-41a3-bc9a-8b02066d312d",
+  "id": "a11b12cb-59dc-4937-848c-84e6d859628f",
+  "prevId": "2b281ddc-74ff-4f0b-9d9b-2e911596707f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4164,7 +4164,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "card_templates_updated_by_admin_id_admins_id_fk": {
@@ -5863,6 +5863,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "playhq_players": {
+          "name": "playhq_players",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "playhq_seen_at": {
+          "name": "playhq_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -9257,6 +9269,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "playhq_players": {
+          "name": "playhq_players",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "playhq_seen_at": {
+          "name": "playhq_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -9759,6 +9783,24 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "playhq_fetch_requested_at": {
+          "name": "playhq_fetch_requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "playhq_fetch_requested_by": {
+          "name": "playhq_fetch_requested_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "playhq_fetch_completed_at": {
+          "name": "playhq_fetch_completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {

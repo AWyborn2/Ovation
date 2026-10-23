@@ -14,7 +14,17 @@
  */
 import type { Queryable } from "./load";
 
-export type PlanName = "weekly" | "preweekend" | "matchmorn" | "matchday" | "dayafter" | "catchup";
+export type PlanName =
+  "weekly" | "preweekend" | "matchmorn" | "matchday" | "dayafter" | "catchup" | "ondemand";
+
+/**
+ * An admin's "Fetch latest from PlayHQ" (Selection Hub) for an organisation: the `ondemand`
+ * plan is due from `at` until a run of it loads.
+ */
+export interface FetchRequest {
+  orgId: string;
+  at: Date;
+}
 
 /** The plan object the harness's `__ov.start(plan)` takes. */
 export interface HarnessPlan {
@@ -111,8 +121,10 @@ function basePlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
         scorecards: "none",
         lineups: "upcoming",
       };
+    // ondemand: an admin asked from the Selection Hub for the sides named in PlayHQ now.
     case "preweekend":
     case "matchmorn":
+    case "ondemand":
       // Sides are usually named Thursday–Saturday morning: pick them up for the Team List card.
       return {
         orgId,
@@ -157,8 +169,14 @@ export function duePlans(
   matches: CadenceMatch[],
   lastRuns: LastRun[],
   juniorOrgIds: Iterable<string> = [],
+  requests: readonly FetchRequest[] = [],
 ): DuePlan[] {
   const juniors = new Set([...juniorOrgIds].map((o) => o.toLowerCase()));
+  const requestedAt = new Map<string, number>();
+  for (const r of requests) {
+    const k = r.orgId.toLowerCase();
+    requestedAt.set(k, Math.max(requestedAt.get(k) ?? 0, r.at.getTime()));
+  }
   const t = now.getTime();
   const today = perthMidnight(t);
   const lastRun = new Map<string, number>();
@@ -192,6 +210,10 @@ export function duePlans(
         const s = m.startAt.getTime();
         return s >= dayStart && s < dayStart + DAY;
       });
+
+    // ondemand — from an admin's request until a run of it loads.
+    const requested = requestedAt.get(org);
+    if (requested !== undefined) due("ondemand", requested);
 
     // weekly — Monday 06:00, all year.
     const sinceMonday = (perthDow(t) + 6) % 7;

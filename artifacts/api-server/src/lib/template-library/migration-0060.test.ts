@@ -1,6 +1,6 @@
 /**
- * Migration 0059 carries the pilot over (ADR-011 T3.2). Real-DB test (needs
- * DATABASE_URL): inside a rolled-back transaction it rebuilds the pre-0059
+ * Migration 0060 carries the pilot over (ADR-011 T3.2). Real-DB test (needs
+ * DATABASE_URL): inside a rolled-back transaction it rebuilds the pre-0060
  * card_templates state, runs the migration twice and checks the result.
  */
 import { readFileSync } from "node:fs";
@@ -12,7 +12,7 @@ import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 
 const ROOT = path.resolve(__dirname, "../../../../..");
 const MIGRATION = readFileSync(
-  path.join(ROOT, "lib/db/migrations/0059_template_library.sql"),
+  path.join(ROOT, "lib/db/migrations/0060_template_library.sql"),
   "utf8",
 );
 const statements = MIGRATION.split("--> statement-breakpoint")
@@ -26,7 +26,7 @@ beforeAll(async () => {
   const [t] = await db
     .insert(tenantsTable)
     .values({
-      slug: `mig-0059-${STAMP}`,
+      slug: `mig-0060-${STAMP}`,
       centralClubId: 800_000 + (STAMP % 100_000),
       name: "Pilot Club",
       plan: "pro",
@@ -51,13 +51,13 @@ const indexExists = async (tx: typeof db | Tx, name: string) =>
     )
   ).rows.length > 0;
 
-describe("migration 0059", () => {
+describe("migration 0060", () => {
   it("marks the pilot's kind rows as defaults, unchanged, and swaps the unique index", async () => {
     const seen: Record<string, unknown> = {};
     await db
       .transaction(async (tx) => {
-        // The state before 0059: one kind row per tenant and kind, no default
-        // flag. (Extra copies only exist since 0059.)
+        // The state before 0060: one kind row per tenant and kind, no default
+        // flag. (Extra copies only exist since 0060.)
         await tx.execute(
           sql.raw(`DELETE FROM "card_templates" WHERE source = 'kind' AND NOT "is_kind_default"`),
         );

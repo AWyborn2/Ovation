@@ -1,4 +1,4 @@
--- Library elements (editable-elements plan, Stream D1; decision E3 numbers it 0061). A shared
+-- Library elements (editable-elements plan, Stream D1; numbered 0062 after main took 0059). A shared
 -- table like the library templates (ADR-011): every element is public, holds no club's assets,
 -- and is inserted into a card as a copy of its layers (decision E2):
 --   library_elements         reusable decorations; origin bundle (extracted from the looks,

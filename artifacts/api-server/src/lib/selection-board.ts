@@ -90,6 +90,7 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
+import { loadPlayhqFetchStatus, type PlayhqFetchStatus } from "./playhq-fetch-request";
 import { enqueueTeamSheetOnFinalise, kickOutbox } from "./email-outbox";
 import { harnessOriginFromHeaders } from "./card-video-renderer";
 import { seasonStartYearFor } from "@workspace/db/seasons";
@@ -339,6 +340,8 @@ export type Board = {
   }[];
   /** The club's remembered PlayHQ matches for this section's players ("Unmatch" in the Hub). */
   participantMatches: ParticipantMatch[];
+  /** The club's "Fetch latest from PlayHQ" state (admins may start one). */
+  playhqFetch: PlayhqFetchStatus & { canRequest: boolean };
 };
 
 /** The member columns the board reads — deliberately no contact column. */
@@ -747,7 +750,7 @@ export async function buildBoard(
     (s) => s.fixture.grade,
     gradeOrder,
   );
-  const playhqCounts = await loadPlayhqListSizes(
+  const playhqSides = await loadPlayhqSides(
     tenantId,
     sectionSides.map((s) => s.fixture),
   );
@@ -821,7 +824,7 @@ export async function buildBoard(
           : final
             ? "This side is finalised. Re-open it to make changes."
             : null,
-      playhqPlayers: playhqCounts.get(`${f.kind}:${f.id}`) ?? null,
+      playhqPlayers: playhqSides.get(`${f.kind}:${f.id}`)?.players ?? null,
       overseas: overseasCount(
         slots.filter((s) => s.overseas).length,
         overseasCapFor(settings?.overseasCaps, f.grade),
@@ -918,6 +921,10 @@ export async function buildBoard(
       createdAt: e.createdAt,
     })),
     participantMatches: await loadParticipantMatches(db, tenantId, section),
+    playhqFetch: {
+      ...(await loadPlayhqFetchStatus(tenantId, now)),
+      canRequest: actor.kind === "admin",
+    },
   };
 }
 
@@ -1245,45 +1252,71 @@ export async function saveBoard(
 
 // --- PlayHQ's published side ---
 
-/** Sizes of the non-empty lists PlayHQ has published for these fixtures, keyed "kind:id". */
-async function loadPlayhqListSizes(
+/**
+ * The side the club last named in PlayHQ for a fixture: the sync's copy, kept whatever the
+ * list's source (an admin's list or a finalised-then-reopened selection keeps its own
+ * players), else a PlayHQ-sourced list's own players (a row the sync hasn't refreshed since
+ * migration 0059). Empty when PlayHQ has named no side.
+ */
+export function playhqSideOf<P>(row: {
+  source: string;
+  players: P[];
+  playhqPlayers: P[] | null;
+}): P[] {
+  if (row.playhqPlayers && row.playhqPlayers.length > 0) return row.playhqPlayers;
+  return row.source === "playhq" ? row.players : [];
+}
+
+/** PlayHQ's named sides for these fixtures (non-empty only), keyed "kind:id", with when the
+ * sync last saw each. */
+async function loadPlayhqSides(
   tenantId: number,
   fixtures: readonly Pick<SideFixture, "kind" | "id">[],
-): Promise<Map<string, number>> {
+): Promise<Map<string, { players: number; seenAt: Date | null }>> {
   const senior = fixtures.filter((f) => f.kind === "senior").map((f) => f.id);
   const junior = fixtures.filter((f) => f.kind === "junior").map((f) => f.id);
   const [s, j] = await Promise.all([
     senior.length > 0
       ? db
-          .select({ id: teamListsTable.fixtureId, players: teamListsTable.players })
+          .select({
+            id: teamListsTable.fixtureId,
+            source: teamListsTable.source,
+            players: teamListsTable.players,
+            playhqPlayers: teamListsTable.playhqPlayers,
+            seenAt: teamListsTable.playhqSeenAt,
+          })
           .from(teamListsTable)
           .where(
-            and(
-              eq(teamListsTable.tenantId, tenantId),
-              eq(teamListsTable.source, "playhq"),
-              inArray(teamListsTable.fixtureId, senior),
-            ),
+            and(eq(teamListsTable.tenantId, tenantId), inArray(teamListsTable.fixtureId, senior)),
           )
       : [],
     junior.length > 0
       ? db
           .select({
             id: juniorTeamListsTable.juniorFixtureId,
+            source: juniorTeamListsTable.source,
             players: juniorTeamListsTable.players,
+            playhqPlayers: juniorTeamListsTable.playhqPlayers,
+            seenAt: juniorTeamListsTable.playhqSeenAt,
           })
           .from(juniorTeamListsTable)
           .where(
             and(
               eq(juniorTeamListsTable.tenantId, tenantId),
-              eq(juniorTeamListsTable.source, "playhq"),
               inArray(juniorTeamListsTable.juniorFixtureId, junior),
             ),
           )
       : [],
   ]);
-  const out = new Map<string, number>();
-  for (const r of s) if (r.players.length > 0) out.set(`senior:${r.id}`, r.players.length);
-  for (const r of j) if (r.players.length > 0) out.set(`junior:${r.id}`, r.players.length);
+  const out = new Map<string, { players: number; seenAt: Date | null }>();
+  for (const r of s) {
+    const n = playhqSideOf<unknown>(r).length;
+    if (n > 0) out.set(`senior:${r.id}`, { players: n, seenAt: r.seenAt });
+  }
+  for (const r of j) {
+    const n = playhqSideOf<unknown>(r).length;
+    if (n > 0) out.set(`junior:${r.id}`, { players: n, seenAt: r.seenAt });
+  }
   return out;
 }
 
@@ -1339,31 +1372,37 @@ export async function syncSideFromPlayhq(
     // Juniors play up in senior sides; a junior side takes juniors only. A name on
     // both registers is the senior record in a senior side.
 
+    // PlayHQ's named side, whatever the fixture's published list is (an admin's list, or a
+    // selection finalised and then re-opened, keeps its own players).
     let list: TeamListPlayer[] = [];
     if (fixture.kind === "junior") {
       const [row] = await tx
-        .select({ players: juniorTeamListsTable.players })
+        .select({
+          source: juniorTeamListsTable.source,
+          players: juniorTeamListsTable.players,
+          playhqPlayers: juniorTeamListsTable.playhqPlayers,
+        })
         .from(juniorTeamListsTable)
         .where(
           and(
             eq(juniorTeamListsTable.tenantId, tenantId),
             eq(juniorTeamListsTable.juniorFixtureId, fixture.id),
-            eq(juniorTeamListsTable.source, "playhq"),
           ),
         );
-      if (row) list = (await juniorListAsNames(tx, tenantId, members))(row.players);
+      const side = row ? playhqSideOf(row) : [];
+      if (side.length) list = (await juniorListAsNames(tx, tenantId, members))(side);
     } else {
       const [row] = await tx
-        .select({ players: teamListsTable.players })
+        .select({
+          source: teamListsTable.source,
+          players: teamListsTable.players,
+          playhqPlayers: teamListsTable.playhqPlayers,
+        })
         .from(teamListsTable)
         .where(
-          and(
-            eq(teamListsTable.tenantId, tenantId),
-            eq(teamListsTable.fixtureId, fixture.id),
-            eq(teamListsTable.source, "playhq"),
-          ),
+          and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.fixtureId, fixture.id)),
         );
-      if (row) list = row.players;
+      if (row) list = playhqSideOf(row);
     }
     if (list.length === 0) {
       throw new SelectionError(404, `PlayHQ hasn't published a side for ${fixture.grade} yet.`);

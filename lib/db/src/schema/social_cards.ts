@@ -176,7 +176,7 @@ export const cardTemplatesTable = pgTable(
   "card_templates",
   {
     id: serial("id").primaryKey(),
-    // A club's templates go with the club (migration 0060): every new draft now
+    // A club's templates go with the club (migration 0061): every new draft now
     // creates its kind's default template, so the rows are the club's own config.
     tenantId: integer("tenant_id")
       .notNull()
@@ -237,7 +237,7 @@ export const cardTemplatesTable = pgTable(
     // until an admin dismisses it.
     replacedPackId: text("replaced_pack_id"),
     noticeDismissedAt: timestamp("notice_dismissed_at", { withTimezone: true }),
-    // Template library (ADR-011, migration 0059). A club may hold many kind
+    // Template library (ADR-011, migration 0060). A club may hold many kind
     // templates ("copies") per kind; exactly one per kind is its default. Kind
     // rows never use `isDefault` / `defaultForKinds`, which carry the pack choice.
     isKindDefault: boolean("is_kind_default").notNull().default(false),

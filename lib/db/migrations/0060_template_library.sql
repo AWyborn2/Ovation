@@ -1,5 +1,5 @@
--- Social template library (ADR-011; designed as 0057, renumbered after #412 and the crest
--- overrides took 0057 and 0058). Shared library tables, club copies in card_templates, and
+-- Social template library (ADR-011; designed as 0057, renumbered after #412, the crest
+-- overrides and the Selection Hub sync took 0057–0059). Shared library tables, club copies in card_templates, and
 -- the template a draft was copied from:
 --   template_looks              named sets of templates (Club Kit, Gold Foil, Clubhouse, ...)
 --   library_templates           one kind each; origin bundle | console | club; listed or not

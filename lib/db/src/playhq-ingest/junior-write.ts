@@ -259,7 +259,21 @@ export async function writeTeamLists(
       window,
     );
     if (action === "keepAdmin") summary.teamListsKeptAdmin++;
-    if (action !== "write") continue;
+    // PlayHQ's side is kept on the row whatever its source, for the Selection Hub's
+    // "Sync from PlayHQ" (see `team_lists.playhq_players`). After any write below.
+    const recordCopy = async () => {
+      if (players.length === 0) return;
+      await db.execute(
+        sql`update junior_team_lists
+               set playhq_players = ${JSON.stringify(players)}::jsonb,
+                   playhq_seen_at = ${now.toISOString()}::timestamptz
+             where tenant_id = ${tenantId} and junior_fixture_id = ${fixtureId}`,
+      );
+    };
+    if (action !== "write") {
+      await recordCopy();
+      continue;
+    }
     const written = await rowsOf<{ id: number }>(
       db,
       sql`insert into junior_team_lists (tenant_id, junior_fixture_id, players, is_published, source)
@@ -271,6 +285,7 @@ export async function writeTeamLists(
           returning id`,
     );
     summary.teamListsWritten += written.length;
+    await recordCopy();
   }
 }
 

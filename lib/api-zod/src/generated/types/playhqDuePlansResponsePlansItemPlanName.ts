@@ -16,4 +16,5 @@ export const PlayhqDuePlansResponsePlansItemPlanName = {
   matchday: 'matchday',
   dayafter: 'dayafter',
   catchup: 'catchup',
+  ondemand: 'ondemand',
 } as const;

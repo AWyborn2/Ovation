@@ -3707,7 +3707,16 @@ export const GetSelectionBoardResponse = zod.object({
   "memberName": zod.string(),
   "createdBy": zod.string().nullable().describe('Who made the match'),
   "createdAt": zod.coerce.date()
-})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n'),
+  "playhqFetch": zod.object({
+  "available": zod.boolean().describe('The club is linked to PlayHQ with the scheduled sync on'),
+  "canRequest": zod.boolean().describe('The caller may start a fetch (admins)'),
+  "pending": zod.boolean().describe('A fetch is waiting for, or in, a sync run'),
+  "requestedAt": zod.coerce.date().nullable(),
+  "requestedBy": zod.string().nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('When the last requested fetch landed'),
+  "nextAllowedAt": zod.coerce.date().nullable().describe('While the 10-minute cooldown runs, when the next fetch may be asked for')
+}).optional().describe('The club\'s \"Fetch latest from PlayHQ\" state')
 })
 
 
@@ -3901,7 +3910,16 @@ export const SaveSelectionBoardResponse = zod.object({
   "memberName": zod.string(),
   "createdBy": zod.string().nullable().describe('Who made the match'),
   "createdAt": zod.coerce.date()
-})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n'),
+  "playhqFetch": zod.object({
+  "available": zod.boolean().describe('The club is linked to PlayHQ with the scheduled sync on'),
+  "canRequest": zod.boolean().describe('The caller may start a fetch (admins)'),
+  "pending": zod.boolean().describe('A fetch is waiting for, or in, a sync run'),
+  "requestedAt": zod.coerce.date().nullable(),
+  "requestedBy": zod.string().nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('When the last requested fetch landed'),
+  "nextAllowedAt": zod.coerce.date().nullable().describe('While the 10-minute cooldown runs, when the next fetch may be asked for')
+}).optional().describe('The club\'s \"Fetch latest from PlayHQ\" state')
 })
 
 
@@ -4328,7 +4346,9 @@ export const ResendEmailSendResponse = zod.object({
 
 /**
  * Fills the draft with the side named in PlayHQ for the fixture (senior or
-junior, as synced from PlayHQ). Each player is matched to a squad member
+junior, as synced from PlayHQ), whatever list the fixture has published
+(an admin's list, or a side finalised and then re-opened, does not stop
+it). Each player is matched to a squad member
 as a draft is seeded; anyone matched to nobody, or already in another
 side of the round, is left as a named gap. Captain and keeper follow
 PlayHQ's roles. The body carries the side's version as loaded. Refused
@@ -4707,7 +4727,16 @@ export const MatchSelectionSlotResponse = zod.object({
   "memberName": zod.string(),
   "createdBy": zod.string().nullable().describe('Who made the match'),
   "createdAt": zod.coerce.date()
-})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n'),
+  "playhqFetch": zod.object({
+  "available": zod.boolean().describe('The club is linked to PlayHQ with the scheduled sync on'),
+  "canRequest": zod.boolean().describe('The caller may start a fetch (admins)'),
+  "pending": zod.boolean().describe('A fetch is waiting for, or in, a sync run'),
+  "requestedAt": zod.coerce.date().nullable(),
+  "requestedBy": zod.string().nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('When the last requested fetch landed'),
+  "nextAllowedAt": zod.coerce.date().nullable().describe('While the 10-minute cooldown runs, when the next fetch may be asked for')
+}).optional().describe('The club\'s \"Fetch latest from PlayHQ\" state')
 })
 
 
@@ -4901,7 +4930,16 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "memberName": zod.string(),
   "createdBy": zod.string().nullable().describe('Who made the match'),
   "createdAt": zod.coerce.date()
-})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n'),
+  "playhqFetch": zod.object({
+  "available": zod.boolean().describe('The club is linked to PlayHQ with the scheduled sync on'),
+  "canRequest": zod.boolean().describe('The caller may start a fetch (admins)'),
+  "pending": zod.boolean().describe('A fetch is waiting for, or in, a sync run'),
+  "requestedAt": zod.coerce.date().nullable(),
+  "requestedBy": zod.string().nullable(),
+  "completedAt": zod.coerce.date().nullable().describe('When the last requested fetch landed'),
+  "nextAllowedAt": zod.coerce.date().nullable().describe('While the 10-minute cooldown runs, when the next fetch may be asked for')
+}).optional().describe('The club\'s \"Fetch latest from PlayHQ\" state')
 })
 
 
@@ -11763,7 +11801,7 @@ export const ListDuePlayhqPlansResponse = zod.object({
   "now": zod.coerce.date(),
   "plans": zod.array(zod.object({
   "orgId": zod.string(),
-  "planName": zod.enum(['weekly', 'preweekend', 'matchmorn', 'matchday', 'dayafter', 'catchup']),
+  "planName": zod.enum(['weekly', 'preweekend', 'matchmorn', 'matchday', 'dayafter', 'catchup', 'ondemand']),
   "slot": zod.coerce.date().describe('The schedule slot this run serves.'),
   "plan": zod.record(zod.string(), zod.unknown()).describe('Pass verbatim to the harness\'s __ov.start(plan).')
 }))

@@ -167,3 +167,67 @@ edit drawer, an admin can turn on **Show name publicly** to name them on this cl
 - A side that was already published keeps the name it was published with. Re-open and re-finalise
   it to apply a change.
 - The Hub and the printed team sheet always show real names.
+
+## 5. PlayHQ's sides at any time, and "Fetch latest from PlayHQ"
+
+**Why.** A fixture holds one team list. Finalising a side in the Hub writes its list there
+(`source = 'selection'`), and re-opening the side keeps that list published. The PlayHQ sync never
+overwrites a Hub or admin list before the match, so before migration 0059 a finalised-then-reopened
+side could never "Sync from PlayHQ" again: the button stayed greyed out.
+
+**What changed.**
+
+- The sync now keeps the side the club named in PlayHQ on every team-list row
+  (`team_lists.playhq_players` / `junior_team_lists.playhq_players`, with `playhq_seen_at`),
+  whatever the row's `source`. The published list itself is unchanged.
+- "Sync from PlayHQ" and "Sync all from PlayHQ" read that copy, so any draft can take PlayHQ's
+  side at any time. A row the sync hasn't refreshed since 0059 falls back to a PlayHQ-sourced
+  list's own players.
+- **Fetch latest from PlayHQ** (admins only) asks the sync to collect the club's matches and named
+  sides now, juniors too when junior sync is on. It is stored on the club
+  (`tenants.playhq_fetch_requested_at`) and served as the `ondemand` plan by
+  `GET /api/internal/playhq/plans` until a run of it lands; the ingest stamps
+  `playhq_fetch_completed_at`. One request per club per 10 minutes; a request older than 6 hours
+  is dropped. A fetch changes no draft: selectors apply PlayHQ's side with Sync from PlayHQ once it
+  lands (the Hub refreshes every 15 seconds).
+- With `PLAYHQ_DISPATCH_TOKEN` set, the API also starts the **PlayHQ sync** workflow at once
+  (GitHub `workflow_dispatch` on `PLAYHQ_DISPATCH_REF`, default `main`). Without it, the request
+  waits for the next hourly run. The workflow runs one at a time and GitHub drops a waiting run
+  when another queues; that costs nothing, because the next run still collects the request.
+
+**Deploy order (once).**
+
+1. **Before republishing**, in the Production SQL runner, statement by statement:
+
+   ```sql
+   ALTER TABLE "team_lists"
+     ADD COLUMN IF NOT EXISTS "playhq_players" jsonb,
+     ADD COLUMN IF NOT EXISTS "playhq_seen_at" timestamp with time zone;
+   ```
+
+   ```sql
+   ALTER TABLE "junior_team_lists"
+     ADD COLUMN IF NOT EXISTS "playhq_players" jsonb,
+     ADD COLUMN IF NOT EXISTS "playhq_seen_at" timestamp with time zone;
+   ```
+
+   ```sql
+   ALTER TABLE "tenants"
+     ADD COLUMN IF NOT EXISTS "playhq_fetch_requested_at" timestamp with time zone,
+     ADD COLUMN IF NOT EXISTS "playhq_fetch_requested_by" text,
+     ADD COLUMN IF NOT EXISTS "playhq_fetch_completed_at" timestamp with time zone;
+   ```
+
+   Check (read-only), expect 7 rows:
+
+   ```sql
+   select table_name, column_name from information_schema.columns
+   where column_name in ('playhq_players', 'playhq_seen_at', 'playhq_fetch_requested_at',
+                         'playhq_fetch_requested_by', 'playhq_fetch_completed_at');
+   ```
+
+2. **Optional, for the instant start:** create a GitHub fine-grained token for this repository only,
+   with **Actions: read and write**, and save it in Replit Secrets as `PLAYHQ_DISPATCH_TOKEN`. Note
+   its expiry date and renew it before then, like the cron-job.org trigger's token.
+3. Republish. The next sync run fills the PlayHQ copies, and then a re-opened side can sync again.
+   To fill them straight away, press **Fetch latest from PlayHQ** in the Hub.
