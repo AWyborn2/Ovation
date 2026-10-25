@@ -8,6 +8,11 @@
  * paste do. An element keeps the boxes it was designed with, per size; at a
  * size it wasn't designed for, it takes the box of its nearest designed size
  * (boxes are in percent of the card, so a full-width band stays full width).
+ *
+ * An element drawn per size keeps a copy of each piece for each size group
+ * (`sizes`, e.g. one for square/portrait/story and a smaller one for
+ * landscape). Only the copies made for the size being edited come in, so the
+ * pieces aren't doubled; an element with no copy for that size comes in whole.
  */
 import type { FreeLayer, LayerBox } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
@@ -37,6 +42,12 @@ export function boxAt(layer: Pick<FreeLayer, "geometry">, size: CardSize): Layer
   return null;
 }
 
+/** The layers of one level to copy at `size`: its own size's copies when it has any. */
+function forSize(list: ElementLayer[], size: CardSize): ElementLayer[] {
+  const designedHere = list.some((l) => l.sizes?.includes(size));
+  return designedHere ? list.filter((l) => !l.sizes || l.sizes.includes(size)) : list;
+}
+
 function copyLayer(layer: ElementLayer, size: CardSize, links: Map<string, string>, now: number) {
   const box = boxAt(layer, size);
   const copy: ElementLayer = {
@@ -52,7 +63,9 @@ function copyLayer(layer: ElementLayer, size: CardSize, links: Map<string, strin
     if (!links.has(layer.link)) links.set(layer.link, newId("k"));
     copy.link = links.get(layer.link);
   }
-  if (layer.children) copy.children = layer.children.map((c) => copyLayer(c, size, links, now));
+  if (layer.children) {
+    copy.children = forSize(layer.children, size).map((c) => copyLayer(c, size, links, now));
+  }
   return copy;
 }
 
@@ -66,7 +79,7 @@ export function elementLayers(
   now = Date.now(),
 ): FreeLayer[] {
   const links = new Map<string, string>();
-  return ((document.layers ?? []) as ElementLayer[])
+  return forSize((document.layers ?? []) as ElementLayer[], size)
     .filter((l) => boxAt(l, size) !== null)
     .map((l) => copyLayer(l, size, links, now));
 }
