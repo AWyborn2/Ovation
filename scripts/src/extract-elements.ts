@@ -9,6 +9,9 @@
  *
  *   pnpm --filter @workspace/scripts run extract-elements
  *
+ * A family's looks (Ovation Match Graphics) are left alone: their converter
+ * writes their elements.
+ *
  * Then format the files with Prettier and regenerate the bundles index
  * (`pnpm --filter @workspace/template-bundles run generate`). Re-run after the
  * converter re-generates the looks (Stream C4).
@@ -24,10 +27,20 @@ const OUT = path.join(BUNDLES, "elements");
 
 const LOOK = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/**
+ * A look in a design-system family (Ovation Match Graphics) has its own
+ * elements, written by its converter (`convert-match-graphics.ts`): this
+ * script neither extracts from it nor rewrites its element file.
+ */
+const familyLook = (slug: string): boolean =>
+  !!(JSON.parse(readFileSync(path.join(BUNDLES, slug, "look.json"), "utf8")) as { family?: string })
+    .family;
+
 function readLooks(): LookInput[] {
   return readdirSync(BUNDLES)
     .filter((name) => LOOK.test(name) && name !== "elements")
     .filter((name) => existsSync(path.join(BUNDLES, name, "look.json")))
+    .filter((name) => !familyLook(name))
     .map((slug) => {
       const dir = path.join(BUNDLES, slug);
       const look = JSON.parse(readFileSync(path.join(dir, "look.json"), "utf8")) as {
@@ -56,7 +69,11 @@ if (existsSync(PIECES)) {
   for (const i of r.invalid) console.log(`  invalid ${i.slug}: ${i.error}`);
 }
 mkdirSync(OUT, { recursive: true });
-for (const f of readdirSync(OUT)) if (f.endsWith(".json")) rmSync(path.join(OUT, f));
+for (const f of readdirSync(OUT)) {
+  const look = f.slice(0, -".json".length);
+  const kept = existsSync(path.join(BUNDLES, look, "look.json")) && familyLook(look);
+  if (f.endsWith(".json") && !kept) rmSync(path.join(OUT, f));
+}
 for (const file of files) {
   writeFileSync(path.join(OUT, `${file.look}.json`), `${JSON.stringify(file, null, 2)}\n`);
   const counts = new Map<string, number>();

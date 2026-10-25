@@ -10,4 +10,6 @@ export interface LibraryLookRef {
   id: number;
   slug: string;
   name: string;
+  /** The design system the look belongs to (a bundle look's `family`), when it has one. */
+  family?: string;
 }
