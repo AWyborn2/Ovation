@@ -116,7 +116,12 @@ import {
   type FreeLayer,
 } from "@/lib/pack-render";
 import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/lib/card-sets/plan";
-import { planTemplateSlides, type LayerDocument } from "@workspace/scorecard/kind-templates";
+import {
+  isSetDocument,
+  planTemplateSlides,
+  type LayerDocument,
+} from "@workspace/scorecard/kind-templates";
+import { DraftDesignEditor } from "./admin-draft-design-editor";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { resolvePackIdForKind } from "@/lib/card-template";
@@ -201,6 +206,18 @@ export default function AdminStudioEditor() {
       <div className="studio-editor grid min-h-screen place-items-center text-center">
         <p>That card could not be found. It may have been removed.</p>
       </div>
+    );
+  }
+  // A draft made from a template edits its own copy of the design in the full
+  // editor (full draft editor plan, stage 1). Carousel sets have their own editor,
+  // and drafts on the older packs keep this one.
+  if (draft.templateVersion != null && !isSetDocument(draft.adjustments)) {
+    return (
+      <DraftDesignEditor
+        key={draft.id}
+        draft={draft}
+        onReload={async () => (await draftQ.refetch()).data}
+      />
     );
   }
   return <EditorApp key={draft.id} draftId={draft.id} />;
