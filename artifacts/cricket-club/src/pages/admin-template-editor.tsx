@@ -165,6 +165,7 @@ import {
   packNativeSize,
   resolveCardTokens,
   type FreeLayer,
+  type PackCardData,
 } from "@/lib/pack-render";
 import { previewSample, sampleItem, stressSample } from "@/lib/kind-templates/samples";
 import { PackCard } from "@/components/pack-card";
@@ -444,11 +445,43 @@ export type EditorSlidesMode = {
   noun?: string;
 };
 
+/**
+ * A draft's own design (full draft editor plan, stage 1): the editor draws the
+ * draft's real card, offers the draft editor's content panels beside its own,
+ * and puts the draft's controls (Download) in the top bar.
+ */
+export type EditorDraftMode = {
+  /** The draft's card input and club data, drawn in place of the latest card or a sample. */
+  input: Record<string, unknown>;
+  data: PackCardData;
+  /** Rail panels after the editor's own; each adds layers to the page on show. */
+  panels?: Array<
+    RailItem & {
+      render: (ctx: {
+        size: CardSize;
+        add: (layers: FreeLayer[]) => void;
+        values: Record<string, string>;
+        /** The page on show, and a whole-page edit (recolour, sponsor lock). */
+        page: EditorDoc;
+        setPage: (next: EditorDoc) => void;
+      }) => ReactNode;
+    }
+  >;
+  /** Top-bar controls, given the design as it would be saved and the card on show. */
+  actions?: (ctx: {
+    document: Record<string, unknown>;
+    size: CardSize;
+    input: ShareCardInput;
+    data: PackCardData;
+  }) => ReactNode;
+};
+
 export function TemplateEditorV2<T extends EditorTemplate>({
   template,
   viewport,
   host,
   slidesMode,
+  draftMode,
   initialFormat,
   actions,
 }: {
@@ -457,6 +490,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   host: EditorHost<T>;
   /** Edit a set draft's real slides instead of the template's sample pages. */
   slidesMode?: EditorSlidesMode;
+  /** Edit a draft's own design with its real card (stage 1). */
+  draftMode?: EditorDraftMode;
   /** The size the editor opens at (a new set's, picked when it was made). */
   initialFormat?: CardSize;
   /** Extra controls in the top bar (Make a carousel set). */
@@ -566,26 +601,30 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   }, [draftsQ.data, pageKind]);
   const sourceInput = stress
     ? stressSample(cardKind, clubName)
-    : (latest ?? previewSample(cardKind, clubName));
+    : (draftMode?.input ?? latest ?? previewSample(cardKind, clubName));
   // Lists spill onto extra slides by capacity; the editor shows the first.
   const plan = planTemplateSlides(
     sourceInput as unknown as Record<string, unknown>,
     pageFull as LayerDocument,
     format,
   );
-  const input = pageInput(
-    presetInput(
-      sampleItem(plan.slides[0].input as unknown as ShareCardInput, cur.repeat ? sample : 0),
-      pageKind,
-      page,
-      preset,
-    ),
-    pageKind,
-    page,
-  );
+  // A draft draws its own content as it stands: no sample item, no preset.
+  const input =
+    draftMode && !stress
+      ? pageInput(plan.slides[0].input as unknown as ShareCardInput, pageKind, page)
+      : pageInput(
+          presetInput(
+            sampleItem(plan.slides[0].input as unknown as ShareCardInput, cur.repeat ? sample : 0),
+            pageKind,
+            page,
+            preset,
+          ),
+          pageKind,
+          page,
+        );
   // A set draft's slide draws with its own data (its photo, the club's sponsors).
   const shownInput = slide ? slide.input : input;
-  const shownData = slide ? slide.data : data;
+  const shownData = slide ? slide.data : (draftMode?.data ?? data);
   const values = packFieldValues(shownInput, shownData, BLANK_PACK_ID);
 
   // Every edit is to the page on show; the whole document is what history keeps.
@@ -642,6 +681,18 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   useEffect(() => setFocusId(null), [selection, cur.id]);
   const isGroup =
     selected.length > 1 && selected.every((l) => l.group && l.group === selected[0].group);
+
+  // Live fields by label in the Layers list ("Opposition name", not "{{opposition.name}}").
+  const fieldLabels = useMemo(
+    () => Object.fromEntries((kindFields(pageKind)?.fields ?? []).map((f) => [f.key, f.label])),
+    [pageKind],
+  );
+
+  // The editor's own panels, then a draft's content panels.
+  const rail: RailItem[] = [
+    ...RAIL,
+    ...(draftMode?.panels ?? []).map(({ id, label, icon }) => ({ id, label, icon })),
+  ];
 
   // A new element goes on the page itself, so adding one leaves a group being edited.
   const addTemplateLayers = (added: FreeLayer[]) => {
@@ -798,7 +849,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     }
     const v2 = sourceFormat === 2 || !!full.setDesign || needsV2(full, kind);
     // A version 1 template keeps version 1's rule: every size has something on it.
-    const blockers = v2 ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
+    // A draft posts at its own sizes, so the rule is the template's, not the draft's.
+    const blockers = v2 || draftMode ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
     if (v2 && Object.values(full.pages).every((p) => !p?.layers.length)) {
       blockers.push("Add at least one element before saving.");
     }
@@ -920,7 +972,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           <>
             {slidesMode?.actions}
             {actions}
-            {!slidesMode && isContentKind(pageKind) && (
+            {draftMode?.actions?.({
+              document: (full.setDesign
+                ? storedSetDocument(full)
+                : storedDocument(full, kind, sourceFormat)) as Record<string, unknown>,
+              size: format,
+              input: shownInput,
+              data: shownData,
+            })}
+            {!slidesMode && !draftMode && isContentKind(pageKind) && (
               <label className="flex items-center gap-1.5 px-1 text-xs font-semibold text-[var(--ed-ink2)]">
                 Preset
                 <select
@@ -950,12 +1010,21 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         }
       />
       <div className="flex min-h-0 flex-1">
-        <EditorRail items={RAIL} active={panel} onSelect={setPanel} />
-        {panel && (
+        <EditorRail items={rail} active={panel} onSelect={setPanel} />
+        {panel && rail.some((r) => r.id === panel) && (
           <EditorPanel
-            title={RAIL.find((r) => r.id === panel)!.label}
+            title={rail.find((r) => r.id === panel)!.label}
             onCollapse={() => setPanel(null)}
           >
+            {draftMode?.panels
+              ?.find((p) => p.id === panel)
+              ?.render({
+                size: format,
+                add: addTemplateLayers,
+                values,
+                page: pageFull,
+                setPage: editPage,
+              })}
             {panel === "fields" && (
               <FieldsPanel
                 kind={pageKind}
@@ -1374,6 +1443,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               layers={layersOnSize(pageFull, format)}
               size={format}
               scope={scope}
+              fieldLabels={fieldLabels}
               selection={selection}
               onSelect={(ids, mode, parent) => {
                 // A row in another group goes inside that group first.

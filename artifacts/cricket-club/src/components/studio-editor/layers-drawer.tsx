@@ -53,6 +53,27 @@ const LABEL: Partial<Record<FreeLayer["kind"], string>> = {
 /** A layer's name: its own, or what kind of layer it is. */
 export const layerName = (l: FreeLayer): string => l.name ?? LABEL[l.kind] ?? l.kind;
 
+/** "opposition.homeAway" → "Opposition home away": a field key read aloud. */
+const readableKey = (key: string): string => {
+  const words = key
+    .replace(/[._-]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim()
+    .toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+/**
+ * A text layer's content as the Layers list shows it: each live field
+ * (`{{key}}`) by its label, so "{{opposition.name}}" reads "Opposition name".
+ */
+export function contentLabel(content: string, labels: Record<string, string> = {}): string {
+  return content.replace(
+    /\{\{\s*([\w.]+)\s*\}\}/g,
+    (_m, key: string) => labels[key] ?? readableKey(key),
+  );
+}
+
 type Mods = { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean };
 
 /** What a row opens to: a group's children, or a list's cells. */
@@ -91,6 +112,7 @@ export function LayersDrawer({
   onClose,
   size,
   scope = null,
+  fieldLabels,
 }: {
   layers: FreeLayer[];
   selection: string[];
@@ -106,6 +128,8 @@ export function LayersDrawer({
   size?: CardSize;
   /** The group being edited inside, if any. */
   scope?: string | null;
+  /** Labels for live-field keys, so text layers read by field, not by token. */
+  fieldLabels?: Record<string, string>;
 }) {
   const anchor = useRef<string | null>(null);
   // Open groups; going inside a group opens it and the groups around it.
@@ -182,7 +206,7 @@ export function LayersDrawer({
             >
               <Icon className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
               <span className={cn("truncate", l.hidden && "opacity-50")}>
-                {l.name ?? l.content ?? name}
+                {l.name ?? (l.content ? contentLabel(l.content, fieldLabels) : name)}
               </span>
             </button>
             {/* A list's cell is part of every row: it's hidden or locked with its list. */}

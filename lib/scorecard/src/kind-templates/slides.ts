@@ -12,6 +12,8 @@ import {
   type LayerDocument,
   type TemplateSize,
 } from "./document";
+import { isDocumentV2 } from "./format";
+import { pageForInput } from "./pages";
 import type { LayoutWarning } from "./warnings";
 import { isJuniorGradeLabel } from "../junior-grade";
 
@@ -57,6 +59,11 @@ export function planTemplateSlides<I extends Record<string, unknown>>(
   size: TemplateSize,
 ): TemplateSlidePlan<I> {
   const single: TemplateSlidePlan<I> = { slides: [{ key: "single", input, page: 1, of: 1 }] };
+  // A page-based design (format v2) plans from the page the card draws on.
+  if (isDocumentV2(doc) && typeof input.kind === "string") {
+    const page = pageForInput(input as unknown as Parameters<typeof pageForInput>[0]);
+    doc = { layers: doc.pages[page]?.layers ?? [] } as LayerDocument;
+  }
   const rowsLayer = layersForSize(doc, size).find(
     (l) => l.kind === "rows" && l.rows && Array.isArray(input[l.rows.repeat]),
   );
