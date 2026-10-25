@@ -849,7 +849,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     }
     const v2 = sourceFormat === 2 || !!full.setDesign || needsV2(full, kind);
     // A version 1 template keeps version 1's rule: every size has something on it.
-    const blockers = v2 ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
+    // A draft posts at its own sizes, so the rule is the template's, not the draft's.
+    const blockers = v2 || draftMode ? [] : saveBlockers(pageDoc(full, primaryPage(kind)));
     if (v2 && Object.values(full.pages).every((p) => !p?.layers.length)) {
       blockers.push("Add at least one element before saving.");
     }

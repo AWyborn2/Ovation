@@ -49,6 +49,16 @@ describe("planTemplateSlides (KTD13)", () => {
     ]);
   });
 
+  it("plans a page-based design (format v2) from the page the card draws on", () => {
+    const v2 = { formatVersion: 2, pages: { card: doc(5) } };
+    const plan = planTemplateSlides(
+      { kind: "weekendWrap", matches: rows(9) },
+      v2 as unknown as Parameters<typeof planTemplateSlides>[1],
+      "square",
+    );
+    expect(plan.slides.map((s) => (s.input.matches as unknown[]).length)).toEqual([5, 4]);
+  });
+
   it("never puts junior and senior rows on one slide", () => {
     const input = { kind: "weekendWrap", matches: [...rows(3), ...rows(3, true)] };
     const plan = planTemplateSlides(input, doc(5), "square");
