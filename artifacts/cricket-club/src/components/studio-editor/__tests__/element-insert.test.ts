@@ -67,6 +67,39 @@ describe("elementLayers", () => {
     expect(child.geometry.story).toEqual(chip.children[0]!.geometry.square);
   });
 
+  it("brings in only the copies made for the size, so per-size pieces aren't doubled", () => {
+    const cell = (id: string, sizes: string[], box: Record<string, object>) => ({
+      id,
+      kind: "text",
+      content: "48",
+      sizes,
+      geometry: box,
+    });
+    const stat = {
+      id: "g",
+      kind: "group",
+      geometry: { portrait: { x: 6, y: 70, w: 46, h: 6 }, landscape: { x: 6, y: 70, w: 24, h: 7 } },
+      children: [
+        cell("big", ["square", "portrait", "story"], { portrait: { x: 6, y: 70, w: 10, h: 3 } }),
+        cell("small", ["landscape"], { landscape: { x: 6, y: 70, w: 6, h: 4 } }),
+      ],
+    };
+    const [portrait] = elementLayers({ layers: [stat] }, "portrait", 1);
+    expect((portrait as FreeLayer & { children: FreeLayer[] }).children).toHaveLength(1);
+    expect(
+      (portrait as FreeLayer & { children: FreeLayer[] }).children[0]!.geometry.portrait,
+    ).toEqual({
+      x: 6,
+      y: 70,
+      w: 10,
+      h: 3,
+    });
+    const [landscape] = elementLayers({ layers: [stat] }, "landscape", 1);
+    expect(
+      (landscape as FreeLayer & { children: FreeLayer[] }).children[0]!.geometry.landscape,
+    ).toEqual({ x: 6, y: 70, w: 6, h: 4 });
+  });
+
   it("leaves out a layer with no box at all", () => {
     expect(elementLayers({ layers: [{ id: "x", kind: "shape", geometry: {} }] }, "square")).toEqual(
       [],

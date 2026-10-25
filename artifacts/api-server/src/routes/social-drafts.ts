@@ -794,7 +794,13 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl, adjustments } = parsed.data;
+    const { caption, photoUrl } = parsed.data;
+    // The design is stored exactly as sent. The generated schema lists only the
+    // first editor's keys, and parsing drops every other one, which wiped a
+    // templated draft's pages (format v2) on save. Validation above still
+    // checks the request's shape.
+    const adjustments = (req.body as { adjustments?: unknown }).adjustments as
+      typeof parsed.data.adjustments | undefined;
     const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
       // A manual action: stop any pending auto-promotion (KTD4).
       autoReadyAt: null,

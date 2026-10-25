@@ -150,6 +150,42 @@ describe("PATCH /social-drafts/:id", () => {
 });
 
 describe("stale posted cards (R31)", () => {
+  it("saving a templated draft's design keeps every key of its document (format v2 pages)", async () => {
+    const { draft } = await upsertDraftByKey({
+      tenantId,
+      engine: "roundup",
+      family: "roundup",
+      sourceKey: `edit:${STAMP}:design-v2`,
+      cardInput: card(13),
+      appPath: "/records",
+    });
+    await db
+      .update(socialDraftsTable)
+      .set({ packId: "blank", templateVersion: 1, layoutCheckPending: false })
+      .where(eq(socialDraftsTable.id, draft.id));
+    const adjustments = {
+      formatVersion: 2,
+      palettes: ["club-kit"],
+      pages: {
+        card: {
+          layers: [
+            {
+              id: "t1",
+              kind: "text",
+              content: "{{headline}}",
+              geometry: { square: { x: 5, y: 5, w: 90, h: 10 } },
+            },
+          ],
+        },
+      },
+    };
+    const res = await patch(draft.id, { adjustments });
+    expect(res.status).toBe(200);
+    expect(res.body.adjustments).toEqual(adjustments);
+    expect(res.body.designEditedAt).not.toBeNull();
+    expect(res.body.layoutCheckPending).toBe(true);
+  });
+
   it("keeps the corrected data as one revision; reverting to it applies it and clears stale", async () => {
     const key = `edit:${STAMP}:stale`;
     const base = {
