@@ -17,6 +17,7 @@ import {
 } from "@/components/honours-display/use-approaching-board";
 import { KioskPlayer } from "@/components/honours-display/player/kiosk-player";
 import { buildRotation } from "@/components/honours-display/player/rotation";
+import { ensureHonourFontsLoaded } from "@/lib/honour-fonts";
 import "@/styles/honour-boards.css";
 
 /**
@@ -109,6 +110,8 @@ export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundl
     // fullscreen and stay on the rotation. Admin previews go back to the display.
     if (!kioskToken) navigate("/honours-display");
   };
+
+  useEffect(() => ensureHonourFontsLoaded(), []);
 
   // Enter fullscreen on first user interaction (browsers block auto-fullscreen).
   useEffect(() => {

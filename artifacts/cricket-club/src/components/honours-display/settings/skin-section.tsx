@@ -18,6 +18,7 @@ const TEMPLATE_BLURB: Record<TemplateId, string> = {
   p9: "Printed acrylic board with a filled colour header row.",
   p10: "Matches the Ovation app — dark charcoal, club gold, serif titles.",
   p11: "Matches the Broadcast redesign — near-black panels, condensed titles, club accent.",
+  p12: "The clubroom honour board — framed timber, gold plate, engraved names. Made for the TV.",
 };
 
 /** Skin picker — built-in templates + admin-authored themes. */

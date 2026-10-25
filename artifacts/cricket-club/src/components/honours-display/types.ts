@@ -56,7 +56,7 @@ export type BoardLayout =
 
 /** The built-in skin ids (admin skins use "custom:<uuid>"). */
 export type TemplateId =
-  "p1" | "p2" | "p3" | "p4" | "p5" | "p6" | "p7" | "p8" | "p9" | "p10" | "p11";
+  "p1" | "p2" | "p3" | "p4" | "p5" | "p6" | "p7" | "p8" | "p9" | "p10" | "p11" | "p12";
 
 export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p1", label: "P1 · Heritage Timber" },
@@ -70,11 +70,12 @@ export const TEMPLATES: { id: TemplateId; label: string }[] = [
   { id: "p9", label: "P9 · Printed Board" },
   { id: "p10", label: "P10 · Ovation App" },
   { id: "p11", label: "P11 · Ovation Broadcast" },
+  { id: "p12", label: "P12 · Classic Honour Board" },
 ];
 
 const BUILTIN_IDS = new Set<string>(TEMPLATES.map((t) => t.id));
 
-/** True for a built-in skin id (p1..p11); false for an admin "custom:" skin. */
+/** True for a built-in skin id (p1..p12); false for an admin "custom:" skin. */
 export function isBuiltinSkin(id: string | null | undefined): id is TemplateId {
   return !!id && BUILTIN_IDS.has(id);
 }
