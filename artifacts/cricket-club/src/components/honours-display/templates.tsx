@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "wouter";
 import type { DisplayBoard, BoardEntry, BoardDisplayConfig, HonourBrand } from "./types";
 import { gradeBadge, formatDate } from "./helpers";
+import { KioskBoardFooter, KioskPageDots } from "./kiosk-chrome";
 
 interface LayoutProps {
   board: DisplayBoard;
@@ -65,6 +66,7 @@ function BoardHead({
         <h2 className="hb-title">{title}</h2>
         {subtitle ? <p className="hb-sub">{subtitle}</p> : null}
       </div>
+      <KioskPageDots />
     </header>
   );
 }
@@ -77,9 +79,12 @@ function BoardHead({
  */
 function BoardBody({ children }: { children: ReactNode }) {
   return (
-    <div className="hb-body">
-      <div className="hb-body-inner">{children}</div>
-    </div>
+    <>
+      <div className="hb-body">
+        <div className="hb-body-inner">{children}</div>
+      </div>
+      <KioskBoardFooter />
+    </>
   );
 }
 

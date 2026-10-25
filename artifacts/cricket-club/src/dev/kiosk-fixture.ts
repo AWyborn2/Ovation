@@ -173,7 +173,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     juniorsColour: "#0e3b2e",
   },
   settings: {
-    defaultTemplate: "p1",
+    defaultTemplate: "p12",
     kioskSequence: [],
     kioskDwellMs: 3500,
     kioskScrollSpeed: 36,

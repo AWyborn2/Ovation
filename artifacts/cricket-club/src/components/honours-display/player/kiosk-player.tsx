@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import type { ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
 import type { Sponsor } from "@workspace/api-client-react";
 import { BoardRenderer } from "../board-renderer";
+import { KioskChromeContext, type KioskChrome } from "../kiosk-chrome";
 import { AdSlide, SponsorSlide, SponsorSlideSingle } from "../sponsor-ads";
 import type { BoardDisplayConfig, DisplayBoard, HonourBrand, HonourSkin } from "../types";
 import { boardColumnHeadings, columnGroupLabel, sliceBoardColumns } from "./column-groups";
@@ -37,6 +38,9 @@ interface Screen {
   cfg?: BoardDisplayConfig;
   /** Text scale on the body (the board's size, or smaller when fitted). */
   scale: number;
+  /** This page and the board's place in the rotation (page dots, footer). */
+  page?: KioskChrome["page"];
+  position?: KioskChrome["position"];
   /** Set while a page turn plays on this (incoming) layer. */
   paging?: boolean;
 }
@@ -190,6 +194,9 @@ export function KioskPlayer(props: KioskPlayerProps) {
     /** Turn to the next page: only the board body moves. */
     const turnPage = async (s: Omit<Screen, "id">, signal: AbortSignal) => {
       const prevEl = layers0();
+      // Its header and footer sit under the incoming page's identical ones; hide
+      // them so the old page dots don't show through while the page turns.
+      prevEl?.classList.add("hb-kp-under");
       const screen = await commit({ ...s, paging: true });
       const el = layerEl(screen.id);
       const body = el?.querySelector<HTMLElement>(".hb-body") ?? null;
@@ -209,7 +216,11 @@ export function KioskPlayer(props: KioskPlayerProps) {
     const innerOf = (s: Screen) =>
       layerEl(s.id)?.querySelector<HTMLElement>(".hb-body-inner") ?? null;
 
-    async function playBoard(item: BoardItem, signal: AbortSignal) {
+    async function playBoard(
+      item: BoardItem,
+      position: KioskChrome["position"],
+      signal: AbortSignal,
+    ) {
       const d = item.display;
       const cfgs = latest.current.boardConfigs;
       const headings = boardColumnHeadings(item.board);
@@ -227,6 +238,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           item,
           cfg: screenCfg(item, cfgs?.[item.board.id], label),
           scale: d.textScale,
+          position,
         };
         const screen = await enter({ ...base, board }, signal);
         if (signal.aborted) return;
@@ -288,6 +300,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           await commit({
             ...base,
             board: sliceBoardRows(board, 0, ranges[0]![1], d.columnsPerScreen),
+            page: { index: 0, count: ranges.length },
           });
           setLayers((prev) => prev.slice(-1));
         }
@@ -295,7 +308,11 @@ export function KioskPlayer(props: KioskPlayerProps) {
           if (p > 0) {
             const [from, to] = ranges[p]!;
             await turnPage(
-              { ...base, board: sliceBoardRows(board, from, to, d.columnsPerScreen) },
+              {
+                ...base,
+                board: sliceBoardRows(board, from, to, d.columnsPerScreen),
+                page: { index: p, count: ranges.length },
+              },
               signal,
             );
           }
@@ -327,7 +344,9 @@ export function KioskPlayer(props: KioskPlayerProps) {
         skipRef.current = skip;
         const signal = skip.signal;
         if (item.kind === "board") {
-          await playBoard(item, signal);
+          // "Board N of M" counts boards, not sponsor or ad slides.
+          const boards = items.filter((x) => x.kind === "board");
+          await playBoard(item, { index: boards.indexOf(item), count: boards.length }, signal);
         } else {
           await enter({ item, scale: 1 }, signal);
           const look = latest.current.look;
@@ -362,7 +381,9 @@ export function KioskPlayer(props: KioskPlayerProps) {
                 } as CSSProperties
               }
             >
-              <BoardRenderer board={s.board} brand={brand} kiosk cfg={s.cfg} skins={skins} />
+              <KioskChromeContext.Provider value={{ page: s.page, position: s.position }}>
+                <BoardRenderer board={s.board} brand={brand} kiosk cfg={s.cfg} skins={skins} />
+              </KioskChromeContext.Provider>
             </div>
           ) : s.item.kind === "sponsor" ? (
             s.item.sponsor ? (
