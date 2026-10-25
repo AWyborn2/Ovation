@@ -996,71 +996,94 @@
   height: 100%;
   display: flex;
 }
-.hb-kiosk .preset {
-  width: min(1100px, 96vw);
-  margin: 0 auto;
-  padding: clamp(16px, 3vh, 40px) 0;
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
-}
-.hb-kiosk .preset.active {
-  opacity: 1;
-  transform: none;
-}
-/* Full-screen fit — drop the narrow centred cap and use the whole width. */
-.hb-kiosk .preset.fit {
+/* The player stage: screen layers stack here (outgoing below, incoming on
+   top) while a transition plays. Leaves room for the sponsor strip when it's
+   showing (--kiosk-strip-h defaults to 0). */
+.hb-kp-stage {
+  position: relative;
   width: 100%;
-  max-width: none;
-  margin: 0;
+  height: calc(100vh - var(--kiosk-strip-h, 0px));
+  overflow: hidden;
+}
+.hb-kp-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   padding: clamp(12px, 2vh, 28px) clamp(16px, 3vw, 48px);
+  backface-visibility: hidden;
 }
-/* The scrollable board frame the kiosk auto-scrolls. Reserves room for the
-   sponsor strip when it's showing (--kiosk-strip-h defaults to 0). */
+.hb-kp-board,
+.hb-kp-board > div:not(.hb-board) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Header/body contract: the header plate is a fixed layer and the rows live in
+   a clipped body beneath it, so moving rows can never draw over the header.
+   The body scrolls (credits roll) and its inner element is what page turns
+   animate and what text size / fit-to-screen scale. */
 .hb-kiosk .hb-board {
-  max-height: calc(100vh - clamp(32px, 6vh, 80px) - var(--kiosk-strip-h, 0px));
-  overflow-y: auto;
-  scrollbar-width: none;
-  /* The board's top padding would sit *above* the sticky title (the title
-     pins at the scrollport's padding edge), leaving a band the scrolling rows
-     show through. Drop it here and hand it to the pinned title below so the
-     title covers the frame from the very top edge. */
-  padding-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.hb-kiosk .hb-board::-webkit-scrollbar {
-  display: none;
-}
-
-/* Frozen title + column headings during the kiosk credit-scroll.
-   The kiosk scrolls the `.hb-board` frame vertically, so pin the board title
-   and its column-heading row inside that frame — they stay legible while the
-   rows scroll past beneath them. `--hb-head-h` (the title's measured height,
-   published per-frame by the kiosk) offsets the heading row so it sits directly
-   under the pinned title. Backgrounds are opaque so scrolling rows don't bleed
-   through. */
 .hb-kiosk .hb-head {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--hb-board-bg);
-  /* Absorb the board's (now-removed) top padding so the title keeps its
-     breathing room while its opaque background reaches the very top edge —
-     no gap for rows to leak through above the banner. */
-  padding-top: clamp(18px, 3vw, 36px);
+  flex: none;
+  position: relative;
+  z-index: 2;
 }
-/* The grid heading row lives inside `.hb-grid-scroll`; its `overflow-x: auto`
-   promotes the block to a vertical scroll container too, which would anchor the
-   sticky heading to the wrapper instead of the scrolling board. Drop it in the
-   kiosk (a clubroom TV never horizontally scrolls) so the heading pins to the
-   board. */
+.hb-kiosk .hb-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.hb-kiosk .hb-body-inner {
+  zoom: var(--hb-kp-scale, 1);
+}
+/* A credits roll fades rows out at the bottom edge, and pads the end so the
+   last row clears the fade. */
+.hb-kiosk .hb-body.hb-kp-rolling {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 3vh), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 3vh), transparent);
+}
+.hb-kp-board[data-move="credits"] .hb-body-inner {
+  padding-bottom: 3vh;
+}
+/* During a page turn the incoming layer drops its board background so the
+   outgoing page shows beneath it; the identical header plates overlap. */
+.hb-kp-paging .hb-board {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* Wipe transition: the gold rule that sweeps across. */
+.hb-kp-wipe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #f3d98b, #d8b25e, transparent);
+}
+/* Columns across for plaques and life-member cards (set per board). */
+.hb-kiosk .hb-kp-board .hb-flags,
+.hb-kiosk .hb-kp-board .hb-lm-grid {
+  grid-template-columns: repeat(var(--hb-kp-cols, 3), minmax(0, 1fr));
+}
+/* Column headings stay pinned at the top of the body while it rolls. The grid
+   wrapper's `overflow-x: auto` would make it the scroll container instead, so
+   drop it in the kiosk (a clubroom TV never scrolls sideways). */
 .hb-kiosk .hb-grid-scroll {
   overflow: visible;
 }
 .hb-kiosk .hb-grid-table th {
   position: sticky;
-  top: var(--hb-head-h, 0px);
+  top: 0;
   z-index: 3;
   background: var(--hb-board-bg);
 }
@@ -1081,18 +1104,14 @@
 }
 .hb-kiosk .hb-col-head {
   position: sticky;
-  top: var(--hb-head-h, 0px);
+  top: 0;
   z-index: 3;
   background: var(--hb-board-bg);
 }
 
-/* Kiosk premiership layout tweaks (clubroom TV).
-   Stack each premiership squad as a single column (one player per line)
-   instead of wrapping into two, and pack more premiership cards across the
-   wide screen — up to ~5 at the standard kiosk width, still responsive. */
-.hb-kiosk .hb-flags {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-}
+/* Kiosk premiership layout tweak (clubroom TV): stack each premiership squad
+   as a single column (one player per line) instead of wrapping into two. The
+   number of plaques across is the board's columns-per-screen setting. */
 .hb-kiosk .hb-squad {
   flex-direction: column;
   flex-wrap: nowrap;
@@ -1129,13 +1148,6 @@
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hb-kiosk .preset,
-  .hb-kiosk .preset.active {
-    transition: none;
   }
 }
 

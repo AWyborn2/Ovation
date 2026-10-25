@@ -181,11 +181,12 @@ describe("resolveKioskDisplay: new settings", () => {
   });
 
   it("gives each other layout its own column default and cap", () => {
-    expect(resolveKioskDisplay({ layout: "premiership" }, {}, look).columnsPerScreen).toBe(3);
+    expect(resolveKioskDisplay({ layout: "premiership" }, {}, look).columnsPerScreen).toBe(5);
+    expect(resolveKioskDisplay({ layout: "lifeMembers" }, {}, look).columnsPerScreen).toBe(2);
     expect(
-      resolveKioskDisplay({ layout: "premiership" }, { columnsPerScreen: 5 }, look)
+      resolveKioskDisplay({ layout: "premiership" }, { columnsPerScreen: 2 }, look)
         .columnsPerScreen,
-    ).toBe(5);
+    ).toBe(2);
     expect(
       resolveKioskDisplay({ layout: "lifeMembers" }, { columnsPerScreen: 5 }, look)
         .columnsPerScreen,
