@@ -66,7 +66,8 @@ describe("layers drawer", () => {
         }
       }
     }
-  }, 60_000);
+    // Seventeen looks' pages: allow for a slow machine.
+  }, 180_000);
 
   it("names vectors and groups by what they are, with their own icons", () => {
     const box = { x: 0, y: 0, w: 10, h: 10 };

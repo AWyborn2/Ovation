@@ -29,6 +29,7 @@ import {
   tokensFromCardTheme,
 } from "./tokens";
 import { applyPackData, bindInput } from "./bind";
+import { cardMatchColours } from "./match-vars";
 import {
   applyFieldOverrides,
   hideFields,
@@ -278,6 +279,7 @@ export function renderPackCard(
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,
+        match: cardMatchColours(input, tokens, data?.brand),
       },
     );
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
@@ -387,6 +389,7 @@ export function renderPackCard(
     images: layerImages(bound.images, input.kind, withholdPhotos),
     kind: input.kind,
     page,
+    match: cardMatchColours(input, tokens, data?.brand),
   });
   const extra = manifest.rootVars?.(packCtx);
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, manifest.inkTint, mode)}${extra ? `;${extra}` : ""}">${html}${layers}</div>`;

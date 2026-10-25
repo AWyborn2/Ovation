@@ -23,6 +23,11 @@ function looks(): Array<{ look: string; docs: Map<string, unknown> }> {
   for (const look of readdirSync(BUNDLES).sort()) {
     const dir = path.join(BUNDLES, look);
     if (!statSync(dir).isDirectory() || !existsSync(path.join(dir, "look.json"))) continue;
+    // A design system's looks (a `family`) design one kind each, so they assemble no sets.
+    if (
+      (JSON.parse(readFileSync(path.join(dir, "look.json"), "utf8")) as { family?: string }).family
+    )
+      continue;
     const docs = new Map<string, unknown>();
     for (const file of readdirSync(dir)) {
       if (!file.endsWith(".json") || file === "look.json") continue;

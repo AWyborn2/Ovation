@@ -15,7 +15,7 @@ import {
   type TemplateOrigin,
 } from "@workspace/db";
 import { TemplateLibraryError } from "./errors";
-import { OVATION_AUTHOR, type LibraryLookRef } from "./store";
+import { lookRef, OVATION_AUTHOR, type LibraryLookRef } from "./store";
 
 /** Elements per console page. */
 export const CONSOLE_ELEMENT_PAGE_SIZE = 100;
@@ -89,7 +89,7 @@ function present(row: ViewRow): ConsoleElementView {
     authorTenantId: row.authorTenantId,
     look:
       row.lookId !== null && row.lookSlug !== null && row.lookName !== null
-        ? { id: row.lookId, slug: row.lookSlug, name: row.lookName }
+        ? lookRef(row.lookId, row.lookSlug, row.lookName)
         : null,
     listed: row.listed,
     unlistedBy: row.unlistedBy ?? null,

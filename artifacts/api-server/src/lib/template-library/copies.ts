@@ -38,7 +38,7 @@ import {
 import { documentCoverage } from "./coverage";
 import { copyNotFound, TemplateLibraryError } from "./errors";
 import { initialFit, requestFit } from "./fit";
-import { loadLibraryVersion, lookTemplates, OVATION_AUTHOR } from "./store";
+import { loadLibraryVersion, lookRef, lookTemplates, OVATION_AUTHOR } from "./store";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -114,7 +114,7 @@ async function originsFor(rows: CardTemplateRow[]): Promise<Map<number, OriginRo
         authorName: t.authorName ?? OVATION_AUTHOR,
         look:
           t.lookId !== null && t.lookSlug !== null && t.lookName !== null
-            ? { id: t.lookId, slug: t.lookSlug, name: t.lookName }
+            ? lookRef(t.lookId, t.lookSlug, t.lookName)
             : null,
       },
     ]),

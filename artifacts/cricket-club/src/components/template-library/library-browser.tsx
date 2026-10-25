@@ -41,6 +41,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
+import { groupFamilies, lookLabel } from "./look-families";
 import { MakeSetDialog } from "./make-set-dialog";
 import {
   SetPageThumb,
@@ -143,7 +144,7 @@ function TemplateTile({
           {set
             ? `${templateKindLabel(template.kind)} · ${set.pages.length} pages`
             : kindLabel(template.kind)}
-          {template.look ? ` · ${template.look.name}` : ""} · {template.authorName}
+          {template.look ? ` · ${lookLabel(template.look)}` : ""} · {template.authorName}
         </p>
       </button>
       {/* Shown on hover or focus where there is a pointer; always on small screens. */}
@@ -219,7 +220,8 @@ export function TemplateDetailDialog({
               <DialogTitle>{template.name}</DialogTitle>
               <DialogDescription>
                 {templateKindLabel(template.kind)}
-                {template.look ? ` · ${template.look.name} look` : ""} · by {template.authorName}
+                {template.look ? ` · ${lookLabel(template.look)} look` : ""} · by{" "}
+                {template.authorName}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -382,7 +384,9 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
         ])}
         {select("library-look", "Look", look, setLook, [
           ["", "Every look"],
-          ...(looksQ.data?.looks ?? []).map((l) => [l.slug, l.name] as [string, string]),
+          ...groupFamilies(looksQ.data?.looks ?? []).map(
+            (l) => [l.slug, lookLabel(l)] as [string, string],
+          ),
         ])}
       </div>
 

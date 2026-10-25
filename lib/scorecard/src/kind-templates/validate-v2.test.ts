@@ -341,7 +341,7 @@ describe("format v2 validation", () => {
     ]);
     expect(
       templateDocumentErrors(doc({ card: [layer("a")] }, { palettes: ["foil"] }), "milestone"),
-    ).toEqual(["palettes must list club-kit or duotone once each."]);
+    ).toEqual(["palettes must list club-kit or duotone or match once each."]);
   });
 
   it("caps layers per page and per document, children included", () => {
@@ -523,6 +523,8 @@ describe("what the converter dropped (B4)", () => {
     expect(
       errors("text", { color: "transparent", textStroke: { width: 0.19, color: "#ffffff38" } }),
     ).toEqual([]);
+    // The match graphics' type: italic scoreboards, Archivo at 125% (M10).
+    expect(errors("text", { italic: true, stretch: 125 })).toEqual([]);
   });
 
   it("refuses them out of range or misshapen, naming the setting", () => {
@@ -540,6 +542,8 @@ describe("what the converter dropped (B4)", () => {
     expect(errors("shape", { skew: { x: 89 } }).length).toBe(1);
     expect(errors("shape", { skew: { z: 4 } }).length).toBe(1);
     expect(errors("shape", { backdropBlur: 40 }).length).toBe(1);
+    expect(errors("text", { italic: "yes" }).length).toBe(1);
+    expect(errors("text", { stretch: 250 }).length).toBe(1);
     expect(
       errors("shape", {
         dropShadow: Array.from({ length: 5 }, () => ({ x: 0, y: 0, blur: 1, color: "#000" })),
@@ -556,6 +560,8 @@ describe("what the converter dropped (B4)", () => {
       { skew: { x: 10 } },
       { backdropBlur: 4 },
       { dropShadow: [{ x: 0, y: 0, blur: 1, color: "#000" }] },
+      { italic: true },
+      { stretch: 125 },
     ])
       expect(
         templateDocumentErrors({ layers: [{ id: "a", kind: "shape", geometry, style }] }, "player"),

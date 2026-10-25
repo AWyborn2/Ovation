@@ -132,13 +132,155 @@ const SINGLE_PAGE_CONTENT: Record<string, Record<string, string>> = {
   },
 };
 
+/**
+ * The Match Summary's match graphics content (Ovation Match Graphics, plan
+ * 2026-10-23, M9): the innings in batting order, the venue and competition,
+ * and each innings' batting, bowling and paired rows. `bindInput` fills them.
+ */
+const INNINGS_FIELDS = (n: 1 | 2): PageToken[] => [
+  { key: `innings${n}.team`, label: `Innings ${n} team`, content: "result.scores" },
+  { key: `innings${n}.short`, label: `Innings ${n} team short name`, content: "result.scores" },
+  { key: `innings${n}.score`, label: `Innings ${n} score (W/R)`, content: "result.scores" },
+  { key: `innings${n}.scoreDash`, label: `Innings ${n} score (W-R)`, content: "result.scores" },
+  { key: `innings${n}.overs`, label: `Innings ${n} overs`, content: "result.scores" },
+];
+
+/** Every field of a batting row. */
+export const BATTING_ROW_FIELDS = [
+  "name",
+  "initialName",
+  "initialDotName",
+  "surname",
+  "runs",
+  "runsOnly",
+  "notOut",
+  "balls",
+] as const;
+
+/** Every field of a bowling row. */
+export const BOWLING_ROW_FIELDS = [
+  "name",
+  "initialName",
+  "initialDotName",
+  "surname",
+  "figures",
+  "figuresDash",
+  "overs",
+] as const;
+
+/** A paired row: a batter's fields (`bat…`) beside a bowler's (`bowl…`). */
+export const PAIR_ROW_FIELDS = [
+  ...BATTING_ROW_FIELDS.map((f) => `bat${f[0]!.toUpperCase()}${f.slice(1)}`),
+  ...BOWLING_ROW_FIELDS.map((f) => `bowl${f[0]!.toUpperCase()}${f.slice(1)}`),
+];
+
+const ROW_FIELD_LABELS: Record<string, string> = {
+  name: "Name",
+  initialName: "Initial and surname (K Standing)",
+  initialDotName: "Initial and surname (K.Standing)",
+  surname: "Surname",
+  runs: "Runs (with * not out)",
+  runsOnly: "Runs",
+  notOut: "Not out mark (*)",
+  balls: "Balls faced",
+  figures: "Figures (W/R)",
+  figuresDash: "Figures (W-R)",
+  overs: "Overs",
+};
+
+const rowFields = (keys: readonly string[], prefix = ""): PageToken[] =>
+  keys.map((key) => {
+    const base = key.replace(/^(bat|bowl)/, "");
+    const field = base[0]!.toLowerCase() + base.slice(1);
+    return {
+      key,
+      label: `${prefix}${ROW_FIELD_LABELS[field] ?? field}`,
+      content: "result.performers",
+    };
+  });
+
+const INNINGS_REPEATS = (n: 1 | 2): PageRepeat[] => [
+  {
+    key: `innings${n}.batting`,
+    label: `Innings ${n} batting`,
+    variants: [],
+    content: "result.performers",
+    fields: rowFields(BATTING_ROW_FIELDS),
+  },
+  {
+    key: `innings${n}.bowling`,
+    label: `Innings ${n} bowling`,
+    variants: [],
+    content: "result.performers",
+    fields: rowFields(BOWLING_ROW_FIELDS),
+  },
+  {
+    key: `innings${n}.pairs`,
+    label: `Innings ${n} batters and bowlers`,
+    variants: [],
+    content: "result.performers",
+    fields: [
+      ...rowFields(PAIR_ROW_FIELDS.slice(0, BATTING_ROW_FIELDS.length), "Batter: "),
+      ...rowFields(PAIR_ROW_FIELDS.slice(BATTING_ROW_FIELDS.length), "Bowler: "),
+    ],
+  },
+];
+
 /** Tokens `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
 const SINGLE_PAGE_EXTRA_FIELDS: Record<string, PageToken[]> = {
   matchDay: [{ key: "opposition.monogram", label: "Opposition monogram (no crest)" }],
   matchSummary: [
     { key: "club.monogram", label: "Club side monogram (no crest)" },
     { key: "opposition.monogram", label: "Opposition monogram (no crest)" },
+    { key: "club.short", label: "Club side short name", content: "result.scores" },
+    { key: "opposition.short", label: "Opposition short name", content: "result.scores" },
+    { key: "competition", label: "Competition", content: "result.grade" },
+    { key: "venue", label: "Venue" },
+    { key: "date", label: "Match date" },
+    { key: "winner.name", label: "Winning side", content: "result.result" },
+    ...INNINGS_FIELDS(1),
+    ...INNINGS_FIELDS(2),
   ],
+};
+
+/** Images `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
+const SINGLE_PAGE_EXTRA_IMAGES: Record<string, PageImageToken[]> = {
+  matchSummary: [
+    { key: "innings1.logo", label: "Innings 1 team logo", type: "logo", content: "result.scores" },
+    { key: "innings2.logo", label: "Innings 2 team logo", type: "logo", content: "result.scores" },
+    { key: "winner.logo", label: "Winning side's logo", type: "logo", content: "result.scores" },
+    { key: "loser.logo", label: "Losing side's logo", type: "logo", content: "result.scores" },
+  ],
+};
+
+/**
+ * The Match Summary's match graphics content (M9) exists in format v2 only: a
+ * layer that binds any of it (an Ovation Match Graphics element inserted into
+ * a v1 draft) makes the document v2, as v2 styles do.
+ */
+// Keys no v1 document holds (`venue` and `competition` are older tokens elsewhere).
+const MATCH_GRAPHICS_KEYS = [
+  "club.short",
+  "opposition.short",
+  "winner.name",
+  "winner.logo",
+  "loser.logo",
+  "innings1.",
+  "innings2.",
+];
+
+/** Whether a layer binds the match graphics content (tokens or rows), which only v2 holds. */
+export function usesMatchGraphicsContent(layer: unknown): boolean {
+  const json = JSON.stringify(layer ?? null);
+  return MATCH_GRAPHICS_KEYS.some(
+    (k) =>
+      json.includes(`{{${k}`) || json.includes(`"bind":"${k}`) || json.includes(`"repeat":"${k}`),
+  );
+}
+
+/** Repeats `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
+const SINGLE_PAGE_EXTRA_REPEATS: Record<string, PageRepeat[]> = {
+  matchSummary: [...INNINGS_REPEATS(1), ...INNINGS_REPEATS(2)],
 };
 
 /** Content fields of each team-list row field. */
@@ -162,21 +304,27 @@ function singlePage(kind: string, page: PageKey, cat: KindFieldCatalogue): PageT
     if (!fields.some((f) => f.key === extra.key))
       fields.push(map?.[extra.key] ? { ...extra, content: map[extra.key] } : { ...extra });
   }
+  const images = cat.images.map((i) => (map?.[i.key] ? { ...i, content: map[i.key] } : { ...i }));
+  for (const extra of SINGLE_PAGE_EXTRA_IMAGES[kind] ?? [])
+    if (!images.some((i) => i.key === extra.key)) images.push({ ...extra });
   return {
     kind,
     page,
     fields,
-    images: cat.images.map((i) => (map?.[i.key] ? { ...i, content: map[i.key] } : { ...i })),
-    repeats: cat.repeats.map((r) => ({
-      key: r.key,
-      label: r.label,
-      variants: [...r.variants],
-      fields:
-        kind === "teamList" && r.key === "players"
-          ? withContent(r.fields, PLAYER_ROW_CONTENT)
-          : r.fields.map((f) => ({ ...f })),
-      ...(kind === "teamList" && r.key === "players" ? { content: "team.players" } : {}),
-    })),
+    images,
+    repeats: [
+      ...cat.repeats.map((r) => ({
+        key: r.key,
+        label: r.label,
+        variants: [...r.variants],
+        fields:
+          kind === "teamList" && r.key === "players"
+            ? withContent(r.fields, PLAYER_ROW_CONTENT)
+            : r.fields.map((f) => ({ ...f })),
+        ...(kind === "teamList" && r.key === "players" ? { content: "team.players" } : {}),
+      })),
+      ...(SINGLE_PAGE_EXTRA_REPEATS[kind] ?? []).map((r) => structuredClone(r)),
+    ],
   };
 }
 

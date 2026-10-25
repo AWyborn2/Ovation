@@ -1,6 +1,7 @@
 /**
  * Editor reach over every look (editable-elements plan, Stream A): on every
- * page and size of every bundle in all ten looks, each layer at any depth
+ * page and size of every bundle in every look (the ten, and Ovation Match
+ * Graphics' seven), each layer at any depth
  * and each cell of each list can be selected — it is a layer of some level
  * the editor can enter (the page, a group, a stack or a list), with a box
  * there for the canvas to draw its handles on.
@@ -23,7 +24,7 @@ type Doc = { layers?: FreeLayer[]; pages?: Record<string, { layers: FreeLayer[] 
 
 describe("editor reach", () => {
   it("reaches every layer and list cell of every look on every size", () => {
-    expect(LOOKS).toHaveLength(10);
+    expect(LOOKS.length).toBeGreaterThanOrEqual(17);
     let reached = 0;
     const missed: string[] = [];
     for (const look of LOOKS) {
