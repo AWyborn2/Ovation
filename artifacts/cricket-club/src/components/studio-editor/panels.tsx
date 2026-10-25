@@ -131,7 +131,7 @@ export function ContentPanel({
               [
                 ["Focus left–right", "focalX", 0, 1, 0.01],
                 ["Focus top–bottom", "focalY", 0, 1, 0.01],
-                ["Zoom", "zoom", 1, 3, 0.05],
+                ["Zoom", "zoom", 0.5, 3, 0.05],
               ] as const
             ).map(([label, key, min, max, step]) => (
               <label key={key} className="flex items-center gap-3">

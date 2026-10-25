@@ -11,7 +11,12 @@ import {
   resolvePackTokens,
 } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
-import { substituteTokens, type CardAdjustments, type FreeLayer } from "./adjustments";
+import {
+  photoBoxSize,
+  substituteTokens,
+  type CardAdjustments,
+  type FreeLayer,
+} from "./adjustments";
 
 const tokens = resolvePackTokens({ brand: brandDefaultTokens(null), theme: null, junior: false });
 
@@ -150,6 +155,19 @@ describe("photo layer", () => {
     const html = withSliders({ focalX: 0.75, focalY: 0.4, zoom: 1.5 });
     expect(html).toContain("object-position:75% 40%");
     expect(html).toContain("scale(1.5)");
+  });
+
+  it("zooms out to half size, and no further", () => {
+    expect(withSliders({ focalX: 0.5, focalY: 0, zoom: 0.5 })).toContain("scale(0.5)");
+    expect(withSliders({ focalX: 0.5, focalY: 0, zoom: 0.2 })).toContain("scale(0.5)");
+  });
+
+  it("measures the box the photo is drawn in, for the photo controls", () => {
+    expect(photoBoxSize({ layers: [photo] }, "player", "square", { w: 1080, h: 1080 })).toEqual({
+      w: 1080,
+      h: 648,
+    });
+    expect(photoBoxSize(null, "player", "square", { w: 1080, h: 1080 })).toBeNull();
   });
 
   it("keeps the layer's own focal point while the sliders are centred", () => {

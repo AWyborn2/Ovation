@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { DEFAULT_PHOTO_TRANSFORM, type PhotoTransform } from "@/lib/share-card";
-
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 3;
+import {
+  PHOTO_ZOOM_MAX as MAX_ZOOM,
+  PHOTO_ZOOM_MIN as MIN_ZOOM,
+} from "@/lib/pack-render/adjustments";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 // Source-window geometry for object-fit: cover at a given zoom — mirrors the
 // canvas math in `drawImageCoverFocal` so the control and the rendered card
-// crop identically.
+// crop identically. Below 1× the window is bigger than the photo.
 const coverGeom = (
   natW: number,
   natH: number,
@@ -37,9 +38,21 @@ const coverGeom = (
   return { sw, sh, dispScale };
 };
 
+/**
+ * The window's start for a focal fraction: like CSS object-position, the
+ * fraction of the travel (0 = left/top, 1 = right/bottom). Negative when
+ * zoomed out, which places the smaller photo inside the frame.
+ */
+const windowStart = (focal: number, natLen: number, win: number) =>
+  clamp(focal, 0, 1) * (natLen - win);
+
+/** The focal fraction for a window start; `keep` when there's no travel on that axis. */
+const focalFor = (start: number, natLen: number, win: number, keep: number) =>
+  Math.abs(natLen - win) < 0.5 ? keep : clamp(start / (natLen - win), 0, 1);
+
 type Props = {
   src: string;
-  /** Target card aspect ratio (drives the crop frame shape). */
+  /** The shape of the box the card draws the photo in (drives the frame shape). */
   aspect: { w: number; h: number };
   value: PhotoTransform;
   onChange: (next: PhotoTransform) => void;
@@ -47,8 +60,9 @@ type Props = {
 
 /**
  * Drag-to-reposition + zoom control for a feature share-card photo. The chosen
- * focal point (0-1) and zoom (>= 1) are size-independent, so the same values
- * drive every card size and all downloads.
+ * focal point (0-1) and zoom (0.5-3) are size-independent, so the same values
+ * drive every card size and all downloads. Zoomed out, the photo sits inside
+ * its box and can be dragged anywhere within it.
  */
 export function PhotoReposition({ src, aspect, value, onChange }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -80,8 +94,8 @@ export function PhotoReposition({ src, aspect, value, onChange }: Props) {
   let imgStyle: React.CSSProperties = { visibility: "hidden" };
   if (nat && frameW > 0) {
     const { sw, sh, dispScale } = coverGeom(nat.w, nat.h, frameW, aspect, value.zoom);
-    const sx = clamp(value.focalX * nat.w - sw / 2, 0, nat.w - sw);
-    const sy = clamp(value.focalY * nat.h - sh / 2, 0, nat.h - sh);
+    const sx = windowStart(value.focalX, nat.w, sw);
+    const sy = windowStart(value.focalY, nat.h, sh);
     imgStyle = {
       position: "absolute",
       left: 0,
@@ -98,8 +112,8 @@ export function PhotoReposition({ src, aspect, value, onChange }: Props) {
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!nat || frameW === 0) return;
     const { sw, sh } = coverGeom(nat.w, nat.h, frameW, aspect, value.zoom);
-    const sx = clamp(value.focalX * nat.w - sw / 2, 0, nat.w - sw);
-    const sy = clamp(value.focalY * nat.h - sh / 2, 0, nat.h - sh);
+    const sx = windowStart(value.focalX, nat.w, sw);
+    const sy = windowStart(value.focalY, nat.h, sh);
     drag.current = { px: e.clientX, py: e.clientY, sx, sy };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -108,12 +122,12 @@ export function PhotoReposition({ src, aspect, value, onChange }: Props) {
     if (!drag.current || !nat || frameW === 0) return;
     const { sw, sh, dispScale } = coverGeom(nat.w, nat.h, frameW, aspect, value.zoom);
     // Dragging right reveals the left of the image → window moves left.
-    const sx = clamp(drag.current.sx - (e.clientX - drag.current.px) / dispScale, 0, nat.w - sw);
-    const sy = clamp(drag.current.sy - (e.clientY - drag.current.py) / dispScale, 0, nat.h - sh);
+    const sx = drag.current.sx - (e.clientX - drag.current.px) / dispScale;
+    const sy = drag.current.sy - (e.clientY - drag.current.py) / dispScale;
     onChange({
       ...value,
-      focalX: nat.w > sw ? (sx + sw / 2) / nat.w : 0.5,
-      focalY: nat.h > sh ? (sy + sh / 2) / nat.h : 0.5,
+      focalX: focalFor(sx, nat.w, sw, value.focalX),
+      focalY: focalFor(sy, nat.h, sh, value.focalY),
     });
   };
 
@@ -126,21 +140,9 @@ export function PhotoReposition({ src, aspect, value, onChange }: Props) {
     }
   };
 
-  const handleZoom = (z: number) => {
-    if (!nat || frameW === 0) {
-      onChange({ ...value, zoom: z });
-      return;
-    }
-    // Re-derive focal from the clamped window so zooming doesn't drift the crop.
-    const { sw, sh } = coverGeom(nat.w, nat.h, frameW, aspect, z);
-    const sx = clamp(value.focalX * nat.w - sw / 2, 0, nat.w - sw);
-    const sy = clamp(value.focalY * nat.h - sh / 2, 0, nat.h - sh);
-    onChange({
-      focalX: nat.w > sw ? (sx + sw / 2) / nat.w : 0.5,
-      focalY: nat.h > sh ? (sy + sh / 2) / nat.h : 0.5,
-      zoom: z,
-    });
-  };
+  // The focal fraction is zoom-independent: zooming scales about it, so the
+  // part of the photo under the focal point stays put.
+  const handleZoom = (z: number) => onChange({ ...value, zoom: z });
 
   return (
     <div className="space-y-2">
