@@ -515,8 +515,41 @@ function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): s
   const radius = layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : "";
   const fx = num(t.focalX, 50);
   const fy = num(t.focalY, 50);
-  const zoom = num(t.zoom, 1);
+  // Below 1× the photo shrinks inside its box, toward the focal point, so the
+  // sliders place the smaller photo (left/top at 0%, centred at 50%).
+  const zoom = Math.max(PHOTO_ZOOM_MIN, Math.min(PHOTO_ZOOM_MAX, num(t.zoom, 1)));
   return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${fx}% ${fy}%;transform:scale(${zoom});transform-origin:${fx}% ${fy}%" /></div>`;
+}
+
+/** The photo zoom range every control and renderer shares. */
+export const PHOTO_ZOOM_MIN = 0.5;
+export const PHOTO_ZOOM_MAX = 3;
+
+/**
+ * The size in pixels of the box a template draws the card photo in at `size`:
+ * the largest `photo` layer on the kind's primary page. The photo controls
+ * shape their frame to it, so dragging matches the card. Null when the
+ * document draws no photo layer at that size.
+ */
+export function photoBoxSize(
+  adj: unknown,
+  kind: string,
+  size: CardSize,
+  card: { w: number; h: number },
+): { w: number; h: number } | null {
+  if (!adj) return null;
+  const doc = normaliseDocument(adj as CardAdjustments, kind);
+  let best: { w: number; h: number } | null = null;
+  for (const layer of flattenLayers(documentPageLayers(doc, primaryPage(kind)))) {
+    if (layer.kind !== "photo" || layer.hidden) continue;
+    if (layer.sizes && !layer.sizes.includes(size)) continue;
+    const box = resolveGeometry(layer.geometry, layer.editedAt, size)?.value;
+    if (!box) continue;
+    const w = (num(box.w) / 100) * card.w;
+    const h = (num(box.h) / 100) * card.h;
+    if (w > 0 && h > 0 && (!best || w * h > best.w * best.h)) best = { w, h };
+  }
+  return best;
 }
 
 /** A layer's inner markup; null when it should not be drawn at all. */

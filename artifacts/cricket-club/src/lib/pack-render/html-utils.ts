@@ -423,8 +423,10 @@ export function resolveSlots(
             // slot's default focus.
             photoPositionStyle(photoTransform) || (focus ? `;object-position:${focus}` : "")
           : "";
-      const zoom = type === "photo" && honourZoom ? (photoTransform?.zoom ?? 1) : 1;
-      if (zoom > 1 && photoTransform) {
+      const zoom =
+        type === "photo" && honourZoom ? Math.max(0.5, Math.min(3, photoTransform?.zoom ?? 1)) : 1;
+      // Below 1× the photo shrinks inside the slot toward its focal point.
+      if (zoom !== 1 && photoTransform) {
         const fx = Math.round(Math.max(0, Math.min(1, photoTransform.focalX)) * 100);
         const fy = Math.round(Math.max(0, Math.min(1, photoTransform.focalY)) * 100);
         return `<div style="width:100%;height:100%;overflow:hidden"><img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:${fit}${pos};display:block;transform:scale(${zoom.toFixed(3)});transform-origin:${fx}% ${fy}%" /></div>`;

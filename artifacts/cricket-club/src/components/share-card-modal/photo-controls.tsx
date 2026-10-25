@@ -11,10 +11,14 @@ import type { PhotoControlsState } from "./use-photo-controls";
 export function PhotoControls({
   photo,
   activeSize,
+  photoBox,
 }: {
   photo: PhotoControlsState;
   activeSize: CardSize;
+  /** The size of the box the template draws the photo in; absent → the whole card. */
+  photoBox?: { w: number; h: number } | null;
 }) {
+  const frame = photoBox ?? { w: SIZES[activeSize].w, h: SIZES[activeSize].h };
   const {
     isMatchCard,
     galleryPhotos,
@@ -110,7 +114,7 @@ export function PhotoControls({
       {effectivePhotoUrl && isMatchCard && (
         <PhotoReposition
           src={effectivePhotoUrl}
-          aspect={{ w: SIZES[activeSize].w, h: SIZES[activeSize].h }}
+          aspect={frame}
           value={photoTransform}
           onChange={setPhotoTransform}
         />
@@ -144,7 +148,7 @@ export function PhotoControls({
           {photoPlacement === "feature" && (
             <PhotoReposition
               src={effectivePhotoUrl}
-              aspect={{ w: SIZES[activeSize].w, h: SIZES[activeSize].h }}
+              aspect={frame}
               value={photoTransform}
               onChange={setPhotoTransform}
             />

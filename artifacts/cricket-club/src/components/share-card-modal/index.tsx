@@ -16,12 +16,14 @@ import { Label } from "@/components/ui/label";
 import { PenSquare } from "lucide-react";
 import {
   isAnimatedCard,
+  SIZES,
   type CardSize,
   type PhotoTransform,
   type RenderOptions,
 } from "@/lib/share-card";
 import { canExportVideo, videoFormatLabel } from "@/lib/share-card-animation";
 import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
+import { photoBoxSize } from "@/lib/pack-render/adjustments";
 import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { OpenInEditorButton } from "@/components/studio-editor/open-in-editor";
 import type { Props } from "./constants";
@@ -438,7 +440,17 @@ export function ShareCardModal({
                   </div>
                 )}
 
-                {showPhotoControls && <PhotoControls photo={photo} activeSize={activeSize} />}
+                {showPhotoControls && (
+                  <PhotoControls
+                    photo={photo}
+                    activeSize={activeSize}
+                    photoBox={
+                      input
+                        ? photoBoxSize(templateDoc, input.kind, activeSize, SIZES[activeSize])
+                        : null
+                    }
+                  />
+                )}
               </div>
 
               <div className="space-y-3">
