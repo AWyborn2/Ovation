@@ -1,51 +1,26 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
 import { RotationBuilder } from "./rotation-builder";
+import { RotationItemPanel } from "./rotation-item-panel";
 
-/** TV kiosk rotation (builder) + scroll timings. */
+/**
+ * The TV rotation (B2) with the selected item's settings beside it (B3). The
+ * club-wide timings moved to the Look tab's TV defaults.
+ */
 export function KioskSection({ form }: { form: HonoursDisplayForm }) {
-  const { dwell, setDwell, speed, setSpeed, endHold, setEndHold } = form;
+  const [selected, setSelected] = useState<string | null>(null);
+  // A removed item can't stay selected.
+  const current = selected && form.sequence.includes(selected) ? selected : null;
   return (
     <Card>
       <CardHeader>
         <CardTitle>TV kiosk</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <RotationBuilder form={form} />
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Dwell before scroll (ms)
-            </span>
-            <Input
-              type="number"
-              value={dwell}
-              onChange={(e) => setDwell(e.target.value)}
-              data-testid="input-dwell"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">Scroll speed (px/sec)</span>
-            <Input
-              type="number"
-              value={speed}
-              onChange={(e) => setSpeed(e.target.value)}
-              data-testid="input-speed"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Hold after scroll (ms)
-            </span>
-            <Input
-              type="number"
-              value={endHold}
-              onChange={(e) => setEndHold(e.target.value)}
-              data-testid="input-endhold"
-            />
-          </label>
+      <CardContent className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+        <RotationBuilder form={form} selected={current} onSelect={setSelected} />
+        <div className="lg:pt-7">
+          <RotationItemPanel form={form} token={current} />
         </div>
       </CardContent>
     </Card>

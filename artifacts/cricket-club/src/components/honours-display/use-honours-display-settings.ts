@@ -11,13 +11,20 @@ import {
   type HonourColourOverrides,
   type GridCatalogEntry,
   type KioskAd,
+  type KioskLook,
   type CustomGridDef,
 } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { TEMPLATES, isBuiltinSkin } from "./types";
 import { CLIENT_DEFAULT_DISPLAY } from "./use-approaching-board";
 import type { SkinOption } from "./editors/constants";
+import {
+  resolveClubLook,
+  resolveKioskDisplay,
+  type KioskLookSource,
+} from "@workspace/scorecard/kiosk-display";
 import { duplicateItem, moveItem } from "./settings/rotation-list";
+import { withoutMotion } from "./settings/tv-motion-fields";
 
 // The "approaching milestones" board is built client-side (no server row), so it
 // never appears in the bundle. This synthetic row lets an admin still tune its
@@ -45,6 +52,7 @@ function seedDraft(settings: HonoursDisplaySettings) {
     dwell: String(settings.kioskDwellMs),
     speed: String(settings.kioskScrollSpeed),
     endHold: String(settings.kioskEndHoldMs),
+    kioskLook: settings.kioskLook ?? {},
     sponsorStrip: settings.kioskSponsorStrip,
     sponsorSlides: settings.kioskSponsorSlides,
     sponsorSlideEvery: String(settings.kioskSponsorSlideEvery),
@@ -92,6 +100,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const [dwell, setDwell] = useState(seeded.dwell);
   const [speed, setSpeed] = useState(seeded.speed);
   const [endHold, setEndHold] = useState(seeded.endHold);
+  const [kioskLook, setKioskLook] = useState<KioskLook>(seeded.kioskLook);
   const [sponsorStrip, setSponsorStrip] = useState(seeded.sponsorStrip);
   const [sponsorSlides, setSponsorSlides] = useState(seeded.sponsorSlides);
   const [sponsorSlideEvery, setSponsorSlideEvery] = useState(seeded.sponsorSlideEvery);
@@ -118,6 +127,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     setDwell(seeded.dwell);
     setSpeed(seeded.speed);
     setEndHold(seeded.endHold);
+    setKioskLook(seeded.kioskLook);
     setSponsorStrip(seeded.sponsorStrip);
     setSponsorSlides(seeded.sponsorSlides);
     setSponsorSlideEvery(seeded.sponsorSlideEvery);
@@ -142,6 +152,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     dwell,
     speed,
     endHold,
+    kioskLook,
     sponsorStrip,
     sponsorSlides,
     sponsorSlideEvery,
@@ -244,6 +255,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
       kioskDwellMs: d,
       kioskScrollSpeed: s,
       kioskEndHoldMs: e,
+      kioskLook,
       kioskSponsorStrip: sponsorStrip,
       kioskSponsorSlides: sponsorSlides,
       kioskSponsorSlideEvery: safeEvery,
@@ -301,6 +313,26 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
 
   const setConfig = (id: string, patch: Partial<BoardDisplayConfig>) =>
     setBoardConfigs((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }));
+
+  // ---- TV look (B3) ------------------------------------------------------
+  // The club's TV defaults as the TV resolves them: the saved look, then the
+  // legacy kiosk timings, then built-ins.
+  const lookSource = (look: KioskLook): KioskLookSource => ({
+    kioskLook: look,
+    kioskDwellMs: Number(dwell),
+    kioskEndHoldMs: Number(endHold),
+    kioskScrollSpeed: Number(speed),
+  });
+  const resolveLook = (look: KioskLook) => resolveClubLook(lookSource(look));
+  const clubLook = resolveLook(kioskLook);
+  const patchLook = (patch: KioskLook) => setKioskLook((prev) => ({ ...prev, ...patch }));
+  const resetLook = () => setKioskLook({});
+  // One board's TV settings over the club look; Reset keeps its content and
+  // style settings (heading, skin, …) and clears only the motion fields.
+  const resolveBoard = (board: DisplayBoard, cfg: BoardDisplayConfig) =>
+    resolveKioskDisplay(board, cfg, clubLook);
+  const resetBoardMotion = (id: string) =>
+    setBoardConfigs((prev) => (prev[id] ? { ...prev, [id]: withoutMotion(prev[id]) } : prev));
 
   const addComposite = () =>
     setComposites((prev) => [
@@ -438,6 +470,14 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     addAd,
     patchAd,
     removeAd,
+    // TV look + per-board TV settings
+    kioskLook,
+    clubLook,
+    resolveLook,
+    patchLook,
+    resetLook,
+    resolveBoard,
+    resetBoardMotion,
     // Per-board display
     tunableBoards,
     boardConfigs,

@@ -238,3 +238,100 @@ describe("rotation builder (kiosk redesign B2)", () => {
     expect(rowTitles()).toEqual(["Club Champions", "Premierships", "Sponsor wall"]);
   });
 });
+
+describe("TV settings (kiosk redesign B3)", () => {
+  const champions = {
+    id: "champions",
+    category: "awards",
+    layout: "grid" as const,
+    title: "Club Champions",
+    entries: [],
+    grid: { rowHeading: "Season", columnHeadings: ["First", "Second", "Third"], rows: [] },
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  };
+  const team = { ...champions, id: "team", layout: "teamOfDecade" as const, title: "Team" };
+  const bundle = (
+    settings: Partial<HonourDisplayBundle["settings"]> = {},
+  ): HonourDisplayBundle => ({
+    ...BUNDLE,
+    boards: [champions, team],
+    settings: { ...BUNDLE.settings, kioskSequence: ["champions", "team", "sponsor"], ...settings },
+  });
+  const sentBody = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const sent = () =>
+      vi.mocked(fetch).mock.calls.find(([, init]) => init?.method && init.method !== "GET");
+    await waitFor(() => expect(sent()).toBeTruthy());
+    return JSON.parse(String(sent()![1]!.body)) as {
+      kioskLook: Record<string, unknown>;
+      boardConfigs: Record<string, Record<string, unknown>>;
+    };
+  };
+  const select = (id: string) => screen.getByTestId(id) as HTMLSelectElement;
+
+  it("shows a board only the controls its layout and movement use", async () => {
+    installApiMock({ "/honour-display": bundle() });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+
+    // A season grid offers up to its own three grade columns, defaulting to the club's.
+    const cols = select("board-tv-champions-columns");
+    expect([...cols.options].map((o) => o.textContent)).toEqual(["Default · 3", "1", "2", "3"]);
+    // Credits roll by default: roll speed shows, rows per page doesn't.
+    expect(select("board-tv-champions-move").options[0]!.textContent).toBe(
+      "Default · Credits roll",
+    );
+    expect(screen.getByTestId("board-tv-champions-speed")).toBeTruthy();
+    expect(screen.queryByTestId("board-tv-champions-perpage")).toBeNull();
+
+    fireEvent.change(select("board-tv-champions-move"), { target: { value: "pages" } });
+    expect(screen.getByTestId("board-tv-champions-perpage")).toBeTruthy();
+    expect(screen.queryByTestId("board-tv-champions-speed")).toBeNull();
+
+    // A team board has no columns to choose.
+    fireEvent.click(screen.getByTestId("seq-select-1"));
+    expect(screen.queryByTestId("board-tv-team-columns")).toBeNull();
+
+    // The sponsor wall points to its own tab.
+    fireEvent.click(screen.getByTestId("seq-select-2"));
+    expect(screen.getByTestId("rotation-item-panel").textContent).toContain("Sponsors & ads tab");
+  });
+
+  it("saves a board's own settings and resets them to the club defaults", async () => {
+    installApiMock({
+      "/honour-display": bundle({
+        boardConfigs: { champions: { heading: "Champions", move: "fit" } },
+      }),
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    expect(select("board-tv-champions-move").value).toBe("fit");
+
+    fireEvent.click(screen.getByTestId("board-tv-reset-champions"));
+    expect(select("board-tv-champions-move").value).toBe("");
+    fireEvent.change(select("board-tv-champions-size"), { target: { value: "XL" } });
+    fireEvent.change(screen.getByTestId("board-tv-champions-hold"), { target: { value: "7" } });
+
+    const body = await sentBody();
+    expect(body.boardConfigs.champions).toEqual({ heading: "Champions", size: "XL", hold: 7 });
+  });
+
+  it("edits the club's TV defaults on the Look tab, and boards follow them", async () => {
+    installApiMock({ "/honour-display": bundle({ kioskLook: { trans: "wipe" } }) });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.mouseDown(await screen.findByTestId("tab-look"));
+    expect(select("look-trans").value).toBe("wipe");
+    // Unset timings show what the TV uses now: the legacy 3.5 s dwell, rounded.
+    expect((screen.getByTestId("look-pagesecs") as HTMLInputElement).placeholder).toBe(
+      "Default · 4",
+    );
+    fireEvent.change(select("look-move"), { target: { value: "pages" } });
+
+    fireEvent.mouseDown(screen.getByTestId("tab-rotation"));
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    expect(select("board-tv-champions-move").options[0]!.textContent).toBe("Default · Pages");
+    expect(select("board-tv-champions-trans").options[0]!.textContent).toBe("Default · Wipe");
+
+    expect((await sentBody()).kioskLook).toEqual({ trans: "wipe", move: "pages" });
+  });
+});

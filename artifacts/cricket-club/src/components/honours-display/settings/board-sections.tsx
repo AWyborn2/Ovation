@@ -14,13 +14,12 @@ export function PerBoardSection({ form }: { form: HonoursDisplayForm }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Override how each board appears on the display and TV kiosk.
-          <strong> Columns</strong> spreads a long list across 2–3 columns.
-          <strong> Transition</strong> chooses how tall boards advance on the kiosk: <em>scroll</em>{" "}
-          credit-rolls the whole board; <em>slide</em> pages through it a screen at a time.{" "}
-          <strong>Fit</strong> fills the full screen width instead of the narrow centred cap. Expand
-          a board to override its heading, text size, density, font, crest and background — and, for
-          grid-capable boards, the season-grid columns.
+          Override how each board looks. <strong>Columns</strong>, <strong>Transition</strong> and{" "}
+          <strong>Full width</strong> set the public honours display page; on the TV they only apply
+          until you set the board&apos;s own movement, columns and text size (select it in the
+          rotation, or set club defaults on the Look tab). Expand a board to override its heading,
+          text size, density, font, crest and background — and, for grid-capable boards, the
+          season-grid columns.
         </p>
         <div className="space-y-2">
           {tunableBoards.map((b) => (
