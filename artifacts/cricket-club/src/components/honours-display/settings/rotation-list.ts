@@ -32,6 +32,7 @@ export const BOARD_LAYOUT_LABEL: Readonly<Record<DisplayBoardLayout, string>> = 
   leaderboard: "Leaderboard",
   achievements: "Achievement list",
   recordPanels: "Record panels",
+  recordsTable: "Records table",
 };
 
 /** The list with the item at `from` moved to index `to` (clamped). */

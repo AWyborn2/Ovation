@@ -15,6 +15,7 @@ const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   leaderboard: "Columns",
   achievements: "Columns",
   recordPanels: "Panels across",
+  recordsTable: "Columns",
 };
 
 /**

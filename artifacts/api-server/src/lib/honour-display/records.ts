@@ -241,6 +241,115 @@ export async function buildPartnerships(tenantId: number): Promise<HonourBoardOu
   };
 }
 
+/** A partnership for a records table: a curated row or a derived stand. */
+export interface PartnershipRow {
+  grade: string;
+  wicket: number;
+  runs: number;
+  /** "Ann Allrounder & Bea Batter". */
+  batters: string;
+  season: string;
+  opponent: string | null;
+  source: "curated" | "derived";
+}
+
+/** 3 from "3rd", "3", "3rd Wkt"; null when there's no wicket number 1–10. */
+export function wicketNumber(raw: string): number | null {
+  const n = parseInt(raw.match(/\d+/)?.[0] ?? "", 10);
+  return n >= 1 && n <= 10 ? n : null;
+}
+
+/**
+ * The Partnership Records boards (kiosk redesign C4): one "records table" per
+ * grade with the highest partnership for each wicket. Derived stands (from
+ * fall-of-wicket data) and the club's curated records (its older seasons)
+ * compete per wicket; the higher wins, and on a tie the club's own record.
+ */
+export function partnershipBoards(rows: PartnershipRow[]): HonourBoardOut[] {
+  const best = new Map<string, PartnershipRow>();
+  for (const r of rows) {
+    const key = `${r.grade}\u0000${r.wicket}`;
+    const cur = best.get(key);
+    if (
+      !cur ||
+      r.runs > cur.runs ||
+      (r.runs === cur.runs && r.source === "curated" && cur.source !== "curated")
+    ) {
+      best.set(key, r);
+    }
+  }
+  const byGrade = new Map<string, PartnershipRow[]>();
+  for (const r of best.values()) {
+    if (!byGrade.has(r.grade)) byGrade.set(r.grade, []);
+    byGrade.get(r.grade)!.push(r);
+  }
+  return [...byGrade.entries()]
+    .sort((a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]))
+    .map(([grade, list]) => ({
+      id: `partnerships_grade:${grade}`,
+      category: "partnership_records",
+      layout: "recordsTable" as const,
+      title: `${grade} Partnerships`,
+      subtitle: "Highest partnership for each wicket",
+      figureLabel: "Runs",
+      entries: list
+        .sort((a, b) => a.wicket - b.wicket)
+        .map((r) => ({
+          season: r.season,
+          primaryText: r.batters,
+          detail: `${r.runs} runs · ${r.wicket} wkt${r.opponent ? ` · v ${r.opponent}` : ""}`,
+          meta: { grade, wicket: r.wicket, figure: String(r.runs), opponent: r.opponent },
+        })),
+    }));
+}
+
+/**
+ * Partnership records per grade: a central tenant's derived stands with its
+ * curated records; the native tenant's curated records alone.
+ */
+export async function buildPartnershipBoards(source: DataSource): Promise<HonourBoardOut[]> {
+  const curated = await db
+    .select()
+    .from(partnershipRecordsTable)
+    .where(eq(partnershipRecordsTable.tenantId, source.tenantId));
+  const rows: PartnershipRow[] = [];
+  for (const c of curated) {
+    const wicket = wicketNumber(c.wicket);
+    if (wicket === null || !c.batsmen.trim()) continue;
+    rows.push({
+      grade: c.grade,
+      wicket,
+      runs: c.runs,
+      batters: c.batsmen.trim(),
+      season: c.season ?? "",
+      opponent: opponentName(c.opposition),
+      source: "curated",
+    });
+  }
+  if (source.kind === "central") {
+    const { centralPartnershipRecords } = await import("@workspace/db/central-queries");
+    const overlay = await loadClubOverlay(source.tenantId);
+    const [derived, opponents] = await Promise.all([
+      centralPartnershipRecords(source.clubId, overlay.identity.merges),
+      centralOpponentsByMatch(source.clubId),
+    ]);
+    for (const d of derived) {
+      const names = d.batters.map((b) => (b.displayName ?? "").trim());
+      if (names.some((n) => !n)) continue;
+      rows.push({
+        grade: d.grade,
+        wicket: d.wicket,
+        runs: d.runs,
+        batters: names.join(" & "),
+        season: d.season,
+        opponent: opponents.get(d.matchId) ?? null,
+        source: "derived",
+      });
+    }
+  }
+  return partnershipBoards(rows);
+}
+
 /** Recently-achieved milestones (reuses the /milestones feed, tenant-scoped). */
 export async function buildMilestoneBoard(source: DataSource): Promise<HonourBoardOut | null> {
   const { items } = await buildMilestonesForSource(source);

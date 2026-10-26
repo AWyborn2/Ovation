@@ -10171,7 +10171,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels', 'recordsTable']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines. \"recordsTable\" lists partnerships (wicket, runs, partners, season, opponent) whose entries carry meta.wicket, meta.figure and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10191,7 +10191,8 @@ export const GetHonourDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10247,7 +10248,8 @@ export const GetHonourDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10510,7 +10512,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels', 'recordsTable']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines. \"recordsTable\" lists partnerships (wicket, runs, partners, season, opponent) whose entries carry meta.wicket, meta.figure and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10530,7 +10532,8 @@ export const GetKioskDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10586,7 +10589,8 @@ export const GetKioskDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),

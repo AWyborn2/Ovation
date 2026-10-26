@@ -21450,6 +21450,10 @@ components:
           type: string
           nullable: true
           description: The side the achievement came against, e.g. "Mandurah".
+        wicket:
+          type: integer
+          nullable: true
+          description: Records tables, the wicket a partnership was for (1–10).
 
     BoardEntry:
       type: object
@@ -21927,6 +21931,7 @@ components:
             - leaderboard
             - achievements
             - recordPanels
+            - recordsTable
           description: >-
             Natural render layout for this board (skin only changes the look).
             "leaderboard" is a ranked table (rank, player, figure, seasons) whose
@@ -21934,7 +21939,9 @@ components:
             "achievements" is a dated list (season, player, figure, grade,
             opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
             "recordPanels" is one panel per grade: each entry is a grade
-            (primaryText) with its record lines.
+            (primaryText) with its record lines. "recordsTable" lists
+            partnerships (wicket, runs, partners, season, opponent) whose
+            entries carry meta.wicket, meta.figure and meta.opponent.
         title:
           type: string
         subtitle:

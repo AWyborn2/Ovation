@@ -13,6 +13,7 @@ import {
   LeaderboardBoard,
   AchievementsBoard,
   RecordPanelsBoard,
+  RecordsTableBoard,
 } from "./templates";
 
 interface BoardRendererProps {
@@ -80,6 +81,9 @@ export function BoardRenderer({ board, brand, kiosk, cfg, skins }: BoardRenderer
   }
   if (board.layout === "grid") {
     return wrap(<GridBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
+  }
+  if (board.layout === "recordsTable") {
+    return wrap(<RecordsTableBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
   if (board.layout === "recordPanels") {
     return wrap(<RecordPanelsBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
