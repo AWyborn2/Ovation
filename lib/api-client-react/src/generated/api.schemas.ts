@@ -7290,6 +7290,16 @@ export type BoardEntryLifeMember = {
   stats?: LifeMemberStats | null;
 } | null;
 
+export interface BoardRecordLine {
+  /** The record, e.g. "Most Runs". */
+  label: string;
+  /** The figure, e.g. "4321" or "7/20". */
+  value: string;
+  /** Who holds it (null for a curated record that names no one separately). */
+  holder?: string | null;
+  playerId?: number | null;
+}
+
 export interface BoardEntry {
   /** Season / year label, e.g. "2024/25" (may be empty). */
   season: string;
@@ -7306,6 +7316,8 @@ export interface BoardEntry {
   squad?: BoardSquadMember[] | null;
   /** Extra data for the life-members board (career stats + bio), populated only for boards with the "lifeMembers" layout. */
   lifeMember?: BoardEntryLifeMember;
+  /** Record panels: one grade's records, in board order (populated only for boards with the "recordPanels" layout). */
+  lines?: BoardRecordLine[] | null;
 }
 
 /**
@@ -7697,7 +7709,7 @@ export interface CompositeDef {
 }
 
 /**
- * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
+ * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. "recordPanels" is one panel per grade: each entry is a grade (primaryText) with its record lines.
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
@@ -7711,6 +7723,7 @@ export const DisplayBoardLayout = {
   lifeMembers: 'lifeMembers',
   leaderboard: 'leaderboard',
   achievements: 'achievements',
+  recordPanels: 'recordPanels',
 } as const;
 
 /**
@@ -7754,7 +7767,7 @@ export interface DisplayBoard {
   id: string;
   /** Free-text board category used for grouping/labelling. */
   category: string;
-  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. */
+  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. "recordPanels" is one panel per grade: each entry is a grade (primaryText) with its record lines. */
   layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;

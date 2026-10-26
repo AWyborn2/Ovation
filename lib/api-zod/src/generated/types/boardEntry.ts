@@ -7,6 +7,7 @@
  */
 import type { BoardEntryLifeMember } from './boardEntryLifeMember';
 import type { BoardEntryMeta } from './boardEntryMeta';
+import type { BoardRecordLine } from './boardRecordLine';
 import type { BoardSquadMember } from './boardSquadMember';
 
 export interface BoardEntry {
@@ -25,4 +26,6 @@ export interface BoardEntry {
   squad?: BoardSquadMember[] | null;
   /** Extra data for the life-members board (career stats + bio), populated only for boards with the "lifeMembers" layout. */
   lifeMember?: BoardEntryLifeMember;
+  /** Record panels: one grade's records, in board order (populated only for boards with the "recordPanels" layout). */
+  lines?: BoardRecordLine[] | null;
 }

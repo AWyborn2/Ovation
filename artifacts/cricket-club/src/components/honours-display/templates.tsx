@@ -390,6 +390,44 @@ export function AchievementsBoard({ board, brand, kiosk, cfg, entries }: LayoutP
 }
 
 // ---------------------------------------------------------------------------
+// Record panels layout — one panel per grade, each listing that grade's record
+// holders (kiosk redesign C3). On the TV, "Panels across" sets how many sit
+// side by side; a row of panels pages and scrolls as one.
+// ---------------------------------------------------------------------------
+
+export function RecordPanelsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
+  return (
+    <div className="hb-board hb-record-panels">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        <div className="hb-panels">
+          {board.entries.map((e, i) => (
+            <article className="hb-panel" key={i}>
+              <h3 className="hb-panel-title">{e.primaryText}</h3>
+              <dl className="hb-panel-lines">
+                {(e.lines ?? []).map((l, j) => (
+                  <div className="hb-panel-line" key={j}>
+                    <dt>{l.label}</dt>
+                    <dd>
+                      <b>{l.value}</b>{" "}
+                      {l.holder ? (
+                        <NameLink playerId={l.playerId} kiosk={kiosk}>
+                          {l.holder}
+                        </NameLink>
+                      ) : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))}
+        </div>
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Composite "columns" layout — several list boards rendered side-by-side.
 // Rendered as a single CSS grid so rows line up across columns (used by the
 // season-aligned transform, where every column is index-aligned by season).

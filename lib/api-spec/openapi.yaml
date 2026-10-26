@@ -21510,6 +21510,34 @@ components:
                 - $ref: "#/components/schemas/LifeMemberStats"
               nullable: true
               description: Aggregated career stats (null when the member has no linked player).
+        lines:
+          type: array
+          nullable: true
+          description: >-
+            Record panels: one grade's records, in board order (populated only
+            for boards with the "recordPanels" layout).
+          items:
+            $ref: "#/components/schemas/BoardRecordLine"
+
+    BoardRecordLine:
+      type: object
+      required:
+        - label
+        - value
+      properties:
+        label:
+          type: string
+          description: The record, e.g. "Most Runs".
+        value:
+          type: string
+          description: The figure, e.g. "4321" or "7/20".
+        holder:
+          type: string
+          nullable: true
+          description: Who holds it (null for a curated record that names no one separately).
+        playerId:
+          type: integer
+          nullable: true
 
     BoardDisplay:
       type: object
@@ -21898,12 +21926,15 @@ components:
             - lifeMembers
             - leaderboard
             - achievements
+            - recordPanels
           description: >-
             Natural render layout for this board (skin only changes the look).
             "leaderboard" is a ranked table (rank, player, figure, seasons) whose
             entries carry meta.rank, meta.figure and meta.seasonSpan.
             "achievements" is a dated list (season, player, figure, grade,
             opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
+            "recordPanels" is one panel per grade: each entry is a grade
+            (primaryText) with its record lines.
         title:
           type: string
         subtitle:

@@ -104,6 +104,7 @@ export * from './boardGrid';
 export * from './boardGridCell';
 export * from './boardGridEntry';
 export * from './boardGridRow';
+export * from './boardRecordLine';
 export * from './boardSquadMember';
 export * from './capCatchUpResult';
 export * from './capCategory';

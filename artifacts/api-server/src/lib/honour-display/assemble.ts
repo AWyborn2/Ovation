@@ -31,7 +31,7 @@ import {
   buildMilestoneBoard,
   buildLeaderboards,
   buildPartnerships,
-  buildRecordsByGrade,
+  buildGradeRecordBoards,
   buildRecordsLeaderboards,
   roleRank,
 } from "./records";
@@ -84,7 +84,7 @@ export async function assembleBoards(
     buildMilestoneBoard(source),
     buildAwardPoints(tenantId),
     buildRecordsLeaderboards(tenantId),
-    buildRecordsByGrade(source),
+    buildGradeRecordBoards(source),
     buildTeamOfDecade(tenantId),
     buildClubRecords(tenantId),
     buildLeaderboards(source),
@@ -97,7 +97,8 @@ export async function assembleBoards(
   if (awardWinnersGrid) boards.push(awardWinnersGrid);
   boards.push(...teamOfDecade);
   if (clubRecords) boards.push(clubRecords);
-  boards.push(...recordsByGrade);
+  boards.push(...recordsByGrade.byGrade);
+  if (recordsByGrade.panels) boards.push(recordsByGrade.panels);
   if (partnerships) boards.push(partnerships);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
