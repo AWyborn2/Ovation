@@ -21,4 +21,5 @@ export const LibraryElementCategory = {
   'crest-frames': 'crest-frames',
   'sponsor-strips': 'sponsor-strips',
   'data-blocks': 'data-blocks',
+  textures: 'textures',
 } as const;

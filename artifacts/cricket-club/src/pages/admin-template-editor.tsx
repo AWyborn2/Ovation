@@ -24,6 +24,7 @@ import {
 import {
   CONTENT_PRESET_LABELS,
   CONTENT_PRESETS,
+  isBundledImage,
   isContentKind,
   isSetDocument,
   kindFields,
@@ -51,6 +52,7 @@ import {
 import { ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
 import { SaveElementDialog } from "@/components/studio-editor/save-element-dialog";
+import { backgroundDepth } from "@/components/studio-editor/element-insert";
 import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
@@ -704,7 +706,12 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   // A new element goes on the page itself, so adding one leaves a group being edited.
   const addTemplateLayers = (added: FreeLayer[]) => {
     const placed = added.map((l) => onlyOnSize(l, format));
-    editPage({ ...pageFull, layers: [...layersOf(pageFull), ...placed] });
+    // A library texture or pattern is a background: it goes just above the
+    // page's full-card background layers, under the rest of the design.
+    const texture = placed.every((l) => l.kind === "image" && isBundledImage(l.content));
+    const layers = layersOf(pageFull);
+    const at = texture ? backgroundDepth(layers, format) : layers.length;
+    editPage({ ...pageFull, layers: [...layers.slice(0, at), ...placed, ...layers.slice(at)] });
     enterScope(
       null,
       placed.map((l) => l.id),

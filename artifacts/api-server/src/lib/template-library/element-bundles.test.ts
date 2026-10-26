@@ -4,6 +4,8 @@
  * changed, keeps Ovation's unlisting and removes what left the files.
  * Real-DB integration test (needs DATABASE_URL).
  */
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq, like } from "drizzle-orm";
 import { db, libraryElementsTable, templateLooksTable } from "@workspace/db";
@@ -16,6 +18,10 @@ import {
 } from "@workspace/template-bundles";
 import { syncElementBundles } from "./element-bundles";
 import { elementSaveErrors } from "./elements";
+
+/** Element files that aren't a look's: the image kits (CC BY 4.0, `public/library-assets/CREDITS.md`). */
+const IMAGE_KITS = new Set(["textures-kit", "seamless-patterns"]);
+const WEB_PUBLIC = path.resolve(__dirname, "../../../../cricket-club/public");
 
 const STAMP = Date.now();
 const LOOK = `eb-${STAMP}`;
@@ -56,7 +62,7 @@ describe("the committed element files", () => {
     expect(ELEMENT_BUNDLES.length).toBeGreaterThanOrEqual(10);
     const slugs = new Set<string>();
     for (const b of ELEMENT_BUNDLES) {
-      expect(looks.has(b.look)).toBe(true);
+      expect(looks.has(b.look) || IMAGE_KITS.has(b.look)).toBe(true);
       expect(b.file.look).toBe(b.look);
       for (const e of b.file.elements) {
         expect(e.slug.startsWith(`${b.look}/${e.category}/`)).toBe(true);
@@ -71,6 +77,22 @@ describe("the committed element files", () => {
       }
     }
     expect(slugs.size).toBeGreaterThan(50);
+  });
+
+  it("ship every texture and pattern they draw with the web app", () => {
+    const kits = ELEMENT_BUNDLES.filter((b) => IMAGE_KITS.has(b.look));
+    expect(kits.map((b) => b.file.elements.length)).toEqual([40, 40]);
+    for (const b of kits) {
+      for (const e of b.file.elements) {
+        const layers = (e.document as { layers: Array<{ content?: string }> }).layers;
+        const src = layers[0]!.content!;
+        expect(src.startsWith("/library-assets/")).toBe(true);
+        expect({ src, exists: existsSync(path.join(WEB_PUBLIC, src)) }).toEqual({
+          src,
+          exists: true,
+        });
+      }
+    }
   });
 });
 

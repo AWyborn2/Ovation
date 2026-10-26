@@ -510,6 +510,7 @@ export function LibraryElements({
           </button>
         ))}
       </div>
+      {category === "textures" && <TexturesCredit />}
       {family ? (
         family.looks.map((member) => (
           <div key={member.id} className="mt-3">
@@ -545,5 +546,42 @@ export function LibraryElements({
       )}
       <ReportElementDialog element={reporting} onClose={() => setReporting(null)} />
     </section>
+  );
+}
+
+/** The textures and patterns kits' CC BY 4.0 credit (`public/library-assets/CREDITS.md`). */
+function TexturesCredit() {
+  const link = "underline hover:text-[var(--ed-ink)]";
+  return (
+    <p className="mt-2 text-[11px] leading-snug text-[var(--ed-ink2)]">
+      Textures from{" "}
+      <a
+        className={link}
+        href="https://www.figma.com/community/file/1051984823754653573/textures-kit"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Textures Kit
+      </a>{" "}
+      by Bebbble and patterns from{" "}
+      <a
+        className={link}
+        href="https://www.figma.com/community/file/1184852075345917340/20-seamless-patterns-textures-in-figma"
+        target="_blank"
+        rel="noreferrer"
+      >
+        20 Seamless Patterns &amp; Textures
+      </a>{" "}
+      by Simon Fairhurst, under{" "}
+      <a
+        className={link}
+        href="https://creativecommons.org/licenses/by/4.0/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        CC BY 4.0
+      </a>
+      ; re-encoded, and the patterns tiled.
+    </p>
   );
 }

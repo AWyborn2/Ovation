@@ -42,6 +42,21 @@ export function boxAt(layer: Pick<FreeLayer, "geometry">, size: CardSize): Layer
   return null;
 }
 
+/**
+ * How many layers at the bottom of a page are its full-card background at
+ * `size` (boxes covering the whole card): where a texture goes, above them and
+ * under the rest of the design.
+ */
+export function backgroundDepth(layers: readonly FreeLayer[], size: CardSize): number {
+  let n = 0;
+  for (const layer of layers) {
+    const box = boxAt(layer, size);
+    if (!box || box.x > 0.5 || box.y > 0.5 || box.x + box.w < 99.5 || box.y + box.h < 99.5) break;
+    n += 1;
+  }
+  return n;
+}
+
 /** The layers of one level to copy at `size`: its own size's copies when it has any. */
 function forSize(list: ElementLayer[], size: CardSize): ElementLayer[] {
   const designedHere = list.some((l) => l.sizes?.includes(size));

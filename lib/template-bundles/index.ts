@@ -228,7 +228,9 @@ import elements12 from "./elements/omg-ground-scoreboard.json";
 import elements13 from "./elements/omg-panel.json";
 import elements14 from "./elements/omg-scoreboard.json";
 import elements15 from "./elements/omg-t20.json";
-import elements16 from "./elements/sunset.json";
+import elements16 from "./elements/seamless-patterns.json";
+import elements17 from "./elements/sunset.json";
+import elements18 from "./elements/textures-kit.json";
 
 export type * from "./types";
 
@@ -548,5 +550,7 @@ export const ELEMENT_BUNDLES: ElementBundle[] = [
   { look: "omg-panel", hash: "009bf238102cbe0dbac43dc155c735fc1fd60f2ec21894896cf1ab7f6ec8a48a", file: elements13 },
   { look: "omg-scoreboard", hash: "68821ac9e2a542c1f9425a329434f493ae135809d8844f47ced2020ddfde0b99", file: elements14 },
   { look: "omg-t20", hash: "3f8eeb01cd0979df3b710f508d618dcd2f75a16147b8a968bc378cddd28e704d", file: elements15 },
-  { look: "sunset", hash: "be5bd0ed1aba653dc7a37174414d1a695b1d2429b0e039836fb7f224621a1fe2", file: elements16 },
+  { look: "seamless-patterns", hash: "493148ca5f93ed866186cb3f533a11c6f6435d68886c982c350c96bfc313d701", file: elements16 },
+  { look: "sunset", hash: "be5bd0ed1aba653dc7a37174414d1a695b1d2429b0e039836fb7f224621a1fe2", file: elements17 },
+  { look: "textures-kit", hash: "0c1fe09faea9a6beafc7a22ac9c6f0309c2b5268f4c6817fc0c849dc0099df13", file: elements18 },
 ];

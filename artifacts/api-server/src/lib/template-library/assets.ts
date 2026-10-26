@@ -3,7 +3,8 @@
  *
  * Images a library template draws (from the console, the AI designer or a
  * Figma import) are copied to public object storage under `library/`. A
- * library document may reference only those, `{{tokens}}` and slots — never a
+ * library document may reference only those, the images shipped with the web
+ * app for the element library (`/library-assets/`), `{{tokens}}` and slots — never a
  * club's own uploads or any other address — so nothing in the library points
  * at a tenant's assets. Club copies may reference the club's uploads, as
  * today, so the policy applies to library rows only.
@@ -16,6 +17,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isBundledImage } from "@workspace/scorecard/kind-templates";
 import { env } from "../../config";
 import { objectStorageClient, ObjectStorageService } from "../objectStorage";
 
@@ -28,7 +30,9 @@ const ASSET_NAME = /^[0-9a-f-]{36}\.(png|jpg|webp|svg)$/;
 const NAMESPACE_URI = /^https?:\/\/www\.w3\.org\//;
 
 const isLibraryUrl = (url: string): boolean =>
-  url.startsWith(LIBRARY_ASSET_PREFIX) && ASSET_NAME.test(url.slice(LIBRARY_ASSET_PREFIX.length));
+  (url.startsWith(LIBRARY_ASSET_PREFIX) &&
+    ASSET_NAME.test(url.slice(LIBRARY_ASSET_PREFIX.length))) ||
+  isBundledImage(url);
 
 /** Every address a string refers to: absolute URLs, CSS `url(...)` targets and root paths. */
 function addressesIn(value: string, key: string): string[] {

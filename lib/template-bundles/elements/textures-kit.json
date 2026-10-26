@@ -1,0 +1,1885 @@
+{
+  "look": "textures-kit",
+  "elements": [
+    {
+      "slug": "textures-kit/textures/texture-01",
+      "name": "Texture 1",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "f3eca607331d64f3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 1",
+            "content": "/library-assets/textures-kit/texture-01.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-02",
+      "name": "Texture 2",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "8557ab0b4c31cc9b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 2",
+            "content": "/library-assets/textures-kit/texture-02.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-03",
+      "name": "Texture 3",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "84bebc54944a7d6b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 3",
+            "content": "/library-assets/textures-kit/texture-03.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-04",
+      "name": "Texture 4",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "0d5a85db6844df8a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 4",
+            "content": "/library-assets/textures-kit/texture-04.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-05",
+      "name": "Texture 5",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "c5532046ec6dfb48",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 5",
+            "content": "/library-assets/textures-kit/texture-05.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-06",
+      "name": "Texture 6",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "60d2c95f18649823",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 6",
+            "content": "/library-assets/textures-kit/texture-06.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-07",
+      "name": "Texture 7",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "d554bfced056584e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 7",
+            "content": "/library-assets/textures-kit/texture-07.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-08",
+      "name": "Texture 8",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "56923b131379f7c5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 8",
+            "content": "/library-assets/textures-kit/texture-08.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-09",
+      "name": "Texture 9",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "01b8b5bdeca2261c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 9",
+            "content": "/library-assets/textures-kit/texture-09.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-10",
+      "name": "Texture 10",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "154cfb131b2d6fbd",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 10",
+            "content": "/library-assets/textures-kit/texture-10.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-11",
+      "name": "Texture 11",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "bb6195d2fb348cf1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 11",
+            "content": "/library-assets/textures-kit/texture-11.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-12",
+      "name": "Texture 12",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "59fc613f3146846a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 12",
+            "content": "/library-assets/textures-kit/texture-12.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-13",
+      "name": "Texture 13",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "7ef8b303bf81dce8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 13",
+            "content": "/library-assets/textures-kit/texture-13.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-14",
+      "name": "Texture 14",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "2ac2ee39dffccf40",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 14",
+            "content": "/library-assets/textures-kit/texture-14.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-15",
+      "name": "Texture 15",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "6fbc0364a5a3fba9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 15",
+            "content": "/library-assets/textures-kit/texture-15.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-16",
+      "name": "Texture 16",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "0b8ebaede827c024",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 16",
+            "content": "/library-assets/textures-kit/texture-16.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-17",
+      "name": "Texture 17",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "ce30475816f91fac",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 17",
+            "content": "/library-assets/textures-kit/texture-17.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-18",
+      "name": "Texture 18",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "44acee0d61df11b1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 18",
+            "content": "/library-assets/textures-kit/texture-18.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-19",
+      "name": "Texture 19",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "fc12fa1c340e8c42",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 19",
+            "content": "/library-assets/textures-kit/texture-19.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-20",
+      "name": "Texture 20",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "545e5a32dc7587b6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 20",
+            "content": "/library-assets/textures-kit/texture-20.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-21",
+      "name": "Texture 21",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "3e17078838676ae3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 21",
+            "content": "/library-assets/textures-kit/texture-21.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-22",
+      "name": "Texture 22",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "3e07ff7f9556f6ea",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 22",
+            "content": "/library-assets/textures-kit/texture-22.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-23",
+      "name": "Texture 23",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "25f78c53a09385ae",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 23",
+            "content": "/library-assets/textures-kit/texture-23.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-24",
+      "name": "Texture 24",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "b07cd9f077cc1d81",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 24",
+            "content": "/library-assets/textures-kit/texture-24.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-25",
+      "name": "Texture 25",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "320335b6b72929e0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 25",
+            "content": "/library-assets/textures-kit/texture-25.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-26",
+      "name": "Texture 26",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "5c15086a454c2023",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 26",
+            "content": "/library-assets/textures-kit/texture-26.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-27",
+      "name": "Texture 27",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "7ec8c404daf50e32",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 27",
+            "content": "/library-assets/textures-kit/texture-27.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-28",
+      "name": "Texture 28",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "099c46cefaabf258",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 28",
+            "content": "/library-assets/textures-kit/texture-28.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-29",
+      "name": "Texture 29",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "c2a27d69e174e320",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 29",
+            "content": "/library-assets/textures-kit/texture-29.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-30",
+      "name": "Texture 30",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "e03c84994e996876",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 30",
+            "content": "/library-assets/textures-kit/texture-30.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-31",
+      "name": "Texture 31",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "870919fe5351193e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 31",
+            "content": "/library-assets/textures-kit/texture-31.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-32",
+      "name": "Texture 32",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "03152dc7f00c1236",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 32",
+            "content": "/library-assets/textures-kit/texture-32.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-33",
+      "name": "Texture 33",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "bdf2079dd0dd0362",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 33",
+            "content": "/library-assets/textures-kit/texture-33.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-34",
+      "name": "Texture 34",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "11343f6bc3db77a1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 34",
+            "content": "/library-assets/textures-kit/texture-34.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-35",
+      "name": "Texture 35",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "54c61fde7671098c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 35",
+            "content": "/library-assets/textures-kit/texture-35.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-36",
+      "name": "Texture 36",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "f21f4d844bbc2749",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 36",
+            "content": "/library-assets/textures-kit/texture-36.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-37",
+      "name": "Texture 37",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "c18971071b9b519c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 37",
+            "content": "/library-assets/textures-kit/texture-37.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-38",
+      "name": "Texture 38",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "4e063fca272e5227",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 38",
+            "content": "/library-assets/textures-kit/texture-38.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-39",
+      "name": "Texture 39",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "1027f17d7630eba1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 39",
+            "content": "/library-assets/textures-kit/texture-39.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "textures-kit/textures/texture-40",
+      "name": "Texture 40",
+      "category": "textures",
+      "tags": ["texture", "background", "textures kit", "bebbble"],
+      "signature": "4dcf940ea9249613",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture 40",
+            "content": "/library-assets/textures-kit/texture-40.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
