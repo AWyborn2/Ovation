@@ -242,11 +242,16 @@ describe("resolveTeamName", () => {
     await setTeamNameOverride(tenantB, OPP, null, "Other tenant");
     await setTeamNameOverride(tenantA, OPP, "A Grade", "First grade");
     await setTeamNameOverride(tenantA, OPP, "A Grade", "Updated grade");
-    await Promise.all(
-      ["Blues", "SJ Blues", "Singleton"].map((name) =>
-        setTeamNameOverride(tenantA, OPP, null, name),
-      ),
-    );
+    // The race needs both saves to insert, so each round starts with no
+    // all-grades row; one round alone only hits it occasionally.
+    for (let round = 0; round < 20; round++) {
+      await setTeamNameOverride(tenantA, OPP, null, "");
+      await Promise.all(
+        ["Blues", "SJ Blues", "Singleton"].map((name) =>
+          setTeamNameOverride(tenantA, OPP, null, name),
+        ),
+      );
+    }
     const rows = await db
       .select()
       .from(teamNameOverridesTable)
