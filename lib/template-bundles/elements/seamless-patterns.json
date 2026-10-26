@@ -1,0 +1,1885 @@
+{
+  "look": "seamless-patterns",
+  "elements": [
+    {
+      "slug": "seamless-patterns/textures/charcoal-smudge-light",
+      "name": "Charcoal smudge (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "charcoal smudge", "light", "simon fairhurst"],
+      "signature": "dae1eaebdd2c0106",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Charcoal smudge (light)",
+            "content": "/library-assets/seamless-patterns/charcoal-smudge-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/charcoal-smudge-dark",
+      "name": "Charcoal smudge (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "charcoal smudge", "dark", "simon fairhurst"],
+      "signature": "b5f523d7233d15e4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Charcoal smudge (dark)",
+            "content": "/library-assets/seamless-patterns/charcoal-smudge-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/confetti-shapes-light",
+      "name": "Confetti shapes (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "confetti shapes", "light", "simon fairhurst"],
+      "signature": "24b0adbbd884d972",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Confetti shapes (light)",
+            "content": "/library-assets/seamless-patterns/confetti-shapes-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/confetti-shapes-dark",
+      "name": "Confetti shapes (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "confetti shapes", "dark", "simon fairhurst"],
+      "signature": "923f7b20a8efcb53",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Confetti shapes (dark)",
+            "content": "/library-assets/seamless-patterns/confetti-shapes-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/cotton-light",
+      "name": "Cotton (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "cotton", "light", "simon fairhurst"],
+      "signature": "417b9876c3ae1aa1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cotton (light)",
+            "content": "/library-assets/seamless-patterns/cotton-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/cotton-dark",
+      "name": "Cotton (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "cotton", "dark", "simon fairhurst"],
+      "signature": "de49605122be9738",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cotton (dark)",
+            "content": "/library-assets/seamless-patterns/cotton-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/cubes-light",
+      "name": "Cubes (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "cubes", "light", "simon fairhurst"],
+      "signature": "6eef9aec9952bb9f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cubes (light)",
+            "content": "/library-assets/seamless-patterns/cubes-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/cubes-dark",
+      "name": "Cubes (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "cubes", "dark", "simon fairhurst"],
+      "signature": "a896c65a22e195ed",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cubes (dark)",
+            "content": "/library-assets/seamless-patterns/cubes-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/denim-light",
+      "name": "Denim (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "denim", "light", "simon fairhurst"],
+      "signature": "2bfcd53936ba7651",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Denim (light)",
+            "content": "/library-assets/seamless-patterns/denim-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/denim-dark",
+      "name": "Denim (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "denim", "dark", "simon fairhurst"],
+      "signature": "5057c687f38eebec",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Denim (dark)",
+            "content": "/library-assets/seamless-patterns/denim-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/diagonal-lines-light",
+      "name": "Diagonal lines (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "diagonal lines", "light", "simon fairhurst"],
+      "signature": "f1fd63eaa85a92da",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Diagonal lines (light)",
+            "content": "/library-assets/seamless-patterns/diagonal-lines-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/diagonal-lines-dark",
+      "name": "Diagonal lines (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "diagonal lines", "dark", "simon fairhurst"],
+      "signature": "48407964bafdbf54",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Diagonal lines (dark)",
+            "content": "/library-assets/seamless-patterns/diagonal-lines-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/dots-light",
+      "name": "Dots (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "dots", "light", "simon fairhurst"],
+      "signature": "2f7de7dbcea8e6b6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Dots (light)",
+            "content": "/library-assets/seamless-patterns/dots-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/dots-dark",
+      "name": "Dots (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "dots", "dark", "simon fairhurst"],
+      "signature": "43a788f2edffdd4e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Dots (dark)",
+            "content": "/library-assets/seamless-patterns/dots-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/dust-light",
+      "name": "Dust (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "dust", "light", "simon fairhurst"],
+      "signature": "04d8777d188b4f0e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Dust (light)",
+            "content": "/library-assets/seamless-patterns/dust-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/dust-dark",
+      "name": "Dust (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "dust", "dark", "simon fairhurst"],
+      "signature": "05704b793b9e36ad",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Dust (dark)",
+            "content": "/library-assets/seamless-patterns/dust-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/grunge-light",
+      "name": "Grunge (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "grunge", "light", "simon fairhurst"],
+      "signature": "2fbeba499ed31f81",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Grunge (light)",
+            "content": "/library-assets/seamless-patterns/grunge-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/grunge-dark",
+      "name": "Grunge (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "grunge", "dark", "simon fairhurst"],
+      "signature": "a320a306bfd16e1f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Grunge (dark)",
+            "content": "/library-assets/seamless-patterns/grunge-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/lines-light",
+      "name": "Lines (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "lines", "light", "simon fairhurst"],
+      "signature": "316b0f82ee328cdd",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Lines (light)",
+            "content": "/library-assets/seamless-patterns/lines-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/lines-dark",
+      "name": "Lines (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "lines", "dark", "simon fairhurst"],
+      "signature": "d7a1d59aacc3b459",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Lines (dark)",
+            "content": "/library-assets/seamless-patterns/lines-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/mathematics-light",
+      "name": "Mathematics (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "mathematics", "light", "simon fairhurst"],
+      "signature": "0e546073e2207521",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Mathematics (light)",
+            "content": "/library-assets/seamless-patterns/mathematics-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/mathematics-dark",
+      "name": "Mathematics (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "mathematics", "dark", "simon fairhurst"],
+      "signature": "5631d28c7320518e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Mathematics (dark)",
+            "content": "/library-assets/seamless-patterns/mathematics-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/mosaic-light",
+      "name": "Mosaic (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "mosaic", "light", "simon fairhurst"],
+      "signature": "6981fa72ed1ba16b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Mosaic (light)",
+            "content": "/library-assets/seamless-patterns/mosaic-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/mosaic-dark",
+      "name": "Mosaic (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "mosaic", "dark", "simon fairhurst"],
+      "signature": "5c8e23234c3c674a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Mosaic (dark)",
+            "content": "/library-assets/seamless-patterns/mosaic-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/paper-light",
+      "name": "Paper (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "paper", "light", "simon fairhurst"],
+      "signature": "5b5159ef88b0ce98",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Paper (light)",
+            "content": "/library-assets/seamless-patterns/paper-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/paper-dark",
+      "name": "Paper (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "paper", "dark", "simon fairhurst"],
+      "signature": "1a34f6c244c4fb12",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Paper (dark)",
+            "content": "/library-assets/seamless-patterns/paper-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/paper-fibers-light",
+      "name": "Paper fibers (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "paper fibers", "light", "simon fairhurst"],
+      "signature": "cb170b0260818dfb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Paper fibers (light)",
+            "content": "/library-assets/seamless-patterns/paper-fibers-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/paper-fibers-dark",
+      "name": "Paper fibers (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "paper fibers", "dark", "simon fairhurst"],
+      "signature": "c339993379d15991",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Paper fibers (dark)",
+            "content": "/library-assets/seamless-patterns/paper-fibers-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/pinstripe-light",
+      "name": "Pinstripe (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "pinstripe", "light", "simon fairhurst"],
+      "signature": "dfb93668bcd75396",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Pinstripe (light)",
+            "content": "/library-assets/seamless-patterns/pinstripe-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/pinstripe-dark",
+      "name": "Pinstripe (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "pinstripe", "dark", "simon fairhurst"],
+      "signature": "21a09188ee2df8ab",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Pinstripe (dark)",
+            "content": "/library-assets/seamless-patterns/pinstripe-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/snow-light",
+      "name": "Snow (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "snow", "light", "simon fairhurst"],
+      "signature": "bec30ed797428fcf",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Snow (light)",
+            "content": "/library-assets/seamless-patterns/snow-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/snow-dark",
+      "name": "Snow (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "snow", "dark", "simon fairhurst"],
+      "signature": "aac665b9c36873c2",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Snow (dark)",
+            "content": "/library-assets/seamless-patterns/snow-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/speckles-light",
+      "name": "Speckles (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "speckles", "light", "simon fairhurst"],
+      "signature": "ccd85d25a95b085d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Speckles (light)",
+            "content": "/library-assets/seamless-patterns/speckles-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/speckles-dark",
+      "name": "Speckles (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "speckles", "dark", "simon fairhurst"],
+      "signature": "b67d9bd5df8d1cb0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Speckles (dark)",
+            "content": "/library-assets/seamless-patterns/speckles-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/squares-light",
+      "name": "Squares (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "squares", "light", "simon fairhurst"],
+      "signature": "73a7a32984fcce92",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Squares (light)",
+            "content": "/library-assets/seamless-patterns/squares-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/squares-dark",
+      "name": "Squares (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "squares", "dark", "simon fairhurst"],
+      "signature": "5cd9281e1e0a4f7d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Squares (dark)",
+            "content": "/library-assets/seamless-patterns/squares-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/stars-light",
+      "name": "Stars (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "stars", "light", "simon fairhurst"],
+      "signature": "691dfad06caa6b17",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Stars (light)",
+            "content": "/library-assets/seamless-patterns/stars-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/stars-dark",
+      "name": "Stars (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "stars", "dark", "simon fairhurst"],
+      "signature": "57f17fed4aad16d8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Stars (dark)",
+            "content": "/library-assets/seamless-patterns/stars-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/wood-light",
+      "name": "Wood (light)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "wood", "light", "simon fairhurst"],
+      "signature": "92070667a67b95d7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Wood (light)",
+            "content": "/library-assets/seamless-patterns/wood-light.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "multiply"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "seamless-patterns/textures/wood-dark",
+      "name": "Wood (dark)",
+      "category": "textures",
+      "tags": ["pattern", "seamless", "background", "wood", "dark", "simon fairhurst"],
+      "signature": "12fe0f339cd502d5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Wood (dark)",
+            "content": "/library-assets/seamless-patterns/wood-dark.webp",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "blend": "screen"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

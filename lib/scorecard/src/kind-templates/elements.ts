@@ -21,6 +21,7 @@ export const ELEMENT_CATEGORIES = [
   "crest-frames",
   "sponsor-strips",
   "data-blocks",
+  "textures",
 ] as const;
 export type ElementCategory = (typeof ELEMENT_CATEGORIES)[number];
 
@@ -29,11 +30,22 @@ export const ELEMENT_CATEGORY_LABELS: Record<ElementCategory, string> = {
   bands: "Bands and slashes",
   badges: "Badges and chips",
   rules: "Rules and dividers",
-  glows: "Glows and textures",
+  glows: "Glows",
   "crest-frames": "Crest frames",
   "sponsor-strips": "Sponsor strips",
   "data-blocks": "Data blocks",
+  textures: "Textures and patterns",
 };
+
+/**
+ * Images shipped with the web app for the element library (the textures and
+ * patterns kits): `/library-assets/<kit>/<name>.webp`. Like library assets they
+ * belong to no club, so a library document may use them.
+ */
+export const BUNDLED_IMAGE_PREFIX = "/library-assets/";
+const BUNDLED_IMAGE = /^\/library-assets\/[a-z0-9-]+\/[a-z0-9-]+\.(webp|png|jpg)$/;
+export const isBundledImage = (url: unknown): boolean =>
+  typeof url === "string" && BUNDLED_IMAGE.test(url);
 
 export const isElementCategory = (v: unknown): v is ElementCategory =>
   (ELEMENT_CATEGORIES as readonly unknown[]).includes(v);

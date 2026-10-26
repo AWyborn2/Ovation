@@ -33,6 +33,17 @@ describe("library asset policy", () => {
     expect(libraryAssetPolicyErrors(doc)).toEqual([]);
   });
 
+  it("accepts the element library's bundled textures, and nothing else under that folder", () => {
+    const image = (content: string) => ({
+      layers: [{ id: "a", kind: "image", content, geometry: {} }],
+    });
+    expect(libraryAssetPolicyErrors(image("/library-assets/textures-kit/texture-01.webp"))).toEqual(
+      [],
+    );
+    expect(libraryAssetPolicyErrors(image("/library-assets/../uploads/x.webp"))).toHaveLength(1);
+    expect(libraryAssetPolicyErrors(image("/library-assets/kit/x.gif"))).toHaveLength(1);
+  });
+
   it("refuses a club upload, any other address and CSS url()s", () => {
     const doc = {
       formatVersion: 2,

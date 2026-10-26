@@ -13,6 +13,7 @@
 import {
   documentPageLayers,
   flattenLayers,
+  isBundledImage,
   isDocumentV2,
   layerDropped,
   LOGO_ROW_FIELDS,
@@ -647,8 +648,9 @@ function layerInner(
           : "contain";
         return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:${objectFit};display:block" />`;
       }
+      // A library texture or pattern fills its box; another image keeps its shape.
       return layer.content
-        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : ""}" />`
+        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius || isBundledImage(layer.content) ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : ""}" />`
         : "";
     }
     case "medal":

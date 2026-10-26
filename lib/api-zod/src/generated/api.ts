@@ -11298,7 +11298,7 @@ export const listLibraryElementsQueryQMax = 60;
 
 export const ListLibraryElementsQueryParams = zod.object({
   "q": zod.coerce.string().max(listLibraryElementsQueryQMax).optional().describe('Words that must each appear in the element\'s name or tags.'),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).optional(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).optional(),
   "look": zod.coerce.string().optional().describe('A look\'s slug.'),
   "mine": zod.coerce.boolean().optional().describe('Only the elements this club saved, listed or not.'),
   "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
@@ -11309,7 +11309,7 @@ export const ListLibraryElementsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -11343,7 +11343,7 @@ export const saveLibraryElementBodyTagsMax = 12;
 
 export const SaveLibraryElementBody = zod.object({
   "name": zod.string().min(1).max(saveLibraryElementBodyNameMax),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string().min(1).max(saveLibraryElementBodyTagsItemMax)).max(saveLibraryElementBodyTagsMax).optional(),
   "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.')
 })
@@ -11361,7 +11361,7 @@ export const GetLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -11391,7 +11391,7 @@ export const UnlistLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -16929,7 +16929,7 @@ export const ListConsoleLibraryElementsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -16992,7 +16992,7 @@ export const UnlistConsoleLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -17025,7 +17025,7 @@ export const ListConsoleLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -17057,7 +17057,7 @@ export const DismissConsoleLibraryElementReportsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
