@@ -11,6 +11,7 @@ import {
   db,
   centuriesTable,
   fiveWicketHaulsTable,
+  hatTricksTable,
   clubRecordsTable,
   awardsTable,
   awardWinnersTable,
@@ -25,55 +26,166 @@ import type { DataSource } from "../tenant";
 import { buildClubStats, clubRecordLeaders, clubRecords, loadClubOverlay } from "../club-overlay";
 import { nativeRecordLeaders, nativeSeasonSpans } from "../records-native";
 import { rankLeaders } from "../records-analytics";
+import { centralHonourList, centralOpponentsByMatch } from "../honours-lists";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { seasonLabel } from "./premierships";
 import { gradeRank } from "./shared";
 import { type BoardEntry, type HonourBoardOut } from "./types";
 
-export async function buildCenturies(tenantId: number): Promise<HonourBoardOut | null> {
-  const rows = await db
-    .select()
-    .from(centuriesTable)
-    .where(eq(centuriesTable.tenantId, tenantId))
-    .orderBy(desc(centuriesTable.season), asc(centuriesTable.batsman));
-  if (rows.length === 0) return null;
-  return {
+/** One row of an achievement list (centuries, five-fors, hat-tricks). */
+export interface AchievementRow {
+  name: string;
+  playerId: number | null;
+  grade: string;
+  /** "134*", "6/23". */
+  figure: string;
+  /** "YYYY/YY" (may be empty). */
+  season: string;
+  opponent: string | null;
+}
+
+const ACHIEVEMENT_BOARDS = {
+  centuries: {
     id: "centuries",
-    category: "centuries",
-    layout: "list",
     title: "Centuries",
     subtitle: "Hundreds for the club",
-    entries: rows.map((r) => ({
-      season: r.season ?? "",
-      primaryText: r.batsman,
-      detail: r.score ?? null,
-      playerId: r.playerId ?? null,
-      meta: { grade: r.grade },
+    figureLabel: "Score",
+    tally: ["century", "centuries"],
+  },
+  five_wicket_hauls: {
+    id: "five_wicket_hauls",
+    title: "Five-Wicket Hauls",
+    subtitle: "Five or more in an innings",
+    figureLabel: "Figures",
+    tally: ["five-wicket haul", "five-wicket hauls"],
+  },
+  hat_tricks: {
+    id: "hat_tricks",
+    title: "Hat-tricks",
+    subtitle: "Three wickets in three balls",
+    figureLabel: "Figures",
+    tally: ["hat-trick", "hat-tricks"],
+  },
+} as const;
+export type AchievementBoardId = keyof typeof ACHIEVEMENT_BOARDS;
+
+/** "Mandurah" from "v Mandurah" or "Mandurah"; null when blank. */
+function opponentName(raw: string | null | undefined): string | null {
+  const t = (raw ?? "").trim().replace(/^v\.?\s+/i, "");
+  return t || null;
+}
+
+/**
+ * An achievement list board (kiosk redesign C2): season, player, figure, grade,
+ * opponent, newest season first. Entries keep a "134* · A Grade" style detail
+ * for list renderers and composite columns.
+ */
+export function achievementBoard(
+  id: AchievementBoardId,
+  rows: AchievementRow[],
+): HonourBoardOut | null {
+  const def = ACHIEVEMENT_BOARDS[id];
+  const named = rows.filter((r) => r.name.trim() !== "");
+  if (named.length === 0) return null;
+  const sorted = [...named].sort(
+    (a, b) =>
+      b.season.localeCompare(a.season) ||
+      gradeRank(a.grade) - gradeRank(b.grade) ||
+      a.name.localeCompare(b.name),
+  );
+  return {
+    id: def.id,
+    category: def.id,
+    layout: "achievements",
+    title: def.title,
+    subtitle: def.subtitle,
+    figureLabel: def.figureLabel,
+    tallyLabel: `${sorted.length} ${def.tally[sorted.length === 1 ? 0 : 1]}`,
+    entries: sorted.map((r) => ({
+      season: r.season,
+      primaryText: r.name.trim(),
+      detail: r.figure || null,
+      playerId: r.playerId,
+      meta: { grade: r.grade, figure: r.figure || null, opponent: opponentName(r.opponent) },
     })),
   };
 }
 
-export async function buildFiveWicketHauls(tenantId: number): Promise<HonourBoardOut | null> {
-  const rows = await db
-    .select()
-    .from(fiveWicketHaulsTable)
-    .where(eq(fiveWicketHaulsTable.tenantId, tenantId))
-    .orderBy(desc(fiveWicketHaulsTable.season), asc(fiveWicketHaulsTable.bowler));
-  if (rows.length === 0) return null;
-  return {
-    id: "five_wicket_hauls",
-    category: "five_wicket_hauls",
-    layout: "list",
-    title: "Five-Wicket Hauls",
-    subtitle: "Five or more in an innings",
-    entries: rows.map((r) => ({
+/**
+ * Centuries or five-wicket hauls. A central tenant shows the list its public
+ * Centuries / Five-Wicket Hauls page shows (derived from scorecards, with the
+ * club overlay), each with the opponent from its match; the native tenant
+ * shows its curated list.
+ */
+export async function buildHonourList(
+  kind: "century" | "fiveFor",
+  source: DataSource,
+): Promise<HonourBoardOut | null> {
+  const id: AchievementBoardId = kind === "century" ? "centuries" : "five_wicket_hauls";
+  if (source.kind === "central") {
+    const [rows, opponents] = await Promise.all([
+      centralHonourList(kind, source.tenantId, source.clubId),
+      centralOpponentsByMatch(source.clubId),
+    ]);
+    return achievementBoard(
+      id,
+      rows.map((r) => ({
+        name: r.name,
+        playerId: r.playerId,
+        grade: r.grade,
+        figure: r.detail,
+        season: r.season,
+        opponent: r.matchId != null ? (opponents.get(r.matchId) ?? null) : null,
+      })),
+    );
+  }
+  const rows =
+    kind === "century"
+      ? await db
+          .select({
+            name: centuriesTable.batsman,
+            playerId: centuriesTable.playerId,
+            grade: centuriesTable.grade,
+            figure: centuriesTable.score,
+            season: centuriesTable.season,
+          })
+          .from(centuriesTable)
+          .where(eq(centuriesTable.tenantId, source.tenantId))
+      : await db
+          .select({
+            name: fiveWicketHaulsTable.bowler,
+            playerId: fiveWicketHaulsTable.playerId,
+            grade: fiveWicketHaulsTable.grade,
+            figure: fiveWicketHaulsTable.figures,
+            season: fiveWicketHaulsTable.season,
+          })
+          .from(fiveWicketHaulsTable)
+          .where(eq(fiveWicketHaulsTable.tenantId, source.tenantId));
+  return achievementBoard(
+    id,
+    rows.map((r) => ({
+      ...r,
+      figure: r.figure ?? "",
       season: r.season ?? "",
-      primaryText: r.bowler,
-      detail: r.figures ?? null,
-      playerId: r.playerId ?? null,
-      meta: { grade: r.grade },
+      opponent: null,
     })),
-  };
+  );
+}
+
+/** The club's curated hat-tricks. */
+export async function buildHatTricks(tenantId: number): Promise<HonourBoardOut | null> {
+  const rows = await db.select().from(hatTricksTable).where(eq(hatTricksTable.tenantId, tenantId));
+  return achievementBoard(
+    "hat_tricks",
+    rows.map((r) => ({
+      name: r.bowler,
+      playerId: r.playerId,
+      grade: r.grade,
+      figure: r.figures ?? "",
+      season: r.season ?? "",
+      opponent: r.opponent,
+    })),
+  );
 }
 
 export async function buildClubRecords(tenantId: number): Promise<HonourBoardOut | null> {

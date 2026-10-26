@@ -470,6 +470,13 @@
       "when": 1792986773875,
       "tag": "0066_library_element_textures",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792992218642,
+      "tag": "0067_hat_tricks",
+      "breakpoints": true
     }
   ]
 }

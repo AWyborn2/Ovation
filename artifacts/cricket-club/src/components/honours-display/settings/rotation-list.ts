@@ -30,6 +30,7 @@ export const BOARD_LAYOUT_LABEL: Readonly<Record<DisplayBoardLayout, string>> = 
   grid: "Season grid",
   lifeMembers: "Life members",
   leaderboard: "Leaderboard",
+  achievements: "Achievement list",
 };
 
 /** The list with the item at `from` moved to index `to` (clamped). */

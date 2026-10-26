@@ -29,6 +29,8 @@ export interface BoardEntryMeta {
   // player's seasons for the club ("2009–25").
   figure?: string | null;
   seasonSpan?: string | null;
+  // Achievement lists: the side it came against ("Mandurah").
+  opponent?: string | null;
 }
 
 // Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
@@ -76,8 +78,17 @@ export interface BoardEntry {
 // "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
 // "lifeMembers" is the two-column stat-tile + bio card layout.
 // "leaderboard" is a ranked table: rank, player, figure, seasons.
+// "achievements" is a dated list: season, player, figure, grade, opponent.
+// "achievements" is a dated list: season, player, figure, grade, opponent.
 export type BoardLayout =
-  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers" | "leaderboard";
+  | "premiership"
+  | "teamOfDecade"
+  | "list"
+  | "columns"
+  | "grid"
+  | "lifeMembers"
+  | "leaderboard"
+  | "achievements";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 
@@ -141,6 +152,8 @@ export interface HonourBoardOut {
   footnote?: string | null;
   // Table layouts: the heading over the entries' meta.figure ("Games").
   figureLabel?: string | null;
+  // Achievement lists: the whole list's tally ("47 centuries").
+  tallyLabel?: string | null;
   // Stamped onto every board by assembleBoards before serialization.
   display?: BoardDisplayOut;
 }

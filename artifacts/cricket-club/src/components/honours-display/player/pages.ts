@@ -11,6 +11,7 @@ function itemsPerRow(board: DisplayBoard, columnsPerScreen: number): number {
   switch (board.layout) {
     case "list":
     case "leaderboard":
+    case "achievements":
     case "premiership":
     case "lifeMembers":
       return Math.max(1, columnsPerScreen);

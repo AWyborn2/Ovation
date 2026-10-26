@@ -65,6 +65,7 @@ function BoardHead({
         <div className="hb-club">{brand.name}</div>
         <h2 className="hb-title">{title}</h2>
         {subtitle ? <p className="hb-sub">{subtitle}</p> : null}
+        {board.tallyLabel ? <p className="hb-tally">{board.tallyLabel}</p> : null}
       </div>
       <KioskPageDots />
     </header>
@@ -300,6 +301,73 @@ export function LeaderboardBoard({ board, brand, kiosk, cfg, entries }: LayoutPr
 
   return (
     <div className="hb-board hb-list hb-leaderboard">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        {chunks.length > 1 ? (
+          <div
+            className="hb-list-cols"
+            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          >
+            {chunks.map((ch, ci) => (
+              <div className="hb-list-col" key={ci}>
+                {renderTable(ch)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderTable(rows)
+        )}
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Achievement list layout — season · player · figure · grade · opponent, with
+// the whole list's tally in the header (kiosk redesign C2).
+// ---------------------------------------------------------------------------
+
+export function AchievementsBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
+  const rows = entries ?? board.entries;
+  const colCount = Math.min(3, Math.max(1, board.display?.columns ?? 1));
+  const per = colCount >= 2 && rows.length > colCount ? Math.ceil(rows.length / colCount) : 0;
+  const chunks = per
+    ? Array.from({ length: colCount }, (_, c) => rows.slice(c * per, (c + 1) * per))
+    : [rows];
+
+  const renderTable = (slice: BoardEntry[]) => (
+    <table className="hb-table hb-achievement-table">
+      <thead>
+        <tr>
+          <th className="hb-lead">Season</th>
+          <th className="hb-name">Player</th>
+          <th className="hb-figure">{board.figureLabel ?? ""}</th>
+          <th className="hb-grade">Grade</th>
+          <th className="hb-opponent">Opponent</th>
+        </tr>
+      </thead>
+      <tbody>
+        {slice.map((e, i) => (
+          <tr className="row" key={i}>
+            <td className="hb-lead">
+              <span className="hb-season">{e.season || "—"}</span>
+            </td>
+            <td className="hb-name">
+              <NameLink playerId={e.playerId} kiosk={kiosk}>
+                {e.primaryText}
+              </NameLink>
+            </td>
+            <td className="hb-figure">{e.meta?.figure ?? e.detail ?? ""}</td>
+            <td className="hb-grade">{e.meta?.grade ? gradeBadge(e.meta.grade) : ""}</td>
+            <td className="hb-opponent">{e.meta?.opponent ? `v ${e.meta.opponent}` : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="hb-board hb-list hb-achievements">
       <BoardHead board={board} brand={brand} cfg={cfg} />
       <BoardBody>
         {chunks.length > 1 ? (

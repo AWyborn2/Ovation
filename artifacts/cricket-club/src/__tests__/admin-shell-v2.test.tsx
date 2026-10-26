@@ -105,6 +105,7 @@ describe("admin shell v2", () => {
       "team-of-decade",
       "caps",
       "life-members",
+      "hat-tricks",
       "junior-premierships",
     ]);
   });

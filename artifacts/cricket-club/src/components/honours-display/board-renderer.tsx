@@ -11,6 +11,7 @@ import {
   GridBoard,
   LifeMembersBoard,
   LeaderboardBoard,
+  AchievementsBoard,
 } from "./templates";
 
 interface BoardRendererProps {
@@ -83,8 +84,8 @@ export function BoardRenderer({ board, brand, kiosk, cfg, skins }: BoardRenderer
     return wrap(<LifeMembersBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} />);
   }
 
-  // List and leaderboard layouts: paginate ~80 rows in interactive mode; show
-  // all in kiosk.
+  // List-like layouts (lists, leaderboards, achievement lists): paginate ~80
+  // rows in interactive mode; show all in kiosk.
   const total = board.entries.length;
   const pageCount = Math.max(1, Math.ceil(total / LIST_PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -93,12 +94,13 @@ export function BoardRenderer({ board, brand, kiosk, cfg, skins }: BoardRenderer
       ? board.entries
       : board.entries.slice(safePage * LIST_PAGE_SIZE, (safePage + 1) * LIST_PAGE_SIZE);
 
-  const list =
-    board.layout === "leaderboard" ? (
-      <LeaderboardBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} entries={entries} />
-    ) : (
-      <ListBoard board={board} brand={brand} kiosk={kiosk} cfg={cfg} entries={entries} />
-    );
+  const ListLayout =
+    board.layout === "leaderboard"
+      ? LeaderboardBoard
+      : board.layout === "achievements"
+        ? AchievementsBoard
+        : ListBoard;
+  const list = <ListLayout board={board} brand={brand} kiosk={kiosk} cfg={cfg} entries={entries} />;
 
   if (kiosk || pageCount <= 1) return wrap(list);
 

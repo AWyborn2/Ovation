@@ -19,6 +19,7 @@ import { TEMPLATES, isBuiltinSkin } from "./types";
 import { CLIENT_DEFAULT_DISPLAY } from "./use-approaching-board";
 import type { SkinOption } from "./editors/constants";
 import {
+  isListLikeLayout,
   resolveClubLook,
   resolveKioskDisplay,
   type KioskLookSource,
@@ -347,10 +348,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   // List-layout boards eligible to be a composite column source (no composites,
   // no approaching — the server refuses both as column refs).
   const sourceBoards = boards.filter(
-    (b) =>
-      (b.layout === "list" || b.layout === "leaderboard") &&
-      !b.id.startsWith("composite:") &&
-      b.id !== "approaching",
+    (b) => isListLikeLayout(b.layout) && !b.id.startsWith("composite:") && b.id !== "approaching",
   );
 
   const setConfig = (id: string, patch: Partial<BoardDisplayConfig>) =>

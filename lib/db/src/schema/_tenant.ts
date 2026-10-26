@@ -25,7 +25,7 @@ import { tenantsTable } from "./tenants";
  *   team_of_decade_boards, team_of_decade_members, premierships,
  *   premiership_players, cap_register, club_roles, non_player_people,
  *   partnership_records, partnerships_50plus, centuries, club_records,
- *   five_wicket_hauls, honour_board_records, tour_content, nav_items,
+ *   five_wicket_hauls, hat_tricks, honour_board_records, tour_content, nav_items,
  *   player_images, sponsors, card_themes, junior_participants, junior_matches,
  *   junior_premierships, junior_office_bearers.
  *

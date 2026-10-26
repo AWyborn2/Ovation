@@ -13,6 +13,7 @@ const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   premiership: "Plaques across",
   teamOfDecade: "Columns",
   leaderboard: "Columns",
+  achievements: "Columns",
 };
 
 /**

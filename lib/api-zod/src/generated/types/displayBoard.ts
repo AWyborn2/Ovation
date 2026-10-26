@@ -16,7 +16,7 @@ export interface DisplayBoard {
   id: string;
   /** Free-text board category used for grouping/labelling. */
   category: string;
-  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. */
+  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. */
   layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;
@@ -31,5 +31,7 @@ export interface DisplayBoard {
   footnote?: string | null;
   /** Column heading for the entries' meta.figure in table layouts (e.g. "Games", "Runs"). */
   figureLabel?: string | null;
+  /** Achievement lists: the header's tally of the whole list, e.g. "47 centuries" (pages of the board on the TV keep the full count). */
+  tallyLabel?: string | null;
   display: BoardDisplay;
 }
