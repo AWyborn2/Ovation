@@ -71,7 +71,9 @@ export interface RowBox {
 /**
  * How many whole rows fit in `height`, from the rendered items. Items whose
  * tops are within a pixel are one row (plaques side by side); a row fits when
- * its lowest item does. Always at least 1, so a giant row still gets a page.
+ * its lowest item does. Always at least 1, so a giant row still gets a page
+ * of its own; the player then scales that page down to fit (`fitToBody`)
+ * rather than clipping it.
  */
 export function rowsThatFit(items: RowBox[], height: number): number {
   const rows: RowBox[] = [];

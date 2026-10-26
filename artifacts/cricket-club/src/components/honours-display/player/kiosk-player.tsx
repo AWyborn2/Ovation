@@ -7,7 +7,7 @@ import { AdSlide, SponsorSlide, SponsorSlideSingle } from "../sponsor-ads";
 import type { BoardDisplayConfig, DisplayBoard, HonourBrand, HonourSkin } from "../types";
 import { boardColumnHeadings, columnGroupLabel, sliceBoardColumns } from "./column-groups";
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
-import { creditsDurationMs, findFitScale } from "./movement";
+import { creditsDurationMs, fitToBody, overflowsBody } from "./movement";
 import {
   pickTransition,
   runTransition,
@@ -191,13 +191,19 @@ export function KioskPlayer(props: KioskPlayerProps) {
       return els && els.length ? els[els.length - 1]! : null;
     };
 
-    /** Turn to the next page: only the board body moves. */
-    const turnPage = async (s: Omit<Screen, "id">, signal: AbortSignal) => {
+    /** Turn to the next page: only the board body moves. `ready` runs on the
+     * incoming page before it moves (to fit it). */
+    const turnPage = async (
+      s: Omit<Screen, "id">,
+      signal: AbortSignal,
+      ready?: (screen: Screen) => void,
+    ) => {
       const prevEl = layers0();
       // Its header and footer sit under the incoming page's identical ones; hide
       // them so the old page dots don't show through while the page turns.
       prevEl?.classList.add("hb-kp-under");
       const screen = await commit({ ...s, paging: true });
+      ready?.(screen);
       const el = layerEl(screen.id);
       const body = el?.querySelector<HTMLElement>(".hb-body") ?? null;
       await runTransition({
@@ -215,6 +221,13 @@ export function KioskPlayer(props: KioskPlayerProps) {
     const bodyOf = (s: Screen) => layerEl(s.id)?.querySelector<HTMLElement>(".hb-body") ?? null;
     const innerOf = (s: Screen) =>
       layerEl(s.id)?.querySelector<HTMLElement>(".hb-body-inner") ?? null;
+    /** A page still taller than the body (one row of plaques taller than the
+     * screen) is scaled down to fit rather than clipped. */
+    const fitPage = (s: Screen, start: number) => {
+      const body = bodyOf(s);
+      const inner = innerOf(s);
+      if (body && inner && overflowsBody(body)) fitToBody({ body, inner }, start);
+    };
 
     async function playBoard(
       item: BoardItem,
@@ -247,11 +260,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           const body = bodyOf(screen);
           const inner = innerOf(screen);
           if (body && inner) {
-            const { scale, readable } = findFitScale((sc) => {
-              inner.style.setProperty("--hb-kp-scale", String(sc));
-              return body.scrollHeight <= body.clientHeight + 1;
-            }, d.textScale);
-            inner.style.setProperty("--hb-kp-scale", String(scale));
+            const { scale, readable } = fitToBody({ body, inner }, d.textScale);
             latest.current.onFit?.(item.board.id, scale, readable);
           }
           await sleep((d.pageSecs + d.hold) * 1000, signal);
@@ -297,12 +306,15 @@ export function KioskPlayer(props: KioskPlayerProps) {
         if (ranges.length > 1) {
           // Swap the full board for page 1 without a transition: it shows the
           // same top rows, minus the part-row the page leaves off.
-          await commit({
+          const first = await commit({
             ...base,
             board: sliceBoardRows(board, 0, ranges[0]![1], d.columnsPerScreen),
             page: { index: 0, count: ranges.length },
           });
           setLayers((prev) => prev.slice(-1));
+          fitPage(first, d.textScale);
+        } else {
+          fitPage(screen, d.textScale);
         }
         for (let p = 0; p < ranges.length; p++) {
           if (p > 0) {
@@ -314,6 +326,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
                 page: { index: p, count: ranges.length },
               },
               signal,
+              (s) => fitPage(s, d.textScale),
             );
           }
           await sleep(d.pageSecs * 1000, signal);

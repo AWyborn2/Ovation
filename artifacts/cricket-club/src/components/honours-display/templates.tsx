@@ -130,7 +130,11 @@ export function PremiershipBoard({ board, brand, kiosk, cfg }: LayoutProps) {
               </div>
 
               {e.squad && e.squad.length ? (
-                <div className="hb-squad">
+                <div
+                  className="hb-squad"
+                  // The kiosk lays the squad down two columns in batting order.
+                  style={{ "--hb-squad-rows": Math.ceil(e.squad.length / 2) } as CSSProperties}
+                >
                   {e.squad.map((m, j) => (
                     <span className="hb-squad-name" key={j}>
                       <NameLink playerId={m.playerId} kiosk={kiosk}>

@@ -9,7 +9,13 @@ import {
   splitColumnGroups,
 } from "./column-groups";
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
-import { creditsDurationMs, findFitScale, FIT_MIN_SCALE } from "./movement";
+import {
+  creditsDurationMs,
+  findFitScale,
+  fitToBody,
+  overflowsBody,
+  FIT_MIN_SCALE,
+} from "./movement";
 import { pickTransition, RANDOM_TRANSITIONS, transitionSpec } from "./transitions";
 import { buildRotation } from "./rotation";
 
@@ -125,6 +131,40 @@ describe("pages", () => {
     expect(rowsThatFit(plaques, 600)).toBe(1);
     // A row taller than the screen still gets a page of its own.
     expect(rowsThatFit([{ top: 0, bottom: 900 }], 600)).toBe(1);
+  });
+
+  it("scales a page down when one row of plaques is taller than the body", () => {
+    // Five plaques across, each 900px tall at full size, in a 600px body:
+    // one row per page, and that page is fitted rather than clipped.
+    const plaques = [0, 0.4, 0, 0.2, 0].map((top) => ({ top, bottom: top + 900 }));
+    expect(rowsThatFit(plaques, 600)).toBe(1);
+    let scale = 1;
+    const body = {
+      clientHeight: 600,
+      get scrollHeight() {
+        return 900 * scale;
+      },
+    };
+    const inner = { style: { setProperty: (_: string, v: string) => void (scale = Number(v)) } };
+    expect(overflowsBody(body)).toBe(true);
+    const fit = fitToBody({ body, inner }, 1);
+    expect(fit.scale).toBeLessThanOrEqual(600 / 900);
+    expect(fit.scale).toBeGreaterThan(600 / 900 - 0.05); // the largest that fits
+    expect(scale).toBe(fit.scale); // left applied to the page
+    expect(overflowsBody(body)).toBe(false);
+  });
+
+  it("leaves a page that already fits at its size", () => {
+    const set: string[] = [];
+    const fit = fitToBody(
+      {
+        body: { clientHeight: 600, scrollHeight: 580 },
+        inner: { style: { setProperty: (_, v) => void set.push(v) } },
+      },
+      1.18,
+    );
+    expect(fit).toEqual({ scale: 1.18, readable: true });
+    expect(set.at(-1)).toBe("1.18");
   });
 });
 
