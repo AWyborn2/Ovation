@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
+import { isListLikeLayout, type ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
 import type { Sponsor } from "@workspace/api-client-react";
 import { BoardRenderer } from "../board-renderer";
 import { KioskChromeContext, type KioskChrome } from "../kiosk-chrome";
@@ -229,7 +229,9 @@ export function KioskPlayer(props: KioskPlayerProps) {
         if (signal.aborted) return;
         const grouped = headings.length ? sliceBoardColumns(item.board, group) : item.board;
         const label = item.groups.length > 1 ? columnGroupLabel(headings, group) : "";
-        const listCols = grouped.layout === "list" ? d.columnsPerScreen : grouped.display.columns;
+        const listCols = isListLikeLayout(grouped.layout)
+          ? d.columnsPerScreen
+          : grouped.display.columns;
         const board: DisplayBoard = {
           ...grouped,
           display: { ...grouped.display, columns: listCols },

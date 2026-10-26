@@ -2808,6 +2808,43 @@ export interface CapEntryUpdate {
   playerId?: number | null;
 }
 
+export interface HatTrick {
+  id: number;
+  /** Link to the bowler's player profile (tenant id space). */
+  playerId?: number | null;
+  bowler: string;
+  /** Senior grade, e.g. "A Grade". */
+  grade: string;
+  /** Season label, e.g. "2024/25". */
+  season?: string | null;
+  /** Innings figures, e.g. "5/23". */
+  figures?: string | null;
+  /** The side it was taken against. */
+  opponent?: string | null;
+}
+
+export interface HatTrickInput {
+  playerId?: number | null;
+  /** @minLength 1 */
+  bowler: string;
+  /** @minLength 1 */
+  grade: string;
+  season?: string | null;
+  figures?: string | null;
+  opponent?: string | null;
+}
+
+export interface HatTrickUpdate {
+  playerId?: number | null;
+  /** @minLength 1 */
+  bowler?: string;
+  /** @minLength 1 */
+  grade?: string;
+  season?: string | null;
+  figures?: string | null;
+  opponent?: string | null;
+}
+
 export interface LifeMember {
   id: number;
   name: string;
@@ -7229,6 +7266,12 @@ export interface BoardEntryMeta {
   competition?: string | null;
   /** 1-based rank for ranked list boards (points, win counts). */
   rank?: number | null;
+  /** The entry's headline figure for table layouts, e.g. "312" (games), "147*" (a score) or "6/23" (bowling figures). */
+  figure?: string | null;
+  /** Seasons the player played for the club, e.g. "2009–25" or "2024/25". */
+  seasonSpan?: string | null;
+  /** The side the achievement came against, e.g. "Mandurah". */
+  opponent?: string | null;
 }
 
 /**
@@ -7654,7 +7697,7 @@ export interface CompositeDef {
 }
 
 /**
- * Natural render layout for this board (skin only changes the look).
+ * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
@@ -7666,6 +7709,8 @@ export const DisplayBoardLayout = {
   columns: 'columns',
   grid: 'grid',
   lifeMembers: 'lifeMembers',
+  leaderboard: 'leaderboard',
+  achievements: 'achievements',
 } as const;
 
 /**
@@ -7709,7 +7754,7 @@ export interface DisplayBoard {
   id: string;
   /** Free-text board category used for grouping/labelling. */
   category: string;
-  /** Natural render layout for this board (skin only changes the look). */
+  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. */
   layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;
@@ -7722,6 +7767,10 @@ export interface DisplayBoard {
   skin?: string | null;
   /** Free-text footnote rendered under the board. */
   footnote?: string | null;
+  /** Column heading for the entries' meta.figure in table layouts (e.g. "Games", "Runs"). */
+  figureLabel?: string | null;
+  /** Achievement lists: the header's tally of the whole list, e.g. "47 centuries" (pages of the board on the TV keep the full count). */
+  tallyLabel?: string | null;
   display: BoardDisplay;
 }
 

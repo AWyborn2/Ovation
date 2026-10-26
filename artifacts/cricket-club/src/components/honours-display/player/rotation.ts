@@ -47,7 +47,11 @@ export function boardItem(
   return {
     kind: "board",
     key,
-    board,
+    // A leaderboard shows its "Show top" count on the TV.
+    board:
+      board.layout === "leaderboard"
+        ? { ...board, entries: board.entries.slice(0, display.top) }
+        : board,
     display,
     groups: headings.length
       ? splitColumnGroups(headings.length, display.columnsPerScreen)

@@ -1974,6 +1974,83 @@ paths:
         "404":
           description: Not found
 
+  /hat-tricks:
+    get:
+      operationId: listHatTricks
+      tags: [lifeMembers]
+      summary: List the club's hat-tricks
+      description: |
+        The club's curated hat-tricks (scorecards can't show them), newest
+        season first. Shown on the honours display as an achievement list.
+      responses:
+        "200":
+          description: Hat-tricks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HatTrick"
+    post:
+      operationId: createHatTrick
+      tags: [lifeMembers]
+      summary: Add a hat-trick
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HatTrickInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HatTrick"
+
+  /hat-tricks/{id}:
+    patch:
+      operationId: updateHatTrick
+      tags: [lifeMembers]
+      summary: Update a hat-trick
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HatTrickUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HatTrick"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteHatTrick
+      tags: [lifeMembers]
+      summary: Delete a hat-trick
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /premierships:
     get:
       operationId: listPremierships
@@ -15679,6 +15756,79 @@ components:
         playerId:
           type: ["integer", "null"]
 
+    HatTrick:
+      type: object
+      required: [id, bowler, grade]
+      properties:
+        id:
+          type: integer
+        playerId:
+          type: integer
+          nullable: true
+          description: Link to the bowler's player profile (tenant id space).
+        bowler:
+          type: string
+        grade:
+          type: string
+          description: Senior grade, e.g. "A Grade".
+        season:
+          type: string
+          nullable: true
+          description: Season label, e.g. "2024/25".
+        figures:
+          type: string
+          nullable: true
+          description: Innings figures, e.g. "5/23".
+        opponent:
+          type: string
+          nullable: true
+          description: The side it was taken against.
+
+    HatTrickInput:
+      type: object
+      required: [bowler, grade]
+      properties:
+        playerId:
+          type: integer
+          nullable: true
+        bowler:
+          type: string
+          minLength: 1
+        grade:
+          type: string
+          minLength: 1
+        season:
+          type: string
+          nullable: true
+        figures:
+          type: string
+          nullable: true
+        opponent:
+          type: string
+          nullable: true
+
+    HatTrickUpdate:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          nullable: true
+        bowler:
+          type: string
+          minLength: 1
+        grade:
+          type: string
+          minLength: 1
+        season:
+          type: string
+          nullable: true
+        figures:
+          type: string
+          nullable: true
+        opponent:
+          type: string
+          nullable: true
+
     LifeMember:
       type: object
       required: [id, name, inductionYear, isPlayingMember, blurb]
@@ -21286,6 +21436,20 @@ components:
           type: integer
           nullable: true
           description: 1-based rank for ranked list boards (points, win counts).
+        figure:
+          type: string
+          nullable: true
+          description: >-
+            The entry's headline figure for table layouts, e.g. "312" (games),
+            "147*" (a score) or "6/23" (bowling figures).
+        seasonSpan:
+          type: string
+          nullable: true
+          description: Seasons the player played for the club, e.g. "2009–25" or "2024/25".
+        opponent:
+          type: string
+          nullable: true
+          description: The side the achievement came against, e.g. "Mandurah".
 
     BoardEntry:
       type: object
@@ -21732,7 +21896,14 @@ components:
             - columns
             - grid
             - lifeMembers
-          description: Natural render layout for this board (skin only changes the look).
+            - leaderboard
+            - achievements
+          description: >-
+            Natural render layout for this board (skin only changes the look).
+            "leaderboard" is a ranked table (rank, player, figure, seasons) whose
+            entries carry meta.rank, meta.figure and meta.seasonSpan.
+            "achievements" is a dated list (season, player, figure, grade,
+            opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
         title:
           type: string
         subtitle:
@@ -21763,6 +21934,18 @@ components:
           type: string
           nullable: true
           description: Free-text footnote rendered under the board.
+        figureLabel:
+          type: string
+          nullable: true
+          description: >-
+            Column heading for the entries' meta.figure in table layouts
+            (e.g. "Games", "Runs").
+        tallyLabel:
+          type: string
+          nullable: true
+          description: >-
+            Achievement lists: the header's tally of the whole list, e.g.
+            "47 centuries" (pages of the board on the TV keep the full count).
         display:
           $ref: "#/components/schemas/BoardDisplay"
 

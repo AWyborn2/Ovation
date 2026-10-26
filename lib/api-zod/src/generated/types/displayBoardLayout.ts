@@ -7,7 +7,7 @@
  */
 
 /**
- * Natural render layout for this board (skin only changes the look).
+ * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
@@ -19,4 +19,6 @@ export const DisplayBoardLayout = {
   columns: 'columns',
   grid: 'grid',
   lifeMembers: 'lifeMembers',
+  leaderboard: 'leaderboard',
+  achievements: 'achievements',
 } as const;

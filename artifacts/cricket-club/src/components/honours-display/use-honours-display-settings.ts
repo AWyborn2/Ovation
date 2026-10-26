@@ -19,6 +19,7 @@ import { TEMPLATES, isBuiltinSkin } from "./types";
 import { CLIENT_DEFAULT_DISPLAY } from "./use-approaching-board";
 import type { SkinOption } from "./editors/constants";
 import {
+  isListLikeLayout,
   resolveClubLook,
   resolveKioskDisplay,
   type KioskLookSource,
@@ -347,7 +348,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   // List-layout boards eligible to be a composite column source (no composites,
   // no approaching — the server refuses both as column refs).
   const sourceBoards = boards.filter(
-    (b) => b.layout === "list" && !b.id.startsWith("composite:") && b.id !== "approaching",
+    (b) => isListLikeLayout(b.layout) && !b.id.startsWith("composite:") && b.id !== "approaching",
   );
 
   const setConfig = (id: string, patch: Partial<BoardDisplayConfig>) =>
@@ -371,7 +372,11 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const resolveBoard = (board: DisplayBoard, cfg: BoardDisplayConfig) =>
     resolveKioskDisplay(board, cfg, clubLook);
   const resetBoardMotion = (id: string) =>
-    setBoardConfigs((prev) => (prev[id] ? { ...prev, [id]: withoutMotion(prev[id]) } : prev));
+    setBoardConfigs((prev) => {
+      if (!prev[id]) return prev;
+      const { top: _top, ...rest } = withoutMotion(prev[id]);
+      return { ...prev, [id]: rest };
+    });
 
   const addComposite = () =>
     setComposites((prev) => [

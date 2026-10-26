@@ -202,8 +202,64 @@ const lifeMembers: DisplayBoard = {
   display: display("slide"),
 };
 
+// A career leaderboard (C1): rank, player, figure, seasons.
+const mostRuns: DisplayBoard = {
+  id: "most_runs",
+  category: "most_runs",
+  layout: "leaderboard",
+  title: "Most Runs",
+  subtitle: "Senior career runs for the club, all grades",
+  figureLabel: "Runs",
+  entries: Array.from({ length: 50 }, (_, i) => {
+    const runs = 9840 - i * 160;
+    const first = 1984 + ((i * 5) % 25);
+    return {
+      season: "",
+      primaryText: name(i * 3 + 1),
+      detail: `${runs} runs`,
+      meta: {
+        rank: i + 1,
+        figure: runs.toLocaleString("en-AU"),
+        seasonSpan: `${first}–${String((first + 9 + (i % 7)) % 100).padStart(2, "0")}`,
+      },
+    };
+  }),
+  display: display(),
+};
+
+// An achievement list (C2): season, player, figure, grade, opponent + tally.
+const centuries: DisplayBoard = {
+  id: "centuries",
+  category: "centuries",
+  layout: "achievements",
+  title: "Centuries",
+  subtitle: "Hundreds for the club",
+  figureLabel: "Score",
+  tallyLabel: "36 centuries",
+  entries: Array.from({ length: 36 }, (_, i) => ({
+    season: season(2025 - Math.floor(i * 0.7)),
+    primaryText: name(i * 5 + 2),
+    detail: `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}`,
+    meta: {
+      figure: `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}`,
+      grade: GRADES[(i * 3) % 4],
+      opponent: OPPONENTS[i % OPPONENTS.length],
+    },
+  })),
+  display: display(),
+};
+
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
-  boards: [premierships, champions, captains, officeBearers, battingRecords, lifeMembers],
+  boards: [
+    premierships,
+    champions,
+    captains,
+    officeBearers,
+    battingRecords,
+    mostRuns,
+    centuries,
+    lifeMembers,
+  ],
   brand: {
     name: "Halls Head Cricket Club",
     shortName: "Halls Head",
@@ -231,6 +287,8 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       captains: { move: "pages", trans: "up" },
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
       "batting-records": { move: "fit", trans: "pop" },
+      most_runs: { move: "pages", trans: "rows", top: 20 },
+      centuries: { move: "credits", trans: "fade", speed: 160 },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
     },
     composites: [],

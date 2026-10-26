@@ -294,6 +294,41 @@
 .hb-table .row:nth-child(odd) td {
   background: var(--hb-row-stripe);
 }
+/* Table layouts with column headings (leaderboards and the other C-layouts). */
+.hb-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: clamp(11px, 1.2vw, 14px);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hb-head-ink);
+  border-bottom: 2px solid var(--hb-head-border);
+}
+.hb-table .hb-figure {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.hb-table .hb-span {
+  white-space: nowrap;
+  color: var(--hb-muted);
+}
+.hb-table .hb-grade,
+.hb-table .hb-opponent {
+  white-space: nowrap;
+  color: var(--hb-muted);
+}
+/* An achievement list's tally, under its subtitle ("47 centuries"). */
+.hb-tally {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--hb-accent);
+}
 .hb-lead {
   width: 64px;
   white-space: nowrap;
@@ -1067,6 +1102,7 @@
 }
 /* Column headings and rows: Cinzel headings, engraved names, dotted rules. */
 .skin-p12 .hb-grid-table th,
+.skin-p12 .hb-table th,
 .skin-p12 .hb-col-head {
   font: 600 1cqw var(--hb-title-font);
   letter-spacing: 0.18em;
@@ -1100,6 +1136,21 @@
 .skin-p12 .hb-rank {
   font-family: var(--hb-title-font);
   background: transparent;
+}
+.skin-p12 .hb-table .hb-figure {
+  font-family: var(--hb-title-font);
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-tally {
+  font: 600 0.9cqw var(--hb-title-font);
+  letter-spacing: 0.24em;
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-table td.hb-span,
+.skin-p12 .hb-table td.hb-grade,
+.skin-p12 .hb-table td.hb-opponent {
+  font-style: italic;
+  color: rgba(240, 223, 180, 0.7);
 }
 .skin-p12 .hb-detail,
 .skin-p12 .hb-grid-note,

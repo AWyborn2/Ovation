@@ -197,6 +197,13 @@ describe("resolveKioskDisplay: new settings", () => {
     ).toBe(1);
   });
 
+  it("treats a leaderboard like a list for columns", () => {
+    const board: KioskBoardShape = { layout: "leaderboard" };
+    expect(resolveKioskDisplay(board, {}, look).columnsPerScreen).toBe(1);
+    expect(resolveKioskDisplay(board, { columns: 2 }, look).columnsPerScreen).toBe(2);
+    expect(resolveKioskDisplay(board, { columnsPerScreen: 5 }, look).columnsPerScreen).toBe(3);
+  });
+
   it("accepts only the leaderboard sizes for top", () => {
     expect(resolveKioskDisplay(list, { top: 50 }, look).top).toBe(50);
     expect(resolveKioskDisplay(list, { top: 37 } as BoardDisplayConfig, look).top).toBe(20);

@@ -2573,6 +2573,80 @@ export const DeleteLifeMemberParams = zod.object({
 
 
 /**
+ * The club's curated hat-tricks (scorecards can't show them), newest
+season first. Shown on the honours display as an achievement list.
+
+ * @summary List the club's hat-tricks
+ */
+export const ListHatTricksResponseItem = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number().nullish().describe('Link to the bowler\'s player profile (tenant id space).'),
+  "bowler": zod.string(),
+  "grade": zod.string().describe('Senior grade, e.g. \"A Grade\".'),
+  "season": zod.string().nullish().describe('Season label, e.g. \"2024\/25\".'),
+  "figures": zod.string().nullish().describe('Innings figures, e.g. \"5\/23\".'),
+  "opponent": zod.string().nullish().describe('The side it was taken against.')
+})
+export const ListHatTricksResponse = zod.array(ListHatTricksResponseItem)
+
+
+/**
+ * @summary Add a hat-trick
+ */
+
+
+
+
+export const CreateHatTrickBody = zod.object({
+  "playerId": zod.number().nullish(),
+  "bowler": zod.string().min(1),
+  "grade": zod.string().min(1),
+  "season": zod.string().nullish(),
+  "figures": zod.string().nullish(),
+  "opponent": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a hat-trick
+ */
+export const UpdateHatTrickParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+export const UpdateHatTrickBody = zod.object({
+  "playerId": zod.number().nullish(),
+  "bowler": zod.string().min(1).optional(),
+  "grade": zod.string().min(1).optional(),
+  "season": zod.string().nullish(),
+  "figures": zod.string().nullish(),
+  "opponent": zod.string().nullish()
+})
+
+export const UpdateHatTrickResponse = zod.object({
+  "id": zod.number(),
+  "playerId": zod.number().nullish().describe('Link to the bowler\'s player profile (tenant id space).'),
+  "bowler": zod.string(),
+  "grade": zod.string().describe('Senior grade, e.g. \"A Grade\".'),
+  "season": zod.string().nullish().describe('Season label, e.g. \"2024\/25\".'),
+  "figures": zod.string().nullish().describe('Innings figures, e.g. \"5\/23\".'),
+  "opponent": zod.string().nullish().describe('The side it was taken against.')
+})
+
+
+/**
+ * @summary Delete a hat-trick
+ */
+export const DeleteHatTrickParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List all premierships with rosters
  */
 export const ListPremiershipsResponseItem = zod.object({
@@ -10097,7 +10171,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10114,7 +10188,10 @@ export const GetHonourDisplayResponse = zod.object({
   "grade": zod.string().nullish(),
   "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
   "competition": zod.string().nullish(),
-  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
+  "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
+  "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10161,7 +10238,10 @@ export const GetHonourDisplayResponse = zod.object({
   "grade": zod.string().nullish(),
   "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
   "competition": zod.string().nullish(),
-  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
+  "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
+  "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10209,6 +10289,8 @@ export const GetHonourDisplayResponse = zod.object({
 }).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
   "skin": zod.string().nullish().describe('Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin.'),
   "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
+  "figureLabel": zod.string().nullish().describe('Column heading for the entries\' meta.figure in table layouts (e.g. \"Games\", \"Runs\").'),
+  "tallyLabel": zod.string().nullish().describe('Achievement lists: the header\'s tally of the whole list, e.g. \"47 centuries\" (pages of the board on the TV keep the full count).'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getHonourDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).describe('Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).'),
@@ -10416,7 +10498,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers']).describe('Natural render layout for this board (skin only changes the look).'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10433,7 +10515,10 @@ export const GetKioskDisplayResponse = zod.object({
   "grade": zod.string().nullish(),
   "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
   "competition": zod.string().nullish(),
-  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
+  "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
+  "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10480,7 +10565,10 @@ export const GetKioskDisplayResponse = zod.object({
   "grade": zod.string().nullish(),
   "parentGrade": zod.string().nullish().describe('P7 grade-filter key (e.g. \"A\", \"Female A\", \"U21 Colts\").'),
   "competition": zod.string().nullish(),
-  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).')
+  "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
+  "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
+  "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10528,6 +10616,8 @@ export const GetKioskDisplayResponse = zod.object({
 }).describe('A reusable season-grid matrix — rows (usually seasons) by admin-chosen columns (offices, awards, grades). Falls back to a list\/columns layout when the board has no configured columns.').nullish().describe('Season-grid matrix for the \'grid\' layout (else null).'),
   "skin": zod.string().nullish().describe('Effective per-board skin (resolved server-side from the board config or custom-grid definition); null = use the club-wide skin.'),
   "footnote": zod.string().nullish().describe('Free-text footnote rendered under the board.'),
+  "figureLabel": zod.string().nullish().describe('Column heading for the entries\' meta.figure in table layouts (e.g. \"Games\", \"Runs\").'),
+  "tallyLabel": zod.string().nullish().describe('Achievement lists: the header\'s tally of the whole list, e.g. \"47 centuries\" (pages of the board on the TV keep the full count).'),
   "display": zod.object({
   "columns": zod.number().min(1).max(getKioskDisplayResponseBoardsItemDisplayColumnsMax).describe('Column count for multi-column list flow (1 = single column).'),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).describe('Kiosk fill mode — continuous credit-scroll, paged slideshow, or wrap (grid boards split into side-by-side blocks to fit one screen).'),

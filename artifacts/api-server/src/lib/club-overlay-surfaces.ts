@@ -558,6 +558,8 @@ export interface OverlayHonourRow {
   /** "YYYY/YY". */
   season: string;
   source: "central" | "history" | "curated";
+  /** The central match it came in (central rows only; the opponent is read from it). */
+  matchId?: number | null;
 }
 
 export interface OverlayHonoursInput {
@@ -625,6 +627,7 @@ export function overlayHonours(input: OverlayHonoursInput): OverlayHonourRow[] {
       detail: detailOf(r),
       season: r.season,
       source: "central",
+      matchId: r.matchId,
     });
   }
   for (const c of input.corrected) {
@@ -641,6 +644,7 @@ export function overlayHonours(input: OverlayHonoursInput): OverlayHonourRow[] {
         detail,
         season: seasonLabel(l.season),
         source: "central",
+        matchId: l.matchId,
       });
     }
   }

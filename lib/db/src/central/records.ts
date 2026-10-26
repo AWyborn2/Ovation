@@ -988,6 +988,8 @@ export interface CentralRecordLeader {
   value: number;
   /** Last senior season (start year) the player appeared for the club, any grade. */
   lastSeason: number | null;
+  /** First senior season (start year) the player appeared for the club, any grade. */
+  firstSeason?: number | null;
 }
 
 /**
@@ -1084,12 +1086,14 @@ async function centralRecordLeadersImpl(
   const fielding = canonicalizeLines(rawFielding, merges);
 
   const lastSeason = new Map<string, number>();
+  const firstSeason = new Map<string, number>();
   const games = new Map<string, Set<number>>();
   const values = new Map<string, number>();
   const add = (pid: string, n: number) => values.set(pid, (values.get(pid) ?? 0) + n);
   const played = (pid: string, matchId: number) => {
     const s = seasonOf.get(matchId);
     if (s != null && s > (lastSeason.get(pid) ?? -Infinity)) lastSeason.set(pid, s);
+    if (s != null && s < (firstSeason.get(pid) ?? Infinity)) firstSeason.set(pid, s);
     if (metric !== "games" || !scoped.has(matchId)) return;
     let g = games.get(pid);
     if (!g) {
@@ -1137,6 +1141,7 @@ async function centralRecordLeadersImpl(
       displayName: names.get(pid)?.displayName ?? null,
       value,
       lastSeason: lastSeason.get(pid) ?? null,
+      firstSeason: firstSeason.get(pid) ?? null,
     }))
     .sort((a, b) => b.value - a.value || (a.displayName ?? "").localeCompare(b.displayName ?? ""));
 }

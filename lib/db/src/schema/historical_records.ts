@@ -48,6 +48,33 @@ export const fiveWicketHaulsTable = pgTable(
   }),
 );
 
+/**
+ * Hat-tricks (honours kiosk redesign C2). Curated only: scorecards don't record
+ * the order wickets fell in, so they can't be derived. Senior grades; entered
+ * by an admin on the Honours → Hat-tricks tab.
+ */
+export const hatTricksTable = pgTable(
+  "hat_tricks",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    // A player id in the TENANT's id space, like centuries / five_wicket_hauls
+    // (no FK; writes are checked by assertPlayerInTenantSpace).
+    playerId: integer("player_id"),
+    bowler: text("bowler").notNull(),
+    grade: text("grade").notNull(),
+    // Display label, "2024/25".
+    season: text("season"),
+    // Innings figures, "5/23".
+    figures: text("figures"),
+    // The side it was taken against, "Mandurah".
+    opponent: text("opponent"),
+  },
+  (t) => ({
+    idxTenant: index("hat_tricks_tenant_idx").on(t.tenantId),
+  }),
+);
+
 /** The club's hand-kept record holders (e.g. "GAMES RECORD HOLDERS"). */
 export const clubRecordsTable = pgTable(
   "club_records",
@@ -82,4 +109,5 @@ export const honourBoardRecordsTable = pgTable(
 export type CenturyRow = typeof centuriesTable.$inferSelect;
 export type FiveWicketHaulRow = typeof fiveWicketHaulsTable.$inferSelect;
 export type ClubRecordRow = typeof clubRecordsTable.$inferSelect;
+export type HatTrickRow = typeof hatTricksTable.$inferSelect;
 export type HonourBoardRecordRow = typeof honourBoardRecordsTable.$inferSelect;

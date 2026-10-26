@@ -1,5 +1,5 @@
 {
-  "id": "e9c40ad0-6d4a-4b4d-b58c-e2beabcd6631",
+  "id": "0dcbfc1c-7cee-4c17-87a9-f2b366fc0ab4",
   "prevId": "62dfdb75-05e4-4a59-b4ff-f3ac91acbab3",
   "version": "7",
   "dialect": "postgresql",
@@ -7657,6 +7657,98 @@
         "five_wicket_hauls_tenant_id_tenants_id_fk": {
           "name": "five_wicket_hauls_tenant_id_tenants_id_fk",
           "tableFrom": "five_wicket_hauls",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hat_tricks": {
+      "name": "hat_tricks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bowler": {
+          "name": "bowler",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade": {
+          "name": "grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "season": {
+          "name": "season",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "figures": {
+          "name": "figures",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opponent": {
+          "name": "opponent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "hat_tricks_tenant_idx": {
+          "name": "hat_tricks_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "hat_tricks_tenant_id_tenants_id_fk": {
+          "name": "hat_tricks_tenant_id_tenants_id_fk",
+          "tableFrom": "hat_tricks",
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"
@@ -16244,7 +16336,7 @@
         },
         "library_elements_category_check": {
           "name": "library_elements_category_check",
-          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers')"
+          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures')"
         },
         "library_elements_unlisted_by_check": {
           "name": "library_elements_unlisted_by_check",
