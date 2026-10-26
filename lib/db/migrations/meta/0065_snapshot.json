@@ -1,5 +1,5 @@
 {
-  "id": "b8882091-f840-436d-9bc8-7f59bdd3fd79",
+  "id": "0e570170-18d2-4390-958a-9cc423ed15da",
   "prevId": "5befde39-11db-43ac-bccd-95bca3bd1698",
   "version": "7",
   "dialect": "postgresql",
@@ -6319,6 +6319,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "kiosk_look": {
+          "name": "kiosk_look",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "board_configs": {
           "name": "board_configs",
@@ -16237,7 +16244,7 @@
         },
         "library_elements_category_check": {
           "name": "library_elements_category_check",
-          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures')"
+          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks')"
         },
         "library_elements_unlisted_by_check": {
           "name": "library_elements_unlisted_by_check",

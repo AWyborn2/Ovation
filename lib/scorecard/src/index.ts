@@ -37,6 +37,7 @@ export { FILL_IN_THRESHOLD, isFillInPlayerId } from "./fill-in";
 export { isJuniorGradeLabel } from "./junior-grade";
 export { gradeSeniorityRank, sortByGradeOrder } from "./grade-order";
 export * from "./honour-boards";
+export * from "./kiosk-display";
 export * from "./nav";
 export { buildJuniorScorecard } from "./junior-mapping";
 export * from "./match-summary-types";

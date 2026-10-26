@@ -21402,12 +21402,167 @@ components:
           type: string
           nullable: true
 
+    KioskLook:
+      type: object
+      description: >-
+        Club-wide kiosk motion and size defaults (the Look tab). Every field is
+        optional; unset derives from the legacy kiosk timing settings, then the
+        built-in default. Each board's BoardDisplayConfig overrides them.
+      properties:
+        move:
+          type: string
+          enum:
+            - pages
+            - credits
+            - fit
+          description: >-
+            How a long board shows all its rows: turn pages, a continuous credits
+            roll, or shrink to fit one screen.
+        trans:
+          type: string
+          enum:
+            - fade
+            - up
+            - down
+            - left
+            - right
+            - pop
+            - zoom
+            - flip
+            - wipe
+            - rows
+            - cut
+            - random
+          description: How a board, or its next page, arrives.
+        dur:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+          description: Transition length (short, medium, long).
+        size:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+            - XL
+          description: Text size.
+        perPage:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: >-
+            Rows (seasons, or rows of panels) per page; 0 = as many as fit the
+            screen.
+        pageSecs:
+          type: integer
+          minimum: 1
+          maximum: 60
+          description: >-
+            Seconds per page, or the pause before a credits roll starts.
+        speed:
+          type: integer
+          minimum: 5
+          maximum: 200
+          description: Credits-roll speed in px/sec.
+        hold:
+          type: integer
+          minimum: 0
+          maximum: 60
+          description: Seconds held at the end of a board before the next item.
+        columnsPerScreen:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: >-
+            Columns shown at once (grade or role columns, plaques across, list
+            columns). A season grid with more columns splits into column groups.
+
     BoardDisplayConfig:
       type: object
       description: >-
         Admin per-board override (all fields optional; unset falls back to the
         board's natural default). Stored keyed by board id in settings.boardConfigs.
       properties:
+        move:
+          type: string
+          enum:
+            - pages
+            - credits
+            - fit
+          description: >-
+            How a long board shows all its rows: turn pages, a continuous credits
+            roll, or shrink to fit one screen.
+        trans:
+          type: string
+          enum:
+            - fade
+            - up
+            - down
+            - left
+            - right
+            - pop
+            - zoom
+            - flip
+            - wipe
+            - rows
+            - cut
+            - random
+          description: How a board, or its next page, arrives.
+        dur:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+          description: Transition length (short, medium, long).
+        size:
+          type: string
+          enum:
+            - S
+            - M
+            - L
+            - XL
+          description: Text size.
+        perPage:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: >-
+            Rows (seasons, or rows of panels) per page; 0 = as many as fit the
+            screen.
+        pageSecs:
+          type: integer
+          minimum: 1
+          maximum: 60
+          description: >-
+            Seconds per page, or the pause before a credits roll starts.
+        speed:
+          type: integer
+          minimum: 5
+          maximum: 200
+          description: Credits-roll speed in px/sec.
+        hold:
+          type: integer
+          minimum: 0
+          maximum: 60
+          description: Seconds held at the end of a board before the next item.
+        columnsPerScreen:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: >-
+            Columns shown at once (grade or role columns, plaques across, list
+            columns). A season grid with more columns splits into column groups.
+        top:
+          type: integer
+          enum:
+            - 10
+            - 20
+            - 50
+          description: Leaderboards only - how many players to show.
         columns:
           type: integer
           minimum: 1
@@ -21910,6 +22065,7 @@ components:
         - kioskSponsorSlideEvery
         - boardConfigs
         - composites
+        - kioskLook
       properties:
         defaultTemplate:
           type: string
@@ -21970,6 +22126,8 @@ components:
           description: >-
             Long-lived read-only kiosk access token (admin bundle only; null
             when no link has been issued). Omitted from the public kiosk feed.
+        kioskLook:
+          $ref: "#/components/schemas/KioskLook"
         boardConfigs:
           type: object
           description: Per-board display overrides keyed by board id.
@@ -22022,6 +22180,8 @@ components:
     HonourDisplaySettingsUpdate:
       type: object
       properties:
+        kioskLook:
+          $ref: "#/components/schemas/KioskLook"
         defaultTemplate:
           type: string
         kioskSequence:

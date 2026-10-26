@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import { useGetHonourDisplay } from "@workspace/api-client-react";
 import { BoardRenderer } from "@/components/honours-display/board-renderer";
 import { rootStyle } from "@/components/honours-display/theme";
 import { skinClass } from "@/components/honours-display/types";
+import { ensureHonourFontsLoaded } from "@/lib/honour-fonts";
 import {
   useApproachingBoard,
   applyBoardConfig,
@@ -16,6 +17,7 @@ import "@/styles/honour-boards.css";
 export default function HonoursDisplay() {
   const { data, isLoading, isError, refetch } = useGetHonourDisplay();
   const approachingBoard = useApproachingBoard();
+  useEffect(() => ensureHonourFontsLoaded(), []);
 
   const boards = useMemo(() => {
     const base = data?.boards ?? [];
