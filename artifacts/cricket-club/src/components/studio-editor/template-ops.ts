@@ -130,6 +130,23 @@ export function photoLayer(size: CardSize): FreeLayer {
   );
 }
 
+/**
+ * An image the page binds by token (a team's crest, a sponsor's logo), on
+ * `size` only, kept whole in its box.
+ */
+export function imageTokenLayer(key: string, label: string, size: CardSize): FreeLayer {
+  return onlyOnSize(
+    {
+      id: newId(),
+      kind: "image",
+      name: label,
+      content: fieldToken(key),
+      geometry: { [size]: box(40, 30, 20, 14) },
+    },
+    size,
+  );
+}
+
 /** The club crest, on `size` only; resolved from the club's brand at render. */
 export function logoLayer(size: CardSize): FreeLayer {
   return onlyOnSize(

@@ -31,6 +31,7 @@ import {
 } from "@/components/studio-editor/content-panels";
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { draftInput } from "@/components/social-queue/draft-meta";
+import { pageForInput, pageTokens } from "@workspace/scorecard/kind-templates";
 import { useBrand } from "@/lib/brand-context";
 import {
   buildPackData,
@@ -85,6 +86,10 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
     bundle?.brand?.backgroundColour ?? brand.backgroundColour,
   ].filter((c): c is string => !!c);
 
+  // Every field the card's page has (stage 3), else the kind's.
+  const liveFields =
+    pageTokens(input.kind, pageForInput(input))?.fields ?? packTextFields(input, BLANK_PACK_ID);
+
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
@@ -132,12 +137,7 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       label: "Live stats",
       icon: Radio,
       render: ({ size, add, values }) => (
-        <LiveStatsPanel
-          size={size}
-          fields={packTextFields(input, BLANK_PACK_ID)}
-          values={values}
-          onAdd={(l) => add([l])}
-        />
+        <LiveStatsPanel size={size} fields={liveFields} values={values} onAdd={(l) => add([l])} />
       ),
     },
     {

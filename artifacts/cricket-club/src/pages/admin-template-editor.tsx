@@ -27,6 +27,7 @@ import {
   isContentKind,
   isSetDocument,
   kindFields,
+  pageTokens,
   MAX_STACK_DEPTH,
   planTemplateSlides,
   primaryPage,
@@ -684,8 +685,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
 
   // Live fields by label in the Layers list ("Opposition name", not "{{opposition.name}}").
   const fieldLabels = useMemo(
-    () => Object.fromEntries((kindFields(pageKind)?.fields ?? []).map((f) => [f.key, f.label])),
-    [pageKind],
+    () =>
+      Object.fromEntries(
+        (pageTokens(pageKind, page)?.fields ?? kindFields(pageKind)?.fields ?? []).map((f) => [
+          f.key,
+          f.label,
+        ]),
+      ),
+    [pageKind, page],
   );
 
   // The editor's own panels, then a draft's content panels.
@@ -1028,6 +1035,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             {panel === "fields" && (
               <FieldsPanel
                 kind={pageKind}
+                page={page}
                 size={format}
                 values={values}
                 textSelected={single?.kind === "text"}
