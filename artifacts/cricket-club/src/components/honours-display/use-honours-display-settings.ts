@@ -17,6 +17,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { TEMPLATES, isBuiltinSkin } from "./types";
 import { CLIENT_DEFAULT_DISPLAY } from "./use-approaching-board";
 import type { SkinOption } from "./editors/constants";
+import { duplicateItem, moveItem } from "./settings/rotation-list";
 
 // The "approaching milestones" board is built client-side (no server row), so it
 // never appears in the bundle. This synthetic row lets an admin still tune its
@@ -70,7 +71,16 @@ type HonoursDisplayDraft = ReturnType<typeof seedDraft>;
  * are presentational over this object.
  */
 export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: () => void) {
-  const { boards, settings, brand } = bundle;
+  const { boards: bundleBoards, settings, brand } = bundle;
+  // Boards the rotation can hold. The TV adds the client-built approaching
+  // board after the rest, so it can be placed here too.
+  const boards = useMemo(
+    () =>
+      bundleBoards.some((b) => b.id === "approaching")
+        ? bundleBoards
+        : [...bundleBoards, APPROACHING_TUNABLE_BOARD],
+    [bundleBoards],
+  );
   const boardTitle = useMemo(() => new Map(boards.map((b) => [b.id, b.title])), [boards]);
 
   // The loaded values every field starts from; Reset returns to them and the
@@ -169,19 +179,18 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     .filter((s) => (!s.activeFrom || s.activeFrom <= today) && (!s.activeTo || s.activeTo >= today))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
 
-  const moveSeq = (idx: number, dir: -1 | 1) => {
-    setSequence((prev) => {
-      const next = prev.slice();
-      const target = idx + dir;
-      if (target < 0 || target >= next.length) return prev;
-      [next[idx], next[target]] = [next[target]!, next[idx]!];
-      return next;
-    });
-  };
+  // Rotation builder (B2). An empty sequence plays every board in order, so
+  // the first edit starts from that implied list rather than from nothing.
+  const editSeq = (fn: (list: string[]) => string[]) =>
+    setSequence((prev) => fn(prev.length ? prev : boards.map((b) => b.id)));
+  const moveSeqTo = (from: number, to: number) => setSequence((prev) => moveItem(prev, from, to));
+  const moveSeq = (idx: number, dir: -1 | 1) => moveSeqTo(idx, idx + dir);
+  const duplicateSeq = (idx: number) => setSequence((prev) => duplicateItem(prev, idx));
   const removeSeq = (idx: number) => setSequence((prev) => prev.filter((_, i) => i !== idx));
   const addToSeq = (id: string) => {
-    if (id) setSequence((prev) => [...prev, id]);
+    if (id) editSeq((list) => [...list, id]);
   };
+  const startSeqFromAllBoards = () => editSeq((list) => list);
 
   const save = () => {
     setError(null);
@@ -257,7 +266,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     update.mutate({ data });
   };
 
-  const unusedBoards = boards.filter((b) => !sequence.includes(b.id));
+  const boardById = useMemo(() => new Map(boards.map((b) => [b.id, b])), [boards]);
 
   // Boards an admin can tune (real boards + approaching), excluding composites
   // which carry their own transition/fit on the composite definition. The
@@ -265,12 +274,9 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   // bundle somehow already carries one.
   // Custom grids are configured in their own builder (skin/fill/footnote live on
   // the definition), so exclude them from the generic per-board tuner too.
-  const realTunable = boards.filter(
+  const tunableBoards = boards.filter(
     (b) => !b.id.startsWith("composite:") && !b.id.startsWith("grid:"),
   );
-  const tunableBoards = realTunable.some((b) => b.id === "approaching")
-    ? realTunable
-    : [...realTunable, APPROACHING_TUNABLE_BOARD];
 
   // Skin choices for the per-board / per-grid skin selects (built-ins + custom).
   const skinOptions: SkinOption[] = [
@@ -280,10 +286,10 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
 
   // Resolve a sequence item to a display label (boards + sponsor/ad tokens).
   const seqLabel = (id: string): string => {
-    if (id === "sponsor") return "✦ Sponsor slide";
+    if (id === "sponsor") return "Sponsor wall";
     if (id.startsWith("ad:")) {
       const ad = kioskAds.find((a) => a.id === id);
-      return ad ? `▣ Ad — ${ad.name || "Untitled"}` : `${id} (missing ad)`;
+      return ad ? ad.name || "Untitled ad" : "Missing ad";
     }
     return boardTitle.get(id) ?? `${id} (missing)`;
   };
@@ -401,9 +407,13 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     sequence,
     seqLabel,
     moveSeq,
+    moveSeqTo,
+    duplicateSeq,
     removeSeq,
     addToSeq,
-    unusedBoards,
+    startSeqFromAllBoards,
+    boards,
+    boardById,
     dwell,
     setDwell,
     speed,

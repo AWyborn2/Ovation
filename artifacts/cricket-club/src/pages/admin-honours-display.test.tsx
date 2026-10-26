@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderAt } from "../test/render";
 import { installApiMock } from "../test/mock-api";
@@ -151,5 +151,90 @@ describe("settings tabs (kiosk redesign B1)", () => {
     fireEvent.mouseDown(screen.getByTestId("tab-look"));
     fireEvent.mouseDown(screen.getByTestId("tab-sponsors"));
     expect(await screen.findAllByTestId(/^ad-file-/)).toHaveLength(1);
+  });
+});
+
+describe("rotation builder (kiosk redesign B2)", () => {
+  const board = (id: string, title: string, layout: "list" | "grid" = "list") => ({
+    id,
+    category: "awards",
+    layout,
+    title,
+    entries: [],
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  });
+  const WITH_BOARDS: HonourDisplayBundle = {
+    ...BUNDLE,
+    boards: [board("premierships", "Premierships"), board("champions", "Club Champions", "grid")],
+  };
+  const rowTitles = () =>
+    screen
+      .getAllByTestId(/^seq-row-\d+$/)
+      .map((r) => r.querySelector("[data-title]")?.textContent?.trim());
+
+  /** Saves the form and returns the kioskSequence the page sent. */
+  async function savedSequence(): Promise<string[]> {
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const fetchMock = vi.mocked(fetch);
+    const sent = () =>
+      fetchMock.mock.calls.find(([, init]) => init?.method && init.method !== "GET");
+    await waitFor(() => expect(sent()).toBeTruthy());
+    return (JSON.parse(String(sent()![1]!.body)) as { kioskSequence: string[] }).kioskSequence;
+  }
+
+  it("starts from every board when no rotation is set", async () => {
+    installApiMock({ "/honour-display": WITH_BOARDS });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    expect(await screen.findByTestId("rotation-empty")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("rotation-start-all"));
+    expect(rowTitles()).toEqual(["Premierships", "Club Champions", "Approaching Milestones"]);
+    expect(screen.getByTestId("seq-row-1").textContent).toContain("Season grid");
+  });
+
+  it("adds, duplicates, reorders by keyboard and removes items, then saves the sequence", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...WITH_BOARDS,
+        settings: { ...BUNDLE.settings, kioskSequence: ["premierships"] },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    await screen.findByTestId("seq-row-0");
+
+    fireEvent.click(screen.getByTestId("add-sponsor-to-seq"));
+    fireEvent.change(screen.getByTestId("add-to-seq"), { target: { value: "champions" } });
+    expect(rowTitles()).toEqual(["Premierships", "Sponsor wall", "Club Champions"]);
+    expect(screen.getByTestId("seq-row-1").textContent).toContain("Sponsor wall");
+
+    fireEvent.click(screen.getByTestId("seq-dup-1"));
+    expect(rowTitles()).toEqual(["Premierships", "Sponsor wall", "Sponsor wall", "Club Champions"]);
+
+    fireEvent.keyDown(screen.getByTestId("seq-handle-3"), { key: "ArrowUp", altKey: true });
+    fireEvent.keyDown(screen.getByTestId("seq-handle-2"), { key: "ArrowUp", altKey: true });
+    expect(rowTitles()).toEqual(["Premierships", "Club Champions", "Sponsor wall", "Sponsor wall"]);
+    expect(screen.getByTestId("rotation-announcer").textContent).toBe(
+      "Club Champions moved to position 2 of 4",
+    );
+
+    fireEvent.click(screen.getByTestId("seq-remove-3"));
+    expect(await savedSequence()).toEqual(["premierships", "champions", "sponsor"]);
+  });
+
+  it("reorders by drag and drop", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...WITH_BOARDS,
+        settings: { ...BUNDLE.settings, kioskSequence: ["premierships", "champions", "sponsor"] },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    const first = await screen.findByTestId("seq-row-0");
+    const last = screen.getByTestId("seq-row-2");
+    fireEvent.dragStart(first, { dataTransfer: { setData: () => {}, effectAllowed: "" } });
+    // jsdom gives drag events no pointer position, so this drops onto the top
+    // half of the last row (before it); dropIndex covers the bottom half.
+    fireEvent.dragOver(last);
+    fireEvent.drop(last);
+    expect(rowTitles()).toEqual(["Club Champions", "Premierships", "Sponsor wall"]);
   });
 });
