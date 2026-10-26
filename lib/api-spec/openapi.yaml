@@ -23566,7 +23566,20 @@ components:
       type: string
       description: The Elements panel's categories (`ELEMENT_CATEGORIES`).
       enum:
-        [frames, bands, badges, rules, glows, crest-frames, sponsor-strips, data-blocks, textures]
+        [
+          frames,
+          bands,
+          badges,
+          rules,
+          glows,
+          crest-frames,
+          sponsor-strips,
+          data-blocks,
+          textures,
+          icons,
+          shapes,
+          stickers,
+        ]
 
     LibraryElementDocument:
       type: object

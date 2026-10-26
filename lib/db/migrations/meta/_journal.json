@@ -470,6 +470,13 @@
       "when": 1792986773875,
       "tag": "0066_library_element_textures",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792990953165,
+      "tag": "0067_library_element_icons",
+      "breakpoints": true
     }
   ]
 }

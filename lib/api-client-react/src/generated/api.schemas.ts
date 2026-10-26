@@ -9056,6 +9056,9 @@ export const LibraryElementCategory = {
   'sponsor-strips': 'sponsor-strips',
   'data-blocks': 'data-blocks',
   textures: 'textures',
+  icons: 'icons',
+  shapes: 'shapes',
+  stickers: 'stickers',
 } as const;
 
 /**
