@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 import {
   assembleSetDocument,
   freeSetFromDocument,
+  freeSetFromLook,
   isSetDocument,
   setFromDesign,
   setPageDocument,
   setTemplateKind,
+  setTypeForKind,
   setTypeOfKind,
   SET_TYPES,
   type DataSetType,
@@ -193,5 +195,46 @@ describe("a set made from one design (part 4)", () => {
     expect(setFromDesign("teamLists", null, "player", gold.docs.get("player"))).toBeNull();
     const md = assembleSetDocument("matchDay", (k) => kit.docs.get(k))!.document;
     expect(setFromDesign("teamLists", md, "player", gold.docs.get("player"))).toBeNull();
+  });
+});
+
+describe("a card's own carousel from a look's pages (full draft editor, D9)", () => {
+  const kit = looks().find((l) => l.look === "club-kit")!;
+  const results = assembleSetDocument("results", (k) => kit.docs.get(k))!.document;
+  const design = kit.docs.get("matchSummary");
+
+  it("finds the set whose pages suit a card", () => {
+    expect(setTypeForKind("teamList")).toBe("teamLists");
+    expect(setTypeForKind("matchDay")).toBe("matchDay");
+    expect(setTypeForKind("matchSummary")).toBe("results");
+    expect(setTypeForKind("teamListRound")).toBe("teamLists");
+    expect(setTypeForKind("milestone")).toBeNull();
+  });
+
+  it("puts the card's design after the look's cover and before its sponsors page", () => {
+    const set = freeSetFromLook("matchSummary", design, results, ["cover", "result", "sponsors"]);
+    expect(set!.set).toBe("free");
+    expect(set!.pages.map((p) => p.id)).toEqual([
+      "look-cover",
+      "page-1",
+      "look-result",
+      "look-sponsors",
+    ]);
+    // The look's result page draws the card itself; the others keep their kind.
+    expect(set!.pages[2]!.kind).toBe("matchSummary");
+    expect(set!.pages[0]!.kind).toBe(results.pages[0]!.kind);
+    expect(set!.pages.every((p) => p.role === "fixed" && p.slot === "page")).toBe(true);
+    expect(templateDocumentErrors(set, setTemplateKind("free"))).toEqual([]);
+  });
+
+  it("is the design alone, or with a copy, when no look page is picked", () => {
+    expect(freeSetFromLook("matchSummary", design, results, [])!.pages).toHaveLength(1);
+    const two = freeSetFromLook("matchSummary", design, null, [], true)!;
+    expect(two.pages.map((p) => p.id)).toEqual(["page-1", "page-2"]);
+  });
+
+  it("offers no junior day page", () => {
+    const set = freeSetFromLook("matchSummary", design, results, ["day"]);
+    expect(set!.pages.map((p) => p.id)).toEqual(["page-1"]);
   });
 });

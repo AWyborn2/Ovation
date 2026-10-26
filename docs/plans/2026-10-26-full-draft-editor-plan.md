@@ -59,8 +59,9 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
   - Junior cards keep their privacy rules.
   - **Built (stage 5a):** the Fields panel's add chooser, sorts by balls, strike rate and economy,
     and minimum runs or wickets and "not outs only" filters (`rows-pick.ts`).
-- **D5, agreed and to build (stage 5):** Applying a changed template to waiting drafts skips
-  drafts whose design was edited by hand, and says how many it skipped.
+- **D5, agreed:** Applying a changed template to waiting drafts skips drafts whose design was
+  edited by hand, and says how many it skipped. **Built (stage 5b):** `applyTemplateToDrafts`
+  skips drafts with `design_edited_at` set and reports them as `edited`.
 - **D6, agreed:** Performances come as two lists, batting and bowling, not one "both" list: one row
   design can't show runs and figures in the same cells.
 - **D7, agreed:** A list's "whose" setting appears on performance lists only. Single-innings lists
@@ -70,4 +71,7 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
   performance list's chosen rows by its box, and each slide carries its share (`performanceRows`).
 - **D9, changed:** "Make a carousel set" offers the look's matching pages to start the set from
   (cover, per-team, sponsors), as the template library's "Make a carousel set" does, instead of
-  only the design and a copy. **To build (stage 5).**
+  only the design and a copy. **Built (stage 5b):** the draft's "Make a carousel set" opens on
+  the look its design came from, with the look's cover and sponsors page ticked and its version
+  of the card to tick. Every page is a design page of a free set drawing the card's own data
+  (`freeSetFromLook`). A card no set draws (a player card) offers the design and a copy.
