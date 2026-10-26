@@ -168,6 +168,45 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   };
   const dirty = JSON.stringify(draft) !== JSON.stringify(seeded);
 
+  // ---- Live preview (B4) -------------------------------------------------
+  // The settings as the TV would get them if saved now. A number field that
+  // doesn't parse yet keeps its saved value rather than breaking the preview.
+  const num = (v: string, saved: number) => {
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? saved : n;
+  };
+  const draftSettings = (): HonoursDisplaySettings => ({
+    ...settings,
+    defaultTemplate,
+    kioskSequence: sequence,
+    kioskDwellMs: num(dwell, settings.kioskDwellMs),
+    kioskScrollSpeed: num(speed, settings.kioskScrollSpeed),
+    kioskEndHoldMs: num(endHold, settings.kioskEndHoldMs),
+    kioskLook,
+    kioskSponsorStrip: sponsorStrip,
+    kioskSponsorSlides: sponsorSlides,
+    kioskSponsorSlideEvery: num(sponsorSlideEvery, settings.kioskSponsorSlideEvery),
+    kioskSponsorSlideStyle: sponsorSlideStyle,
+    kioskSponsorIds: sponsorIds,
+    kioskAds,
+    boardConfigs,
+    composites,
+    customGrids,
+    skins,
+    colourOverrides,
+    defaultFont: defaultFont || null,
+  });
+  /** The bundle the preview plays: the whole rotation, or just one item. */
+  const previewBundle = (token: string | null): HonourDisplayBundle => {
+    const draftSet = draftSettings();
+    return {
+      ...bundle,
+      settings: token
+        ? { ...draftSet, kioskSequence: [token], kioskSponsorSlides: false }
+        : draftSet,
+    };
+  };
+
   const update = useUpdateHonourDisplaySettings({
     mutation: {
       onSuccess: () => {
@@ -496,6 +535,8 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     addCustomGrid,
     patchCustomGrid,
     removeCustomGrid,
+    // Live preview
+    previewBundle,
     // Submit
     error,
     save,

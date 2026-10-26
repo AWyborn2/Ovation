@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderAt } from "../test/render";
 import { installApiMock } from "../test/mock-api";
 import type { HonourDisplayBundle } from "@workspace/api-client-react";
@@ -333,5 +333,78 @@ describe("TV settings (kiosk redesign B3)", () => {
     expect(select("board-tv-champions-trans").options[0]!.textContent).toBe("Default · Wipe");
 
     expect((await sentBody()).kioskLook).toEqual({ trans: "wipe", move: "pages" });
+  });
+});
+
+describe("live preview (kiosk redesign B4)", () => {
+  const champions = {
+    id: "champions",
+    category: "awards",
+    layout: "list" as const,
+    title: "Club Champions",
+    entries: [],
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  };
+  const WITH_ROTATION: HonourDisplayBundle = {
+    ...BUNDLE,
+    boards: [champions],
+    settings: { ...BUNDLE.settings, kioskSequence: ["champions", "sponsor"] },
+  };
+
+  /** Marks the preview frame ready and returns what the page posts to it. */
+  function connectFrame() {
+    const frame = screen.getByTestId("kiosk-preview-frame") as HTMLIFrameElement;
+    const win = frame.contentWindow!;
+    const post = vi.spyOn(win, "postMessage");
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: { type: "ovation:kiosk-preview-ready" },
+          origin: window.location.origin,
+          source: win,
+        }),
+      );
+    });
+    return async () => {
+      await waitFor(() => expect(post).toHaveBeenCalled());
+      const [msg, origin] = post.mock.calls.at(-1)!;
+      expect(origin).toBe(window.location.origin);
+      post.mockClear();
+      return msg as { bundle: HonourDisplayBundle };
+    };
+  }
+
+  it("plays the selected item, then the whole rotation, with unsaved changes", async () => {
+    installApiMock({ "/honour-display": WITH_ROTATION });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    await screen.findByTestId("seq-row-0");
+    const nextMessage = connectFrame();
+
+    // Nothing selected: the whole saved rotation.
+    let sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions", "sponsor"]);
+    expect(screen.queryByTestId("kiosk-preview-unsaved")).toBeNull();
+
+    // Select a board and change it without saving: the preview replays just it.
+    fireEvent.click(screen.getByTestId("seq-select-0"));
+    fireEvent.change(screen.getByTestId("board-tv-champions-move"), {
+      target: { value: "pages" },
+    });
+    sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions"]);
+    expect(sent.bundle.settings.boardConfigs.champions).toEqual({ move: "pages" });
+    expect(screen.getByTestId("kiosk-preview-now").textContent).toBe("Club Champions");
+    expect(screen.getByTestId("kiosk-preview-unsaved")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("kiosk-preview-rotation"));
+    sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions", "sponsor"]);
+    expect(screen.getByTestId("kiosk-preview-now").textContent).toBe("Whole rotation");
+
+    // Discard returns the preview to the saved settings.
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    sent = await nextMessage();
+    expect(sent.bundle.settings.boardConfigs).toEqual({});
+    expect(screen.queryByTestId("kiosk-preview-unsaved")).toBeNull();
   });
 });
