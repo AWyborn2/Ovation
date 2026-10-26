@@ -106,8 +106,17 @@ const RANGES = {
   pageSecs: [1, 60],
   speed: [5, 200],
   hold: [0, 60],
-  columnsPerScreen: [1, 5],
+  columnsPerScreen: [1, 10],
 } as const;
+
+/**
+ * Most columns on one screen: season grids and composite columns take up to
+ * this many; the other layouts keep their own lower caps (`columnRule`).
+ */
+export const KIOSK_MAX_COLUMNS = RANGES.columnsPerScreen[1];
+
+/** From this many columns on one screen the TV uses its dense grid style. */
+export const KIOSK_DENSE_COLUMNS = 7;
 
 const LEGACY_MOVE: Record<string, KioskMove> = {
   scroll: "credits",
@@ -172,9 +181,9 @@ export interface KioskBoardShape {
 function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: number } {
   switch (board.layout) {
     case "grid":
-      return { fallback: "club", max: board.grid?.columnHeadings.length || 5 };
+      return { fallback: "club", max: board.grid?.columnHeadings.length || KIOSK_MAX_COLUMNS };
     case "columns":
-      return { fallback: "club", max: board.columns?.length || 5 };
+      return { fallback: "club", max: board.columns?.length || KIOSK_MAX_COLUMNS };
     case "list":
     case "leaderboard":
     case "achievements":

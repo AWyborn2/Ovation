@@ -7473,9 +7473,9 @@ export interface KioskLook {
      */
   hold?: number;
   /**
-     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.
+     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.
      * @minimum 1
-     * @maximum 5
+     * @maximum 10
      */
   columnsPerScreen?: number;
 }
@@ -7648,9 +7648,9 @@ export interface BoardDisplayConfig {
      */
   hold?: number;
   /**
-     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.
+     * Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.
      * @minimum 1
-     * @maximum 5
+     * @maximum 10
      */
   columnsPerScreen?: number;
   /** Leaderboards only - how many players to show. */

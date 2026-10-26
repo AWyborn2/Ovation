@@ -1,11 +1,20 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { isListLikeLayout, type ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
+import {
+  isListLikeLayout,
+  KIOSK_DENSE_COLUMNS,
+  type ResolvedKioskLook,
+} from "@workspace/scorecard/kiosk-display";
 import type { KioskSlideshowPhoto, Sponsor } from "@workspace/api-client-react";
 import { BoardRenderer } from "../board-renderer";
 import { KioskChromeContext, type KioskChrome } from "../kiosk-chrome";
 import { AdSlide, SponsorSlide, SponsorSlideSingle } from "../sponsor-ads";
 import type { BoardDisplayConfig, DisplayBoard, HonourBrand, HonourSkin } from "../types";
-import { boardColumnHeadings, columnGroupLabel, sliceBoardColumns } from "./column-groups";
+import {
+  boardColumnHeadings,
+  columnGroupLabel,
+  compactBoard,
+  sliceBoardColumns,
+} from "./column-groups";
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
 import { creditsDurationMs, fitToBody, overflowsBody } from "./movement";
 import {
@@ -49,6 +58,8 @@ interface Screen {
   photo?: KioskSlideshowPhoto;
   /** A board's photo background (P2) and its panel strength. */
   backdrop?: { url: string; dim: string };
+  /** Seven or more columns on this screen: the dense grid style. */
+  dense?: boolean;
 }
 
 /** How long a slideshow waits for a photo before skipping it. */
@@ -289,7 +300,10 @@ export function KioskPlayer(props: KioskPlayerProps) {
       }
       for (const group of item.groups) {
         if (signal.aborted) return;
-        const grouped = headings.length ? sliceBoardColumns(item.board, group) : item.board;
+        const sliced = headings.length ? sliceBoardColumns(item.board, group) : item.board;
+        // Seven or more columns on one screen use the dense style.
+        const dense = headings.length > 0 && group.count >= KIOSK_DENSE_COLUMNS;
+        const grouped = dense ? compactBoard(sliced) : sliced;
         const label = item.groups.length > 1 ? columnGroupLabel(headings, group) : "";
         const listCols = isListLikeLayout(grouped.layout)
           ? d.columnsPerScreen
@@ -304,6 +318,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           scale: d.textScale,
           position,
           backdrop,
+          dense,
         };
         const screen = await enter({ ...base, board }, signal);
         if (signal.aborted) return;
@@ -465,6 +480,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
               className={`hb-kp-board${s.backdrop ? " hb-kp-photobg" : ""}`}
               data-move={s.item.display.move}
               data-dim={s.backdrop?.dim}
+              data-dense={s.dense ? "" : undefined}
               style={
                 {
                   "--hb-kp-scale": s.scale,

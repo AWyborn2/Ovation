@@ -71,10 +71,20 @@ describe("honour display settings: kiosk look (integration)", () => {
   });
 
   it("rejects values outside the allowed set", async () => {
-    for (const kioskLook of [{ move: "sideways" }, { columnsPerScreen: 9 }, { pageSecs: 0 }]) {
+    for (const kioskLook of [{ move: "sideways" }, { columnsPerScreen: 11 }, { pageSecs: 0 }]) {
       await patch({ kioskLook }).expect(400);
     }
     await patch({ boardConfigs: { most_games: { top: 37 } } }).expect(400);
+  });
+
+  it("allows up to 10 columns per screen", async () => {
+    const res = await patch({
+      kioskLook: { columnsPerScreen: 10 },
+      boardConfigs: { champions: { columnsPerScreen: 10 } },
+    }).expect(200);
+    expect(res.body.kioskLook.columnsPerScreen).toBe(10);
+    expect(res.body.boardConfigs.champions.columnsPerScreen).toBe(10);
+    await patch({ boardConfigs: { champions: { columnsPerScreen: 11 } } }).expect(400);
   });
 
   it("round-trips photo slideshows and resolves them in the admin bundle (D1)", async () => {

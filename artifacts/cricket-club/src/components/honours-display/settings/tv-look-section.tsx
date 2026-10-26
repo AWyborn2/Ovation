@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { KIOSK_MAX_COLUMNS } from "@workspace/scorecard/kiosk-display";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
@@ -28,7 +29,7 @@ export function TvLookSection({ form }: { form: HonoursDisplayForm }) {
               value={kioskLook}
               defaults={motionDefaults(kioskLook, resolveLook)}
               onPatch={patchLook}
-              maxColumns={5}
+              maxColumns={KIOSK_MAX_COLUMNS}
               columnsLabel="Grade columns per screen (season grids)"
               idPrefix="look"
             />

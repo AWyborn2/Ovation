@@ -10201,7 +10201,7 @@ export const getHonourDisplayResponseSettingsKioskLookSpeedMax = 200;
 export const getHonourDisplayResponseSettingsKioskLookHoldMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookHoldMax = 60;
 
-export const getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+export const getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax = 10;
 
 export const getHonourDisplayResponseSettingsBoardConfigsPerPageMin = 0;
 export const getHonourDisplayResponseSettingsBoardConfigsPerPageMax = 20;
@@ -10214,7 +10214,7 @@ export const getHonourDisplayResponseSettingsBoardConfigsSpeedMax = 200;
 export const getHonourDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getHonourDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
-export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 10;
 
 export const getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
@@ -10433,7 +10433,7 @@ export const GetHonourDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getHonourDisplayResponseSettingsKioskLookSpeedMin).max(getHonourDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getHonourDisplayResponseSettingsKioskLookHoldMin).max(getHonourDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10444,7 +10444,7 @@ export const GetHonourDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsSpeedMin).max(getHonourDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsHoldMin).max(getHonourDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "photoBackground": zod.object({
   "slideshowId": zod.string().max(getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
@@ -10600,7 +10600,7 @@ export const getKioskDisplayResponseSettingsKioskLookSpeedMax = 200;
 export const getKioskDisplayResponseSettingsKioskLookHoldMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookHoldMax = 60;
 
-export const getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+export const getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax = 10;
 
 export const getKioskDisplayResponseSettingsBoardConfigsPerPageMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsPerPageMax = 20;
@@ -10613,7 +10613,7 @@ export const getKioskDisplayResponseSettingsBoardConfigsSpeedMax = 200;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
-export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 10;
 
 export const getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
@@ -10832,7 +10832,7 @@ export const GetKioskDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getKioskDisplayResponseSettingsKioskLookSpeedMin).max(getKioskDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getKioskDisplayResponseSettingsKioskLookHoldMin).max(getKioskDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10843,7 +10843,7 @@ export const GetKioskDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsSpeedMin).max(getKioskDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsHoldMin).max(getKioskDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "photoBackground": zod.object({
   "slideshowId": zod.string().max(getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
@@ -10991,7 +10991,7 @@ export const updateHonourDisplaySettingsBodyKioskLookSpeedMax = 200;
 export const updateHonourDisplaySettingsBodyKioskLookHoldMin = 0;
 export const updateHonourDisplaySettingsBodyKioskLookHoldMax = 60;
 
-export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 10;
 
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax = 80;
@@ -11026,7 +11026,7 @@ export const updateHonourDisplaySettingsBodyBoardConfigsSpeedMax = 200;
 export const updateHonourDisplaySettingsBodyBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsBodyBoardConfigsHoldMax = 60;
 
-export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 10;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
@@ -11050,7 +11050,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsBodyKioskLookSpeedMin).max(updateHonourDisplaySettingsBodyKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsBodyKioskLookHoldMin).max(updateHonourDisplaySettingsBodyKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).optional().describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "defaultTemplate": zod.string().optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
@@ -11101,7 +11101,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsSpeedMin).max(updateHonourDisplaySettingsBodyBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsHoldMin).max(updateHonourDisplaySettingsBodyBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "photoBackground": zod.object({
   "slideshowId": zod.string().max(updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax),
@@ -11212,7 +11212,7 @@ export const updateHonourDisplaySettingsResponseKioskLookSpeedMax = 200;
 export const updateHonourDisplaySettingsResponseKioskLookHoldMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookHoldMax = 60;
 
-export const updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax = 10;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMax = 20;
@@ -11225,7 +11225,7 @@ export const updateHonourDisplaySettingsResponseBoardConfigsSpeedMax = 200;
 export const updateHonourDisplaySettingsResponseBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsResponseBoardConfigsHoldMax = 60;
 
-export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 10;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
@@ -11290,7 +11290,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsResponseKioskLookSpeedMin).max(updateHonourDisplaySettingsResponseKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsResponseKioskLookHoldMin).max(updateHonourDisplaySettingsResponseKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -11301,7 +11301,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsSpeedMin).max(updateHonourDisplaySettingsResponseBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsHoldMin).max(updateHonourDisplaySettingsResponseBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
   "photoBackground": zod.object({
   "slideshowId": zod.string().max(updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax),
