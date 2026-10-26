@@ -93,9 +93,22 @@ const premierships: DisplayBoard = {
   display: display(),
 };
 
+// A few cells exercise the season grid's edge cases: joint holders, a note
+// under the name, an over-long name and an empty cell.
+const championCell = (i: number, g: number): BoardGridRow["cells"][number] => {
+  if (i === 1 && g === 0) {
+    return { entries: [{ text: name(3) }, { text: name(8), note: "Joint" }] };
+  }
+  if (i === 2 && g === 1) {
+    return { entries: [{ text: "Alexander Montgomery-Fitzwilliam Jnr", note: "Premiers" }] };
+  }
+  if (i === 3 && g === 3) return { entries: [] };
+  return { entries: [{ text: name(i * 5 + g * 3) }] };
+};
+
 const championRows: BoardGridRow[] = Array.from({ length: 24 }, (_, i) => ({
   heading: season(2025 - i),
-  cells: GRADES.map((_, g) => ({ entries: [{ text: name(i * 5 + g * 3) }] })),
+  cells: GRADES.map((_, g) => championCell(i, g)),
 }));
 
 const champions: DisplayBoard = {
@@ -142,6 +155,33 @@ const battingRecords: DisplayBoard = {
   display: display(),
 };
 
+// A season-aligned composite board (several list boards side by side).
+const captains: DisplayBoard = {
+  id: "captains",
+  category: "captains",
+  layout: "columns",
+  title: "Captains",
+  subtitle: "Captain of each senior side",
+  entries: [],
+  columns: [
+    {
+      heading: "Season",
+      entries: Array.from({ length: 16 }, (_, i) => ({
+        primaryText: season(2025 - i),
+        season: season(2025 - i),
+      })),
+    },
+    ...GRADES.slice(0, 3).map((g, c) => ({
+      heading: g,
+      entries: Array.from({ length: 16 }, (_, i) => ({
+        primaryText: name(i * 3 + c * 5 + 1),
+        season: season(2025 - i),
+      })),
+    })),
+  ],
+  display: display("slide"),
+};
+
 const lifeMembers: DisplayBoard = {
   id: "life-members",
   category: "life-members",
@@ -163,7 +203,7 @@ const lifeMembers: DisplayBoard = {
 };
 
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
-  boards: [premierships, champions, officeBearers, battingRecords, lifeMembers],
+  boards: [premierships, champions, captains, officeBearers, battingRecords, lifeMembers],
   brand: {
     name: "Halls Head Cricket Club",
     shortName: "Halls Head",
@@ -188,6 +228,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     boardConfigs: {
       premierships: { move: "pages", trans: "flip" },
       "club-champions": { move: "credits", trans: "wipe", speed: 120 },
+      captains: { move: "pages", trans: "up" },
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
       "batting-records": { move: "fit", trans: "pop" },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },

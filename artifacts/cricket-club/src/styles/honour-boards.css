@@ -1083,6 +1083,11 @@
   background: transparent;
   border-bottom: 1px dotted rgba(216, 178, 94, 0.18);
 }
+/* A composite board's names take the cell's engraved type. */
+.skin-p12 .hb-cell .hb-name {
+  font: inherit;
+  color: inherit;
+}
 .skin-p12 .hb-table .row:nth-child(odd) td,
 .skin-p12 .hb-grid-table .row:nth-child(odd) td {
   background: transparent;
@@ -1305,6 +1310,45 @@
   pointer-events: none;
   background: linear-gradient(180deg, transparent, #f3d98b, #d8b25e, transparent);
 }
+/* Season grids on the TV (A4): the season shows once per row in a fixed,
+   narrow leading column and the grade / office / award columns share the rest
+   equally, so every column group of a board lines up the same way. Names stay
+   on one line (ellipsis rather than a ragged two-line row); joint holders
+   stack, and a cell's note sits on its own line under the name. */
+.hb-kiosk {
+  --hb-season-w: max(7.2cqw, 88px);
+}
+.hb-kiosk .hb-grid-table {
+  table-layout: fixed;
+}
+.hb-kiosk .hb-grid-table .hb-grid-rowhead {
+  width: var(--hb-season-w);
+}
+.hb-kiosk .hb-grid-table th,
+.hb-kiosk .hb-grid-name,
+.hb-kiosk .hb-cell .hb-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-kiosk .hb-grid-name + .hb-grid-name {
+  margin-top: 0.15em;
+}
+.hb-kiosk .hb-grid-note {
+  display: block;
+  margin-left: 0;
+}
+/* A season-aligned composite board: a narrow Season column like the grid's
+   (the template sets equal columns inline, hence the !important). */
+.hb-kiosk .hb-cols[data-season-lead] {
+  grid-template-columns:
+    var(--hb-season-w)
+    repeat(var(--hb-cols-n), minmax(0, 1fr)) !important;
+}
+.hb-kiosk .hb-cell {
+  min-width: 0;
+}
+
 /* Classic Honour Board chrome: page dots in the plate and the board footer.
    Only that skin shows them, so the other skins look as they always have. */
 .hb-kp-dots,
