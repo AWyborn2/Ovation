@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link } from "wouter";
 import type { DisplayBoard, BoardEntry, BoardDisplayConfig, HonourBrand } from "./types";
 import { gradeBadge, formatDate } from "./helpers";
@@ -266,6 +266,8 @@ export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   const cols = board.columns ?? [];
   const colCount = Math.max(1, cols.length);
   const maxRows = cols.reduce((m, c) => Math.max(m, c.entries.length), 0);
+  // A season-aligned board leads with a Season column; the kiosk keeps it narrow.
+  const seasonLead = cols[0]?.heading === "Season";
 
   return (
     <div className="hb-board hb-columns">
@@ -273,7 +275,13 @@ export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
       <BoardBody>
         <div
           className="hb-cols"
-          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          data-season-lead={seasonLead ? "" : undefined}
+          style={
+            {
+              gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+              "--hb-cols-n": colCount - 1,
+            } as CSSProperties
+          }
         >
           {cols.map((col, ci) => (
             <div className="hb-col-head" key={`h-${ci}`}>
