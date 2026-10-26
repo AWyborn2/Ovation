@@ -185,6 +185,9 @@ function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: n
       return { fallback: 2, max: 3 };
     case "premiership":
       return { fallback: 5, max: 5 };
+    // Grade record panels: four across, as the design shows them.
+    case "recordPanels":
+      return { fallback: 4, max: 5 };
     default:
       return { fallback: 1, max: 1 };
   }

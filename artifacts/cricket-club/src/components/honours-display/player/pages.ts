@@ -13,6 +13,7 @@ function itemsPerRow(board: DisplayBoard, columnsPerScreen: number): number {
     case "leaderboard":
     case "achievements":
     case "premiership":
+    case "recordPanels":
     case "lifeMembers":
       return Math.max(1, columnsPerScreen);
     default:

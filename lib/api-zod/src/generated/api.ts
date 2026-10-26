@@ -10171,7 +10171,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10220,7 +10220,13 @@ export const GetHonourDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -10270,7 +10276,13 @@ export const GetHonourDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({
@@ -10498,7 +10510,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10547,7 +10559,13 @@ export const GetKioskDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -10597,7 +10615,13 @@ export const GetKioskDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({

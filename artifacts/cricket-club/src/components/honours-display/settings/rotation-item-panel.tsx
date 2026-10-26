@@ -14,6 +14,7 @@ const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   teamOfDecade: "Columns",
   leaderboard: "Columns",
   achievements: "Columns",
+  recordPanels: "Panels across",
 };
 
 /**

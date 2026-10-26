@@ -249,6 +249,36 @@ const centuries: DisplayBoard = {
   display: display(),
 };
 
+// Grade record panels (C3): one panel per grade.
+const gradeRecords: DisplayBoard = {
+  id: "grade_records",
+  category: "grade_records",
+  layout: "recordPanels",
+  title: "Grade Records",
+  subtitle: "Leading performances in each grade",
+  entries: GRADES.map((g, k) => ({
+    season: "",
+    primaryText: g,
+    lines: [
+      { label: "Most Games", value: String(180 - k * 9), holder: name(k * 3) },
+      { label: "Most Runs", value: String(6400 - k * 410), holder: name(k * 3 + 4) },
+      {
+        label: "Highest Score",
+        value: `${148 + ((k * 23) % 80)}${k % 2 ? "*" : ""}`,
+        holder: name(k * 3 + 7),
+      },
+      { label: "Most Wickets", value: String(312 - k * 21), holder: name(k * 3 + 9) },
+      {
+        label: "Best Bowling",
+        value: `${7 + (k % 3)}/${12 + ((k * 7) % 30)}`,
+        holder: name(k * 3 + 2),
+      },
+      { label: "Most Catches", value: String(96 - k * 6), holder: name(k * 3 + 5) },
+    ],
+  })),
+  display: display(),
+};
+
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
   boards: [
     premierships,
@@ -258,6 +288,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     battingRecords,
     mostRuns,
     centuries,
+    gradeRecords,
     lifeMembers,
   ],
   brand: {
@@ -289,6 +320,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       "batting-records": { move: "fit", trans: "pop" },
       most_runs: { move: "pages", trans: "rows", top: 20 },
       centuries: { move: "credits", trans: "fade", speed: 160 },
+      grade_records: { move: "pages", trans: "flip", columnsPerScreen: 4 },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
     },
     composites: [],
