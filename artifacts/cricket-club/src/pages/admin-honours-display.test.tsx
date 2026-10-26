@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderAt } from "../test/render";
 import { installApiMock } from "../test/mock-api";
 import type { HonourDisplayBundle } from "@workspace/api-client-react";
@@ -35,6 +35,7 @@ const BUNDLE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
+    kioskPhotoSlideshows: [],
     kioskLook: {},
     boardConfigs: {},
     composites: [],
@@ -333,5 +334,182 @@ describe("TV settings (kiosk redesign B3)", () => {
     expect(select("board-tv-champions-trans").options[0]!.textContent).toBe("Default · Wipe");
 
     expect((await sentBody()).kioskLook).toEqual({ trans: "wipe", move: "pages" });
+  });
+});
+
+describe("live preview (kiosk redesign B4)", () => {
+  const champions = {
+    id: "champions",
+    category: "awards",
+    layout: "list" as const,
+    title: "Club Champions",
+    entries: [],
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  };
+  const WITH_ROTATION: HonourDisplayBundle = {
+    ...BUNDLE,
+    boards: [champions],
+    settings: { ...BUNDLE.settings, kioskSequence: ["champions", "sponsor"] },
+  };
+
+  /** Marks the preview frame ready and returns what the page posts to it. */
+  function connectFrame() {
+    const frame = screen.getByTestId("kiosk-preview-frame") as HTMLIFrameElement;
+    const win = frame.contentWindow!;
+    const post = vi.spyOn(win, "postMessage");
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          data: { type: "ovation:kiosk-preview-ready" },
+          origin: window.location.origin,
+          source: win,
+        }),
+      );
+    });
+    return async () => {
+      await waitFor(() => expect(post).toHaveBeenCalled());
+      const [msg, origin] = post.mock.calls.at(-1)!;
+      expect(origin).toBe(window.location.origin);
+      post.mockClear();
+      return msg as { bundle: HonourDisplayBundle };
+    };
+  }
+
+  it("plays the selected item, then the whole rotation, with unsaved changes", async () => {
+    installApiMock({ "/honour-display": WITH_ROTATION });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    await screen.findByTestId("seq-row-0");
+    const nextMessage = connectFrame();
+
+    // Nothing selected: the whole saved rotation.
+    let sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions", "sponsor"]);
+    expect(screen.queryByTestId("kiosk-preview-unsaved")).toBeNull();
+
+    // Select a board and change it without saving: the preview replays just it.
+    fireEvent.click(screen.getByTestId("seq-select-0"));
+    fireEvent.change(screen.getByTestId("board-tv-champions-move"), {
+      target: { value: "pages" },
+    });
+    sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions"]);
+    expect(sent.bundle.settings.boardConfigs.champions).toEqual({ move: "pages" });
+    expect(screen.getByTestId("kiosk-preview-now").textContent).toBe("Club Champions");
+    expect(screen.getByTestId("kiosk-preview-unsaved")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("kiosk-preview-rotation"));
+    sent = await nextMessage();
+    expect(sent.bundle.settings.kioskSequence).toEqual(["champions", "sponsor"]);
+    expect(screen.getByTestId("kiosk-preview-now").textContent).toBe("Whole rotation");
+
+    // Discard returns the preview to the saved settings.
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    sent = await nextMessage();
+    expect(sent.bundle.settings.boardConfigs).toEqual({});
+    expect(screen.queryByTestId("kiosk-preview-unsaved")).toBeNull();
+  });
+});
+
+describe("Photo slideshows (kiosk redesign D2)", () => {
+  const champions = {
+    id: "champions",
+    category: "awards",
+    layout: "grid" as const,
+    title: "Club Champions",
+    entries: [],
+    grid: { rowHeading: "Season", columnHeadings: ["First"], rows: [] },
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  };
+  const saved = {
+    id: "photos:saved",
+    name: "Season photos",
+    library: "senior" as const,
+    source: "season" as const,
+    order: "newest" as const,
+    perPass: 10,
+    secondsPerPhoto: 6,
+    captions: true,
+  };
+
+  it("adds a slideshow to the rotation, edits it and saves the definition", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["champions", "photos:saved"],
+          kioskPhotoSlideshows: [saved],
+        },
+        photoSlideshows: [{ id: "photos:saved", photos: [{ url: "/p.jpg", width: 4, height: 3 }] }],
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    const row = await screen.findByTestId("seq-row-1");
+    expect(row.textContent).toContain("Photo slideshow");
+    expect(row.textContent).toContain("Season photos");
+    expect(row.textContent).toContain("1 photo to pick from");
+
+    fireEvent.click(screen.getByTestId("add-photos-to-seq"));
+    const added = screen.getByTestId("seq-row-2");
+    expect(added.textContent).toContain("Photos 2");
+    expect(added.textContent).toContain("Save to load its photos");
+    // The new slideshow opens in the item panel.
+    const id = (screen.getByTestId(/^slideshow-photos:.*-name$/) as HTMLInputElement).id.replace(
+      /^slideshow-|-name$/g,
+      "",
+    );
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-name`), {
+      target: { value: "Juniors" },
+    });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-library`), {
+      target: { value: "junior" },
+    });
+    expect(screen.getByText(/every child tagged in it may be shown/)).toBeTruthy();
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-source`), {
+      target: { value: "types" },
+    });
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-type-team`));
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const sent = () =>
+      vi.mocked(fetch).mock.calls.find(([, init]) => init?.method && init.method !== "GET");
+    await waitFor(() => expect(sent()).toBeTruthy());
+    const body = JSON.parse(String(sent()![1]!.body)) as {
+      kioskSequence: string[];
+      kioskPhotoSlideshows: Array<Record<string, unknown>>;
+    };
+    expect(body.kioskSequence).toEqual(["champions", "photos:saved", id]);
+    expect(body.kioskPhotoSlideshows).toEqual([
+      saved,
+      expect.objectContaining({
+        id,
+        name: "Juniors",
+        library: "junior",
+        source: "types",
+        types: ["team"],
+        order: "random",
+        perPass: 10,
+      }),
+    ]);
+  });
+
+  it("deleting a slideshow takes it out of the rotation", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["photos:saved", "champions", "photos:saved"],
+          kioskPhotoSlideshows: [saved],
+        },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    fireEvent.click(screen.getByTestId("slideshow-photos:saved-delete"));
+    expect(screen.getAllByTestId(/^seq-row-/)).toHaveLength(1);
+    expect(screen.getByTestId("seq-row-0").textContent).toContain("Club Champions");
   });
 });

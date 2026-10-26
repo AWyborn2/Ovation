@@ -171,3 +171,13 @@ describe("vector colours", () => {
     expect(vectorColours(swapped)).toEqual(["var(--accent)", "var(--gold)"]);
   });
 });
+
+describe("page colours", () => {
+  it("keeps an empty page that has a colour, and drops it with neither", () => {
+    const doc: Parameters<typeof withPage>[0] = { formatVersion: 2, pages: {} };
+    const white = withPage(doc, "card", { layers: [], background: "#FFFFFF" });
+    expect(white.pages.card).toEqual({ layers: [], background: "#FFFFFF" });
+    expect(pageDoc(white, "card").background).toBe("#FFFFFF");
+    expect(withPage(white, "card", { layers: [] }).pages.card).toBeUndefined();
+  });
+});

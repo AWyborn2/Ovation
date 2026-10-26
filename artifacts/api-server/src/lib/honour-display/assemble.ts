@@ -22,16 +22,23 @@ import {
   buildTeamOfDecade,
 } from "./awards";
 import { buildComposites, buildCustomGrids } from "./composites";
-import { buildCaptains, buildCaptainsGrid, buildCommittee, buildLifeMembers } from "./people";
+import {
+  buildCaptains,
+  buildCaptainsGrid,
+  buildCommittee,
+  buildLifeMembers,
+  buildOfficeBearers,
+} from "./people";
 import { buildPremierships, buildPremiershipsGrid, premParentGrade } from "./premierships";
 import {
-  buildCenturies,
   buildClubRecords,
-  buildFiveWicketHauls,
+  buildHatTricks,
+  buildHonourList,
   buildMilestoneBoard,
-  buildMostGames,
+  buildLeaderboards,
+  buildPartnershipBoards,
   buildPartnerships,
-  buildRecordsByGrade,
+  buildGradeRecordBoards,
   buildRecordsLeaderboards,
   roleRank,
 } from "./records";
@@ -55,37 +62,43 @@ export async function assembleBoards(
     awardWinnersGrid,
     centuries,
     fiveFor,
+    hatTricks,
     lifeMembers,
     captains,
     captainsGrid,
     committee,
+    officeBearers,
     partnerships,
+    partnershipBoards,
     milestones,
     awardPoints,
     recordsLeaderboards,
     recordsByGrade,
     teamOfDecade,
     clubRecords,
-    mostGames,
+    leaderboards,
   ] = await Promise.all([
     buildPremierships(tenantId, central),
     buildPremiershipsGrid(tenantId, gridCols("premierships_grid")),
     buildAwardBoards(tenantId),
     buildAwardWinnersGrid(tenantId, gridCols("award_winners")),
-    buildCenturies(tenantId),
-    buildFiveWicketHauls(tenantId),
+    buildHonourList("century", source),
+    buildHonourList("fiveFor", source),
+    buildHatTricks(tenantId),
     buildLifeMembers(tenantId),
     buildCaptains(tenantId),
     buildCaptainsGrid(tenantId, gridCols("captains_grid")),
     buildCommittee(tenantId, gridCols("committee")),
+    buildOfficeBearers(tenantId),
     buildPartnerships(tenantId),
+    buildPartnershipBoards(source),
     buildMilestoneBoard(source),
     buildAwardPoints(tenantId),
     buildRecordsLeaderboards(tenantId),
-    buildRecordsByGrade(source),
+    buildGradeRecordBoards(source),
     buildTeamOfDecade(tenantId),
     buildClubRecords(tenantId),
-    buildMostGames(source),
+    buildLeaderboards(source),
   ]);
 
   const boards: HonourBoardOut[] = [];
@@ -95,21 +108,25 @@ export async function assembleBoards(
   if (awardWinnersGrid) boards.push(awardWinnersGrid);
   boards.push(...teamOfDecade);
   if (clubRecords) boards.push(clubRecords);
-  boards.push(...recordsByGrade);
+  boards.push(...recordsByGrade.byGrade);
+  if (recordsByGrade.panels) boards.push(recordsByGrade.panels);
   if (partnerships) boards.push(partnerships);
+  boards.push(...partnershipBoards);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
-  if (mostGames) boards.push(mostGames);
+  if (hatTricks) boards.push(hatTricks);
+  boards.push(...leaderboards);
   if (milestones) boards.push(milestones);
   boards.push(...awardPoints);
   boards.push(...recordsLeaderboards);
   boards.push(...captains);
   if (captainsGrid) boards.push(captainsGrid);
   if (committee) boards.push(committee);
+  if (officeBearers) boards.push(officeBearers);
   if (lifeMembers) boards.push(lifeMembers);
 
   // Composite "columns" boards reference the base boards above, so build them
-  // last (after Most Games) and append.
+  // last (after the leaderboards) and append.
   boards.push(...buildComposites(settings.composites ?? [], boards));
 
   // Admin-built custom grid boards (independent of the base boards).

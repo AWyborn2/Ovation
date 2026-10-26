@@ -6,7 +6,7 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { type BoardDisplayConfigJson } from "@workspace/db";
-import { gradeSeniorityRank } from "@workspace/scorecard";
+import { gradeSeniorityRank, isListLikeLayout } from "@workspace/scorecard";
 import {
   type BoardDisplayOut,
   type BoardGridOut,
@@ -83,8 +83,10 @@ export function resolveDisplay(
   layout: BoardLayout,
   override: BoardDisplayConfigJson | undefined,
 ): BoardDisplayOut {
-  // Multi-column flow only makes sense for plain lists; other layouts stay 1.
-  const cols = layout === "list" ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1))) : 1;
+  // Multi-column flow only makes sense for list-like boards; others stay 1.
+  const cols = isListLikeLayout(layout)
+    ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1)))
+    : 1;
   // "wrap" only applies to grid boards; other layouts fall back to a slideshow.
   let transition = override?.transition ?? DEFAULT_DISPLAY.transition;
   if (transition === "wrap" && layout !== "grid") transition = "slide";

@@ -5,6 +5,7 @@
  * the barrel). Depends only on the db layer, settings and tenant resolution —
  * never on a request object — so every builder is unit-testable.
  */
+import { isListLikeLayout } from "@workspace/scorecard";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
@@ -57,7 +58,8 @@ export function buildComposites(
       if (!ref || NON_COMPOSITE_REFS.has(ref.boardId)) continue;
       if (ref.boardId.startsWith("composite:")) continue; // no nesting
       const src = byId.get(ref.boardId);
-      if (!src || src.layout !== "list") continue; // only list boards
+      // Only list-like boards (lists, leaderboards, achievement lists).
+      if (!src || !isListLikeLayout(src.layout)) continue;
       cols.push({
         heading: (ref.heading ?? "").trim() || src.title,
         entries: src.entries,

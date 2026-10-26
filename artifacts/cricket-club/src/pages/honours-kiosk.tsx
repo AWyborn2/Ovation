@@ -34,7 +34,14 @@ const KIOSK_STRIP_PX = 96;
  */
 const KIOSK_REFRESH_MS = 10 * 60 * 1000;
 
-export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundle } = {}) {
+export default function HonoursKiosk({
+  fixture,
+  preview = false,
+}: {
+  fixture?: HonourDisplayBundle;
+  /** The settings page's live preview: no fullscreen, no exit button. */
+  preview?: boolean;
+} = {}) {
   // A kiosk token (issued by an admin) drives the public, login-free kiosk feed
   // for a fixed clubroom TV. It arrives via the short `/tv/:token` path, or the
   // legacy `?token=` query for older saved links. Without one we're the in-app
@@ -89,6 +96,11 @@ export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundl
     !!settings?.kioskSponsorStrip && activeSponsors.length > 0 && !overlayShowing;
   const sponsorSlidesOn = !!settings?.kioskSponsorSlides && activeSponsors.length > 0;
 
+  const photoSlideshows = data?.photoSlideshows;
+  const slideshowPhotos = useMemo(
+    () => Object.fromEntries((photoSlideshows ?? []).map((s) => [s.id, s.photos])),
+    [photoSlideshows],
+  );
   const items = useMemo(
     () =>
       settings
@@ -98,10 +110,12 @@ export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundl
             look,
             sponsors: activeSponsors,
             ads: settings.kioskAds ?? [],
+            slideshows: settings.kioskPhotoSlideshows ?? [],
+            slideshowPhotos,
             sponsorSlides: sponsorSlidesOn,
           })
         : [],
-    [boards, settings, look, activeSponsors, sponsorSlidesOn],
+    [boards, settings, look, activeSponsors, slideshowPhotos, sponsorSlidesOn],
   );
 
   const exit = () => {
@@ -115,6 +129,7 @@ export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundl
 
   // Enter fullscreen on first user interaction (browsers block auto-fullscreen).
   useEffect(() => {
+    if (preview) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") exit();
     };
@@ -177,9 +192,11 @@ export default function HonoursKiosk({ fixture }: { fixture?: HonourDisplayBundl
         />
       </div>
       {sponsorStripOn && <SponsorStrip sponsors={activeSponsors} />}
-      <button className="hb-kexit" onClick={exit}>
-        ✕ Exit kiosk (Esc)
-      </button>
+      {!preview && (
+        <button className="hb-kexit" onClick={exit}>
+          ✕ Exit kiosk (Esc)
+        </button>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   type HonourColourOverrides,
   type GridCatalogEntry,
   type KioskAd,
+  type KioskPhotoSlideshow,
   type KioskLook,
   type CustomGridDef,
 } from "@workspace/api-client-react";
@@ -19,6 +20,7 @@ import { TEMPLATES, isBuiltinSkin } from "./types";
 import { CLIENT_DEFAULT_DISPLAY } from "./use-approaching-board";
 import type { SkinOption } from "./editors/constants";
 import {
+  isListLikeLayout,
   resolveClubLook,
   resolveKioskDisplay,
   type KioskLookSource,
@@ -59,6 +61,7 @@ function seedDraft(settings: HonoursDisplaySettings) {
     sponsorSlideStyle: (settings.kioskSponsorSlideStyle ?? "grid") as SponsorSlideStyle,
     sponsorIds: settings.kioskSponsorIds ?? [],
     kioskAds: settings.kioskAds ?? [],
+    slideshows: settings.kioskPhotoSlideshows ?? [],
     boardConfigs: settings.boardConfigs ?? {},
     composites: settings.composites ?? [],
     customGrids: settings.customGrids ?? [],
@@ -109,6 +112,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   );
   const [sponsorIds, setSponsorIds] = useState<number[]>(seeded.sponsorIds);
   const [kioskAds, setKioskAds] = useState<KioskAd[]>(seeded.kioskAds);
+  const [slideshows, setSlideshows] = useState<KioskPhotoSlideshow[]>(seeded.slideshows);
   const [boardConfigs, setBoardConfigs] = useState<Record<string, BoardDisplayConfig>>(
     seeded.boardConfigs,
   );
@@ -134,6 +138,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     setSponsorSlideStyle(seeded.sponsorSlideStyle);
     setSponsorIds(seeded.sponsorIds);
     setKioskAds(seeded.kioskAds);
+    setSlideshows(seeded.slideshows);
     setBoardConfigs(seeded.boardConfigs);
     setComposites(seeded.composites);
     setCustomGrids(seeded.customGrids);
@@ -159,6 +164,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     sponsorSlideStyle,
     sponsorIds,
     kioskAds,
+    slideshows,
     boardConfigs,
     composites,
     customGrids,
@@ -167,6 +173,46 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     defaultFont,
   };
   const dirty = JSON.stringify(draft) !== JSON.stringify(seeded);
+
+  // ---- Live preview (B4) -------------------------------------------------
+  // The settings as the TV would get them if saved now. A number field that
+  // doesn't parse yet keeps its saved value rather than breaking the preview.
+  const num = (v: string, saved: number) => {
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? saved : n;
+  };
+  const draftSettings = (): HonoursDisplaySettings => ({
+    ...settings,
+    defaultTemplate,
+    kioskSequence: sequence,
+    kioskDwellMs: num(dwell, settings.kioskDwellMs),
+    kioskScrollSpeed: num(speed, settings.kioskScrollSpeed),
+    kioskEndHoldMs: num(endHold, settings.kioskEndHoldMs),
+    kioskLook,
+    kioskSponsorStrip: sponsorStrip,
+    kioskSponsorSlides: sponsorSlides,
+    kioskSponsorSlideEvery: num(sponsorSlideEvery, settings.kioskSponsorSlideEvery),
+    kioskSponsorSlideStyle: sponsorSlideStyle,
+    kioskSponsorIds: sponsorIds,
+    kioskAds,
+    kioskPhotoSlideshows: slideshows,
+    boardConfigs,
+    composites,
+    customGrids,
+    skins,
+    colourOverrides,
+    defaultFont: defaultFont || null,
+  });
+  /** The bundle the preview plays: the whole rotation, or just one item. */
+  const previewBundle = (token: string | null): HonourDisplayBundle => {
+    const draftSet = draftSettings();
+    return {
+      ...bundle,
+      settings: token
+        ? { ...draftSet, kioskSequence: [token], kioskSponsorSlides: false }
+        : draftSet,
+    };
+  };
 
   const update = useUpdateHonourDisplaySettings({
     mutation: {
@@ -233,6 +279,9 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     for (const sk of skins) {
       if (!sk.name.trim()) return setError("Every theme needs a name.");
     }
+    for (const sh of slideshows) {
+      if (!sh.name.trim()) return setError("Every photo slideshow needs a name.");
+    }
     for (const g of customGrids) {
       if (!g.title.trim()) return setError("Every custom grid board needs a title.");
       if (g.columns.length < 1) {
@@ -262,6 +311,7 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
       kioskSponsorSlideStyle: sponsorSlideStyle,
       kioskSponsorIds: sponsorIds,
       kioskAds,
+      kioskPhotoSlideshows: slideshows,
       boardConfigs,
       composites,
       customGrids,
@@ -303,12 +353,16 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
       const ad = kioskAds.find((a) => a.id === id);
       return ad ? ad.name || "Untitled ad" : "Missing ad";
     }
+    if (id.startsWith("photos:")) {
+      const sh = slideshows.find((x) => x.id === id);
+      return sh ? sh.name || "Untitled slideshow" : "Missing slideshow";
+    }
     return boardTitle.get(id) ?? `${id} (missing)`;
   };
   // List-layout boards eligible to be a composite column source (no composites,
   // no approaching — the server refuses both as column refs).
   const sourceBoards = boards.filter(
-    (b) => b.layout === "list" && !b.id.startsWith("composite:") && b.id !== "approaching",
+    (b) => isListLikeLayout(b.layout) && !b.id.startsWith("composite:") && b.id !== "approaching",
   );
 
   const setConfig = (id: string, patch: Partial<BoardDisplayConfig>) =>
@@ -332,7 +386,11 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const resolveBoard = (board: DisplayBoard, cfg: BoardDisplayConfig) =>
     resolveKioskDisplay(board, cfg, clubLook);
   const resetBoardMotion = (id: string) =>
-    setBoardConfigs((prev) => (prev[id] ? { ...prev, [id]: withoutMotion(prev[id]) } : prev));
+    setBoardConfigs((prev) => {
+      if (!prev[id]) return prev;
+      const { top: _top, ...rest } = withoutMotion(prev[id]);
+      return { ...prev, [id]: rest };
+    });
 
   const addComposite = () =>
     setComposites((prev) => [
@@ -383,6 +441,41 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     setKioskAds((prev) => prev.filter((a) => a.id !== id));
     setSequence((prev) => prev.filter((s) => s !== id));
   };
+
+  // ---- Photo slideshows (D2) --------------------------------------------
+  /** Add a slideshow with sensible defaults and place it at the end of the rotation. */
+  const addSlideshow = () => {
+    const id = `photos:${crypto.randomUUID()}`;
+    setSlideshows((prev) => [
+      ...prev,
+      {
+        id,
+        name: prev.length ? `Photos ${prev.length + 1}` : "Club photos",
+        library: "senior",
+        source: "all",
+        recentDays: null,
+        types: null,
+        grades: null,
+        order: "random",
+        perPass: 10,
+        secondsPerPhoto: 6,
+        captions: true,
+      },
+    ]);
+    editSeq((list) => [...list, id]);
+    return id;
+  };
+  const patchSlideshow = (id: string, patch: Partial<KioskPhotoSlideshow>) =>
+    setSlideshows((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const removeSlideshow = (id: string) => {
+    setSlideshows((prev) => prev.filter((x) => x.id !== id));
+    setSequence((prev) => prev.filter((s) => s !== id));
+  };
+  /** Photos the server picked for each saved slideshow (an unsaved one has none yet). */
+  const slideshowPhotoCount = useMemo(
+    () => new Map((bundle.photoSlideshows ?? []).map((x) => [x.id, x.photos.length])),
+    [bundle.photoSlideshows],
+  );
 
   const toggleSponsorId = (id: number) =>
     setSponsorIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -470,6 +563,12 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     addAd,
     patchAd,
     removeAd,
+    // Photo slideshows
+    slideshows,
+    addSlideshow,
+    patchSlideshow,
+    removeSlideshow,
+    slideshowPhotoCount,
     // TV look + per-board TV settings
     kioskLook,
     clubLook,
@@ -496,6 +595,8 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     addCustomGrid,
     patchCustomGrid,
     removeCustomGrid,
+    // Live preview
+    previewBundle,
     // Submit
     error,
     save,

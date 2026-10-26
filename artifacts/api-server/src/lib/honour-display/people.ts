@@ -11,6 +11,7 @@ import { gradeSeniorityRank } from "@workspace/scorecard";
 
 import { curatedIdsAreNative } from "../curated-player-space";
 import { seasonLabel } from "./premierships";
+import { roleRank } from "./records";
 import { composeSeasonGrid, gradeRank } from "./shared";
 import { type GridColumnOptionOut, type HonourBoardOut, type LifeMemberStatsOut } from "./types";
 
@@ -223,6 +224,59 @@ export async function buildCommittee(
       detail: r.role,
       playerId: r.playerId ?? null,
     })),
+  };
+}
+
+/**
+ * Office Bearers (kiosk redesign C6): the committee as a season grid, one
+ * column per office in office order (President, Vice President, Secretary,
+ * …, then any others alphabetically), so it needs no setup. A season with two
+ * holders of an office shows both. Unlike the Committee board, this is
+ * always a grid; on the TV, more offices than fit split into column groups.
+ */
+export async function buildOfficeBearers(tenantId: number): Promise<HonourBoardOut | null> {
+  const rows = await db
+    .select()
+    .from(clubRolesTable)
+    .where(and(eq(clubRolesTable.tenantId, tenantId), eq(clubRolesTable.published, true)))
+    .orderBy(desc(clubRolesTable.season), asc(clubRolesTable.displayOrder), asc(clubRolesTable.id));
+  return officeBearersBoard(rows);
+}
+
+/** The Office Bearers grid from published club roles (grade captains ignored). */
+export function officeBearersBoard(
+  rows: {
+    role: string;
+    season: number;
+    name: string;
+    playerId: number | null;
+    grade: string | null;
+  }[],
+): HonourBoardOut | null {
+  const officeBearers = rows.filter((r) => r.grade == null && r.role.trim() !== "");
+  if (officeBearers.length === 0) return null;
+  const offices = [...new Set(officeBearers.map((r) => r.role))].sort(
+    (a, b) => roleRank(a) - roleRank(b) || a.localeCompare(b),
+  );
+  const grid = composeSeasonGrid(
+    "Season",
+    offices.map((o) => ({ key: o, label: o })),
+    officeBearers.map((r) => ({
+      seasonLabel: seasonLabel(r.season),
+      startYear: r.season,
+      colKey: r.role,
+      text: r.name,
+      playerId: r.playerId ?? null,
+    })),
+  );
+  return {
+    id: "office_bearers",
+    category: "office_bearers",
+    layout: "grid",
+    title: "Office Bearers",
+    subtitle: "The committee that ran the club each season",
+    entries: [],
+    grid,
   };
 }
 

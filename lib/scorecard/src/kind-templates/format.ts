@@ -439,7 +439,12 @@ export const LAYER_KINDS_V2: readonly TemplateLayerKindV2[] = [
 // ── Documents ───────────────────────────────────────────────────────────────
 
 /** One page: its layers, back to front. */
-export type TemplatePage = { layers: TemplateLayerV2[] };
+/**
+ * One page of a template: its layers, and the colour behind them (a hex, or a
+ * card colour token such as `var(--gold)`). Without one the page sits on the
+ * club's stage colour, as every page did before page colours.
+ */
+export type TemplatePage = { layers: TemplateLayerV2[]; background?: string };
 
 /** A template document, format v2. */
 export type TemplateDocumentV2 = {

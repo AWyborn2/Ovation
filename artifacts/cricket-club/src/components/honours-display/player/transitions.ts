@@ -117,7 +117,7 @@ export function transitionSpec(t: ConcreteTransition): TransitionSpec | null {
 }
 
 /** Elements staggered by the Rows reveal transition. */
-export const ROW_SELECTOR = ".row, .hb-flag, .hb-lineup-row, .hb-lm-card";
+export const ROW_SELECTOR = ".row, .hb-flag, .hb-lineup-row, .hb-lm-card, .hb-panel";
 
 const EASE = "cubic-bezier(.2,.7,.2,1)";
 

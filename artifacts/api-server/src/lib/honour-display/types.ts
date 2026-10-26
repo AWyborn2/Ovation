@@ -25,6 +25,14 @@ export interface BoardEntryMeta {
   parentGrade?: string | null;
   competition?: string | null;
   rank?: number | null;
+  // Table layouts: the headline figure ("312", "147*", "6/23") and the
+  // player's seasons for the club ("2009–25").
+  figure?: string | null;
+  seasonSpan?: string | null;
+  // Achievement lists: the side it came against ("Mandurah").
+  opponent?: string | null;
+  // Records tables: the wicket a partnership was for (1–10).
+  wicket?: number | null;
 }
 
 // Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
@@ -65,14 +73,39 @@ export interface BoardEntry {
   meta?: BoardEntryMeta;
   squad?: BoardSquadMember[] | null;
   lifeMember?: LifeMemberInfoOut | null;
+  // Record panels: one grade's records ("Most Runs", "4321", "Jane Smith").
+  lines?: BoardRecordLineOut[] | null;
+}
+
+export interface BoardRecordLineOut {
+  label: string;
+  value: string;
+  holder?: string | null;
+  playerId?: number | null;
 }
 
 // Each board keeps its NATURAL layout; the chosen skin only changes the look.
 // "columns" is a composite layout: several list boards rendered side-by-side.
 // "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
 // "lifeMembers" is the two-column stat-tile + bio card layout.
+// "leaderboard" is a ranked table: rank, player, figure, seasons.
+// "achievements" is a dated list: season, player, figure, grade, opponent.
+// "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
+// "achievements" is a dated list: season, player, figure, grade, opponent.
+// "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
 export type BoardLayout =
-  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers";
+  | "premiership"
+  | "teamOfDecade"
+  | "list"
+  | "columns"
+  | "grid"
+  | "lifeMembers"
+  | "leaderboard"
+  | "achievements"
+  | "recordPanels"
+  | "recordsTable";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 
@@ -134,6 +167,10 @@ export interface HonourBoardOut {
   // board config / composite / custom-grid definition by assembleBoards.
   skin?: string | null;
   footnote?: string | null;
+  // Table layouts: the heading over the entries' meta.figure ("Games").
+  figureLabel?: string | null;
+  // Achievement lists: the whole list's tally ("47 centuries").
+  tallyLabel?: string | null;
   // Stamped onto every board by assembleBoards before serialization.
   display?: BoardDisplayOut;
 }

@@ -232,4 +232,41 @@ describe("central premiership honour boards", () => {
       .where(eq(premiershipsTable.id, created.body.id));
     expect(row!.tenantId).toBe(pinjarraTenantId);
   });
+
+  it("links a premiership to the grand final an admin picks and fills what's missing", async () => {
+    const board = await getBoard(pinjarraTenantId);
+    const b = board.body.find((p: { grade: string }) => p.grade === "B Grade");
+    expect(b).toMatchObject({ matchId: null, players: [] });
+    const link = (matchId: number, premId = b.id as number) =>
+      request(app)
+        .post(`/api/premierships/${premId}/link-match`)
+        .set("x-tenant-id", String(pinjarraTenantId))
+        .set("Cookie", adminCookie)
+        .send({ matchId });
+
+    // Match 1001 is Halls Head v Mandurah: not one of Pinjarra's.
+    await link(1001).expect(400);
+
+    // Match 1003: Pinjarra 9/200 beat club 1, 10/190, with Drew and Eli.
+    const linked = await link(1003).expect(200);
+    expect(linked.body).toMatchObject({
+      matchId: 1003,
+      venue: "Fixture Oval",
+      matchDate: "2024-10-26",
+      // The row's own result line ("Minor premiers") is kept.
+      result: "Minor premiers",
+    });
+    expect(linked.body.players.map((p: { name: string }) => p.name)).toEqual([
+      "Drew Fixture",
+      "Eli Fixture",
+    ]);
+
+    // Linking again doesn't duplicate the team.
+    const again = await link(1003).expect(200);
+    expect(again.body.players).toHaveLength(2);
+
+    // Another club's admin can't link its premierships.
+    const theirs = await getBoard(mandurahTenantId);
+    await link(1002, theirs.body[0].id).expect(404);
+  });
 });

@@ -9,6 +9,7 @@ import type { DisplayBoard } from './displayBoard';
 import type { GridCatalogEntry } from './gridCatalogEntry';
 import type { HonourBrand } from './honourBrand';
 import type { HonourDisplaySettings } from './honourDisplaySettings';
+import type { KioskSlideshowPhotos } from './kioskSlideshowPhotos';
 import type { Sponsor } from './sponsor';
 
 export interface HonourDisplayBundle {
@@ -19,4 +20,6 @@ export interface HonourDisplayBundle {
   activeSponsors: Sponsor[];
   /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
   gridCatalog?: GridCatalogEntry[];
+  /** Each photo slideshow's photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown). */
+  photoSlideshows?: KioskSlideshowPhotos[];
 }

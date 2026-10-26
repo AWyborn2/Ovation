@@ -130,6 +130,28 @@ export interface KioskAdJson {
   mediaType?: "image" | "video";
 }
 
+// A photo slideshow placed in the kiosk rotation (kiosk redesign D1). The
+// server resolves its photos for the TV; the client never evaluates filters.
+export interface KioskPhotoSlideshowJson {
+  id: string; // "photos:<uuid>"
+  name: string;
+  // Which library: senior club photos, the junior library (consent-checked), or both.
+  library: "senior" | "junior" | "both";
+  // Which photos: the whole library, the last `recentDays`, this season, or
+  // ones with any of `types` / `grades`.
+  source: "all" | "recent" | "season" | "types" | "grades";
+  recentDays?: number | null;
+  types?: string[] | null;
+  grades?: string[] | null;
+  // "random" shuffles each pass; "newest" shows the newest first.
+  order: "random" | "newest";
+  // Photos shown each time the slideshow comes round.
+  perPass: number;
+  secondsPerPhoto: number;
+  // Grade and season under each photo (never names).
+  captions: boolean;
+}
+
 // An admin-authored skin/theme. Built-in skins (p1..p8) are CSS-only and not
 // stored here; these are admin-created presets applied via inline CSS vars.
 export interface HonourSkinJson {
@@ -200,6 +222,11 @@ export const honourDisplaySettingsTable = pgTable(
     kioskSponsorIds: jsonb("kiosk_sponsor_ids").$type<number[]>().notNull().default([]),
     // Admin-uploaded full-screen ad creatives placed between boards.
     kioskAds: jsonb("kiosk_ads").$type<KioskAdJson[]>().notNull().default([]),
+    // Photo slideshows placed in the rotation as "photos:<id>" (kiosk redesign D1).
+    kioskPhotoSlideshows: jsonb("kiosk_photo_slideshows")
+      .$type<KioskPhotoSlideshowJson[]>()
+      .notNull()
+      .default([]),
     // Long-lived read-only access token that lets a fixed clubroom TV / Raspberry
     // Pi load the kiosk rotation without an admin login. NULL = no link issued
     // (kiosk token access disabled). Rotating/clearing this revokes old links.

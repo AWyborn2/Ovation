@@ -672,3 +672,22 @@ describe("what the converter dropped (B4)", () => {
       ).toEqual([`Layer 1.style has an unknown setting "${Object.keys(style)[0]}".`]);
   });
 });
+
+describe("page colours", () => {
+  const doc = (background: unknown) => ({
+    formatVersion: 2,
+    pages: { card: { layers: [layer("a")], background } },
+  });
+
+  it("accepts a hex colour or a card colour token", () => {
+    expect(templateDocumentErrors(doc("#FFFFFF"), "newSigning")).toEqual([]);
+    expect(templateDocumentErrors(doc("#0b1f3acc"), "newSigning")).toEqual([]);
+    expect(templateDocumentErrors(doc("var(--gold)"), "newSigning")).toEqual([]);
+  });
+
+  it("refuses anything else", () => {
+    for (const bad of ["red", "url(x)", "var(--evil)", "#12", 5]) {
+      expect(templateDocumentErrors(doc(bad), "newSigning").join(" ")).toMatch(/background/);
+    }
+  });
+});

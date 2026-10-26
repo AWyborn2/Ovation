@@ -183,6 +183,7 @@ describe("resolveKioskDisplay: new settings", () => {
   it("gives each other layout its own column default and cap", () => {
     expect(resolveKioskDisplay({ layout: "premiership" }, {}, look).columnsPerScreen).toBe(5);
     expect(resolveKioskDisplay({ layout: "lifeMembers" }, {}, look).columnsPerScreen).toBe(2);
+    expect(resolveKioskDisplay({ layout: "recordPanels" }, {}, look).columnsPerScreen).toBe(4);
     expect(
       resolveKioskDisplay({ layout: "premiership" }, { columnsPerScreen: 2 }, look)
         .columnsPerScreen,
@@ -195,6 +196,13 @@ describe("resolveKioskDisplay: new settings", () => {
       resolveKioskDisplay({ layout: "teamOfDecade" }, { columnsPerScreen: 4 }, look)
         .columnsPerScreen,
     ).toBe(1);
+  });
+
+  it("treats a leaderboard like a list for columns", () => {
+    const board: KioskBoardShape = { layout: "leaderboard" };
+    expect(resolveKioskDisplay(board, {}, look).columnsPerScreen).toBe(1);
+    expect(resolveKioskDisplay(board, { columns: 2 }, look).columnsPerScreen).toBe(2);
+    expect(resolveKioskDisplay(board, { columnsPerScreen: 5 }, look).columnsPerScreen).toBe(3);
   });
 
   it("accepts only the leaderboard sizes for top", () => {

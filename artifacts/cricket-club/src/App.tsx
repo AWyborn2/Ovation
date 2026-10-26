@@ -88,6 +88,7 @@ const KioskFixtureHarness =
 const AdminStarterProofs = lazy(() => import("@/pages/admin-starter-proofs"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
 const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
+const HonoursKioskPreview = lazy(() => import("@/pages/honours-kiosk-preview"));
 
 const queryClient = createAppQueryClient();
 
@@ -371,6 +372,12 @@ export function Router() {
         </Route>
         <Route path="/honours-display/kiosk">
           <KioskGate />
+        </Route>
+        {/* The settings page's live preview frame (fed unsaved settings by postMessage). */}
+        <Route path="/honours-display/preview">
+          <AdminOnly>
+            <HonoursKioskPreview />
+          </AdminOnly>
         </Route>
         <Route path="/honours-display">
           <Layout>

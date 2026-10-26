@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
 import { MOTION_KEYS, TvMotionFields, motionDefaults } from "./tv-motion-fields";
+import { KioskPreview } from "./kiosk-preview";
 
 /**
  * The club's TV defaults (honours kiosk redesign B3), saved to `kiosk_look`.
@@ -21,26 +22,29 @@ export function TvLookSection({ form }: { form: HonoursDisplayForm }) {
           How boards move and how big their text is on the clubroom TV. Each board follows these
           unless you change it in the rotation.
         </p>
-        <div className="max-w-2xl">
-          <TvMotionFields
-            value={kioskLook}
-            defaults={motionDefaults(kioskLook, resolveLook)}
-            onPatch={patchLook}
-            maxColumns={5}
-            columnsLabel="Grade columns per screen (season grids)"
-            idPrefix="look"
-          />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+          <div className="space-y-4">
+            <TvMotionFields
+              value={kioskLook}
+              defaults={motionDefaults(kioskLook, resolveLook)}
+              onPatch={patchLook}
+              maxColumns={5}
+              columnsLabel="Grade columns per screen (season grids)"
+              idPrefix="look"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!changed}
+              onClick={resetLook}
+              data-testid="look-reset"
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Back to built-in defaults
+            </Button>
+          </div>
+          <KioskPreview form={form} token={null} />
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!changed}
-          onClick={resetLook}
-          data-testid="look-reset"
-        >
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Back to built-in defaults
-        </Button>
       </CardContent>
     </Card>
   );

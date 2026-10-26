@@ -565,7 +565,13 @@ router.post(
       });
       return;
     }
-    let adjustments: unknown = parsed.data.adjustments ?? null;
+    // Stored as sent, as PATCH does: parsing keeps only the first editor's keys,
+    // so a page-based design (a blank one starting on a white page) would lose
+    // its pages. Validation above still checks the request's shape.
+    let adjustments: unknown =
+      parsed.data.adjustments == null
+        ? null
+        : ((req.body as { adjustments?: unknown }).adjustments ?? null);
     if (templateId !== undefined) {
       const template = await loadEditorTemplate(tenantId, templateId);
       if (!template) {

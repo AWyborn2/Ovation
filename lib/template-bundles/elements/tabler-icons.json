@@ -1,0 +1,2293 @@
+{
+  "look": "tabler-icons",
+  "elements": [
+    {
+      "slug": "tabler-icons/icons/beer",
+      "name": "Beer (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "beer"],
+      "signature": "f98983df299afdef",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Beer (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M9 21h6a1 1 0 0 0 1 -1v-3.625c0 -1.397 .29 -2.775 .845 -4.025l.31 -.7c.556 -1.25 .845 -2.253 .845 -3.65v-4a1 1 0 0 0 -1 -1h-10a1 1 0 0 0 -1 1v4c0 1.397 .29 2.4 .845 3.65l.31 .7a9.931 9.931 0 0 1 .845 4.025v3.625a1 1 0 0 0 1 1\" /> <path d=\"M6 8h12\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/camera",
+      "name": "Camera (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "camera"],
+      "signature": "9f37d45650970b89",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Camera (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2\" /> <path d=\"M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/microphone",
+      "name": "Microphone (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "microphone"],
+      "signature": "cbe699c85b774b73",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Microphone (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M9 5a3 3 0 0 1 3 -3a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3a3 3 0 0 1 -3 -3l0 -5\" /> <path d=\"M5 10a7 7 0 0 0 14 0\" /> <path d=\"M8 21l8 0\" /> <path d=\"M12 17l0 4\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/chart-bar",
+      "name": "Chart bar (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "chart", "bar"],
+      "signature": "b6821a84f1a0b46b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Chart bar (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6\" /> <path d=\"M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10\" /> <path d=\"M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14\" /> <path d=\"M4 20h14\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/flag",
+      "name": "Flag (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "flag"],
+      "signature": "4360a5d06aae7a01",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Flag (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9\" /> <path d=\"M5 21v-7\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/flame",
+      "name": "Flame (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "flame"],
+      "signature": "799e9c815618e7ca",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Flame (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M12 10.941c2.333 -3.308 .167 -7.823 -1 -8.941c0 3.395 -2.235 5.299 -3.667 6.706c-1.43 1.408 -2.333 3.294 -2.333 5.588c0 3.704 3.134 6.706 7 6.706c3.866 0 7 -3.002 7 -6.706c0 -1.712 -1.232 -4.403 -2.333 -5.588c-2.084 3.353 -3.257 3.353 -4.667 2.235\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/brand-facebook",
+      "name": "Facebook (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "brand", "facebook"],
+      "signature": "929c3361301b6cc8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Facebook (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M7 10v4h3v7h4v-7h3l1 -4h-4v-2a1 1 0 0 1 1 -1h3v-4h-3a5 5 0 0 0 -5 5v2h-3\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/brand-instagram",
+      "name": "Instagram (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "brand", "instagram"],
+      "signature": "121aeb6f70c419c9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Instagram (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10\" /> <path d=\"M8.5 12a3.5 3.5 0 1 0 7 0a3.5 3.5 0 0 0 -7 0\" /> <path d=\"M17 7v.01\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/cloud-rain",
+      "name": "Cloud rain (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "cloud", "rain"],
+      "signature": "b2be7ca05f97884b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Cloud rain (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7\" /> <path d=\"M11 13v2m0 3v2m4 -5v2m0 3v2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/speakerphone",
+      "name": "Speakerphone (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "speakerphone"],
+      "signature": "08244cb32229435a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Speakerphone (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M18 8a3 3 0 0 1 0 6\" /> <path d=\"M10 8v11a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-5\" /> <path d=\"M12 8l4.524 -3.77a.9 .9 0 0 1 1.476 .692v12.156a.9 .9 0 0 1 -1.476 .692l-4.524 -3.77h-8a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h8\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/sparkles",
+      "name": "Sparkles (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "sparkles"],
+      "signature": "3602fb2e87182816",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Sparkles (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/star",
+      "name": "Star (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "star"],
+      "signature": "a8510190072cde3e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Star (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/clock",
+      "name": "Clock (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "clock"],
+      "signature": "08f94a8d96cc2e81",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Clock (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0\" /> <path d=\"M12 7v5l3 3\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/map-pin",
+      "name": "Map pin (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "map", "pin"],
+      "signature": "c13614870e5a2fb5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Map pin (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/cricket",
+      "name": "Cricket (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "cricket"],
+      "signature": "37a850ca0b6766f4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Cricket (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M11.105 18.79l-1 .992a4.159 4.159 0 0 1 -6.038 -5.715l.157 -.166l8.282 -8.401l1.5 1.5l3.45 -3.391a2.08 2.08 0 0 1 3.057 2.815l-.116 .126l-3.391 3.45l1.5 1.5l-3.668 3.617\" /> <path d=\"M10.5 7.5l6 6\" /> <path d=\"M11 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/trophy",
+      "name": "Trophy (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "trophy"],
+      "signature": "371f47d4693b55d5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Trophy (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M8 21l8 0\" /> <path d=\"M12 17l0 4\" /> <path d=\"M7 4l10 0\" /> <path d=\"M17 4v8a5 5 0 0 1 -10 0v-8\" /> <path d=\"M3 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M17 9a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/medal",
+      "name": "Medal (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "medal"],
+      "signature": "b03d86d62840137d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Medal (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M12 4v3m-4 -3v6m8 -6v6\" /> <path d=\"M12 18.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5l-3 -1.5\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/medal-2",
+      "name": "Medal 2 (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "medal", "2"],
+      "signature": "e318c1e337b0244e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Medal 2 (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M9 3h6l3 7l-6 2l-6 -2l3 -7\" /> <path d=\"M12 12l-3 -9\" /> <path d=\"M15 11l-3 -8\" /> <path d=\"M12 19.5l-3 1.5l.5 -3.5l-2 -2l3 -.5l1.5 -3l1.5 3l3 .5l-2 2l.5 3.5l-3 -1.5\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/award",
+      "name": "Award (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "award"],
+      "signature": "cb5b39972a6153c1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Award (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M6 9a6 6 0 1 0 12 0a6 6 0 1 0 -12 0\" /> <path d=\"M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889\" /> <path d=\"M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.232l3.4 -5.889\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/crown",
+      "name": "Crown (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "crown"],
+      "signature": "bec42d47ed23fde7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Crown (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4l4 -6\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/scoreboard",
+      "name": "Scoreboard (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "scoreboard"],
+      "signature": "b101b0b3a7061380",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Scoreboard (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10\" /> <path d=\"M12 5v2\" /> <path d=\"M12 10v1\" /> <path d=\"M12 14v1\" /> <path d=\"M12 18v1\" /> <path d=\"M7 3v2\" /> <path d=\"M17 3v2\" /> <path d=\"M15 10.5v3a1.5 1.5 0 0 0 3 0v-3a1.5 1.5 0 0 0 -3 0\" /> <path d=\"M6 9h1.5a1.5 1.5 0 0 1 0 3h-.5h.5a1.5 1.5 0 0 1 0 3h-1.5\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/shirt-sport",
+      "name": "Shirt sport (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "shirt", "sport"],
+      "signature": "19c86db0ef57e7dd",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Shirt sport (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M15 4l6 2v5h-3v8a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-8h-3v-5l6 -2a3 3 0 0 0 6 0\" /> <path d=\"M10.5 11h2.5l-1.5 5\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/ball-baseball",
+      "name": "Ball baseball (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "ball", "baseball"],
+      "signature": "b3a099bb12a8f8c1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Ball baseball (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M5.636 18.364a9 9 0 1 0 12.728 -12.728a9 9 0 0 0 -12.728 12.728\" /> <path d=\"M12.495 3.02a9 9 0 0 1 -9.475 9.475\" /> <path d=\"M20.98 11.505a9 9 0 0 0 -9.475 9.475\" /> <path d=\"M9 9l2 2\" /> <path d=\"M13 13l2 2\" /> <path d=\"M11 7l2 1\" /> <path d=\"M7 11l1 2\" /> <path d=\"M16 11l1 2\" /> <path d=\"M11 16l2 1\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/ball-football",
+      "name": "Ball football (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "ball", "football"],
+      "signature": "0909b9e6b353b510",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Ball football (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> <path d=\"M12 7l4.76 3.45l-1.76 5.55h-6l-1.76 -5.55l4.76 -3.45\" /> <path d=\"M12 7v-4m3 13l2.5 3m-.74 -8.55l3.74 -1.45m-11.44 7.05l-2.56 2.95m.74 -8.55l-3.74 -1.45\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/run",
+      "name": "Run (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "run"],
+      "signature": "8c48349ce5ec3b85",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Run (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M11.007 5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0\" /> <path d=\"M4 17l5 1l.75 -1.5\" /> <path d=\"M15 21v-4l-4 -3l1 -6\" /> <path d=\"M7 12v-3l5 -1l3 3l3 1\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/stopwatch",
+      "name": "Stopwatch (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "stopwatch"],
+      "signature": "9ac30d27f0d3c9d2",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Stopwatch (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M5 13a7 7 0 1 0 14 0a7 7 0 0 0 -14 0\" /> <path d=\"M14.5 10.5l-2.5 2.5\" /> <path d=\"M17 8l1 -1\" /> <path d=\"M14 3h-4\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/calendar-event",
+      "name": "Calendar event (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "calendar", "event"],
+      "signature": "0dbaed005b794d77",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Calendar event (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12\" /> <path d=\"M16 3l0 4\" /> <path d=\"M8 3l0 4\" /> <path d=\"M4 11l16 0\" /> <path d=\"M8 15h2v2h-2l0 -2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/users-group",
+      "name": "Users group (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "users", "group"],
+      "signature": "6a2e1a2b50026998",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Users group (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1\" /> <path d=\"M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M17 10h2a2 2 0 0 1 2 2v1\" /> <path d=\"M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0\" /> <path d=\"M3 13v-1a2 2 0 0 1 2 -2h2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/user-star",
+      "name": "User star (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "user", "star"],
+      "signature": "2d102cf2740b580e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "User star (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0\" /> <path d=\"M6 21v-2a4 4 0 0 1 4 -4h.5\" /> <path d=\"M17.8 20.817l-2.172 1.138a.392 .392 0 0 1 -.568 -.41l.415 -2.411l-1.757 -1.707a.389 .389 0 0 1 .217 -.665l2.428 -.352l1.086 -2.193a.392 .392 0 0 1 .702 0l1.086 2.193l2.428 .352a.39 .39 0 0 1 .217 .665l-1.757 1.707l.414 2.41a.39 .39 0 0 1 -.567 .411l-2.172 -1.138\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/confetti",
+      "name": "Confetti (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "confetti"],
+      "signature": "2e14629dea8a6139",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Confetti (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M4 5h2\" /> <path d=\"M5 4v2\" /> <path d=\"M11.5 4l-.5 2\" /> <path d=\"M18 5h2\" /> <path d=\"M19 4v2\" /> <path d=\"M15 9l-1 1\" /> <path d=\"M18 13l2 -.5\" /> <path d=\"M18 19h2\" /> <path d=\"M19 18v2\" /> <path d=\"M14 16.518l-6.518 -6.518l-4.39 9.58a1 1 0 0 0 1.329 1.329l9.579 -4.39\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/ticket",
+      "name": "Ticket (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "ticket"],
+      "signature": "8dfa93f66891c39b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Ticket (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M15 5l0 2\" /> <path d=\"M15 11l0 2\" /> <path d=\"M15 17l0 2\" /> <path d=\"M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-3a2 2 0 0 0 0 -4v-3a2 2 0 0 1 2 -2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/bolt",
+      "name": "Bolt (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "bolt"],
+      "signature": "c680e4b125093fc0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Bolt (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/target",
+      "name": "Target (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "target"],
+      "signature": "0a46f393866b091d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Target (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0\" /> <path d=\"M7 12a5 5 0 1 0 10 0a5 5 0 1 0 -10 0\" /> <path d=\"M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/heart-handshake",
+      "name": "Heart handshake (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "heart", "handshake"],
+      "signature": "859b0d098f1ba92f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Heart handshake (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572\" /> <path d=\"M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25\" /> <path d=\"M12.5 15.5l2 2\" /> <path d=\"M15 13l2 2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/gift",
+      "name": "Gift (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "gift"],
+      "signature": "59c9388d3c184cf8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Gift (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 9a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1l0 -2\" /> <path d=\"M12 8l0 13\" /> <path d=\"M19 12v7a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7\" /> <path d=\"M7.5 8a2.5 2.5 0 0 1 0 -5a4.8 8 0 0 1 4.5 5a4.8 8 0 0 1 4.5 -5a2.5 2.5 0 0 1 0 5\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/cake",
+      "name": "Cake (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "cake"],
+      "signature": "9ae614520cb6abff",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Cake (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 20h18v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8\" /> <path d=\"M3 14.803c.312 .135 .654 .204 1 .197a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1c.35 .007 .692 -.062 1 -.197\" /> <path d=\"M12 4l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/sun",
+      "name": "Sun (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "sun"],
+      "signature": "85c2ee1f4d287290",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Sun (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0\" /> <path d=\"M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/coffee",
+      "name": "Coffee (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "coffee"],
+      "signature": "da96b065f2a6bb8c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Coffee (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1\" /> <path d=\"M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2\" /> <path d=\"M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2\" /> <path d=\"M3 10h14v5a6 6 0 0 1 -6 6h-2a6 6 0 0 1 -6 -6v-5\" /> <path d=\"M16.746 16.726a3 3 0 1 0 .252 -5.555\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/grill",
+      "name": "Grill (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "grill"],
+      "signature": "4538d27f94719be8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Grill (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M19 8h-14a6 6 0 0 0 6 6h2a6 6 0 0 0 6 -5.775l0 -.225\" /> <path d=\"M17 20a2 2 0 1 1 0 -4a2 2 0 0 1 0 4\" /> <path d=\"M15 14l1 2\" /> <path d=\"M9 14l-3 6\" /> <path d=\"M15 18h-8\" /> <path d=\"M15 5v-1\" /> <path d=\"M12 5v-1\" /> <path d=\"M9 5v-1\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/music",
+      "name": "Music (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "music"],
+      "signature": "6932b90ae4750861",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Music (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M13 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0\" /> <path d=\"M9 17v-13h10v13\" /> <path d=\"M9 8h10\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/building-stadium",
+      "name": "Building stadium (line)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "building", "stadium"],
+      "signature": "019b42221fffc1b0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Building stadium (line)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"var(--gold)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" > <path d=\"M4 12a8 2 0 1 0 16 0a8 2 0 1 0 -16 0\" /> <path d=\"M4 12v7c0 .94 2.51 1.785 6 2v-3h4v3c3.435 -.225 6 -1.07 6 -2v-7\" /> <path d=\"M15 6h4v-3h-4v7\" /> <path d=\"M7 6h4v-3h-4v7\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/calendar-filled",
+      "name": "Calendar (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "calendar"],
+      "signature": "21fd2b4910175ff5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Calendar (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M16 2a1 1 0 0 1 .993 .883l.007 .117v1h1a3 3 0 0 1 2.995 2.824l.005 .176v12a3 3 0 0 1 -2.824 2.995l-.176 .005h-12a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-12a3 3 0 0 1 2.824 -2.995l.176 -.005h1v-1a1 1 0 0 1 1.993 -.117l.007 .117v1h6v-1a1 1 0 0 1 1 -1zm3 7h-14v9.625c0 .705 .386 1.286 .883 1.366l.117 .009h12c.513 0 .936 -.53 .993 -1.215l.007 -.16v-9.625z\" /> <path d=\"M12 12a1 1 0 0 1 .993 .883l.007 .117v3a1 1 0 0 1 -1.993 .117l-.007 -.117v-2a1 1 0 0 1 -.117 -1.993l.117 -.007h1z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/trophy-filled",
+      "name": "Trophy (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "trophy"],
+      "signature": "a8fd02456692a3ee",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Trophy (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M17 3a1 1 0 0 1 .993 .883l.007 .117v2.17a3 3 0 1 1 0 5.659v.171a6.002 6.002 0 0 1 -5 5.917v2.083h3a1 1 0 0 1 .117 1.993l-.117 .007h-8a1 1 0 0 1 -.117 -1.993l.117 -.007h3v-2.083a6.002 6.002 0 0 1 -4.996 -5.692l-.004 -.225v-.171a3 3 0 0 1 -3.996 -2.653l-.003 -.176l.005 -.176a3 3 0 0 1 3.995 -2.654l-.001 -2.17a1 1 0 0 1 1 -1h10zm-12 5a1 1 0 1 0 0 2a1 1 0 0 0 0 -2m14 0a1 1 0 1 0 0 2a1 1 0 0 0 0 -2\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/crown-filled",
+      "name": "Crown (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "crown"],
+      "signature": "98d69cd3b0703cb3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Crown (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M19 19h-14c-.5 0 -.9 -.3 -1 -.8l-2 -10c0 -.4 .1 -.8 .5 -1.1c.4 -.2 .8 -.2 1.1 0l4.1 3.3l3.4 -5.1c.4 -.6 1.3 -.6 1.7 0l3.4 5.1l4.1 -3.3c.3 -.3 .8 -.3 1.1 0c.4 .2 .5 .6 .5 1.1l-2 10c0 .5 -.5 .8 -1 .8z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/star-filled",
+      "name": "Star (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "star"],
+      "signature": "df52c89098c9c919",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Star (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M8.243 7.34l-6.38 .925l-.113 .023a1 1 0 0 0 -.44 1.684l4.622 4.499l-1.09 6.355l-.013 .11a1 1 0 0 0 1.464 .944l5.706 -3l5.693 3l.1 .046a1 1 0 0 0 1.352 -1.1l-1.091 -6.355l4.624 -4.5l.078 -.085a1 1 0 0 0 -.633 -1.62l-6.38 -.926l-2.852 -5.78a1 1 0 0 0 -1.794 0l-2.853 5.78z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/flame-filled",
+      "name": "Flame (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "flame"],
+      "signature": "5b49d43340d56beb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Flame (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M10 2c0 -.88 1.056 -1.331 1.692 -.722c1.958 1.876 3.096 5.995 1.75 9.12l-.08 .174l.012 .003c.625 .133 1.203 -.43 2.303 -2.173l.14 -.224a1 1 0 0 1 1.582 -.153c1.334 1.435 2.601 4.377 2.601 6.27c0 4.265 -3.591 7.705 -8 7.705s-8 -3.44 -8 -7.706c0 -2.252 1.022 -4.716 2.632 -6.301l.605 -.589c.241 -.236 .434 -.43 .618 -.624c1.43 -1.512 2.145 -2.924 2.145 -4.78\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/bolt-filled",
+      "name": "Bolt (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "bolt"],
+      "signature": "bf9e70aeb9ee29ea",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Bolt (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M13 2l.018 .001l.016 .001l.083 .005l.011 .002h.011l.038 .009l.052 .008l.016 .006l.011 .001l.029 .011l.052 .014l.019 .009l.015 .004l.028 .014l.04 .017l.021 .012l.022 .01l.023 .015l.031 .017l.034 .024l.018 .011l.013 .012l.024 .017l.038 .034l.022 .017l.008 .01l.014 .012l.036 .041l.026 .027l.006 .009c.12 .147 .196 .322 .218 .513l.001 .012l.002 .041l.004 .064v6h5a1 1 0 0 1 .868 1.497l-.06 .091l-8 11c-.568 .783 -1.808 .38 -1.808 -.588v-6h-5a1 1 0 0 1 -.868 -1.497l.06 -.091l8 -11l.01 -.013l.018 -.024l.033 -.038l.018 -.022l.009 -.008l.013 -.014l.04 -.036l.028 -.026l.008 -.006a1 1 0 0 1 .402 -.199l.011 -.001l.027 -.005l.074 -.013l.011 -.001l.041 -.002z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/heart-filled",
+      "name": "Heart (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "heart"],
+      "signature": "a5d3164661f17e9c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Heart (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/map-pin-filled",
+      "name": "Map pin (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "map", "pin"],
+      "signature": "dda03ead8880c71b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Map pin (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M18.364 4.636a9 9 0 0 1 .203 12.519l-.203 .21l-4.243 4.242a3 3 0 0 1 -4.097 .135l-.144 -.135l-4.244 -4.243a9 9 0 0 1 12.728 -12.728zm-6.364 3.364a3 3 0 1 0 0 6a3 3 0 0 0 0 -6\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/flag-filled",
+      "name": "Flag (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "flag"],
+      "signature": "c846bb5b3af58c03",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Flag (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M4 5a1 1 0 0 1 .3 -.714a6 6 0 0 1 8.213 -.176l.351 .328a4 4 0 0 0 5.272 0l.249 -.227c.61 -.483 1.527 -.097 1.61 .676l.005 .113v9a1 1 0 0 1 -.3 .714a6 6 0 0 1 -8.213 .176l-.351 -.328a4 4 0 0 0 -5.136 -.114v6.552a1 1 0 0 1 -1.993 .117l-.007 -.117v-16z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/award-filled",
+      "name": "Award (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "award"],
+      "signature": "7ad17f5b417c0e0c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Award (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M19.496 13.983l1.966 3.406a1.001 1.001 0 0 1 -.705 1.488l-.113 .011l-.112 -.001l-2.933 -.19l-1.303 2.636a1.001 1.001 0 0 1 -1.608 .26l-.082 -.094l-.072 -.11l-1.968 -3.407a8.994 8.994 0 0 0 6.93 -3.999z\" /> <path d=\"M11.43 17.982l-1.966 3.408a1.001 1.001 0 0 1 -1.622 .157l-.076 -.1l-.064 -.114l-1.304 -2.635l-2.931 .19a1.001 1.001 0 0 1 -1.022 -1.29l.04 -.107l.05 -.1l1.968 -3.409a8.994 8.994 0 0 0 6.927 4.001z\" /> <path d=\"M12 2l.24 .004a7 7 0 0 1 6.76 6.996l-.003 .193l-.007 .192l-.018 .245l-.026 .242l-.024 .178a6.985 6.985 0 0 1 -.317 1.268l-.116 .308l-.153 .348a7.001 7.001 0 0 1 -12.688 -.028l-.13 -.297l-.052 -.133l-.08 -.217l-.095 -.294a6.96 6.96 0 0 1 -.093 -.344l-.06 -.271l-.049 -.271l-.02 -.139l-.039 -.323l-.024 -.365l-.006 -.292a7 7 0 0 1 6.76 -6.996l.24 -.004z\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tabler-icons/icons/confetti-filled",
+      "name": "Confetti (solid)",
+      "category": "icons",
+      "tags": ["icon", "tabler", "confetti"],
+      "signature": "89498722ba9dd04a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "vector",
+            "name": "Confetti (solid)",
+            "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"var(--gold)\" > <path d=\"M3 5a1 1 0 0 1 1 -1a1 1 0 0 1 1.993 -.117l.007 .117a1 1 0 0 1 .117 1.993l-.117 .007a1 1 0 1 1 -2 0a1 1 0 0 1 -1 -1m7.53 -1.243a1 1 0 1 1 1.94 .486l-.5 2a1 1 0 1 1 -1.94 -.486zm6.47 1.243a1 1 0 0 1 1 -1a1 1 0 0 1 1.993 -.117l.007 .117a1 1 0 0 1 .117 1.993l-.117 .007a1 1 0 0 1 -2 0a1 1 0 0 1 -1 -1m-8.81 4.293l6.517 6.518a1 1 0 0 1 -.29 1.617l-9.573 4.387a2 2 0 0 1 -2.661 -2.652l4.39 -9.58a1 1 0 0 1 1.616 -.29m7.517 -1a1 1 0 0 1 0 1.414l-1 1a1 1 0 0 1 -1.414 -1.414l1 -1a1 1 0 0 1 1.414 0m4.05 3.237a1 1 0 0 1 .486 1.94l-2 .5a1 1 0 0 1 -.486 -1.94zm-2.756 7.47a1 1 0 0 1 1 -1a1 1 0 0 1 1.993 -.117l.007 .117a1 1 0 0 1 .117 1.993l-.117 .007a1 1 0 0 1 -2 0a1 1 0 0 1 -1 -1\" /> </svg>",
+            "geometry": {
+              "square": {
+                "x": 41,
+                "y": 41,
+                "w": 18,
+                "h": 18
+              },
+              "portrait": {
+                "x": 41,
+                "y": 42.8,
+                "w": 18,
+                "h": 14.4
+              },
+              "story": {
+                "x": 41,
+                "y": 44.94,
+                "w": 18,
+                "h": 10.13
+              },
+              "landscape": {
+                "x": 41,
+                "y": 32.86,
+                "w": 18,
+                "h": 34.29
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

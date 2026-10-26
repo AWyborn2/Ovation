@@ -117,6 +117,7 @@ import {
 } from "@/lib/pack-render";
 import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/lib/card-sets/plan";
 import {
+  isDocumentV2,
   isSetDocument,
   planTemplateSlides,
   type LayerDocument,
@@ -213,10 +214,12 @@ export default function AdminStudioEditor() {
   // editor (full draft editor plan, stage 1). Carousel sets have their own editor,
   // and drafts on the older packs keep this one.
   // A card made into pages (stage 2) edits in the set editor.
-  if (draft.templateVersion != null && setDraftLayout(draft) === "pages") {
+  // So does a blank design started as a page (a white page, Studio home).
+  const fullEditor = draft.templateVersion != null || isDocumentV2(draft.adjustments);
+  if (fullEditor && setDraftLayout(draft) === "pages") {
     return <Redirect to={`/admin/social/set/${draft.id}`} />;
   }
-  if (draft.templateVersion != null && !isSetDocument(draft.adjustments)) {
+  if (fullEditor && !isSetDocument(draft.adjustments)) {
     return (
       <DraftDesignEditor
         key={draft.id}

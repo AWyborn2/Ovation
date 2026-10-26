@@ -13,7 +13,7 @@ describe("honour display settings: kiosk look (integration)", () => {
   const tenantId = 1;
   let adminId: number;
   let adminCookie: string;
-  let original: { kioskLook: unknown; boardConfigs: unknown };
+  let original: { kioskLook: unknown; boardConfigs: unknown; kioskPhotoSlideshows: unknown };
 
   beforeAll(async () => {
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-honour-look";
@@ -28,7 +28,11 @@ describe("honour display settings: kiosk look (integration)", () => {
     adminId = admin.id;
     adminCookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
     const row = await ensureHonourDisplaySettings(tenantId);
-    original = { kioskLook: row.kioskLook, boardConfigs: row.boardConfigs };
+    original = {
+      kioskLook: row.kioskLook,
+      boardConfigs: row.boardConfigs,
+      kioskPhotoSlideshows: row.kioskPhotoSlideshows,
+    };
   });
 
   afterAll(async () => {
@@ -71,5 +75,29 @@ describe("honour display settings: kiosk look (integration)", () => {
       await patch({ kioskLook }).expect(400);
     }
     await patch({ boardConfigs: { most_games: { top: 37 } } }).expect(400);
+  });
+
+  it("round-trips photo slideshows and resolves them in the admin bundle (D1)", async () => {
+    const slideshow = {
+      id: "photos-1",
+      name: "Clubroom photos",
+      library: "senior",
+      source: "recent",
+      recentDays: 30,
+      order: "random",
+      perPass: 12,
+      secondsPerPhoto: 6,
+      captions: true,
+    };
+    const res = await patch({ kioskPhotoSlideshows: [slideshow] }).expect(200);
+    expect(res.body.kioskPhotoSlideshows).toEqual([slideshow]);
+    await patch({ kioskPhotoSlideshows: [{ ...slideshow, perPass: 0 }] }).expect(400);
+    await patch({ kioskPhotoSlideshows: [{ ...slideshow, library: "everyone" }] }).expect(400);
+
+    const bundle = await request(app)
+      .get("/api/honour-display")
+      .set("Cookie", adminCookie)
+      .expect(200);
+    expect(bundle.body.photoSlideshows).toEqual([{ id: "photos-1", photos: expect.any(Array) }]);
   });
 });

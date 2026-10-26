@@ -65,6 +65,7 @@ function BoardHead({
         <div className="hb-club">{brand.name}</div>
         <h2 className="hb-title">{title}</h2>
         {subtitle ? <p className="hb-sub">{subtitle}</p> : null}
+        {board.tallyLabel ? <p className="hb-tally">{board.tallyLabel}</p> : null}
       </div>
       <KioskPageDots />
     </header>
@@ -256,6 +257,221 @@ export function ListBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
     <div className="hb-board hb-list">
       <BoardHead board={board} brand={brand} cfg={cfg} />
       <BoardBody>{body}</BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Leaderboard layout — rank · player · figure · seasons (kiosk redesign C1).
+// A long board flows into the board's list columns like a list does.
+// ---------------------------------------------------------------------------
+
+export function LeaderboardBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
+  const rows = entries ?? board.entries;
+  const colCount = Math.min(3, Math.max(1, board.display?.columns ?? 1));
+  const per = colCount >= 2 && rows.length > colCount ? Math.ceil(rows.length / colCount) : 0;
+  const chunks = per
+    ? Array.from({ length: colCount }, (_, c) => rows.slice(c * per, (c + 1) * per))
+    : [rows];
+
+  const renderTable = (slice: BoardEntry[]) => (
+    <table className="hb-table hb-leader-table">
+      <thead>
+        <tr>
+          <th className="hb-lead">#</th>
+          <th className="hb-name">Player</th>
+          <th className="hb-figure">{board.figureLabel ?? ""}</th>
+          <th className="hb-span">Seasons</th>
+        </tr>
+      </thead>
+      <tbody>
+        {slice.map((e, i) => (
+          <tr className="row" key={i}>
+            <td className="hb-lead">
+              <span className="hb-rank">{e.meta?.rank ?? ""}</span>
+            </td>
+            <td className="hb-name">
+              <NameLink playerId={e.playerId} kiosk={kiosk}>
+                {e.primaryText}
+              </NameLink>
+            </td>
+            <td className="hb-figure">{e.meta?.figure ?? e.detail ?? ""}</td>
+            <td className="hb-span">{e.meta?.seasonSpan ?? ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="hb-board hb-list hb-leaderboard">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        {chunks.length > 1 ? (
+          <div
+            className="hb-list-cols"
+            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          >
+            {chunks.map((ch, ci) => (
+              <div className="hb-list-col" key={ci}>
+                {renderTable(ch)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderTable(rows)
+        )}
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Achievement list layout — season · player · figure · grade · opponent, with
+// the whole list's tally in the header (kiosk redesign C2).
+// ---------------------------------------------------------------------------
+
+export function AchievementsBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
+  const rows = entries ?? board.entries;
+  const colCount = Math.min(3, Math.max(1, board.display?.columns ?? 1));
+  const per = colCount >= 2 && rows.length > colCount ? Math.ceil(rows.length / colCount) : 0;
+  const chunks = per
+    ? Array.from({ length: colCount }, (_, c) => rows.slice(c * per, (c + 1) * per))
+    : [rows];
+
+  const renderTable = (slice: BoardEntry[]) => (
+    <table className="hb-table hb-achievement-table">
+      <thead>
+        <tr>
+          <th className="hb-lead">Season</th>
+          <th className="hb-name">Player</th>
+          <th className="hb-figure">{board.figureLabel ?? ""}</th>
+          <th className="hb-grade">Grade</th>
+          <th className="hb-opponent">Opponent</th>
+        </tr>
+      </thead>
+      <tbody>
+        {slice.map((e, i) => (
+          <tr className="row" key={i}>
+            <td className="hb-lead">
+              <span className="hb-season">{e.season || "—"}</span>
+            </td>
+            <td className="hb-name">
+              <NameLink playerId={e.playerId} kiosk={kiosk}>
+                {e.primaryText}
+              </NameLink>
+            </td>
+            <td className="hb-figure">{e.meta?.figure ?? e.detail ?? ""}</td>
+            <td className="hb-grade">{e.meta?.grade ? gradeBadge(e.meta.grade) : ""}</td>
+            <td className="hb-opponent">{e.meta?.opponent ? `v ${e.meta.opponent}` : ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="hb-board hb-list hb-achievements">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        {chunks.length > 1 ? (
+          <div
+            className="hb-list-cols"
+            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          >
+            {chunks.map((ch, ci) => (
+              <div className="hb-list-col" key={ci}>
+                {renderTable(ch)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderTable(rows)
+        )}
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Record panels layout — one panel per grade, each listing that grade's record
+// holders (kiosk redesign C3). On the TV, "Panels across" sets how many sit
+// side by side; a row of panels pages and scrolls as one.
+// ---------------------------------------------------------------------------
+
+export function RecordPanelsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
+  return (
+    <div className="hb-board hb-record-panels">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        <div className="hb-panels">
+          {board.entries.map((e, i) => (
+            <article className="hb-panel" key={i}>
+              <h3 className="hb-panel-title">{e.primaryText}</h3>
+              <dl className="hb-panel-lines">
+                {(e.lines ?? []).map((l, j) => (
+                  <div className="hb-panel-line" key={j}>
+                    <dt>{l.label}</dt>
+                    <dd>
+                      <b>{l.value}</b>{" "}
+                      {l.holder ? (
+                        <NameLink playerId={l.playerId} kiosk={kiosk}>
+                          {l.holder}
+                        </NameLink>
+                      ) : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ))}
+        </div>
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Records table layout — partnership records: wicket · runs · partners ·
+// season · opponent (kiosk redesign C4).
+// ---------------------------------------------------------------------------
+
+/** "1st", "2nd", "3rd", "4th" … "10th". */
+const ordinal = (n: number) =>
+  `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th")}`;
+
+export function RecordsTableBoard({ board, brand, cfg }: LayoutProps) {
+  return (
+    <div className="hb-board hb-list hb-records-table">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        <table className="hb-table hb-partnership-table">
+          <thead>
+            <tr>
+              <th className="hb-lead">Wkt</th>
+              <th className="hb-figure">{board.figureLabel ?? "Runs"}</th>
+              <th className="hb-name">Partners</th>
+              <th className="hb-season-col">Season</th>
+              <th className="hb-opponent">Opponent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {board.entries.map((e, i) => (
+              <tr className="row" key={i}>
+                <td className="hb-lead">
+                  <span className="hb-rank">{e.meta?.wicket ? ordinal(e.meta.wicket) : ""}</span>
+                </td>
+                <td className="hb-figure">{e.meta?.figure ?? ""}</td>
+                <td className="hb-name">{e.primaryText}</td>
+                <td className="hb-season-col">
+                  <span className="hb-season">{e.season || "—"}</span>
+                </td>
+                <td className="hb-opponent">{e.meta?.opponent ? `v ${e.meta.opponent}` : ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </BoardBody>
     </div>
   );
 }

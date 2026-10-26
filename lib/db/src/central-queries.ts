@@ -23,6 +23,7 @@
  *   - records.ts       club records, centuries, five-fors, milestones
  *   - summaries.ts     club totals, grade summaries, dashboard, ladder, grade/season lists
  *   - premiers.ts      premierships + decider scores + team lists (honour-board seed)
+ *   - partnerships.ts  partnership records per wicket per grade, from fall of wickets
  *   - grade-distribution.ts  per-player raw aggregates for one grade + season span
  *   - vs-club.ts       per-player career record against one opponent club (+ club id lookups)
  *   - social-recap.ts  Social Studio round-up / season recap inputs for one grade + season
@@ -48,6 +49,7 @@ export * from "./central/club-matches";
 export * from "./central/leaderboards";
 export * from "./central/players";
 export * from "./central/match-innings";
+export * from "./central/partnerships";
 export * from "./central/records";
 export * from "./central/summaries";
 export * from "./central/premiers";

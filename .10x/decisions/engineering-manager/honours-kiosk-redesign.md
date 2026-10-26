@@ -62,6 +62,19 @@ harness and a dev deploy; test on the real clubroom TV browser (performance risk
 | D2   | Photo slideshow rotation item + settings + player screen (preload, skip on error, captions, crest)                                                                                 | M    |
 | D3   | Junior source: kiosk-token path on the gated junior image route, fail-closed consent filter (depends on the junior library stream)                                                 | M    |
 
+**As built (26 Oct 2026):**
+
+- Sources are all photos, recent (last N days), this season, photo types (the library's type
+  folders) and grades; order is random (a fresh pick each pass) or newest (working down the list
+  pass by pass). Hand-picked photos and a "manual" order are not built yet.
+- The server sends at most 60 photos per slideshow, newest first. Senior: the club's own library,
+  without junior stock artwork or background-removed cut-outs. Junior: only photos with at least
+  one tagged child where every tagged child may be shown (`loadJuniorPhotoConsent`, fail closed).
+- D3 needed no kiosk-token path: `/juniors/photos/:id` already serves anyone while the photo
+  passes the consent rule (and 404s, `no-store`, the moment it doesn't), so the TV loads junior
+  images without an admin session and a withdrawal takes effect at the next image load.
+- Migration `0068_kiosk_photo_slideshows.sql`.
+
 ## Parallel stream: junior photo library (est. 5–8 days, own branch → `main`)
 
 Independent of the kiosk files, so it runs in its own session in parallel with Milestone A, with

@@ -49,6 +49,19 @@ export const KIOSK_TEXT_SCALE: Readonly<Record<KioskTextSize, number>> = {
 };
 export const KIOSK_LEADERBOARD_TOPS = [10, 20, 50] as const;
 
+/**
+ * Layouts that read as a list of entries: plain lists, and the leaderboards and
+ * achievement lists that grew out of them. They flow into list columns, can be
+ * a composite board's column, and read the legacy list `columns` setting.
+ */
+export const LIST_LIKE_LAYOUTS: readonly DisplayBoardLayout[] = [
+  "list",
+  "leaderboard",
+  "achievements",
+];
+export const isListLikeLayout = (layout: DisplayBoardLayout): boolean =>
+  LIST_LIKE_LAYOUTS.includes(layout);
+
 /** Club defaults with every field filled in. */
 export interface ResolvedKioskLook {
   move: KioskMove;
@@ -163,6 +176,8 @@ function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: n
     case "columns":
       return { fallback: "club", max: board.columns?.length || 5 };
     case "list":
+    case "leaderboard":
+    case "achievements":
       return { fallback: 1, max: 3 };
     // Today's TV shows two life-member cards across and as many plaques as fit
     // (about seven on a 1080p TV); keep that look until the board sets one.
@@ -170,6 +185,9 @@ function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: n
       return { fallback: 2, max: 3 };
     case "premiership":
       return { fallback: 5, max: 5 };
+    // Grade record panels: four across, as the design shows them.
+    case "recordPanels":
+      return { fallback: 4, max: 5 };
     default:
       return { fallback: 1, max: 1 };
   }
@@ -192,7 +210,7 @@ export function resolveKioskDisplay(
   const columnsPerScreen = Math.min(
     max,
     num(c.columnsPerScreen, RANGES.columnsPerScreen) ??
-      (board.layout === "list" ? num(c.columns, RANGES.columnsPerScreen) : undefined) ??
+      (isListLikeLayout(board.layout) ? num(c.columns, RANGES.columnsPerScreen) : undefined) ??
       (rule.fallback === "club" ? look.columnsPerScreen : rule.fallback),
   );
 

@@ -294,6 +294,77 @@
 .hb-table .row:nth-child(odd) td {
   background: var(--hb-row-stripe);
 }
+/* Table layouts with column headings (leaderboards and the other C-layouts). */
+.hb-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: clamp(11px, 1.2vw, 14px);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hb-head-ink);
+  border-bottom: 2px solid var(--hb-head-border);
+}
+.hb-table .hb-figure {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.hb-table .hb-span {
+  white-space: nowrap;
+  color: var(--hb-muted);
+}
+.hb-table .hb-grade,
+.hb-table .hb-opponent {
+  white-space: nowrap;
+  color: var(--hb-muted);
+}
+/* Record panels: one panel per grade (kiosk redesign C3). */
+.hb-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.hb-panel {
+  border: 1px solid var(--hb-board-border);
+  border-top: 4px solid var(--hb-accent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--hb-board-bg, transparent);
+}
+.hb-panel-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hb-head-ink);
+}
+.hb-panel-lines {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.hb-panel-line dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hb-muted);
+}
+.hb-panel-line dd {
+  margin: 0;
+}
+/* An achievement list's tally, under its subtitle ("47 centuries"). */
+.hb-tally {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--hb-accent);
+}
 .hb-lead {
   width: 64px;
   white-space: nowrap;
@@ -1067,6 +1138,7 @@
 }
 /* Column headings and rows: Cinzel headings, engraved names, dotted rules. */
 .skin-p12 .hb-grid-table th,
+.skin-p12 .hb-table th,
 .skin-p12 .hb-col-head {
   font: 600 1cqw var(--hb-title-font);
   letter-spacing: 0.18em;
@@ -1100,6 +1172,57 @@
 .skin-p12 .hb-rank {
   font-family: var(--hb-title-font);
   background: transparent;
+}
+.skin-p12 .hb-table .hb-figure {
+  font-family: var(--hb-title-font);
+  color: var(--hb12-gold);
+}
+/* Grade record panels as engraved gold-edged panels. */
+.skin-p12 .hb-panel {
+  border: 1px solid var(--hb12-gold);
+  border-radius: 0;
+  outline: 1px solid rgba(216, 178, 94, 0.45);
+  outline-offset: 0.35cqw;
+  margin: 0.4cqw;
+  padding: 1.1cqw 1.3cqw;
+  background: linear-gradient(180deg, rgba(216, 178, 94, 0.1), rgba(216, 178, 94, 0.03));
+  box-shadow: 0 0.4cqw 1.2cqw rgba(0, 0, 0, 0.35);
+}
+.skin-p12 .hb-panel-title {
+  font: 700 1.5cqw/1.1 var(--hb-title-font);
+  letter-spacing: 0.08em;
+  color: var(--hb12-gold-hi);
+  border-bottom: 1px solid var(--hb12-rule);
+  padding-bottom: 0.6cqw;
+  margin-bottom: 0.8cqw;
+}
+.skin-p12 .hb-panel-lines {
+  gap: 0.7cqw;
+}
+.skin-p12 .hb-panel-line dt {
+  font: 600 0.8cqw var(--hb-title-font);
+  letter-spacing: 0.16em;
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-panel-line dd {
+  font: 600 1.25cqw/1.25 var(--hb12-name-font);
+  color: var(--hb12-engrave);
+}
+.skin-p12 .hb-panel-line dd b {
+  font-family: var(--hb-title-font);
+  color: var(--hb12-gold-hi);
+  margin-right: 0.3em;
+}
+.skin-p12 .hb-tally {
+  font: 600 0.9cqw var(--hb-title-font);
+  letter-spacing: 0.24em;
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-table td.hb-span,
+.skin-p12 .hb-table td.hb-grade,
+.skin-p12 .hb-table td.hb-opponent {
+  font-style: italic;
+  color: rgba(240, 223, 180, 0.7);
 }
 .skin-p12 .hb-detail,
 .skin-p12 .hb-grid-note,
@@ -1392,8 +1515,9 @@
 .hb-kp-under .hb-kp-foot {
   visibility: hidden;
 }
-/* Columns across for plaques and life-member cards (set per board). */
+/* Columns across for plaques, record panels and life-member cards (set per board). */
 .hb-kiosk .hb-kp-board .hb-flags,
+.hb-kiosk .hb-kp-board .hb-panels,
 .hb-kiosk .hb-kp-board .hb-lm-grid {
   grid-template-columns: repeat(var(--hb-kp-cols, 3), minmax(0, 1fr));
 }
@@ -1635,4 +1759,49 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* Kiosk photo slideshow (kiosk redesign D2). */
+.hb-photo-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+.hb-photo-slide-fill {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  object-fit: cover;
+  filter: blur(28px) brightness(0.55);
+}
+.hb-photo-slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.hb-photo-slide-crest {
+  position: absolute;
+  top: clamp(16px, 3vh, 40px);
+  right: clamp(16px, 3vh, 40px);
+  height: clamp(48px, 9vh, 110px);
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+.hb-photo-slide-caption {
+  position: absolute;
+  left: clamp(16px, 3vh, 40px);
+  bottom: clamp(16px, 3vh, 40px);
+  padding: 0.35em 0.8em;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: clamp(16px, 2.6vh, 34px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }

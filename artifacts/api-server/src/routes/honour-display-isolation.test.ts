@@ -33,11 +33,18 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
  * (the folded club) has no matches at all.
  */
 
-type Entry = { primaryText: string; detail?: string | null; playerId?: number | null };
-type Board = { id: string; category: string; title: string; entries: Entry[] };
+type Entry = {
+  primaryText: string;
+  detail?: string | null;
+  playerId?: number | null;
+  meta?: { rank?: number | null; figure?: string | null; seasonSpan?: string | null };
+  lines?: { label: string; value: string; holder: string | null; playerId: number | null }[];
+};
+type Board = { id: string; category: string; layout?: string; title: string; entries: Entry[] };
 type Bundle = { boards: Board[] };
 
 const STAMP = Date.now();
+const LEADERBOARD_IDS = ["most_games", "most_runs", "most_wickets", "most_catches"];
 const MANDURAH = 2;
 const FOLDED_CLUB = 4;
 const CASEY = "33333333-3333-4333-8333-333333333333";
@@ -79,7 +86,7 @@ describe.skipIf(!process.env.DATABASE_URL)("honour display: stats boards are ten
   }
 
   const statsBoards = (b: Bundle) =>
-    b.boards.filter((x) => x.category === "records_by_grade" || x.category === "most_games");
+    b.boards.filter((x) => x.category === "records_by_grade" || LEADERBOARD_IDS.includes(x.id));
 
   beforeAll(async () => {
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-hd-isolation";
@@ -192,6 +199,32 @@ describe.skipIf(!process.env.DATABASE_URL)("honour display: stats boards are ten
         playerId: casey!.playerId,
       }),
     ]);
+    // The other career leaderboards (kiosk redesign C1) read the same club.
+    expect(mostGames!.layout).toBe("leaderboard");
+    expect(mostGames!.entries[0]!.meta).toMatchObject({
+      rank: 1,
+      figure: "2",
+      seasonSpan: "2024/25",
+    });
+    const mostRuns = bundle.boards.find((b) => b.id === "most_runs");
+    expect(mostRuns!.entries).toEqual([
+      expect.objectContaining({ primaryText: "Casey Fixture", detail: "41 runs" }),
+    ]);
+    const mostWickets = bundle.boards.find((b) => b.id === "most_wickets");
+    expect(mostWickets!.entries).toEqual([
+      expect.objectContaining({ primaryText: "Casey Fixture", detail: "2 wickets" }),
+    ]);
+
+    // The Grade Records panels board (kiosk redesign C3) reads the same holders.
+    const panels = bundle.boards.find((b) => b.id === "grade_records");
+    expect(panels?.layout).toBe("recordPanels");
+    const aPanel = panels!.entries.find((e) => e.primaryText === "A Grade")!;
+    expect(aPanel.lines).toContainEqual({
+      label: "Most Runs",
+      value: "41",
+      holder: "Casey Fixture",
+      playerId: casey!.playerId,
+    });
 
     const aGrade = bundle.boards.find((b) => b.id === "records_grade:A Grade");
     expect(aGrade).toBeDefined();

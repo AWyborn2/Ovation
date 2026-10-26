@@ -89,6 +89,61 @@ export function pickDeciderMatch(
   return candidates.length === 1 ? candidates[0]!.matchId : null;
 }
 
+type TeamLine = {
+  id: number;
+  matchId: number | null;
+  participantId: string | null;
+  playerName: string | null;
+};
+
+/**
+ * The club side's team list for one match: batting lines in batting order
+ * (these include "did not bat"), then bowling-only, then roster-only players.
+ * Privacy is the FLAG treatment: `isPrivate` is set and the caller masks.
+ */
+function teamList(
+  matchId: number,
+  batting: (TeamLine & { innings: number | null; batOrder: number | null })[],
+  bowling: TeamLine[],
+  rosters: TeamLine[],
+  names: ReadonlyMap<string, { displayName: string | null; isPrivate: boolean }>,
+): CentralPremiershipPlayer[] {
+  const seen = new Set<string>();
+  const team: CentralPremiershipPlayer[] = [];
+  const add = (participantId: string | null, playerName: string | null) => {
+    const key = participantId ?? `name:${(playerName ?? "").trim().toLowerCase()}`;
+    if (seen.has(key)) return;
+    const known = participantId ? names.get(participantId) : undefined;
+    const name = known?.displayName?.trim() || playerName?.trim();
+    if (!name) return;
+    seen.add(key);
+    team.push({
+      participantId,
+      name,
+      isPrivate: known?.isPrivate ?? false,
+      order: team.length + 1,
+    });
+  };
+  batting
+    .filter((b) => b.matchId === matchId)
+    .sort(
+      (a, b) =>
+        (a.innings ?? 0) - (b.innings ?? 0) ||
+        (a.batOrder ?? 99) - (b.batOrder ?? 99) ||
+        a.id - b.id,
+    )
+    .forEach((b) => add(b.participantId, b.playerName));
+  bowling
+    .filter((b) => b.matchId === matchId)
+    .sort((a, b) => a.id - b.id)
+    .forEach((b) => add(b.participantId, b.playerName));
+  rosters
+    .filter((r) => r.matchId === matchId)
+    .sort((a, b) => a.id - b.id)
+    .forEach((r) => add(r.participantId, r.playerName));
+  return team;
+}
+
 /**
  * Premierships a central club won, each with its decider's scores and the
  * club's team list, for seeding the tenant-side honour board
@@ -190,42 +245,7 @@ export async function centralClubPremierships(clubId: number): Promise<CentralPr
   ];
   const names = await centralPlayerNames(guids);
 
-  const teamFor = (matchId: number): CentralPremiershipPlayer[] => {
-    const seen = new Set<string>();
-    const team: CentralPremiershipPlayer[] = [];
-    const add = (participantId: string | null, playerName: string | null) => {
-      const key = participantId ?? `name:${(playerName ?? "").trim().toLowerCase()}`;
-      if (seen.has(key)) return;
-      const known = participantId ? names.get(participantId) : undefined;
-      const name = known?.displayName?.trim() || playerName?.trim();
-      if (!name) return;
-      seen.add(key);
-      team.push({
-        participantId,
-        name,
-        isPrivate: known?.isPrivate ?? false,
-        order: team.length + 1,
-      });
-    };
-    batting
-      .filter((b) => b.matchId === matchId)
-      .sort(
-        (a, b) =>
-          (a.innings ?? 0) - (b.innings ?? 0) ||
-          (a.batOrder ?? 99) - (b.batOrder ?? 99) ||
-          a.id - b.id,
-      )
-      .forEach((b) => add(b.participantId, b.playerName));
-    bowling
-      .filter((b) => b.matchId === matchId)
-      .sort((a, b) => a.id - b.id)
-      .forEach((b) => add(b.participantId, b.playerName));
-    rosters
-      .filter((r) => r.matchId === matchId)
-      .sort((a, b) => a.id - b.id)
-      .forEach((r) => add(r.participantId, r.playerName));
-    return team;
-  };
+  const teamFor = (matchId: number) => teamList(matchId, batting, bowling, rosters, names);
 
   return premiers
     .sort((a, b) => a.id - b.id)
@@ -258,4 +278,84 @@ export async function centralClubPremierships(clubId: number): Promise<CentralPr
         players: m ? teamFor(m.matchId) : [],
       };
     });
+}
+
+/** A match's details from the club's side, for a premiership plaque. */
+export interface CentralDeciderDetails {
+  matchId: number;
+  /** Raw central grade label and season, to sanity-check the pick. */
+  grade: string | null;
+  season: string | null;
+  matchDate: string | null;
+  venue: string | null;
+  opponent: string | null;
+  clubScore: string | null;
+  opponentScore: string | null;
+  outcome: "won" | "lost" | "undecided";
+  matchResultText: string | null;
+  players: CentralPremiershipPlayer[];
+}
+
+/**
+ * One match's plaque details from the club's side (an admin linking a
+ * premiership to its grand final when the seed couldn't pick it): date, venue,
+ * opponent, scores, outcome and the club's team list. Null when the match
+ * doesn't exist or the club didn't play in it. Uncached: an admin action.
+ */
+export async function centralDeciderDetails(
+  clubId: number,
+  matchId: number,
+): Promise<CentralDeciderDetails | null> {
+  const [m] = await centralDb
+    .select()
+    .from(centralMatchesTable)
+    .where(eq(centralMatchesTable.matchId, matchId));
+  if (!m || (m.homeClubId !== clubId && m.awayClubId !== clubId)) return null;
+  const line = and(
+    eq(centralMatchBattingTable.clubId, clubId),
+    eq(centralMatchBattingTable.matchId, matchId),
+  );
+  const [batting, bowling, rosters] = await Promise.all([
+    centralDb.select().from(centralMatchBattingTable).where(line),
+    centralDb
+      .select()
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          eq(centralMatchBowlingTable.matchId, matchId),
+        ),
+      ),
+    centralDb
+      .select()
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          eq(centralMatchRostersTable.matchId, matchId),
+        ),
+      ),
+  ]);
+  const guids = [
+    ...new Set(
+      [...batting, ...bowling, ...rosters]
+        .map((l) => l.participantId)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  const names = await centralPlayerNames(guids);
+  const isHome = m.homeClubId === clubId;
+  return {
+    matchId: m.matchId,
+    grade: m.grade,
+    season: m.season,
+    matchDate: m.matchDate,
+    venue: m.venue,
+    opponent: isHome ? m.awayTeam : m.homeTeam,
+    clubScore: isHome ? m.homeScore : m.awayScore,
+    opponentScore: isHome ? m.awayScore : m.homeScore,
+    outcome: m.winnerClubId == null ? "undecided" : m.winnerClubId === clubId ? "won" : "lost",
+    matchResultText: m.resultText,
+    players: teamList(matchId, batting, bowling, rosters, names),
+  };
 }

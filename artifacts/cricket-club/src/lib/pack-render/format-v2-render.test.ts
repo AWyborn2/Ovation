@@ -292,3 +292,81 @@ describe("a v2 list's row styles", () => {
     expect(text).not.toContain("#d3175a");
   });
 });
+
+describe("page colours (editor issue 1, 26 Oct 2026)", () => {
+  const signing = previewSample("newSigning");
+  const page = primaryPage("newSigning");
+  const text = {
+    id: "t",
+    kind: "text",
+    content: "Hello",
+    geometry: { square: { x: 10, y: 10, w: 80, h: 10 } },
+  } as unknown as TemplateLayerV2;
+  const docWith = (background?: string) =>
+    ({
+      formatVersion: 2,
+      pages: { [page]: { layers: [text], ...(background ? { background } : {}) } },
+    }) as unknown as CardAdjustments;
+  const rootStyle = (html: string) => /class="pack-card-root" style="([^"]*)"/.exec(html)![1]!;
+
+  it("draws a page's own colour behind its layers, with dark text on a light page", () => {
+    const style = rootStyle(render(signing, docWith("#FFFFFF")));
+    expect(style).toMatch(/;background:#FFFFFF;color:#16181C$/);
+  });
+
+  it("gives a dark page and the club panel light text, and the club colour its own ink", () => {
+    expect(rootStyle(render(signing, docWith("#0B1F3A")))).toMatch(/color:#FFFFFF$/);
+    expect(rootStyle(render(signing, docWith("var(--panel)")))).toMatch(
+      /background:var\(--panel\);color:#FFFFFF$/,
+    );
+    expect(rootStyle(render(signing, docWith("var(--gold)")))).toMatch(
+      /color:var\(--accent-ink, #111111\)$/,
+    );
+  });
+
+  it("keeps the club's stage colour without one, and ignores a colour it can't draw", () => {
+    const plain = rootStyle(render(signing, docWith()));
+    expect(plain.match(/background:/g)).toHaveLength(1);
+    expect(rootStyle(render(signing, docWith('red;" onload="x')))).toBe(plain);
+  });
+});
+
+describe("the template editor's sample text", () => {
+  it("fills a field the card has no value for, and never one it has", () => {
+    const signing = previewSample("newSigning");
+    const doc = {
+      formatVersion: 2,
+      pages: {
+        [primaryPage("newSigning")]: {
+          layers: [
+            {
+              id: "t",
+              kind: "text",
+              content: "{{innings1.overs}} · {{clubName}}",
+              geometry: { square: { x: 10, y: 10, w: 80, h: 10 } },
+            },
+          ],
+        },
+      },
+    } as unknown as CardAdjustments;
+    const tokens = resolveCardTokens({
+      theme: null,
+      junior: false,
+      data: DATA,
+      packId: BLANK_PACK_ID,
+    });
+    const html = renderPackCard(
+      signing,
+      "square",
+      true,
+      tokens,
+      false,
+      { ...DATA, sampleValues: { "innings1.overs": "20 ov", clubName: "Not Me" } },
+      BLANK_PACK_ID,
+      doc,
+    );
+    expect(html).toContain("20 ov");
+    expect(html).toContain("20 ov · Sample<");
+    expect(html).not.toContain("Not Me");
+  });
+});

@@ -218,19 +218,25 @@ import elements2 from "./elements/broadcast-dark.json";
 import elements3 from "./elements/club-kit-classic.json";
 import elements4 from "./elements/club-kit.json";
 import elements5 from "./elements/clubhouse.json";
-import elements6 from "./elements/duotone.json";
-import elements7 from "./elements/gold-foil.json";
-import elements8 from "./elements/neon-night.json";
-import elements9 from "./elements/omg-broadcast.json";
-import elements10 from "./elements/omg-classic.json";
-import elements11 from "./elements/omg-clean.json";
-import elements12 from "./elements/omg-ground-scoreboard.json";
-import elements13 from "./elements/omg-panel.json";
-import elements14 from "./elements/omg-scoreboard.json";
-import elements15 from "./elements/omg-t20.json";
-import elements16 from "./elements/seamless-patterns.json";
-import elements17 from "./elements/sunset.json";
-import elements18 from "./elements/textures-kit.json";
+import elements6 from "./elements/coolshapes.json";
+import elements7 from "./elements/duotone.json";
+import elements8 from "./elements/fluent-emoji.json";
+import elements9 from "./elements/game-icons.json";
+import elements10 from "./elements/gold-foil.json";
+import elements11 from "./elements/hero-patterns.json";
+import elements12 from "./elements/neon-night.json";
+import elements13 from "./elements/omg-broadcast.json";
+import elements14 from "./elements/omg-classic.json";
+import elements15 from "./elements/omg-clean.json";
+import elements16 from "./elements/omg-ground-scoreboard.json";
+import elements17 from "./elements/omg-panel.json";
+import elements18 from "./elements/omg-scoreboard.json";
+import elements19 from "./elements/omg-t20.json";
+import elements20 from "./elements/phosphor-icons.json";
+import elements21 from "./elements/seamless-patterns.json";
+import elements22 from "./elements/sunset.json";
+import elements23 from "./elements/tabler-icons.json";
+import elements24 from "./elements/textures-kit.json";
 
 export type * from "./types";
 
@@ -540,17 +546,23 @@ export const ELEMENT_BUNDLES: ElementBundle[] = [
   { look: "club-kit-classic", hash: "289909d02ceb567c7f4f453dbc66317693012fcc29d9a0b5bcc7934384d68fdc", file: elements3 },
   { look: "club-kit", hash: "ca9d3f2fc2a4cb128d9d561f25c887af482ab099304c2c7b5ef2fe2d3a8406fc", file: elements4 },
   { look: "clubhouse", hash: "1873e72f0be75b2fb7fb77efb3f973e5705d93e8c543b9ec1700474b72e9c251", file: elements5 },
-  { look: "duotone", hash: "68a332f3f26456c321fa4fe8c47a272e1bf1c9496b70af9371617eca7a3e09c5", file: elements6 },
-  { look: "gold-foil", hash: "d42a61a8ca3482b23c5ac72ebd890da441eff25a293a0941e917ad26750864cc", file: elements7 },
-  { look: "neon-night", hash: "750c7883e15486d85fcb35941261b9909f9d7eeecb2d02858c3d6819d0e05981", file: elements8 },
-  { look: "omg-broadcast", hash: "8639f29603a605fdb50403bfa97b645fc4d2a68628e1c3c1d9dd312ce3876544", file: elements9 },
-  { look: "omg-classic", hash: "f29bc6ee112c0ceb88932673cfd683034edce3596e26803c99912f91d7114dc0", file: elements10 },
-  { look: "omg-clean", hash: "aef6ba2806cba012ab2922296f9f1923cfa9ad4646772c4c1a92951e7fc1649b", file: elements11 },
-  { look: "omg-ground-scoreboard", hash: "f9e87493edef3b22aa967fe2ab8528de2ec08e25aae1565778b60dd369b563b7", file: elements12 },
-  { look: "omg-panel", hash: "009bf238102cbe0dbac43dc155c735fc1fd60f2ec21894896cf1ab7f6ec8a48a", file: elements13 },
-  { look: "omg-scoreboard", hash: "68821ac9e2a542c1f9425a329434f493ae135809d8844f47ced2020ddfde0b99", file: elements14 },
-  { look: "omg-t20", hash: "3f8eeb01cd0979df3b710f508d618dcd2f75a16147b8a968bc378cddd28e704d", file: elements15 },
-  { look: "seamless-patterns", hash: "493148ca5f93ed866186cb3f533a11c6f6435d68886c982c350c96bfc313d701", file: elements16 },
-  { look: "sunset", hash: "be5bd0ed1aba653dc7a37174414d1a695b1d2429b0e039836fb7f224621a1fe2", file: elements17 },
-  { look: "textures-kit", hash: "0c1fe09faea9a6beafc7a22ac9c6f0309c2b5268f4c6817fc0c849dc0099df13", file: elements18 },
+  { look: "coolshapes", hash: "7efcffcc7612f1bc5cfa1398d92961dfefead6a74d7a866f407e864daf02a094", file: elements6 },
+  { look: "duotone", hash: "68a332f3f26456c321fa4fe8c47a272e1bf1c9496b70af9371617eca7a3e09c5", file: elements7 },
+  { look: "fluent-emoji", hash: "b8a73af145e4dfabb5af66f781ea46cec012eb9aa1c1c8cc65b32b3b7307665d", file: elements8 },
+  { look: "game-icons", hash: "e3c900a176e4d25ef890c7a7ba49a4fba99c8aa80ca44b2fd09269eed88fd7c3", file: elements9 },
+  { look: "gold-foil", hash: "d42a61a8ca3482b23c5ac72ebd890da441eff25a293a0941e917ad26750864cc", file: elements10 },
+  { look: "hero-patterns", hash: "24e03dce41e9cbaaec1565111327f4ecafdec1a6e3596982f7dff96495621efb", file: elements11 },
+  { look: "neon-night", hash: "750c7883e15486d85fcb35941261b9909f9d7eeecb2d02858c3d6819d0e05981", file: elements12 },
+  { look: "omg-broadcast", hash: "8639f29603a605fdb50403bfa97b645fc4d2a68628e1c3c1d9dd312ce3876544", file: elements13 },
+  { look: "omg-classic", hash: "f29bc6ee112c0ceb88932673cfd683034edce3596e26803c99912f91d7114dc0", file: elements14 },
+  { look: "omg-clean", hash: "aef6ba2806cba012ab2922296f9f1923cfa9ad4646772c4c1a92951e7fc1649b", file: elements15 },
+  { look: "omg-ground-scoreboard", hash: "f9e87493edef3b22aa967fe2ab8528de2ec08e25aae1565778b60dd369b563b7", file: elements16 },
+  { look: "omg-panel", hash: "009bf238102cbe0dbac43dc155c735fc1fd60f2ec21894896cf1ab7f6ec8a48a", file: elements17 },
+  { look: "omg-scoreboard", hash: "68821ac9e2a542c1f9425a329434f493ae135809d8844f47ced2020ddfde0b99", file: elements18 },
+  { look: "omg-t20", hash: "3f8eeb01cd0979df3b710f508d618dcd2f75a16147b8a968bc378cddd28e704d", file: elements19 },
+  { look: "phosphor-icons", hash: "fc0d97809b014d800b58835f87591ef602356443f0f67453b2abc121d3c6d1d2", file: elements20 },
+  { look: "seamless-patterns", hash: "493148ca5f93ed866186cb3f533a11c6f6435d68886c982c350c96bfc313d701", file: elements21 },
+  { look: "sunset", hash: "be5bd0ed1aba653dc7a37174414d1a695b1d2429b0e039836fb7f224621a1fe2", file: elements22 },
+  { look: "tabler-icons", hash: "33eabb6ff2f987aa78f7eab037925e5fd77f55603db2ea7121d79313818f8470", file: elements23 },
+  { look: "textures-kit", hash: "0c1fe09faea9a6beafc7a22ac9c6f0309c2b5268f4c6817fc0c849dc0099df13", file: elements24 },
 ];
