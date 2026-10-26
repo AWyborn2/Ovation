@@ -160,7 +160,7 @@ describe("syncElementBundles", () => {
     const summary = await syncElementBundles(
       bundle([
         element("Gold rule", { tags: ["rule", "gold"] }),
-        element("Bad rule", { category: "stickers" }),
+        element("Bad rule", { category: "holograms" }),
         element("Remote rule", {
           document: {
             formatVersion: 2,
