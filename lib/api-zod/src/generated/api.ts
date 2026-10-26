@@ -2647,6 +2647,46 @@ export const DeleteHatTrickParams = zod.object({
 
 
 /**
+ * For a club that reads from the central database: links the premiership
+to the match an admin picked as its grand final (when setup couldn't
+pick it) and fills the details the row is missing from that match —
+venue and date when blank, the result line when blank or a bare
+"Premiers", and the team list when the row has no players. Never
+overwrites what an admin has entered.
+
+ * @summary Link a premiership to its grand final and fill its details
+ */
+export const LinkPremiershipDeciderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const LinkPremiershipDeciderBody = zod.object({
+  "matchId": zod.number().describe('The central match id of the grand final.')
+})
+
+export const LinkPremiershipDeciderResponse = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "matchId": zod.number().nullish().describe('Id of the Grand Final scorecard match for this premiership\'s grade and\nseason, when one exists in the match database; null otherwise.\n'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "premiershipId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+}))
+})
+
+
+/**
  * @summary List all premierships with rosters
  */
 export const ListPremiershipsResponseItem = zod.object({

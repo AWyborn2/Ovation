@@ -12,12 +12,15 @@ import {
   UpdatePremiershipBody,
   UpdatePremiershipParams,
   DeletePremiershipParams,
+  LinkPremiershipDeciderBody,
+  LinkPremiershipDeciderParams,
 } from "@workspace/api-zod";
+import { planDeciderLink } from "@workspace/db/premierships-seed";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
-import { isCentralTenant, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
+import { dataSource, isCentralTenant, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { loadClubIdentity } from "../lib/club-overlay";
 
 const router: IRouter = Router();
@@ -512,6 +515,69 @@ router.patch(
     }
     const full = await loadApiPremiership(req, params.data.id);
     res.json(full);
+  },
+);
+
+/**
+ * Link a premiership to the grand final an admin picked (kiosk redesign C5)
+ * and fill what the row is missing from it (see planDeciderLink). Central
+ * clubs only: the match is a central match the club played in.
+ */
+router.post(
+  "/premierships/:id/link-match",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = LinkPremiershipDeciderParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const body = LinkPremiershipDeciderBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const source = await dataSource(req);
+    if (source.kind !== "central") {
+      res
+        .status(400)
+        .json({ error: "Only clubs that read from the central database can link a match" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const row = await loadWithPlayers(params.data.id, tenantId);
+    if (!row) {
+      res.status(404).json({ error: "Premiership not found" });
+      return;
+    }
+    const { centralDeciderDetails } = await import("@workspace/db/central-queries");
+    const details = await centralDeciderDetails(source.clubId, body.data.matchId);
+    if (!details) {
+      res.status(400).json({ error: "That match isn't one of the club's" });
+      return;
+    }
+    const plan = planDeciderLink({ ...row, playerCount: row.players.length }, details);
+    await db.transaction(async (tx) => {
+      await tx
+        .update(premiershipsTable)
+        .set(plan.set)
+        .where(and(eq(premiershipsTable.id, row.id), eq(premiershipsTable.tenantId, tenantId)));
+      if (plan.players.length > 0) {
+        await tx.insert(premiershipPlayersTable).values(
+          plan.players.map((p) => ({
+            tenantId,
+            premiershipId: row.id,
+            playerId: null,
+            name: p.name,
+            participantId: p.participantId,
+            battingOrder: p.battingOrder,
+            isCaptain: false,
+          })),
+        );
+      }
+    });
+    res.json(await loadApiPremiership(req, row.id));
   },
 );
 

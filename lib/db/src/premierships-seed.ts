@@ -4,6 +4,7 @@ import { premiershipsTable, premiershipPlayersTable } from "./schema/premiership
 import {
   centralClubPremierships,
   shortTeamName,
+  type CentralDeciderDetails,
   type CentralPremiershipSeed,
 } from "./central-queries";
 
@@ -43,7 +44,12 @@ export function premiershipYear(seed: CentralPremiershipSeed): number | null {
 }
 
 /** Plaque result line, e.g. "7/245 def Pinjarra 180". */
-export function premiershipResult(seed: CentralPremiershipSeed): string {
+export function premiershipResult(
+  seed: Pick<
+    CentralPremiershipSeed,
+    "opponent" | "outcome" | "clubScore" | "opponentScore" | "matchResultText" | "note"
+  >,
+): string {
   const opp = shortTeamName(seed.opponent);
   if (seed.outcome === "won") {
     if (seed.clubScore && seed.opponentScore && opp) {
@@ -209,6 +215,40 @@ export function planPremiershipSeed(
     }
   }
   return plan;
+}
+
+/**
+ * What linking a premiership to a match fills in (an admin picking the grand
+ * final the seed couldn't): the venue and date when the row has none, the
+ * result line when the row's is blank or a bare "Premiers", and the club's
+ * team list when the row has no players. Never overwrites an admin's edits.
+ */
+export function planDeciderLink(
+  row: {
+    venue: string | null;
+    matchDate: string | null;
+    result: string | null;
+    playerCount: number;
+  },
+  d: CentralDeciderDetails,
+): {
+  set: { centralMatchId: number; venue?: string; matchDate?: string; result?: string };
+  players: SeedPlayerRow[];
+} {
+  const set: ReturnType<typeof planDeciderLink>["set"] = { centralMatchId: d.matchId };
+  if (row.venue == null && d.venue) set.venue = d.venue;
+  if (row.matchDate == null && d.matchDate) set.matchDate = d.matchDate;
+  const blank = row.result == null || row.result.trim() === "" || row.result.trim() === "Premiers";
+  if (blank) set.result = premiershipResult({ ...d, note: null });
+  const players =
+    row.playerCount === 0
+      ? d.players.map((p) => ({
+          name: p.isPrivate ? PRIVATE_PLAYER_NAME : p.name,
+          participantId: p.isPrivate ? null : p.participantId,
+          battingOrder: p.order,
+        }))
+      : [];
+  return { set, players };
 }
 
 export interface SeedTenantPremiershipsResult {

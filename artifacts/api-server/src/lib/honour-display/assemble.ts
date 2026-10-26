@@ -22,7 +22,13 @@ import {
   buildTeamOfDecade,
 } from "./awards";
 import { buildComposites, buildCustomGrids } from "./composites";
-import { buildCaptains, buildCaptainsGrid, buildCommittee, buildLifeMembers } from "./people";
+import {
+  buildCaptains,
+  buildCaptainsGrid,
+  buildCommittee,
+  buildLifeMembers,
+  buildOfficeBearers,
+} from "./people";
 import { buildPremierships, buildPremiershipsGrid, premParentGrade } from "./premierships";
 import {
   buildClubRecords,
@@ -61,6 +67,7 @@ export async function assembleBoards(
     captains,
     captainsGrid,
     committee,
+    officeBearers,
     partnerships,
     partnershipBoards,
     milestones,
@@ -82,6 +89,7 @@ export async function assembleBoards(
     buildCaptains(tenantId),
     buildCaptainsGrid(tenantId, gridCols("captains_grid")),
     buildCommittee(tenantId, gridCols("committee")),
+    buildOfficeBearers(tenantId),
     buildPartnerships(tenantId),
     buildPartnershipBoards(source),
     buildMilestoneBoard(source),
@@ -114,6 +122,7 @@ export async function assembleBoards(
   boards.push(...captains);
   if (captainsGrid) boards.push(captainsGrid);
   if (committee) boards.push(committee);
+  if (officeBearers) boards.push(officeBearers);
   if (lifeMembers) boards.push(lifeMembers);
 
   // Composite "columns" boards reference the base boards above, so build them

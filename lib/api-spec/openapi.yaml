@@ -2051,6 +2051,42 @@ paths:
         "404":
           description: Not found
 
+  /premierships/{id}/link-match:
+    post:
+      operationId: linkPremiershipDecider
+      tags: [grades]
+      summary: Link a premiership to its grand final and fill its details
+      description: |
+        For a club that reads from the central database: links the premiership
+        to the match an admin picked as its grand final (when setup couldn't
+        pick it) and fills the details the row is missing from that match —
+        venue and date when blank, the result line when blank or a bare
+        "Premiers", and the team list when the row has no players. Never
+        overwrites what an admin has entered.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiershipMatchLink"
+      responses:
+        "200":
+          description: Linked and filled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Premiership"
+        "400":
+          description: Not a central club, or the match isn't one of the club's
+        "404":
+          description: Not found
+
   /premierships:
     get:
       operationId: listPremierships
@@ -18051,6 +18087,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PremiershipPlayerInput"
+
+    PremiershipMatchLink:
+      type: object
+      required: [matchId]
+      properties:
+        matchId:
+          type: integer
+          description: The central match id of the grand final.
 
     PremiershipPlayerInput:
       type: object

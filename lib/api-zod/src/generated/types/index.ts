@@ -757,6 +757,7 @@ export * from './postPackImagesItem';
 export * from './postPackImagesItemSize';
 export * from './premiership';
 export * from './premiershipInput';
+export * from './premiershipMatchLink';
 export * from './premiershipPlayer';
 export * from './premiershipPlayerInput';
 export * from './premiershipUpdate';

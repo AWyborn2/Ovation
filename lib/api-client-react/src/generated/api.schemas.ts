@@ -4485,6 +4485,11 @@ export interface PremiershipUpdate {
   players?: PremiershipPlayerInput[];
 }
 
+export interface PremiershipMatchLink {
+  /** The central match id of the grand final. */
+  matchId: number;
+}
+
 export interface HonourBoard {
   id: number;
   key: string;
