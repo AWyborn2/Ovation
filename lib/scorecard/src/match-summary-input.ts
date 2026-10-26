@@ -59,14 +59,17 @@ function toTeam(t: ScorecardTeam): MatchSummaryTeam {
   };
 }
 
-/** Every batter by runs, most first (fill-ins are already excluded by buildScorecard). */
+/**
+ * Every batter in batting order, as the scorecard lists them (fill-ins are
+ * already excluded by buildScorecard): the performance lists start in
+ * scorecard order and sort only when a list asks (D4).
+ */
 export function allBatters(
   batsmen: ScorecardBatsman[],
   excludeName?: string,
 ): MatchSummaryBatter[] {
-  return [...batsmen]
+  return batsmen
     .filter((b) => !excludeName || b.name !== excludeName)
-    .sort((a, b) => (b.runs ?? -1) - (a.runs ?? -1))
     .map((b) => ({
       name: b.name,
       runs: b.runs ?? 0,
@@ -80,19 +83,18 @@ export function topBatters(
   batsmen: ScorecardBatsman[],
   excludeName?: string,
 ): MatchSummaryBatter[] {
-  return allBatters(batsmen, excludeName).slice(0, 3);
+  return [...batsmen]
+    .filter((b) => !excludeName || b.name !== excludeName)
+    .sort((a, b) => (b.runs ?? -1) - (a.runs ?? -1))
+    .slice(0, 3)
+    .map((b) => allBatters([b])[0]!);
 }
 
-/** Everyone who bowled, by wickets, then by fewest runs conceded. */
+/** Everyone who bowled, in bowling order (a bowler with no overs and no wicket didn't). */
 export function allBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
-  return [...bowlers]
+  return bowlers
     .filter((b) => !excludeName || b.name !== excludeName)
     .filter((b) => (b.wickets ?? 0) > 0 || !!b.overs)
-    .sort(
-      (a, b) =>
-        (b.wickets ?? 0) - (a.wickets ?? 0) ||
-        (a.runs ?? Number.MAX_SAFE_INTEGER) - (b.runs ?? Number.MAX_SAFE_INTEGER),
-    )
     .map((b) => ({
       name: b.name,
       wickets: b.wickets ?? 0,
@@ -103,7 +105,9 @@ export function allBowlers(bowlers: ScorecardBowler[], excludeName?: string): Ma
 
 /** Best bowlers by wickets, then by fewest runs conceded. */
 export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
-  return allBowlers(bowlers, excludeName).slice(0, 3);
+  return [...allBowlers(bowlers, excludeName)]
+    .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)
+    .slice(0, 3);
 }
 
 /** Winner from the club-perspective result text, defaulting to a draw. */

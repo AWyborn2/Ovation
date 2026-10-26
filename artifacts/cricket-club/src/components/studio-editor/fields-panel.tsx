@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { Image as ImageIcon, List, Plus, Search, Type } from "lucide-react";
-import { kindFields, pageTokens, type PageKey } from "@workspace/scorecard/kind-templates";
+import {
+  isPerformanceRepeat,
+  kindFields,
+  pageTokens,
+  type KindRepeat,
+  type PageKey,
+  type RowsPick,
+} from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
+import { PickControls } from "./rows-panel";
 import {
   fieldTextLayer,
   imageTokenLayer,
@@ -17,6 +25,63 @@ const row =
 
 /** The images the panel always offers itself (the card photo, the club crest). */
 const OWN_IMAGES = new Set(["photo", "clubLogo"]);
+
+/**
+ * Asked straight away when a performance list is added (full draft editor
+ * plan, D4): whose, how many, sorted how and which count. Skip adds it
+ * unfiltered (both teams, every performance, scorecard order).
+ */
+function AddListChooser({
+  repeat,
+  clubLabel,
+  onAdd,
+  onSkip,
+}: {
+  repeat: KindRepeat;
+  clubLabel?: string;
+  onAdd: (pick: RowsPick) => void;
+  onSkip: () => void;
+}) {
+  const [pick, setPick] = useState<RowsPick>({});
+  return (
+    <div
+      role="group"
+      aria-label={`Set up ${repeat.label}`}
+      className="rounded-lg border border-[var(--ed-accent)] bg-[var(--ed-panel)] p-3 text-sm"
+    >
+      <p className="text-xs font-semibold">Which performances should this list show?</p>
+      <PickControls
+        repeat={repeat.key}
+        pick={pick}
+        clubLabel={clubLabel}
+        onPick={(patch) =>
+          setPick((p) => {
+            const next = { ...p, ...patch };
+            for (const k of Object.keys(next) as Array<keyof RowsPick>)
+              if (next[k] === undefined) delete next[k];
+            return next;
+          })
+        }
+      />
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onAdd(pick)}
+          className="rounded-full bg-[var(--ed-accent)] px-3 py-1.5 text-xs font-bold text-[var(--ed-on-accent)]"
+        >
+          Add list
+        </button>
+        <button
+          type="button"
+          onClick={onSkip}
+          className="rounded-full border border-[var(--ed-line)] px-3 py-1.5 text-xs"
+        >
+          Skip, show all
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Every live field, image and list a card's page has (full draft editor plan,
@@ -50,6 +115,8 @@ export function FieldsPanel({
   onAdd: (layer: FreeLayer) => void;
 }) {
   const [query, setQuery] = useState("");
+  // The performance list being set up before it's added (D4), if any.
+  const [choosing, setChoosing] = useState<string | null>(null);
   const pageCat = page ? pageTokens(kind, page) : null;
   const cat = pageCat ?? kindFields(kind);
   if (!cat) return <p className="text-sm text-[var(--ed-ink2)]">This card has no live fields.</p>;
@@ -152,17 +219,37 @@ export function FieldsPanel({
           </h3>
           <div className="flex flex-col gap-1.5">
             {cat.repeats.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                className={row}
-                onClick={() => onAdd(rowsLayer(r, size))}
-              >
-                <span className="flex items-center gap-2 font-semibold">
-                  <List className="h-4 w-4 text-[var(--ed-ink2)]" aria-hidden /> {r.label}
-                </span>
-                <Plus className="h-4 w-4" aria-hidden />
-              </button>
+              <div key={r.key} className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  className={row}
+                  aria-expanded={isPerformanceRepeat(r.key) ? choosing === r.key : undefined}
+                  onClick={() =>
+                    isPerformanceRepeat(r.key)
+                      ? setChoosing(choosing === r.key ? null : r.key)
+                      : onAdd(rowsLayer(r, size))
+                  }
+                >
+                  <span className="flex items-center gap-2 font-semibold">
+                    <List className="h-4 w-4 text-[var(--ed-ink2)]" aria-hidden /> {r.label}
+                  </span>
+                  <Plus className="h-4 w-4" aria-hidden />
+                </button>
+                {choosing === r.key && (
+                  <AddListChooser
+                    repeat={r}
+                    clubLabel={values["club.short"]}
+                    onAdd={(pick) => {
+                      setChoosing(null);
+                      onAdd(rowsLayer(r, size, pick));
+                    }}
+                    onSkip={() => {
+                      setChoosing(null);
+                      onAdd(rowsLayer(r, size));
+                    }}
+                  />
+                )}
+              </div>
             ))}
           </div>
           <p className="mt-2 text-xs text-[var(--ed-ink2)]">

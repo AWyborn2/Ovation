@@ -231,7 +231,7 @@ describe("topBowlers", () => {
 // ---------------------------------------------------------------------------
 
 describe("allBatters and allBowlers", () => {
-  it("keeps every batter, most runs first, with the same exclusions as the top three", () => {
+  it("keeps every batter in batting order, with the same exclusions as the top three", () => {
     const batsmen = [
       bat("A", 10),
       bat("B", 50),
@@ -240,20 +240,19 @@ describe("allBatters and allBowlers", () => {
       bat("D", 20),
       bat("E", 40),
     ];
+    // Scorecard order (D4): a list sorts only when it asks.
     expect(allBatters(batsmen, "Private Player").map((b) => b.name)).toEqual([
+      "A",
       "B",
-      "E",
       "C",
       "D",
-      "A",
+      "E",
     ]);
-    // The top three are the full list's first three (the cap stays at three).
-    expect(topBatters(batsmen, "Private Player")).toEqual(
-      allBatters(batsmen, "Private Player").slice(0, 3),
-    );
+    // The top three are still the most runs first.
+    expect(topBatters(batsmen, "Private Player").map((b) => b.name)).toEqual(["B", "E", "C"]);
   });
 
-  it("keeps everyone who bowled, most wickets then fewest runs first", () => {
+  it("keeps everyone who bowled, in bowling order", () => {
     const bowlers = [
       bowl("A", 1, 40),
       bowl("B", 3, 25),
@@ -262,8 +261,8 @@ describe("allBatters and allBowlers", () => {
       bowl("E", 0, 50),
       bowl("F", 0, 10, null),
     ];
-    expect(allBowlers(bowlers).map((b) => b.name)).toEqual(["C", "B", "D", "A", "E"]);
-    expect(topBowlers(bowlers)).toEqual(allBowlers(bowlers).slice(0, 3));
+    expect(allBowlers(bowlers).map((b) => b.name)).toEqual(["A", "B", "C", "D", "E"]);
+    expect(topBowlers(bowlers).map((b) => b.name)).toEqual(["C", "B", "D"]);
   });
 });
 

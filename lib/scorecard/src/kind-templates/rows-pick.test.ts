@@ -1,24 +1,32 @@
-/** A list's row choice (full draft editor plan, stage 4): whose, sorted how, how many. */
+/** A list's row choice (full draft editor plan, stages 4 and 5): whose, sorted how, how many. */
 import { describe, expect, it } from "vitest";
 import {
-  defaultPick,
+  economyText,
   effectivePick,
   isPerformanceRepeat,
   isPickableRepeat,
+  oversToBalls,
+  performanceEntries,
+  performancePickRows,
   pickRowIndexes,
+  pickSortsFor,
   pickStat,
+  strikeRateText,
 } from "./rows-pick";
+import type { MatchSummaryInnings } from "../match-summary-types";
 
-const bat = (name: string, runs: number, balls: number | null, side: string) => ({
+const bat = (name: string, runs: number, balls: number | null, side: string, notOut = false) => ({
   name,
-  runs: String(runs),
+  runs: `${runs}${notOut ? "*" : ""}`,
   runsOnly: String(runs),
+  notOut: notOut ? "*" : "",
   balls: balls == null ? "" : String(balls),
   side,
 });
-const bowl = (name: string, wickets: number, runs: number, side: string) => ({
+const bowl = (name: string, wickets: number, runs: number, side: string, overs = "") => ({
   name,
   figures: `${wickets}/${runs}`,
+  overs,
   side,
 });
 
@@ -52,31 +60,44 @@ describe("which lists take a row choice", () => {
     expect(pickStat("leaders")).toBeNull();
   });
 
-  it("starts a performance list as the club's top three (D4)", () => {
-    expect(defaultPick("performances.batting")).toEqual({ side: "club", count: 3, sort: "runs" });
-    expect(defaultPick("performances.bowling")).toEqual({
-      side: "club",
-      count: 3,
-      sort: "wickets",
-    });
-    expect(defaultPick("innings1.batting")).toBeUndefined();
-    // A choice without a side keeps to the club; an innings list has no side.
-    expect(effectivePick("performances.batting", { count: 0 })).toEqual({
-      side: "club",
-      count: 0,
-    });
+  it("draws every row without a choice; a choice without a side keeps both teams (D4)", () => {
+    expect(effectivePick("performances.batting", undefined)).toBeNull();
+    expect(effectivePick("performances.batting", { count: 0 })).toEqual({ count: 0 });
     expect(effectivePick("innings1.batting", { side: "both", count: 2 })).toEqual({ count: 2 });
     expect(effectivePick("innings1.batting", undefined)).toBeNull();
     expect(effectivePick("players", { count: 2 })).toBeNull();
   });
+
+  it("offers each stat its own sorts, and stage 4's three on either", () => {
+    expect(pickSortsFor("batting")).toEqual(["runs", "balls", "strikeRate", "wickets", "figures"]);
+    expect(pickSortsFor("bowling")).toEqual(["wickets", "figures", "economy", "runs"]);
+  });
+});
+
+describe("cricket numbers", () => {
+  it("reads overs as overs and balls", () => {
+    expect(oversToBalls("8.3")).toBe(51);
+    expect(oversToBalls("10")).toBe(60);
+    expect(oversToBalls("")).toBeNull();
+    expect(oversToBalls("4.7")).toBeNull();
+  });
+
+  it("formats strike rate and economy, empty without balls", () => {
+    expect(strikeRateText(45, 36)).toBe("125.0");
+    expect(strikeRateText(12, null)).toBe("");
+    expect(strikeRateText(0, 0)).toBe("");
+    expect(economyText(28, "8.3")).toBe("3.29");
+    expect(economyText(10, "")).toBe("");
+  });
 });
 
 describe("pickRowIndexes", () => {
-  it("draws the club's top three batters without a choice, never the opposition's", () => {
-    expect(names(BATTING, pickRowIndexes("performances.batting", BATTING, undefined))).toEqual([
-      "Club C", // 64 off 41 beats 64 off 50
-      "Club B",
+  it("draws every performance of both teams in scorecard order without a choice (D4)", () => {
+    expect(pickRowIndexes("performances.batting", BATTING, undefined)).toEqual([0, 1, 2, 3, 4, 5]);
+    // A choice that names no side keeps both teams too.
+    expect(names(BATTING, pickRowIndexes("performances.batting", BATTING, { count: 2 }))).toEqual([
       "Club A",
+      "Club B",
     ]);
   });
 
@@ -133,9 +154,105 @@ describe("pickRowIndexes", () => {
     expect(names(innings, top)).toEqual(["Club C", "Club B"]);
   });
 
+  it("sorts batters by balls faced or strike rate, rows without balls last", () => {
+    const balls = pickRowIndexes("performances.batting", BATTING, { sort: "balls" });
+    expect(names(BATTING, balls)).toEqual([
+      "Opp A",
+      "Club B",
+      "Club C",
+      "Club A",
+      "Club D",
+      "Opp B",
+    ]);
+    // 64 off 41 (156.1), 64 off 50 (128), 88 off 70 (125.7), 20 off 30, 5 off 9.
+    const sr = pickRowIndexes("performances.batting", BATTING, { sort: "strikeRate" });
+    expect(names(BATTING, sr)).toEqual(["Club C", "Club B", "Opp A", "Club A", "Club D", "Opp B"]);
+  });
+
+  it("sorts bowlers by economy, lowest first, rows without overs last", () => {
+    const rows = [
+      bowl("Four an over", 1, 40, "club", "10"),
+      bowl("No overs", 3, 10, "club"),
+      bowl("Three an over", 2, 15, "club", "5"),
+      bowl("Part over", 0, 6, "opposition", "1.3"), // 6 off 9 balls: 4.00
+    ];
+    const econ = pickRowIndexes("performances.bowling", rows, { sort: "economy" });
+    expect(names(rows, econ)).toEqual(["Three an over", "Four an over", "Part over", "No overs"]);
+  });
+
+  it("filters by a minimum of runs or wickets, and not outs", () => {
+    const fifty = pickRowIndexes("performances.batting", BATTING, { minRuns: 50 });
+    expect(names(BATTING, fifty)).toEqual(["Club B", "Club C", "Opp A"]);
+    const threes = pickRowIndexes("performances.bowling", BOWLING, {
+      minWickets: 3,
+      side: "club",
+    });
+    expect(names(BOWLING, threes)).toEqual(["Club X", "Club Y"]);
+    const rows = [bat("Out", 40, 30, "club"), bat("Not out", 12, 10, "club", true)];
+    expect(names(rows, pickRowIndexes("innings1.batting", rows, { notOutOnly: true }))).toEqual([
+      "Not out",
+    ]);
+  });
+
+  it("changes nothing when applied to the rows it already chose (a slide's share)", () => {
+    const pick = { side: "both" as const, sort: "strikeRate" as const, count: 4, minRuns: 5 };
+    const first = pickRowIndexes("performances.batting", BATTING, pick).map((i) => BATTING[i]!);
+    expect(pickRowIndexes("performances.batting", first, pick)).toEqual([0, 1, 2, 3]);
+  });
+
   it("leaves any other list as bound", () => {
     expect(pickRowIndexes("players", BATTING, { count: 1, sort: "runs" })).toEqual([
       0, 1, 2, 3, 4, 5,
     ]);
+  });
+});
+
+describe("a result's performances", () => {
+  const innings: MatchSummaryInnings[] = [
+    {
+      teamKey: "opposition",
+      inningsNum: 1,
+      totalRuns: "150",
+      wickets: "10",
+      overs: "40",
+      topBatters: [],
+      topBowlers: [],
+      batters: [{ name: "Opp A", runs: 50, balls: 60 }],
+      bowlers: [{ name: "Club X", wickets: 3, runs: 20, overs: "8.3" }],
+    },
+    {
+      teamKey: "club",
+      inningsNum: 2,
+      totalRuns: "151",
+      wickets: "4",
+      overs: "35",
+      // An older input: the top three only.
+      topBatters: [{ name: "Club A", runs: 70, balls: 80, notOut: true }],
+      topBowlers: [{ name: "Opp X", wickets: 2, runs: 30, overs: "7" }],
+    },
+  ];
+
+  it("lists every innings' batters and bowlers in scorecard order, each with its side", () => {
+    const { batting, bowling } = performanceEntries(innings);
+    expect(batting.map((e) => [e.player.name, e.side])).toEqual([
+      ["Opp A", "opposition"],
+      ["Club A", "club"],
+    ]);
+    expect(bowling.map((e) => [e.player.name, e.side])).toEqual([
+      ["Club X", "club"],
+      ["Opp X", "opposition"],
+    ]);
+  });
+
+  it("gives the values a choice reads, as the binding formats them", () => {
+    expect(performancePickRows(innings, "performances.batting")).toEqual([
+      { runs: "50", runsOnly: "50", notOut: "", balls: "60", side: "opposition" },
+      { runs: "70*", runsOnly: "70", notOut: "*", balls: "80", side: "club" },
+    ]);
+    expect(performancePickRows(innings, "performances.bowling")).toEqual([
+      { figures: "3/20", overs: "8.3", side: "club" },
+      { figures: "2/30", overs: "7", side: "opposition" },
+    ]);
+    expect(performancePickRows(innings, "innings1.batting")).toEqual([]);
   });
 });

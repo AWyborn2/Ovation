@@ -155,6 +155,7 @@ export const BATTING_ROW_FIELDS = [
   "runsOnly",
   "notOut",
   "balls",
+  "strikeRate",
 ] as const;
 
 /** Every field of a bowling row. */
@@ -166,6 +167,7 @@ export const BOWLING_ROW_FIELDS = [
   "figures",
   "figuresDash",
   "overs",
+  "economy",
 ] as const;
 
 /** A paired row: a batter's fields (`bat…`) beside a bowler's (`bowl…`). */
@@ -186,6 +188,8 @@ const ROW_FIELD_LABELS: Record<string, string> = {
   figures: "Figures (W/R)",
   figuresDash: "Figures (W-R)",
   overs: "Overs",
+  strikeRate: "Strike rate",
+  economy: "Economy",
   team: "Team",
 };
 
