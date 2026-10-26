@@ -250,7 +250,11 @@ describe("template editor", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     const dialog = await screen.findByRole("dialog", { name: /Update 3 waiting cards/ });
-    expect(within(dialog).getByText(/keeps their captions. Cards whose design was edited by hand keep it/)).toBeTruthy();
+    expect(
+      within(dialog).getByText(
+        /keeps their captions. Cards whose design was edited by hand keep it/,
+      ),
+    ).toBeTruthy();
     await waitFor(() =>
       expect(document.activeElement).toBe(
         within(dialog).getByRole("button", { name: "Don't apply" }),

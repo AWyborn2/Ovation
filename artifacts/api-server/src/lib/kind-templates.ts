@@ -348,8 +348,7 @@ export async function applyTemplateToDrafts(
       .where(eq(socialDraftsTable.id, draft.id));
     changed += 1;
   }
-  const skipped =
-    expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed - edited);
+  const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed - edited);
   return { changed, skipped, edited };
 }
 
