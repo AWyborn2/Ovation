@@ -123,6 +123,51 @@ const champions: DisplayBoard = {
   display: display(),
 };
 
+// Ten grades on one screen (the dense style): long real-style names and
+// full grade headings, to check readability at 1920×1080.
+const TEN_GRADES = [
+  "First Grade",
+  "Second Grade",
+  "Third Grade",
+  "Fourth Grade",
+  "Fifth Grade",
+  "Sixth Grade",
+  "Women's First Grade",
+  "Women's Second Grade",
+  "Under 17",
+  "Over 40s",
+];
+const LONG_NAMES = [
+  "Jonathan Prendergast",
+  "Bartholomew Fairweather",
+  "Ashley Hollingsworth",
+  "Christopher Vandenberg",
+  "Mackenzie O'Donoghue",
+  "Sam Lee",
+  "Alexandra Whittington",
+  "Benjamin Castellanos",
+  "Tom Ng",
+  "Maximilian Featherstone",
+];
+const tenGrades: DisplayBoard = {
+  id: "ten-grades",
+  category: "awards",
+  layout: "grid",
+  title: "Best and Fairest",
+  entries: [],
+  grid: {
+    rowHeading: "Season",
+    columnHeadings: TEN_GRADES,
+    rows: Array.from({ length: 12 }, (_, i) => ({
+      heading: season(2025 - i),
+      cells: TEN_GRADES.map((_, g) => ({
+        entries: [{ text: LONG_NAMES[(i + g) % LONG_NAMES.length]! }],
+      })),
+    })),
+  },
+  display: display(),
+};
+
 const officeBearers: DisplayBoard = {
   id: "office-bearers",
   category: "committee",
@@ -299,6 +344,7 @@ const partnershipRecords: DisplayBoard = {
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
   boards: [
     premierships,
+    tenGrades,
     champions,
     captains,
     officeBearers,
@@ -324,6 +370,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSequence: [
       "premierships",
       "photos:fixture",
+      "ten-grades",
       "club-champions",
       "captains",
       "office-bearers",
@@ -359,6 +406,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     boardConfigs: {
       premierships: { move: "pages", trans: "flip", columnsPerScreen: 5 },
       "club-champions": { move: "credits", trans: "wipe", speed: 120 },
+      "ten-grades": { move: "pages", trans: "fade", columnsPerScreen: 10 },
       captains: { move: "pages", trans: "up" },
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
       "batting-records": { move: "fit", trans: "pop" },

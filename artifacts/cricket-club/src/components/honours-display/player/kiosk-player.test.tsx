@@ -235,4 +235,43 @@ describe("KioskPlayer", () => {
     expect(screen.getByText("Club Champions")).toBeTruthy();
     expect(backdrop().at(-1)).toBe("/bg2.jpg");
   });
+
+  it("shows up to 10 grades on one screen in the dense style", async () => {
+    vi.useFakeTimers();
+    const look = resolveClubLook({ kioskLook: { pageSecs: 1, hold: 0, move: "pages" } });
+    const cols = Array.from({ length: 8 }, (_, i) => `G${i + 1}`);
+    const wide = board("champions", "Club Champions", ["First Grade", ...cols.slice(1)]);
+    wide.grid!.rows[0]!.cells[0]!.entries[0]!.text = "Jonathan Prendergast";
+    const build = (columnsPerScreen: number) =>
+      buildRotation({
+        boards: [wide],
+        settings: {
+          kioskSequence: [],
+          boardConfigs: { champions: { columnsPerScreen } },
+          kioskSponsorSlideEvery: 3,
+          kioskSponsorSlideStyle: "grid",
+        },
+        look,
+        sponsors: [],
+        ads: [],
+        sponsorSlides: false,
+      });
+    render(<KioskPlayer items={build(8)} brand={brand} look={look} sponsors={[]} reducedMotion />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    expect(document.querySelector(".hb-kp-board")?.hasAttribute("data-dense")).toBe(true);
+    expect(screen.getByText("1st Grade")).toBeTruthy();
+    expect(screen.getByText("J. Prendergast")).toBeTruthy();
+    expect(screen.getByText("G8 winner")).toBeTruthy();
+    cleanup();
+
+    // Four across is not dense: full names and headings.
+    render(<KioskPlayer items={build(4)} brand={brand} look={look} sponsors={[]} reducedMotion />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    expect(document.querySelector(".hb-kp-board")?.hasAttribute("data-dense")).toBe(false);
+    expect(screen.getByText("Jonathan Prendergast")).toBeTruthy();
+  });
 });

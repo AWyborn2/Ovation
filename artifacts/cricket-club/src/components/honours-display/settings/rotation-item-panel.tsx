@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { KIOSK_MAX_COLUMNS } from "@workspace/scorecard/kiosk-display";
 import type { BoardDisplayConfig, DisplayBoard } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
@@ -83,7 +84,7 @@ export function RotationItemPanel({
 function BoardTvSettings({ form, board }: { form: HonoursDisplayForm; board: DisplayBoard }) {
   const cfg = form.boardConfigs[board.id] ?? {};
   const resolve = (value: typeof cfg) => form.resolveBoard(board, value);
-  const maxColumns = resolve({ columnsPerScreen: 5 }).columnsPerScreen;
+  const maxColumns = resolve({ columnsPerScreen: KIOSK_MAX_COLUMNS }).columnsPerScreen;
   const leaderboard = board.layout === "leaderboard";
   const overridden =
     MOTION_KEYS.some((k) => cfg[k] !== undefined) || (leaderboard && cfg.top !== undefined);

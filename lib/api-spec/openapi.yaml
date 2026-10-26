@@ -21822,10 +21822,12 @@ components:
         columnsPerScreen:
           type: integer
           minimum: 1
-          maximum: 5
+          maximum: 10
           description: >-
             Columns shown at once (grade or role columns, plaques across, list
             columns). A season grid with more columns splits into column groups.
+            Season grids and composite columns take up to 10; plaques and
+            record panels up to 5, life members and lists up to 3.
 
     BoardDisplayConfig:
       type: object
@@ -21899,10 +21901,12 @@ components:
         columnsPerScreen:
           type: integer
           minimum: 1
-          maximum: 5
+          maximum: 10
           description: >-
             Columns shown at once (grade or role columns, plaques across, list
             columns). A season grid with more columns splits into column groups.
+            Season grids and composite columns take up to 10; plaques and
+            record panels up to 5, life members and lists up to 3.
         top:
           type: integer
           enum:

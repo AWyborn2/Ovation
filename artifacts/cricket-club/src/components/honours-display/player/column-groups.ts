@@ -91,3 +91,78 @@ export function sliceBoardColumns(board: DisplayBoard, group: ColumnGroup): Disp
   }
   return board;
 }
+
+/** Names longer than this become initial and surname on a dense screen. */
+const COMPACT_NAME_OVER = 12;
+
+/**
+ * "Jonathan Prendergast" → "J. Prendergast" when longer than
+ * COMPACT_NAME_OVER; shorter names, single words and text that isn't a name
+ * (a "—" or a figure) are kept as they are.
+ */
+export function compactName(name: string): string {
+  const text = name.trim();
+  if (text.length <= COMPACT_NAME_OVER) return text;
+  const words = text.split(/\s+/);
+  if (words.length < 2 || !/^\p{L}/u.test(words[0]!)) return text;
+  return `${words[0]![0]!.toUpperCase()}. ${words.slice(1).join(" ")}`;
+}
+
+const ORDINALS: Readonly<Record<string, string>> = {
+  first: "1st",
+  second: "2nd",
+  third: "3rd",
+  fourth: "4th",
+  fifth: "5th",
+  sixth: "6th",
+  seventh: "7th",
+  eighth: "8th",
+  ninth: "9th",
+  tenth: "10th",
+};
+
+/** "First Grade" → "1st Grade": ordinal words as numerals for a narrow heading. */
+export function compactHeading(heading: string): string {
+  return heading.replace(/\b[A-Za-z]+\b/g, (w) => ORDINALS[w.toLowerCase()] ?? w);
+}
+
+/**
+ * A screen showing KIOSK_DENSE_COLUMNS or more columns (honours kiosk: up to
+ * 10 across): long names as initial and surname, ordinal grade headings as
+ * numerals. Other boards are returned unchanged.
+ */
+export function compactBoard(board: DisplayBoard): DisplayBoard {
+  if (board.layout === "grid" && board.grid) {
+    const g = board.grid;
+    return {
+      ...board,
+      grid: {
+        ...g,
+        columnHeadings: g.columnHeadings.map(compactHeading),
+        rows: g.rows.map((r) => ({
+          ...r,
+          cells: r.cells.map((c) => ({
+            ...c,
+            entries: c.entries.map((e) => ({ ...e, text: compactName(e.text) })),
+          })),
+        })),
+      },
+    };
+  }
+  if (board.layout === "columns" && board.columns) {
+    const lead = seasonColumnCount(board);
+    return {
+      ...board,
+      columns: board.columns.map((col, i) =>
+        i < lead
+          ? col
+          : {
+              ...col,
+              heading: compactHeading(col.heading),
+              entries: col.entries.map((e) => ({ ...e, primaryText: compactName(e.primaryText) })),
+            },
+      ),
+    };
+  }
+  return board;
+}

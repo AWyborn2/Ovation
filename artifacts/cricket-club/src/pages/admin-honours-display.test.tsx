@@ -723,4 +723,39 @@ describe("Photo slideshow sources (kiosk-photo-rotation P0/P1)", () => {
       (body as unknown as { boardConfigs: Record<string, unknown> }).boardConfigs.champions,
     ).toEqual({ photoBackground: null });
   });
+
+  it("offers up to 10 columns for a season grid, with the compact-style hint from 7", async () => {
+    const tenCols = {
+      ...champions,
+      grid: {
+        rowHeading: "Season",
+        columnHeadings: Array.from({ length: 12 }, (_, i) => `G${i}`),
+        rows: [],
+      },
+    };
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [tenCols],
+        settings: { ...BUNDLE.settings, kioskSequence: ["champions"] },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    const columns = screen.getByTestId("board-tv-champions-columns") as HTMLSelectElement;
+    expect(
+      [...columns.options]
+        .map((o) => o.value)
+        .filter(Boolean)
+        .at(-1),
+    ).toBe("10");
+    expect(screen.queryByTestId("board-tv-champions-dense-hint")).toBeNull();
+    fireEvent.change(columns, { target: { value: "10" } });
+    expect(screen.getByTestId("board-tv-champions-dense-hint")).toBeTruthy();
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, { columnsPerScreen?: number }> })
+        .boardConfigs.champions!.columnsPerScreen,
+    ).toBe(10);
+  });
 });

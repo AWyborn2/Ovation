@@ -1514,6 +1514,50 @@
   display: block;
   margin-left: 0;
 }
+/* Dense screens: seven to ten columns across (season grids and composite
+   columns). Tighter cells, a narrower season column and smaller, less
+   spaced type; headings may wrap to two lines rather than clip. The player
+   also shortens long names to initial and surname, and ordinal grade
+   headings to numerals. */
+.hb-kiosk .hb-kp-board[data-dense] {
+  --hb-season-w: max(5.6cqw, 72px);
+}
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-table th,
+.hb-kiosk .hb-kp-board[data-dense] .hb-col-head {
+  padding: 0.5cqw 0.45cqw;
+  font-size: max(0.85cqw, 11px);
+  letter-spacing: 0.04em;
+  white-space: normal;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-table td,
+.hb-kiosk .hb-kp-board[data-dense] .hb-cell {
+  padding: 0.45cqw;
+  font-size: max(1.15cqw, 13px);
+}
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-grid-table th,
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-col-head,
+.hb-kiosk.skin-p12 .hb-kp-board[data-dense] .hb-grid-table th {
+  font-size: 0.85cqw;
+  letter-spacing: 0.06em;
+}
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-grid-table td,
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-cell,
+.hb-kiosk.skin-p12 .hb-kp-board[data-dense] .hb-grid-table td {
+  font-size: 1.22cqw;
+}
+/* An honour board never clips a name: on a dense screen a long name wraps
+   (at its spaces, hyphenating only a single over-long word) instead of
+   ending in an ellipsis. */
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-name,
+.hb-kiosk .hb-kp-board[data-dense] .hb-cell .hb-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  hyphens: auto;
+  line-height: 1.12;
+}
 /* A season-aligned composite board: a narrow Season column like the grid's
    (the template sets equal columns inline, hence the !important). */
 .hb-kiosk .hb-cols[data-season-lead] {
