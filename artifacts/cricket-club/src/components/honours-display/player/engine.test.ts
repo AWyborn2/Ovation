@@ -11,7 +11,7 @@ import {
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
 import { creditsDurationMs, findFitScale, FIT_MIN_SCALE } from "./movement";
 import { pickTransition, RANDOM_TRANSITIONS, transitionSpec } from "./transitions";
-import { buildRotation } from "./rotation";
+import { buildRotation, slideshowPass } from "./rotation";
 
 const display = { columns: 1, transition: "scroll" as const, fit: false };
 const GRADES = ["First Grade", "Second Grade", "Third Grade", "Fourth Grade", "Fifth Grade"];
@@ -257,5 +257,38 @@ describe("rotation", () => {
       "A",
       "B",
     ]);
+  });
+});
+
+describe("photo slideshow passes", () => {
+  const photos = ["a", "b", "c", "d", "e"].map((u) => ({ url: u, width: 1, height: 1 }));
+  const item = (order: "random" | "newest", perPass: number) => ({
+    kind: "photos" as const,
+    key: "k",
+    photos,
+    slideshow: {
+      id: "photos:x",
+      name: "x",
+      library: "senior" as const,
+      source: "all" as const,
+      order,
+      perPass,
+      secondsPerPhoto: 5,
+      captions: false,
+    },
+  });
+  const urls = (p: { url: string }[]) => p.map((x) => x.url);
+
+  it("works down the newest photos pass by pass, wrapping round", () => {
+    expect(urls(slideshowPass(item("newest", 2), 0))).toEqual(["a", "b"]);
+    expect(urls(slideshowPass(item("newest", 2), 1))).toEqual(["c", "d"]);
+    expect(urls(slideshowPass(item("newest", 2), 2))).toEqual(["e", "a"]);
+    expect(urls(slideshowPass(item("newest", 9), 0))).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("picks a random set without repeats", () => {
+    const pick = urls(slideshowPass(item("random", 3), 0, () => 0));
+    expect(pick).toHaveLength(3);
+    expect(new Set(pick).size).toBe(3);
   });
 });

@@ -7882,6 +7882,84 @@ export interface CustomGridDef {
 }
 
 /**
+ * Senior club photos, the junior library (only photos every tagged child may be shown in), or both.
+ */
+export type KioskPhotoSlideshowLibrary = typeof KioskPhotoSlideshowLibrary[keyof typeof KioskPhotoSlideshowLibrary];
+
+
+export const KioskPhotoSlideshowLibrary = {
+  senior: 'senior',
+  junior: 'junior',
+  both: 'both',
+} as const;
+
+/**
+ * The whole library, the last recentDays, this season, or photos with any of types / grades.
+ */
+export type KioskPhotoSlideshowSource = typeof KioskPhotoSlideshowSource[keyof typeof KioskPhotoSlideshowSource];
+
+
+export const KioskPhotoSlideshowSource = {
+  all: 'all',
+  recent: 'recent',
+  season: 'season',
+  types: 'types',
+  grades: 'grades',
+} as const;
+
+export type KioskPhotoSlideshowOrder = typeof KioskPhotoSlideshowOrder[keyof typeof KioskPhotoSlideshowOrder];
+
+
+export const KioskPhotoSlideshowOrder = {
+  random: 'random',
+  newest: 'newest',
+} as const;
+
+export interface KioskPhotoSlideshow {
+  /** "photos:<uuid>"; the rotation places it by this id. */
+  id: string;
+  /** @maxLength 80 */
+  name: string;
+  /** Senior club photos, the junior library (only photos every tagged child may be shown in), or both. */
+  library: KioskPhotoSlideshowLibrary;
+  /** The whole library, the last recentDays, this season, or photos with any of types / grades. */
+  source: KioskPhotoSlideshowSource;
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  recentDays?: number | null;
+  types?: string[] | null;
+  grades?: string[] | null;
+  order: KioskPhotoSlideshowOrder;
+  /**
+     * Photos shown each time the slideshow comes round.
+     * @minimum 1
+     * @maximum 30
+     */
+  perPass: number;
+  /**
+     * @minimum 2
+     * @maximum 30
+     */
+  secondsPerPhoto: number;
+  /** Grade and season under each photo (never names). */
+  captions: boolean;
+}
+
+export interface KioskSlideshowPhoto {
+  url: string;
+  width: number;
+  height: number;
+  caption?: string | null;
+}
+
+export interface KioskSlideshowPhotos {
+  id: string;
+  photos: KioskSlideshowPhoto[];
+}
+
+/**
  * The creative's media type. Defaults to "image" when absent (ads created before video support existed).
  */
 export type KioskAdMediaType = typeof KioskAdMediaType[keyof typeof KioskAdMediaType];
@@ -7984,6 +8062,8 @@ export interface HonourDisplaySettings {
   kioskSponsorIds?: number[];
   /** Admin-uploaded full-screen ad creatives for the kiosk. */
   kioskAds?: KioskAd[];
+  /** Photo slideshows placed in the rotation as "photos:<id>". The bundle's photoSlideshows carries each one's resolved photos. */
+  kioskPhotoSlideshows: KioskPhotoSlideshow[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
   kioskLook: KioskLook;
@@ -8037,6 +8117,8 @@ export interface HonourDisplaySettingsUpdate {
   kioskSponsorSlideStyle?: HonourDisplaySettingsUpdateKioskSponsorSlideStyle;
   kioskSponsorIds?: number[];
   kioskAds?: KioskAd[];
+  /** @maxItems 20 */
+  kioskPhotoSlideshows?: KioskPhotoSlideshow[];
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
   customGrids?: CustomGridDef[];
@@ -8053,6 +8135,8 @@ export interface HonourDisplayBundle {
   activeSponsors: Sponsor[];
   /** Grid-capable boards and their selectable columns, for the admin season-grid column pickers. */
   gridCatalog?: GridCatalogEntry[];
+  /** Each photo slideshow's photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown). */
+  photoSlideshows?: KioskSlideshowPhotos[];
 }
 
 export interface TourStepContent {

@@ -3,7 +3,13 @@ import {
   type ResolvedKioskDisplay,
   type ResolvedKioskLook,
 } from "@workspace/scorecard/kiosk-display";
-import type { HonourDisplaySettings, KioskAd, Sponsor } from "@workspace/api-client-react";
+import type {
+  HonourDisplaySettings,
+  KioskAd,
+  KioskPhotoSlideshow,
+  KioskSlideshowPhoto,
+  Sponsor,
+} from "@workspace/api-client-react";
 import type { DisplayBoard } from "../types";
 import { boardColumnHeadings, splitColumnGroups, type ColumnGroup } from "./column-groups";
 
@@ -19,7 +25,14 @@ export type RotationItem =
     }
   // A sponsor slide: `sponsor` set → one large sponsor; null → grid of all.
   | { kind: "sponsor"; key: string; sponsor: Sponsor | null }
-  | { kind: "ad"; key: string; ad: KioskAd };
+  | { kind: "ad"; key: string; ad: KioskAd }
+  // A photo slideshow: the server-picked photos; the player shows `perPass` a pass.
+  | {
+      kind: "photos";
+      key: string;
+      slideshow: KioskPhotoSlideshow;
+      photos: KioskSlideshowPhoto[];
+    };
 
 export interface RotationInput {
   boards: DisplayBoard[];
@@ -31,6 +44,9 @@ export interface RotationInput {
   /** The sponsors chosen for the kiosk (already filtered to active + chosen). */
   sponsors: Sponsor[];
   ads: KioskAd[];
+  /** The photo slideshow definitions, and the photos the server picked for each. */
+  slideshows?: KioskPhotoSlideshow[];
+  slideshowPhotos?: Record<string, KioskSlideshowPhoto[]>;
   /** Auto-insert a sponsor slide after every N boards. */
   sponsorSlides: boolean;
 }
@@ -61,13 +77,15 @@ export function boardItem(
 
 /**
  * The rotation the TV plays. The admin's sequence holds board ids and placement
- * tokens ("sponsor" for a sponsor slide, "ad:<id>" for an advert); empty means
+ * tokens ("sponsor" for a sponsor slide, "ad:<id>" for an advert, "photos:<id>"
+ * for a photo slideshow, skipped while it has no photos); empty means
  * every board in order. When sponsor slides are on, one is also inserted after
  * every N boards (and at least once). A "single" sponsor style shows each
  * sponsor on its own slide in turn.
  */
 export function buildRotation(input: RotationInput): RotationItem[] {
   const { boards, settings, look, sponsors, ads, sponsorSlides } = input;
+  const slideshows = input.slideshows ?? [];
   if (!boards.length) return [];
   const byId = new Map(boards.map((b) => [b.id, b]));
   const seq = settings.kioskSequence?.length ? settings.kioskSequence : boards.map((b) => b.id);
@@ -98,6 +116,14 @@ export function buildRotation(input: RotationInput): RotationItem[] {
       if (ad) out.push({ kind: "ad", key: `seq-ad:${i}`, ad });
       return;
     }
+    if (id.startsWith("photos:")) {
+      const slideshow = slideshows.find((s) => s.id === id);
+      const photos = input.slideshowPhotos?.[id] ?? [];
+      if (slideshow && photos.length) {
+        out.push({ kind: "photos", key: `seq-photos:${i}`, slideshow, photos });
+      }
+      return;
+    }
     const board = byId.get(id);
     if (!board) return;
     out.push(boardItem(board, settings, look, `board:${board.id}:${i}`));
@@ -109,4 +135,28 @@ export function buildRotation(input: RotationInput): RotationItem[] {
     pushSponsor("auto-sponsor:0");
   }
   return out;
+}
+
+/**
+ * The photos one pass of a slideshow shows: `perPass` of them, a fresh random
+ * pick each pass, or the newest working down the list pass by pass (`pass`
+ * counts the slideshow's passes so far).
+ */
+export function slideshowPass(
+  item: Extract<RotationItem, { kind: "photos" }>,
+  pass: number,
+  random: () => number = Math.random,
+): KioskSlideshowPhoto[] {
+  const { photos, slideshow } = item;
+  const n = Math.min(Math.max(1, slideshow.perPass), photos.length);
+  if (slideshow.order === "random") {
+    const pool = [...photos];
+    for (let k = pool.length - 1; k > 0; k--) {
+      const j = Math.floor(random() * (k + 1));
+      [pool[k], pool[j]] = [pool[j]!, pool[k]!];
+    }
+    return pool.slice(0, n);
+  }
+  const start = (pass * n) % photos.length;
+  return Array.from({ length: n }, (_, k) => photos[(start + k) % photos.length]!);
 }

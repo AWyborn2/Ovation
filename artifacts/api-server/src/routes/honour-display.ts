@@ -7,6 +7,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { dataSource } from "../lib/tenant";
+import { resolveSlideshows } from "../lib/honour-display/photo-slideshows";
 import {
   assembleBoards,
   buildBrand,
@@ -33,11 +34,12 @@ router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
     ensureHonourDisplaySettings(tenantId),
     dataSource(req),
   ]);
-  const [boards, brand, gridCatalog, activeSponsors] = await Promise.all([
+  const [boards, brand, gridCatalog, activeSponsors, photoSlideshows] = await Promise.all([
     assembleBoards(settingsRow, source),
     buildBrand(tenantId),
     buildGridCatalog(tenantId),
     loadActiveSponsors(tenantId, req.log),
+    resolveSlideshows(tenantId, settingsRow.kioskPhotoSlideshows ?? []),
   ]);
   res.json({
     boards,
@@ -45,6 +47,7 @@ router.get("/honour-display", requireAdmin, async (req, res): Promise<void> => {
     settings: serializeSettings(settingsRow, { includeToken: true }),
     activeSponsors,
     gridCatalog,
+    photoSlideshows,
   });
 });
 
@@ -58,12 +61,19 @@ router.get("/honour-display/kiosk", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Invalid or revoked kiosk token" });
     return;
   }
-  const [boards, brand, activeSponsors] = await Promise.all([
+  const [boards, brand, activeSponsors, photoSlideshows] = await Promise.all([
     assembleBoards(settingsRow, await dataSource(req)),
     buildBrand(tenantId),
     loadActiveSponsors(tenantId, req.log),
+    resolveSlideshows(tenantId, settingsRow.kioskPhotoSlideshows ?? []),
   ]);
-  res.json({ boards, brand, settings: serializeSettings(settingsRow), activeSponsors });
+  res.json({
+    boards,
+    brand,
+    settings: serializeSettings(settingsRow),
+    activeSponsors,
+    photoSlideshows,
+  });
 });
 
 // Generate (or rotate) the kiosk token. Replaces any existing one, so the

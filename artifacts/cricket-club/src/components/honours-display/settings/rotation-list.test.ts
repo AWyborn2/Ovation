@@ -5,6 +5,7 @@ describe("rotation list helpers (kiosk redesign B2)", () => {
   it("types each sequence token", () => {
     expect(rotationItemKind("premierships")).toBe("board");
     expect(rotationItemKind("sponsor")).toBe("sponsor");
+    expect(rotationItemKind("photos:abc")).toBe("photos");
     expect(rotationItemKind("ad:123")).toBe("ad");
   });
 

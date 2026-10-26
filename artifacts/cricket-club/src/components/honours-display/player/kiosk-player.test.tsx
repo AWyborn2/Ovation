@@ -8,7 +8,17 @@ import { buildRotation } from "./rotation";
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
+
+/** An Image that loads on the next tick, or fails when its url says "broken". */
+class FakeImage {
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  set src(url: string) {
+    setTimeout(() => (url.includes("broken") ? this.onerror?.() : this.onload?.()), 0);
+  }
+}
 
 const brand = { name: "Test Club", monogram: "TC" } as HonourBrand;
 const board = (id: string, title: string, cols: string[]): DisplayBoard => ({
@@ -87,5 +97,62 @@ describe("KioskPlayer", () => {
     });
     expect(screen.getByText("Club Champions")).toBeTruthy();
     expect(onCycle).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays a photo slideshow pass, skipping a photo that fails to load", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("Image", FakeImage);
+    const look = resolveClubLook({ kioskLook: { pageSecs: 1, hold: 0, move: "pages" } });
+    const slideshow = {
+      id: "photos:1",
+      name: "Clubroom",
+      library: "senior" as const,
+      source: "all" as const,
+      order: "newest" as const,
+      perPass: 3,
+      secondsPerPhoto: 2,
+      captions: true,
+    };
+    const items = buildRotation({
+      boards: [board("officers", "Office Bearers", ["President"])],
+      settings: {
+        kioskSequence: ["officers", "photos:1", "photos:missing"],
+        boardConfigs: {},
+        kioskSponsorSlideEvery: 3,
+        kioskSponsorSlideStyle: "grid",
+      },
+      look,
+      sponsors: [],
+      ads: [],
+      slideshows: [slideshow],
+      slideshowPhotos: {
+        "photos:1": [
+          { url: "/a.jpg", width: 4, height: 3, caption: "A Grade · 2025/26" },
+          { url: "/broken.jpg", width: 4, height: 3, caption: "Broken" },
+          { url: "/c.jpg", width: 4, height: 3, caption: null },
+        ],
+      },
+      sponsorSlides: false,
+    });
+    // An unknown or empty slideshow is left out of the rotation.
+    expect(items.map((i) => i.kind)).toEqual(["board", "photos"]);
+    render(<KioskPlayer items={items} brand={brand} look={look} sponsors={[]} reducedMotion />);
+    const shown = () =>
+      screen
+        .queryAllByTestId("kiosk-photo")
+        .map((el) => el.querySelector(".hb-photo-slide-img")?.getAttribute("src"));
+
+    // Watch the top screen every 100 ms through one pass and back to the board.
+    const seen: string[] = [];
+    for (let t = 0; t < 80; t++) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      const top = shown().at(-1) ?? (screen.queryByText("Office Bearers") ? "board" : "");
+      if (top && seen.at(-1) !== top) seen.push(top);
+      if (top === "/a.jpg") expect(screen.getByText("A Grade · 2025/26")).toBeTruthy();
+    }
+    expect(seen.slice(0, 4)).toEqual(["board", "/a.jpg", "/c.jpg", "board"]);
+    expect(screen.queryByText("Broken")).toBeNull();
   });
 });

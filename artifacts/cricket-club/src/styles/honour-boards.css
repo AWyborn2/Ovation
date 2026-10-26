@@ -1743,3 +1743,48 @@
   max-height: 100%;
   object-fit: contain;
 }
+
+/* Kiosk photo slideshow (kiosk redesign D2). */
+.hb-photo-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+.hb-photo-slide-fill {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  object-fit: cover;
+  filter: blur(28px) brightness(0.55);
+}
+.hb-photo-slide-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.hb-photo-slide-crest {
+  position: absolute;
+  top: clamp(16px, 3vh, 40px);
+  right: clamp(16px, 3vh, 40px);
+  height: clamp(48px, 9vh, 110px);
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+.hb-photo-slide-caption {
+  position: absolute;
+  left: clamp(16px, 3vh, 40px);
+  bottom: clamp(16px, 3vh, 40px);
+  padding: 0.35em 0.8em;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: clamp(16px, 2.6vh, 34px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

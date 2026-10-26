@@ -10171,6 +10171,15 @@ export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
 
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
 export const getHonourDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookPerPageMax = 20;
 
@@ -10378,6 +10387,19 @@ export const GetHonourDisplayResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10494,7 +10516,16 @@ export const GetHonourDisplayResponse = zod.object({
   "key": zod.string(),
   "label": zod.string()
 }).describe('An available column an admin can add to a grid-capable board.'))
-}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.'),
+  "photoSlideshows": zod.array(zod.object({
+  "id": zod.string(),
+  "photos": zod.array(zod.object({
+  "url": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "caption": zod.string().nullish()
+}))
+})).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
 
 
@@ -10511,6 +10542,15 @@ export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
 
 export const getKioskDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10719,6 +10759,19 @@ export const GetKioskDisplayResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10835,7 +10888,16 @@ export const GetKioskDisplayResponse = zod.object({
   "key": zod.string(),
   "label": zod.string()
 }).describe('An available column an admin can add to a grid-capable board.'))
-}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.'),
+  "photoSlideshows": zod.array(zod.object({
+  "id": zod.string(),
+  "photos": zod.array(zod.object({
+  "url": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "caption": zod.string().nullish()
+}))
+})).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
 
 
@@ -10877,6 +10939,17 @@ export const updateHonourDisplaySettingsBodyKioskLookHoldMax = 60;
 
 export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 5;
 
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax = 80;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax = 20;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMin = 0;
 export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMax = 20;
@@ -10929,6 +11002,19 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional(),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
   "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
@@ -11015,6 +11101,15 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 })
 
 
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax = 80;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMax = 20;
 
@@ -11068,6 +11163,19 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),

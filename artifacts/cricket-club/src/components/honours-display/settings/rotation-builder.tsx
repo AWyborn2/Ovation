@@ -15,12 +15,14 @@ const KIND_CHIP: Readonly<Record<RotationItemKind, string>> = {
   board: "bg-primary/10 text-primary-text",
   sponsor: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
   ad: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  photos: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
 };
 
 /**
  * The kiosk rotation as an ordered list (honours kiosk redesign B2): drag a
  * row, press Alt+↑/↓ on a focused row, or use the arrow buttons to reorder;
- * duplicate or remove a row; add boards, the sponsor wall or an ad. Saves to
+ * duplicate or remove a row; add boards, the sponsor wall, an ad or a photo
+ * slideshow. Saves to
  * `kiosk_sequence` through the page's save bar.
  */
 export function RotationBuilder({
@@ -44,6 +46,9 @@ export function RotationBuilder({
     boards,
     boardById,
     kioskAds,
+    slideshows,
+    addSlideshow,
+    slideshowPhotoCount,
   } = form;
   const listRef = useRef<HTMLUListElement>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
@@ -71,6 +76,11 @@ export function RotationBuilder({
     const kind = rotationItemKind(token);
     if (kind === "sponsor") return "Every sponsor on one screen";
     if (kind === "ad") return "Full-screen advert";
+    if (kind === "photos") {
+      const n = slideshowPhotoCount.get(token);
+      if (n == null) return "Save to load its photos";
+      return n ? `${n} photo${n === 1 ? "" : "s"} to pick from` : "No photos match yet";
+    }
     const board = boardById.get(token);
     return board ? BOARD_LAYOUT_LABEL[board.layout] : null;
   };
@@ -273,6 +283,39 @@ export function RotationBuilder({
         >
           <Plus className="h-3.5 w-3.5 mr-1.5" /> Sponsor wall
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const id = addSlideshow();
+            setAnnouncement("Photo slideshow added");
+            onSelect(id);
+          }}
+          data-testid="add-photos-to-seq"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Photo slideshow
+        </Button>
+        {slideshows.length > 0 && (
+          <select
+            className="px-2 py-1.5 rounded border bg-card text-sm"
+            value=""
+            aria-label="Add a saved photo slideshow"
+            onChange={(e) => {
+              addToSeq(e.target.value);
+              if (e.target.value) setAnnouncement(`${seqLabel(e.target.value)} added`);
+            }}
+            data-testid="add-slideshow-to-seq"
+          >
+            <option value="">+ Existing slideshow…</option>
+            {slideshows.map((sh) => (
+              <option key={sh.id} value={sh.id}>
+                {sh.name || "Untitled slideshow"}
+                {placed.has(sh.id) ? " (again)" : ""}
+              </option>
+            ))}
+          </select>
+        )}
         {kioskAds.length > 0 && (
           <select
             className="px-2 py-1.5 rounded border bg-card text-sm"

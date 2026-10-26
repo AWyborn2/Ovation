@@ -36,6 +36,7 @@ export function serializeSettings(
     kioskSponsorSlideStyle: (row.kioskSponsorSlideStyle as "grid" | "single") ?? "grid",
     kioskSponsorIds: row.kioskSponsorIds ?? [],
     kioskAds: row.kioskAds ?? [],
+    kioskPhotoSlideshows: row.kioskPhotoSlideshows ?? [],
     kioskLook: row.kioskLook ?? {},
     boardConfigs: row.boardConfigs ?? {},
     composites: row.composites ?? [],
