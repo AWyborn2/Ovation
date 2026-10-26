@@ -35,6 +35,8 @@ import {
   type VectorLayerV2,
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
+import { SIZES } from "../share-card/types";
+import { focusTransform, type PhotoFocus } from "@workspace/scorecard/photo-focus";
 import { escapeHtml } from "./html-utils";
 import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
@@ -351,6 +353,16 @@ export interface FreeLayerContext {
    */
   photoTransform?: { focalX: number; focalY: number; zoom?: number } | null;
   /**
+   * The photo's focus box and size (photo focus areas): a `photo` layer whose
+   * position nobody set by hand crops to it, for its own frame's shape.
+   */
+  photoFocus?: PhotoFocus | null;
+  /**
+   * The size in pixels of the frame being drawn (set by `renderFreeLayers` for
+   * a `photo` layer), so a focus box crops to the frame's shape.
+   */
+  framePx?: { w: number; h: number };
+  /**
    * The card's bound images (crests, sponsor logos, the club logo), for v2
    * image tokens and conditions. Photos are already left out of a junior
    * card the server hasn't cleared.
@@ -533,13 +545,26 @@ function sliderPhoto(t: FreeLayerContext["photoTransform"]): PhotoAdjust | null 
   return { focalX: pct(t.focalX), focalY: pct(t.focalY), zoom };
 }
 
+/** The photo's focus box as a layer's photo adjust for this frame; null without one. */
+function focusPhoto(ctx: FreeLayerContext): PhotoAdjust | null {
+  const frame = ctx.framePx;
+  if (!ctx.photoFocus || !frame || !(frame.w > 0) || !(frame.h > 0)) return null;
+  const t = focusTransform(ctx.photoFocus, frame.w / frame.h);
+  const pct = (v: number) => Math.round(v * 1000) / 10;
+  return { focalX: pct(t.focalX), focalY: pct(t.focalY), zoom: t.zoom };
+}
+
 /** A `photo` layer: the card photo at this size's focal point and zoom. */
 function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
   // A junior card shows a photo only when the server marked it allowed — a junior
   // player's own photo the family consented to (ADR-007); never from the document alone.
   if ((ctx.junior && !ctx.juniorPhotoAllowed) || !ctx.photoUrl) return null;
+  // A hand-set position wins (the card's sliders, then the layer's own, which
+  // only an edit sets: no bundled design positions its photo); then the
+  // photo's focus box; then centred.
   const t = sliderPhoto(ctx.photoTransform) ??
-    resolveGeometry(layer.photo, undefined, size)?.value ?? {
+    resolveGeometry(layer.photo, undefined, size)?.value ??
+    focusPhoto(ctx) ?? {
       focalX: 50,
       focalY: 50,
       zoom: 1,
@@ -757,7 +782,13 @@ export function renderFreeLayers(
    * card. `depth` is how deep it sits in groups (1 = the page's own layer);
    * `inV2` is true inside a layer drawn by v2's styles.
    */
-  const draw = (layer: TemplateLayerV2, depth: number, inV2 = false): DrawnLayer | null => {
+  const draw = (
+    layer: TemplateLayerV2,
+    depth: number,
+    inV2 = false,
+    /** The parent's size in pixels (the card, or the group the layer sits in). */
+    parentPx: { w: number; h: number } = SIZES[size],
+  ): DrawnLayer | null => {
     if (layer.hidden) return null;
     if (layer.sizes && !layer.sizes.includes(size)) return null;
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
@@ -770,13 +801,30 @@ export function renderFreeLayers(
       // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
       if (!groupDepthAllowed(depth)) return null;
       const children = (Array.isArray(layer.children) ? layer.children : [])
-        .map((child) => draw(child, depth + 1, styled))
+        .map((child) =>
+          draw(child, depth + 1, styled, {
+            w: (num(box.value.w) / 100) * parentPx.w,
+            h: (num(box.value.h) / 100) * parentPx.h,
+          }),
+        )
         .filter((child): child is DrawnLayer => child !== null);
       inner = renderGroup(layer as GroupLayerV2, box.value, children, layout);
     } else if (layer.kind === "vector") {
       inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
     } else {
-      inner = layerInner(layer as unknown as FreeLayer, values, styled ? v2Ctx : drawCtx, size);
+      const layerCtx = styled ? v2Ctx : drawCtx;
+      // A photo frame's own size, so a focus box crops to its shape.
+      const photoCtx =
+        layer.kind === "photo" && ctx.photoFocus
+          ? {
+              ...layerCtx,
+              framePx: {
+                w: (num(box.value.w) / 100) * parentPx.w,
+                h: (num(box.value.h) / 100) * parentPx.h,
+              },
+            }
+          : layerCtx;
+      inner = layerInner(layer as unknown as FreeLayer, values, photoCtx, size);
     }
     if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;

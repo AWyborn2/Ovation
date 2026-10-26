@@ -529,6 +529,7 @@ export default function AdminSocialQueue() {
         // The draft's own photo (as the drawer shows it and the post pack
         // renders it), plus the player's gallery to swap in.
         photoUrl={preview?.photoUrl ?? null}
+        photoFocus={preview?.photoFocus ?? null}
         packId={preview?.packId ?? null}
         templateDoc={
           preview?.templateVersion != null

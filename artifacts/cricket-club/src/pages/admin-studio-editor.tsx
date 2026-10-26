@@ -265,8 +265,10 @@ function EditorApp({ draftId }: { draftId: number }) {
         names: bundle?.cardNames,
       }),
       photoUrl: draft.photoUrl ?? undefined,
+      // The photo's focus box: frames the design hasn't positioned crop to it.
+      ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl],
+    [bundle, brand, input.kind, grade, draft.photoUrl, draft.photoFocus],
   );
 
   const saved = (draft.adjustments ?? {}) as CardAdjustments;

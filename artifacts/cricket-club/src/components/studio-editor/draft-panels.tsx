@@ -78,8 +78,10 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
         names: bundle?.cardNames,
       }),
       photoUrl: draft.photoUrl ?? undefined,
+      // The photo's focus box: frames the design hasn't positioned crop to it.
+      ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl],
+    [bundle, brand, input.kind, grade, draft.photoUrl, draft.photoFocus],
   );
   const palette = [
     bundle?.brand?.primaryColour ?? brand.primaryColour,

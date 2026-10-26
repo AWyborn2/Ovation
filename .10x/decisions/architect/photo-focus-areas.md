@@ -31,9 +31,13 @@ box with the photo URL it already has, with no lookup. Deleting a photo or tag c
 ## Precedence when drawing
 
 1. The draft's own photo sliders, once moved (as today).
-2. The draft's `photoFocus`, through `focusTransform` with the frame's aspect.
-3. A template `photo` layer's own focal point and zoom.
+2. A `photo` layer's own focal point and zoom. Only an edit sets one (no bundled design positions
+   its photo), so this is a hand-made crop on the draft or the club's template copy.
+3. The draft's `photoFocus`, through `focusTransform` with the frame's aspect.
 4. Centred.
+
+The older pack path (pre-template drafts) keeps its centred slots: its frames' sizes aren't known
+when it renders.
 
 The frame's aspect is the layer's box in pixels (template documents: the layer's geometry
 percentage of its parent, down through groups; the canvas renderer: its rect).
@@ -62,11 +66,12 @@ gets the same through the junior routes only, behind the same consent gate.
 
 ## Slices (each its own PR to `main`, safe alone)
 
-| Slice | What                                                                                          |
-| ----- | --------------------------------------------------------------------------------------------- |
-| 1     | Migration 0070, schema, OpenAPI, `PUT /club-photos/{id}/focus`, the shared calculation, tests |
-| 2     | Renderers use `photoFocus`; `pickDraftPhoto` snapshots it and is shape-aware                  |
-| 3     | The library's focus editor: box, preview strip, player areas, face suggestions, filter        |
-| 4     | Juniors parity on the junior library routes and editor                                        |
+| Slice | What                                                                                                                                    |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Migration 0070, schema, OpenAPI, `PUT /club-photos/{id}/focus`, the shared calculation, tests                                           |
+| 2a    | Drafts snapshot `photoFocus` at every pick and manual change; the template renderer, share dialog, editors and server render crop to it |
+| 2b    | `pickDraftPhoto` is shape-aware (frame aspect from the club's template)                                                                 |
+| 3     | The library's focus editor: box, preview strip, player areas, face suggestions, filter                                                  |
+| 4     | Juniors parity on the junior library routes and editor                                                                                  |
 
 Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the editor.

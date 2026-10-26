@@ -254,6 +254,8 @@ export async function renderDraftSlides(
     // A junior card shows a photo only behind the engines' positive marker: a junior
     // player's own photo the family allows (ADR-007). Nothing else reaches it.
     photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,
+    // The photo's focus box (photo focus areas): frames crop to it.
+    ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
     photoPlacement: "contained",
     ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
     ...(Object.keys(names).length ? { names } : {}),

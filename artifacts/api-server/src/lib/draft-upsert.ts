@@ -366,6 +366,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           caption: e.caption,
           photoUrl: e.photoUrl,
           photoSource: e.photoSource,
+          photoFocus: e.photoFocus,
           ...(templated ?? {}),
         })
         .returning();
@@ -420,7 +421,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
     ...(input.sourceMatchIsJunior === true ? { sourceMatchIsJunior: true } : {}),
     ...(current.editedAt == null ? { caption: e.caption } : {}),
     ...(isAutoPhoto(current.photoSource)
-      ? { photoUrl: e.photoUrl, photoSource: e.photoSource }
+      ? { photoUrl: e.photoUrl, photoSource: e.photoSource, photoFocus: e.photoFocus }
       : {}),
     // New data can change how a templated card lays out: it owes a fresh
     // layout check before automation can touch it again (KTD10).

@@ -21,6 +21,7 @@ import {
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
+import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
 
 const STAMP = Date.now();
 const objects = new Map<string, Buffer>();
@@ -431,6 +432,22 @@ describe("focus areas", () => {
       playerIds[0],
     ]);
     expect(cleared.body.playerIds).toHaveLength(2);
+
+    // What a draft snapshots: the pictured player's area, else the photo's box.
+    const url = res.body.url as string;
+    expect(await draftPhotoFocus(tenantId, url, playerIds[0])).toEqual({
+      box: { x: 0.1, y: 0.2, w: 0.2, h: 0.5 },
+      width: 300,
+      height: 200,
+    });
+    expect((await draftPhotoFocus(tenantId, url, playerIds[1]))?.box).toEqual({
+      x: 0.1,
+      y: 0.2,
+      w: 0.5,
+      h: 0.6,
+    });
+    expect(await draftPhotoFocus(otherTenantId, url)).toBeNull();
+    expect(await draftPhotoFocus(tenantId, "https://example.org/headshot.jpg")).toBeNull();
 
     const none = await api("put", `/club-photos/${photoId}/focus`).send({ focusBox: null });
     expect(none.body.focusBox).toBeNull();

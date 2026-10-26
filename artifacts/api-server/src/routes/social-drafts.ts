@@ -32,6 +32,7 @@ import {
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
+import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
 import { generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
@@ -821,6 +822,10 @@ router.patch(
       // The admin's choice is never replaced by an automatic pick (KTD6).
       // Clearing is a choice too ("none"), so the missing-photo fill leaves it.
       patch.photoSource = photoUrl === null ? "none" : "manual";
+      // A library photo the admin picked brings its focus box (not a player's
+      // area: nothing says who the card is about); keeping the same photo
+      // keeps the draft's snapshot.
+      if (photoUrl !== draft.photoUrl) patch.photoFocus = await draftPhotoFocus(tenantId, photoUrl);
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
     }
     if (adjustments !== undefined) {

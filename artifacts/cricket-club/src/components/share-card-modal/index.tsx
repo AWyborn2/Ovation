@@ -68,6 +68,7 @@ export function ShareCardModal({
   playerId,
   matchId,
   photoUrl,
+  photoFocus,
   packId: packIdProp,
   templateDoc,
   onApprove,
@@ -220,6 +221,8 @@ export function ShareCardModal({
       presentingSponsorName,
       photoUrl: effectivePhotoUrl,
       photoTransform: transform,
+      // The draft photo's focus box, while that photo is the one shown.
+      photoFocus: photoFocus && effectivePhotoUrl === photoUrl ? photoFocus : null,
       // Reuse the existing placement toggle — the shared builder maps the
       // canvas vocabulary ("feature"/"headshot") onto the pack's own.
       photoPlacement,
