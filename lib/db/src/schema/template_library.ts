@@ -191,7 +191,10 @@ export type LibraryElementCategory =
   | "crest-frames"
   | "sponsor-strips"
   | "data-blocks"
-  | "textures";
+  | "textures"
+  | "icons"
+  | "shapes"
+  | "stickers";
 
 /**
  * Library elements (editable-elements plan, Stream D; migration 0063): shared
@@ -250,7 +253,7 @@ export const libraryElementsTable = pgTable(
     ),
     chkCategory: check(
       "library_elements_category_check",
-      sql`"category" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures')`,
+      sql`"category" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers')`,
     ),
     chkUnlistedBy: check(
       "library_elements_unlisted_by_check",

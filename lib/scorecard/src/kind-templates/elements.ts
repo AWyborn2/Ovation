@@ -22,6 +22,9 @@ export const ELEMENT_CATEGORIES = [
   "sponsor-strips",
   "data-blocks",
   "textures",
+  "icons",
+  "shapes",
+  "stickers",
 ] as const;
 export type ElementCategory = (typeof ELEMENT_CATEGORIES)[number];
 
@@ -35,6 +38,9 @@ export const ELEMENT_CATEGORY_LABELS: Record<ElementCategory, string> = {
   "sponsor-strips": "Sponsor strips",
   "data-blocks": "Data blocks",
   textures: "Textures and patterns",
+  icons: "Icons",
+  shapes: "Shapes",
+  stickers: "Stickers",
 };
 
 /**

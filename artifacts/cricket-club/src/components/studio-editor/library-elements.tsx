@@ -510,7 +510,7 @@ export function LibraryElements({
           </button>
         ))}
       </div>
-      {category === "textures" && <TexturesCredit />}
+      {category && category in CREDITS && <LibraryCredit category={category} />}
       {family ? (
         family.looks.map((member) => (
           <div key={member.id} className="mt-3">
@@ -549,39 +549,102 @@ export function LibraryElements({
   );
 }
 
-/** The textures and patterns kits' CC BY 4.0 credit (`public/library-assets/CREDITS.md`). */
-function TexturesCredit() {
+/** One credited source: its name, link, author and licence. */
+type Credit = { name: string; href: string; by: string; licence: string; licenceHref: string };
+
+const CC_BY_4 = "https://creativecommons.org/licenses/by/4.0/";
+const CC_BY_3 = "https://creativecommons.org/licenses/by/3.0/";
+const MIT = "https://opensource.org/license/mit";
+
+/** The free kits each category draws from (`public/library-assets/CREDITS.md`). */
+const CREDITS: Partial<Record<LibraryElementCategory, Credit[]>> = {
+  textures: [
+    {
+      name: "Textures Kit",
+      href: "https://www.figma.com/community/file/1051984823754653573/textures-kit",
+      by: "Bebbble",
+      licence: "CC BY 4.0",
+      licenceHref: CC_BY_4,
+    },
+    {
+      name: "20 Seamless Patterns & Textures",
+      href: "https://www.figma.com/community/file/1184852075345917340/20-seamless-patterns-textures-in-figma",
+      by: "Simon Fairhurst",
+      licence: "CC BY 4.0",
+      licenceHref: CC_BY_4,
+    },
+    {
+      name: "Hero Patterns",
+      href: "https://heropatterns.com",
+      by: "Steve Schoger",
+      licence: "CC BY 4.0",
+      licenceHref: CC_BY_4,
+    },
+  ],
+  icons: [
+    {
+      name: "Game-icons.net",
+      href: "https://game-icons.net",
+      by: "Delapouite and Lorc",
+      licence: "CC BY 3.0",
+      licenceHref: CC_BY_3,
+    },
+    {
+      name: "Tabler Icons",
+      href: "https://tabler.io/icons",
+      by: "Paweł Kuna",
+      licence: "MIT",
+      licenceHref: MIT,
+    },
+    {
+      name: "Phosphor Icons",
+      href: "https://phosphoricons.com",
+      by: "Phosphor Icons",
+      licence: "MIT",
+      licenceHref: MIT,
+    },
+  ],
+  shapes: [
+    {
+      name: "Coolshapes",
+      href: "https://github.com/realvjy/coolshapes-react",
+      by: "Coolshapes",
+      licence: "MIT",
+      licenceHref: MIT,
+    },
+  ],
+  stickers: [
+    {
+      name: "Fluent Emoji",
+      href: "https://github.com/microsoft/fluentui-emoji",
+      by: "Microsoft",
+      licence: "MIT",
+      licenceHref: MIT,
+    },
+  ],
+};
+
+/** The credit line for a category drawn from free kits, with links to each kit and licence. */
+function LibraryCredit({ category }: { category: LibraryElementCategory }) {
   const link = "underline hover:text-[var(--ed-ink)]";
+  const credits = CREDITS[category] ?? [];
   return (
     <p className="mt-2 text-[11px] leading-snug text-[var(--ed-ink2)]">
-      Textures from{" "}
-      <a
-        className={link}
-        href="https://www.figma.com/community/file/1051984823754653573/textures-kit"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Textures Kit
-      </a>{" "}
-      by Bebbble and patterns from{" "}
-      <a
-        className={link}
-        href="https://www.figma.com/community/file/1184852075345917340/20-seamless-patterns-textures-in-figma"
-        target="_blank"
-        rel="noreferrer"
-      >
-        20 Seamless Patterns &amp; Textures
-      </a>{" "}
-      by Simon Fairhurst, under{" "}
-      <a
-        className={link}
-        href="https://creativecommons.org/licenses/by/4.0/"
-        target="_blank"
-        rel="noreferrer"
-      >
-        CC BY 4.0
-      </a>
-      ; re-encoded, and the patterns tiled.
+      From{" "}
+      {credits.map((c, i) => (
+        <span key={c.name}>
+          {i > 0 && (i === credits.length - 1 ? " and " : ", ")}
+          <a className={link} href={c.href} target="_blank" rel="noreferrer">
+            {c.name}
+          </a>{" "}
+          by {c.by} (
+          <a className={link} href={c.licenceHref} target="_blank" rel="noreferrer">
+            {c.licence}
+          </a>
+          )
+        </span>
+      ))}
+      . Recoloured or re-encoded for the Studio.
     </p>
   );
 }
