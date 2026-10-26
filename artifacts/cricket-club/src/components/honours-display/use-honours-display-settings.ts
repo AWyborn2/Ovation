@@ -479,6 +479,16 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const removeSlideshow = (id: string) => {
     setSlideshows((prev) => prev.filter((x) => x.id !== id));
     setSequence((prev) => prev.filter((s) => s !== id));
+    // Boards that took their photo background from it go back to none.
+    setBoardConfigs((prev) => {
+      const next = { ...prev };
+      for (const [boardId, cfg] of Object.entries(prev)) {
+        if (cfg.photoBackground?.slideshowId === id) {
+          next[boardId] = { ...cfg, photoBackground: null };
+        }
+      }
+      return next;
+    });
   };
   /** Photos the server picked for each saved slideshow (an unsaved one has none yet). */
   const slideshowPhotoCount = useMemo(

@@ -21803,6 +21803,10 @@ components:
             - 20
             - 50
           description: Leaderboards only - how many players to show.
+        photoBackground:
+          allOf:
+            - $ref: "#/components/schemas/BoardPhotoBackground"
+          nullable: true
         columns:
           type: integer
           minimum: 1
@@ -22310,6 +22314,23 @@ components:
           description: >-
             Photo interludes: also show one photo from this slideshow after
             every N boards. Null = off.
+
+    BoardPhotoBackground:
+      type: object
+      required: [slideshowId]
+      description: >-
+        Kiosk photo background (kiosk-photo-rotation P2): a photo from one of
+        the club's slideshows behind the board. The board's own panel sits
+        over it at dim strength (light 72%, medium 82%, strong 90%), so the
+        text keeps the contrast its skin was designed for.
+      properties:
+        slideshowId:
+          type: string
+          maxLength: 80
+        dim:
+          type: string
+          nullable: true
+          enum: [light, medium, strong]
 
     KioskSlideshowFolder:
       type: object

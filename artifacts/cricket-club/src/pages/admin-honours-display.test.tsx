@@ -653,4 +653,74 @@ describe("Photo slideshow sources (kiosk-photo-rotation P0/P1)", () => {
       }),
     ]);
   });
+
+  it("gives a board a photo background with a panel strength", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["champions", "photos:s"],
+          kioskPhotoSlideshows: [
+            {
+              id: "photos:s",
+              name: "Club photos",
+              library: "senior",
+              source: "all",
+              order: "random",
+              perPass: 10,
+              secondsPerPhoto: 6,
+              captions: true,
+            },
+          ],
+        },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    fireEvent.change(screen.getByTestId("board-tv-champions-photobg"), {
+      target: { value: "photos:s" },
+    });
+    fireEvent.change(screen.getByTestId("board-tv-champions-photobg-dim"), {
+      target: { value: "strong" },
+    });
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, unknown> }).boardConfigs.champions,
+    ).toEqual({ photoBackground: { slideshowId: "photos:s", dim: "strong" } });
+  });
+
+  it("clears a board's photo background when its slideshow is deleted", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["photos:s", "champions"],
+          boardConfigs: { champions: { photoBackground: { slideshowId: "photos:s" } } },
+          kioskPhotoSlideshows: [
+            {
+              id: "photos:s",
+              name: "Club photos",
+              library: "senior",
+              source: "all",
+              order: "random",
+              perPass: 10,
+              secondsPerPhoto: 6,
+              captions: true,
+            },
+          ],
+        },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    fireEvent.click(screen.getByTestId("slideshow-photos:s-delete"));
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, unknown> }).boardConfigs.champions,
+    ).toEqual({ photoBackground: null });
+  });
 });

@@ -104,6 +104,8 @@ export * from './boardGrid';
 export * from './boardGridCell';
 export * from './boardGridEntry';
 export * from './boardGridRow';
+export * from './boardPhotoBackground';
+export * from './boardPhotoBackgroundDim';
 export * from './boardRecordLine';
 export * from './boardSquadMember';
 export * from './capCatchUpResult';

@@ -14,6 +14,7 @@ import type { BoardDisplayConfigTextSize } from './boardDisplayConfigTextSize';
 import type { BoardDisplayConfigTop } from './boardDisplayConfigTop';
 import type { BoardDisplayConfigTrans } from './boardDisplayConfigTrans';
 import type { BoardDisplayConfigTransition } from './boardDisplayConfigTransition';
+import type { BoardPhotoBackground } from './boardPhotoBackground';
 import type { HonourBackground } from './honourBackground';
 
 /**
@@ -60,6 +61,7 @@ export interface BoardDisplayConfig {
   columnsPerScreen?: number;
   /** Leaderboards only - how many players to show. */
   top?: BoardDisplayConfigTop;
+  photoBackground?: BoardPhotoBackground | null;
   /**
      * @minimum 1
      * @maximum 3

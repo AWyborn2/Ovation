@@ -7593,6 +7593,24 @@ export const BoardDisplayConfigSort = {
   desc: 'desc',
 } as const;
 
+export type BoardPhotoBackgroundDim = typeof BoardPhotoBackgroundDim[keyof typeof BoardPhotoBackgroundDim] | null;
+
+
+export const BoardPhotoBackgroundDim = {
+  light: 'light',
+  medium: 'medium',
+  strong: 'strong',
+} as const;
+
+/**
+ * Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club's slideshows behind the board. The board's own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.
+ */
+export interface BoardPhotoBackground {
+  /** @maxLength 80 */
+  slideshowId: string;
+  dim?: BoardPhotoBackgroundDim;
+}
+
 /**
  * Admin per-board override (all fields optional; unset falls back to the board's natural default). Stored keyed by board id in settings.boardConfigs.
  */
@@ -7637,6 +7655,7 @@ export interface BoardDisplayConfig {
   columnsPerScreen?: number;
   /** Leaderboards only - how many players to show. */
   top?: BoardDisplayConfigTop;
+  photoBackground?: BoardPhotoBackground | null;
   /**
      * @minimum 1
      * @maximum 3

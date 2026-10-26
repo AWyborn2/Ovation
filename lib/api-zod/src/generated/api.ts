@@ -10216,6 +10216,8 @@ export const getHonourDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
 
+export const getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
+
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
 export const getHonourDisplayResponseSettingsBoardConfigsWrapBlocksMin = 2;
@@ -10444,6 +10446,10 @@ export const GetHonourDisplayResponse = zod.object({
   "hold": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsHoldMin).max(getHonourDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10608,6 +10614,8 @@ export const getKioskDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+
+export const getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10837,6 +10845,10 @@ export const GetKioskDisplayResponse = zod.object({
   "hold": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsHoldMin).max(getKioskDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -11016,6 +11028,8 @@ export const updateHonourDisplaySettingsBodyBoardConfigsHoldMax = 60;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 5;
 
+export const updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
+
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsWrapBlocksMin = 2;
@@ -11089,6 +11103,10 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "hold": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsHoldMin).max(updateHonourDisplaySettingsBodyBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -11209,6 +11227,8 @@ export const updateHonourDisplaySettingsResponseBoardConfigsHoldMax = 60;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 5;
 
+export const updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
+
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsWrapBlocksMin = 2;
@@ -11283,6 +11303,10 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "hold": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsHoldMin).max(updateHonourDisplaySettingsResponseBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),

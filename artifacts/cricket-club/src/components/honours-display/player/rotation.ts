@@ -22,6 +22,8 @@ export type RotationItem =
       display: ResolvedKioskDisplay;
       /** Screens the board's columns split into (one when they all fit). */
       groups: ColumnGroup[];
+      /** A photo background from one of the club's slideshows (P2). */
+      backdrop?: BoardBackdrop;
     }
   // A sponsor slide: `sponsor` set → one large sponsor; null → grid of all.
   | { kind: "sponsor"; key: string; sponsor: Sponsor | null }
@@ -35,6 +37,13 @@ export type RotationItem =
       photos: KioskSlideshowPhoto[];
       interlude?: boolean;
     };
+
+/** A board's photo background: the slideshow's photos and the panel strength. */
+export interface BoardBackdrop {
+  slideshowId: string;
+  photos: KioskSlideshowPhoto[];
+  dim: "light" | "medium" | "strong";
+}
 
 export interface RotationInput {
   boards: DisplayBoard[];
@@ -53,15 +62,22 @@ export interface RotationInput {
   sponsorSlides: boolean;
 }
 
-/** A board with its resolved display settings and column groups. */
+/**
+ * A board with its resolved display settings, column groups and, when its
+ * photo background's slideshow has photos, that backdrop.
+ */
 export function boardItem(
   board: DisplayBoard,
   settings: Pick<HonourDisplaySettings, "boardConfigs">,
   look: ResolvedKioskLook,
   key: string,
+  slideshowPhotos?: Record<string, KioskSlideshowPhoto[]>,
 ): RotationItem {
-  const display = resolveKioskDisplay(board, settings.boardConfigs?.[board.id], look);
+  const cfg = settings.boardConfigs?.[board.id];
+  const display = resolveKioskDisplay(board, cfg, look);
   const headings = boardColumnHeadings(board);
+  const bg = cfg?.photoBackground;
+  const bgPhotos = bg ? (slideshowPhotos?.[bg.slideshowId] ?? []) : [];
   return {
     kind: "board",
     key,
@@ -74,6 +90,11 @@ export function boardItem(
     groups: headings.length
       ? splitColumnGroups(headings.length, display.columnsPerScreen)
       : [{ start: 0, count: 0 }],
+    ...(bg && bgPhotos.length
+      ? {
+          backdrop: { slideshowId: bg.slideshowId, photos: bgPhotos, dim: bg.dim ?? "medium" },
+        }
+      : {}),
   };
 }
 
@@ -132,7 +153,7 @@ export function buildRotation(input: RotationInput): RotationItem[] {
     }
     const board = byId.get(id);
     if (!board) return;
-    out.push(boardItem(board, settings, look, `board:${board.id}:${i}`));
+    out.push(boardItem(board, settings, look, `board:${board.id}:${i}`, input.slideshowPhotos));
     boardCount++;
     if (sponsorSlides && boardCount % every === 0) pushSponsor(`auto-sponsor:${autoCount++}`);
     for (const s of interludes) {

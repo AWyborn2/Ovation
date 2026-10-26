@@ -72,6 +72,10 @@ harness and a dev deploy; test on the real clubroom TV browser (performance risk
   libraries, random).
 - Photo interludes (P1): a slideshow can also show one photo after every N boards, whether or
   not the slideshow itself is in the rotation.
+- Board photo backgrounds (P2): a board can take its background from a slideshow. The photo
+  fills the screen behind the board, blurred, and the board's own panel is redrawn over it at
+  72%, 82% or 90% (no lighter option: the contrast guard). The board takes the slideshow's next
+  photo each time it comes round. Stored in `board_configs.photoBackground`.
 - The server sends at most 60 photos per slideshow. Senior: the club's own library, without
   junior stock artwork or background-removed cut-outs. Junior: only photos with at least one
   tagged child where every tagged child may be shown (`loadJuniorPhotoConsent`, fail closed),

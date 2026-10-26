@@ -92,6 +92,15 @@ export interface BoardDisplayConfigJson extends KioskMotionJson {
   // Season row order for grid boards: "desc" (default) newest-first, "asc"
   // oldest-first.
   sort?: "asc" | "desc";
+  // Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the
+  // club's slideshows behind the board, the board's own panel over it at
+  // `dim` strength (never under 72%, so the text keeps its contrast).
+  photoBackground?: BoardPhotoBackgroundJson | null;
+}
+
+export interface BoardPhotoBackgroundJson {
+  slideshowId: string; // a kiosk_photo_slideshows id ("photos:<uuid>")
+  dim?: "light" | "medium" | "strong" | null;
 }
 
 // One column of an admin-built custom grid board. `source` picks where the
