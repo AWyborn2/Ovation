@@ -1,5 +1,32 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** photo-focus-areas
+
+## Context
+
+- Scope: `.10x/decisions/product-manager/photo-focus-areas.md` (approved by Ash, 27 Oct 2026).
+  P0: focus box per photo, crop from the box in every frame, preview strip, player areas on tags,
+  per-draft override still wins. P1: in-browser face suggestions, shape suitability and
+  shape-aware `pickDraftPhoto`, "needs focus" filter, juniors parity.
+- Design questions (settled by Ash 27 Oct 2026; see the decision file's last section):
+  1. Storage: box on `club_photos` and an area on `club_photo_players` (and the junior
+     equivalents), or a separate areas table. Migration number 0070 or later.
+  2. One crop function shared by the editor preview (`photo-reposition.tsx`), the HTML renderer
+     (`pack-render/adjustments.ts`), the canvas share card (`share-card/draw-primitives.ts`) and
+     the server. How a focus box and the existing focal point and zoom combine.
+  3. How the picker learns a template's photo frame shape, and how a player area reaches the
+     render (which area applies when a card is about a player).
+  4. Face detection library choice (in-browser only, lazy-loaded) and its licence.
+- Constraints: OpenAPI first; juniors isolation; withheld junior photos stay withheld; existing
+  drafts unchanged; builds in parallel with the remaining template library work, so PRs go to
+  `main` in small slices.
+
+## Handoff History
+
+### Previous (Engineering Manager to Senior Engineer, honours-kiosk-redesign)
+
 **From:** Engineering Manager
 **To:** Senior Engineer / SDE
 **Feature:** honours-kiosk-redesign (+ kiosk-photo-rotation)
@@ -14,8 +41,6 @@
   green. Never merge it to `main` until Ash approves the finished branch.
 - Start with A0 (local kiosk harness) then A1 to A4. Test on the real TV at Milestone A.
 - Parallel stream: junior photo library on its own branch to `main` (separate session).
-
-## Handoff History
 
 ### Previous (Architect to Staff/EM, honours-kiosk-redesign)
 
