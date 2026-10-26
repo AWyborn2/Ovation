@@ -77,7 +77,7 @@ describe("P11 · Ovation Broadcast honours skin (U19)", () => {
         kioskSponsorSlides: false,
         kioskSponsorSlideEvery: 3,
         kioskAds: [],
-    kioskPhotoSlideshows: [],
+        kioskPhotoSlideshows: [],
         kioskLook: {},
         boardConfigs: {},
         composites: [],
