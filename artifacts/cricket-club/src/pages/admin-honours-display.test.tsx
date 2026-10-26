@@ -35,6 +35,7 @@ const BUNDLE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
+    kioskPhotoSlideshows: [],
     kioskLook: {},
     boardConfigs: {},
     composites: [],

@@ -326,6 +326,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
+    kioskPhotoSlideshows: [],
     // Short timings so a browser check sees every movement quickly.
     kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
     // One board per movement, with a spread of transitions.

@@ -477,6 +477,13 @@
       "when": 1792992218642,
       "tag": "0067_hat_tricks",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792997319341,
+      "tag": "0068_kiosk_photo_slideshows",
+      "breakpoints": true
     }
   ]
 }

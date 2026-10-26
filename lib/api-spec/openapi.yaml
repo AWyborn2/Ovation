@@ -22223,6 +22223,84 @@ components:
           items:
             $ref: "#/components/schemas/CustomGridColumn"
 
+    KioskPhotoSlideshow:
+      type: object
+      required: [id, name, library, source, order, perPass, secondsPerPhoto, captions]
+      properties:
+        id:
+          type: string
+          description: '"photos:<uuid>"; the rotation places it by this id.'
+        name:
+          type: string
+          maxLength: 80
+        library:
+          type: string
+          enum: [senior, junior, both]
+          description: >-
+            Senior club photos, the junior library (only photos every tagged
+            child may be shown in), or both.
+        source:
+          type: string
+          enum: [all, recent, season, types, grades]
+          description: >-
+            The whole library, the last recentDays, this season, or photos
+            with any of types / grades.
+        recentDays:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 365
+        types:
+          type: array
+          nullable: true
+          items:
+            type: string
+        grades:
+          type: array
+          nullable: true
+          items:
+            type: string
+        order:
+          type: string
+          enum: [random, newest]
+        perPass:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Photos shown each time the slideshow comes round.
+        secondsPerPhoto:
+          type: integer
+          minimum: 2
+          maximum: 30
+        captions:
+          type: boolean
+          description: Grade and season under each photo (never names).
+
+    KioskSlideshowPhoto:
+      type: object
+      required: [url, width, height]
+      properties:
+        url:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        caption:
+          type: string
+          nullable: true
+
+    KioskSlideshowPhotos:
+      type: object
+      required: [id, photos]
+      properties:
+        id:
+          type: string
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/KioskSlideshowPhoto"
+
     KioskAd:
       type: object
       description: >-
@@ -22331,6 +22409,7 @@ components:
         - boardConfigs
         - composites
         - kioskLook
+        - kioskPhotoSlideshows
       properties:
         defaultTemplate:
           type: string
@@ -22385,6 +22464,13 @@ components:
           description: Admin-uploaded full-screen ad creatives for the kiosk.
           items:
             $ref: "#/components/schemas/KioskAd"
+        kioskPhotoSlideshows:
+          type: array
+          description: >-
+            Photo slideshows placed in the rotation as "photos:<id>". The
+            bundle's photoSlideshows carries each one's resolved photos.
+          items:
+            $ref: "#/components/schemas/KioskPhotoSlideshow"
         kioskToken:
           type: string
           nullable: true
@@ -22479,6 +22565,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/KioskAd"
+        kioskPhotoSlideshows:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/KioskPhotoSlideshow"
         boardConfigs:
           type: object
           additionalProperties:
@@ -22531,6 +22622,13 @@ components:
             season-grid column pickers.
           items:
             $ref: "#/components/schemas/GridCatalogEntry"
+        photoSlideshows:
+          type: array
+          description: >-
+            Each photo slideshow's photos, resolved on the server (tenant-scoped;
+            junior photos only when every tagged child may be shown).
+          items:
+            $ref: "#/components/schemas/KioskSlideshowPhotos"
 
     TourStepContent:
       type: object

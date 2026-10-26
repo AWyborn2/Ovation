@@ -13,6 +13,7 @@ import type { HonourDisplaySettingsKioskSponsorSlideStyle } from './honourDispla
 import type { HonourSkin } from './honourSkin';
 import type { KioskAd } from './kioskAd';
 import type { KioskLook } from './kioskLook';
+import type { KioskPhotoSlideshow } from './kioskPhotoSlideshow';
 
 export interface HonourDisplaySettings {
   /** The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id ("custom:<uuid>"). */
@@ -40,6 +41,8 @@ export interface HonourDisplaySettings {
   kioskSponsorIds?: number[];
   /** Admin-uploaded full-screen ad creatives for the kiosk. */
   kioskAds?: KioskAd[];
+  /** Photo slideshows placed in the rotation as "photos:<id>". The bundle's photoSlideshows carries each one's resolved photos. */
+  kioskPhotoSlideshows: KioskPhotoSlideshow[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
   kioskLook: KioskLook;
