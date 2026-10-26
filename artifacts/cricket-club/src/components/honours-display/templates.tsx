@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link } from "wouter";
 import type { DisplayBoard, BoardEntry, BoardDisplayConfig, HonourBrand } from "./types";
 import { gradeBadge, formatDate } from "./helpers";
+import { KioskBoardFooter, KioskPageDots } from "./kiosk-chrome";
 
 interface LayoutProps {
   board: DisplayBoard;
@@ -65,7 +66,25 @@ function BoardHead({
         <h2 className="hb-title">{title}</h2>
         {subtitle ? <p className="hb-sub">{subtitle}</p> : null}
       </div>
+      <KioskPageDots />
     </header>
+  );
+}
+
+/**
+ * The board's rows, below its header. On the kiosk the body is a clipped
+ * viewport that scrolls, pages and transitions on its own, so the header plate
+ * never moves and rows can never draw over it; the inner element is what page
+ * transitions animate. Off the kiosk both are plain blocks.
+ */
+function BoardBody({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <div className="hb-body">
+        <div className="hb-body-inner">{children}</div>
+      </div>
+      <KioskBoardFooter />
+    </>
   );
 }
 
@@ -77,66 +96,68 @@ export function PremiershipBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-premiership">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      <div className="hb-flags">
-        {board.entries.map((e, i) => (
-          <article className="hb-flag" key={i}>
-            <div className="hb-flag-top">
-              <div>
-                <div className="hb-flag-season">{e.season || "—"}</div>
-                <div className="hb-flag-comp">{e.meta?.competition || board.title}</div>
-              </div>
-              {e.meta?.grade ? <span className="hb-chip">{gradeBadge(e.meta.grade)}</span> : null}
-            </div>
-
-            {e.detail ? <div className="hb-flag-result">{e.detail}</div> : null}
-
-            <div className="hb-flag-people">
-              {e.meta?.captain ? (
+      <BoardBody>
+        <div className="hb-flags">
+          {board.entries.map((e, i) => (
+            <article className="hb-flag" key={i}>
+              <div className="hb-flag-top">
                 <div>
-                  <span className="hb-k">Captain</span>
-                  <b>
-                    <NameLink playerId={e.playerId} kiosk={kiosk}>
-                      {e.meta.captain}
-                    </NameLink>
-                  </b>
+                  <div className="hb-flag-season">{e.season || "—"}</div>
+                  <div className="hb-flag-comp">{e.meta?.competition || board.title}</div>
+                </div>
+                {e.meta?.grade ? <span className="hb-chip">{gradeBadge(e.meta.grade)}</span> : null}
+              </div>
+
+              {e.detail ? <div className="hb-flag-result">{e.detail}</div> : null}
+
+              <div className="hb-flag-people">
+                {e.meta?.captain ? (
+                  <div>
+                    <span className="hb-k">Captain</span>
+                    <b>
+                      <NameLink playerId={e.playerId} kiosk={kiosk}>
+                        {e.meta.captain}
+                      </NameLink>
+                    </b>
+                  </div>
+                ) : null}
+                {e.meta?.motm ? (
+                  <div>
+                    <span className="hb-k">Player of the Final</span>
+                    <b>{e.meta.motm}</b>
+                  </div>
+                ) : null}
+              </div>
+
+              {e.squad && e.squad.length ? (
+                <div className="hb-squad">
+                  {e.squad.map((m, j) => (
+                    <span className="hb-squad-name" key={j}>
+                      <NameLink playerId={m.playerId} kiosk={kiosk}>
+                        {m.name}
+                        {m.isCaptain ? " (c)" : ""}
+                      </NameLink>
+                    </span>
+                  ))}
                 </div>
               ) : null}
-              {e.meta?.motm ? (
-                <div>
-                  <span className="hb-k">Player of the Final</span>
-                  <b>{e.meta.motm}</b>
-                </div>
-              ) : null}
-            </div>
 
-            {e.squad && e.squad.length ? (
-              <div className="hb-squad">
-                {e.squad.map((m, j) => (
-                  <span className="hb-squad-name" key={j}>
-                    <NameLink playerId={m.playerId} kiosk={kiosk}>
-                      {m.name}
-                      {m.isCaptain ? " (c)" : ""}
-                    </NameLink>
-                  </span>
-                ))}
+              <div className="hb-flag-foot">
+                <span>{e.meta?.venue || "—"}</span>
+                <span>
+                  {e.matchId && !kiosk ? (
+                    <Link href={`/matches/${e.matchId}`} className="hb-link">
+                      View match ▸
+                    </Link>
+                  ) : (
+                    formatDate(e.meta?.date)
+                  )}
+                </span>
               </div>
-            ) : null}
-
-            <div className="hb-flag-foot">
-              <span>{e.meta?.venue || "—"}</span>
-              <span>
-                {e.matchId && !kiosk ? (
-                  <Link href={`/matches/${e.matchId}`} className="hb-link">
-                    View match ▸
-                  </Link>
-                ) : (
-                  formatDate(e.meta?.date)
-                )}
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      </BoardBody>
     </div>
   );
 }
@@ -149,19 +170,21 @@ export function TeamOfDecadeBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-tod">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      <ol className="hb-lineup">
-        {board.entries.map((e, i) => (
-          <li className="hb-lineup-row" key={i}>
-            <span className="hb-lineup-num">{i + 1}</span>
-            <span className="hb-lineup-name">
-              <NameLink playerId={e.playerId} kiosk={kiosk}>
-                {e.primaryText}
-              </NameLink>
-            </span>
-            {e.detail ? <span className="hb-lineup-role">{e.detail}</span> : null}
-          </li>
-        ))}
-      </ol>
+      <BoardBody>
+        <ol className="hb-lineup">
+          {board.entries.map((e, i) => (
+            <li className="hb-lineup-row" key={i}>
+              <span className="hb-lineup-num">{i + 1}</span>
+              <span className="hb-lineup-name">
+                <NameLink playerId={e.playerId} kiosk={kiosk}>
+                  {e.primaryText}
+                </NameLink>
+              </span>
+              {e.detail ? <span className="hb-lineup-role">{e.detail}</span> : null}
+            </li>
+          ))}
+        </ol>
+      </BoardBody>
     </div>
   );
 }
@@ -228,7 +251,7 @@ export function ListBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
   return (
     <div className="hb-board hb-list">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      {body}
+      <BoardBody>{body}</BoardBody>
     </div>
   );
 }
@@ -243,43 +266,53 @@ export function ColumnsBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   const cols = board.columns ?? [];
   const colCount = Math.max(1, cols.length);
   const maxRows = cols.reduce((m, c) => Math.max(m, c.entries.length), 0);
+  // A season-aligned board leads with a Season column; the kiosk keeps it narrow.
+  const seasonLead = cols[0]?.heading === "Season";
 
   return (
     <div className="hb-board hb-columns">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      <div
-        className="hb-cols"
-        style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
-      >
-        {cols.map((col, ci) => (
-          <div className="hb-col-head" key={`h-${ci}`}>
-            {col.heading}
-          </div>
-        ))}
-        {Array.from({ length: maxRows }).map((_, r) =>
-          cols.map((col, ci) => {
-            const e = col.entries[r];
-            const isSeasonCol = col.heading === "Season";
-            return (
-              <div
-                className={`hb-cell row${isSeasonCol ? " hb-cell-season" : ""}`}
-                key={`${r}-${ci}`}
-              >
-                {e ? (
-                  <>
-                    <span className={isSeasonCol ? "hb-season" : "hb-name"}>
-                      <NameLink playerId={e.playerId} kiosk={kiosk}>
-                        {e.primaryText || ""}
-                      </NameLink>
-                    </span>
-                    {e.detail ? <span className="hb-cell-detail">{e.detail}</span> : null}
-                  </>
-                ) : null}
-              </div>
-            );
-          }),
-        )}
-      </div>
+      <BoardBody>
+        <div
+          className="hb-cols"
+          data-season-lead={seasonLead ? "" : undefined}
+          style={
+            {
+              gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+              "--hb-cols-n": colCount - 1,
+            } as CSSProperties
+          }
+        >
+          {cols.map((col, ci) => (
+            <div className="hb-col-head" key={`h-${ci}`}>
+              {col.heading}
+            </div>
+          ))}
+          {Array.from({ length: maxRows }).map((_, r) =>
+            cols.map((col, ci) => {
+              const e = col.entries[r];
+              const isSeasonCol = col.heading === "Season";
+              return (
+                <div
+                  className={`hb-cell row${isSeasonCol ? " hb-cell-season" : ""}`}
+                  key={`${r}-${ci}`}
+                >
+                  {e ? (
+                    <>
+                      <span className={isSeasonCol ? "hb-season" : "hb-name"}>
+                        <NameLink playerId={e.playerId} kiosk={kiosk}>
+                          {e.primaryText || ""}
+                        </NameLink>
+                      </span>
+                      {e.detail ? <span className="hb-cell-detail">{e.detail}</span> : null}
+                    </>
+                  ) : null}
+                </div>
+              );
+            }),
+          )}
+        </div>
+      </BoardBody>
     </div>
   );
 }
@@ -364,7 +397,7 @@ export function GridBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-grid">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      {body}
+      <BoardBody>{body}</BoardBody>
     </div>
   );
 }
@@ -481,11 +514,13 @@ export function LifeMembersBoard({ board, brand, kiosk, cfg }: LayoutProps) {
   return (
     <div className="hb-board hb-lifemembers">
       <BoardHead board={board} brand={brand} cfg={cfg} />
-      <div className="hb-lm-grid">
-        {board.entries.map((e, i) => (
-          <LifeMemberCard key={i} entry={e} kiosk={kiosk} />
-        ))}
-      </div>
+      <BoardBody>
+        <div className="hb-lm-grid">
+          {board.entries.map((e, i) => (
+            <LifeMemberCard key={i} entry={e} kiosk={kiosk} />
+          ))}
+        </div>
+      </BoardBody>
     </div>
   );
 }

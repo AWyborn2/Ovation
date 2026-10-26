@@ -15,7 +15,8 @@
     "./selection-shape": "./src/selection-shape.ts",
     "./card-names": "./src/card-names.ts",
     "./card-content": "./src/card-content/index.ts",
-    "./pack-capture": "./src/pack-capture.ts"
+    "./pack-capture": "./src/pack-capture.ts",
+    "./kiosk-display": "./src/kiosk-display.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

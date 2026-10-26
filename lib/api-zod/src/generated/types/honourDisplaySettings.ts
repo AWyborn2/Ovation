@@ -12,6 +12,7 @@ import type { HonourDisplaySettingsBoardConfigs } from './honourDisplaySettingsB
 import type { HonourDisplaySettingsKioskSponsorSlideStyle } from './honourDisplaySettingsKioskSponsorSlideStyle';
 import type { HonourSkin } from './honourSkin';
 import type { KioskAd } from './kioskAd';
+import type { KioskLook } from './kioskLook';
 
 export interface HonourDisplaySettings {
   /** The single club-wide skin every board renders in: a built-in id (p1..p8) or an admin skin id ("custom:<uuid>"). */
@@ -41,6 +42,7 @@ export interface HonourDisplaySettings {
   kioskAds?: KioskAd[];
   /** Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed. */
   kioskToken?: string | null;
+  kioskLook: KioskLook;
   /** Per-board display overrides keyed by board id. */
   boardConfigs: HonourDisplaySettingsBoardConfigs;
   /** Admin-defined composite 'columns' boards. */

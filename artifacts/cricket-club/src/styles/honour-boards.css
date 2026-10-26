@@ -940,6 +940,244 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* P12 · Classic Honour Board — the clubroom board in the redesign (Ash,
+   22 Oct 2026): timber with a gold frame, a centred gold plate, Cinzel titles
+   and engraved Cormorant Garamond names, gold rules. Sizes use container
+   units so the board scales with the TV (the kiosk stage is the container). */
+.skin-p12 {
+  --hb12-timber-1: #2b1a0f;
+  --hb12-timber-2: #3d2615;
+  --hb12-timber-3: #24150b;
+  --hb12-gold: #d8b25e;
+  --hb12-gold-hi: #f3dc9b;
+  --hb12-gold-lo: #9a7428;
+  --hb12-engrave: #f0dfb4;
+  --hb12-rule: rgba(216, 178, 94, 0.35);
+  --hb-bg: #1a0f07;
+  --hb-board-bg: #301d10;
+  --hb-board-border: var(--hb12-gold-lo);
+  --hb-shadow: none;
+  --hb-radius: 4px;
+  --hb-ink: var(--hb12-engrave);
+  --hb-muted: rgba(240, 223, 180, 0.72);
+  --hb-faint: rgba(216, 178, 94, 0.06);
+  --hb-row-stripe: transparent;
+  --hb-accent: var(--hb12-gold);
+  --hb-accent-ink: var(--hb12-timber-1);
+  --hb-head-ink: var(--hb12-gold);
+  --hb-season-ink: var(--hb12-gold);
+  --hb-head-border: var(--hb12-rule);
+  --hb-crest-bg: var(--hb12-gold);
+  --hb-crest-ink: var(--hb12-timber-1);
+  --hb-chip-bg: transparent;
+  --hb-chip-ink: var(--hb12-gold-hi);
+  --hb-title-font: "Cinzel", "Trajan Pro", Georgia, serif;
+  --hb12-name-font: "Cormorant Garamond", "Garamond", Georgia, serif;
+}
+.skin-p12 .hb-board {
+  border: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 23px),
+    linear-gradient(180deg, var(--hb12-timber-2), var(--hb12-timber-1) 60%, var(--hb12-timber-3));
+  box-shadow:
+    inset 0 0 0 0.6cqw #1a0f07,
+    inset 0 0 0 0.75cqw var(--hb12-gold-lo),
+    inset 0 0 0 0.9cqw #1a0f07;
+  padding: 2.6cqw 3.6cqw 1.8cqw;
+  color: var(--hb12-engrave);
+}
+/* The gold plate: crest, centred titles, page dots. */
+.skin-p12 .hb-head {
+  display: grid;
+  grid-template-columns: 6cqw 1fr 6cqw;
+  align-items: center;
+  gap: 2.2cqw;
+  position: relative;
+  border-bottom: 0;
+  padding-bottom: 1.2cqw;
+  margin-bottom: 1.1cqw;
+}
+.skin-p12 .hb-head::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--hb12-gold) 12%,
+    var(--hb12-gold-hi) 50%,
+    var(--hb12-gold) 88%,
+    transparent
+  );
+}
+.skin-p12 .hb-head > .hb-titles:first-child {
+  grid-column: 2;
+}
+.skin-p12 .hb-crest {
+  width: 6cqw;
+  height: 6cqw;
+  font: 700 2cqw var(--hb-title-font);
+  color: var(--hb12-timber-1);
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--hb12-gold-hi),
+    var(--hb12-gold) 45%,
+    var(--hb12-gold-lo)
+  );
+  box-shadow:
+    0 0 0 0.25cqw #1a0f07,
+    0 0 0 0.45cqw var(--hb12-gold-lo);
+}
+.skin-p12 .hb-crest.hb-crest-img {
+  background: transparent;
+  box-shadow: none;
+}
+.skin-p12 .hb-titles {
+  text-align: center;
+}
+.skin-p12 .hb-club {
+  font: 500 1cqw var(--hb-title-font);
+  letter-spacing: 0.35em;
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-title {
+  font: 700 3.4cqw/1.05 var(--hb-title-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0.3cqw 0;
+  background: linear-gradient(
+    180deg,
+    var(--hb12-gold-hi),
+    var(--hb12-gold) 55%,
+    var(--hb12-gold-lo)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0.15cqw 0 rgba(0, 0, 0, 0.6));
+}
+.skin-p12 .hb-sub {
+  font: italic 500 1.3cqw var(--hb12-name-font);
+  color: var(--hb12-engrave);
+  opacity: 0.85;
+}
+/* Column headings and rows: Cinzel headings, engraved names, dotted rules. */
+.skin-p12 .hb-grid-table th,
+.skin-p12 .hb-col-head {
+  font: 600 1cqw var(--hb-title-font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hb12-gold);
+  background: transparent;
+  border-bottom: 1px solid var(--hb12-rule);
+}
+.skin-p12 .hb-table .row td,
+.skin-p12 .hb-grid-table td,
+.skin-p12 .hb-cell {
+  font: 600 1.6cqw var(--hb12-name-font);
+  color: var(--hb12-engrave);
+  background: transparent;
+  border-bottom: 1px dotted rgba(216, 178, 94, 0.18);
+}
+/* A composite board's names take the cell's engraved type. */
+.skin-p12 .hb-cell .hb-name {
+  font: inherit;
+  color: inherit;
+}
+.skin-p12 .hb-table .row:nth-child(odd) td,
+.skin-p12 .hb-grid-table .row:nth-child(odd) td {
+  background: transparent;
+}
+.skin-p12 .hb-season,
+.skin-p12 .hb-rank {
+  font: 600 1.4cqw var(--hb12-name-font);
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-rank {
+  font-family: var(--hb-title-font);
+  background: transparent;
+}
+.skin-p12 .hb-detail,
+.skin-p12 .hb-grid-note,
+.skin-p12 .hb-cell-detail {
+  font-family: var(--hb12-name-font);
+  font-style: italic;
+  color: rgba(240, 223, 180, 0.7);
+}
+.skin-p12 .hb-chip {
+  font-family: var(--hb-title-font);
+  border: 1px solid var(--hb12-gold-lo);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Premierships as engraved plaques. */
+.skin-p12 .hb-flag {
+  border: 1px solid var(--hb12-gold);
+  border-radius: 0;
+  outline: 1px solid rgba(216, 178, 94, 0.45);
+  outline-offset: 0.35cqw;
+  margin: 0.4cqw;
+  background: linear-gradient(180deg, rgba(216, 178, 94, 0.1), rgba(216, 178, 94, 0.03));
+  box-shadow: 0 0.4cqw 1.2cqw rgba(0, 0, 0, 0.35);
+  font-family: var(--hb-title-font);
+  text-transform: uppercase;
+}
+.skin-p12 .hb-flag-season {
+  font: 700 1.75cqw/1.1 var(--hb-title-font);
+  color: var(--hb12-gold-hi);
+  letter-spacing: 0.06em;
+}
+.skin-p12 .hb-flag-comp,
+.skin-p12 .hb-k {
+  color: var(--hb12-gold);
+  letter-spacing: 0.05em;
+}
+.skin-p12 .hb-flag-result {
+  font: 600 0.95cqw/1.35 var(--hb-title-font);
+  color: var(--hb12-engrave);
+}
+.skin-p12 .hb-squad {
+  border-top: 1px solid var(--hb12-rule);
+  border-bottom: 1px solid var(--hb12-rule);
+  padding: 0.7cqw 0;
+  align-items: center;
+}
+.skin-p12 .hb-squad-name {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: 600 1.08cqw/1.32 var(--hb12-name-font);
+  letter-spacing: 0.04em;
+  color: var(--hb12-engrave);
+}
+.skin-p12 .hb-lm-card,
+.skin-p12 .hb-lineup-row {
+  border: 1px solid var(--hb12-rule);
+  border-radius: 0;
+  background: rgba(216, 178, 94, 0.05);
+}
+.skin-p12 .hb-lm-name,
+.skin-p12 .hb-lineup-name {
+  font-family: var(--hb12-name-font);
+  color: var(--hb12-engrave);
+}
+.skin-p12 .hb-lm-inducted,
+.skin-p12 .hb-lm-stat-k {
+  font-family: var(--hb-title-font);
+  color: var(--hb12-gold);
+  letter-spacing: 0.08em;
+}
+/* Sticky column headings over a credits roll need a solid timber backing. */
+.hb-kiosk .skin-p12 .hb-grid-table th,
+.hb-kiosk.skin-p12 .hb-grid-table th,
+.hb-kiosk .skin-p12 .hb-col-head {
+  background: var(--hb12-timber-1);
+}
+
 /* ---- Per-board skin wrapper -------------------------------------------------
    A board can carry its own skin (overriding the club-wide one). The wrapper
    applies the skin's --hb-* vars to just that board's subtree. */
@@ -996,71 +1234,178 @@
   height: 100%;
   display: flex;
 }
-.hb-kiosk .preset {
-  width: min(1100px, 96vw);
-  margin: 0 auto;
-  padding: clamp(16px, 3vh, 40px) 0;
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
-}
-.hb-kiosk .preset.active {
-  opacity: 1;
-  transform: none;
-}
-/* Full-screen fit — drop the narrow centred cap and use the whole width. */
-.hb-kiosk .preset.fit {
+/* The player stage: screen layers stack here (outgoing below, incoming on
+   top) while a transition plays. Leaves room for the sponsor strip when it's
+   showing (--kiosk-strip-h defaults to 0). */
+.hb-kp-stage {
+  position: relative;
+  /* Skins size type in container units, so boards scale with the screen. */
+  container-type: inline-size;
   width: 100%;
-  max-width: none;
-  margin: 0;
+  height: calc(100vh - var(--kiosk-strip-h, 0px));
+  overflow: hidden;
+}
+.hb-kp-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   padding: clamp(12px, 2vh, 28px) clamp(16px, 3vw, 48px);
+  backface-visibility: hidden;
 }
-/* The scrollable board frame the kiosk auto-scrolls. Reserves room for the
-   sponsor strip when it's showing (--kiosk-strip-h defaults to 0). */
+.hb-kp-board,
+.hb-kp-board > div:not(.hb-board) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Header/body contract: the header plate is a fixed layer and the rows live in
+   a clipped body beneath it, so moving rows can never draw over the header.
+   The body scrolls (credits roll) and its inner element is what page turns
+   animate and what text size / fit-to-screen scale. */
 .hb-kiosk .hb-board {
-  max-height: calc(100vh - clamp(32px, 6vh, 80px) - var(--kiosk-strip-h, 0px));
-  overflow-y: auto;
-  scrollbar-width: none;
-  /* The board's top padding would sit *above* the sticky title (the title
-     pins at the scrollport's padding edge), leaving a band the scrolling rows
-     show through. Drop it here and hand it to the pinned title below so the
-     title covers the frame from the very top edge. */
-  padding-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.hb-kiosk .hb-board::-webkit-scrollbar {
-  display: none;
+.hb-kiosk .hb-head {
+  flex: none;
+  position: relative;
+  z-index: 2;
+}
+.hb-kiosk .hb-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.hb-kiosk .hb-body-inner {
+  zoom: var(--hb-kp-scale, 1);
+}
+/* A credits roll fades rows out at the bottom edge, and pads the end so the
+   last row clears the fade. */
+.hb-kiosk .hb-body.hb-kp-rolling {
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 3vh), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 3vh), transparent);
+}
+.hb-kp-board[data-move="credits"] .hb-body-inner {
+  padding-bottom: 3vh;
+}
+/* During a page turn the incoming layer drops its board background so the
+   outgoing page shows beneath it; the identical header plates overlap. */
+.hb-kp-paging .hb-board {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* Wipe transition: the gold rule that sweeps across. */
+.hb-kp-wipe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #f3d98b, #d8b25e, transparent);
+}
+/* Season grids on the TV (A4): the season shows once per row in a fixed,
+   narrow leading column and the grade / office / award columns share the rest
+   equally, so every column group of a board lines up the same way. Names stay
+   on one line (ellipsis rather than a ragged two-line row); joint holders
+   stack, and a cell's note sits on its own line under the name. */
+.hb-kiosk {
+  --hb-season-w: max(7.2cqw, 88px);
+}
+.hb-kiosk .hb-grid-table {
+  table-layout: fixed;
+}
+.hb-kiosk .hb-grid-table .hb-grid-rowhead {
+  width: var(--hb-season-w);
+}
+.hb-kiosk .hb-grid-table th,
+.hb-kiosk .hb-grid-name,
+.hb-kiosk .hb-cell .hb-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hb-kiosk .hb-grid-name + .hb-grid-name {
+  margin-top: 0.15em;
+}
+.hb-kiosk .hb-grid-note {
+  display: block;
+  margin-left: 0;
+}
+/* A season-aligned composite board: a narrow Season column like the grid's
+   (the template sets equal columns inline, hence the !important). */
+.hb-kiosk .hb-cols[data-season-lead] {
+  grid-template-columns:
+    var(--hb-season-w)
+    repeat(var(--hb-cols-n), minmax(0, 1fr)) !important;
+}
+.hb-kiosk .hb-cell {
+  min-width: 0;
 }
 
-/* Frozen title + column headings during the kiosk credit-scroll.
-   The kiosk scrolls the `.hb-board` frame vertically, so pin the board title
-   and its column-heading row inside that frame — they stay legible while the
-   rows scroll past beneath them. `--hb-head-h` (the title's measured height,
-   published per-frame by the kiosk) offsets the heading row so it sits directly
-   under the pinned title. Backgrounds are opaque so scrolling rows don't bleed
-   through. */
-.hb-kiosk .hb-head {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--hb-board-bg);
-  /* Absorb the board's (now-removed) top padding so the title keeps its
-     breathing room while its opaque background reaches the very top edge —
-     no gap for rows to leak through above the banner. */
-  padding-top: clamp(18px, 3vw, 36px);
+/* Classic Honour Board chrome: page dots in the plate and the board footer.
+   Only that skin shows them, so the other skins look as they always have. */
+.hb-kp-dots,
+.hb-kp-foot {
+  display: none;
 }
-/* The grid heading row lives inside `.hb-grid-scroll`; its `overflow-x: auto`
-   promotes the block to a vertical scroll container too, which would anchor the
-   sticky heading to the wrapper instead of the scrolling board. Drop it in the
-   kiosk (a clubroom TV never horizontally scrolls) so the heading pins to the
-   board. */
+.skin-p12 .hb-kp-dots {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5cqw;
+  grid-column: 3;
+}
+.skin-p12 .hb-kp-dots i {
+  width: 0.7cqw;
+  height: 0.7cqw;
+  border-radius: 50%;
+  background: var(--hb12-gold-lo);
+}
+.skin-p12 .hb-kp-dots i.on {
+  background: var(--hb12-gold-hi);
+}
+.skin-p12 .hb-kp-foot {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2cqw;
+  padding-top: 0.9cqw;
+  font: 500 0.9cqw var(--hb-title-font);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hb12-gold-lo);
+}
+.skin-p12 .hb-kp-foot b {
+  color: var(--hb12-gold);
+  font-weight: 500;
+}
+/* During a page turn the outgoing page's header and footer sit under the
+   incoming page's identical ones; hide them so old page dots don't show. */
+.hb-kp-under .hb-head,
+.hb-kp-under .hb-kp-foot {
+  visibility: hidden;
+}
+/* Columns across for plaques and life-member cards (set per board). */
+.hb-kiosk .hb-kp-board .hb-flags,
+.hb-kiosk .hb-kp-board .hb-lm-grid {
+  grid-template-columns: repeat(var(--hb-kp-cols, 3), minmax(0, 1fr));
+}
+/* Column headings stay pinned at the top of the body while it rolls. The grid
+   wrapper's `overflow-x: auto` would make it the scroll container instead, so
+   drop it in the kiosk (a clubroom TV never scrolls sideways). */
 .hb-kiosk .hb-grid-scroll {
   overflow: visible;
 }
 .hb-kiosk .hb-grid-table th {
   position: sticky;
-  top: var(--hb-head-h, 0px);
+  top: 0;
   z-index: 3;
   background: var(--hb-board-bg);
 }
@@ -1081,18 +1426,14 @@
 }
 .hb-kiosk .hb-col-head {
   position: sticky;
-  top: var(--hb-head-h, 0px);
+  top: 0;
   z-index: 3;
   background: var(--hb-board-bg);
 }
 
-/* Kiosk premiership layout tweaks (clubroom TV).
-   Stack each premiership squad as a single column (one player per line)
-   instead of wrapping into two, and pack more premiership cards across the
-   wide screen — up to ~5 at the standard kiosk width, still responsive. */
-.hb-kiosk .hb-flags {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
-}
+/* Kiosk premiership layout tweak (clubroom TV): stack each premiership squad
+   as a single column (one player per line) instead of wrapping into two. The
+   number of plaques across is the board's columns-per-screen setting. */
 .hb-kiosk .hb-squad {
   flex-direction: column;
   flex-wrap: nowrap;
@@ -1129,13 +1470,6 @@
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hb-kiosk .preset,
-  .hb-kiosk .preset.active {
-    transition: none;
   }
 }
 
