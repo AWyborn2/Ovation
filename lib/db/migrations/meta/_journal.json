@@ -491,6 +491,13 @@
       "when": 1793000252098,
       "tag": "0069_library_element_icons",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1793056408832,
+      "tag": "0070_photo_focus_areas",
+      "breakpoints": true
     }
   ]
 }

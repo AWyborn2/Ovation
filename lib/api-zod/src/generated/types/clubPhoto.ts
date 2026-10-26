@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ClubPhotoMatchFormat } from './clubPhotoMatchFormat';
+import type { ClubPhotoPlayerArea } from './clubPhotoPlayerArea';
 import type { ClubPhotoType } from './clubPhotoType';
+import type { PhotoFocusBox } from './photoFocusBox';
+import type { PhotoFrameShape } from './photoFrameShape';
 
 export interface ClubPhoto {
   /** Club-provided stock artwork approved for reuse on junior carousels. */
@@ -32,4 +35,10 @@ export interface ClubPhoto {
      * @nullable
      */
   sourcePhotoId?: number | null;
+  /** The part of the photo that matters; null = a centred crop. */
+  focusBox?: PhotoFocusBox | null;
+  /** Frame shapes the automatic picker never puts this photo in. */
+  offShapes?: PhotoFrameShape[];
+  /** Where each tagged player is on the photo (tagged players with an area only). */
+  playerAreas?: ClubPhotoPlayerArea[];
 }

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PhotoFocus } from './photoFocus';
 import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
 import type { SocialDraftPlannedBy } from './socialDraftPlannedBy';
 import type { SocialDraftStatus } from './socialDraftStatus';
@@ -48,6 +49,8 @@ export interface SocialDraft {
   photoUrl?: string | null;
   /** @nullable */
   photoSource?: string | null;
+  /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
+  photoFocus?: PhotoFocus | null;
   adjustments?: unknown;
   /** @nullable */
   editedAt?: Date | null;

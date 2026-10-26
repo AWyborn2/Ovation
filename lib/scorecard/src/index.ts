@@ -54,6 +54,7 @@ export {
 export * from "./captions";
 export * from "./pack-resolve";
 export * from "./photo-types";
+export * from "./photo-focus";
 export {
   DAY_GROUP_KINDS,
   META_CAROUSEL_MAX_SLIDES,

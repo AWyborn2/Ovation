@@ -748,6 +748,14 @@ export const socialDraftsTable = pgTable(
     photoUrl: text("photo_url"),
     // How photoUrl was chosen: "library" | "headshot" | "team" | "manual" | "none".
     photoSource: text("photo_source"),
+    // The photo's focus box (or the pictured player's area) and size when it
+    // was chosen (photo focus areas): renderers crop each frame to it unless
+    // the photo was moved by hand. Null = a centred crop.
+    photoFocus: jsonb("photo_focus").$type<{
+      box: { x: number; y: number; w: number; h: number };
+      width: number;
+      height: number;
+    }>(),
     adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
     editedAt: timestamp("edited_at", { withTimezone: true }),
     // The admin who made the draft by hand (Studio editor / Create a card); null for a

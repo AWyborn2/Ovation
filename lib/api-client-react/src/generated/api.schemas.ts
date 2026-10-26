@@ -6183,6 +6183,30 @@ export const ClubPhotoMatchFormat = {
   two_day: 'two_day',
 } as const;
 
+/**
+ * A box on a photo in fractions (0–1) of its width and height.
+ */
+export interface PhotoFocusBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export type PhotoFrameShape = typeof PhotoFrameShape[keyof typeof PhotoFrameShape];
+
+
+export const PhotoFrameShape = {
+  tall: 'tall',
+  square: 'square',
+  wide: 'wide',
+} as const;
+
+export interface ClubPhotoPlayerArea {
+  playerId: number;
+  box: PhotoFocusBox;
+}
+
 export interface ClubPhoto {
   /** Club-provided stock artwork approved for reuse on junior carousels. */
   juniorStock?: boolean;
@@ -6207,6 +6231,33 @@ export interface ClubPhoto {
      * @nullable
      */
   sourcePhotoId?: number | null;
+  /** The part of the photo that matters; null = a centred crop. */
+  focusBox?: PhotoFocusBox | null;
+  /** Frame shapes the automatic picker never puts this photo in. */
+  offShapes?: PhotoFrameShape[];
+  /** Where each tagged player is on the photo (tagged players with an area only). */
+  playerAreas?: ClubPhotoPlayerArea[];
+}
+
+/**
+ * A photo's focus box (or a pictured player's area) with the photo's size.
+ */
+export interface PhotoFocus {
+  box: PhotoFocusBox;
+  width: number;
+  height: number;
+}
+
+export type SetClubPhotoFocusRequestPlayerAreasItem = {
+  playerId: number;
+  box: PhotoFocusBox | null;
+};
+
+export interface SetClubPhotoFocusRequest {
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Areas to set (box) or clear (null), per player. */
+  playerAreas?: SetClubPhotoFocusRequestPlayerAreasItem[];
 }
 
 export interface StudioToolStatus {
@@ -9901,6 +9952,8 @@ export interface SocialDraft {
   photoUrl?: string | null;
   /** @nullable */
   photoSource?: string | null;
+  /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
+  photoFocus?: PhotoFocus | null;
   adjustments?: unknown;
   /** @nullable */
   editedAt?: string | null;
