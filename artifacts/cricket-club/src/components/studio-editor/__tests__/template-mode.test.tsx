@@ -81,7 +81,7 @@ function stubApi(api: Api = {}): Req[] {
       if (/\/api\/club-templates\?kind=century/.test(url)) {
         payload = { templates: current ? [{ ...current, document: undefined }] : [] };
       } else if (method === "POST" && /club-templates\/7\/apply$/.test(url)) {
-        payload = { changed: 2, skipped: 1 };
+        payload = { changed: 2, skipped: 1, edited: 1 };
       } else if (method === "PUT" && /club-templates\/7$/.test(url)) {
         status = api.saveStatus ?? 200;
         payload =
@@ -250,7 +250,11 @@ describe("template editor", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     const dialog = await screen.findByRole("dialog", { name: /Update 3 waiting cards/ });
-    expect(within(dialog).getByText(/Their captions are kept/)).toBeTruthy();
+    expect(
+      within(dialog).getByText(
+        /keeps their captions. Cards whose design was edited by hand keep it/,
+      ),
+    ).toBeTruthy();
     await waitFor(() =>
       expect(document.activeElement).toBe(
         within(dialog).getByRole("button", { name: "Don't apply" }),
@@ -259,6 +263,7 @@ describe("template editor", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Apply to waiting cards" }));
     expect(await screen.findByText(/2 cards now use this design/)).toBeTruthy();
     expect(screen.getByText(/1 card was posted in the meantime/)).toBeTruthy();
+    expect(screen.getByText(/1 card was edited by hand and kept its design/)).toBeTruthy();
     const apply = requests.find((r) => /apply$/.test(r.url))!;
     expect(apply.body).toEqual({ version: 2, expectedDrafts: 3 });
   });

@@ -113,7 +113,11 @@ export function slideInputFor(
   const from = templateKindFor(String(input.kind ?? ""));
   const to = templateKindFor(page.kind);
   const junior = input.junior === true ? { junior: true } : {};
-  if (page.kind === "matchDay" && page.page === "sponsors" && from !== "matchDay")
+  // Match Day's title and sponsors pages adapt any other card, and a fixture
+  // card drawn on them as design pages (its own carousel, D9).
+  const adaptMatchDay =
+    from !== "matchDay" || (page.slot === "page" && !object(input.carouselPage));
+  if (page.kind === "matchDay" && page.page === "sponsors" && adaptMatchDay)
     return {
       kind: "matchDay",
       ...junior,
@@ -125,7 +129,7 @@ export function slideInputFor(
         sponsors: Array.isArray(ctx.sponsors) ? ctx.sponsors : [],
       },
     };
-  if (from === to) {
+  if (from === to && !(page.kind === "matchDay" && page.page === "title" && adaptMatchDay)) {
     if (page.slot === "cover" && from !== "matchDay")
       return { ...input, setRole: "cover", setPage: null };
     return input;
@@ -144,7 +148,8 @@ export function slideInputFor(
       },
     };
   }
-  if (page.slot === "cover" && page.kind in COVER_TITLE) {
+  // A list card's cover, or the same page as a design page (a card's own carousel).
+  if ((page.slot === "cover" || page.slot === "page") && page.kind in COVER_TITLE) {
     const title = object(input.carouselPage) ? input.carouselPage : {};
     return {
       kind: page.kind,

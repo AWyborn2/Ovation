@@ -400,6 +400,106 @@ export function freeSetFromDocument(
   };
 }
 
+/**
+ * The data set whose pages suit a card of `kind` (full draft editor plan, D9):
+ * the set that repeats it (a team list, a result, a fixture), or the one a list
+ * card is the cover of. Null for a kind no set draws (a player card).
+ */
+export function setTypeForKind(kind: string): DataSetType | null {
+  const own = templateKindFor(kind);
+  for (const type of SET_TYPES) {
+    if (type === "free") continue;
+    if (Object.values(REPEAT_SOURCES[type]).some((s) => s && templateKindFor(s.kind) === own))
+      return type;
+  }
+  if (kind === "teamListRound") return "teamLists";
+  if (kind === "roundFixtures") return "matchDay";
+  if (kind === "resultsSummary" || kind === "weekendWrap") return "results";
+  return null;
+}
+
+/** The pages of a look's set a card can start its own set from (D9): not junior days. */
+export function lookPagesForCard(base: SetDocument): SetPage[] {
+  return base.pages.filter((p) => p.slot !== "day");
+}
+
+/**
+ * A card made into a carousel from its design and pages picked from a look's
+ * set (full draft editor plan, D9). The set is a free set: every page is a
+ * design page drawing the card's own data (a page of the card's kind takes it
+ * as the card's, a cover and the sponsors page adapt it). The picked pages keep
+ * the look's order, with the card's design (and a copy of it) in place of the
+ * look's item page, after its cover.
+ */
+export function freeSetFromLook(
+  kind: string,
+  doc: unknown,
+  base: SetDocument | null,
+  picked: readonly string[],
+  copy = false,
+): SetDocument | null {
+  const page = primaryPage(kind);
+  const own = kindDocPage(doc, page);
+  if (!own) return null;
+  const design: SetPage[] = [
+    {
+      id: "page-1",
+      role: "fixed",
+      slot: "page",
+      kind,
+      page,
+      name: "Your design",
+      layers: clone(own),
+    },
+    ...(copy
+      ? [
+          {
+            id: "page-2",
+            role: "fixed" as const,
+            slot: "page" as const,
+            kind,
+            page,
+            name: "Your design (copy)",
+            layers: clone(own),
+          },
+        ]
+      : []),
+  ];
+  const chosen = new Set(picked);
+  const looks = (base ? lookPagesForCard(base) : []).filter((p) => chosen.has(p.id));
+  const pages: SetPage[] = [];
+  let placed = false;
+  for (const p of looks) {
+    if (!placed && p.slot !== "cover") {
+      pages.push(...design);
+      placed = true;
+    }
+    // A page of the card's own kind draws the card itself.
+    const same = templateKindFor(p.kind) === templateKindFor(kind);
+    pages.push({
+      id: `look-${p.id}`,
+      role: "fixed",
+      slot: "page",
+      kind: same ? kind : p.kind,
+      page: p.page,
+      name: `Look's ${setPageLabel(p).toLowerCase()}`,
+      layers: clone(p.layers),
+    });
+  }
+  if (!placed) pages.push(...design);
+  const d = doc as { palettes?: unknown; sponsorLock?: unknown };
+  const palettes = new Set<DerivedPalette>(looks.length ? (base?.palettes ?? []) : []);
+  if (Array.isArray(d.palettes)) for (const p of d.palettes) palettes.add(p as DerivedPalette);
+  const sponsors = looks.some((p) => p.slot === "sponsors") && base?.sponsorLock === true;
+  return {
+    formatVersion: FORMAT_VERSION,
+    set: "free",
+    pages: pages.slice(0, MAX_SET_PAGES),
+    ...(palettes.size ? { palettes: [...palettes].sort() } : {}),
+    ...(d.sponsorLock === true || sponsors ? { sponsorLock: true } : {}),
+  };
+}
+
 /** Whether a kind page can be a set's cover (a Match Day title, a list card). */
 function canCover(kind: string, page: PageKey): boolean {
   return (

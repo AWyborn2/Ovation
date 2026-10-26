@@ -23232,10 +23232,16 @@ components:
 
     ApplyKindTemplateResult:
       type: object
-      required: [changed, skipped]
+      required: [changed, skipped, edited]
       properties:
         changed: { type: integer }
-        skipped: { type: integer }
+        skipped:
+          type: integer
+          description: Waiting drafts posted in the meantime.
+        edited:
+          type: integer
+          description: >-
+            Waiting drafts whose design was edited by hand, which keep it.
 
     KindTemplateConflict:
       type: object
