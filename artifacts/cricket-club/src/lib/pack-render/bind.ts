@@ -981,6 +981,25 @@ function bindMatchGraphics(
       }),
     );
   });
+  // The performance lists (full draft editor plan, stage 4): every innings'
+  // batters and bowlers (its full lists, else an older input's top three),
+  // each with its side and team. A batter is the batting side's; a bowler the
+  // other side's. A list's `pick` chooses whose, how sorted and how many.
+  const perfBatting: BoundInput["rows"][string] = [];
+  const perfBowling: BoundInput["rows"][string] = [];
+  for (const inn of input.innings) {
+    const bat = inn.teamKey;
+    const bowl = bat === "club" ? "opposition" : "club";
+    for (const b of inn.batters ?? inn.topBatters)
+      perfBatting.push({ values: { ...batterRow(b), team: name(bat), side: bat }, variant: bat });
+    for (const b of inn.bowlers ?? inn.topBowlers)
+      perfBowling.push({
+        values: { ...bowlerRow(b), team: name(bowl), side: bowl },
+        variant: bowl,
+      });
+  }
+  rows["performances.batting"] = perfBatting;
+  rows["performances.bowling"] = perfBowling;
 }
 
 /**

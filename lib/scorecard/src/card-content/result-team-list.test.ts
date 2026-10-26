@@ -180,6 +180,20 @@ describe("resultSlideInput (the carousel)", () => {
     expect((r.innings as MatchSummaryInput["innings"]).every((i) => !i.topBatters.length)).toBe(
       true,
     );
+    // The full lists (the performance lists) go too.
+    const full = summary();
+    full.innings = full.innings.map((i) => ({
+      ...i,
+      batters: i.topBatters,
+      bowlers: i.topBowlers,
+    }));
+    const set = resultSlideInput(
+      resultContent(full, { kind: "results", matchId: 1, names }),
+      standard("results"),
+    );
+    expect(
+      (set.innings as MatchSummaryInput["innings"]).every((i) => !i.batters && !i.bowlers),
+    ).toBe(true);
     const ms = resultSlideInput(
       resultContent(summary(), { kind: "matchSummary", matchId: 1, names }),
       standard("matchSummary"),

@@ -7,9 +7,11 @@
  */
 import {
   addLayerToSizes,
+  defaultPick,
   emptySizes,
   kindFields,
   layerOnSize,
+  pickStat,
   TEMPLATE_SIZE_ORDER,
   type KindRepeat,
   type RowsCell,
@@ -161,26 +163,66 @@ export function logoLayer(size: CardSize): FreeLayer {
   );
 }
 
-/** A list element for one of the kind's repeats: the first few fields across the row. */
+/**
+ * A list element for one of the kind's repeats: the first few fields across
+ * the row. A result's batting or bowling list starts as a name and its runs
+ * or figures; a performance list also with the club's top three (D4).
+ */
 export function rowsLayer(repeat: KindRepeat, size: CardSize): FreeLayer {
-  const fields = repeat.fields.slice(0, 4);
-  const w = 100 / Math.max(fields.length, 1);
-  const cells: RowsCell[] = fields.map((f, i) => ({
-    field: f.key,
-    x: i * w,
-    w,
-    style: { fontSize: 3.6, fontWeight: i === 0 ? 800 : 600, align: i === 0 ? "left" : "center" },
-  }));
+  const stat = pickStat(repeat.key);
+  const pick = defaultPick(repeat.key);
+  const cells: RowsCell[] = stat
+    ? [
+        { field: "name", x: 0, w: 72, style: { fontSize: 3.6, fontWeight: 800, align: "left" } },
+        {
+          field: stat === "batting" ? "runs" : "figures",
+          x: 72,
+          w: 28,
+          style: { fontSize: 3.6, fontWeight: 600, align: "right" },
+        },
+      ]
+    : repeat.fields.slice(0, 4).map((f, i, fields) => {
+        const w = 100 / Math.max(fields.length, 1);
+        return {
+          field: f.key,
+          x: i * w,
+          w,
+          style: {
+            fontSize: 3.6,
+            fontWeight: i === 0 ? 800 : 600,
+            align: i === 0 ? "left" : "center",
+          },
+        };
+      });
   return onlyOnSize(
     {
       id: newId(),
       kind: "rows",
       name: repeat.label,
-      rows: { repeat: repeat.key, rowHeight: 7, gap: 1, cells },
+      rows: { repeat: repeat.key, rowHeight: 7, gap: 1, cells, ...(pick ? { pick } : {}) },
       geometry: { [size]: box(6, 24, 88, 56) },
     },
     size,
   );
+}
+
+/** Change a list's row choice (whose, how many, sorted how); an empty choice is removed. */
+export function setRowsPick(
+  doc: EditorDoc,
+  id: string,
+  patch: Partial<NonNullable<NonNullable<FreeLayer["rows"]>["pick"]>>,
+): EditorDoc {
+  return {
+    ...doc,
+    layers: layersOf(doc).map((l) => {
+      if (l.id !== id || !l.rows) return l;
+      const pick = { ...(l.rows.pick ?? defaultPick(l.rows.repeat)), ...patch };
+      for (const k of Object.keys(pick) as Array<keyof typeof pick>)
+        if (pick[k] === undefined) delete pick[k];
+      const { pick: _old, ...rest } = l.rows;
+      return { ...l, rows: Object.keys(pick).length ? { ...rest, pick } : rest };
+    }),
+  };
 }
 
 /** The fields a kind's text boxes can show, without layout-only ones. */

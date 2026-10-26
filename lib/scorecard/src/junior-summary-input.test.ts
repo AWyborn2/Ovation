@@ -80,6 +80,13 @@ describe("juniorMatchToSummaryInput opposition performers", () => {
     expect(opp!.topBowlers.map((b) => b.name)).toEqual(["Mia B", "Sam T"]);
   });
 
+  it("keeps the full lists (the performance lists) to the same rule", () => {
+    expect(club!.batters!.map((b) => b.name)).toEqual(["Ollie G", "Sam T"]);
+    expect(club!.bowlers).toEqual([]);
+    expect(opp!.batters).toEqual([]);
+    expect(opp!.bowlers!.map((b) => b.name)).toEqual(["Mia B", "Sam T"]);
+  });
+
   it("keeps both team totals", () => {
     expect(club).toMatchObject({ teamKey: "club", totalRuns: "120", wickets: "5" });
     expect(opp).toMatchObject({ teamKey: "opposition", totalRuns: "100", wickets: "8" });

@@ -59,15 +59,14 @@ function toTeam(t: ScorecardTeam): MatchSummaryTeam {
   };
 }
 
-/** Top scorers by runs (fill-ins are already excluded by buildScorecard). */
-export function topBatters(
+/** Every batter by runs, most first (fill-ins are already excluded by buildScorecard). */
+export function allBatters(
   batsmen: ScorecardBatsman[],
   excludeName?: string,
 ): MatchSummaryBatter[] {
   return [...batsmen]
     .filter((b) => !excludeName || b.name !== excludeName)
     .sort((a, b) => (b.runs ?? -1) - (a.runs ?? -1))
-    .slice(0, 3)
     .map((b) => ({
       name: b.name,
       runs: b.runs ?? 0,
@@ -76,8 +75,16 @@ export function topBatters(
     }));
 }
 
-/** Best bowlers by wickets, then by fewest runs conceded. */
-export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
+/** Top scorers by runs (fill-ins are already excluded by buildScorecard). */
+export function topBatters(
+  batsmen: ScorecardBatsman[],
+  excludeName?: string,
+): MatchSummaryBatter[] {
+  return allBatters(batsmen, excludeName).slice(0, 3);
+}
+
+/** Everyone who bowled, by wickets, then by fewest runs conceded. */
+export function allBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
   return [...bowlers]
     .filter((b) => !excludeName || b.name !== excludeName)
     .filter((b) => (b.wickets ?? 0) > 0 || !!b.overs)
@@ -86,13 +93,17 @@ export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): Ma
         (b.wickets ?? 0) - (a.wickets ?? 0) ||
         (a.runs ?? Number.MAX_SAFE_INTEGER) - (b.runs ?? Number.MAX_SAFE_INTEGER),
     )
-    .slice(0, 3)
     .map((b) => ({
       name: b.name,
       wickets: b.wickets ?? 0,
       runs: b.runs ?? 0,
       overs: b.overs ?? "",
     }));
+}
+
+/** Best bowlers by wickets, then by fewest runs conceded. */
+export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): MatchSummaryBowler[] {
+  return allBowlers(bowlers, excludeName).slice(0, 3);
 }
 
 /** Winner from the club-perspective result text, defaulting to a draw. */
@@ -200,6 +211,8 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
       overs: inn.oversTotal ?? "",
       topBatters: topBatters(inn.batsmen),
       topBowlers: topBowlers(inn.bowlers),
+      batters: allBatters(inn.batsmen),
+      bowlers: allBowlers(inn.bowlers),
     }));
 
   return {
@@ -320,6 +333,9 @@ export function juniorMatchToSummaryInput(
         overs: inn.oversTotal ?? "",
         topBatters: clubBatted ? topBatters(inn.batsmen, MASK_NAME) : [],
         topBowlers: clubBatted ? [] : topBowlers(inn.bowlers, MASK_NAME),
+        // The full lists (the performance lists) keep the same rules.
+        batters: clubBatted ? allBatters(inn.batsmen, MASK_NAME) : [],
+        bowlers: clubBatted ? [] : allBowlers(inn.bowlers, MASK_NAME),
       };
     });
 

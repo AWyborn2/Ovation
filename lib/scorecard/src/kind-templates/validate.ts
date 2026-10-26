@@ -46,6 +46,7 @@ import {
 } from "./format";
 import { kindHasPage } from "./pages";
 import { pageRepeat, pageTokenKeys } from "./page-tokens";
+import { isPickableRepeat, MAX_PICK_COUNT, PICK_SIDES, PICK_SORTS } from "./rows-pick";
 import {
   isRepeatSlot,
   isSetType,
@@ -495,6 +496,30 @@ function checkTokens(errors: Errors, where: string, text: string, allowed: Set<s
   }
 }
 
+/** A list's row choice (format v2): whose, how many and sorted how (`rows-pick.ts`). */
+function checkPick(errors: Errors, where: string, v: unknown, repeat: string, scope: Scope): void {
+  if (!scope.v2) {
+    errors.push(`${where} is a format v2 option.`);
+    return;
+  }
+  if (!isPickableRepeat(repeat)) {
+    errors.push(`${where} is only for a result's batting and bowling lists.`);
+    return;
+  }
+  if (!isObject(v)) {
+    errors.push(`${where} must be an object.`);
+    return;
+  }
+  for (const key of Object.keys(v))
+    if (key !== "side" && key !== "count" && key !== "sort")
+      errors.push(`${where}.${key.slice(0, 30)} isn't a list choice.`);
+  if (v.side !== undefined && !(PICK_SIDES as readonly unknown[]).includes(v.side))
+    errors.push(`${where}.side must be club, opposition or both.`);
+  if (v.count !== undefined) numberIn(errors, `${where}.count`, v.count, 0, MAX_PICK_COUNT, true);
+  if (v.sort !== undefined && !(PICK_SORTS as readonly unknown[]).includes(v.sort))
+    errors.push(`${where}.sort must be runs, wickets or figures.`);
+}
+
 function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): void {
   if (!isObject(v)) {
     errors.push(`${where} must describe a list row.`);
@@ -518,6 +543,7 @@ function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): voi
     else if (v.flow !== "down" && v.flow !== "across")
       errors.push(`${where}.flow must be down or across.`);
   }
+  if (v.pick !== undefined) checkPick(errors, `${where}.pick`, v.pick, v.repeat as string, scope);
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
     errors.push(`${where}.cells must be a list of at most ${MAX_CELLS} cells.`);
   } else {
