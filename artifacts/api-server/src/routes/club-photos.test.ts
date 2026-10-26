@@ -118,9 +118,14 @@ afterAll(async () => {
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId, otherTenantId]));
 });
 
-const api = (method: "get" | "post", path: string, as: "own" | "other" = "own") => {
+const api = (method: "get" | "post" | "put", path: string, as: "own" | "other" = "own") => {
   const agent = request(app);
-  const req = method === "get" ? agent.get(`/api${path}`) : agent.post(`/api${path}`);
+  const req =
+    method === "get"
+      ? agent.get(`/api${path}`)
+      : method === "put"
+        ? agent.put(`/api${path}`)
+        : agent.post(`/api${path}`);
   return req
     .set("Cookie", as === "own" ? cookie : otherCookie)
     .set("x-tenant-id", String(as === "own" ? tenantId : otherTenantId));
@@ -389,5 +394,63 @@ describe("profile photo from the library", () => {
     expect(await taggedPlayerPhotoUrl(otherTenantId, playerIds[0])).toBeNull();
     // A player with no tagged photos gets none.
     expect(await taggedPlayerPhotoUrl(tenantId, 987654)).toBeNull();
+  });
+});
+
+describe("focus areas", () => {
+  it("sets a focus box, switched-off shapes and player areas, tagging new players", async () => {
+    const path = await upload("focus.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({
+      objectPaths: [path],
+      playerIds: [playerIds[0]],
+    });
+    const photoId = ingest.body.results[0].photo.id as number;
+    expect(ingest.body.results[0].photo.focusBox).toBeNull();
+    expect(ingest.body.results[0].photo.offShapes).toEqual([]);
+
+    const res = await api("put", `/club-photos/${photoId}/focus`).send({
+      focusBox: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 },
+      offShapes: ["wide", "tall", "wide"],
+      playerAreas: [
+        { playerId: playerIds[0], box: { x: 0.1, y: 0.2, w: 0.2, h: 0.5 } },
+        { playerId: playerIds[1], box: { x: 0.4, y: 0.2, w: 0.2, h: 0.5 } },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.focusBox).toEqual({ x: 0.1, y: 0.2, w: 0.5, h: 0.6 });
+    expect(res.body.offShapes).toEqual(["tall", "wide"]);
+    expect(res.body.playerIds).toEqual([...playerIds].sort((a, b) => a - b));
+    expect(res.body.playerAreas).toHaveLength(2);
+
+    // Fields left out are kept; a null area clears it but keeps the tag.
+    const cleared = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: playerIds[1], box: null }],
+    });
+    expect(cleared.body.focusBox).toEqual({ x: 0.1, y: 0.2, w: 0.5, h: 0.6 });
+    expect(cleared.body.playerAreas.map((a: { playerId: number }) => a.playerId)).toEqual([
+      playerIds[0],
+    ]);
+    expect(cleared.body.playerIds).toHaveLength(2);
+
+    const none = await api("put", `/club-photos/${photoId}/focus`).send({ focusBox: null });
+    expect(none.body.focusBox).toBeNull();
+  });
+
+  it("rejects bad boxes, non-senior players and another club's photo", async () => {
+    const path = await upload("focus-bad.jpg", await jpeg());
+    const ingest = await api("post", "/club-photos/ingest").send({ objectPaths: [path] });
+    const photoId = ingest.body.results[0].photo.id as number;
+    const tiny = await api("put", `/club-photos/${photoId}/focus`).send({
+      focusBox: { x: 0.5, y: 0.5, w: 0.001, h: 0.2 },
+    });
+    expect(tiny.status).toBe(400);
+    const fillIn = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: 90001, box: { x: 0, y: 0, w: 0.5, h: 0.5 } }],
+    });
+    expect(fillIn.status).toBe(422);
+    const other = await api("put", `/club-photos/${photoId}/focus`, "other").send({
+      focusBox: { x: 0, y: 0, w: 0.5, h: 0.5 },
+    });
+    expect(other.status).toBe(404);
   });
 });

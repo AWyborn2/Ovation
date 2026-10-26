@@ -414,6 +414,7 @@ import type {
   SelectionSide,
   SelectionStatusSetBody,
   SeniorOverview,
+  SetClubPhotoFocusRequest,
   SetGradeDecisionBody,
   SetJuniorSeniorLinkBody,
   SetPlannedTimeRequest,
@@ -24172,6 +24173,79 @@ export const useTagClubPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getTagClubPhotosMutationOptions(options));
+    }
+
+export const getSetClubPhotoFocusUrl = (photoId: number,) => {
+
+
+
+
+  return `/api/club-photos/${photoId}/focus`
+}
+
+/**
+ * Photo focus areas. Every frame a card draws the photo in crops to keep the focus box in view; a card about a player crops to that player's area. A player given an area who isn't tagged yet is tagged (senior players only). Fields left out are kept.
+ * @summary Set a library photo's focus box, switched-off frame shapes and player areas (admin)
+ */
+export const setClubPhotoFocus = async (photoId: number,
+    setClubPhotoFocusRequest: SetClubPhotoFocusRequest, options?: RequestInit): Promise<ClubPhoto> => {
+
+  return customFetch<ClubPhoto>(getSetClubPhotoFocusUrl(photoId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setClubPhotoFocusRequest,)
+  }
+);}
+
+
+
+
+export const getSetClubPhotoFocusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubPhotoFocus>>, TError,{photoId: number;data: BodyType<SetClubPhotoFocusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setClubPhotoFocus>>, TError,{photoId: number;data: BodyType<SetClubPhotoFocusRequest>}, TContext> => {
+
+const mutationKey = ['setClubPhotoFocus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setClubPhotoFocus>>, {photoId: number;data: BodyType<SetClubPhotoFocusRequest>}> = (props) => {
+          const {photoId,data} = props ?? {};
+
+          return  setClubPhotoFocus(photoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetClubPhotoFocusMutationResult = NonNullable<Awaited<ReturnType<typeof setClubPhotoFocus>>>
+    export type SetClubPhotoFocusMutationBody = BodyType<SetClubPhotoFocusRequest>
+    export type SetClubPhotoFocusMutationError = ErrorType<void>
+
+    /**
+ * @summary Set a library photo's focus box, switched-off frame shapes and player areas (admin)
+ */
+export const useSetClubPhotoFocus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubPhotoFocus>>, TError,{photoId: number;data: BodyType<SetClubPhotoFocusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setClubPhotoFocus>>,
+        TError,
+        {photoId: number;data: BodyType<SetClubPhotoFocusRequest>},
+        TContext
+      > => {
+      return useMutation(getSetClubPhotoFocusMutationOptions(options));
     }
 
 export const getMoveClubPhotosUrl = () => {

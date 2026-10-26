@@ -9555,7 +9555,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })).optional(),
   "timeZone": zod.string(),
   "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Team list, results and match summary sets: each slide\'s content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
@@ -9618,7 +9634,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 }),zod.null()]).describe('The club\'s chosen background photo, when it is still in the library and safe to show.'),
   "nextHomeGame": zod.union([zod.object({
   "kind": zod.enum(['matchDay']),
@@ -9695,7 +9727,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })),
   "coverPhotos": zod.array(zod.object({
   "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
@@ -9711,7 +9759,23 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
   "photoPicks": zod.object({
   "cover": zod.number().nullable().describe('A coverPhotos (or juniorStockPhotos) id.'),
@@ -11567,6 +11631,16 @@ export const ListSocialDraftsResponseItem = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -12624,7 +12698,23 @@ export const ListClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
@@ -12664,7 +12754,23 @@ export const IngestClubPhotosResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 }).optional(),
   "error": zod.string().optional()
 }))
@@ -12738,9 +12844,86 @@ export const TagClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
+
+
+/**
+ * Photo focus areas. Every frame a card draws the photo in crops to keep the focus box in view; a card about a player crops to that player's area. A player given an area who isn't tagged yet is tagged (senior players only). Fields left out are kept.
+ * @summary Set a library photo's focus box, switched-off frame shapes and player areas (admin)
+ */
+export const SetClubPhotoFocusParams = zod.object({
+  "photoId": zod.coerce.number()
+})
+
+export const SetClubPhotoFocusBody = zod.object({
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()])
+})).optional().describe('Areas to set (box) or clear (null), per player.')
+})
+
+export const SetClubPhotoFocusResponse = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})
 
 
 /**
@@ -12770,7 +12953,23 @@ export const MoveClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })
 export const MoveClubPhotosResponse = zod.array(MoveClubPhotosResponseItem)
 
@@ -12880,7 +13079,23 @@ export const RemovePhotoBackgroundResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
 })
 
 
@@ -12974,6 +13189,16 @@ export const ApproveSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13080,6 +13305,16 @@ export const SaveDraftSetDesignResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13152,6 +13387,16 @@ export const GetSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13237,6 +13482,16 @@ export const UpdateSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13443,6 +13698,16 @@ export const GetSocialCalendarResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13511,6 +13776,16 @@ export const GetSocialCalendarResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13601,6 +13876,16 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13683,6 +13968,16 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13759,6 +14054,16 @@ export const SendBackSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13831,6 +14136,16 @@ export const ReopenSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13925,6 +14240,16 @@ export const RevertSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13997,6 +14322,16 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14078,6 +14413,16 @@ export const GenerateRecapsResponseItem = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),

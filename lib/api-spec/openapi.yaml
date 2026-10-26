@@ -7454,6 +7454,42 @@ paths:
         "422":
           description: A tagged player is not a senior player of this club
 
+  /club-photos/{photoId}/focus:
+    put:
+      operationId: setClubPhotoFocus
+      tags: [socialCards]
+      summary: Set a library photo's focus box, switched-off frame shapes and player areas (admin)
+      description: >-
+        Photo focus areas. Every frame a card draws the photo in crops to keep
+        the focus box in view; a card about a player crops to that player's
+        area. A player given an area who isn't tagged yet is tagged (senior
+        players only). Fields left out are kept.
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetClubPhotoFocusRequest"
+      responses:
+        "200":
+          description: The updated photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: The photo is not in this club's library
+        "422":
+          description: A player is not a senior player of this club
+
   /club-photos/move:
     post:
       operationId: moveClubPhotos
@@ -20034,6 +20070,77 @@ components:
         sourcePhotoId:
           type: ["integer", "null"]
           description: "For a derived image (a background-removed cut-out), the library photo it was made from."
+        focusBox:
+          description: The part of the photo that matters; null = a centred crop.
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocusBox"
+            - type: "null"
+        offShapes:
+          type: array
+          description: Frame shapes the automatic picker never puts this photo in.
+          items:
+            $ref: "#/components/schemas/PhotoFrameShape"
+        playerAreas:
+          type: array
+          description: Where each tagged player is on the photo (tagged players with an area only).
+          items:
+            $ref: "#/components/schemas/ClubPhotoPlayerArea"
+
+    PhotoFocusBox:
+      type: object
+      description: A box on a photo in fractions (0–1) of its width and height.
+      required: [x, y, w, h]
+      properties:
+        x: { type: number }
+        y: { type: number }
+        w: { type: number }
+        h: { type: number }
+
+    PhotoFrameShape:
+      type: string
+      enum: [tall, square, wide]
+
+    PhotoFocus:
+      type: object
+      description: A photo's focus box (or a pictured player's area) with the photo's size.
+      required: [box, width, height]
+      properties:
+        box:
+          $ref: "#/components/schemas/PhotoFocusBox"
+        width: { type: integer }
+        height: { type: integer }
+
+    ClubPhotoPlayerArea:
+      type: object
+      required: [playerId, box]
+      properties:
+        playerId: { type: integer }
+        box:
+          $ref: "#/components/schemas/PhotoFocusBox"
+
+    SetClubPhotoFocusRequest:
+      type: object
+      properties:
+        focusBox:
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocusBox"
+            - type: "null"
+        offShapes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhotoFrameShape"
+        playerAreas:
+          type: array
+          description: Areas to set (box) or clear (null), per player.
+          items:
+            type: object
+            required: [playerId, box]
+            properties:
+              playerId: { type: integer }
+              box:
+                oneOf:
+                  - $ref: "#/components/schemas/PhotoFocusBox"
+                  - type: "null"
 
     StudioToolStatus:
       type: object
@@ -24636,6 +24743,13 @@ components:
         caption: { type: ["string", "null"] }
         photoUrl: { type: ["string", "null"] }
         photoSource: { type: ["string", "null"] }
+        photoFocus:
+          description: >-
+            The photo's focus box (or the pictured player's area) and size when it
+            was chosen; frames crop to it unless the photo was moved by hand.
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocus"
+            - type: "null"
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
         templateVersion:

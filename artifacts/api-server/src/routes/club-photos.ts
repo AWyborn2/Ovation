@@ -8,8 +8,10 @@ import {
   MoveClubPhotosBody,
   FetchGoogleDriveFilesBody,
   ListClubPhotosQueryParams,
+  SetClubPhotoFocusBody,
+  SetClubPhotoFocusParams,
 } from "@workspace/api-zod";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { FRAME_SHAPES, isJuniorGradeLabel, normaliseFocusBox } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
@@ -390,6 +392,96 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
   await fillMissingDraftPhotos(tenantId);
   if (typesChanged) await repickTypedDraftPhotos(tenantId);
   res.json(await presentPhotos(tenantId, rows));
+});
+
+/**
+ * Photo focus areas: a photo's focus box, the frame shapes switched off for it
+ * and where each player is on it. A player given an area who isn't tagged yet
+ * is tagged (senior players only, like `tags`). Fields left out are kept.
+ */
+router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promise<void> => {
+  const params = SetClubPhotoFocusParams.safeParse(req.params);
+  const parsed = SetClubPhotoFocusBody.safeParse(req.body);
+  if (!params.success || !parsed.success) {
+    res.status(400).json({ error: (params.error ?? parsed.error)?.message ?? "Invalid body" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const { photoId } = params.data;
+  const { focusBox, offShapes, playerAreas = [] } = parsed.data;
+  const box =
+    focusBox === undefined ? undefined : focusBox === null ? null : normaliseFocusBox(focusBox);
+  if (box === null && focusBox !== null) {
+    res.status(400).json({ error: "The focus box is too small or off the photo." });
+    return;
+  }
+  const areas = playerAreas.map((a) => ({
+    playerId: a.playerId,
+    box: a.box === null ? null : normaliseFocusBox(a.box),
+    cleared: a.box === null,
+  }));
+  if (areas.some((a) => a.box === null && !a.cleared)) {
+    res.status(400).json({ error: "A player's area is too small or off the photo." });
+    return;
+  }
+  if (new Set(areas.map((a) => a.playerId)).size !== areas.length) {
+    res.status(400).json({ error: "Give each player one area." });
+    return;
+  }
+  if ((await tenantPhotoIds(tenantId, [photoId])).length === 0) {
+    res.status(404).json({ error: "photo not found" });
+    return;
+  }
+  const tagging = areas.filter((a) => a.box).map((a) => a.playerId);
+  const rejected = await nonSeniorPlayerIds(tenantId, tagging);
+  if (rejected.length > 0) {
+    res.status(422).json({ error: "Only senior players can be tagged.", playerIds: rejected });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    const patch: { focusBox?: typeof box; offShapes?: SQL } = {};
+    if (box !== undefined) patch.focusBox = box;
+    if (offShapes !== undefined)
+      patch.offShapes = textArray(FRAME_SHAPES.filter((shape) => offShapes.includes(shape)));
+    if (Object.keys(patch).length > 0) {
+      await tx
+        .update(clubPhotosTable)
+        .set(patch)
+        .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.id, photoId)));
+    }
+    for (const area of areas) {
+      if (area.box) {
+        await tx
+          .insert(clubPhotoPlayersTable)
+          .values({ tenantId, photoId, playerId: area.playerId, area: area.box })
+          .onConflictDoUpdate({
+            target: [clubPhotoPlayersTable.photoId, clubPhotoPlayersTable.playerId],
+            set: { area: area.box },
+          });
+      } else {
+        await tx
+          .update(clubPhotoPlayersTable)
+          .set({ area: null })
+          .where(
+            and(
+              eq(clubPhotoPlayersTable.tenantId, tenantId),
+              eq(clubPhotoPlayersTable.photoId, photoId),
+              eq(clubPhotoPlayersTable.playerId, area.playerId),
+            ),
+          );
+      }
+    }
+  });
+
+  const rows = await db
+    .select()
+    .from(clubPhotosTable)
+    .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.id, photoId)));
+  // A newly tagged player can fill drafts that had no photo.
+  if (tagging.length > 0) await fillMissingDraftPhotos(tenantId);
+  const [photo] = await presentPhotos(tenantId, rows);
+  res.json(photo);
 });
 
 /**

@@ -8,9 +8,13 @@ import {
   type ClubPhotoRow,
 } from "@workspace/db";
 import {
+  FRAME_SHAPES,
   PHOTO_TYPES,
   isFillInPlayerId,
   isMatchFormat,
+  normaliseFocusBox,
+  type FocusBox,
+  type FrameShape,
   type MatchFormat,
   type PhotoType,
 } from "@workspace/scorecard";
@@ -65,6 +69,10 @@ export type PhotoDto = {
   matchFormat: MatchFormat | null;
   sourcePhotoId: number | null;
   juniorStock: boolean;
+  /** Photo focus areas: the box every frame keeps in view; null = centred. */
+  focusBox: FocusBox | null;
+  offShapes: FrameShape[];
+  playerAreas: Array<{ playerId: number; box: FocusBox }>;
 };
 
 export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Promise<PhotoDto[]> {
@@ -82,6 +90,11 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     : [];
   const byPhoto = new Map<number, number[]>();
   for (const t of tags) byPhoto.set(t.photoId, [...(byPhoto.get(t.photoId) ?? []), t.playerId]);
+  const areas = new Map<number, Array<{ playerId: number; box: FocusBox }>>();
+  for (const t of tags) {
+    const box = normaliseFocusBox(t.area);
+    if (box) areas.set(t.photoId, [...(areas.get(t.photoId) ?? []), { playerId: t.playerId, box }]);
+  }
   return rows.map((r) => ({
     id: r.id,
     url: objectUrl(r.objectPath),
@@ -98,6 +111,9 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     matchFormat: isMatchFormat(r.matchFormat) ? r.matchFormat : null,
     sourcePhotoId: r.sourcePhotoId ?? null,
     juniorStock: r.juniorStock,
+    focusBox: normaliseFocusBox(r.focusBox),
+    offShapes: FRAME_SHAPES.filter((shape) => r.offShapes.includes(shape)),
+    playerAreas: (areas.get(r.id) ?? []).sort((a, b) => a.playerId - b.playerId),
   }));
 }
 
