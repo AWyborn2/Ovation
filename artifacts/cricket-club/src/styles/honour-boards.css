@@ -1555,14 +1555,31 @@
   background: var(--hb-board-bg);
 }
 
-/* Kiosk premiership layout tweak (clubroom TV): stack each premiership squad
-   as a single column (one player per line) instead of wrapping into two. The
-   number of plaques across is the board's columns-per-screen setting. */
+/* Premiership plaques on the clubroom TV: the squad runs down two columns, so
+   a full XI (plus 12th man) fits a 1080p screen at five plaques across. The
+   number of plaques across is the board's columns-per-screen setting; plaques
+   in a row share the row's height. A name too long for its column wraps
+   rather than being cut off. */
 .hb-kiosk .hb-squad {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 4px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--hb-squad-rows, 6), auto);
+  gap: 0.25cqw 0.6cqw;
+  align-items: start;
+  align-content: start;
+}
+.hb-kiosk .hb-squad-name {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+/* The engraved names are sized for one column; in two they are set a touch
+   smaller and tighter so a long surname still sits on one line at five
+   plaques across. */
+.hb-kiosk .skin-p12 .hb-squad-name,
+.hb-kiosk.skin-p12 .hb-squad-name {
+  font-size: 0.88cqw;
+  letter-spacing: 0.02em;
 }
 
 .hb-kexit {

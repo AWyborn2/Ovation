@@ -84,7 +84,8 @@ const premierships: DisplayBoard = {
         captain: name(i * 11 + captain),
         grade: ["A Grade", "B Grade", "C Grade", "Colts"][i % 4],
       },
-      squad: Array.from({ length: 11 }, (_, k) => ({
+      // A full XI plus 12th man: the plaque must show every name at five across.
+      squad: Array.from({ length: 12 }, (_, k) => ({
         name: name(i * 11 + k),
         isCaptain: k === captain,
       })),
@@ -356,7 +357,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
     // One board per movement, with a spread of transitions.
     boardConfigs: {
-      premierships: { move: "pages", trans: "flip" },
+      premierships: { move: "pages", trans: "flip", columnsPerScreen: 5 },
       "club-champions": { move: "credits", trans: "wipe", speed: 120 },
       captains: { move: "pages", trans: "up" },
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
