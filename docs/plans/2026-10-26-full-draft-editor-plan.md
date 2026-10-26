@@ -43,25 +43,29 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
 | **3. Every live field**  | The Fields and Live stats panels list `pageTokens` for the card's kind and page: both teams' names, crests, scores, overs, result, margin, venue, competition, round and date. `planTemplateSlides` plans from the document's page, so v2 lists split                                                                                                                                                                                             | Any field the card's data has can be added as a live text box                                                                                                                            |
 | **4. Performance lists** | A list layer with settings: whose (club, opposition, both), what (batting, bowling, both), how many (all, top N, best), sort (runs, wickets, figures). One row design repeats                                                                                                                                                                                                                                                                     | "Best Halls Head performances only" is one setting on a result card                                                                                                                      |
 
-## Decisions (to confirm with Ash)
+## Decisions (gone through with Ash, 26 Oct 2026)
 
-- **D1:** Editing a draft never changes the library template or the club's copy (ADR-002's copy
-  rule). "Save as my template" can come later.
-- **D2:** Pack-based drafts from before the template library keep the old editor until they're gone
-  from the queue.
-- **D3:** A draft's Content panel (field overrides) isn't carried over. In the full editor, text
-  is edited on the layer itself.
-- **D4:** Performance lists default to Halls Head only, top 3. The opposition's players show only
-  when a list is set to show them. Junior cards keep their privacy rules.
-- **D5:** Applying a changed template to waiting drafts (ADR-002) skips drafts whose design was
-  edited by hand. To come with stage 2.
-- **D6 (stage 4):** Performances come as two lists, batting and bowling, not one "both" list:
-  one row design can't show runs and figures in the same cells.
-- **D7 (stage 4):** A list's "whose" setting applies to performance lists only. Single-innings
-  lists are one side's already, so only "how many" and "sort" apply to them.
-- **D8 (stage 4):** Performance lists don't spill onto extra slides, because they aren't in the
-  card's data. The list's box and its "how many" setting limit the rows, so an "All" list longer
-  than its box is cut off.
-- **D9 (stage 2):** "Make a carousel set" makes a free set from the design: the design as page 1
-  and a copy as page 2. Every page draws the card's own data, and the draft posts one slide per
-  page.
+- **D1, agreed:** Editing a draft never changes the library template or the club's copy (ADR-002's
+  copy rule). "Save as my template" can come later.
+- **D2, agreed:** Pack-based drafts from before the template library keep the old editor until
+  they're gone from the queue.
+- **D3, agreed:** The old Content panel (field overrides) isn't carried over. In the full editor,
+  text is edited on the layer itself.
+- **D4, changed:** Lists give clubs maximum flexibility, not a default.
+  - A new performance list starts unfiltered: both teams, every performance, in scorecard order.
+  - Adding one asks straight away for whose, how many and sort.
+  - There are more ways to sort (runs, balls, strike rate, wickets, economy, figures) and to filter
+    (a minimum of runs or wickets).
+  - Junior cards keep their privacy rules.
+  - **To build (stage 5).**
+- **D5, agreed and to build (stage 5):** Applying a changed template to waiting drafts skips
+  drafts whose design was edited by hand, and says how many it skipped.
+- **D6, agreed:** Performances come as two lists, batting and bowling, not one "both" list: one row
+  design can't show runs and figures in the same cells.
+- **D7, agreed:** A list's "whose" setting appears on performance lists only. Single-innings lists
+  are one side's already, so only "how many" and "sort" apply to them.
+- **D8, changed:** A performance list's rows that don't fit its box continue on extra slides with
+  the same design, as the older lists do. **To build (stage 5).**
+- **D9, changed:** "Make a carousel set" offers the look's matching pages to start the set from
+  (cover, per-team, sponsors), as the template library's "Make a carousel set" does, instead of
+  only the design and a copy. **To build (stage 5).**
