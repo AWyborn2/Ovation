@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useApplyKindTemplate, type ApplyKindTemplateResult } from "@workspace/api-client-react";
+import { useApplyClubTemplate, type ApplyKindTemplateResult } from "@workspace/api-client-react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  * changed and what was skipped (posted in the meantime).
  */
 export function ApplyTemplateDialog({
-  kind,
+  copyId,
   label,
   version,
   waiting,
@@ -29,7 +29,8 @@ export function ApplyTemplateDialog({
   onClose,
   onApplied,
 }: {
-  kind: string;
+  /** The club template to apply (editor v2). */
+  copyId: number;
   /** The card kind's display name. */
   label: string;
   /** The saved version to apply. */
@@ -40,20 +41,17 @@ export function ApplyTemplateDialog({
   onClose: () => void;
   onApplied?: (result: ApplyKindTemplateResult) => void;
 }) {
-  const apply = useApplyKindTemplate();
+  const apply = useApplyClubTemplate();
   const [result, setResult] = useState<ApplyKindTemplateResult | null>(null);
   const dontApplyRef = useRef<HTMLButtonElement>(null);
 
-  const run = () =>
-    apply.mutate(
-      { kind, data: { version, expectedDrafts: waiting } },
-      {
-        onSuccess: (r) => {
-          setResult(r);
-          onApplied?.(r);
-        },
-      },
-    );
+  const onSuccess = (r: ApplyKindTemplateResult) => {
+    setResult(r);
+    onApplied?.(r);
+  };
+  const run = () => {
+    apply.mutate({ id: copyId, data: { version, expectedDrafts: waiting } }, { onSuccess });
+  };
   const close = () => {
     setResult(null);
     apply.reset();

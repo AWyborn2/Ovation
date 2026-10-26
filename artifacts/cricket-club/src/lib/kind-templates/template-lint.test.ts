@@ -13,11 +13,10 @@
 import { describe, expect, it } from "vitest";
 import {
   placeholderDocument,
-  STARTER_IDS,
-  starterDocument,
   TEMPLATE_CARD_KINDS,
   TEMPLATE_SIZE_ORDER,
 } from "@workspace/scorecard/kind-templates";
+import { STARTER_IDS, starterDocument } from "@/test/starter-documents";
 import { buildPackData } from "@/lib/pack-card-data";
 import {
   BLANK_PACK_ID,

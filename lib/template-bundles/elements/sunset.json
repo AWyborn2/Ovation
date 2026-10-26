@@ -1,0 +1,651 @@
+{
+  "look": "sunset",
+  "elements": [
+    {
+      "slug": "sunset/frames/glass-panel",
+      "name": "Glass panel",
+      "category": "frames",
+      "tags": ["sunset", "frames", "glass", "panel", "shape", "rounded", "subtle"],
+      "signature": "d018b03010442f86",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF1F",
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF4D"
+              },
+              "radius": 25.67,
+              "backdropBlur": 18
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6.7,
+                "y": 18.98,
+                "w": 70.76,
+                "h": 66.47
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/frames/glass-panel-2",
+      "name": "Glass panel 2",
+      "category": "frames",
+      "tags": ["sunset", "frames", "glass", "panel", "2", "shape", "rounded", "subtle"],
+      "signature": "66ad817137b6480c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF1F",
+              "radius": 8.16
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 38.44,
+                "y": 44.56,
+                "w": 39.15,
+                "h": 19.03
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/bands/glass-band",
+      "name": "Glass band",
+      "category": "bands",
+      "tags": ["sunset", "bands", "glass", "band", "shape", "rounded", "subtle"],
+      "signature": "650cbad3acba8f9e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF1F",
+              "radius": 14
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 9.49,
+                "y": 61.59,
+                "w": 65.18,
+                "h": 21.07
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/bands/glass-band-2",
+      "name": "Glass band 2",
+      "category": "bands",
+      "tags": ["sunset", "bands", "glass", "band", "2", "shape", "rounded", "subtle"],
+      "signature": "a05dcc05bfad1332",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF1F",
+              "border": {
+                "width": 0.08,
+                "color": "#FFFFFF4D"
+              },
+              "radius": 14.96,
+              "backdropBlur": 18
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.52,
+                "y": 37.83,
+                "w": 76.1,
+                "h": 28.7
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/badges/glass-pill",
+      "name": "Glass pill",
+      "category": "badges",
+      "tags": ["sunset", "badges", "glass", "pill", "shape", "rounded", "subtle"],
+      "signature": "f82a793169a3ff5d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF2E",
+              "border": {
+                "width": 0.08,
+                "color": "#FFFFFF73"
+              },
+              "radius": 623.7
+            },
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 89.32,
+                "y": 8.39,
+                "w": 7.53,
+                "h": 4.72
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/badges/glass-pill-2",
+      "name": "Glass pill 2",
+      "category": "badges",
+      "tags": ["sunset", "badges", "glass", "pill", "2", "shape", "rounded", "subtle"],
+      "signature": "e490868e3a41cbef",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF2E",
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF73"
+              },
+              "radius": 1069.2
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 79.79,
+                "y": 8.46,
+                "w": 14.21,
+                "h": 4.59
+              },
+              "portrait": {
+                "x": 79.79,
+                "y": 6.77,
+                "w": 14.21,
+                "h": 3.67
+              },
+              "story": {
+                "x": 79.79,
+                "y": 4.76,
+                "w": 14.21,
+                "h": 2.58
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/badges/glass-pill-3",
+      "name": "Glass pill 3",
+      "category": "badges",
+      "tags": ["sunset", "badges", "glass", "pill", "3", "shape", "rounded", "subtle"],
+      "signature": "a94a061732e8bc49",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 5.83,
+              "opacity": 0.09
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 9.49,
+                "y": 39.95,
+                "w": 4.32,
+                "h": 4.32
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/badges/hairline-pill",
+      "name": "Hairline pill",
+      "category": "badges",
+      "tags": ["sunset", "badges", "hairline", "pill", "shape", "outline", "rounded", "subtle"],
+      "signature": "eef8b95067935a28",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF47"
+              },
+              "radius": 577.5,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 69.91,
+                "y": 62.68,
+                "w": 4.76,
+                "h": 2.78
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/white-rule",
+      "name": "White rule",
+      "category": "rules",
+      "tags": ["sunset", "rules", "white", "rule", "shape"],
+      "signature": "4528ad44661bf6f3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF38"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 9.49,
+                "y": 61.59,
+                "w": 65.18,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 9.49,
+                "y": 60.55,
+                "w": 65.18,
+                "h": 0.07
+              },
+              "story": {
+                "x": 9.49,
+                "y": 57.42,
+                "w": 65.18,
+                "h": 0.05
+              },
+              "landscape": {
+                "x": 38.44,
+                "y": 44.56,
+                "w": 39.15,
+                "h": 0.16
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/accent-rule",
+      "name": "Accent rule",
+      "category": "rules",
+      "tags": ["sunset", "rules", "accent", "rule", "shape"],
+      "signature": "0a4a2c1c9b9fd55b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "opacity": 0.28
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 21.29,
+                "y": 51.15,
+                "w": 53.38,
+                "h": 0.11
+              },
+              "portrait": {
+                "x": 23.76,
+                "y": 58.45,
+                "w": 50.9,
+                "h": 0.1
+              },
+              "story": {
+                "x": 23.76,
+                "y": 70.79,
+                "w": 50.9,
+                "h": 0.07
+              },
+              "landscape": {
+                "x": 7.12,
+                "y": 51.11,
+                "w": 33.02,
+                "h": 0.11
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/white-divider",
+      "name": "White divider",
+      "category": "rules",
+      "tags": ["sunset", "rules", "white", "divider", "shape"],
+      "signature": "89af6fe3a2067bc0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF38"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 74.58,
+                "y": 61.59,
+                "w": 0.09,
+                "h": 21.07
+              },
+              "portrait": {
+                "x": 74.58,
+                "y": 60.55,
+                "w": 0.09,
+                "h": 20.37
+              },
+              "story": {
+                "x": 74.58,
+                "y": 57.42,
+                "w": 0.09,
+                "h": 14.32
+              },
+              "landscape": {
+                "x": 77.51,
+                "y": 44.56,
+                "w": 0.08,
+                "h": 19.03
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/hairline-rule",
+      "name": "Hairline rule",
+      "category": "rules",
+      "tags": ["sunset", "rules", "hairline", "rule", "shape", "outline", "subtle"],
+      "signature": "411a455d1c3d5609",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF47",
+                "sides": ["top"]
+              },
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 6.49
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 5.19
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 3.65
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/hairline-rule-2",
+      "name": "Hairline rule 2",
+      "category": "rules",
+      "tags": ["sunset", "rules", "hairline", "rule", "2", "shape", "outline", "subtle"],
+      "signature": "62e95f5154efe37a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "var(--accent-ink)",
+                "sides": ["top"]
+              },
+              "opacity": 0.28,
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.51,
+                "w": 88,
+                "h": 6.49
+              },
+              "portrait": {
+                "x": 6,
+                "y": 90.01,
+                "w": 88,
+                "h": 5.19
+              },
+              "story": {
+                "x": 6,
+                "y": 92.97,
+                "w": 88,
+                "h": 3.65
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/rules/hairline-rule-3",
+      "name": "Hairline rule 3",
+      "category": "rules",
+      "tags": ["sunset", "rules", "hairline", "rule", "3", "shape", "outline", "subtle"],
+      "signature": "6afa4b25e78d6864",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "border": {
+                "width": 0.09,
+                "color": "#FFFFFF47",
+                "sides": ["bottom"]
+              },
+              "fill": "#00000000"
+            },
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 9.49,
+                "y": 48.32,
+                "w": 65.18,
+                "h": 1.95
+              },
+              "portrait": {
+                "x": 9.49,
+                "y": 48.68,
+                "w": 65.18,
+                "h": 1.88
+              },
+              "story": {
+                "x": 9.49,
+                "y": 49.07,
+                "w": 65.18,
+                "h": 1.32
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/glows/tinted-glow",
+      "name": "Tinted glow",
+      "category": "glows",
+      "tags": ["sunset", "glows", "tinted", "glow", "shape", "gradient"],
+      "signature": "e6c835d4a32883d4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "#E77FA4D9",
+                    "at": 0
+                  },
+                  {
+                    "color": "#D3175A40",
+                    "at": 45
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 66,
+                "y": -12,
+                "w": 46,
+                "h": 46
+              },
+              "portrait": {
+                "x": 66,
+                "y": -9.6,
+                "w": 46,
+                "h": 36.8
+              },
+              "story": {
+                "x": 66,
+                "y": -6.75,
+                "w": 46,
+                "h": 25.87
+              },
+              "landscape": {
+                "x": 82.15,
+                "y": -12,
+                "w": 24.15,
+                "h": 46
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "sunset/crest-frames/glass-crest-plate",
+      "name": "Glass crest plate",
+      "category": "crest-frames",
+      "tags": ["sunset", "crest-frames", "glass", "crest", "plate", "shape", "subtle"],
+      "signature": "f3e2d28404b0f5f7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF1F"
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 9.49,
+                "y": 55.98,
+                "w": 4.32,
+                "h": 4.32
+              },
+              "portrait": {
+                "x": 9.49,
+                "y": 54.1,
+                "w": 5.23,
+                "h": 4.18
+              },
+              "story": {
+                "x": 9.49,
+                "y": 52.88,
+                "w": 5.23,
+                "h": 2.94
+              },
+              "landscape": {
+                "x": 29.38,
+                "y": 46.3,
+                "w": 2.27,
+                "h": 4.32
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

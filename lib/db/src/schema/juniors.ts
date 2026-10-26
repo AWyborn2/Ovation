@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { clubsTable } from "./clubs";
 import { tenantIdColumn } from "./_tenant";
+import { CLUB_PHOTO_MATCH_FORMATS, clubPhotoTypesSqlArray } from "./club_photos";
 import type { TeamListRole } from "./fixtures";
 
 /**
@@ -232,6 +233,10 @@ export const juniorParticipantsTable = pgTable(
 
 export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
 
+const juniorPhotoMatchFormatsSqlArray = sql.raw(
+  `ARRAY[${CLUB_PHOTO_MATCH_FORMATS.map((t) => `'${t}'`).join(", ")}]::text[]`,
+);
+
 /**
  * A junior player's photos, uploaded by a club admin (junior card photos plan, ADR-007).
  * Keyed by PlayHQ participant id like every junior row — deliberately separate from the
@@ -245,21 +250,69 @@ export const juniorPhotosTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    participantId: text("participant_id").notNull(),
+    // LEGACY (migration 0060): the player a per-player upload belongs to. Who a photo shows
+    // is `junior_photo_participants`; this column only keeps `is_default` per player and is
+    // null for library uploads. Dropped in a later migration once nothing reads it.
+    participantId: text("participant_id"),
     objectPath: text("object_path").notNull(),
     thumbPath: text("thumb_path"),
     width: integer("width"),
     height: integer("height"),
     isDefault: boolean("is_default").notNull().default(false),
+    // Library fields, as on the senior `club_photos` (kiosk-photo-rotation A).
+    season: integer("season"),
+    grade: text("grade"),
+    photoTypes: text("photo_types").array().notNull().default([]),
+    matchFormat: text("match_format"),
+    takenAt: timestamp("taken_at", { withTimezone: true }),
     createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxParticipant: index("junior_photos_tenant_participant_idx").on(t.tenantId, t.participantId),
+    idxTenantCreated: index("junior_photos_tenant_created_idx").on(t.tenantId, t.createdAt),
+    chkPhotoTypes: check(
+      "junior_photos_photo_types_check",
+      sql`"photo_types" <@ ${clubPhotoTypesSqlArray}`,
+    ),
+    chkMatchFormat: check(
+      "junior_photos_match_format_check",
+      sql`"match_format" IS NULL OR "match_format" = ANY (${juniorPhotoMatchFormatsSqlArray})`,
+    ),
   }),
 );
 
 export type JuniorPhotoRow = typeof juniorPhotosTable.$inferSelect;
+
+/**
+ * Who a junior photo shows (kiosk-photo-rotation A): one row per tagged child, keyed by
+ * PlayHQ participant id within the tenant. A photo is displayable only when it has at
+ * least one tag and every tagged child is allowed a photo (`juniorLibraryPhotoAllowed`);
+ * an untagged photo never leaves admin.
+ */
+export const juniorPhotoParticipantsTable = pgTable(
+  "junior_photo_participants",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    photoId: integer("photo_id")
+      .notNull()
+      .references(() => juniorPhotosTable.id, { onDelete: "cascade" }),
+    participantId: text("participant_id").notNull(),
+  },
+  (t) => ({
+    uniqPhotoParticipant: uniqueIndex("junior_photo_participants_photo_participant_unique").on(
+      t.photoId,
+      t.participantId,
+    ),
+    idxTenantParticipant: index("junior_photo_participants_tenant_participant_idx").on(
+      t.tenantId,
+      t.participantId,
+    ),
+  }),
+);
+
+export type JuniorPhotoParticipantRow = typeof juniorPhotoParticipantsTable.$inferSelect;
 
 export const juniorPremiershipsTable = pgTable(
   "junior_premierships",

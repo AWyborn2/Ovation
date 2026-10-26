@@ -8,12 +8,14 @@
     "./brand": "./src/brand.ts",
     "./queued-carousel": "./src/queued-carousel.ts",
     "./kind-templates": "./src/kind-templates/index.ts",
+    "./match-palette": "./src/kind-templates/match-palette.ts",
     "./posting-plan": "./src/posting-plan.ts",
     "./club-leaderboard-input": "./src/club-leaderboard-input.ts",
     "./ladder-input": "./src/ladder-input.ts",
     "./selection-shape": "./src/selection-shape.ts",
     "./card-names": "./src/card-names.ts",
     "./card-content": "./src/card-content/index.ts",
+    "./pack-capture": "./src/pack-capture.ts",
     "./kiosk-display": "./src/kiosk-display.ts"
   },
   "dependencies": {

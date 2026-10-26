@@ -8,6 +8,7 @@
  * one commit happened to mint.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type * as KindTemplates from "./kind-templates";
 
 // ---------------------------------------------------------------------------
 // Fake @workspace/db
@@ -102,6 +103,12 @@ vi.mock("@workspace/db", () => ({
 vi.mock("./draft-enrich", () => ({
   enrichDraft: async () => ({ packId: null, caption: "", photoUrl: null, photoSource: null }),
   isAutoPhoto: () => true,
+}));
+// Templated drafts (the club's default template, ADR-011) read tables this
+// suite doesn't model; they have their own coverage in kind-template-drafts.
+vi.mock("./kind-templates", async (importOriginal) => ({
+  ...(await importOriginal<typeof KindTemplates>()),
+  templatedDesignFor: async () => null,
 }));
 vi.mock("./effective-draft-state", () => ({
   autoReadyAtFor: async (_tenantId: number, importedAt: Date) => importedAt,

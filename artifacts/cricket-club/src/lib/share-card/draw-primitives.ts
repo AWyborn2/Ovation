@@ -61,13 +61,35 @@ export const drawImageCoverFocal = (
     sw0 = img.width;
     sh0 = img.width / rr;
   }
-  const z = Math.max(1, zoom);
+  const z = Math.max(0.5, Math.min(3, zoom));
   const sw = sw0 / z;
   const sh = sh0 / z;
-  // Centre the window on the focal point, clamped so it stays inside the image.
-  const sx = Math.max(0, Math.min(img.width - sw, focalX * img.width - sw / 2));
-  const sy = Math.max(0, Math.min(img.height - sh, focalY * img.height - sh / 2));
-  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+  // The focal point is the fraction of the travel, like CSS object-position
+  // (0 = left/top, 0.5 = centred, 1 = right/bottom), so canvas and DOM cards
+  // place a photo alike. Zoomed out (below 1×) the window is bigger than the
+  // photo, so the photo sits inside the box at that fraction.
+  const fx = Math.max(0, Math.min(1, focalX));
+  const fy = Math.max(0, Math.min(1, focalY));
+  const sx = fx * (img.width - sw);
+  const sy = fy * (img.height - sh);
+  // Draw only the part of the window the photo covers.
+  const scale = dw / sw;
+  const x0 = Math.max(0, sx);
+  const y0 = Math.max(0, sy);
+  const x1 = Math.min(img.width, sx + sw);
+  const y1 = Math.min(img.height, sy + sh);
+  if (x1 <= x0 || y1 <= y0) return;
+  ctx.drawImage(
+    img,
+    x0,
+    y0,
+    x1 - x0,
+    y1 - y0,
+    dx + (x0 - sx) * scale,
+    dy + (y0 - sy) * scale,
+    (x1 - x0) * scale,
+    (y1 - y0) * scale,
+  );
 };
 
 // Draw `img` so it covers the rect (object-fit: cover), centred.

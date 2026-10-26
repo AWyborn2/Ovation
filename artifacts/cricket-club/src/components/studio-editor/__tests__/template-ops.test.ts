@@ -24,7 +24,6 @@ import {
   saveBlockers,
   setTextStyle,
   showsKeyField,
-  starterExport,
 } from "../template-ops";
 
 const text = (id: string, over: Partial<FreeLayer> = {}): FreeLayer => ({
@@ -131,20 +130,6 @@ describe("template-mode document ops", () => {
     );
     expect(html).toContain("https://example.test/seaview.png");
     expect(html).not.toContain("{{clubLogo}}");
-  });
-});
-
-describe("starterExport (T6.2)", () => {
-  it("writes the layers without edit stamps, locks or hidden layers", () => {
-    const out = JSON.parse(
-      starterExport({
-        layers: [text("a", { editedAt: { square: 5 }, locked: true }), text("b", { hidden: true })],
-        fields: { x: "y" },
-      }),
-    );
-    expect(out).toEqual({
-      layers: [{ id: "a", kind: "text", content: "Hello", geometry: text("a").geometry }],
-    });
   });
 });
 

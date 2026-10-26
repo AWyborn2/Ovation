@@ -15,10 +15,13 @@ export function SlidePreview({
   slide,
   size,
   packId = WEEKEND_PACK_ID,
+  document,
 }: {
   slide: WeekendSlide;
   size: CardSize;
   packId?: string;
+  /** A templated (version 3) carousel's assembled document, drawn on every slide. */
+  document?: unknown;
 }) {
   return (
     <div className="min-w-0 space-y-2" data-testid={`slide-${slide.id}`}>
@@ -33,7 +36,11 @@ export function SlidePreview({
           junior={slide.junior}
           data={slide.data}
           packId={packId}
-          adjustments={slideAdjustments(slide, size)}
+          adjustments={
+            document !== undefined
+              ? (document as Parameters<typeof PackCard>[0]["adjustments"])
+              : slideAdjustments(slide, size)
+          }
         />
       </div>
       <p className="text-center text-xs text-muted-foreground">{slide.label}</p>
@@ -79,7 +86,7 @@ export function PhotoPlacement({
         [
           ["focalX", "Horizontal", 0, 1, 0.01],
           ["focalY", "Vertical", 0, 1, 0.01],
-          ["zoom", "Zoom", 1, 3, 0.01],
+          ["zoom", "Zoom", 0.5, 3, 0.01],
         ] as const
       ).map(([key, title, min, max, step]) => (
         <label key={key} className="block space-y-1 text-xs">
@@ -102,7 +109,9 @@ export function PhotoPlacement({
         </label>
       ))}
       <p className="text-xs text-muted-foreground">
-        Adjust the photo while watching the slide preview. Zoom in for more room to reposition.
+        Adjust the photo while watching the slide preview. A photo that already fills its box top to
+        bottom (or side to side) has no room to move that way: zoom in for more photo to move
+        through, or zoom out below 1× to move a smaller photo around its box.
       </p>
     </fieldset>
   );

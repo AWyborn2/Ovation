@@ -1,0 +1,10 @@
+<!-- @dsCard group="Clean" height=150 width=320 subtitle="One Clean player line: name, bold figure, small secondary numeral" -->
+<div id="root" style="font-family:var(--font-clean);text-transform:uppercase;color:#fff;background:#1c2026;width:320px;padding:16px 24px;display:flex;flex-direction:column;gap:6px;"></div>
+<script>
+(function () {
+  var DS = window.OvationMatch, h = React.createElement, B = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23d9dbde' stroke='%238b8d90' stroke-width='4' stroke-dasharray='8 6'/%3E%3Ctext x='50' y='57' text-anchor='middle' font-family='Arial' font-weight='700' font-size='20' fill='%236b6e72'%3ELOGO%3C/text%3E%3C/svg%3E", T = {}, M = DS.SAMPLE_MATCH;
+  Object.keys(DS.SAMPLE_TEAMS).forEach(function (k) { T[k] = Object.assign({}, DS.SAMPLE_TEAMS[k], { logo: B, logoOnDark: B }); });
+  var C = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: null }), CL = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: B });
+  ReactDOM.createRoot(document.getElementById('root')).render(M.innings[1].batting.map(function(b,k){return h(DS.CleanPlayerRow,{key:k,player:b})}));
+})();
+</script>

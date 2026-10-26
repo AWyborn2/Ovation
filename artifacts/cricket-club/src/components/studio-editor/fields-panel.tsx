@@ -1,13 +1,29 @@
-import { Image as ImageIcon, List, Plus, Type } from "lucide-react";
-import { kindFields } from "@workspace/scorecard/kind-templates";
+import { useState } from "react";
+import { Image as ImageIcon, List, Plus, Search, Type } from "lucide-react";
+import { kindFields, pageTokens, type PageKey } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
-import { fieldTextLayer, logoLayer, photoLayer, rowsLayer, templateFields } from "./template-ops";
+import {
+  fieldTextLayer,
+  imageTokenLayer,
+  logoLayer,
+  photoLayer,
+  rowsLayer,
+  templateFields,
+} from "./template-ops";
 
 const row =
   "flex w-full items-center justify-between gap-2 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-3 py-2 text-left text-sm hover:border-[var(--ed-accent)]";
 
+/** The images the panel always offers itself (the card photo, the club crest). */
+const OWN_IMAGES = new Set(["photo", "clubLogo"]);
+
 /**
+ * Every live field, image and list a card's page has (full draft editor plan,
+ * stage 3): the page's own catalogue (`pageTokens`: a result's innings
+ * scores, the winner, venue and competition, each team's crest, the batting,
+ * bowling and pairs lists), else the kind's fields.
+ *
  * Live data for a card kind template (R3, R5): every field the kind offers.
  * With a text box selected, a field is inserted into it as a `{{field}}`
  * token; otherwise it is added as a new text box. Also the card photo, the
@@ -15,6 +31,7 @@ const row =
  */
 export function FieldsPanel({
   kind,
+  page,
   size,
   values,
   textSelected,
@@ -22,6 +39,8 @@ export function FieldsPanel({
   onAdd,
 }: {
   kind: string;
+  /** The page on show; its own catalogue when it has one. */
+  page?: PageKey;
   size: CardSize;
   /** Current preview values, shown beside each field. */
   values: Record<string, string>;
@@ -30,8 +49,16 @@ export function FieldsPanel({
   onInsert: (key: string) => void;
   onAdd: (layer: FreeLayer) => void;
 }) {
-  const cat = kindFields(kind);
+  const [query, setQuery] = useState("");
+  const pageCat = page ? pageTokens(kind, page) : null;
+  const cat = pageCat ?? kindFields(kind);
   if (!cat) return <p className="text-sm text-[var(--ed-ink2)]">This card has no live fields.</p>;
+  const fields = pageCat?.fields ?? templateFields(kind);
+  const images = (pageCat?.images ?? []).filter((i) => !OWN_IMAGES.has(i.key));
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? fields.filter((f) => f.label.toLowerCase().includes(q) || f.key.toLowerCase().includes(q))
+    : fields;
   return (
     <div className="flex flex-col gap-5">
       <section>
@@ -43,8 +70,24 @@ export function FieldsPanel({
             ? "Click a field to insert it into the selected text box."
             : "Click a field to add it as a text box, or select a text box first to insert it."}
         </p>
+        {fields.length > 8 && (
+          <label className="mb-2 flex items-center gap-2 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2">
+            <Search className="h-3.5 w-3.5 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
+            <input
+              type="search"
+              aria-label="Search fields"
+              placeholder="Search fields"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
+          </label>
+        )}
         <ul className="flex flex-col gap-1.5">
-          {templateFields(kind).map((f) => (
+          {shown.length === 0 && (
+            <li className="text-xs text-[var(--ed-ink2)]">No field matches “{query}”.</li>
+          )}
+          {shown.map((f) => (
             <li key={f.key}>
               <button
                 type="button"
@@ -83,6 +126,20 @@ export function FieldsPanel({
             </span>
             <Plus className="h-4 w-4" aria-hidden />
           </button>
+          {images.map((i) => (
+            <button
+              key={i.key}
+              type="button"
+              className={row}
+              aria-label={`Add ${i.label}`}
+              onClick={() => onAdd(imageTokenLayer(i.key, i.label, size))}
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <ImageIcon className="h-4 w-4 text-[var(--ed-ink2)]" aria-hidden /> {i.label}
+              </span>
+              <Plus className="h-4 w-4" aria-hidden />
+            </button>
+          ))}
         </div>
         <p className="mt-2 text-xs text-[var(--ed-ink2)]">
           Junior cards never show the photo, whatever the template holds.

@@ -9,6 +9,7 @@ import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
 import type { SocialDraftPlannedBy } from './socialDraftPlannedBy';
 import type { SocialDraftStatus } from './socialDraftStatus';
 import type { SocialPublication } from './socialPublication';
+import type { TemplateRef } from './templateRef';
 
 export interface SocialDraft {
   id: number;
@@ -55,6 +56,8 @@ export interface SocialDraft {
      * @nullable
      */
   templateVersion?: number | null;
+  /** The template this draft's design was copied from; null for a pack draft. */
+  templateRef?: TemplateRef | null;
   /**
      * When an admin last edited this templated draft's design by hand.
      * @nullable

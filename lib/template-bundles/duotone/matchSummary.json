@@ -1,0 +1,3435 @@
+{
+  "name": "Duotone matchSummary",
+  "version": 3,
+  "listed": true,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "result": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "result-l1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1n943401b7btsl"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "result-l2",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1n943401b7btsl"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--dt-p-22)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            },
+            "id": "result-l3",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:06mpf690gl12ko"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 0,
+                  "y": 100
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 72
+                  }
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            },
+            "id": "result-l4",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:11frxh518etagc"
+          },
+          {
+            "kind": "photo",
+            "style": {
+              "filter": [
+                {
+                  "preset": "duotone",
+                  "dark": "var(--dt-ink)",
+                  "light": "var(--dt-p)"
+                }
+              ]
+            },
+            "id": "result-l5",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 60,
+                "h": 100
+              }
+            },
+            "sig": "photo:1mc7jmb0h7xx80"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#00000000",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--ink)",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "id": "result-l6",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 60,
+                "h": 100
+              }
+            },
+            "sig": "shape:05g2y5c01uoihl"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--dt-ink-80)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": true
+            },
+            "id": "result-l7",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 30
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 30
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 26.5
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 35
+              }
+            },
+            "sig": "shape:1pvy7uk0nubdud"
+          },
+          {
+            "kind": "text",
+            "content": "{{resultWord}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.51,
+              "fontWeight": 900,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.12,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.4,
+                  "blur": 2,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l8",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 5,
+                "y": 5.19,
+                "w": 90,
+                "h": 11.94
+              },
+              "portrait": {
+                "x": 5,
+                "y": 4.15,
+                "w": 90,
+                "h": 9.56
+              }
+            },
+            "sig": "text:1rrohyf0rdhnng",
+            "link": "result-l8"
+          },
+          {
+            "kind": "text",
+            "content": "{{resultWord}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.5,
+              "fontWeight": 900,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.12,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.4,
+                  "blur": 2,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l9",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 5,
+                "y": 13.67,
+                "w": 90,
+                "h": 8.59
+              }
+            },
+            "sig": "text:0zq19pm0ys2us7",
+            "link": "result-l8"
+          },
+          {
+            "kind": "text",
+            "content": "{{resultWord}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.03,
+              "fontWeight": 900,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.12,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.21,
+                  "blur": 1.05,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l10",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 2.63,
+                "y": 5.16,
+                "w": 42.86,
+                "h": 15.24
+              }
+            },
+            "sig": "text:00f8qeq1rhyjk1",
+            "link": "result-l8"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 59.4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "result-l11",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 32.81,
+                "w": 92,
+                "h": 63.19
+              },
+              "portrait": {
+                "x": 4,
+                "y": 41.76,
+                "w": 92,
+                "h": 55.05
+              },
+              "story": {
+                "x": 4,
+                "y": 36.39,
+                "w": 92,
+                "h": 45.34
+              }
+            },
+            "sig": "shape:0opoupm06a0pzr",
+            "link": "result-l11"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 31.5,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0.63,
+                  "blur": 2.1,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "result-l12",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 48.11,
+                "y": 5,
+                "w": 49.27,
+                "h": 90
+              }
+            },
+            "sig": "shape:0pa4uz806z62fb",
+            "link": "result-l11"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "border": {
+                "width": 0.19,
+                "color": "var(--panel)"
+              },
+              "radius": 1069.2
+            },
+            "id": "result-l13",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 36.41,
+                "w": 79,
+                "h": 4.11
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 44.81,
+                "w": 83.1,
+                "h": 5.71
+              }
+            },
+            "sig": "shape:1n7trkd1gc8jfq",
+            "link": "result-l13"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "border": {
+                "width": 0.28,
+                "color": "var(--panel)"
+              },
+              "radius": 1069.2
+            },
+            "id": "result-l14",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 38.7,
+                "w": 82.43,
+                "h": 4.41
+              }
+            },
+            "sig": "shape:0luf33d1akbwum",
+            "link": "result-l13"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--panel)",
+              "border": {
+                "width": 0.17,
+                "color": "var(--panel)"
+              },
+              "radius": 623.7
+            },
+            "id": "result-l15",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 50.97,
+                "y": 9.68,
+                "w": 43.54,
+                "h": 8.95
+              }
+            },
+            "sig": "shape:1qv1ayn16hk85a",
+            "link": "result-l13"
+          },
+          {
+            "kind": "text",
+            "content": "{{matchTitle}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.3,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.15
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l16",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 10.18,
+                "y": 37.14,
+                "w": 77.29,
+                "h": 2.5
+              }
+            },
+            "sig": "text:0gkfjch0pgmhzq",
+            "link": "result-l16"
+          },
+          {
+            "kind": "text",
+            "content": "{{matchTitle}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.44,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.15
+            },
+            "id": "result-l17",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 10.54,
+                "y": 45.42,
+                "w": 79.01,
+                "h": 4.39
+              }
+            },
+            "sig": "text:15xtxvg1tixdrp",
+            "link": "result-l16"
+          },
+          {
+            "kind": "text",
+            "content": "{{matchTitle}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.62,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.15
+            },
+            "id": "result-l18",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 11.11,
+                "y": 39.21,
+                "w": 77.86,
+                "h": 3.31
+              }
+            },
+            "sig": "text:1851nhk0b3x8fx",
+            "link": "result-l16"
+          },
+          {
+            "kind": "text",
+            "content": "{{matchTitle}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.57,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.15
+            },
+            "id": "result-l19",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 52.37,
+                "y": 10.71,
+                "w": 40.83,
+                "h": 6.77
+              }
+            },
+            "sig": "text:1k9jsox0w9jl38",
+            "link": "result-l16"
+          },
+          {
+            "kind": "image",
+            "content": "{{club.logo}}",
+            "id": "result-l20",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 44.75,
+                "w": 5.25,
+                "h": 5.25
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 53.81,
+                "w": 5.83,
+                "h": 4.66
+              },
+              "story": {
+                "x": 8.79,
+                "y": 45.53,
+                "w": 6.55,
+                "h": 3.68
+              },
+              "landscape": {
+                "x": 50.97,
+                "y": 23.53,
+                "w": 3.33,
+                "h": 6.34
+              }
+            },
+            "sig": "image:12yan4u14tdutj"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.76,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l21",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 15.25,
+                "y": 42.54,
+                "w": 52.91,
+                "h": 6.27
+              }
+            },
+            "sig": "text:0tr55yq05clb9j",
+            "link": "result-l21"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.68,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l22",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.19,
+                "y": 52.24,
+                "w": 50.3,
+                "h": 4.97
+              }
+            },
+            "sig": "text:0f7hepj0ibowpq",
+            "link": "result-l21"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.58,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l23",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.39,
+                "y": 44.42,
+                "w": 46.87,
+                "h": 3.73
+              }
+            },
+            "sig": "text:0p9e02a13j44xv",
+            "link": "result-l21"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.68,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l24",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 55.53,
+                "y": 21.33,
+                "w": 24.83,
+                "h": 6.44
+              }
+            },
+            "sig": "text:11qbu2s1heu6fp",
+            "link": "result-l21"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.9,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l25",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 15.25,
+                "y": 49.56,
+                "w": 54.5,
+                "h": 2.04
+              }
+            },
+            "sig": "text:0y0p7jm1pebsdz",
+            "link": "result-l25"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.01,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l26",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.19,
+                "y": 57.77,
+                "w": 51.81,
+                "h": 1.78
+              }
+            },
+            "sig": "text:14736jd1ay7rne",
+            "link": "result-l25"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.17,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l27",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.39,
+                "y": 48.59,
+                "w": 48.28,
+                "h": 1.35
+              }
+            },
+            "sig": "text:0yc9muc0pt3pjz",
+            "link": "result-l25"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.3,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l28",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 55.53,
+                "y": 28.69,
+                "w": 25.83,
+                "h": 2.7
+              }
+            },
+            "sig": "text:1b77wyk0gx33ip",
+            "link": "result-l25"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.score}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l29",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 69.96,
+                "y": 44.07,
+                "w": 22.85,
+                "h": 6.57
+              }
+            },
+            "sig": "text:01aa7fe0f5g0fz",
+            "link": "result-l29"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.score}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.36,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l30",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 68.4,
+                "y": 53.35,
+                "w": 24.16,
+                "h": 5.48
+              }
+            },
+            "sig": "text:18066nt0yzscyu",
+            "link": "result-l29"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.score}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.84,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l31",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 66.31,
+                "y": 45.23,
+                "w": 25.9,
+                "h": 4.22
+              }
+            },
+            "sig": "text:0dlsl2q0leulnl",
+            "link": "result-l29"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.score}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.55,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l32",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 81.59,
+                "y": 23.01,
+                "w": 13.92,
+                "h": 7.3
+              }
+            },
+            "sig": "text:09r7tkb1wqz3tk",
+            "link": "result-l29"
+          },
+          {
+            "kind": "image",
+            "content": "{{opposition.logo}}",
+            "id": "result-l33",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 55.66,
+                "w": 5.25,
+                "h": 5.25
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 62.66,
+                "w": 5.83,
+                "h": 4.66
+              },
+              "story": {
+                "x": 8.79,
+                "y": 52.24,
+                "w": 6.55,
+                "h": 3.68
+              },
+              "landscape": {
+                "x": 50.97,
+                "y": 36.04,
+                "w": 3.33,
+                "h": 6.34
+              }
+            },
+            "sig": "image:1ta06dm16xx7qr"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.76,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l34",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 15.25,
+                "y": 53.45,
+                "w": 52.91,
+                "h": 6.27
+              }
+            },
+            "sig": "text:1fg9pq71wjfwna",
+            "link": "result-l34"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.68,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l35",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.19,
+                "y": 61.1,
+                "w": 50.3,
+                "h": 4.97
+              }
+            },
+            "sig": "text:1qwhm7a1b8s7sj",
+            "link": "result-l34"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.68,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.06
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l36",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 55.53,
+                "y": 33.83,
+                "w": 24.83,
+                "h": 9.54
+              }
+            },
+            "sig": "text:0r6x05c02knk29",
+            "link": "result-l34"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.9,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l37",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 15.25,
+                "y": 60.47,
+                "w": 54.5,
+                "h": 2.04
+              }
+            },
+            "sig": "text:0s51hi61g07k7n",
+            "link": "result-l37"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.01,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l38",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.19,
+                "y": 66.63,
+                "w": 51.81,
+                "h": 1.78
+              }
+            },
+            "sig": "text:0lt7hwt1kphyvi",
+            "link": "result-l37"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.oversLabel}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.3,
+              "fontWeight": 500,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l39",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 55.53,
+                "y": 41.19,
+                "w": 25.83,
+                "h": 2.7
+              }
+            },
+            "sig": "text:12z0yxk1dgkud9",
+            "link": "result-l37"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.score}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l40",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 69.96,
+                "y": 54.98,
+                "w": 22.85,
+                "h": 6.57
+              }
+            },
+            "sig": "text:04hhtv40s4zpkj",
+            "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.score}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.36,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l41",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 68.4,
+                "y": 62.21,
+                "w": 24.16,
+                "h": 5.48
+              }
+            },
+            "sig": "text:16xyg8n1v86382",
+            "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.score}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.84,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l42",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 66.31,
+                "y": 51.95,
+                "w": 25.9,
+                "h": 4.22
+              }
+            },
+            "sig": "text:16ixwpk0gzbn8d",
+            "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.score}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.55,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 0.95
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l43",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 81.59,
+                "y": 35.52,
+                "w": 13.92,
+                "h": 7.3
+              }
+            },
+            "sig": "text:0z0cym108unk5w",
+            "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "id": "result-l44",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 65.24,
+                "w": 83.7,
+                "h": 6.41
+              }
+            },
+            "sig": "text:1gmf0e90f6h1f6",
+            "link": "result-l44"
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.97,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "id": "result-l45",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 70.68,
+                "w": 83.2,
+                "h": 5.44
+              }
+            },
+            "sig": "text:087zkml1fy7f34",
+            "link": "result-l44"
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.19,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "id": "result-l46",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 58.45,
+                "w": 82.52,
+                "h": 4.08
+              }
+            },
+            "sig": "text:10en80q0dkpggj",
+            "link": "result-l44"
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.91,
+              "fontWeight": 800,
+              "align": "left",
+              "lineHeight": 1.2
+            },
+            "id": "result-l47",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 50.97,
+                "y": 47.68,
+                "w": 43.62,
+                "h": 8.34
+              }
+            },
+            "sig": "text:0xfyx3o1yr64jx",
+            "link": "result-l44"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l48",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 72.85,
+                "w": 83.7,
+                "h": 5.15
+              }
+            },
+            "sig": "text:1ja6a4l1ttcuww",
+            "link": "result-l48"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.23,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l49",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 77.21,
+                "w": 83.2,
+                "h": 4.33
+              }
+            },
+            "sig": "text:148dsux0uxbfae",
+            "link": "result-l48"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.39,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l50",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 63.32,
+                "w": 82.52,
+                "h": 5.09
+              }
+            },
+            "sig": "text:07jzrug1ko6dqf",
+            "link": "result-l48"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.43,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l51",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 50.97,
+                "y": 57.61,
+                "w": 43.62,
+                "h": 10.39
+              }
+            },
+            "sig": "text:0vlwp461supi5d",
+            "link": "result-l48"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.1,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l52",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 79.32,
+                "w": 83.7,
+                "h": 5.15
+              }
+            },
+            "sig": "text:0xero551tltvw4",
+            "link": "result-l52"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.23,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l53",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 82.71,
+                "w": 83.2,
+                "h": 4.33
+              }
+            },
+            "sig": "text:0t3lv6d1dg140i",
+            "link": "result-l52"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.39,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l54",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 69.27,
+                "w": 82.52,
+                "h": 5.09
+              }
+            },
+            "sig": "text:0jig2k41ou4n1f",
+            "link": "result-l52"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.performers}}",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.43,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.35
+            },
+            "id": "result-l55",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 50.97,
+                "y": 69.7,
+                "w": 43.62,
+                "h": 10.39
+              }
+            },
+            "sig": "text:03ckntm1gxar2d",
+            "link": "result-l52"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "showWhen": {
+              "photo": false
+            },
+            "id": "result-l56",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 87.4,
+                "w": 4.4,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 89.51,
+                "w": 4.66,
+                "h": 3.73
+              },
+              "story": {
+                "x": 8.79,
+                "y": 76.23,
+                "w": 5.02,
+                "h": 2.82
+              },
+              "landscape": {
+                "x": 50.97,
+                "y": 83.82,
+                "w": 3,
+                "h": 5.72
+              }
+            },
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "result-l57",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 87.4,
+                "w": 4.4,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 89.51,
+                "w": 4.66,
+                "h": 3.73
+              },
+              "story": {
+                "x": 8.79,
+                "y": 76.23,
+                "w": 5.02,
+                "h": 2.82
+              },
+              "landscape": {
+                "x": 50.97,
+                "y": 83.82,
+                "w": 3,
+                "h": 5.72
+              }
+            },
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "var(--dt-ink-55)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            },
+            "id": "result-l58",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:105lcvu1jv32id"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l59",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 14.6,
+                "y": 88.76,
+                "w": 13.27,
+                "h": 1.57
+              }
+            },
+            "sig": "text:00fuxhn0vhcakw",
+            "link": "result-l59"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.54,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l60",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 15.23,
+                "y": 90.65,
+                "w": 10.41,
+                "h": 1.41
+              }
+            },
+            "sig": "text:1qxv1ma1a3gfvj",
+            "link": "result-l59"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.74,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l61",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 16.09,
+                "y": 77.08,
+                "w": 6.7,
+                "h": 1.04
+              }
+            },
+            "sig": "text:01epmsc1r3y5w1",
+            "link": "result-l59"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.64,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l62",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 55.34,
+                "y": 85.55,
+                "w": 0.17,
+                "h": 2.22
+              }
+            },
+            "sig": "text:128683i0ammwxv",
+            "link": "result-l59"
+          },
+          {
+            "kind": "image",
+            "content": "{{sponsor1}}",
+            "id": "result-l63",
+            "geometry": {
+              "square": {
+                "x": 31.46,
+                "y": 86.8,
+                "w": 13,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 29.45,
+                "y": 88.99,
+                "w": 13.78,
+                "h": 4.75
+              },
+              "story": {
+                "x": 26.88,
+                "y": 75.84,
+                "w": 14.82,
+                "h": 3.59
+              },
+              "landscape": {
+                "x": 57.97,
+                "y": 83.04,
+                "w": 8.87,
+                "h": 7.28
+              }
+            },
+            "sig": "image:16m2gfo0dd71nj"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.3,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l64",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 38.78,
+                "y": 88.34,
+                "w": 54.62,
+                "h": 2.5
+              }
+            },
+            "sig": "text:0lhxbvw0jglet1",
+            "link": "result-l64"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.44,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l65",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 35.3,
+                "y": 90.28,
+                "w": 57.94,
+                "h": 2.15
+              }
+            },
+            "sig": "text:0vr87p51ip1iwq",
+            "link": "result-l64"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.62,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l66",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 30.82,
+                "y": 76.79,
+                "w": 62.2,
+                "h": 1.61
+              }
+            },
+            "sig": "text:0fioj5t07kj5v2",
+            "link": "result-l64"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--gold)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.57,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.5
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l67",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 58.33,
+                "y": 84.92,
+                "w": 37.26,
+                "h": 3.33
+              }
+            },
+            "sig": "text:1s1f0im0tdz5a1",
+            "link": "result-l64"
+          }
+        ]
+      },
+      "day": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "day-l1",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1n943401b7btsl"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--ink)"
+            },
+            "id": "day-l2",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1n943401b7btsl"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--dt-p-22)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 70
+                  }
+                ]
+              }
+            },
+            "id": "day-l3",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:06mpf690gl12ko"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 0,
+                  "y": 100
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 72
+                  }
+                ]
+              }
+            },
+            "id": "day-l4",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:11frxh518etagc"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.13
+            },
+            "id": "day-l5",
+            "geometry": {
+              "square": {
+                "x": 22,
+                "y": -52,
+                "w": 110,
+                "h": 110
+              },
+              "portrait": {
+                "x": 22,
+                "y": -32,
+                "w": 110,
+                "h": 88
+              },
+              "story": {
+                "x": 24,
+                "y": -7.87,
+                "w": 110,
+                "h": 61.88
+              },
+              "landscape": {
+                "x": -13.65,
+                "y": 34,
+                "w": 57.75,
+                "h": 110
+              }
+            },
+            "sig": "image:1ouezsv1sscvsa"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "var(--dt-ink-55)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              }
+            },
+            "id": "day-l6",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:105lcvu1jv32id"
+          },
+          {
+            "kind": "text",
+            "content": "{{dayHeading}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 6.72,
+              "fontWeight": 900,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.12,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.4,
+                  "blur": 2,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l7",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5,
+                "y": 5.19,
+                "w": 90,
+                "h": 11.94
+              },
+              "portrait": {
+                "x": 5,
+                "y": 4.15,
+                "w": 90,
+                "h": 9.56
+              },
+              "story": {
+                "x": 5,
+                "y": 13.61,
+                "w": 90,
+                "h": 7.03
+              }
+            },
+            "sig": "text:1ov75uf171silg",
+            "link": "day-l7"
+          },
+          {
+            "kind": "text",
+            "content": "{{dayHeading}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.45,
+              "fontWeight": 900,
+              "letterSpacing": -0.01,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.12,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.21,
+                  "blur": 1.05,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "fit": {
+              "minScale": 1,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l8",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 2.63,
+                "y": 5,
+                "w": 33.38,
+                "h": 8.73
+              }
+            },
+            "sig": "text:1wamxpm0qnj73d",
+            "link": "day-l7"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 59.4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "day-l9",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 41.92,
+                "w": 92,
+                "h": 54.08
+              },
+              "portrait": {
+                "x": 4,
+                "y": 39.98,
+                "w": 92,
+                "h": 56.82
+              },
+              "story": {
+                "x": 4,
+                "y": 27.74,
+                "w": 92,
+                "h": 54
+              }
+            },
+            "sig": "shape:0opoupm06a0pzr",
+            "link": "day-l9"
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--accent-ink)",
+              "radius": 31.5,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0.63,
+                  "blur": 2.1,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "day-l10",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 38.63,
+                "y": 5,
+                "w": 58.75,
+                "h": 90
+              }
+            },
+            "sig": "shape:0pa4uz806z62fb",
+            "link": "day-l9"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "day-l11",
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 45.52,
+                "w": 6,
+                "h": 6
+              },
+              "portrait": {
+                "x": 8.45,
+                "y": 43.04,
+                "w": 6.36,
+                "h": 5.09
+              },
+              "story": {
+                "x": 8.79,
+                "y": 30.05,
+                "w": 6.84,
+                "h": 3.85
+              },
+              "landscape": {
+                "x": 41.5,
+                "y": 9.68,
+                "w": 4.09,
+                "h": 7.8
+              }
+            },
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l12",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 46.06,
+                "w": 39.97,
+                "h": 2.31
+              }
+            },
+            "sig": "text:0jmtuij0becg54",
+            "link": "day-l12"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.97,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l13",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 43.49,
+                "w": 42.39,
+                "h": 1.93
+              }
+            },
+            "sig": "text:18ezihr14evgsi",
+            "link": "day-l12"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 3.19,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l14",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.68,
+                "y": 30.39,
+                "w": 45.52,
+                "h": 1.46
+              }
+            },
+            "sig": "text:0ny471g05yj5wl",
+            "link": "day-l12"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "var(--ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.91,
+              "fontWeight": 900,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "day-l15",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 46.82,
+                "y": 10.37,
+                "w": 27.27,
+                "h": 3.02
+              }
+            },
+            "sig": "text:0hcmtmm0rjj0lz",
+            "link": "day-l12"
+          },
+          {
+            "kind": "text",
+            "content": "Junior results",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l16",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 16,
+                "y": 48.58,
+                "w": 41.17,
+                "h": 2.22
+              }
+            },
+            "sig": "text:0bxm3u31w5ajlu",
+            "link": "day-l16"
+          },
+          {
+            "kind": "text",
+            "content": "Junior results",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.12,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l17",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 16.72,
+                "y": 45.62,
+                "w": 43.66,
+                "h": 1.85
+              }
+            },
+            "sig": "text:1fo1bfi13bxprp",
+            "link": "day-l16"
+          },
+          {
+            "kind": "text",
+            "content": "Junior results",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.28,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l18",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.68,
+                "y": 31.99,
+                "w": 46.89,
+                "h": 1.41
+              }
+            },
+            "sig": "text:1aow68n10j1azs",
+            "link": "day-l16"
+          },
+          {
+            "kind": "text",
+            "content": "Junior results",
+            "style": {
+              "color": "#5B656E",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 1.37,
+              "fontWeight": 500,
+              "align": "left",
+              "lineHeight": 1.3
+            },
+            "id": "day-l19",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 46.82,
+                "y": 13.72,
+                "w": 28.27,
+                "h": 2.7
+              }
+            },
+            "sig": "text:0croxwo1w1fnqz",
+            "link": "day-l16"
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 9.72,
+              "cells": [
+                {
+                  "field": "oppScore",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.95,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 7.82,
+                  "y": 12.26,
+                  "h": 31.27,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 1069.2
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 0,
+                  "w": 0.22,
+                  "y": 12.26,
+                  "h": 31.27,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 7.6,
+                  "w": 0.22,
+                  "y": 12.26,
+                  "h": 31.27,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 7.82,
+                  "y": 12.26,
+                  "h": 1.91,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 0,
+                  "w": 7.82,
+                  "y": 41.62,
+                  "h": 1.91,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 9.26,
+                  "y": 12.26,
+                  "h": 31.27,
+                  "style": {
+                    "fontSize": 1.8,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 9.26,
+                  "w": 46.83,
+                  "y": 15.2,
+                  "h": 25.4,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 56.08,
+                  "y": 43.54,
+                  "h": 19.74,
+                  "style": {
+                    "fontSize": 3,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 56.08,
+                  "y": 63.28,
+                  "h": 25.4,
+                  "style": {
+                    "fontSize": 1.9,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 56.08,
+                  "w": 35.31,
+                  "y": 20.62,
+                  "h": 32.93,
+                  "style": {
+                    "fontSize": 3.2,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "oppScore",
+                  "x": 56.08,
+                  "w": 35.31,
+                  "y": 57.66,
+                  "h": 22.65,
+                  "style": {
+                    "fontSize": 2.2,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 93.3,
+                  "w": 6.7,
+                  "y": 21.66,
+                  "h": 57.62,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l20",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 8.2,
+                "y": 53.12,
+                "w": 83.6,
+                "h": 39.28
+              }
+            },
+            "sig": "rows:0jjhhz20ojf4fr",
+            "link": "day-l20"
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 12.14,
+              "cells": [
+                {
+                  "field": "oppScore",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.76,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 8.31,
+                  "y": 10.4,
+                  "h": 26.41,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 1069.2
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 0,
+                  "w": 0.22,
+                  "y": 10.4,
+                  "h": 26.41,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 8.09,
+                  "w": 0.22,
+                  "y": 10.4,
+                  "h": 26.41,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 8.31,
+                  "y": 10.4,
+                  "h": 1.53,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 0,
+                  "w": 8.31,
+                  "y": 35.28,
+                  "h": 1.53,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 9.84,
+                  "y": 10.4,
+                  "h": 26.41,
+                  "style": {
+                    "fontSize": 1.91,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 9.84,
+                  "w": 43.34,
+                  "y": 12.84,
+                  "h": 21.51,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 53.18,
+                  "y": 36.8,
+                  "h": 32.06,
+                  "style": {
+                    "fontSize": 3.18,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 53.18,
+                  "y": 68.86,
+                  "h": 21.51,
+                  "style": {
+                    "fontSize": 2.01,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 53.18,
+                  "w": 37.64,
+                  "y": 25.1,
+                  "h": 27.92,
+                  "style": {
+                    "fontSize": 3.39,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "oppScore",
+                  "x": 53.18,
+                  "w": 37.64,
+                  "y": 56.48,
+                  "h": 19.19,
+                  "style": {
+                    "fontSize": 2.33,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.85,
+                  "w": 7.15,
+                  "y": 25.92,
+                  "h": 48.92,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l21",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 8.45,
+                "y": 49.49,
+                "w": 83.1,
+                "h": 44.26
+              }
+            },
+            "sig": "rows:0fla4ls1cweea1",
+            "link": "day-l20"
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 13.19,
+              "gap": 0,
+              "cells": [
+                {
+                  "field": "oppScore",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 0.7,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 9.21,
+                  "y": 10.18,
+                  "h": 27.24,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 1069.2
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 0,
+                  "w": 0.34,
+                  "y": 10.18,
+                  "h": 27.24,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 8.87,
+                  "w": 0.34,
+                  "y": 10.18,
+                  "h": 27.24,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 9.21,
+                  "y": 10.18,
+                  "h": 2.11,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 0,
+                  "w": 9.21,
+                  "y": 35.31,
+                  "h": 2.11,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 10.87,
+                  "y": 10.18,
+                  "h": 27.24,
+                  "style": {
+                    "fontSize": 2.05,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 10.87,
+                  "w": 38.35,
+                  "y": 13.1,
+                  "h": 21.39,
+                  "style": {
+                    "fontSize": 2.17,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 49.22,
+                  "y": 37.42,
+                  "h": 31.72,
+                  "style": {
+                    "fontSize": 3.42,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 49.22,
+                  "y": 69.14,
+                  "h": 21.39,
+                  "style": {
+                    "fontSize": 2.17,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 49.22,
+                  "w": 40.84,
+                  "y": 25.27,
+                  "h": 27.67,
+                  "style": {
+                    "fontSize": 3.65,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "oppScore",
+                  "x": 49.22,
+                  "w": 40.85,
+                  "y": 56.41,
+                  "h": 19.03,
+                  "style": {
+                    "fontSize": 2.51,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.26,
+                  "w": 7.74,
+                  "y": 26.17,
+                  "h": 48.36,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l22",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 8.79,
+                "y": 34.92,
+                "w": 82.43,
+                "h": 44.52
+              }
+            },
+            "sig": "rows:05t327y0psnjch",
+            "link": "day-l20"
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "dayRows",
+              "rowHeight": 7.92,
+              "cells": [
+                {
+                  "field": "oppScore",
+                  "x": 0,
+                  "w": 100,
+                  "y": 0,
+                  "h": 1.05,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#DADDE0"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 8.57,
+                  "y": 10.52,
+                  "h": 27.17,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)",
+                    "radius": 623.7
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 0,
+                  "w": 0.31,
+                  "y": 10.52,
+                  "h": 27.17,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 8.26,
+                  "w": 0.31,
+                  "y": 10.52,
+                  "h": 27.17,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 8.57,
+                  "y": 10.52,
+                  "h": 2.1,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 0,
+                  "w": 8.57,
+                  "y": 35.59,
+                  "h": 2.1,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--gold)"
+                  }
+                },
+                {
+                  "field": "word",
+                  "x": 0,
+                  "w": 10.11,
+                  "y": 10.52,
+                  "h": 27.17,
+                  "style": {
+                    "fontSize": 1.23,
+                    "color": "var(--accent-ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "grade",
+                  "x": 10.11,
+                  "w": 42.63,
+                  "y": 13.47,
+                  "h": 21.26,
+                  "style": {
+                    "fontSize": 1.3,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 700,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "opposition",
+                  "x": 0,
+                  "w": 52.74,
+                  "y": 37.69,
+                  "h": 31.58,
+                  "style": {
+                    "fontSize": 2.05,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "result",
+                  "x": 0,
+                  "w": 52.74,
+                  "y": 69.27,
+                  "h": 21.26,
+                  "style": {
+                    "fontSize": 1.3,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 500,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "clubScore",
+                  "x": 52.74,
+                  "w": 38,
+                  "y": 25.54,
+                  "h": 27.55,
+                  "style": {
+                    "fontSize": 2.18,
+                    "color": "var(--ink)",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 900,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "oppScore",
+                  "x": 52.74,
+                  "w": 38,
+                  "y": 56.54,
+                  "h": 18.95,
+                  "style": {
+                    "fontSize": 1.5,
+                    "color": "#5B656E",
+                    "fontFamily": "'Archivo',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "crest",
+                  "x": 92.79,
+                  "w": 7.21,
+                  "y": 26.41,
+                  "h": 48.23,
+                  "show": "image"
+                }
+              ]
+            },
+            "id": "day-l23",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 41.5,
+                "y": 19.55,
+                "w": 53.01,
+                "h": 60.38
+              }
+            },
+            "sig": "rows:15w48go0fhw92h",
+            "link": "day-l20"
+          }
+        ]
+      }
+    },
+    "palettes": ["duotone"]
+  }
+}

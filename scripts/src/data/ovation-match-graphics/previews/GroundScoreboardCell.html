@@ -1,0 +1,10 @@
+<!-- @dsCard group="Ground Scoreboard" height=94 width=820 subtitle="One player cell on a team's dark bar: mixed-case name, figure, secondary" -->
+<div id="root" style="font-family:var(--font-panel);text-transform:uppercase;color:#fff;width:820px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:44px;gap:3px 4px;background:#1d242a;"></div>
+<script>
+(function () {
+  var DS = window.OvationMatch, h = React.createElement, B = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23d9dbde' stroke='%238b8d90' stroke-width='4' stroke-dasharray='8 6'/%3E%3Ctext x='50' y='57' text-anchor='middle' font-family='Arial' font-weight='700' font-size='20' fill='%236b6e72'%3ELOGO%3C/text%3E%3C/svg%3E", T = {}, M = DS.SAMPLE_MATCH;
+  Object.keys(DS.SAMPLE_TEAMS).forEach(function (k) { T[k] = Object.assign({}, DS.SAMPLE_TEAMS[k], { logo: B, logoOnDark: B }); });
+  var C = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: null }), CL = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: B });
+  ReactDOM.createRoot(document.getElementById('root')).render([h(DS.GroundScoreboardCell,{key:1,name:'K Standing',value:'53',sub:121,team:T.WSCC}),h(DS.GroundScoreboardCell,{key:2,name:'T Miles',value:'3-18',sub:'7.4',team:T.HHCC}),h(DS.GroundScoreboardCell,{key:3,name:'R Smart',value:'50',sub:72,team:T.WSCC}),h(DS.GroundScoreboardCell,{key:4,name:'M Caine',value:'2-17',sub:'5',team:T.HHCC})]);
+})();
+</script>

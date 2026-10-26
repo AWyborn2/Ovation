@@ -1,0 +1,1019 @@
+{
+  "name": "Clubhouse big moment",
+  "version": 2,
+  "listed": true,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "stage",
+            "kind": "shape",
+            "name": "Stage",
+            "style": {
+              "background": "var(--ck-stage,#16206B)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:137i2k01gab99n"
+          },
+          {
+            "id": "ground",
+            "kind": "image",
+            "name": "Ground photo",
+            "content": "{{groundPhoto}}",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 62
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 55
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "image:006fwc60ec7ea3"
+          },
+          {
+            "id": "ground-tint",
+            "kind": "shape",
+            "name": "Ground tint",
+            "style": {
+              "background": "linear-gradient(180deg,var(--ck-stage-55) 0%,var(--ck-stage-55) 45%,var(--ck-stage) 100%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 62
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 55
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:0xqace70b3o6e8"
+          },
+          {
+            "id": "stroke-1",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.85
+            },
+            "geometry": {
+              "square": {
+                "x": -8,
+                "y": 90,
+                "w": 30,
+                "h": 2.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -8,
+                "y": 92,
+                "w": 30,
+                "h": 1.76,
+                "rotate": -38
+              },
+              "story": {
+                "x": -8,
+                "y": 94.38,
+                "w": 30,
+                "h": 1.24,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -4.2,
+                "y": 90,
+                "w": 15.75,
+                "h": 2.2,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:1xhjbx00dhx3pp"
+          },
+          {
+            "id": "stroke-2",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.6
+            },
+            "geometry": {
+              "square": {
+                "x": -4,
+                "y": 94,
+                "w": 22,
+                "h": 1.2,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": -4,
+                "y": 95.2,
+                "w": 22,
+                "h": 0.96,
+                "rotate": -38
+              },
+              "story": {
+                "x": -4,
+                "y": 96.63,
+                "w": 22,
+                "h": 0.67,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": -2.1,
+                "y": 94,
+                "w": 11.55,
+                "h": 1.2,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:15mqt370789n24"
+          },
+          {
+            "id": "stroke-3",
+            "kind": "shape",
+            "name": "Paint stroke",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 80,
+                "y": 4,
+                "w": 26,
+                "h": 1.6,
+                "rotate": -38
+              },
+              "portrait": {
+                "x": 80,
+                "y": 3.2,
+                "w": 26,
+                "h": 1.28,
+                "rotate": -38
+              },
+              "story": {
+                "x": 80,
+                "y": 2.25,
+                "w": 26,
+                "h": 0.9,
+                "rotate": -38
+              },
+              "landscape": {
+                "x": 89.5,
+                "y": 4,
+                "w": 13.65,
+                "h": 1.6,
+                "rotate": -38
+              }
+            },
+            "sig": "shape:0cte51t164rfyw"
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "id": "crest",
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 5,
+                "w": 11,
+                "h": 11
+              },
+              "portrait": {
+                "x": 6,
+                "y": 4,
+                "w": 11,
+                "h": 8.8
+              },
+              "story": {
+                "x": 6,
+                "y": 2.81,
+                "w": 11,
+                "h": 6.19
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 5,
+                "w": 5.77,
+                "h": 11
+              }
+            },
+            "name": "Crest",
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club-name-1",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 4.4,
+              "fontWeight": 700,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 19,
+                "y": 5,
+                "w": 75,
+                "h": 6.4
+              },
+              "portrait": {
+                "x": 19,
+                "y": 4,
+                "w": 75,
+                "h": 5.12
+              },
+              "story": {
+                "x": 19,
+                "y": 2.81,
+                "w": 75,
+                "h": 3.6
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0gs1q3k11re3m7"
+          },
+          {
+            "id": "club-name-2",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.31,
+              "fontWeight": 700,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.97,
+                "y": 5,
+                "w": 86.88,
+                "h": 6.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1ca08be0ehqpxj"
+          },
+          {
+            "id": "club-tagline-1",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 2.6,
+              "fontWeight": 600,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 19,
+                "y": 11.4,
+                "w": 75,
+                "h": 4
+              },
+              "portrait": {
+                "x": 19,
+                "y": 9.12,
+                "w": 75,
+                "h": 3.2
+              },
+              "story": {
+                "x": 19,
+                "y": 6.41,
+                "w": 75,
+                "h": 2.25
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0vls6l211fhjb3"
+          },
+          {
+            "id": "club-tagline-2",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "fontFamily": "'Cinzel',Georgia,serif",
+              "fontSize": 1.36,
+              "fontWeight": 600,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 9.97,
+                "y": 11.4,
+                "w": 86.88,
+                "h": 4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:065ydek1tse72j"
+          },
+          {
+            "id": "sponsor-1",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.4,
+              "fontWeight": 700,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 91.6,
+                "w": 51.04,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 93.28,
+                "w": 51.04,
+                "h": 3.52
+              },
+              "story": {
+                "x": 6,
+                "y": 95.28,
+                "w": 51.04,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0j7fluv0v0kxug"
+          },
+          {
+            "id": "sponsor-2",
+            "kind": "text",
+            "name": "Sponsor",
+            "content": "{{sponsorPresentedBy}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.26,
+              "fontWeight": 700,
+              "letterSpacing": 0.08,
+              "uppercase": true,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 91.6,
+                "w": 54.35,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:18mn36e1fp8w13"
+          },
+          {
+            "id": "hashtag-1",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 3,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "right"
+            },
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 91.6,
+                "w": 40,
+                "h": 4.4
+              },
+              "portrait": {
+                "x": 54,
+                "y": 93.28,
+                "w": 40,
+                "h": 3.52
+              },
+              "story": {
+                "x": 54,
+                "y": 95.28,
+                "w": 40,
+                "h": 2.47
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1qu7hoz08bvf2s"
+          },
+          {
+            "id": "hashtag-2",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.57,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "right"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 75.85,
+                "y": 91.6,
+                "w": 21,
+                "h": 4.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1qrk56b0qe6i0q"
+          },
+          {
+            "id": "eyebrow-1",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{inningsLabel}} · vs {{oppositionName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.8,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 22.66,
+                "w": 88,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 25.59,
+                "w": 88,
+                "h": 2.56
+              },
+              "story": {
+                "x": 6,
+                "y": 32.84,
+                "w": 88,
+                "h": 1.8
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1s6qjok1ccct6l"
+          },
+          {
+            "id": "eyebrow-2",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{inningsLabel}} · vs {{oppositionName}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 0.94,
+              "fontWeight": 600,
+              "letterSpacing": 0.22,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 22.98,
+                "w": 93.7,
+                "h": 3.2
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0favik40dwzm7n"
+          },
+          {
+            "id": "moment-1",
+            "kind": "text",
+            "name": "Moment",
+            "content": "{{momentLabel}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 6.66,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 29.26,
+                "w": 88,
+                "h": 15.72
+              }
+            },
+            "sizes": ["square"],
+            "sig": "text:0dg24j50h2hc3g"
+          },
+          {
+            "id": "moment-2",
+            "kind": "text",
+            "name": "Moment",
+            "content": "{{momentLabel}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 10.36,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "portrait": {
+                "x": 6,
+                "y": 28.95,
+                "w": 88,
+                "h": 19.56
+              },
+              "story": {
+                "x": 6,
+                "y": 35.2,
+                "w": 88,
+                "h": 13.75
+              }
+            },
+            "sizes": ["portrait", "story"],
+            "sig": "text:1k0jdr907plbwe"
+          },
+          {
+            "id": "moment-3",
+            "kind": "text",
+            "name": "Moment",
+            "content": "{{momentLabel}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 3.88,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--ck-pt,var(--gold,#F5B400))",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 27.18,
+                "w": 93.7,
+                "h": 17.46
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0t61sh4178agrd"
+          },
+          {
+            "id": "player-1",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 4.14,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 46.37,
+                "w": 88,
+                "h": 9.77
+              },
+              "portrait": {
+                "x": 6,
+                "y": 49.63,
+                "w": 88,
+                "h": 7.82
+              },
+              "story": {
+                "x": 6,
+                "y": 49.74,
+                "w": 88,
+                "h": 5.5
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0b1bow61teedgb"
+          },
+          {
+            "id": "player-2",
+            "kind": "text",
+            "name": "Player name",
+            "content": "{{playerName}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 2.17,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "#FFFFFF",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 46.05,
+                "w": 93.7,
+                "h": 9.77
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0xua3150kvre6s"
+          },
+          {
+            "id": "innings-1",
+            "kind": "text",
+            "name": "Innings",
+            "content": "{{runs}} ({{balls}}) · {{boundaryDetail}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 500,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 56.74,
+                "w": 88,
+                "h": 6
+              },
+              "portrait": {
+                "x": 6,
+                "y": 57.93,
+                "w": 88,
+                "h": 4.8
+              },
+              "story": {
+                "x": 6,
+                "y": 55.57,
+                "w": 88,
+                "h": 3.37
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1wn7v6u10734sb"
+          },
+          {
+            "id": "innings-2",
+            "kind": "text",
+            "name": "Innings",
+            "content": "{{runs}} ({{balls}}) · {{boundaryDetail}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.15,
+              "fontWeight": 500,
+              "color": "rgba(255,255,255,.74)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 56.42,
+                "w": 93.7,
+                "h": 6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:0lc8m77023e8ew"
+          },
+          {
+            "id": "live-fill",
+            "kind": "shape",
+            "name": "Live score",
+            "style": {
+              "background": "#FFFFFF"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64.74,
+                "w": 88,
+                "h": 13
+              },
+              "portrait": {
+                "x": 6,
+                "y": 64.33,
+                "w": 88,
+                "h": 10.4
+              },
+              "story": {
+                "x": 6,
+                "y": 60.07,
+                "w": 88,
+                "h": 7.31
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 64.42,
+                "w": 93.7,
+                "h": 13
+              }
+            },
+            "sig": "shape:0whjrtm1hoy8ip"
+          },
+          {
+            "id": "live-edge",
+            "kind": "shape",
+            "name": "Live score edge",
+            "style": {
+              "background": "var(--ck-p,var(--gold,#F5B400))"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64.74,
+                "w": 1,
+                "h": 13
+              },
+              "portrait": {
+                "x": 6,
+                "y": 64.33,
+                "w": 1,
+                "h": 10.4
+              },
+              "story": {
+                "x": 6,
+                "y": 60.07,
+                "w": 1,
+                "h": 7.31
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 64.42,
+                "w": 0.52,
+                "h": 13
+              }
+            },
+            "sig": "shape:1oegfiu1dmk8ah"
+          },
+          {
+            "id": "live-score-1",
+            "kind": "text",
+            "name": "Live score",
+            "content": "{{liveScore}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 3.7,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--ck-stage,#16206B)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 8.6,
+                "y": 66.34,
+                "w": 83.8,
+                "h": 5.6
+              },
+              "portrait": {
+                "x": 8.6,
+                "y": 65.61,
+                "w": 83.8,
+                "h": 4.48
+              },
+              "story": {
+                "x": 8.6,
+                "y": 60.97,
+                "w": 83.8,
+                "h": 3.15
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:1w1297h1cbe5vk"
+          },
+          {
+            "id": "live-score-2",
+            "kind": "text",
+            "name": "Live score",
+            "content": "{{liveScore}}",
+            "style": {
+              "fontFamily": "'Alfa Slab One',Georgia,serif",
+              "fontSize": 1.94,
+              "fontWeight": 400,
+              "uppercase": true,
+              "color": "var(--ck-stage,#16206B)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 4.51,
+                "y": 66.02,
+                "w": 91.5,
+                "h": 5.6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1jtni6p19zsf5u"
+          },
+          {
+            "id": "live-chase-1",
+            "kind": "text",
+            "name": "Overs and chase",
+            "content": "{{oversChaseLine}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 2,
+              "fontWeight": 700,
+              "uppercase": false,
+              "color": "rgba(16,21,27,.66)",
+              "align": "left"
+            },
+            "geometry": {
+              "square": {
+                "x": 8.6,
+                "y": 72.54,
+                "w": 83.8,
+                "h": 3.6
+              },
+              "portrait": {
+                "x": 8.6,
+                "y": 70.57,
+                "w": 83.8,
+                "h": 2.88
+              },
+              "story": {
+                "x": 8.6,
+                "y": 64.46,
+                "w": 83.8,
+                "h": 2.02
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:0av7etf1ax42f6"
+          },
+          {
+            "id": "live-chase-2",
+            "kind": "text",
+            "name": "Overs and chase",
+            "content": "{{oversChaseLine}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontSize": 1.05,
+              "fontWeight": 700,
+              "uppercase": false,
+              "color": "rgba(16,21,27,.66)",
+              "align": "left"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 4.51,
+                "y": 72.22,
+                "w": 91.5,
+                "h": 3.6
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1d4i1bt1hxvd2m"
+          },
+          {
+            "id": "equation-1",
+            "kind": "text",
+            "name": "Equation",
+            "content": "{{equation}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-onp,#10151B)",
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "align": "center"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 78.94,
+                "w": 70.4,
+                "h": 5.4
+              },
+              "portrait": {
+                "x": 6,
+                "y": 75.69,
+                "w": 70.4,
+                "h": 4.32
+              },
+              "story": {
+                "x": 6,
+                "y": 68.06,
+                "w": 70.4,
+                "h": 3.04
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "sig": "text:10k1egu1mgfbb1"
+          },
+          {
+            "id": "equation-2",
+            "kind": "text",
+            "name": "Equation",
+            "content": "{{equation}}",
+            "style": {
+              "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-onp,#10151B)",
+              "background": "var(--ck-p,var(--gold,#F5B400))",
+              "align": "center"
+            },
+            "geometry": {
+              "landscape": {
+                "x": 3.15,
+                "y": 78.62,
+                "w": 74.96,
+                "h": 5.4
+              }
+            },
+            "sizes": ["landscape"],
+            "sig": "text:1ih5nki18hbrsv"
+          }
+        ]
+      }
+    },
+    "palettes": ["club-kit"]
+  }
+}

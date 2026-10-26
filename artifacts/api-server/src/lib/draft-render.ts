@@ -7,7 +7,11 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import {
+  expandSetSlides,
+  isSetDocument,
+  mapCarouselSlides,
   planTemplateSlides,
+  setPageRenderDocument,
   type DraftLayoutWarnings,
   type LayerDocument,
   type LayoutWarning,
@@ -24,6 +28,7 @@ import {
   resolveActivePackId,
   queuedSlideAdjustments,
   carouselPackId,
+  carouselSlideData,
 } from "@workspace/scorecard/queued-carousel";
 
 /**
@@ -55,12 +60,46 @@ export function stillRendererOverridden(): boolean {
 }
 
 // Renders share one headless browser; run them one at a time so a post pack
-// can't starve other renders or exhaust its memory.
-let queue: Promise<unknown> = Promise.resolve();
+// can't starve other renders or exhaust its memory. Two lanes: card renders
+// (posts, packs, layout checks) always go before template fit checks (L2-B),
+// so a fit check never delays a post.
+type QueuedJob = { run: () => Promise<unknown>; settle: (p: Promise<unknown>) => void };
+const renderLane: QueuedJob[] = [];
+const fitLane: QueuedJob[] = [];
+let rendering = false;
+
+function pump(): void {
+  if (rendering) return;
+  const job = renderLane.shift() ?? fitLane.shift();
+  if (!job) return;
+  rendering = true;
+  const done = Promise.resolve().then(job.run);
+  job.settle(done);
+  void done
+    .catch(() => undefined)
+    .finally(() => {
+      rendering = false;
+      pump();
+    });
+}
+
+function enqueue<T>(lane: QueuedJob[], job: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    lane.push({ run: job, settle: (p) => (p as Promise<T>).then(resolve, reject) });
+    pump();
+  });
+}
+
 function serialised<T>(job: () => Promise<T>): Promise<T> {
-  const next = queue.then(job, job);
-  queue = next.catch(() => undefined);
-  return next;
+  return enqueue(renderLane, job);
+}
+
+/** A card render on the shared browser, ahead of any waiting fit check (exported for tests). */
+export const serialisedRender = serialised;
+
+/** A template fit check on the shared browser, after every waiting card render (L2-B). */
+export function serialisedFitCheck<T>(job: () => Promise<T>): Promise<T> {
+  return enqueue(fitLane, job);
 }
 
 const sponsorApplies = (cardKinds: string[] | null | undefined, kind: string) =>
@@ -102,6 +141,35 @@ export async function renderDraftSlides(
     throw new Error("Invalid saved carousel; cannot render its slides.");
   if (carousel) {
     const rendered: RenderedSlide[] = [];
+    // Drawn with a set design (carousel set editor plan): each slide by its page.
+    const set =
+      carousel.version === 3 && isSetDocument(draft.adjustments) ? draft.adjustments : null;
+    if (set) {
+      const mapped = mapCarouselSlides(set, carousel.slides);
+      const byId = new Map(carousel.slides.map((s) => [s.id, s]));
+      for (const size of sizes) {
+        for (const [i, slide] of mapped.slides.entries()) {
+          const stored = byId.get(slide.key)!;
+          const { buffer, warnings = [] } = await serialised(() =>
+            renderer(
+              slide.input,
+              {
+                size,
+                packId: carouselPackId(carousel),
+                data: carouselSlideData(carousel, stored),
+                junior: stored.junior,
+                sponsorsOn: stored.sponsorsOn,
+                strictImages: true,
+                adjustments: setPageRenderDocument(set, slide.page),
+              },
+              harnessOrigin,
+            ),
+          );
+          rendered.push({ size, png: buffer, page: i + 1, of: mapped.slides.length, warnings });
+        }
+      }
+      return rendered;
+    }
     for (const size of sizes) {
       for (const [i, slide] of carousel.slides.entries()) {
         const { buffer, warnings = [] } = await serialised(() =>
@@ -114,7 +182,12 @@ export async function renderDraftSlides(
               junior: slide.junior,
               sponsorsOn: slide.sponsorsOn,
               strictImages: true,
-              adjustments: queuedSlideAdjustments(slide, size),
+              // A templated (version 3) set draws every slide from its one
+              // assembled document; each slide picks its page from its input.
+              adjustments:
+                carousel.version === 3
+                  ? (draft.adjustments ?? null)
+                  : queuedSlideAdjustments(slide, size),
             },
             harnessOrigin,
           ),
@@ -201,6 +274,47 @@ export async function renderDraftSlides(
     templated || key === "single" ? rootAdj : (rootAdj?.slides?.[key] ?? null);
 
   const rendered: RenderedSlide[] = [];
+  // A list drawn with a set design (Round Team Lists, carousel set editor plan):
+  // its cover and a slide per team on the set's pages, in the design's order.
+  const set = templated && isSetDocument(draft.adjustments) ? draft.adjustments : null;
+  if (set) {
+    const items = planCardSet(input as SetInput, { ...setOptions, cover: true }).map((s) => ({
+      key: s.key,
+      slot: s.role === "detail" || s.role === "single" ? ("team" as const) : ("cover" as const),
+      input: s.input as Record<string, unknown>,
+    }));
+    const slides = expandSetSlides(set, items, { sponsors: data.sponsors, junior });
+    for (const size of sizes) {
+      for (const [i, slide] of slides.entries()) {
+        const slideJunior = junior || slide.input.junior === true;
+        const slideAllowed = slide.input.juniorPhotoAllowed === true;
+        const slideData = slideJunior && !slideAllowed ? { ...data, photoUrl: null } : data;
+        const { buffer, warnings } = await serialised(() =>
+          renderer(
+            slide.input,
+            {
+              size,
+              sponsorsOn,
+              junior: slideJunior,
+              theme: null,
+              data: slideData,
+              packId,
+              adjustments: setPageRenderDocument(set, slide.page),
+            },
+            harnessOrigin,
+          ),
+        );
+        rendered.push({
+          size,
+          png: buffer,
+          page: i + 1,
+          of: slides.length,
+          warnings: warnings ?? [],
+        });
+      }
+    }
+    return rendered;
+  }
   for (const size of sizes) {
     // A templated list spills by its rows layer's capacity (KTD13).
     const templatePlan = templated

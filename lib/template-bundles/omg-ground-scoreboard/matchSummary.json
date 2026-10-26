@@ -1,0 +1,2395 @@
+{
+  "name": "Ground Scoreboard Match Summary",
+  "version": 1,
+  "listed": true,
+  "document": {
+    "formatVersion": 2,
+    "pages": {
+      "result": {
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#000000"
+            },
+            "id": "result-l1",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#000000"
+            },
+            "id": "result-l2",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "photo",
+            "id": "result-l3",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#1C1E22"
+                  },
+                  {
+                    "color": "#0B0C0E"
+                  }
+                ]
+              },
+              "radius": 4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 2.04,
+                  "blur": 4.63,
+                  "color": "#000000A6"
+                },
+                {
+                  "x": 0,
+                  "y": 0.09,
+                  "blur": 0,
+                  "color": "#FFFFFF1A",
+                  "inset": true
+                }
+              ]
+            },
+            "id": "result-l4",
+            "link": "result-l4",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 4.67,
+                "y": 17.11,
+                "w": 90.67,
+                "h": 65.78
+              },
+              "portrait": {
+                "x": 4.67,
+                "y": 21.2,
+                "w": 90.67,
+                "h": 57.6
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#1C1E22"
+                  },
+                  {
+                    "color": "#0B0C0E"
+                  }
+                ]
+              },
+              "radius": 4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.83,
+                  "blur": 4.17,
+                  "color": "#000000A6"
+                },
+                {
+                  "x": 0,
+                  "y": 0.08,
+                  "blur": 0,
+                  "color": "#FFFFFF1A",
+                  "inset": true
+                }
+              ]
+            },
+            "id": "result-l5",
+            "link": "result-l4",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 13.28,
+                "y": 7.49,
+                "w": 73.44,
+                "h": 85.03
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 40,
+                  "y": 20
+                },
+                "stops": [
+                  {
+                    "color": "#2B353D",
+                    "at": 0
+                  },
+                  {
+                    "color": "#1D242A",
+                    "at": 60
+                  },
+                  {
+                    "color": "#151A1F",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "result-l6",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 18,
+                "w": 71.47,
+                "h": 64
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 21.91,
+                "w": 71.47,
+                "h": 56.18
+              },
+              "landscape": {
+                "x": 14,
+                "y": 8.86,
+                "w": 57.89,
+                "h": 82.29
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Match Summary",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.96,
+              "fontWeight": 700,
+              "letterSpacing": 0.04,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "result-l7",
+            "link": "result-l7",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 19.07,
+                "w": 70.68,
+                "h": 2.31
+              },
+              "portrait": {
+                "x": 6.98,
+                "y": 22.76,
+                "w": 70.68,
+                "h": 1.85
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Match Summary",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.58,
+              "fontWeight": 700,
+              "letterSpacing": 0.04,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "result-l8",
+            "link": "result-l7",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.15,
+                "y": 10.5,
+                "w": 57.25,
+                "h": 3.57
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}} · {{venue}}",
+            "style": {
+              "color": "var(--mt-win-ondark)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.67,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l9",
+            "link": "result-l9",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 21.02,
+                "w": 68.62,
+                "h": 3.2
+              },
+              "portrait": {
+                "x": 6.98,
+                "y": 24.33,
+                "w": 68.62,
+                "h": 2.56
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}} · {{venue}}",
+            "style": {
+              "color": "var(--mt-win-ondark)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.16,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1.1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l10",
+            "link": "result-l9",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.15,
+                "y": 13.52,
+                "w": 55.58,
+                "h": 4.94
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-dark-l12)"
+                  },
+                  {
+                    "color": "var(--mt-i1-dark)",
+                    "at": 60
+                  },
+                  {
+                    "color": "var(--mt-i1-dark-d15)"
+                  }
+                ]
+              }
+            },
+            "id": "result-l11",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 25.02,
+                "w": 34.13,
+                "h": 6.13
+              },
+              "portrait": {
+                "x": 6.98,
+                "y": 27.53,
+                "w": 34.13,
+                "h": 5.53
+              },
+              "landscape": {
+                "x": 15.15,
+                "y": 19.69,
+                "w": 27.65,
+                "h": 7.41
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings1.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.09,
+                  "blur": 0.19,
+                  "color": "#00000080"
+                }
+              ]
+            },
+            "id": "result-l12",
+            "link": "result-l12",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 7.69,
+                "y": 26.13,
+                "w": 3.91,
+                "h": 3.91
+              },
+              "portrait": {
+                "x": 7.69,
+                "y": 28.73,
+                "w": 3.91,
+                "h": 3.13
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings1.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.08,
+                  "blur": 0.17,
+                  "color": "#00000080"
+                }
+              ]
+            },
+            "id": "result-l13",
+            "link": "result-l12",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.73,
+                "y": 20.38,
+                "w": 3.17,
+                "h": 6.03
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.team}}",
+            "style": {
+              "color": "var(--mt-i1-bright)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 3.02,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l14",
+            "link": "result-l14",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 12.67,
+                "y": 26.27,
+                "w": 33.86,
+                "h": 3.64
+              },
+              "portrait": {
+                "x": 12.67,
+                "y": 28.84,
+                "w": 33.86,
+                "h": 2.92
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.team}}",
+            "style": {
+              "color": "var(--mt-i1-bright)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.45,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l15",
+            "link": "result-l14",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 19.76,
+                "y": 20.58,
+                "w": 27.61,
+                "h": 5.62
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#FBF3DC"
+                  },
+                  {
+                    "color": "#EFE2BB"
+                  }
+                ]
+              }
+            },
+            "id": "result-l16",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 41.47,
+                "y": 25.02,
+                "w": 34.13,
+                "h": 6.13
+              },
+              "portrait": {
+                "x": 41.47,
+                "y": 27.53,
+                "w": 34.13,
+                "h": 5.53
+              },
+              "landscape": {
+                "x": 43.09,
+                "y": 19.69,
+                "w": 27.65,
+                "h": 7.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.overs}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.84,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l17",
+            "link": "result-l17",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 42.53,
+                "y": 26.4,
+                "w": 6.33,
+                "h": 3.38
+              },
+              "portrait": {
+                "x": 42.53,
+                "y": 28.94,
+                "w": 6.33,
+                "h": 2.7
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.overs}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.3,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l18",
+            "link": "result-l17",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 43.95,
+                "y": 20.79,
+                "w": 5.32,
+                "h": 5.21
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Overs",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.33,
+              "fontWeight": 700,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "left"
+            },
+            "id": "result-l19",
+            "link": "result-l19",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 48.57,
+                "y": 27.29,
+                "w": 4.96,
+                "h": 1.6
+              },
+              "portrait": {
+                "x": 48.57,
+                "y": 29.65,
+                "w": 4.96,
+                "h": 1.28
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Overs",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.08,
+              "fontWeight": 700,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "left"
+            },
+            "id": "result-l20",
+            "link": "result-l19",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 48.84,
+                "y": 22.16,
+                "w": 4.2,
+                "h": 2.47
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.scoreDash}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l21",
+            "link": "result-l21",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 66.42,
+                "y": 26.18,
+                "w": 9.12,
+                "h": 3.82
+              },
+              "portrait": {
+                "x": 66.42,
+                "y": 28.76,
+                "w": 9.12,
+                "h": 3.06
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.scoreDash}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.59,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l22",
+            "link": "result-l21",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 63.3,
+                "y": 20.45,
+                "w": 7.57,
+                "h": 5.9
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.batting",
+              "rowHeight": 6.13,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 68.05,
+                  "y": 28.99,
+                  "h": 49.28,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 72.22,
+                  "w": 9.55,
+                  "y": 20.29,
+                  "h": 59.42,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 44.93,
+                  "h": 28.99,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l23",
+            "link": "result-l23",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 31.42,
+                "w": 34.13,
+                "h": 18.93
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.batting",
+              "rowHeight": 6.91,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 68.05,
+                  "y": 31.35,
+                  "h": 43.73,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 72.22,
+                  "w": 9.55,
+                  "y": 23.63,
+                  "h": 52.73,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 45.5,
+                  "h": 25.72,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l24",
+            "link": "result-l23",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 6.98,
+                "y": 33.27,
+                "w": 34.13,
+                "h": 17.01
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.batting",
+              "rowHeight": 3.89,
+              "gap": 0.22,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 68.05,
+                  "y": 23.15,
+                  "h": 62.97,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 72.22,
+                  "w": 9.55,
+                  "y": 12.04,
+                  "h": 75.91,
+                  "style": {
+                    "fontSize": 2.45,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 43.53,
+                  "h": 37.03,
+                  "style": {
+                    "fontSize": 1.22,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l25",
+            "link": "result-l23",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.15,
+                "y": 27.51,
+                "w": 27.65,
+                "h": 23.04
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.bowling",
+              "rowHeight": 6.13,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 60.98,
+                  "y": 28.99,
+                  "h": 49.28,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 65.15,
+                  "w": 16.62,
+                  "y": 20.29,
+                  "h": 59.42,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 44.93,
+                  "h": 28.99,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l26",
+            "link": "result-l26",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 41.47,
+                "y": 31.42,
+                "w": 34.13,
+                "h": 18.93
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.bowling",
+              "rowHeight": 6.91,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 60.98,
+                  "y": 31.35,
+                  "h": 43.73,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 65.15,
+                  "w": 16.62,
+                  "y": 23.63,
+                  "h": 52.73,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 45.5,
+                  "h": 25.72,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l27",
+            "link": "result-l26",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 41.47,
+                "y": 33.27,
+                "w": 34.13,
+                "h": 17.01
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.bowling",
+              "rowHeight": 3.89,
+              "gap": 0.22,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 60.98,
+                  "y": 23.15,
+                  "h": 62.97,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 65.15,
+                  "w": 16.62,
+                  "y": 12.04,
+                  "h": 75.91,
+                  "style": {
+                    "fontSize": 2.45,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 43.53,
+                  "h": 37.03,
+                  "style": {
+                    "fontSize": 1.22,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l28",
+            "link": "result-l26",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 43.09,
+                "y": 27.51,
+                "w": 27.65,
+                "h": 23.04
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--mt-i2-dark-l12)"
+                  },
+                  {
+                    "color": "var(--mt-i2-dark)",
+                    "at": 60
+                  },
+                  {
+                    "color": "var(--mt-i2-dark-d15)"
+                  }
+                ]
+              }
+            },
+            "id": "result-l29",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 50.62,
+                "w": 34.13,
+                "h": 6.13
+              },
+              "portrait": {
+                "x": 6.98,
+                "y": 50.5,
+                "w": 34.13,
+                "h": 5.53
+              },
+              "landscape": {
+                "x": 15.15,
+                "y": 50.96,
+                "w": 27.65,
+                "h": 7.41
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings2.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.09,
+                  "blur": 0.19,
+                  "color": "#00000080"
+                }
+              ]
+            },
+            "id": "result-l30",
+            "link": "result-l30",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 7.69,
+                "y": 51.73,
+                "w": 3.91,
+                "h": 3.91
+              },
+              "portrait": {
+                "x": 7.69,
+                "y": 51.7,
+                "w": 3.91,
+                "h": 3.13
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings2.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.08,
+                  "blur": 0.17,
+                  "color": "#00000080"
+                }
+              ]
+            },
+            "id": "result-l31",
+            "link": "result-l30",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.73,
+                "y": 51.65,
+                "w": 3.17,
+                "h": 6.03
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.team}}",
+            "style": {
+              "color": "var(--mt-i2-bright)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 3.02,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l32",
+            "link": "result-l32",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 12.67,
+                "y": 51.87,
+                "w": 36.74,
+                "h": 3.64
+              },
+              "portrait": {
+                "x": 12.67,
+                "y": 51.8,
+                "w": 36.74,
+                "h": 2.92
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.team}}",
+            "style": {
+              "color": "var(--mt-i2-bright)",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.45,
+              "fontWeight": 900,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l33",
+            "link": "result-l32",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 19.76,
+                "y": 51.85,
+                "w": 29.89,
+                "h": 5.62
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#FBF3DC"
+                  },
+                  {
+                    "color": "#EFE2BB"
+                  }
+                ]
+              }
+            },
+            "id": "result-l34",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 41.47,
+                "y": 50.62,
+                "w": 34.13,
+                "h": 6.13
+              },
+              "portrait": {
+                "x": 41.47,
+                "y": 50.5,
+                "w": 34.13,
+                "h": 5.53
+              },
+              "landscape": {
+                "x": 43.09,
+                "y": 50.96,
+                "w": 27.65,
+                "h": 7.41
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.overs}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.84,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l35",
+            "link": "result-l35",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 42.53,
+                "y": 52,
+                "w": 5.68,
+                "h": 3.38
+              },
+              "portrait": {
+                "x": 42.53,
+                "y": 51.91,
+                "w": 5.68,
+                "h": 2.7
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.overs}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.3,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l36",
+            "link": "result-l35",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 43.95,
+                "y": 52.06,
+                "w": 4.79,
+                "h": 5.21
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Overs",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.33,
+              "fontWeight": 700,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "left"
+            },
+            "id": "result-l37",
+            "link": "result-l37",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 47.92,
+                "y": 52.89,
+                "w": 4.96,
+                "h": 1.6
+              },
+              "portrait": {
+                "x": 47.92,
+                "y": 52.62,
+                "w": 4.96,
+                "h": 1.28
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Overs",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.08,
+              "fontWeight": 700,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "left"
+            },
+            "id": "result-l38",
+            "link": "result-l37",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 48.32,
+                "y": 53.43,
+                "w": 4.2,
+                "h": 2.47
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.scoreDash}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l39",
+            "link": "result-l39",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 66.95,
+                "y": 51.78,
+                "w": 8.59,
+                "h": 3.82
+              },
+              "portrait": {
+                "x": 66.95,
+                "y": 51.73,
+                "w": 8.59,
+                "h": 3.06
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings2.scoreDash}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.59,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l40",
+            "link": "result-l39",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 63.73,
+                "y": 51.71,
+                "w": 7.14,
+                "h": 5.9
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.batting",
+              "rowHeight": 6.13,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 64.33,
+                  "y": 28.99,
+                  "h": 49.28,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 68.5,
+                  "w": 13.27,
+                  "y": 20.29,
+                  "h": 59.42,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 44.93,
+                  "h": 28.99,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l41",
+            "link": "result-l41",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 57.02,
+                "w": 34.13,
+                "h": 18.93
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.batting",
+              "rowHeight": 6.91,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 64.33,
+                  "y": 31.35,
+                  "h": 43.73,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 68.5,
+                  "w": 13.27,
+                  "y": 23.63,
+                  "h": 52.73,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 45.5,
+                  "h": 25.72,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l42",
+            "link": "result-l41",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 6.98,
+                "y": 56.24,
+                "w": 34.13,
+                "h": 17.01
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.batting",
+              "rowHeight": 3.89,
+              "gap": 0.21,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i2-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 64.33,
+                  "y": 23.15,
+                  "h": 62.97,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "runs",
+                  "x": 68.5,
+                  "w": 13.27,
+                  "y": 12.02,
+                  "h": 75.91,
+                  "style": {
+                    "fontSize": 2.45,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "balls",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 43.51,
+                  "h": 37.03,
+                  "style": {
+                    "fontSize": 1.22,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l43",
+            "link": "result-l41",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.15,
+                "y": 58.78,
+                "w": 27.65,
+                "h": 23.04
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.bowling",
+              "rowHeight": 6.13,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 59.79,
+                  "y": 28.99,
+                  "h": 49.28,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 63.96,
+                  "w": 17.81,
+                  "y": 20.29,
+                  "h": 59.42,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 44.93,
+                  "h": 28.99,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l44",
+            "link": "result-l44",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 41.47,
+                "y": 57.02,
+                "w": 34.13,
+                "h": 18.93
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.bowling",
+              "rowHeight": 6.91,
+              "gap": 0.27,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 59.79,
+                  "y": 31.35,
+                  "h": 43.73,
+                  "style": {
+                    "fontSize": 2.49,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 63.96,
+                  "w": 17.81,
+                  "y": 23.63,
+                  "h": 52.73,
+                  "style": {
+                    "fontSize": 3.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 45.5,
+                  "h": 25.72,
+                  "style": {
+                    "fontSize": 1.51,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l45",
+            "link": "result-l44",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 41.47,
+                "y": 56.24,
+                "w": 34.13,
+                "h": 17.01
+              }
+            }
+          },
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings2.bowling",
+              "rowHeight": 3.89,
+              "gap": 0.21,
+              "cells": [
+                {
+                  "field": "initialName",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "var(--mt-i1-dark-l12)"
+                  }
+                },
+                {
+                  "field": "initialName",
+                  "x": 4.17,
+                  "w": 59.79,
+                  "y": 23.15,
+                  "h": 62.97,
+                  "style": {
+                    "fontSize": 2.02,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "figuresDash",
+                  "x": 63.96,
+                  "w": 17.81,
+                  "y": 12.02,
+                  "h": 75.91,
+                  "style": {
+                    "fontSize": 2.45,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 800,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "overs",
+                  "x": 83.85,
+                  "w": 16.15,
+                  "y": 43.51,
+                  "h": 37.03,
+                  "style": {
+                    "fontSize": 1.22,
+                    "color": "#FFFFFF",
+                    "fontFamily": "'Barlow Semi Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "result-l46",
+            "link": "result-l44",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 43.09,
+                "y": 58.78,
+                "w": 27.65,
+                "h": 23.04
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#FFFFFF"
+                  },
+                  {
+                    "color": "#E9EAEC"
+                  }
+                ]
+              }
+            },
+            "id": "result-l47",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 6.98,
+                "y": 76.49,
+                "w": 68.62,
+                "h": 4.09
+              },
+              "portrait": {
+                "x": 6.98,
+                "y": 73.68,
+                "w": 68.62,
+                "h": 3.27
+              },
+              "landscape": {
+                "x": 15.15,
+                "y": 82.64,
+                "w": 55.58,
+                "h": 6.31
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.67,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "center"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l48",
+            "link": "result-l48",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 7.28,
+                "y": 76.93,
+                "w": 68.01,
+                "h": 3.2
+              },
+              "portrait": {
+                "x": 7.28,
+                "y": 74.04,
+                "w": 68.01,
+                "h": 2.56
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "#1E1F22",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 2.16,
+              "fontWeight": 800,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "center"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l49",
+            "link": "result-l48",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 15.52,
+                "y": 83.33,
+                "w": 54.85,
+                "h": 4.94
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "#00000000"
+                  },
+                  {
+                    "color": "#00000080"
+                  }
+                ]
+              },
+              "opacity": 0.55
+            },
+            "id": "result-l50",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 18,
+                "w": 71.47,
+                "h": 64
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 21.91,
+                "w": 71.47,
+                "h": 56.18
+              },
+              "landscape": {
+                "x": 14,
+                "y": 8.86,
+                "w": 57.89,
+                "h": 82.29
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 165,
+                "stops": [
+                  {
+                    "color": "#FFFFFF0F",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 40
+                  }
+                ]
+              }
+            },
+            "id": "result-l51",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 18,
+                "w": 71.47,
+                "h": 64
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 21.91,
+                "w": 71.47,
+                "h": 56.18
+              },
+              "landscape": {
+                "x": 14,
+                "y": 8.86,
+                "w": 57.89,
+                "h": 82.29
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--mt-comp-colour-l12)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--mt-comp-colour)",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--mt-comp-colour-d20)",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "result-l52",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 77.56,
+                "y": 18,
+                "w": 16.89,
+                "h": 64
+              },
+              "portrait": {
+                "x": 77.56,
+                "y": 21.91,
+                "w": 16.89,
+                "h": 56.18
+              },
+              "landscape": {
+                "x": 72.32,
+                "y": 8.86,
+                "w": 13.68,
+                "h": 82.29
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.19,
+                  "blur": 0.56,
+                  "color": "#00000066"
+                }
+              ]
+            },
+            "id": "result-l53",
+            "link": "result-l53",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 80.22,
+                "y": 38.98,
+                "w": 11.56,
+                "h": 16.89
+              },
+              "portrait": {
+                "x": 80.22,
+                "y": 41.18,
+                "w": 11.56,
+                "h": 13.51
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{clubLogo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.17,
+                  "blur": 0.5,
+                  "color": "#00000066"
+                }
+              ]
+            },
+            "id": "result-l54",
+            "link": "result-l53",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 74.48,
+                "y": 32.99,
+                "w": 9.36,
+                "h": 26.06
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--mt-comp-accent)"
+            },
+            "id": "result-l55",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 81.11,
+                "y": 58.18,
+                "w": 9.78,
+                "h": 0.18
+              },
+              "portrait": {
+                "x": 81.11,
+                "y": 56.54,
+                "w": 9.78,
+                "h": 0.14
+              },
+              "landscape": {
+                "x": 75.2,
+                "y": 62.62,
+                "w": 7.92,
+                "h": 0.27
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.96,
+              "fontWeight": 600,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l56",
+            "link": "result-l56",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 77.16,
+                "y": 58.89,
+                "w": 17.69,
+                "h": 2.31
+              },
+              "portrait": {
+                "x": 77.16,
+                "y": 57.11,
+                "w": 17.69,
+                "h": 1.85
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{clubName}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Semi Condensed',sans-serif",
+              "fontSize": 1.58,
+              "fontWeight": 600,
+              "letterSpacing": 0.06,
+              "uppercase": true,
+              "align": "center",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-l57",
+            "link": "result-l56",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 71.9,
+                "y": 63.71,
+                "w": 14.52,
+                "h": 3.57
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "radial",
+                "shape": "circle",
+                "stops": [
+                  {
+                    "color": "#00000000"
+                  },
+                  {
+                    "color": "#00000080"
+                  }
+                ]
+              },
+              "opacity": 0.55
+            },
+            "id": "result-l58",
+            "sizes": ["square", "portrait", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 77.56,
+                "y": 18,
+                "w": 16.89,
+                "h": 64
+              },
+              "portrait": {
+                "x": 77.56,
+                "y": 21.91,
+                "w": 16.89,
+                "h": 56.18
+              },
+              "landscape": {
+                "x": 72.32,
+                "y": 8.86,
+                "w": 13.68,
+                "h": 82.29
+              }
+            }
+          }
+        ]
+      }
+    },
+    "palettes": ["match"]
+  }
+}

@@ -25,4 +25,10 @@ Team social slides may display a number using a unique exact full-name match whe
 
 **Why:** The user explicitly approved this exception after team-list-imported register entries acquired different player IDs from published Selection Hub lists.
 
-**How to apply:** Prefer verified IDs. Scope names to the fixture's club, season and senior register; ignore case and repeated whitespace only. Refuse duplicate register names (including unnumbered rows), duplicate team/roster names, private placeholders and known private/junior/fill-in members. Never override an explicitly unnumbered register identity. Do not rewrite publications, profiles or saved carousel snapshots.
+**How to apply:** Prefer verified IDs. Scope names to the fixture's club, season and senior register; ignore case and repeated whitespace only. Refuse duplicate register names (including unnumbered rows), duplicate team/roster names, private placeholders and known private/fill-in members. Never override an explicitly unnumbered register identity. Do not rewrite publications, profiles or saved carousel snapshots.
+
+A public junior selected in a senior side may display their allocated senior-register number, including through the same presentation-only exact-name fallback.
+
+**Why:** The user expects allocated numbers to appear for junior members playing senior cricket. A junior roster section alone does not invalidate their senior allocation; imported register player IDs can differ from the selected player's historical ID.
+
+**How to apply:** Choose the register by fixture category and season, not roster section. Keep private-member blocks and ambiguity checks. Never borrow a junior-register number for a senior card. Saved card snapshots require explicit regeneration to pick up later assignments.

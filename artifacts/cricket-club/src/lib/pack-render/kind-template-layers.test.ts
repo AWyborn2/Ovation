@@ -11,7 +11,12 @@ import {
   resolvePackTokens,
 } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
-import { substituteTokens, type CardAdjustments, type FreeLayer } from "./adjustments";
+import {
+  photoBoxSize,
+  substituteTokens,
+  type CardAdjustments,
+  type FreeLayer,
+} from "./adjustments";
 
 const tokens = resolvePackTokens({ brand: brandDefaultTokens(null), theme: null, junior: false });
 
@@ -133,6 +138,44 @@ describe("photo layer", () => {
     expect(render(player, { layers: [photo] })).not.toContain('data-layer-id="p1"');
   });
 
+  // The share dialog's photo placement sliders (0–1 focal point, zoom) reach v2 photo layers.
+  const withSliders = (photoTransform: { focalX: number; focalY: number; zoom: number }) =>
+    renderPackCard(
+      player,
+      "square",
+      true,
+      tokens,
+      false,
+      { photoUrl: "https://example.test/sam.jpg", photoTransform } as never,
+      BLANK_PACK_ID,
+      { layers: [photo] },
+    );
+
+  it("follows the photo placement sliders once they're moved", () => {
+    const html = withSliders({ focalX: 0.75, focalY: 0.4, zoom: 1.5 });
+    expect(html).toContain("object-position:75% 40%");
+    expect(html).toContain("scale(1.5)");
+  });
+
+  it("zooms out to half size, and no further", () => {
+    expect(withSliders({ focalX: 0.5, focalY: 0, zoom: 0.5 })).toContain("scale(0.5)");
+    expect(withSliders({ focalX: 0.5, focalY: 0, zoom: 0.2 })).toContain("scale(0.5)");
+  });
+
+  it("measures the box the photo is drawn in, for the photo controls", () => {
+    expect(photoBoxSize({ layers: [photo] }, "player", "square", { w: 1080, h: 1080 })).toEqual({
+      w: 1080,
+      h: 648,
+    });
+    expect(photoBoxSize(null, "player", "square", { w: 1080, h: 1080 })).toBeNull();
+  });
+
+  it("keeps the layer's own focal point while the sliders are centred", () => {
+    const html = withSliders({ focalX: 0.5, focalY: 0.5, zoom: 1 });
+    expect(html).toContain("object-position:30% 20%");
+    expect(html).toContain("scale(1.2)");
+  });
+
   it("never draws a photo on a junior card (AE6)", () => {
     const html = render(
       player,
@@ -186,6 +229,29 @@ describe("rows layer", () => {
     // Two rows, two columns: one row each, both at the top.
     expect(html).toMatch(/data-row-index="0"[^>]*left:0\.000%;width:45\.000%;top:0\.000cqw/);
     expect(html).toMatch(/data-row-index="1"[^>]*left:55\.000%;width:45\.000%;top:0\.000cqw/);
+  });
+
+  it("fills each line left to right with flow across (a grid of tiles)", () => {
+    const three = {
+      ...ladder,
+      rows: [
+        ...(ladder as unknown as { rows: object[] }).rows,
+        { pos: 3, team: "Mandurah", played: 5, won: 2, lost: 3, points: 12, isClub: false },
+      ],
+    } as unknown as ShareCardInput;
+    const grid: FreeLayer = {
+      ...rows,
+      rows: { ...rows.rows!, columns: 2, columnGap: 10, flow: "across" },
+    };
+    const html = render(three, { layers: [grid] });
+    const pitch = (rows.rows!.rowHeight + (rows.rows!.gap ?? 0)).toFixed(3);
+    // The second row sits beside the first; the third starts the next line.
+    expect(html).toContain(
+      'data-row-index="1" data-row-variant="club" style="position:absolute;left:55.000%;width:45.000%;top:0.000cqw',
+    );
+    expect(html).toContain(
+      `data-row-index="2" style="position:absolute;left:0.000%;width:45.000%;top:${pitch}cqw`,
+    );
   });
 
   it("keeps a single-column list's markup as it was", () => {

@@ -5,7 +5,14 @@ import { SlidePreview } from "@/components/weekend-carousel/slide-preview";
 import type { WeekendSlide } from "@/components/weekend-carousel/model";
 import { Button } from "@/components/ui/button";
 
-export function CarouselPreview({ carousel }: { carousel: QueuedCarousel }) {
+export function CarouselPreview({
+  carousel,
+  document,
+}: {
+  carousel: QueuedCarousel;
+  /** The draft's assembled document, for a templated (version 3) carousel. */
+  document?: unknown;
+}) {
   const [index, setIndex] = useState(0);
   const current = Math.min(index, carousel.slides.length - 1);
   return (
@@ -37,6 +44,7 @@ export function CarouselPreview({ carousel }: { carousel: QueuedCarousel }) {
         slide={carousel.slides[current] as unknown as WeekendSlide}
         size={carousel.size}
         packId={carouselPackId(carousel)}
+        document={carousel.version === 3 ? (document ?? null) : undefined}
       />
       <p className="text-xs text-muted-foreground">
         Saved photos, positioning, sponsor choices and slide order. The caption below applies to the

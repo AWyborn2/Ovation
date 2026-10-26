@@ -47,6 +47,9 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["tenant_id", "category", "cap_number"],
     replaces: ["cap_register_category_cap_number_unique"],
   },
+  // Template library (migration 0061): bundle looks and templates sync by slug.
+  { table: "template_looks", name: "template_looks_slug_unique", columns: ["slug"] },
+  { table: "library_templates", name: "library_templates_slug_unique", columns: ["slug"] },
   {
     table: "admins",
     name: "admins_tenant_username_unique",
@@ -297,6 +300,32 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "sponsors_tier_check",
     sql: `"tier" IN ('major', 'standard')`,
   },
+  // Template library (migration 0061).
+  {
+    table: "template_looks",
+    name: "template_looks_origin_check",
+    sql: `"origin" IN ('bundle', 'console', 'club')`,
+  },
+  {
+    table: "library_templates",
+    name: "library_templates_origin_check",
+    sql: `"origin" IN ('bundle', 'console', 'club')`,
+  },
+  {
+    table: "library_templates",
+    name: "library_templates_unlisted_by_check",
+    sql: `"unlisted_by" IS NULL OR "unlisted_by" IN ('author', 'ovation')`,
+  },
+  {
+    table: "library_template_versions",
+    name: "library_template_versions_fit_status_check",
+    sql: `"fit_status" IN ('pending', 'pass', 'fail')`,
+  },
+  {
+    table: "template_generations",
+    name: "template_generations_status_check",
+    sql: `"status" IN ('queued', 'running', 'done', 'failed')`,
+  },
 ];
 
 /**
@@ -341,12 +370,16 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "social_drafts" ("tenant_id", "source_key")
           WHERE source_key IS NOT NULL AND status != 'dismissed'`,
   },
-  // Card kind templates (migration 0035): one kind template per tenant and card kind.
+  // Card kind templates: one DEFAULT kind template per tenant and card kind
+  // (template library, ADR-011, migration 0061). It replaced migration 0035's
+  // one-row-per-kind `card_templates_kind_unique`, which must never come back:
+  // a club now holds many copies of a kind.
   {
-    name: "card_templates_kind_unique",
-    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "card_templates_kind_unique"
+    name: "card_templates_kind_default_unique",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "card_templates_kind_default_unique"
           ON "card_templates" ("tenant_id", "base_kind")
-          WHERE source = 'kind'`,
+          WHERE source = 'kind' and is_kind_default`,
+    dropIndexes: ["card_templates_kind_unique"],
   },
   {
     name: "fixtures_tenant_playhq_match_uidx",
@@ -560,9 +593,24 @@ async function indexExists(name: string): Promise<boolean> {
   return res.rows.length > 0;
 }
 
-/** Read-only: list every expected object that is missing. */
+/**
+ * Indexes a later migration dropped on purpose, which must stay gone. The
+ * verifier fails while one exists, so nothing quietly brings it back.
+ */
+const ABSENT_INDEXES: { name: string; why: string }[] = [
+  {
+    name: "card_templates_kind_unique",
+    why: "one kind row per tenant; migration 0061 replaced it with card_templates_kind_default_unique so a club can hold many copies of a kind",
+  },
+];
+
+/** Read-only: list every expected object that is missing (or superseded and still present). */
 async function verify(): Promise<string[]> {
   const missing: string[] = [];
+  for (const ix of ABSENT_INDEXES) {
+    if (await indexExists(ix.name))
+      missing.push(`superseded index ${ix.name} still present (${ix.why})`);
+  }
   for (const c of CONSTRAINTS) {
     if (!(await constraintExists(c.table, c.name, "u")))
       missing.push(`unique ${c.table}.${c.name}`);

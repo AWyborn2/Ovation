@@ -4,13 +4,18 @@
  * self-contained card html string.
  */
 
-import { kindFields } from "@workspace/scorecard/kind-templates";
+import {
+  isDocumentV2,
+  kindFields,
+  pageForInput,
+  type PageKey,
+} from "@workspace/scorecard/kind-templates";
 import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
 import { maxSponsorLogos } from "../share-card/sponsor-limit";
 import type { CardThemeLike } from "./tokens";
-import type { PackCardData, PackColourMode, PackTokens } from "./types";
+import type { BoundInput, PackCardData, PackColourMode, PackTokens } from "./types";
 import { fieldDefaults, hasLandscapeFormat, resolveTemplate, selectFormatHtml } from "./templates";
 import {
   brandDefaultTokens,
@@ -24,6 +29,7 @@ import {
   tokensFromCardTheme,
 } from "./tokens";
 import { applyPackData, bindInput } from "./bind";
+import { cardMatchColours } from "./match-vars";
 import {
   applyFieldOverrides,
   hideFields,
@@ -153,6 +159,31 @@ function rowVariantsOf(
   return out;
 }
 
+/** Where a card's input carries its photo: the player's, or a kind's own photo slot. */
+const CARD_PHOTO_SLOTS = ["photo", "teamPhoto", "squadPhoto", "cardPhoto"] as const;
+
+/** Image slots that hold logos (crests, sponsors), never photos. */
+const LOGO_SLOT = /^(?:clubLogo|sponsor\d+|weekendSponsor\d+)$|(?:^|\.)(?:logo|crest)$/;
+
+/**
+ * A card's bound images for format v2 layers (image tokens, conditions). On
+ * a junior card the server hasn't cleared for a photo, only logos are kept:
+ * no template token or condition can bring a junior's photo back (ADR-007).
+ */
+function layerImages(
+  images: Record<string, string>,
+  kind: string,
+  withholdPhotos: boolean,
+): Record<string, string> {
+  if (!withholdPhotos) return { ...images };
+  const logos = new Set(
+    (kindFields(kind)?.images ?? []).filter((i) => i.type === "logo").map((i) => i.key),
+  );
+  return Object.fromEntries(
+    Object.entries(images).filter(([key]) => logos.has(key) || LOGO_SLOT.test(key)),
+  );
+}
+
 /** Apply a pack's club-mode markup swaps (e.g. Sunset's club sky). */
 function applyClubSwaps(html: string, packId: string | null | undefined): string {
   const swaps = getPackManifest(packId).clubSwaps;
@@ -197,12 +228,21 @@ export function renderPackCard(
   packId?: string | null,
   /** Editor overlay (U15, KTD12). Absent or empty renders byte-identically. */
   adjustments?: CardAdjustments | null,
-  opts: { animate?: boolean } = {},
+  /**
+   * `page`: the template page to draw (format v2, ADR-011); absent → the
+   * kind's primary page, where a v1 document's layers are.
+   */
+  opts: { animate?: boolean; page?: PageKey } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
   input = firstSlideOf(input);
   // Junior highlights are always a junior card (juniors palette).
   if (input.kind === "juniorHighlights") junior = true;
+  // The page a v2 document draws: the one asked for, else the one this input
+  // is (a carousel title, sponsors or day slide). A v1 document has one page,
+  // drawn on every slide as it always was.
+  const page = opts.page ?? (isDocumentV2(adj) ? pageForInput(input) : undefined);
+  const withholdPhotos = junior && !juniorPhotoAllowedOn(input);
   // Club colours vs the pack's own look: drives the stage tint weight and any
   // club-mode markup swaps. ("pack" leaves the output byte-identical.)
   const mode = packColourModeFor(data, packId);
@@ -210,6 +250,9 @@ export function renderPackCard(
     // A blank canvas: the club's stage colour and the editor's layers only
     // (also the base every card kind template renders on, ADR-001).
     const bound = bindInput(input, packId, data?.names);
+    // The tenant's logos and sponsors too, for v2 image tokens and conditions.
+    const withData: BoundInput = { values: {}, images: { ...bound.images }, rows: {} };
+    if (data) applyPackData(withData, data, input.kind);
     const layers = renderFreeLayers(
       adj,
       size,
@@ -223,7 +266,20 @@ export function renderPackCard(
         juniorPhotoAllowed: juniorPhotoAllowedOn(input),
         rows: rowValues(bound.rows),
         rowVariants: rowVariantsOf(bound.rows),
-        photoUrl: junior && !juniorPhotoAllowedOn(input) ? null : (data?.photoUrl ?? null),
+        // The card's photo; a v2 document also draws the one the input carries
+        // (a player's, a premiership's team photo), as the packs do.
+        photoUrl: withholdPhotos
+          ? null
+          : (data?.photoUrl ??
+            (isDocumentV2(adj)
+              ? (CARD_PHOTO_SLOTS.map((slot) => withData.images[slot]).find(Boolean) ?? null)
+              : null)),
+        // The photo placement sliders (the share dialog, a queued draft's photo).
+        photoTransform: data?.photoTransform ?? null,
+        images: layerImages(withData.images, input.kind, withholdPhotos),
+        kind: input.kind,
+        page,
+        match: cardMatchColours(input, tokens, data?.brand),
       },
     );
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
@@ -330,6 +386,10 @@ export function renderPackCard(
     brand: data?.brand,
     junior,
     rows: rowValues(bound.rows),
+    images: layerImages(bound.images, input.kind, withholdPhotos),
+    kind: input.kind,
+    page,
+    match: cardMatchColours(input, tokens, data?.brand),
   });
   const extra = manifest.rootVars?.(packCtx);
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, manifest.inkTint, mode)}${extra ? `;${extra}` : ""}">${html}${layers}</div>`;

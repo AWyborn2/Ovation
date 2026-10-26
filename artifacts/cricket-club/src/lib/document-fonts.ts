@@ -9,9 +9,24 @@
  *
  * The curated card fonts (`card-fonts.ts`) still load as before.
  */
+import { flattenLayers, normaliseDocument } from "@workspace/scorecard/kind-templates";
 import type { CardAdjustments } from "@/lib/pack-render";
 
-export type CatalogueEntry = { family: string; category: string; weights: number[] };
+export type CatalogueEntry = {
+  family: string;
+  category: string;
+  weights: number[];
+  /** The family has italics. */
+  italic?: boolean;
+  /** The family's width axis (`wdth`), in percent: Archivo is [62, 125]. */
+  width?: [number, number];
+};
+
+/** How a family is set besides its weights: italic, and the widths it is drawn at. */
+export type FontStyleUse = { italic: boolean; widths: Set<number> };
+
+/** A family to request: its weights, plus italics and widths when the document uses them. */
+export type FontRequest = { family: string; weights: number[]; italic?: true; widths?: number[] };
 
 /** Families the curated loader already provides; never requested again. */
 const CURATED = new Set([
@@ -44,27 +59,60 @@ export function primaryFamily(fontFamily: string | undefined): string | null {
   return first;
 }
 
+type StyleLike = { fontFamily?: string; fontWeight?: number; italic?: boolean; stretch?: number };
+
+/** Every text style a document uses: its text layers', row cells' and row styles'. */
+function documentTextStyles(adj: CardAdjustments | null | undefined): StyleLike[] {
+  const out: StyleLike[] = [];
+  // Every page of the document (format v2), groups' children included.
+  const doc = normaliseDocument(adj, "");
+  const layers = Object.values(doc.pages).flatMap((page) =>
+    flattenLayers(page?.layers ?? []),
+  ) as unknown as NonNullable<CardAdjustments["layers"]>;
+  for (const layer of layers) {
+    if (layer.hidden) continue;
+    const own = layer.style as StyleLike | undefined;
+    if (own) out.push(own);
+    for (const cell of layer.rows?.cells ?? []) out.push({ ...own, ...(cell.style as StyleLike) });
+    for (const overrides of Object.values(layer.rows?.variants ?? {})) {
+      for (const style of Object.values(overrides)) out.push(style as StyleLike);
+    }
+  }
+  return out;
+}
+
 /** Every (family, weight) a document's text styles use, by family. */
 export function documentFontUsage(
   adj: CardAdjustments | null | undefined,
 ): Map<string, Set<number>> {
   const usage = new Map<string, Set<number>>();
-  const add = (style: { fontFamily?: string; fontWeight?: number } | undefined) => {
-    const family = primaryFamily(style?.fontFamily);
-    if (!family) return;
+  for (const style of documentTextStyles(adj)) {
+    const family = primaryFamily(style.fontFamily);
+    if (!family) continue;
     const weights = usage.get(family) ?? new Set<number>();
-    weights.add(style?.fontWeight ?? DEFAULT_WEIGHT);
+    weights.add(style.fontWeight ?? DEFAULT_WEIGHT);
     usage.set(family, weights);
-  };
-  for (const layer of adj?.layers ?? []) {
-    if (layer.hidden) continue;
-    add(layer.style);
-    for (const cell of layer.rows?.cells ?? []) add({ ...layer.style, ...cell.style });
-    for (const overrides of Object.values(layer.rows?.variants ?? {})) {
-      for (const style of Object.values(overrides)) add(style);
-    }
   }
   return usage;
+}
+
+/** The families a document sets in italic or at another width (v2 `italic`, `stretch`). */
+export function documentFontStyles(
+  adj: CardAdjustments | null | undefined,
+): Map<string, FontStyleUse> {
+  const out = new Map<string, FontStyleUse>();
+  for (const style of documentTextStyles(adj)) {
+    const family = primaryFamily(style.fontFamily);
+    if (!family) continue;
+    const italic = style.italic === true;
+    const width = typeof style.stretch === "number" && style.stretch !== 100 ? style.stretch : null;
+    if (!italic && width === null) continue;
+    const use = out.get(family) ?? { italic: false, widths: new Set<number>() };
+    if (italic) use.italic = true;
+    if (width !== null) use.widths.add(width);
+    out.set(family, use);
+  }
+  return out;
 }
 
 /** The available weight nearest to `wanted` (ties go to the heavier weight). */
@@ -77,13 +125,18 @@ export function nearestWeight(available: readonly number[], wanted: number): num
   });
 }
 
-/** The (family, weights) to request: catalogue families only, weights snapped to what exists. */
+/**
+ * The families to request: catalogue families only, weights snapped to what
+ * exists, with italics and widths only where the family has them (asking
+ * Google for an axis a family lacks fails the whole stylesheet).
+ */
 export function planFontRequests(
   usage: Map<string, Set<number>>,
   catalogue: readonly CatalogueEntry[],
-): Array<{ family: string; weights: number[] }> {
+  styles: Map<string, FontStyleUse> = new Map(),
+): FontRequest[] {
   const byFamily = new Map(catalogue.map((e) => [e.family, e]));
-  const out: Array<{ family: string; weights: number[] }> = [];
+  const out: FontRequest[] = [];
   for (const [family, wanted] of usage) {
     if (CURATED.has(family)) continue;
     const entry = byFamily.get(family);
@@ -91,20 +144,38 @@ export function planFontRequests(
     const weights = [...new Set([...wanted].map((w) => nearestWeight(entry.weights, w)))].sort(
       (a, b) => a - b,
     );
-    out.push({ family, weights });
+    const request: FontRequest = { family, weights };
+    const use = styles.get(family);
+    if (use?.italic && entry.italic) request.italic = true;
+    if (use && use.widths.size > 0 && entry.width) {
+      const [min, max] = entry.width;
+      const widths = [...use.widths].map((w) => Math.min(max, Math.max(min, Math.round(w))));
+      // The normal width too, for the family's text set without a stretch.
+      request.widths = [...new Set([100, ...widths])].sort((a, b) => a - b);
+    }
+    out.push(request);
   }
   return out;
 }
 
+/** One family's part of a CSS API url: `Family:wght@…`, with its italic and width axes. */
+function familyParam(r: FontRequest): string {
+  const name = encodeURIComponent(r.family).replace(/%20/g, "+");
+  const italics = r.italic ? [0, 1] : null;
+  const widths = r.widths?.length ? r.widths : null;
+  const axes = [italics ? "ital" : "", widths ? "wdth" : "", "wght"].filter(Boolean).join(",");
+  // Tuples in the axes' order, sorted, as the API requires.
+  const tuples: string[] = [];
+  for (const i of italics ?? [null])
+    for (const w of widths ?? [null])
+      for (const weight of r.weights)
+        tuples.push([i, w, weight].filter((v) => v !== null).join(","));
+  return `family=${name}:${axes}@${tuples.join(";")}`;
+}
+
 /** The Google Fonts CSS API URL for the requests. */
-export function googleFontsHref(requests: Array<{ family: string; weights: number[] }>): string {
-  const params = requests
-    .map(
-      (r) =>
-        `family=${encodeURIComponent(r.family).replace(/%20/g, "+")}:wght@${r.weights.join(";")}`,
-    )
-    .join("&");
-  return `https://fonts.googleapis.com/css2?${params}&display=block`;
+export function googleFontsHref(requests: FontRequest[]): string {
+  return `https://fonts.googleapis.com/css2?${requests.map(familyParam).join("&")}&display=block`;
 }
 
 let cataloguePromise: Promise<CatalogueEntry[]> | null = null;
@@ -146,19 +217,32 @@ export async function ensureDocumentFonts(
   if (typeof document === "undefined") return [];
   const usage = documentFontUsage(adj);
   if (usage.size === 0) return [];
-  const requests = planFontRequests(usage, catalogue ?? (await loadFontCatalogue()));
+  const requests = planFontRequests(
+    usage,
+    catalogue ?? (await loadFontCatalogue()),
+    documentFontStyles(adj),
+  );
   if (requests.length === 0) return [];
-  await appendStylesheet(googleFontsHref(requests));
+  // A family with italics or widths has its own stylesheet, so an axis the
+  // API refuses can't stop the document's other families loading.
+  const plain = requests.filter((r) => !r.italic && !r.widths);
+  const styled = requests.filter((r) => r.italic || r.widths);
+  await Promise.all([
+    ...(plain.length ? [appendStylesheet(googleFontsHref(plain))] : []),
+    ...styled.map((r) => appendStylesheet(googleFontsHref([r]))),
+  ]);
   const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
   if (!fonts?.load) return [];
   const failed = new Set<string>();
   for (const r of requests) {
-    for (const w of r.weights) {
-      try {
-        const faces = await fonts.load(`${w} 32px "${r.family}"`);
-        if (faces.length === 0) failed.add(r.family);
-      } catch {
-        failed.add(r.family);
+    for (const style of r.italic ? ["", "italic "] : [""]) {
+      for (const w of r.weights) {
+        try {
+          const faces = await fonts.load(`${style}${w} 32px "${r.family}"`);
+          if (faces.length === 0) failed.add(r.family);
+        } catch {
+          failed.add(r.family);
+        }
       }
     }
   }
