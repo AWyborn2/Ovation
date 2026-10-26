@@ -8,8 +8,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getGetClubTemplateQueryKey,
+  getGetLibraryTemplateQueryKey,
   getListLibraryTemplatesQueryKey,
   useGetClubTemplate,
+  useGetLibraryTemplate,
   useListLibraryTemplates,
   type TemplateRef,
 } from "@workspace/api-client-react";
@@ -72,8 +74,13 @@ export function DraftSetDialog({
   const copyQ = useGetClubTemplate(copyId, {
     query: { queryKey: getGetClubTemplateQueryKey(copyId), enabled: open && copyId > 0 },
   });
+  // A design started straight from the library names the library template.
+  const libraryId = templateRef?.libraryTemplateId ?? 0;
+  const libraryQ = useGetLibraryTemplate(libraryId, {
+    query: { queryKey: getGetLibraryTemplateQueryKey(libraryId), enabled: open && libraryId > 0 },
+  });
   const looks = (looksQ.data?.templates ?? []).filter((t) => t.look && isSetDocument(t.document));
-  const draftLook = copyQ.data?.basedOn?.look?.id ?? null;
+  const draftLook = copyQ.data?.basedOn?.look?.id ?? libraryQ.data?.look?.id ?? null;
   const [lookId, setLookId] = useState<number | null>(null);
   const look = looks.find((t) => t.look?.id === (lookId ?? draftLook)) ?? looks[0] ?? null;
   const base = look && isSetDocument(look.document) ? look.document : null;
