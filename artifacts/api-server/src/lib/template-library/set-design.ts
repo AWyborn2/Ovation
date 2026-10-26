@@ -67,13 +67,17 @@ const CAROUSEL_SET_TYPE: Record<CarouselSetType, DataSetType> = {
   matchSummary: "matchSummary",
 };
 
-export type DraftSetLayout = "carousel" | "list";
+export type DraftSetLayout = "carousel" | "list" | "pages";
 
 /** Which set a draft is, if it is one the set editor opens. */
 export function draftSetType(
-  draft: Pick<SocialDraftRow, "cardInput">,
-): { setType: DataSetType; layout: DraftSetLayout } | null {
+  draft: Pick<SocialDraftRow, "cardInput"> & Partial<Pick<SocialDraftRow, "adjustments">>,
+): { setType: SetType; layout: DraftSetLayout } | null {
   const input = (draft.cardInput ?? {}) as Record<string, unknown>;
+  // A card made into a free set of pages (full draft editor plan, stage 2):
+  // every page draws the card's own data.
+  if (isSetDocument(draft.adjustments) && draft.adjustments.set === "free")
+    return { setType: "free", layout: "pages" };
   const carousel = readQueuedCarousel(input);
   if (carousel)
     return carousel.version === 3
@@ -86,7 +90,7 @@ export function draftSetType(
 
 export type DraftSetDesignView = {
   draftId: number;
-  setType: DataSetType;
+  setType: SetType;
   layout: DraftSetLayout;
   document: SetDocument;
   templateRef: DraftTemplateRefColumn | null;
@@ -191,6 +195,8 @@ export async function loadDraftSetDesign(
   if (isSetDocument(draft.adjustments) && draft.adjustments.set === kind.setType) {
     return { ...base, document: draft.adjustments, templateRef: ref, stored: true };
   }
+  // A free set is the card's own pages, stored above; there's no look's set to fall back on.
+  if (kind.setType === "free") throw notASet();
   if (kind.layout === "carousel") {
     // The assembled document holds every page the set draws, by page key.
     const own = assembleSetDocument(kind.setType, () => draft.adjustments);

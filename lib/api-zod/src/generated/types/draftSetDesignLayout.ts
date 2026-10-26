@@ -7,7 +7,7 @@
  */
 
 /**
- * `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement).
+ * `carousel`: a queued set whose slides are stored (their order is the payload's); `list`: a list card whose slides are worked out from its data (their order is the design's arrangement); `pages`: a card made into a free set of design pages, each drawn with the card's own data (full draft editor plan, stage 2).
  */
 export type DraftSetDesignLayout = typeof DraftSetDesignLayout[keyof typeof DraftSetDesignLayout];
 
@@ -15,4 +15,5 @@ export type DraftSetDesignLayout = typeof DraftSetDesignLayout[keyof typeof Draf
 export const DraftSetDesignLayout = {
   carousel: 'carousel',
   list: 'list',
+  pages: 'pages',
 } as const;

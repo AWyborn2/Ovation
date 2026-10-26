@@ -6,55 +6,28 @@
  * restyled or deleted, drawn with the draft's real card. The draft editor's
  * content panels (Cricket, Players, Photos, Uploads, Live stats, Brand) sit
  * beside the editor's own, and Download is in the top bar. Saving stores the
- * design on the draft; the library template never changes.
+ * design on the draft; the library template never changes. "Make a carousel
+ * set" turns the design into pages (stage 2).
  */
-import { useMemo } from "react";
-import { useSearch } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
-import { Image as ImageIcon, Monitor, Palette, Radio, Trophy, Upload, Users } from "lucide-react";
-import {
-  getGetSocialDraftQueryKey,
-  getGetSocialSettingsQueryKey,
-  getListCardThemesQueryKey,
-  getListSocialDraftsQueryKey,
-  updateSocialDraft,
-  useGetSocialSettings,
-  useListCardThemes,
-  type CardTheme as ApiCardTheme,
-  type SocialDraft,
-  type SocialSettingsBundle,
-} from "@workspace/api-client-react";
+import { useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
+import { Layers, Monitor } from "lucide-react";
+import { updateSocialDraft, type SocialDraft } from "@workspace/api-client-react";
+import { freeSetFromDocument, primaryPage } from "@workspace/scorecard/kind-templates";
 import { StatusPill } from "@/components/admin-ui";
-import {
-  BrandPanel,
-  CricketPanel,
-  LiveStatsPanel,
-  PhotosPanel,
-  PlayersPanel,
-  UploadsPanel,
-  matchDayFixtureId,
-} from "@/components/studio-editor/content-panels";
-import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
+import { useConfirm } from "@/components/confirm-dialog";
+import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import {
   STATUS_LABEL,
   STATUS_TONE,
   draftHeading,
-  draftInput,
   draftStatus,
 } from "@/components/social-queue/draft-meta";
 import { useBrand } from "@/lib/brand-context";
-import {
-  buildPackData,
-  cardGrade,
-  kindSponsors,
-  presentingSponsorName,
-  tenantHashtag,
-  withGroundPhoto,
-} from "@/lib/pack-card-data";
-import { BLANK_PACK_ID, packTextFields, type CardAdjustments } from "@/lib/pack-render";
+import { withRootLayersOnPage } from "@/lib/draft-design";
+import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
-import { primaryPage } from "@workspace/scorecard/kind-templates";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
   TemplateEditorV2,
@@ -66,26 +39,6 @@ import {
 
 const STUDIO = "/admin/social";
 
-/**
- * The draft's design, with any layers the previous draft editor put at the root
- * of a page-based (format v2) document moved onto its primary page: format v2
- * draws pages only, so they were never shown.
- */
-export function withRootLayersOnPage(adjustments: unknown, kind: string): unknown {
-  const doc = (adjustments ?? {}) as Record<string, unknown> & {
-    layers?: unknown[];
-    pages?: Record<string, { layers?: unknown[] } | undefined>;
-  };
-  if (doc.formatVersion !== 2 || !doc.pages || !doc.layers?.length) return doc;
-  const key = primaryPage(kind);
-  const page = doc.pages[key] ?? {};
-  const { layers, ...rest } = doc;
-  return {
-    ...rest,
-    pages: { ...doc.pages, [key]: { ...page, layers: [...(page.layers ?? []), ...layers] } },
-  };
-}
-
 export function DraftDesignEditor({
   draft,
   onReload,
@@ -93,15 +46,12 @@ export function DraftDesignEditor({
   draft: SocialDraft;
   onReload: () => Promise<SocialDraft | undefined>;
 }) {
-  const qc = useQueryClient();
   const brand = useBrand();
+  const confirm = useConfirm();
+  const [, navigate] = useLocation();
+  const [making, setMaking] = useState(false);
   const viewport = useViewport();
-  const input = draftInput(draft)!;
-  const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
-  const bundle = settingsQ.data as SocialSettingsBundle | undefined;
-  const themesQ = useListCardThemes({ query: { queryKey: getListCardThemesQueryKey() } });
-  const themes = (themesQ.data ?? []) as ApiCardTheme[];
-  const theme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
+  const { input, data, bundle, theme, refresh, panels } = useDraftContent(draft);
 
   // The size the design was started at (Studio home's Create picker), else square.
   const search = useSearch();
@@ -109,32 +59,6 @@ export function DraftDesignEditor({
     const asked = new URLSearchParams(search).get("format");
     return asked && asked in SIZES ? (asked as CardSize) : "square";
   }, [search]);
-
-  // The draft's card as it posts: the club's brand and sponsors, and its own photo.
-  const grade = cardGrade(input);
-  const data = useMemo(
-    () => ({
-      ...buildPackData({
-        brand: withGroundPhoto(bundle?.brand ?? brand, brand),
-        hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, input.kind, true, grade),
-        presentingSponsorName: presentingSponsorName(bundle, true),
-        packColourModes: bundle?.settings.packColourModes,
-        names: bundle?.cardNames,
-      }),
-      photoUrl: draft.photoUrl ?? undefined,
-    }),
-    [bundle, brand, input.kind, grade, draft.photoUrl],
-  );
-  const palette = [
-    bundle?.brand?.primaryColour ?? brand.primaryColour,
-    bundle?.brand?.backgroundColour ?? brand.backgroundColour,
-  ].filter((c): c is string => !!c);
-
-  const refresh = () => {
-    void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
-    void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
-  };
 
   const template: EditorTemplate = useMemo(
     () => ({
@@ -149,6 +73,31 @@ export function DraftDesignEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [draft.id],
   );
+
+  // Stage 2: the design becomes page 1 of a free set (and a copy as page 2),
+  // opened in the set editor to add, duplicate, reorder and delete pages. Every
+  // page draws this card's data; the draft then posts as a carousel.
+  const makePages = async (document: Record<string, unknown>) => {
+    const ok = await confirm({
+      title: "Make this a carousel set?",
+      description:
+        "This design becomes page 1, with a copy as page 2. You can then add, duplicate, reorder and delete pages, and the card posts as one slide per page.",
+      confirmText: "Make a carousel set",
+    });
+    if (!ok) return;
+    const set = freeSetFromDocument(input.kind, primaryPage(input.kind), document, 1);
+    if (!set) return;
+    setMaking(true);
+    try {
+      await updateSocialDraft(draft.id, {
+        adjustments: set as unknown as CardAdjustments,
+      } as Parameters<typeof updateSocialDraft>[1]);
+      refresh();
+      navigate(`/admin/social/set/${draft.id}`);
+    } finally {
+      setMaking(false);
+    }
+  };
 
   const status = draftStatus(draft);
   const host: EditorHost<EditorTemplate> = {
@@ -173,85 +122,29 @@ export function DraftDesignEditor({
   const draftMode: EditorDraftMode = {
     input: input as unknown as Record<string, unknown>,
     data,
-    panels: [
-      {
-        id: "cricket",
-        label: "Cricket",
-        icon: Trophy,
-        render: ({ size, add }) => (
-          <CricketPanel
-            size={size}
-            input={input}
-            fixtureId={matchDayFixtureId(input.kind, draft.sourceKey)}
-            onAdd={(l) => add([l])}
-          />
-        ),
-      },
-      {
-        id: "players",
-        label: "Players",
-        icon: Users,
-        render: ({ size, add }) => <PlayersPanel size={size} onAddMany={add} />,
-      },
-      {
-        id: "photos",
-        label: "Photos",
-        icon: ImageIcon,
-        render: ({ size, add }) => (
-          <PhotosPanel
-            size={size}
-            onAdd={(l) => add([l])}
-            // The card's own photo is the draft's: every photo layer shows it.
-            onSetPhoto={async (url) => {
-              await updateSocialDraft(draft.id, { photoUrl: url });
-              refresh();
-            }}
-          />
-        ),
-      },
-      { id: "uploads", label: "Uploads", icon: Upload, render: () => <UploadsPanel /> },
-      {
-        id: "live",
-        label: "Live stats",
-        icon: Radio,
-        render: ({ size, add, values }) => (
-          <LiveStatsPanel
-            size={size}
-            fields={packTextFields(input, BLANK_PACK_ID)}
-            values={values}
-            onAdd={(l) => add([l])}
-          />
-        ),
-      },
-      {
-        id: "brand",
-        label: "Brand",
-        icon: Palette,
-        render: ({ size, add, page, setPage }) => (
-          <BrandPanel
-            size={size}
-            logoUrl={(bundle?.brand ?? brand).logoUrl ?? null}
-            palette={palette}
-            sponsorLock={!!page.sponsorLock}
-            onAdd={(l) => add([l])}
-            onRecolour={() => setPage(recolourToBrand(page, palette))}
-            onSponsorLock={(on) => setPage(setSponsorLock(page, on))}
-          />
-        ),
-      },
-    ],
+    panels,
     actions: ({ document, size, input: shown, data: shownData }) => (
-      <DownloadMenu
-        card={{
-          input: shown,
-          size,
-          theme,
-          data: shownData,
-          packId: BLANK_PACK_ID,
-          adjustments: document as unknown as CardAdjustments,
-        }}
-        baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
-      />
+      <>
+        <button
+          type="button"
+          disabled={making}
+          onClick={() => void makePages(document)}
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-50"
+        >
+          <Layers className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+        </button>
+        <DownloadMenu
+          card={{
+            input: shown,
+            size,
+            theme,
+            data: shownData,
+            packId: BLANK_PACK_ID,
+            adjustments: document as unknown as CardAdjustments,
+          }}
+          baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
+        />
+      </>
     ),
   };
 

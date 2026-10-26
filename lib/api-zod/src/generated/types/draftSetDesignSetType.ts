@@ -14,4 +14,5 @@ export const DraftSetDesignSetType = {
   results: 'results',
   matchDay: 'matchDay',
   matchSummary: 'matchSummary',
+  free: 'free',
 } as const;

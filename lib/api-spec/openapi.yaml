@@ -23272,14 +23272,16 @@ components:
         draftId: { type: integer }
         setType:
           type: string
-          enum: [teamLists, results, matchDay, matchSummary]
+          enum: [teamLists, results, matchDay, matchSummary, free]
         layout:
           type: string
-          enum: [carousel, list]
+          enum: [carousel, list, pages]
           description: >-
             `carousel`: a queued set whose slides are stored (their order is the
             payload's); `list`: a list card whose slides are worked out from its
-            data (their order is the design's arrangement).
+            data (their order is the design's arrangement); `pages`: a card made
+            into a free set of design pages, each drawn with the card's own data
+            (full draft editor plan, stage 2).
         document:
           $ref: "#/components/schemas/TemplateDocument"
         templateRef:

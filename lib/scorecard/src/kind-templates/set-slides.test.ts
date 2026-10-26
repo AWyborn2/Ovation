@@ -140,6 +140,23 @@ describe("a round of team lists drawn with a set", () => {
   });
 });
 
+describe("a card made into a free set of pages (full draft editor, stage 2)", () => {
+  it("draws every page with the card's own data, one slide per page", () => {
+    const card = { kind: "matchSummary", headline: "Halls Head won by 4 wickets" };
+    const free: SetDocument = {
+      formatVersion: 2,
+      set: "free",
+      pages: ["page-1", "page-2", "page-3"].map((id) =>
+        page({ id, slot: "page", kind: "matchSummary", page: "card" }),
+      ),
+    };
+    // As the server plans a single card: its only slide, in a team slot.
+    const slides = expandSetSlides(free, [{ key: "single", slot: "team", input: card }]);
+    expect(slides.map((s) => s.page.id)).toEqual(["page-1", "page-2", "page-3"]);
+    expect(slides.every((s) => s.input.headline === card.headline)).toBe(true);
+  });
+});
+
 describe("a queued carousel drawn with a set", () => {
   const stored = [
     { id: "title", input: { kind: "matchDay", carouselPage: { page: "title" } } },
