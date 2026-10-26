@@ -279,6 +279,22 @@ const gradeRecords: DisplayBoard = {
   display: display(),
 };
 
+// A records table (C4): the highest partnership for each wicket.
+const partnershipRecords: DisplayBoard = {
+  id: "partnerships_grade:First Grade",
+  category: "partnership_records",
+  layout: "recordsTable",
+  title: "First Grade Partnerships",
+  subtitle: "Highest partnership for each wicket",
+  figureLabel: "Runs",
+  entries: [212, 187, 176, 158, 149, 133, 121, 98, 87, 74].map((runs, i) => ({
+    season: season(2024 - i * 3),
+    primaryText: `${name(i * 2)} & ${name(i * 2 + 5)}`,
+    meta: { wicket: i + 1, figure: String(runs), opponent: OPPONENTS[i % OPPONENTS.length] },
+  })),
+  display: display(),
+};
+
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
   boards: [
     premierships,
@@ -289,6 +305,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     mostRuns,
     centuries,
     gradeRecords,
+    partnershipRecords,
     lifeMembers,
   ],
   brand: {
@@ -321,6 +338,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       most_runs: { move: "pages", trans: "rows", top: 20 },
       centuries: { move: "credits", trans: "fade", speed: 160 },
       grade_records: { move: "pages", trans: "flip", columnsPerScreen: 4 },
+      "partnerships_grade:First Grade": { move: "fit", trans: "wipe" },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
     },
     composites: [],

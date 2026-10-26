@@ -31,6 +31,8 @@ export interface BoardEntryMeta {
   seasonSpan?: string | null;
   // Achievement lists: the side it came against ("Mandurah").
   opponent?: string | null;
+  // Records tables: the wicket a partnership was for (1–10).
+  wicket?: number | null;
 }
 
 // Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
@@ -89,8 +91,10 @@ export interface BoardRecordLineOut {
 // "leaderboard" is a ranked table: rank, player, figure, seasons.
 // "achievements" is a dated list: season, player, figure, grade, opponent.
 // "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
 // "achievements" is a dated list: season, player, figure, grade, opponent.
 // "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
 export type BoardLayout =
   | "premiership"
   | "teamOfDecade"
@@ -100,7 +104,8 @@ export type BoardLayout =
   | "lifeMembers"
   | "leaderboard"
   | "achievements"
-  | "recordPanels";
+  | "recordPanels"
+  | "recordsTable";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 

@@ -30,6 +30,7 @@ import {
   buildHonourList,
   buildMilestoneBoard,
   buildLeaderboards,
+  buildPartnershipBoards,
   buildPartnerships,
   buildGradeRecordBoards,
   buildRecordsLeaderboards,
@@ -61,6 +62,7 @@ export async function assembleBoards(
     captainsGrid,
     committee,
     partnerships,
+    partnershipBoards,
     milestones,
     awardPoints,
     recordsLeaderboards,
@@ -81,6 +83,7 @@ export async function assembleBoards(
     buildCaptainsGrid(tenantId, gridCols("captains_grid")),
     buildCommittee(tenantId, gridCols("committee")),
     buildPartnerships(tenantId),
+    buildPartnershipBoards(source),
     buildMilestoneBoard(source),
     buildAwardPoints(tenantId),
     buildRecordsLeaderboards(tenantId),
@@ -100,6 +103,7 @@ export async function assembleBoards(
   boards.push(...recordsByGrade.byGrade);
   if (recordsByGrade.panels) boards.push(recordsByGrade.panels);
   if (partnerships) boards.push(partnerships);
+  boards.push(...partnershipBoards);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
   if (hatTricks) boards.push(hatTricks);
