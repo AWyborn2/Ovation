@@ -132,3 +132,19 @@ moved or zoomed before posting (from draft adjustments).
   suggestions make it fast; watch the coverage measure.
 - **Parallel work:** the template library's remaining releases also touch the photo layer. Keep
   this feature's renderer change small and merge `main` often.
+
+## Design questions settled (Ash, 27 Oct 2026)
+
+1. **Storage: on existing rows.** `club_photos` gets a focus box (jsonb, fractions 0 to 1) and the
+   frame shapes switched off; `club_photo_players` gets an area (jsonb). The same on `junior_photos`
+   and `junior_photo_participants`. One migration, 0070 or later; no new table. Deleting a photo
+   or tag removes its area through the existing cascade.
+2. **Crop rules: the box sets the default.** With no hand adjustment, one shared function in
+   `lib/scorecard` turns the box (or the player's area), the photo's shape and the frame's shape
+   into the same focal point and zoom (`PhotoAdjust`) the renderers use today. A draft's moved or
+   zoomed photo still wins. Renderers change only where the default comes from.
+3. **Frame shape: read from the template.** The picker takes the width and height of the photo
+   layer in the club's template for that card kind and size, and passes the aspect ratio into
+   `pickDraftPhoto`. Nothing new is stored on templates.
+4. **Face library: MediaPipe Face Detector** (`@mediapipe/tasks-vision`, Apache 2.0, short-range
+   BlazeFace model), run in the browser and loaded only when the focus editor opens.

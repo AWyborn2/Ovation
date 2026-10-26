@@ -10,7 +10,7 @@
   P0: focus box per photo, crop from the box in every frame, preview strip, player areas on tags,
   per-draft override still wins. P1: in-browser face suggestions, shape suitability and
   shape-aware `pickDraftPhoto`, "needs focus" filter, juniors parity.
-- Design questions for the architect:
+- Design questions (settled by Ash 27 Oct 2026; see the decision file's last section):
   1. Storage: box on `club_photos` and an area on `club_photo_players` (and the junior
      equivalents), or a separate areas table. Migration number 0070 or later.
   2. One crop function shared by the editor preview (`photo-reposition.tsx`), the HTML renderer
