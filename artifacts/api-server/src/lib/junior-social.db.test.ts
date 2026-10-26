@@ -345,6 +345,12 @@ describe("junior social drafting (DB)", () => {
     // A team missing from the map (Year 9) is approval too.
     expect((await draftByKey(tenantId, juniorTeamListKey(fixtures.y9)))!.autoReadyAt).toBeNull();
 
+    // Templated drafts owe a layout check before automation may act on them
+    // (ADR-003); no render harness runs here, so record them as checked and clean.
+    await db
+      .update(socialDraftsTable)
+      .set({ layoutCheckPending: false, layoutWarnings: {} })
+      .where(eq(socialDraftsTable.tenantId, tenantId));
     const promoted = await persistDueDrafts(tenantId, new Date(NOW.getTime() + 2 * 3_600_000));
     expect(promoted).toEqual([auto!.id]);
     expect((await draftByKey(tenantId, juniorTeamListKey(fixtures.y5)))!.status).toBe(

@@ -9,11 +9,21 @@
  * card input with `featuredParticipantId` and the positive marker
  * `juniorPhotoAllowed: true` — the only thing that lets a renderer show a photo on a
  * junior card. Photos are served through the gated `/juniors/photos/:id` route, which
- * re-checks the player at request time, so withdrawing consent cuts the image off
+ * re-checks consent at request time, so withdrawing consent cuts the image off
  * everywhere at once.
+ *
+ * The junior photo library (kiosk-photo-rotation A) tags a photo with any number of
+ * children (`junior_photo_participants`); `juniorLibraryPhotoAllowed` is the one consent
+ * rule for cards, serving and the kiosk: every tagged child allowed, and at least one tag.
  */
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
-import { db, juniorParticipantsTable, juniorPhotosTable, socialDraftsTable } from "@workspace/db";
+import { and, eq, inArray, ne, or, sql, type SQL } from "drizzle-orm";
+import {
+  db,
+  juniorParticipantsTable,
+  juniorPhotoParticipantsTable,
+  juniorPhotosTable,
+  socialDraftsTable,
+} from "@workspace/db";
 import { isJuniorWithheld } from "./junior-names";
 import { juniorParticipantJoin } from "./junior-participant-scope";
 import { seededPick, type PhotoSource } from "./draft-enrich";
@@ -47,16 +57,82 @@ export function juniorPhotoAllowed(p: {
 }
 
 /**
- * The default photo of every ALLOWED participant among `participantIds` (every
- * allowed participant with a photo when omitted), keyed by lower-cased participant id.
+ * Whether each of `photoIds` may be displayed outside admin (kiosk-photo-rotation A, fail
+ * closed): only a photo with at least one tagged child, every one of whom has a participant
+ * row in this tenant that passes `juniorPhotoAllowed`. An untagged photo, a tag whose child
+ * is unknown, or any one withheld / private child makes the whole photo not displayable.
+ * Ids of another tenant's photos come back false.
+ */
+export async function loadJuniorPhotoConsent(
+  tenantId: number,
+  photoIds: readonly number[],
+): Promise<Map<number, boolean>> {
+  const ids = [...new Set(photoIds)];
+  const out = new Map<number, boolean>(ids.map((id) => [id, false]));
+  if (ids.length === 0) return out;
+  const rows = await db
+    .select({
+      photoId: juniorPhotoParticipantsTable.photoId,
+      participantId: juniorParticipantsTable.participantId,
+      photoWithheld: juniorParticipantsTable.photoWithheld,
+      isPrivate: juniorParticipantsTable.isPrivate,
+      privacyOverride: juniorParticipantsTable.privacyOverride,
+    })
+    .from(juniorPhotoParticipantsTable)
+    .innerJoin(
+      juniorPhotosTable,
+      and(
+        eq(juniorPhotosTable.id, juniorPhotoParticipantsTable.photoId),
+        eq(juniorPhotosTable.tenantId, tenantId),
+      ),
+    )
+    .leftJoin(
+      juniorParticipantsTable,
+      juniorParticipantJoin(juniorPhotoParticipantsTable.participantId, tenantId),
+    )
+    .where(
+      and(
+        eq(juniorPhotoParticipantsTable.tenantId, tenantId),
+        inArray(juniorPhotoParticipantsTable.photoId, ids),
+      ),
+    );
+  const verdict = new Map<number, boolean>();
+  for (const r of rows) {
+    const ok =
+      r.participantId != null &&
+      juniorPhotoAllowed({
+        photoWithheld: r.photoWithheld ?? true,
+        isPrivate: r.isPrivate ?? true,
+        privacyOverride: r.privacyOverride ?? false,
+      });
+    verdict.set(r.photoId, (verdict.get(r.photoId) ?? true) && ok);
+  }
+  for (const [id, ok] of verdict) out.set(id, ok);
+  return out;
+}
+
+/** The single consent rule for showing one junior photo anywhere outside admin. */
+export async function juniorLibraryPhotoAllowed(
+  tenantId: number,
+  photoId: number,
+): Promise<boolean> {
+  return (await loadJuniorPhotoConsent(tenantId, [photoId])).get(photoId) === true;
+}
+
+/**
+ * One displayable photo for every participant among `participantIds` (every tagged
+ * participant when omitted), keyed by lower-cased participant id: the player's default
+ * per-player photo, else the newest library photo they are tagged in. Only photos that
+ * pass `juniorLibraryPhotoAllowed` count, so a group photo with one withheld child is
+ * never picked for anyone in it.
  */
 export async function loadJuniorPhotos(
   tenantId: number,
   participantIds?: readonly (string | null | undefined)[],
   opts: {
     /**
-     * Include players who are NOT allowed a photo (withheld or private). Admin
-     * listings only — the photo route still refuses to serve them publicly.
+     * Skip the consent rule. Admin listings only — the photo route still refuses to
+     * serve a photo that fails it publicly.
      */
     includeDisallowed?: boolean;
   } = {},
@@ -68,30 +144,45 @@ export async function loadJuniorPhotos(
   const rows = await db
     .select({
       photoId: juniorPhotosTable.id,
-      participantId: juniorPhotosTable.participantId,
+      participantId: juniorPhotoParticipantsTable.participantId,
+      ownerId: juniorPhotosTable.participantId,
+      isDefault: juniorPhotosTable.isDefault,
       thumbPath: juniorPhotosTable.thumbPath,
-      photoWithheld: juniorParticipantsTable.photoWithheld,
-      isPrivate: juniorParticipantsTable.isPrivate,
-      privacyOverride: juniorParticipantsTable.privacyOverride,
+      createdAt: juniorPhotosTable.createdAt,
     })
-    .from(juniorPhotosTable)
-    // Photo rows are written from the participant row's own id, so the exact,
-    // tenant-scoped join is right (and what the tenant guard test requires).
+    .from(juniorPhotoParticipantsTable)
     .innerJoin(
-      juniorParticipantsTable,
-      juniorParticipantJoin(juniorPhotosTable.participantId, tenantId),
+      juniorPhotosTable,
+      and(
+        eq(juniorPhotosTable.id, juniorPhotoParticipantsTable.photoId),
+        eq(juniorPhotosTable.tenantId, tenantId),
+      ),
     )
     .where(
       and(
-        eq(juniorPhotosTable.tenantId, tenantId),
-        eq(juniorPhotosTable.isDefault, true),
-        ids ? inArray(sql`lower(${juniorPhotosTable.participantId})`, ids) : undefined,
+        eq(juniorPhotoParticipantsTable.tenantId, tenantId),
+        ids ? inArray(sql`lower(${juniorPhotoParticipantsTable.participantId})`, ids) : undefined,
       ),
     );
+  const consent = opts.includeDisallowed
+    ? null
+    : await loadJuniorPhotoConsent(
+        tenantId,
+        rows.map((r) => r.photoId),
+      );
+  // The player's own default first, then the newest.
+  const rank = (r: (typeof rows)[number]) =>
+    r.isDefault && r.ownerId?.toLowerCase() === r.participantId.toLowerCase() ? 1 : 0;
+  rows.sort(
+    (a, b) =>
+      rank(b) - rank(a) || b.createdAt.getTime() - a.createdAt.getTime() || b.photoId - a.photoId,
+  );
   const out = new Map<string, JuniorPhoto>();
   for (const r of rows) {
-    if (!opts.includeDisallowed && !juniorPhotoAllowed(r)) continue;
-    out.set(r.participantId.toLowerCase(), {
+    const key = r.participantId.toLowerCase();
+    if (out.has(key)) continue;
+    if (consent && consent.get(r.photoId) !== true) continue;
+    out.set(key, {
       photoId: r.photoId,
       participantId: r.participantId,
       url: juniorPhotoUrl(r.photoId),
@@ -154,15 +245,57 @@ const OPEN_STATUSES = ["awaiting_review", "ready"];
 
 /**
  * A player is no longer allowed a photo (withheld, or made private): strip their photo from
- * every card not yet posted, in the request that changed them (R6); a posted card is marked
- * stale through `withdrawDraft`. The hourly sweep re-drafts the open cards afterwards, so a
- * team list can feature another allowed player.
+ * every card not yet posted, in the request that changed them (R6) — cards featuring them,
+ * and cards showing any photo they are tagged in (a group photo featuring a teammate); a
+ * posted card is marked stale through `withdrawDraft`. The hourly sweep re-drafts the open
+ * cards afterwards, so a team list can feature another allowed player.
  */
 export async function withdrawJuniorPhotos(
   tenantId: number,
   participantId: string,
 ): Promise<{ stripped: number; stale: number }> {
   const pid = participantId.toLowerCase();
+  const tagged = await db
+    .select({ photoId: juniorPhotoParticipantsTable.photoId })
+    .from(juniorPhotoParticipantsTable)
+    .where(
+      and(
+        eq(juniorPhotoParticipantsTable.tenantId, tenantId),
+        sql`lower(${juniorPhotoParticipantsTable.participantId}) = ${pid}`,
+      ),
+    );
+  return stripJuniorPhotoDrafts(
+    tenantId,
+    pid,
+    tagged.map((t) => t.photoId),
+  );
+}
+
+/**
+ * Photos that stopped being displayable (a withheld child tagged in, a tag removed, the
+ * photo deleted): strip them from open cards and mark posted ones stale.
+ */
+export async function withdrawJuniorPhotoIds(
+  tenantId: number,
+  photoIds: readonly number[],
+): Promise<{ stripped: number; stale: number }> {
+  return stripJuniorPhotoDrafts(tenantId, null, photoIds);
+}
+
+async function stripJuniorPhotoDrafts(
+  tenantId: number,
+  participantId: string | null,
+  photoIds: readonly number[],
+): Promise<{ stripped: number; stale: number }> {
+  const urls = [...new Set(photoIds)].map(juniorPhotoUrl);
+  const matches = [
+    participantId
+      ? sql`lower(${socialDraftsTable.cardInput}->>'featuredParticipantId') = ${participantId}`
+      : undefined,
+    urls.length ? inArray(socialDraftsTable.photoUrl, urls) : undefined,
+    urls.length ? inArray(sql`${socialDraftsTable.cardInput}->>'photoUrl'`, urls) : undefined,
+  ].filter((c): c is SQL => !!c);
+  if (matches.length === 0) return { stripped: 0, stale: 0 };
   const drafts = await db
     .select()
     .from(socialDraftsTable)
@@ -170,7 +303,7 @@ export async function withdrawJuniorPhotos(
       and(
         eq(socialDraftsTable.tenantId, tenantId),
         ne(socialDraftsTable.status, "dismissed"),
-        sql`lower(${socialDraftsTable.cardInput}->>'featuredParticipantId') = ${pid}`,
+        or(...matches),
       ),
     );
   let stripped = 0;

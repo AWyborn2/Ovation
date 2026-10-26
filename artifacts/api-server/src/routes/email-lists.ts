@@ -10,7 +10,7 @@ import {
   UpdateEmailListParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
-import { requireAdminOrCaptain } from "../middlewares/require-admin-or-captain";
+import { requireAdminOrCaptain, selectionActorOf } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
 import {
   EmailListInputError,
@@ -28,6 +28,8 @@ import {
 } from "../lib/email-outbox";
 import { TeamSheetError, loadTeamSheetPreview } from "../lib/team-sheet";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
+import { selectionRight } from "../lib/selection-board";
+import { loadAvailabilitySettings } from "../lib/availability-schedule";
 
 /**
  * Email distribution lists (.10x/decisions/architect/email-distribution-lists.md):
@@ -157,8 +159,18 @@ router.post("/selection/:id/email", requireAdminOrCaptain, async (req, res): Pro
   }
   const tenantId = getTenantId(req);
   try {
-    // Refused until the side is finalised, and when no list of its section covers it.
-    await loadTeamSheetPreview(tenantId, params.data.id);
+    // Refused until finalised; captains retain the same grade permission checks.
+    const preview = await loadTeamSheetPreview(tenantId, params.data.id);
+    const settings = await loadAvailabilitySettings(tenantId);
+    const right = selectionRight(
+      selectionActorOf(req),
+      settings?.selectionRule ?? "captains_own_grade",
+      preview.grade,
+    );
+    if (!right.allowed) {
+      res.status(403).json({ error: `${preview.grade} is read-only to you. ${right.reason}` });
+      return;
+    }
     const queued = await enqueueTeamSheetManual({
       tenantId,
       selectionId: params.data.id,

@@ -13,6 +13,12 @@ description: Naming collision rules for Orval codegen in this project — what c
 - For request bodies: always use entity-shaped names in `components/schemas` (e.g. `StatInput`, not `CreateStatBody`) and `$ref` them — never inline bodies.
 - After any spec change, always run `pnpm --filter @workspace/api-spec run codegen` and check for TS errors.
 
+**Generated validator initialization:** The installed Orval generator can place an inline nested-array bound constant after the schema that reads it.
+
+**Why:** This causes both TypeScript use-before-declaration errors and an import-time ReferenceError, preventing API routes from loading even though the OpenAPI schema is valid.
+
+**How to apply:** After regeneration, run the shared-library type check and a route test that imports the validators. Prefer named request schemas as above; preserve the validation bounds when correcting generated declaration order.
+
 **Date-only query parameters:** Use a string with a YYYY-MM-DD pattern and validate the calendar date in the route, rather than OpenAPI `format: date`.
 
 **Why:** This project's Orval configuration emits `zod.date()` (not coercing) for that format. Express supplies query strings, so every valid date request is rejected.

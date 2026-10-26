@@ -6,12 +6,15 @@ import { useEntitlements } from "@/lib/entitlements";
 import { ADMIN_NAV, activeTab } from "@/lib/admin-nav";
 const AdminSocial = lazy(() => import("@/pages/admin-social"));
 const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
+const AdminSocialSettings = lazy(() => import("@/pages/admin-social-settings"));
+const AdminTemplateLibrary = lazy(() => import("@/pages/admin-template-library"));
 const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
 const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
 const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
 const AdminSocialPlan = lazy(() => import("@/pages/admin-social-plan"));
 const AdminPhotoLibrary = lazy(() => import("@/pages/admin-photo-library"));
+const AdminJuniorPhotoLibrary = lazy(() => import("@/pages/admin-junior-photo-library"));
 const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
 const AdminMatchDisplay = lazy(() => import("@/pages/admin-match-display"));
 const AdminRecordsDisplay = lazy(() => import("@/pages/admin-records-display"));
@@ -111,6 +114,7 @@ export function AdminSocialGroup() {
       groupKey="social"
       pages={{
         studio: <AdminSocialStudio />,
+        "template-library": <AdminTemplateLibrary />,
         plan: <AdminSocialPlan />,
         cards: <AdminSocial />,
         create: <AdminSocialCreate />,
@@ -121,6 +125,8 @@ export function AdminSocialGroup() {
         // The same lists page as Selection Hub → Email lists: social lists live there too.
         "email-lists": <AdminEmailLists />,
         library: <AdminPhotoLibrary />,
+        "junior-library": <AdminJuniorPhotoLibrary />,
+        settings: <AdminSocialSettings />,
       }}
     />
   );

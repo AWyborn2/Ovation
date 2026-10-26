@@ -96,6 +96,64 @@ jobs:
         run: pnpm run typecheck:libs
       - name: Build api-server and website
         run: pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build
+      - name: Production website has no converter capture
+        # The pack converter's capture (social template library, L4-A1) is for
+        # the dev server and `vite build --mode capture` only: the render
+        # harness imports it behind a build-time constant. Its format id and
+        # mount id must never reach the bundle that ships.
+        run: |
+          if grep -rlE "ovation-pack-capture|pack-capture-root" artifacts/cricket-club/dist/public; then
+            echo "The production website bundle contains the converter capture." >&2
+            exit 1
+          fi
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Template bundle fit check (social template library, L2-B). Draws every page
+  # × size × preset × photo and sponsor variant of each bundle template with
+  # worst-case content in headless Chrome, and fails on text that doesn't fit,
+  # a core field with no box, rows that spill and the other fit rules. A pull
+  # request checks the bundles it changed, or every bundle when it changes the
+  # renderer, the format or the check; a push to main checks them all. Only a
+  # listed bundle can fail the job, and not one on the known-failures list
+  # (scripts/src/check-template-bundles.known-failures.json), which polish
+  # shrinks; unlisted bundles (raw conversions, work in progress) are reported.
+  # ───────────────────────────────────────────────────────────────────────────
+  template-bundles:
+    name: Template bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BASE_PATH: /
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The PR's base, to see which bundles changed.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - name: Cache the harness build
+        id: harness-build
+        uses: actions/cache@v4
+        with:
+          path: artifacts/cricket-club/dist/harness-production
+          key: harness-${{ runner.os }}-${{ hashFiles('artifacts/cricket-club/src/**', 'artifacts/cricket-club/*.ts', 'artifacts/cricket-club/*.html', 'artifacts/cricket-club/*.json', 'lib/*/src/**', 'pnpm-lock.yaml') }}
+      - name: Fit-check the template bundles
+        run: |
+          ARGS=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ARGS="--changed-since=origin/${{ github.base_ref }}"
+          fi
+          if [ "${{ steps.harness-build.outputs.cache-hit }}" = "true" ]; then
+            ARGS="$ARGS --skip-build"
+          fi
+          pnpm --filter @workspace/scripts run check-template-bundles $ARGS
+      - name: Keep the fit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-bundle-fit-report
+          path: scripts/exports/template-bundles/
+          if-no-files-found: ignore
 
   # ───────────────────────────────────────────────────────────────────────────
   # Library unit tests (lib/db, lib/scorecard, scripts). Hermetic — every

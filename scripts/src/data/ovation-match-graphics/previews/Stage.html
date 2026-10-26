@@ -1,0 +1,10 @@
+<!-- @dsCard group="Shared" height=700 subtitle="The 1080-wide canvas every look sits on: black fill, optional full-bleed photo and vignette" -->
+<div id="root" style=""></div>
+<script>
+(function () {
+  var DS = window.OvationMatch, h = React.createElement, B = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23d9dbde' stroke='%238b8d90' stroke-width='4' stroke-dasharray='8 6'/%3E%3Ctext x='50' y='57' text-anchor='middle' font-family='Arial' font-weight='700' font-size='20' fill='%236b6e72'%3ELOGO%3C/text%3E%3C/svg%3E", T = {}, M = DS.SAMPLE_MATCH;
+  Object.keys(DS.SAMPLE_TEAMS).forEach(function (k) { T[k] = Object.assign({}, DS.SAMPLE_TEAMS[k], { logo: B, logoOnDark: B }); });
+  var C = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: null }), CL = Object.assign({}, DS.SAMPLE_COMPETITION, { logo: B });
+  ReactDOM.createRoot(document.getElementById('root')).render(h(DS.Stage,{background:null,vignette:'radial-gradient(ellipse at 50% 50%,rgba(0,0,0,.15),rgba(0,0,0,.55))'},h('div',{style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',color:'#666',font:'500 28px var(--font-panel)'}},'1080 × 700 · landscape')));
+})();
+</script>

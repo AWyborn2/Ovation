@@ -1,0 +1,1389 @@
+{
+  "look": "omg-classic",
+  "elements": [
+    {
+      "slug": "omg-classic/glows/stripes",
+      "name": "Stripes",
+      "category": "glows",
+      "tags": ["match graphics", "classic", "stripes", "match summary"],
+      "signature": "de03472c2eeb629d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#00000000"
+                  },
+                  {
+                    "color": "var(--mt-win-colour-a75)",
+                    "at": 40
+                  },
+                  {
+                    "color": "var(--mt-win-colour-a55)"
+                  }
+                ]
+              },
+              "skew": {
+                "x": -14,
+                "y": 0
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": -5.56,
+                "y": -20,
+                "w": 10.19,
+                "h": 140
+              },
+              "portrait": {
+                "x": -5.56,
+                "y": -20,
+                "w": 10.19,
+                "h": 140
+              },
+              "landscape": {
+                "x": 4.54,
+                "y": -27.78,
+                "w": 9.17,
+                "h": 155.56
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--mt-win-colour-l45-a50)",
+              "skew": {
+                "x": -14,
+                "y": 0
+              }
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 6.48,
+                "y": -20,
+                "w": 3.15,
+                "h": 140
+              },
+              "portrait": {
+                "x": 6.49,
+                "y": -20,
+                "w": 3.15,
+                "h": 140
+              },
+              "landscape": {
+                "x": 14.62,
+                "y": -27.78,
+                "w": 2.83,
+                "h": 155.56
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#00000000"
+                  },
+                  {
+                    "color": "var(--mt-win-colour-a75)",
+                    "at": 40
+                  },
+                  {
+                    "color": "var(--mt-win-colour-a55)"
+                  }
+                ]
+              },
+              "skew": {
+                "x": -14,
+                "y": 0
+              }
+            },
+            "id": "e3",
+            "geometry": {
+              "square": {
+                "x": 95.37,
+                "y": -20,
+                "w": 10.19,
+                "h": 140
+              },
+              "portrait": {
+                "x": 95.37,
+                "y": -20,
+                "w": 10.19,
+                "h": 140
+              },
+              "landscape": {
+                "x": 86.3,
+                "y": -27.78,
+                "w": 9.17,
+                "h": 155.56
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--mt-win-colour-l45-a50)",
+              "skew": {
+                "x": -14,
+                "y": 0
+              }
+            },
+            "id": "e4",
+            "geometry": {
+              "square": {
+                "x": 90.37,
+                "y": -20,
+                "w": 3.15,
+                "h": 140
+              },
+              "portrait": {
+                "x": 90.37,
+                "y": -20,
+                "w": 3.15,
+                "h": 140
+              },
+              "landscape": {
+                "x": 82.57,
+                "y": -27.78,
+                "w": 2.83,
+                "h": 155.56
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/bands/header",
+      "name": "Header",
+      "category": "bands",
+      "tags": ["match graphics", "classic", "header", "match summary"],
+      "signature": "eb40eea35ebc9a71",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#FFFFFF",
+                    "at": 0
+                  },
+                  {
+                    "color": "#FFFFFF",
+                    "at": 55
+                  },
+                  {
+                    "color": "#ECEDED",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 15,
+                "w": 73.33,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 17.67,
+                "w": 73.33,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 5,
+                "w": 59.4,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 135,
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-dark-l18)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--mt-i1-dark)",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--mt-i1-dark-d32)",
+                    "at": 100
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [80, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 15,
+                "w": 12.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 17.67,
+                "w": 12.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 5,
+                "w": 10.13,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings1.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.19,
+                  "blur": 0.28,
+                  "color": "#00000059"
+                }
+              ],
+              "clip": {
+                "polygon": [
+                  [-24.95, -9.57],
+                  [153.62, -9.57],
+                  [117.9, 109.48],
+                  [-24.95, 109.48]
+                ]
+              }
+            },
+            "id": "e3",
+            "geometry": {
+              "square": {
+                "x": 15.08,
+                "y": 15.67,
+                "w": 7,
+                "h": 7
+              },
+              "portrait": {
+                "x": 15.08,
+                "y": 18.2,
+                "w": 7,
+                "h": 5.6
+              },
+              "landscape": {
+                "x": 21.72,
+                "y": 6.03,
+                "w": 5.67,
+                "h": 10.8
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-dark-a22)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [73.33, 0],
+                  [100, 0],
+                  [26.67, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e4",
+            "geometry": {
+              "square": {
+                "x": 24,
+                "y": 15,
+                "w": 2.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 24,
+                "y": 17.67,
+                "w": 2.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 28.94,
+                "y": 5,
+                "w": 2.03,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 225,
+                "stops": [
+                  {
+                    "color": "var(--mt-i2-dark-l18)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--mt-i2-dark)",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--mt-i2-dark-d32)",
+                    "at": 100
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [20, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e5",
+            "geometry": {
+              "square": {
+                "x": 74.17,
+                "y": 15,
+                "w": 12.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 74.17,
+                "y": 17.67,
+                "w": 12.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 69.58,
+                "y": 5,
+                "w": 10.13,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings2.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.19,
+                  "blur": 0.28,
+                  "color": "#00000059"
+                }
+              ],
+              "clip": {
+                "polygon": [
+                  [-19.52, -10.98],
+                  [126.89, -10.98],
+                  [126.89, 111.03],
+                  [-56.12, 111.03]
+                ]
+              }
+            },
+            "id": "e6",
+            "geometry": {
+              "square": {
+                "x": 78,
+                "y": 15.75,
+                "w": 6.83,
+                "h": 6.83
+              },
+              "portrait": {
+                "x": 78,
+                "y": 18.27,
+                "w": 6.83,
+                "h": 5.47
+              },
+              "landscape": {
+                "x": 72.68,
+                "y": 6.16,
+                "w": 5.54,
+                "h": 10.54
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 270,
+                "stops": [
+                  {
+                    "color": "var(--mt-i2-dark-a20)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [26.67, 0],
+                  [100, 100],
+                  [73.33, 100]
+                ]
+              }
+            },
+            "id": "e7",
+            "geometry": {
+              "square": {
+                "x": 73.5,
+                "y": 15,
+                "w": 2.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 73.5,
+                "y": 17.67,
+                "w": 2.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 69.04,
+                "y": 5,
+                "w": 2.03,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Match Summary",
+            "style": {
+              "color": "#2A2B2D",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.67,
+              "fontWeight": 500,
+              "letterSpacing": 0.07,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "id": "e8",
+            "geometry": {
+              "square": {
+                "x": 31.21,
+                "y": 15.75,
+                "w": 38.71,
+                "h": 6.83
+              },
+              "portrait": {
+                "x": 31.21,
+                "y": 18.27,
+                "w": 38.71,
+                "h": 5.47
+              },
+              "landscape": {
+                "x": 34.78,
+                "y": 6.16,
+                "w": 31.44,
+                "h": 10.54
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/crest-frames/logo-tile",
+      "name": "Logo tile",
+      "category": "crest-frames",
+      "tags": ["match graphics", "classic", "logo", "tile", "match summary"],
+      "signature": "aef100de47e908c2",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 135,
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-dark-l18)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--mt-i1-dark)",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--mt-i1-dark-d32)",
+                    "at": 100
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [80, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 15,
+                "w": 12.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 17.67,
+                "w": 12.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 5,
+                "w": 10.13,
+                "h": 12.86
+              }
+            }
+          },
+          {
+            "kind": "image",
+            "content": "{{innings1.logo}}",
+            "style": {
+              "dropShadow": [
+                {
+                  "x": 0,
+                  "y": 0.19,
+                  "blur": 0.28,
+                  "color": "#00000059"
+                }
+              ],
+              "clip": {
+                "polygon": [
+                  [-24.95, -9.57],
+                  [153.62, -9.57],
+                  [117.9, 109.48],
+                  [-24.95, 109.48]
+                ]
+              }
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 15.08,
+                "y": 15.67,
+                "w": 7,
+                "h": 7
+              },
+              "portrait": {
+                "x": 15.08,
+                "y": 18.2,
+                "w": 7,
+                "h": 5.6
+              },
+              "landscape": {
+                "x": 21.72,
+                "y": 6.03,
+                "w": 5.67,
+                "h": 10.8
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-dark-a22)"
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              },
+              "clip": {
+                "polygon": [
+                  [73.33, 0],
+                  [100, 0],
+                  [26.67, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "id": "e3",
+            "geometry": {
+              "square": {
+                "x": 24,
+                "y": 15,
+                "w": 2.5,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 24,
+                "y": 17.67,
+                "w": 2.5,
+                "h": 6.67
+              },
+              "landscape": {
+                "x": 28.94,
+                "y": 5,
+                "w": 2.03,
+                "h": 12.86
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/rules/context-strip",
+      "name": "Context strip",
+      "category": "rules",
+      "tags": ["match graphics", "classic", "context", "strip", "match summary"],
+      "signature": "256ce2f3b9d5118d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "#45484C",
+                    "at": 0
+                  },
+                  {
+                    "color": "#2F3236",
+                    "at": 100
+                  }
+                ]
+              },
+              "border": {
+                "width": 0.09,
+                "color": "#1D1F22",
+                "sides": ["top"]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 23.33,
+                "w": 73.33,
+                "h": 3.58
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 24.33,
+                "w": 73.33,
+                "h": 2.87
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 17.86,
+                "w": 59.4,
+                "h": 5.53
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{competition}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.67,
+              "fontWeight": 600,
+              "letterSpacing": 0.05,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 27.08,
+                "y": 24.17,
+                "w": 19.64,
+                "h": 2
+              },
+              "portrait": {
+                "x": 27.08,
+                "y": 25,
+                "w": 19.64,
+                "h": 1.6
+              },
+              "landscape": {
+                "x": 31.44,
+                "y": 19.14,
+                "w": 16.1,
+                "h": 3.09
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--mt-win-ondark)"
+            },
+            "id": "e3",
+            "geometry": {
+              "square": {
+                "x": 46.88,
+                "y": 24.94,
+                "w": 0.46,
+                "h": 0.46,
+                "rotate": 45
+              },
+              "portrait": {
+                "x": 46.88,
+                "y": 25.61,
+                "w": 0.46,
+                "h": 0.37,
+                "rotate": 45
+              },
+              "landscape": {
+                "x": 47.44,
+                "y": 20.29,
+                "w": 0.42,
+                "h": 0.79,
+                "rotate": 45
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{venue}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.67,
+              "fontWeight": 600,
+              "letterSpacing": 0.05,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e4",
+            "geometry": {
+              "square": {
+                "x": 48.47,
+                "y": 24.17,
+                "w": 25.44,
+                "h": 2
+              },
+              "portrait": {
+                "x": 48.47,
+                "y": 25,
+                "w": 25.44,
+                "h": 1.6
+              },
+              "landscape": {
+                "x": 48.77,
+                "y": 19.14,
+                "w": 20.8,
+                "h": 3.09
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/bands/innings-bar",
+      "name": "Innings bar",
+      "category": "bands",
+      "tags": ["match graphics", "classic", "innings", "bar", "match summary"],
+      "signature": "8187fc13fddf0146",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "stops": [
+                  {
+                    "color": "var(--mt-i1-colour-l18)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--mt-i1-colour)",
+                    "at": 55
+                  },
+                  {
+                    "color": "var(--mt-i1-colour-d10)",
+                    "at": 100
+                  }
+                ]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 26.92,
+                "w": 73.33,
+                "h": 4
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 27.2,
+                "w": 73.33,
+                "h": 3.2
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 23.39,
+                "w": 59.4,
+                "h": 6.17
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF59"
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 26.92,
+                "w": 73.33,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 27.2,
+                "w": 73.33,
+                "h": 0.07
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 23.39,
+                "w": 59.4,
+                "h": 0.16
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#00000040"
+            },
+            "id": "e3",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 30.82,
+                "w": 73.33,
+                "h": 0.09
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 30.33,
+                "w": 73.33,
+                "h": 0.07
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 29.4,
+                "w": 59.4,
+                "h": 0.16
+              }
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 90,
+                "stops": [
+                  {
+                    "color": "#00000000"
+                  },
+                  {
+                    "color": "#FFFFFF29",
+                    "at": 50
+                  },
+                  {
+                    "color": "#00000000"
+                  }
+                ]
+              },
+              "skew": {
+                "x": -24,
+                "y": 0
+              }
+            },
+            "id": "e4",
+            "geometry": {
+              "square": {
+                "x": 50.26,
+                "y": 26.79,
+                "w": 24.07,
+                "h": 4.26
+              },
+              "portrait": {
+                "x": 50.26,
+                "y": 27.1,
+                "w": 24.07,
+                "h": 3.41
+              },
+              "landscape": {
+                "x": 49.13,
+                "y": 22.82,
+                "w": 21.67,
+                "h": 7.3
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.team}}",
+            "style": {
+              "color": "var(--mt-i1-on)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.5,
+              "fontWeight": 700,
+              "letterSpacing": 0.02,
+              "uppercase": true,
+              "align": "left"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e5",
+            "geometry": {
+              "square": {
+                "x": 15,
+                "y": 27.42,
+                "w": 35,
+                "h": 3
+              },
+              "portrait": {
+                "x": 15,
+                "y": 27.6,
+                "w": 35,
+                "h": 2.4
+              },
+              "landscape": {
+                "x": 21.65,
+                "y": 24.16,
+                "w": 28.35,
+                "h": 4.63
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "Overs {{innings1.overs}}",
+            "style": {
+              "color": "var(--mt-i1-on)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.83,
+              "fontWeight": 600,
+              "letterSpacing": 0.05,
+              "uppercase": true,
+              "align": "center"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e6",
+            "geometry": {
+              "square": {
+                "x": 49.5,
+                "y": 27.83,
+                "w": 19.33,
+                "h": 2.17
+              },
+              "portrait": {
+                "x": 49.5,
+                "y": 27.93,
+                "w": 19.33,
+                "h": 1.73
+              },
+              "landscape": {
+                "x": 49.5,
+                "y": 24.8,
+                "w": 15.85,
+                "h": 3.34
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{innings1.score}}",
+            "style": {
+              "color": "var(--mt-i1-on)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.67,
+              "fontWeight": 700,
+              "uppercase": true,
+              "align": "center"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e7",
+            "geometry": {
+              "square": {
+                "x": 67.83,
+                "y": 27.33,
+                "w": 17.67,
+                "h": 3.17
+              },
+              "portrait": {
+                "x": 67.83,
+                "y": 27.53,
+                "w": 17.67,
+                "h": 2.53
+              },
+              "landscape": {
+                "x": 64.35,
+                "y": 24.03,
+                "w": 14.5,
+                "h": 4.89
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/data-blocks/player-row",
+      "name": "Player row",
+      "category": "data-blocks",
+      "tags": ["match graphics", "classic", "player", "row", "match summary"],
+      "signature": "21c48674ca4d8c82",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "rows",
+            "rows": {
+              "repeat": "innings1.pairs",
+              "rowHeight": 5.79,
+              "cells": [
+                {
+                  "field": "batRunsOnly",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#E6E7E8"
+                  }
+                },
+                {
+                  "field": "batName",
+                  "x": 0,
+                  "w": 100,
+                  "y": 98.4,
+                  "h": 1.6,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF"
+                  }
+                },
+                {
+                  "field": "batName",
+                  "x": 2.27,
+                  "w": 29.21,
+                  "y": 28.41,
+                  "h": 41.73,
+                  "style": {
+                    "fontSize": 2,
+                    "color": "#2B2C2E",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 700,
+                    "uppercase": true,
+                    "letterSpacing": 0.01,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "batRunsOnly",
+                  "x": 31.48,
+                  "w": 7.27,
+                  "y": 26.94,
+                  "h": 44.68,
+                  "style": {
+                    "fontSize": 2.25,
+                    "color": "#2B2C2E",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 700,
+                    "uppercase": true,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "batBalls",
+                  "x": 38.75,
+                  "w": 11.59,
+                  "y": 35.6,
+                  "h": 27.34,
+                  "style": {
+                    "fontSize": 1.33,
+                    "color": "#8B8D90",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 500,
+                    "uppercase": true,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "bowlName",
+                  "x": 50.34,
+                  "w": 29.21,
+                  "y": 28.41,
+                  "h": 41.73,
+                  "style": {
+                    "fontSize": 2,
+                    "color": "#2B2C2E",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 700,
+                    "uppercase": true,
+                    "letterSpacing": 0.01,
+                    "align": "left"
+                  }
+                },
+                {
+                  "field": "bowlFigures",
+                  "x": 79.55,
+                  "w": 10.91,
+                  "y": 27.69,
+                  "h": 43.17,
+                  "style": {
+                    "fontSize": 2.08,
+                    "color": "#2B2C2E",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 700,
+                    "uppercase": true,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "bowlOvers",
+                  "x": 90.45,
+                  "w": 7.27,
+                  "y": 35.6,
+                  "h": 27.34,
+                  "style": {
+                    "fontSize": 1.33,
+                    "color": "#8B8D90",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 500,
+                    "uppercase": true,
+                    "align": "right"
+                  }
+                },
+                {
+                  "field": "batNotOut",
+                  "x": 38.05,
+                  "w": 0.7,
+                  "y": 27.98,
+                  "h": 28.2,
+                  "style": {
+                    "fontSize": 1.42,
+                    "color": "var(--mt-i1-colour)",
+                    "fontFamily": "'Barlow Condensed',sans-serif",
+                    "fontWeight": 600,
+                    "uppercase": true,
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 30.92,
+                "w": 73.33,
+                "h": 5.79
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 30.4,
+                "w": 73.33,
+                "h": 5.72
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 29.56,
+                "w": 59.4,
+                "h": 6.69
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    },
+    {
+      "slug": "omg-classic/bands/result-bar",
+      "name": "Result bar",
+      "category": "bands",
+      "tags": ["match graphics", "classic", "result", "bar", "match summary"],
+      "signature": "feeed8dcc76a6ec9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--mt-win-colour)",
+              "border": {
+                "width": 0.09,
+                "color": "#00000040",
+                "sides": ["top"]
+              }
+            },
+            "id": "e1",
+            "geometry": {
+              "square": {
+                "x": 13.33,
+                "y": 81.25,
+                "w": 73.33,
+                "h": 3.75
+              },
+              "portrait": {
+                "x": 13.33,
+                "y": 79.33,
+                "w": 73.33,
+                "h": 3
+              },
+              "landscape": {
+                "x": 20.3,
+                "y": 89.21,
+                "w": 59.4,
+                "h": 5.79
+              }
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{result}}",
+            "style": {
+              "color": "var(--mt-win-on)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.83,
+              "fontWeight": 700,
+              "letterSpacing": 0.05,
+              "uppercase": true,
+              "align": "center"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "e2",
+            "geometry": {
+              "square": {
+                "x": 12.23,
+                "y": 82.08,
+                "w": 75.53,
+                "h": 2.17
+              },
+              "portrait": {
+                "x": 12.23,
+                "y": 80,
+                "w": 75.53,
+                "h": 1.73
+              },
+              "landscape": {
+                "x": 19.41,
+                "y": 90.5,
+                "w": 61.18,
+                "h": 3.34
+              }
+            }
+          }
+        ],
+        "palettes": ["match"]
+      }
+    }
+  ]
+}

@@ -425,8 +425,43 @@
     {
       "idx": 60,
       "version": "7",
-      "when": 1792730339476,
-      "tag": "0060_kiosk_look",
+      "when": 1792727503531,
+      "tag": "0060_junior_photo_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792727504531,
+      "tag": "0061_template_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792727505531,
+      "tag": "0062_card_templates_tenant_cascade",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792727506531,
+      "tag": "0063_library_elements",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792733566708,
+      "tag": "0064_replit_sync_guards",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1792978081325,
+      "tag": "0065_kiosk_look",
       "breakpoints": true
     }
   ]

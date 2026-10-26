@@ -38,6 +38,7 @@ import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/compo
 import { HEADSHOT_ASPECTS, ImageCropDialog } from "@/components/admin-ui/image-crop-dialog";
 import { useUpload } from "@workspace/object-storage-web";
 import { AlertTriangle, Info, Search } from "lucide-react";
+import { JuniorNameReviewPanel, JuniorNameEditorLoader } from "@/components/junior-name-review";
 
 /** "1 Oct 2026" for an override timestamp; empty when unknown. */
 function overrideDate(at: string | null | undefined): string {
@@ -166,6 +167,8 @@ export default function AdminJuniorPlayers() {
           to show their name, and junior stats never mix with senior stats.
         </p>
       </div>
+
+      <JuniorNameReviewPanel />
 
       {(overridesQ.data ?? []).length > 0 && (
         <section
@@ -302,7 +305,6 @@ function JuniorPlayerEditor({
 }) {
   const confirm = useConfirm();
   const update = useUpdateJuniorParticipant();
-  const [name, setName] = useState(player.displayName);
 
   const togglePrivate = async () => {
     const makingPrivate = !player.isPrivate;
@@ -346,24 +348,7 @@ function JuniorPlayerEditor({
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1">
-        <Label htmlFor="jp-name">Display name</Label>
-        <div className="flex gap-2">
-          <Input id="jp-name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button
-            disabled={update.isPending || !name.trim() || name.trim() === player.displayName}
-            onClick={() => {
-              clearError();
-              update.mutate(
-                { id: player.participantId, data: { displayName: name.trim() } },
-                { onSuccess: onChanged, onError },
-              );
-            }}
-          >
-            Rename
-          </Button>
-        </div>
-      </div>
+      <JuniorNameEditorLoader participantId={player.participantId} onChanged={onChanged} />
 
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
         <div>

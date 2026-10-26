@@ -9,13 +9,14 @@ import {
 import { layerOnSize, type LayoutWarning } from "@workspace/scorecard/kind-templates";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
-import type { FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
+import type { CardAdjustments, FreeLayer, LayerBox, PackCardData } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
 import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
 import { boundsOf, snapMove, snapRotation, type Guide } from "./guides";
-import { contains, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
+import { contains, hasType, resizeBounds, resizeGroup, type ResizeHandle } from "./arrange";
+import { isContainer } from "./scope";
 
 type Handle = ResizeHandle;
 const HANDLES: Handle[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
@@ -55,6 +56,32 @@ type Drag =
   | { kind: "marquee"; x0: number; y0: number; additive: boolean };
 
 type Rect = { x: number; y: number; w: number; h: number };
+
+/** The rendered card's wrapper for a layer. */
+const layerSelector = (id: string) => `[data-layer-id="${id.replace(/["\\]/g, "\\$&")}"]`;
+
+/** Where an element sits on the board, in percent of it; null when it isn't laid out. */
+function placeOn(board: Element, el: Element | null | undefined): LayerBox | null {
+  const r = board.getBoundingClientRect();
+  const b = el?.getBoundingClientRect();
+  if (!b || !r.width || !r.height || (!b.width && !b.height)) return null;
+  return {
+    x: ((b.left - r.left) / r.width) * 100,
+    y: ((b.top - r.top) / r.height) * 100,
+    w: (b.width / r.width) * 100,
+    h: (b.height / r.height) * 100,
+  };
+}
+
+const near = (p: LayerBox, q: LayerBox | undefined) =>
+  !!q &&
+  Math.abs(p.x - q.x) < 0.01 &&
+  Math.abs(p.y - q.y) < 0.01 &&
+  Math.abs(p.w - q.w) < 0.01 &&
+  Math.abs(p.h - q.h) < 0.01;
+const sameBoxes = (a: Record<string, LayerBox>, b: Record<string, LayerBox>) =>
+  Object.keys(a).length === Object.keys(b).length &&
+  Object.entries(a).every(([k, p]) => near(p, b[k]));
 type ModifierKeys = { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean };
 const isCorner = (h: Handle) => h.length === 2;
 
@@ -74,6 +101,12 @@ const isCorner = (h: Handle) => h.length === 2;
  * Layers not on the current size (a template's per-size presence) are not
  * shown. With `onLayout`, live-field text is shrunk to fit after each render
  * and the overflow warnings reported, as the server render does (KTD9).
+ *
+ * Inside a group (editable-elements A2) `doc` is the group's children and
+ * `scopeId` the group, which is outlined; double-clicking a group enters it
+ * with the child under the pointer selected. With `measure`, overlays sit
+ * where the card actually drew each layer (a stack places its children
+ * itself), and with `fixed` they can be resized but not dragged.
  */
 export function EditorCanvas({
   doc,
@@ -94,8 +127,21 @@ export function EditorCanvas({
   onLayout,
   flagged = [],
   touch = false,
+  renderDoc,
+  animate = false,
+  scopeId = null,
+  scopeBox = null,
+  measure = false,
+  fixed = false,
 }: {
   doc: EditorDoc;
+  /**
+   * What the card draws when it differs from `doc` (editor v2: the whole
+   * template, while `doc` is the page being edited and the input selects it).
+   */
+  renderDoc?: CardAdjustments;
+  /** Play layer motion in the preview. */
+  animate?: boolean;
   size: CardSize;
   /** Display width of the artboard in px. */
   width: number;
@@ -112,7 +158,19 @@ export function EditorCanvas({
   onSelectMany?: (ids: string[], additive: boolean) => void;
   /** The canvas around the card: a drag that starts on it draws a marquee too. */
   marqueeArea?: RefObject<HTMLElement | null>;
-  onEnterGroup: (id: string) => void;
+  /**
+   * Double-click on a group or list: enter it, with the child under the
+   * pointer (if any) and the point itself (percent of the artboard).
+   */
+  onEnterGroup: (id: string, child?: string | null, at?: { x: number; y: number }) => void;
+  /** The group being edited inside, outlined on the card. */
+  scopeId?: string | null;
+  /** That group's box, for when the card's drawing of it can't be measured. */
+  scopeBox?: LayerBox | null;
+  /** Place overlays where the card drew each layer, not from its stored box. */
+  measure?: boolean;
+  /** The layers' places come from a stack: they can be resized but not dragged. */
+  fixed?: boolean;
   onChange: (doc: EditorDoc, commit: boolean) => void;
   /** Run the shrink-to-fit step after each render and report what still overflows. */
   onLayout?: (warnings: LayoutWarning[]) => void;
@@ -132,7 +190,7 @@ export function EditorCanvas({
   // Shrink-to-fit runs on the rendered card, so it reflects real fonts and boxes.
   const layoutRef = useRef(onLayout);
   layoutRef.current = onLayout;
-  const docJson = JSON.stringify(doc);
+  const docJson = JSON.stringify(renderDoc ?? doc);
   const inputJson = JSON.stringify(input);
   const fitting = !!onLayout;
   useLayoutEffect(() => {
@@ -147,10 +205,41 @@ export function EditorCanvas({
     observer.observe(board, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [fitting, docJson, inputJson, size, width, junior, data]);
+
+  // Where the card drew each layer (and the scope's group), in percent of the board.
+  const [measured, setMeasured] = useState<Record<string, LayerBox>>({});
+  const measureJson = JSON.stringify(
+    measure ? [...layers.map((l) => l.id), ...(scopeId ? [scopeId] : [])] : [],
+  );
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    const ids = JSON.parse(measureJson) as string[];
+    if (!board || !ids.length) {
+      setMeasured((m) => (Object.keys(m).length ? {} : m));
+      return;
+    }
+    const run = () => {
+      const next: Record<string, LayerBox> = {};
+      for (const id of ids) {
+        const b = placeOn(board, board.querySelector(layerSelector(id)));
+        if (b) next[id] = b;
+      }
+      setMeasured((prev) => (sameBoxes(prev, next) ? prev : next));
+    };
+    run();
+    const observer = new MutationObserver(run);
+    observer.observe(board, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [measureJson, docJson, inputJson, size, width, junior, data]);
+  /** Where a layer shows on the board: as drawn when measured, else its stored box. */
+  const shownBox = (l: FreeLayer): LayerBox | null => measured[l.id] ?? boxOf(l, size);
+
   const selected = layers.filter((l) => selection.includes(l.id));
-  const selectedBoxes = selected.map((l) => boxOf(l, size)).filter((b): b is LayerBox => !!b);
+  const selectedBoxes = selected.map(shownBox).filter((b): b is LayerBox => !!b);
   const single = selected.length === 1 ? selected[0] : null;
   const singleBox = single ? boxOf(single, size) : null;
+  const singleShown = single ? shownBox(single) : null;
+  const frameBox = scopeId ? (measured[scopeId] ?? scopeBox) : null;
 
   const rect = () => boardRef.current?.getBoundingClientRect();
   const toPct = (dxPx: number, dyPx: number) => {
@@ -174,6 +263,21 @@ export function EditorCanvas({
     };
   };
 
+  /** The child of a group under a pointer, top-most first; null when none is. */
+  const childAt = (group: FreeLayer, clientX: number, clientY: number): string | null => {
+    const board = boardRef.current;
+    const p = pointPct(clientX, clientY);
+    const kids = ((group as { children?: FreeLayer[] }).children ?? []).filter(
+      (c) => !c.hidden && layerOnSize(c, size),
+    );
+    for (const c of [...kids].reverse()) {
+      const b =
+        (board && placeOn(board, board.querySelector(layerSelector(c.id)))) ?? boxOf(c, size);
+      if (b && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return c.id;
+    }
+    return null;
+  };
+
   const onLayerPointerDown = (e: ReactPointerEvent, id: string) => {
     e.stopPropagation();
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -181,6 +285,8 @@ export function EditorCanvas({
       return;
     }
     if (!selection.includes(id)) onSelect(id);
+    // A stack places its children itself, so they select but don't drag.
+    if (fixed) return;
     // Selection updates next render; move whatever is (or becomes) selected.
     const ids = selection.includes(id) ? selection : [id];
     const start: Record<string, LayerBox> = {};
@@ -217,7 +323,8 @@ export function EditorCanvas({
         .filter((l) => !ids.includes(l.id))
         .map((l) => boxOf(l, size))
         .filter((b): b is LayerBox => !!b);
-      const snap = snapMove(moved, others);
+      // Stored boxes and drawn places differ under a stack, so guides would mislead there.
+      const snap = measure ? { ...moved, guides: [] } : snapMove(moved, others);
       const sdx = dx + (snap.x - moved.x);
       const sdy = dy + (snap.y - moved.y);
       setGuides(snap.guides);
@@ -273,7 +380,7 @@ export function EditorCanvas({
         : layers
             .filter((l) => !l.locked)
             .filter((l) => {
-              const b = boxOf(l, size);
+              const b = shownBox(l);
               return !!b && contains(m, b);
             })
             .map((l) => l.id);
@@ -338,7 +445,7 @@ export function EditorCanvas({
       from,
       start: structuredClone(movable),
     };
-    setScalingType(isCorner(handle) && movable.some((l) => l.style?.fontSize || l.rows));
+    setScalingType(isCorner(handle) && movable.some(hasType));
     capturePointer(e);
   };
 
@@ -359,12 +466,12 @@ export function EditorCanvas({
   const startRotate = (e: ReactPointerEvent) => {
     e.stopPropagation();
     const r = rect();
-    if (!single || !singleBox || !r || single.locked) return;
+    if (!single || !singleBox || !singleShown || !r || single.locked) return;
     drag.current = {
       kind: "rotate",
       id: single.id,
-      cx: r.left + ((singleBox.x + singleBox.w / 2) / 100) * r.width,
-      cy: r.top + ((singleBox.y + singleBox.h / 2) / 100) * r.height,
+      cx: r.left + ((singleShown.x + singleShown.w / 2) / 100) * r.width,
+      cy: r.top + ((singleShown.y + singleShown.h / 2) / 100) * r.height,
     };
     capturePointer(e);
   };
@@ -398,13 +505,26 @@ export function EditorCanvas({
         theme={theme}
         data={data}
         packId={packId}
-        adjustments={doc}
+        adjustments={renderDoc ?? doc}
         width={width}
+        animate={animate}
       />
 
       <div className="absolute inset-0">
+        {frameBox && (
+          <div
+            data-testid="scope-frame"
+            className="pointer-events-none absolute outline-dashed outline-1 outline-[var(--ed-accent)]"
+            style={{
+              left: `${frameBox.x}%`,
+              top: `${frameBox.y}%`,
+              width: `${frameBox.w}%`,
+              height: `${frameBox.h}%`,
+            }}
+          />
+        )}
         {layers.map((l) => {
-          const b = boxOf(l, size);
+          const b = shownBox(l);
           if (!b) return null;
           const isSel = selection.includes(l.id);
           const isFlagged = flagged.includes(l.id);
@@ -415,7 +535,7 @@ export function EditorCanvas({
               aria-label={l.name ?? l.kind}
               className={cn(
                 "absolute",
-                l.locked ? "pointer-events-none" : "cursor-move",
+                l.locked ? "pointer-events-none" : fixed ? "cursor-pointer" : "cursor-move",
                 isSel &&
                   selected.length > 1 &&
                   "outline outline-[1.5px] outline-[var(--ed-accent)]",
@@ -433,22 +553,28 @@ export function EditorCanvas({
               onPointerDown={(e) => onLayerPointerDown(e, l.id)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                if (l.group) onEnterGroup(l.id);
+                if (isContainer(l)) {
+                  onEnterGroup(
+                    l.id,
+                    childAt(l, e.clientX, e.clientY),
+                    pointPct(e.clientX, e.clientY),
+                  );
+                } else if (l.group) onEnterGroup(l.id);
               }}
             />
           );
         })}
 
-        {single && singleBox && (
+        {single && singleShown && (
           <div
             data-testid="selection-box"
             className="pointer-events-none absolute outline outline-2 outline-[var(--ed-accent)]"
             style={{
-              left: `${singleBox.x}%`,
-              top: `${singleBox.y}%`,
-              width: `${singleBox.w}%`,
-              height: `${singleBox.h}%`,
-              transform: singleBox.rotate ? `rotate(${singleBox.rotate}deg)` : undefined,
+              left: `${singleShown.x}%`,
+              top: `${singleShown.y}%`,
+              width: `${singleShown.w}%`,
+              height: `${singleShown.h}%`,
+              transform: singleShown.rotate ? `rotate(${singleShown.rotate}deg)` : undefined,
             }}
           >
             {!single.locked &&

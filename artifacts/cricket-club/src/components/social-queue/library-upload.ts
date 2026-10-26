@@ -36,7 +36,12 @@ export type UploadTarget = {
 };
 
 type IngestBody = { objectPaths: string[] } & UploadTarget;
-type Ingest = (body: IngestBody) => Promise<IngestClubPhotosResponse>;
+/** Any library's ingest: the senior one, or the junior library's (same per-object results). */
+type Ingest = (body: IngestBody) => Promise<{
+  results: ReadonlyArray<
+    Pick<IngestClubPhotosResponse["results"][number], "objectPath" | "ok" | "error">
+  >;
+}>;
 
 /** Browsers often report "" for .heic; the server sniffs bytes, but signing needs a type. */
 export function contentTypeFor(file: File): string {

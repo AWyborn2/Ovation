@@ -1,7 +1,7 @@
 /**
- * Card kind templates (KTD6, KTD13) — a templated draft in the Studio editor:
- * its list splits by the design's row capacity, as the server renders it, and
- * every edit lands on the one design rather than a single slide.
+ * A templated draft opens in the full editor (full draft editor plan, stage 1):
+ * the template's own layers are in Layers with the draft's content panels
+ * beside the editor's, and saving stores the one design on the draft.
  */
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
@@ -65,6 +65,7 @@ function open(): Req[] {
       requests.push({ method, url, body });
       let payload: unknown = [];
       if (method === "PATCH") payload = { ...DRAFT, ...(body as object) };
+      else if (/\/api\/social-drafts\/11$/.test(url)) payload = DRAFT;
       else if (/\/api\/social-drafts(\?|$)/.test(url)) payload = [DRAFT];
       else if (/social-settings/.test(url))
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };
@@ -84,20 +85,22 @@ function open(): Req[] {
 }
 
 describe("a templated draft in the editor", () => {
-  it("splits its list by the design's capacity and edits the one design", async () => {
+  it("opens its own design in the full editor and saves the one design", async () => {
     const requests = open();
-    const slides = await screen.findByRole("group", { name: "Slides" });
-    // Nine results at five a slide, juniors on their own slide.
-    expect(slides.querySelectorAll("button").length).toBeGreaterThanOrEqual(2);
-    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    // The template's own list is a layer, and the draft's content panels sit in the rail.
+    fireEvent.click(await screen.findByRole("button", { name: "Layers" }));
+    expect(await screen.findByText("Results")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cricket" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Live stats" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Text" }));
     fireEvent.click(screen.getByRole("button", { name: "Add a heading" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(requests.some((r) => r.method === "PATCH")).toBe(true));
     const patch = requests.find((r) => r.method === "PATCH")!.body as {
-      adjustments: { layers: unknown[]; slides?: unknown };
+      adjustments: { formatVersion?: number; pages?: { card?: { layers: unknown[] } } };
     };
-    expect(patch.adjustments.layers).toHaveLength(2);
-    expect(patch.adjustments.slides).toBeUndefined();
+    // A heading on one size makes it a page-based design: the list and the heading, one page.
+    expect(patch.adjustments.formatVersion).toBe(2);
+    expect(patch.adjustments.pages?.card?.layers).toHaveLength(2);
   });
 });

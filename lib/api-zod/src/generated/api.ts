@@ -4306,8 +4306,8 @@ export const ListEmailSendsQueryParams = zod.object({
 
 export const ListEmailSendsResponseItem = zod.object({
   "id": zod.number(),
-  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
-  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.'),
+  "listName": zod.string().describe('The list\'s name, Deleted list after deletion, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
@@ -4330,8 +4330,8 @@ export const ResendEmailSendParams = zod.object({
 
 export const ResendEmailSendResponse = zod.object({
   "id": zod.number(),
-  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled), which spans lists'),
-  "listName": zod.string().describe('The list\'s name, or what sent a batch (\"Email all team sheets (4 sides)\")'),
+  "listId": zod.number().nullable().describe('The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.'),
+  "listName": zod.string().describe('The list\'s name, Deleted list after deletion, or what sent a batch (\"Email all team sheets (4 sides)\")'),
   "kind": zod.string(),
   "subjectType": zod.string(),
   "subjectId": zod.number(),
@@ -7751,7 +7751,8 @@ export const ListCardSetsResponseItem = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 export const ListCardSetsResponse = zod.array(ListCardSetsResponseItem)
 
@@ -7894,7 +7895,8 @@ export const GenerateCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 
 
@@ -7972,7 +7974,8 @@ export const AutoseedCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })),
   "skipped": zod.string().optional()
 })
@@ -8107,7 +8110,8 @@ export const UpdateCardSetResponse = zod.object({
   "sourceKind": zod.string().nullish(),
   "sourceRound": zod.number().nullish(),
   "season": zod.number().nullish(),
-  "grade": zod.string().nullish()
+  "grade": zod.string().nullish(),
+  "updatedAt": zod.coerce.date().optional().describe('When the set was last saved.')
 })
 
 
@@ -11192,6 +11196,11 @@ export const ListSocialDraftsResponseItem = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -11247,7 +11256,12 @@ export const CreateSocialDraftBody = zod.object({
   "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
   "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
 }).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional(),
-  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).')
+  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
 })
 
 
@@ -11290,138 +11304,608 @@ export const DeleteEditorTemplateParams = zod.object({
 
 
 /**
- * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
- * @summary The club's card kind templates and whether the feature is on
+ * Listed templates whose current version passed the fit check (ADR-011), 24 a page, optionally for one card kind, card size or look, or matching search words. Library reads never return any club's own templates.
+ * @summary Browse the template library
  */
-export const ListKindTemplatesResponse = zod.object({
-  "enabled": zod.boolean().describe('Whether card kind templates are switched on for this club.'),
+export const listLibraryTemplatesQueryQMax = 60;
+
+
+
+export const ListLibraryTemplatesQueryParams = zod.object({
+  "q": zod.coerce.string().max(listLibraryTemplatesQueryQMax).optional().describe('Words that must each appear in the template\'s name, its kind or its look\'s name.'),
+  "kind": zod.coerce.string().optional(),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional(),
+  "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
+})
+
+export const ListLibraryTemplatesResponse = zod.object({
   "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
   "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})),
+  "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
+})
+
+
+/**
+ * @summary The library's looks and the kinds each covers
+ */
+export const ListLibraryLooksResponse = zod.object({
+  "looks": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "authorName": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (\"Ovation Match Graphics\"), when it has one. The library shows a family\'s looks together.'),
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
   "version": zod.number(),
-  "updatedAt": zod.coerce.date().nullable(),
-  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
-  "noticeDismissed": zod.boolean(),
-  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+})
+}))
 }))
 })
 
 
 /**
- * @summary One card kind's template
+ * For every kind the look covers, reuses the club's unedited copy of the look's template at its current version, or creates one, and makes it the kind's default, in one transaction. Kinds the look doesn't cover keep their defaults.
+ * @summary Make a look's templates the club's defaults
  */
-export const GetKindTemplateParams = zod.object({
+export const AdoptLibraryLookParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdoptLibraryLookResponse = zod.object({
+  "look": zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),
+  "changed": zod.array(zod.object({
+  "kind": zod.string(),
+  "copyId": zod.number(),
+  "created": zod.boolean().describe('Whether a new copy was made (else an unedited one was reused).')
+})),
+  "unchanged": zod.array(zod.object({
+  "kind": zod.string(),
+  "copyId": zod.number()
+}))
+})
+
+
+/**
+ * The club's latest senior draft input of the kind. Never a junior draft. With none, `source` is `sample` and the client draws the kind's sample in the club's identity.
+ * @summary The card input library thumbnails draw with
+ */
+export const GetTemplatePreviewInputQueryParams = zod.object({
   "kind": zod.coerce.string()
 })
 
-export const GetKindTemplateResponse = zod.object({
+export const GetTemplatePreviewInputResponse = zod.object({
   "kind": zod.string(),
-  "version": zod.number(),
+  "source": zod.enum(['draft', 'sample']),
+  "draftId": zod.number().optional(),
+  "input": zod.unknown().describe('The draft\'s card input (ShareCardInput JSON); null for `sample`.')
+})
+
+
+/**
+ * The same assembly a version 3 carousel gets when it's saved: the set's pages from the picked template (or the club's default for the set's kind), its title and sponsors pages from the same look's Match Day template or the club's default Match Day, and the club's pack look as a whole template when the picked one lacks a page. For previews only; nothing is saved.
+ * @summary The document a carousel set would be drawn with (ADR-011 T5.17)
+ */
+export const assembleCarouselTemplateBodyPagesMax = 20;
+
+
+
+export const AssembleCarouselTemplateBody = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']),
+  "pages": zod.array(zod.string()).max(assembleCarouselTemplateBodyPagesMax).describe('The pages the set\'s slides draw; the title and sponsors pages are added.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The picked template; absent for the club\'s default.')
+})
+
+export const AssembleCarouselTemplateResponse = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
+})
+
+
+/**
+ * A listed template, or one the club holds a copy of (listed or not).
+ * @summary One library template at its current version
+ */
+export const GetLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * Listed library elements (decorations from every look and those clubs saved), 48 a page, optionally for one category or look, or matching a search across names and tags. Every element is shared with every club.
+ * @summary Browse and search the element library
+ */
+export const listLibraryElementsQueryQMax = 60;
+
+
+
+export const ListLibraryElementsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listLibraryElementsQueryQMax).optional().describe('Words that must each appear in the element\'s name or tags.'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).optional(),
+  "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "mine": zod.coerce.boolean().optional().describe('Only the elements this club saved, listed or not.'),
+  "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
+})
+
+export const ListLibraryElementsResponse = zod.object({
+  "elements": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})),
+  "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
+})
+
+
+/**
+ * Publishes the layers to every club at once (decision E1). The document may only use tokens, slots and library images: no club upload, photo or sponsor art.
+ * @summary Save layers as a public library element
+ */
+export const saveLibraryElementBodyNameMax = 60;
+
+export const saveLibraryElementBodyTagsItemMax = 24;
+
+export const saveLibraryElementBodyTagsMax = 12;
+
+
+
+export const SaveLibraryElementBody = zod.object({
+  "name": zod.string().min(1).max(saveLibraryElementBodyNameMax),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string().min(1).max(saveLibraryElementBodyTagsItemMax)).max(saveLibraryElementBodyTagsMax).optional(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * A listed element, or one this club saved (listed or not). Inserting copies its layers into the card; nothing links back to the element.
+ * @summary One library element, to insert
+ */
+export const GetLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Other clubs stop seeing it. Cards it was already inserted into keep their copies of its layers.
+ * @summary Take an element this club saved out of the library
+ */
+export const UnlistLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlistLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "mine": zod.boolean().describe('This club saved it, so it can unlist it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "thumbnailUrl": zod.string().nullable().describe('A library image; null when the panel draws the element live.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * One report per club and element; reporting again replaces the reason. A club cannot report its own element (it can unlist it instead).
+ * @summary Report a library element to Ovation
+ */
+export const ReportLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reportLibraryElementBodyReasonMax = 500;
+
+
+
+export const ReportLibraryElementBody = zod.object({
+  "reason": zod.string().min(1).max(reportLibraryElementBodyReasonMax)
+})
+
+
+/**
+ * Card templates, and set templates (`set:<type>`, carousel set editor plan) when asked for by kind or with `includeSets`.
+ * @summary The club's own templates, defaults first within each kind
+ */
+export const ListClubTemplatesQueryParams = zod.object({
+  "kind": zod.coerce.string().optional(),
+  "includeSets": zod.coerce.boolean().optional()
+})
+
+export const ListClubTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
   "updatedAt": zod.coerce.date().nullable(),
-  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
-  "noticeDismissed": zod.boolean(),
-  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}))
+})
+
+
+/**
+ * @summary Use a library template (copy it into the club's templates)
+ */
+export const CreateClubTemplateBody = zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number().optional().describe('A library version; the current one when absent.'),
+  "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * A new club set template of `setType`, saved to the club's designs. With `from`, that template's design takes the set page it fits (a cover, a team, fixture or result page, or the sponsors page; else it becomes the first page), and the other pages come from the same look's set template (Club Kit's when its look has none). A free set is the design and copies of it, with no data binding, and is never posted automatically. Without `from`, the look's set template as it is.
+ * @summary Make a carousel set design from one template (carousel set editor plan, part 4)
+ */
+export const makeCarouselSetBodyNameMax = 80;
+
+
+
+export const MakeCarouselSetBody = zod.object({
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary', 'free']),
+  "from": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').optional().describe('The template to start from (one of the club\'s, or a library template).'),
+  "lookId": zod.number().optional().describe('Without `from`, the look whose set template to start from (Club Kit when absent).'),
+  "name": zod.string().min(1).max(makeCarouselSetBodyNameMax).optional()
+})
+
+
+/**
+ * @summary One of the club's templates, with its document
+ */
+export const GetClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplateResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
 }).and(zod.object({
-  "document": zod.object({
-  "fields": zod.record(zod.string(), zod.string()).optional(),
-  "hidden": zod.array(zod.string()).optional(),
-  "photo": zod.record(zod.string(), zod.unknown()).optional(),
-  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
-  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
-  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
 }))
 
 
 /**
- * @summary Save a card kind's template (rejected when another admin saved first)
+ * A new document is the club's edit: the first one makes the template its own (no more update prompts), and every one starts a fit check. Renaming alone is neither.
+ * @summary Save one of the club's templates (rejected when someone saved first)
  */
-export const SaveKindTemplateParams = zod.object({
-  "kind": zod.coerce.string()
+export const SaveClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
-export const SaveKindTemplateBody = zod.object({
+export const saveClubTemplateBodyNameMax = 80;
+
+
+
+export const SaveClubTemplateBody = zod.object({
   "baseVersion": zod.number().describe('The version this edit started from.'),
-  "document": zod.object({
-  "fields": zod.record(zod.string(), zod.string()).optional(),
-  "hidden": zod.array(zod.string()).optional(),
-  "photo": zod.record(zod.string(), zod.unknown()).optional(),
-  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
-  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.')
+  "name": zod.string().min(1).max(saveClubTemplateBodyNameMax).optional(),
+  "document": zod.record(zod.string(), zod.unknown()).optional().describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
 })
 
-export const SaveKindTemplateResponse = zod.object({
+export const SaveClubTemplateResponse = zod.object({
+  "id": zod.number(),
   "kind": zod.string(),
-  "version": zod.number(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
   "updatedAt": zod.coerce.date().nullable(),
-  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
-  "noticeDismissed": zod.boolean(),
-  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
 }).and(zod.object({
-  "document": zod.object({
-  "fields": zod.record(zod.string(), zod.string()).optional(),
-  "hidden": zod.array(zod.string()).optional(),
-  "photo": zod.record(zod.string(), zod.unknown()).optional(),
-  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
-  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
-  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
 }))
 
 
 /**
- * @summary Start (or restart) a card kind's template from a starter design
+ * @summary Delete one of the club's templates (never a kind's default)
  */
-export const StartKindTemplateParams = zod.object({
-  "kind": zod.coerce.string()
+export const DeleteClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
-export const StartKindTemplateBody = zod.object({
-  "starter": zod.enum(['club-kit', 'broadcast', 'clubhouse']),
-  "baseVersion": zod.number().optional().describe('Required when the kind already has a template.')
+
+/**
+ * @summary Duplicate one of the club's templates
+ */
+export const DuplicateClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
-export const StartKindTemplateResponse = zod.object({
+
+/**
+ * @summary Make one of the club's templates its kind's default
+ */
+export const SetClubTemplateDefaultParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetClubTemplateDefaultResponse = zod.object({
+  "id": zod.number(),
   "kind": zod.string(),
-  "version": zod.number(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
   "updatedAt": zod.coerce.date().nullable(),
-  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
-  "noticeDismissed": zod.boolean(),
-  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
 }).and(zod.object({
-  "document": zod.object({
-  "fields": zod.record(zod.string(), zod.string()).optional(),
-  "hidden": zod.array(zod.string()).optional(),
-  "photo": zod.record(zod.string(), zod.unknown()).optional(),
-  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
-  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
-}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
-  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
 }))
 
 
 /**
- * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ * Replaces the template's document with the library template's current version. The template stays unedited. Refused for a template the club has changed (it is the club's own) and when there is no newer version.
+ * @summary Take the library's newer version into an unedited club template
  */
-export const DismissKindTemplateNoticeParams = zod.object({
-  "kind": zod.coerce.string()
+export const TakeClubTemplateUpdateParams = zod.object({
+  "id": zod.coerce.number()
 })
+
+export const TakeClubTemplateUpdateBody = zod.object({
+  "baseVersion": zod.number().describe('The template version the admin was looking at.')
+})
+
+export const TakeClubTemplateUpdateResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "version": zod.number().describe('The copy\'s own save counter.'),
+  "isDefault": zod.boolean().describe('New drafts of this kind copy this template.'),
+  "basedOn": zod.union([zod.object({
+  "templateId": zod.number(),
+  "version": zod.number().describe('The library version this copy was taken from.'),
+  "name": zod.string(),
+  "authorName": zod.string(),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()])
+}),zod.null()]),
+  "edited": zod.boolean().describe('The club saved changes to it, so it is its own (no update prompts).'),
+  "updateAvailable": zod.union([zod.object({
+  "version": zod.number()
+}),zod.null()]).describe('A newer version of the library template it came from, for a copy the club hasn\'t edited; null otherwise.'),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "waitingDrafts": zod.number().describe('For a default, the unposted drafts of its kind an apply would change; else 0.')
+}).and(zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "updatedByName": zod.string().nullish()
+}))
 
 
 /**
- * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
- * @summary Apply a saved template version to this kind's unposted drafts
+ * Replaces the design of every unposted draft of the template's kind; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply one of the club's templates to its kind's unposted drafts
  */
-export const ApplyKindTemplateParams = zod.object({
-  "kind": zod.coerce.string()
+export const ApplyClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
-export const ApplyKindTemplateBody = zod.object({
+export const ApplyClubTemplateBody = zod.object({
   "version": zod.number().describe('The saved template version to apply.'),
   "expectedDrafts": zod.number().optional().describe('How many waiting drafts the admin was shown; any shortfall is reported as skipped.')
 })
 
-export const ApplyKindTemplateResponse = zod.object({
+export const ApplyClubTemplateResponse = zod.object({
   "changed": zod.number(),
   "skipped": zod.number()
 })
@@ -11634,6 +12118,90 @@ export const GetPlatformPlayhqSyncResponse = zod.object({
   "openedAt": zod.string()
 }),zod.null()]).optional()
 }))
+})
+
+
+/**
+ * @summary The AI designer's state (configured?), its quality figure and recent designs
+ */
+export const GetTemplateDesignerResponse = zod.object({
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "model": zod.string(),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designs (the 70% bar counts first-try fits).'),
+  "generations": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "model": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "firstTryFit": zod.boolean().nullable().describe('The first reply was valid and fitted; null when no fit check ran.'),
+  "tokens": zod.object({
+  "input": zod.number(),
+  "output": zod.number(),
+  "cacheRead": zod.number(),
+  "cacheWrite": zod.number()
+}),
+  "costUsd": zod.number().nullable(),
+  "result": zod.union([zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number()
+}),zod.null()]).describe('The unlisted console template the design was saved as.'),
+  "errors": zod.array(zod.string()).describe('Why the last reply was invalid, while the server remembers it.'),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Runs in the background; poll the design until its status is done or failed. The result is saved as an unlisted console template in the library. The image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent.
+ * @summary Start an AI design from a brief and an optional uploaded reference image
+ */
+export const startTemplateGenerationBodyBriefMax = 2000;
+
+
+
+export const StartTemplateGenerationBody = zod.object({
+  "kind": zod.string().describe('The card kind to design.'),
+  "brief": zod.string().max(startTemplateGenerationBodyBriefMax).optional(),
+  "image": zod.instanceof(File).optional().describe('A reference image (PNG or JPEG, at most 5 MB).')
+})
+
+
+/**
+ * @summary One AI design
+ */
+export const GetTemplateGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTemplateGenerationResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "model": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "firstTryFit": zod.boolean().nullable().describe('The first reply was valid and fitted; null when no fit check ran.'),
+  "tokens": zod.object({
+  "input": zod.number(),
+  "output": zod.number(),
+  "cacheRead": zod.number(),
+  "cacheWrite": zod.number()
+}),
+  "costUsd": zod.number().nullable(),
+  "result": zod.union([zod.object({
+  "libraryTemplateId": zod.number(),
+  "version": zod.number()
+}),zod.null()]).describe('The unlisted console template the design was saved as.'),
+  "errors": zod.array(zod.string()).describe('Why the last reply was invalid, while the server remembers it.'),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
 })
 
 
@@ -12034,6 +12602,189 @@ export const ApproveSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
+ * A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as its set design: one document whose pages draw every slide. A draft saved before set designs gets one assembled from its own design and the same look's set template; nothing is stored until it is saved.
+ * @summary A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+ */
+export const GetDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetDraftSetDesignResponse = zod.object({
+  "draftId": zod.number(),
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary', 'free']),
+  "layout": zod.enum(['carousel', 'list', 'pages']).describe('`carousel`: a queued set whose slides are stored (their order is the payload\'s); `list`: a list card whose slides are worked out from its data (their order is the design\'s arrangement); `pages`: a card made into a free set of design pages, each drawn with the card\'s own data (full draft editor plan, stage 2).'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullable(),
+  "size": zod.union([zod.literal('square'),zod.literal('portrait'),zod.literal('story'),zod.literal('landscape'),zod.literal(null)]).nullable().describe('A queued carousel\'s size; null for a list draft (it posts at every size the club has on).'),
+  "stored": zod.boolean().optional().describe('Whether the draft already holds this set design (false when assembled for this read).')
+})
+
+
+/**
+ * Stores the set design on the draft. A queued carousel's slides follow the design's arrangement (reordered, deleted, design pages added) and its size; a list draft keeps the arrangement in its design. The draft's data snapshot is unchanged. The new layout owes a check before automation, as any templated edit does.
+ * @summary Save a carousel set draft's design, slide order and size (keeps a revision)
+ */
+export const SaveDraftSetDesignParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SaveDraftSetDesignBody = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "templateRef": zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.').nullish().describe('The set template the design now comes from (switching look); absent keeps the draft\'s.'),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional().describe('A queued carousel\'s new size.')
+})
+
+export const SaveDraftSetDesignResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
+ * @summary One draft, including one just opened in the editor and not yet edited
+ */
+export const GetSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12114,6 +12865,11 @@ export const UpdateSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12315,6 +13071,11 @@ export const GetSocialCalendarResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12378,6 +13139,11 @@ export const GetSocialCalendarResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12463,6 +13229,11 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12540,6 +13311,11 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12611,6 +13387,11 @@ export const SendBackSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12678,6 +13459,11 @@ export const ReopenSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12767,6 +13553,11 @@ export const RevertSocialDraftResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12834,6 +13625,11 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -12910,6 +13706,11 @@ export const GenerateRecapsResponseItem = zod.object({
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "templateRef": zod.union([zod.object({
+  "copyId": zod.number().optional(),
+  "libraryTemplateId": zod.number().optional(),
+  "version": zod.number()
+}).describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),zod.null()]).optional().describe('The template this draft\'s design was copied from; null for a pack draft.'),
   "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
   "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
   "reason": zod.enum(['overflow', 'font', 'slides']),
@@ -14304,6 +15105,216 @@ export const GetJuniorPhotoParams = zod.object({
  */
 export const GetJuniorPhotoThumbParams = zod.object({
   "photoId": zod.coerce.number()
+})
+
+
+export const ListJuniorNameReviewResponseItem = zod.object({
+  "participantId": zod.string(),
+  "currentName": zod.string(),
+  "suggestedName": zod.string().nullable(),
+  "status": zod.enum(['suggested', 'conflicting', 'abbreviated', 'missing', 'protected', 'expanded', 'identity_review']),
+  "evidence": zod.array(zod.object({
+  "source": zod.enum(['roster', 'batting', 'bowling', 'premiership']),
+  "sourceId": zod.number(),
+  "name": zod.string(),
+  "season": zod.string().nullable(),
+  "team": zod.string().nullable()
+})),
+  "revision": zod.string(),
+  "firstSeason": zod.string().nullable(),
+  "lastSeason": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "withheld": zod.boolean(),
+  "publicName": zod.string(),
+  "history": zod.array(zod.object({
+  "id": zod.number(),
+  "before": zod.string().nullable(),
+  "after": zod.string().nullable(),
+  "by": zod.string().nullable(),
+  "at": zod.string()
+}))
+})
+export const ListJuniorNameReviewResponse = zod.array(ListJuniorNameReviewResponseItem)
+
+
+export const publishJuniorNamesBodySelectionsItemParticipantIdMax = 150;
+
+export const publishJuniorNamesBodySelectionsItemNameMin = 3;
+export const publishJuniorNamesBodySelectionsItemNameMax = 200;
+
+export const publishJuniorNamesBodySelectionsMax = 750;
+
+
+
+export const PublishJuniorNamesBody = zod.object({
+  "selections": zod.array(zod.object({
+  "participantId": zod.string().min(1).max(publishJuniorNamesBodySelectionsItemParticipantIdMax),
+  "revision": zod.string(),
+  "name": zod.string().min(publishJuniorNamesBodySelectionsItemNameMin).max(publishJuniorNamesBodySelectionsItemNameMax),
+  "mode": zod.enum(['suggestion', 'manual'])
+})).min(1).max(publishJuniorNamesBodySelectionsMax)
+})
+
+export const PublishJuniorNamesResponse = zod.object({
+  "published": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
+ * Every junior photo with its folder fields and the children tagged in it. `displayable` is the consent rule (kiosk-photo-rotation A): at least one tagged child, and every tagged child neither photo-withheld nor private. A photo that is not displayable never leaves admin.
+ * @summary The club's junior photo library, newest first (admin)
+ */
+export const ListJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const ListJuniorLibraryPhotosResponse = zod.array(ListJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * Like the senior library's ingest: each object becomes an upright JPEG with EXIF stripped, plus a thumbnail, stored under the private junior prefix; the upload is deleted. Files fail independently. At most 50 per call.
+ * @summary Convert uploaded objects into junior library photos (admin)
+ */
+
+
+
+export const IngestJuniorLibraryPhotosBody = zod.object({
+  "objectPaths": zod.array(zod.string()).min(1),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).optional().describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),
+  "matchFormat": zod.enum(['one_day', 't20', 'two_day']).optional().describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),
+  "participantIds": zod.array(zod.string()).optional().describe('Junior players (PlayHQ participant ids) to tag on every photo.')
+})
+
+export const IngestJuniorLibraryPhotosResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "photo": zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).optional().describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.'),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
+ * A photo that stops being displayable (a withheld child tagged in, its last tag removed) is stripped from open cards in the same request.
+ * @summary Tag children, season and match format on junior library photos (admin)
+ */
+
+
+
+export const TagJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "season": zod.number().nullish().describe('Set (or with null, clear) the season. Omit to leave unchanged.'),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).optional().describe('Set (or with null, clear) the match format. Omit to leave unchanged.'),
+  "addParticipantIds": zod.array(zod.string()).optional(),
+  "removeParticipantIds": zod.array(zod.string()).optional()
+})
+
+export const TagJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const TagJuniorLibraryPhotosResponse = zod.array(TagJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary File junior photos into a library folder (grade x photo type) (admin)
+ */
+
+
+
+export const MoveJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "grade": zod.string().nullable().describe('The senior grade folder, or null for Club-wide (no grade).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
+})
+
+export const MoveJuniorLibraryPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean()
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
+export const MoveJuniorLibraryPhotosResponse = zod.array(MoveJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * @summary Remove photos from the junior library (admin); cards lose them at once
+ */
+
+
+
+export const DeleteJuniorLibraryPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1)
+})
+
+export const DeleteJuniorLibraryPhotosResponse = zod.object({
+  "deleted": zod.number()
 })
 
 
@@ -15839,6 +16850,468 @@ export const CreateProvisioningExclusionBody = zod.object({
  */
 export const DeleteProvisioningExclusionParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Every library template, listed or not (ADR-011 L7-A)
+ */
+export const ListConsoleLibraryTemplatesQueryParams = zod.object({
+  "kind": zod.coerce.string().optional(),
+  "origin": zod.enum(['bundle', 'console', 'club']).optional(),
+  "listed": zod.coerce.boolean().optional()
+})
+
+export const ListConsoleLibraryTemplatesResponse = zod.object({
+  "templates": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})))
+})
+
+
+/**
+ * @summary A new, unlisted console template at version 1; its fit check starts
+ */
+export const createConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const CreateConsoleLibraryTemplateBody = zod.object({
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(createConsoleLibraryTemplateBodyNameMax),
+  "lookId": zod.number().nullish(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+
+/**
+ * @summary One library template at its current version
+ */
+export const GetConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * A new document becomes the template's next version and starts its fit check; earlier versions stay, so clubs' copies see an update. A name or look alone changes no version. Bundle templates are refused: they change with a deploy, and the console duplicates them instead.
+ * @summary Save a console template; a new document is a new version
+ */
+export const SaveConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const SaveConsoleLibraryTemplateBody = zod.object({
+  "baseVersion": zod.number(),
+  "name": zod.string().min(1).max(saveConsoleLibraryTemplateBodyNameMax).optional(),
+  "lookId": zod.number().nullish(),
+  "document": zod.record(zod.string(), zod.unknown()).optional().describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+})
+
+export const SaveConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary A console copy of a template's current version (how bundle templates are edited)
+ */
+export const DuplicateConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const duplicateConsoleLibraryTemplateBodyNameMax = 80;
+
+
+
+export const DuplicateConsoleLibraryTemplateBody = zod.object({
+  "name": zod.string().min(1).max(duplicateConsoleLibraryTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * Refused unless the current version passed a real fit check (every page, size and preset). A bundle template follows its bundle file, so this only undoes an Ovation unlisting.
+ * @summary List a template in the library
+ */
+export const ListConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary Take a template out of the library (clubs' copies are untouched)
+ */
+export const UnlistConsoleLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const unlistConsoleLibraryTemplateBodyReasonMax = 300;
+
+
+
+export const UnlistConsoleLibraryTemplateBody = zod.object({
+  "reason": zod.string().max(unlistConsoleLibraryTemplateBodyReasonMax).nullish()
+})
+
+export const UnlistConsoleLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+}).and(zod.object({
+  "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * For moderation (editable-elements plan, D5): every element with its author and how many reports are open, most-reported first, then newest. 100 a page.
+ * @summary Every library element, listed or not, with its open reports
+ */
+export const listConsoleLibraryElementsQueryQMax = 60;
+
+
+
+
+export const ListConsoleLibraryElementsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listConsoleLibraryElementsQueryQMax).optional().describe('Words that must each appear in the name or tags.'),
+  "origin": zod.enum(['bundle', 'console', 'club']).optional(),
+  "reported": zod.coerce.boolean().optional().describe('Only elements with an open report.'),
+  "listed": zod.coerce.boolean().optional(),
+  "page": zod.coerce.number().min(1).optional().describe('Page number, from 1.')
+})
+
+export const ListConsoleLibraryElementsResponse = zod.object({
+  "elements": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Every report of an element, open first
+ */
+export const ListConsoleLibraryElementReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryElementReportsResponse = zod.object({
+  "reports": zod.array(zod.object({
+  "id": zod.number(),
+  "clubName": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * No club sees it any more; cards it was added to keep their copies. Its open reports are resolved. A bundle sync keeps it unlisted.
+ * @summary Take an element out of the library, as Ovation
+ */
+export const UnlistConsoleLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const unlistConsoleLibraryElementBodyReasonMax = 500;
+
+
+
+export const UnlistConsoleLibraryElementBody = zod.object({
+  "reason": zod.string().max(unlistConsoleLibraryElementBodyReasonMax).optional()
+})
+
+export const UnlistConsoleLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Undoes either unlisting, the author's or Ovation's.
+ * @summary Put an element back in the library
+ */
+export const ListConsoleLibraryElementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListConsoleLibraryElementResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Resolve an element's open reports and keep it listed
+ */
+export const DismissConsoleLibraryElementReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DismissConsoleLibraryElementReportsResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "name": zod.string(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "tags": zod.array(zod.string()),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that saved it.'),
+  "authorTenantId": zod.number().nullable().describe('The club that saved it; null for Ovation\'s.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "listed": zod.boolean(),
+  "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
+  "unlistReason": zod.string().nullable(),
+  "unlistedAt": zod.coerce.date().nullable(),
+  "openReports": zod.number().describe('Reports not yet resolved.'),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Every look, with how many templates each holds
+ */
+export const ListConsoleLibraryLooksResponse = zod.object({
+  "looks": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "displayOrder": zod.number(),
+  "templates": zod.number().describe('Library templates in this look, listed or not.')
+}))
+})
+
+
+/**
+ * @summary A new console look
+ */
+export const createConsoleLibraryLookBodySlugMax = 60;
+
+export const createConsoleLibraryLookBodyNameMax = 80;
+
+
+
+export const CreateConsoleLibraryLookBody = zod.object({
+  "slug": zod.string().max(createConsoleLibraryLookBodySlugMax),
+  "name": zod.string().min(1).max(createConsoleLibraryLookBodyNameMax),
+  "description": zod.string().nullish()
+})
+
+
+/**
+ * Reads the link's frames (named <page>/<size>, or card-shaped) with Ovation's read-only Figma token, maps them to the template format, exports vectors as SVG and copies images to the library, then saves an unlisted console template, validated and sent to the fit job. The report lists everything that was changed or left out. Colours bound to styles named ovation/* become the club's colour tokens.
+ * @summary Import a Figma design as an unlisted console template (ADR-011 L8-B)
+ */
+export const importFigmaTemplateBodyFileUrlMax = 2000;
+
+export const importFigmaTemplateBodyNameMax = 80;
+
+
+
+export const ImportFigmaTemplateBody = zod.object({
+  "fileUrl": zod.string().min(1).max(importFigmaTemplateBodyFileUrlMax).describe('A Figma design link (with or without node-id), or a bare file key.'),
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(importFigmaTemplateBodyNameMax).optional(),
+  "lookId": zod.number().nullish()
 })
 
 

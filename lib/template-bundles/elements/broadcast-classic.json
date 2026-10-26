@@ -1,0 +1,454 @@
+{
+  "look": "broadcast-classic",
+  "elements": [
+    {
+      "slug": "broadcast-classic/bands/accent-slash",
+      "name": "Accent slash",
+      "category": "bands",
+      "tags": ["broadcast-classic", "bands", "accent", "slash", "shape"],
+      "signature": "98a31bfabcf8e2fe",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--gold,#FBAC27)"
+            },
+            "geometry": {
+              "square": {
+                "x": 83,
+                "y": -4,
+                "w": 3,
+                "h": 18,
+                "rotate": 22
+              },
+              "portrait": {
+                "x": 83,
+                "y": -3.2,
+                "w": 3,
+                "h": 14.4,
+                "rotate": 22
+              },
+              "story": {
+                "x": 83,
+                "y": -2.25,
+                "w": 3,
+                "h": 10.12,
+                "rotate": 22
+              },
+              "landscape": {
+                "x": 91.08,
+                "y": -4,
+                "w": 1.57,
+                "h": 18,
+                "rotate": 22
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/bands/gold-slash",
+      "name": "Gold slash",
+      "category": "bands",
+      "tags": ["broadcast-classic", "bands", "gold", "slash", "shape", "angled"],
+      "signature": "042746021c8339d0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 79.37,
+                "y": -4,
+                "w": 10.22,
+                "h": 17.96
+              },
+              "portrait": {
+                "x": 79.37,
+                "y": -3.2,
+                "w": 10.22,
+                "h": 14.37
+              },
+              "story": {
+                "x": 79.37,
+                "y": -2.25,
+                "w": 10.22,
+                "h": 10.1
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [71.01, 0],
+                  [100, 0],
+                  [28.99, 100],
+                  [0, 100]
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/bands/gold-slash-2",
+      "name": "Gold slash 2",
+      "category": "bands",
+      "tags": ["broadcast-classic", "bands", "gold", "slash", "2", "shape", "angled"],
+      "signature": "d7c2d09dfead7045",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 89.17,
+                "y": -4,
+                "w": 5.39,
+                "h": 17.94
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [70.61, 0],
+                  [100, 0],
+                  [29.39, 100],
+                  [0, 100]
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/badges/gold-chip",
+      "name": "Gold chip",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "gold", "chip", "shape", "angled"],
+      "signature": "1ad5070c3e9e5a93",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 93.16,
+                "y": -4,
+                "w": 3.51,
+                "h": 13.02
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [78.64, 0],
+                  [100, 0],
+                  [21.36, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/badges/gold-chip-2",
+      "name": "Gold chip 2",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "gold", "chip", "2", "shape", "angled"],
+      "signature": "9e864338f069b7a0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "kind": "shape",
+            "id": "e1",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 86.98,
+                "y": -4,
+                "w": 6.62,
+                "h": 12.96
+              },
+              "portrait": {
+                "x": 86.98,
+                "y": -3.2,
+                "w": 6.62,
+                "h": 10.37
+              },
+              "story": {
+                "x": 86.98,
+                "y": -2.25,
+                "w": 6.62,
+                "h": 7.29
+              }
+            },
+            "style": {
+              "fill": "var(--gold)",
+              "clip": {
+                "polygon": [
+                  [79.04, 0],
+                  [100, 0],
+                  [20.96, 100],
+                  [0, 100]
+                ]
+              },
+              "opacity": 0.55
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/badges/stat-1-panel",
+      "name": "Stat 1 panel",
+      "category": "badges",
+      "tags": ["broadcast-classic", "badges", "stat", "1", "panel", "shape", "subtle"],
+      "signature": "cdb32ff5f6d876af",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "rgba(255,255,255,.07)"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 64,
+                "w": 18.13,
+                "h": 11
+              },
+              "portrait": {
+                "x": 6,
+                "y": 71.2,
+                "w": 18.13,
+                "h": 8.8
+              },
+              "story": {
+                "x": 6,
+                "y": 79.75,
+                "w": 28.8,
+                "h": 6.19
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 64,
+                "w": 11.69,
+                "h": 11
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/rules/accent-slash-2",
+      "name": "Accent slash 2",
+      "category": "rules",
+      "tags": ["broadcast-classic", "rules", "accent", "slash", "2", "shape"],
+      "signature": "0e214ea3c2571749",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "var(--gold,#FBAC27)",
+              "opacity": 0.55
+            },
+            "geometry": {
+              "square": {
+                "x": 89.6,
+                "y": -4,
+                "w": 1.4,
+                "h": 13,
+                "rotate": 22
+              },
+              "portrait": {
+                "x": 89.6,
+                "y": -3.2,
+                "w": 1.4,
+                "h": 10.4,
+                "rotate": 22
+              },
+              "story": {
+                "x": 89.6,
+                "y": -2.25,
+                "w": 1.4,
+                "h": 7.31,
+                "rotate": 22
+              },
+              "landscape": {
+                "x": 94.54,
+                "y": -4,
+                "w": 0.73,
+                "h": 13,
+                "rotate": 22
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/rules/footer-rule",
+      "name": "Footer rule",
+      "category": "rules",
+      "tags": ["broadcast-classic", "rules", "footer", "rule", "shape", "subtle"],
+      "signature": "8ac823c19a6084d6",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "rgba(255,255,255,.14)"
+            },
+            "geometry": {
+              "square": {
+                "x": 6,
+                "y": 87.4,
+                "w": 88,
+                "h": 0.25
+              },
+              "portrait": {
+                "x": 6,
+                "y": 89.92,
+                "w": 88,
+                "h": 0.2
+              },
+              "story": {
+                "x": 6,
+                "y": 92.91,
+                "w": 88,
+                "h": 0.14
+              },
+              "landscape": {
+                "x": 3.15,
+                "y": 87.4,
+                "w": 93.7,
+                "h": 0.25
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/glows/photo-fade-side",
+      "name": "Photo fade (side)",
+      "category": "glows",
+      "tags": ["broadcast-classic", "glows", "photo", "fade", "(side)", "shape", "gradient"],
+      "signature": "d691b3c228d8e02f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(90deg,var(--ink,#101216) 0%,transparent 70%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "portrait": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "story": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "landscape": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "broadcast-classic/glows/photo-fade-bottom",
+      "name": "Photo fade (bottom)",
+      "category": "glows",
+      "tags": ["broadcast-classic", "glows", "photo", "fade", "(bottom)", "shape", "gradient"],
+      "signature": "ec910bc873454ceb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "shape",
+            "style": {
+              "background": "linear-gradient(0deg,var(--ink,#101216) 12%,transparent 58%)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

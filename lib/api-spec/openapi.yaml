@@ -3142,6 +3142,8 @@ paths:
           description: Not signed in as this club's admin
         "404":
           description: Send not found
+        "409":
+          description: The contact list was deleted; this send cannot be resent.
 
   /selection/{id}/playhq-sync:
     post:
@@ -6358,131 +6360,531 @@ paths:
         "404":
           description: Not found
 
-  /kind-templates:
+  /template-library:
     get:
-      operationId: listKindTemplates
+      operationId: listLibraryTemplates
       tags: [socialCards]
-      summary: The club's card kind templates and whether the feature is on
+      summary: Browse the template library
       description: >-
-        Card kind templates (plan 2026-10-07-002). `enabled` is false until the
-        KIND_TEMPLATES release switch includes this club; the list is then empty.
+        Listed templates whose current version passed the fit check (ADR-011),
+        24 a page, optionally for one card kind, card size or look, or matching
+        search words. Library reads never return any club's own templates.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the template's name, its kind or its look's name.
+          schema: { type: string, maxLength: 60 }
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [square, portrait, story, landscape]
+        - name: look
+          in: query
+          required: false
+          description: A look's slug.
+          schema: { type: string }
+        - name: cursor
+          in: query
+          required: false
+          description: The previous page's `nextCursor`.
+          schema: { type: integer }
       responses:
         "200":
-          description: Kind templates
+          description: One page of library templates
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/KindTemplateList"
+                $ref: "#/components/schemas/LibraryTemplatePage"
 
-  /kind-templates/{kind}:
+  /template-library/looks:
+    get:
+      operationId: listLibraryLooks
+      tags: [socialCards]
+      summary: The library's looks and the kinds each covers
+      responses:
+        "200":
+          description: Looks with at least one listed template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLookList"
+
+  /template-library/looks/{id}/adopt:
     parameters:
-      - name: kind
+      - name: id
         in: path
         required: true
-        schema: { type: string }
-    get:
-      operationId: getKindTemplate
+        schema: { type: integer }
+    post:
+      operationId: adoptLibraryLook
       tags: [socialCards]
-      summary: One card kind's template
+      summary: Make a look's templates the club's defaults
+      description: >-
+        For every kind the look covers, reuses the club's unedited copy of the
+        look's template at its current version, or creates one, and makes it
+        the kind's default, in one transaction. Kinds the look doesn't cover
+        keep their defaults.
+      responses:
+        "200":
+          description: The defaults that changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdoptLookResult"
+        "404":
+          description: No such look, or none of its templates are listed
+
+  /template-library/preview-input:
+    get:
+      operationId: getTemplatePreviewInput
+      tags: [socialCards]
+      summary: The card input library thumbnails draw with
+      description: >-
+        The club's latest senior draft input of the kind. Never a junior draft.
+        With none, `source` is `sample` and the client draws the kind's sample
+        in the club's identity.
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The preview input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplatePreviewInput"
+        "404":
+          description: Unknown card kind
+
+  /template-library/carousel-assembly:
+    post:
+      operationId: assembleCarouselTemplate
+      tags: [socialCards]
+      summary: The document a carousel set would be drawn with (ADR-011 T5.17)
+      description: >-
+        The same assembly a version 3 carousel gets when it's saved: the set's
+        pages from the picked template (or the club's default for the set's
+        kind), its title and sponsors pages from the same look's Match Day
+        template or the club's default Match Day, and the club's pack look as
+        a whole template when the picked one lacks a page. For previews only;
+        nothing is saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarouselAssemblyRequest"
+      responses:
+        "200":
+          description: The assembled document and the template that drew the set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarouselAssembly"
+        "400":
+          description: An unknown page, or a template for another card kind
+        "404":
+          description: The template isn't one the club can use
+        "409":
+          description: No template the club can use has every page the set needs
+
+  /template-library/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getLibraryTemplate
+      tags: [socialCards]
+      summary: One library template at its current version
+      description: >-
+        A listed template, or one the club holds a copy of (listed or not).
       responses:
         "200":
           description: The template
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/KindTemplate"
+                $ref: "#/components/schemas/LibraryTemplate"
         "404":
-          description: Not enabled for this club, unknown kind, or no template yet (start one from a starter)
-    put:
-      operationId: saveKindTemplate
+          description: Not in the library
+
+  /template-library/elements:
+    get:
+      operationId: listLibraryElements
       tags: [socialCards]
-      summary: Save a card kind's template (rejected when another admin saved first)
+      summary: Browse and search the element library
+      description: >-
+        Listed library elements (decorations from every look and those clubs
+        saved), 48 a page, optionally for one category or look, or matching a
+        search across names and tags. Every element is shared with every club.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the element's name or tags.
+          schema: { type: string, maxLength: 60 }
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/LibraryElementCategory"
+        - name: look
+          in: query
+          required: false
+          description: A look's slug.
+          schema: { type: string }
+        - name: mine
+          in: query
+          required: false
+          description: Only the elements this club saved, listed or not.
+          schema: { type: boolean }
+        - name: cursor
+          in: query
+          required: false
+          description: The previous page's `nextCursor`.
+          schema: { type: integer }
+      responses:
+        "200":
+          description: One page of elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElementPage"
+    post:
+      operationId: saveLibraryElement
+      tags: [socialCards]
+      summary: Save layers as a public library element
+      description: >-
+        Publishes the layers to every club at once (decision E1). The document
+        may only use tokens, slots and library images: no club upload, photo
+        or sponsor art.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SaveKindTemplateRequest"
+              $ref: "#/components/schemas/SaveLibraryElementRequest"
+      responses:
+        "201":
+          description: The saved element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "400":
+          description: The name, category, tags or layers are not valid
+
+  /template-library/elements/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getLibraryElement
+      tags: [socialCards]
+      summary: One library element, to insert
+      description: >-
+        A listed element, or one this club saved (listed or not). Inserting
+        copies its layers into the card; nothing links back to the element.
+      responses:
+        "200":
+          description: The element
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "404":
+          description: Not in the library
+
+  /template-library/elements/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistLibraryElement
+      tags: [socialCards]
+      summary: Take an element this club saved out of the library
+      description: >-
+        Other clubs stop seeing it. Cards it was already inserted into keep
+        their copies of its layers.
+      responses:
+        "200":
+          description: The element, now unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElement"
+        "404":
+          description: Not an element this club saved
+
+  /template-library/elements/{id}/report:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: reportLibraryElement
+      tags: [socialCards]
+      summary: Report a library element to Ovation
+      description: >-
+        One report per club and element; reporting again replaces the reason.
+        A club cannot report its own element (it can unlist it instead).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportLibraryElementRequest"
+      responses:
+        "204":
+          description: Reported
+        "400":
+          description: No reason given, or the club's own element
+        "404":
+          description: Not in the library
+
+  /club-templates:
+    get:
+      operationId: listClubTemplates
+      tags: [socialCards]
+      summary: The club's own templates, defaults first within each kind
+      description: >-
+        Card templates, and set templates (`set:<type>`, carousel set editor
+        plan) when asked for by kind or with `includeSets`.
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: includeSets
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: The club's templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplateList"
+    post:
+      operationId: createClubTemplate
+      tags: [socialCards]
+      summary: Use a library template (copy it into the club's templates)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClubTemplateRequest"
+      responses:
+        "201":
+          description: The club's new copy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not in the library, or no such version
+        "409":
+          description: makeDefault while the version's fit check is pending
+
+  /club-templates/sets:
+    post:
+      operationId: makeCarouselSet
+      tags: [socialCards]
+      summary: Make a carousel set design from one template (carousel set editor plan, part 4)
+      description: >-
+        A new club set template of `setType`, saved to the club's designs. With
+        `from`, that template's design takes the set page it fits (a cover, a
+        team, fixture or result page, or the sponsors page; else it becomes the
+        first page), and the other pages come from the same look's set
+        template (Club Kit's when its look has none). A free set is the design
+        and copies of it, with no data binding, and is never posted
+        automatically. Without `from`, the look's set template as it is.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MakeCarouselSetRequest"
+      responses:
+        "201":
+          description: The club's new set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "400":
+          description: The template can't start that set
+        "404":
+          description: Not the club's template, or not in the library
+
+  /club-templates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getClubTemplate
+      tags: [socialCards]
+      summary: One of the club's templates, with its document
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+    put:
+      operationId: saveClubTemplate
+      tags: [socialCards]
+      summary: Save one of the club's templates (rejected when someone saved first)
+      description: >-
+        A new document is the club's edit: the first one makes the template
+        its own (no more update prompts), and every one starts a fit check.
+        Renaming alone is neither.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveClubTemplateRequest"
       responses:
         "200":
           description: Saved
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/KindTemplate"
+                $ref: "#/components/schemas/ClubTemplate"
         "400":
-          description: Invalid document (e.g. a size with no elements)
+          description: Invalid document or name
         "404":
-          description: Not enabled for this club, unknown kind, or no template yet
+          description: Not one of this club's templates
         "409":
-          description: Another admin saved this template since `baseVersion`
+          description: Someone saved this template since `baseVersion`
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/KindTemplateConflict"
+    delete:
+      operationId: deleteClubTemplate
+      tags: [socialCards]
+      summary: Delete one of the club's templates (never a kind's default)
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: It is its kind's default
+        "404":
+          description: Not one of this club's templates
 
-  /kind-templates/{kind}/start:
+  /club-templates/{id}/duplicate:
     parameters:
-      - name: kind
+      - name: id
         in: path
         required: true
-        schema: { type: string }
+        schema: { type: integer }
     post:
-      operationId: startKindTemplate
+      operationId: duplicateClubTemplate
       tags: [socialCards]
-      summary: Start (or restart) a card kind's template from a starter design
+      summary: Duplicate one of the club's templates
+      responses:
+        "201":
+          description: The duplicate (never the default)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+
+  /club-templates/{id}/default:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: setClubTemplateDefault
+      tags: [socialCards]
+      summary: Make one of the club's templates its kind's default
+      responses:
+        "200":
+          description: The template, now the default
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "404":
+          description: Not one of this club's templates
+        "409":
+          description: Its fit check is still pending
+
+  /club-templates/{id}/update:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: takeClubTemplateUpdate
+      tags: [socialCards]
+      summary: Take the library's newer version into an unedited club template
+      description: >-
+        Replaces the template's document with the library template's current
+        version. The template stays unedited. Refused for a template the club has
+        changed (it is the club's own) and when there is no newer version.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StartKindTemplateRequest"
+              $ref: "#/components/schemas/TakeTemplateUpdateRequest"
       responses:
         "200":
-          description: The template, now a copy of the starter
+          description: The template, at the new version
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/KindTemplate"
+                $ref: "#/components/schemas/ClubTemplate"
         "404":
-          description: Not enabled for this club, or unknown kind
+          description: Not one of this club's templates
         "409":
-          description: Restarting an existing template whose version moved on since `baseVersion`
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/KindTemplateConflict"
+          description: Edited, no newer version, or saved since `baseVersion`
 
-  /kind-templates/{kind}/dismiss-notice:
+  /club-templates/{id}/apply:
     parameters:
-      - name: kind
+      - name: id
         in: path
         required: true
-        schema: { type: string }
+        schema: { type: integer }
     post:
-      operationId: dismissKindTemplateNotice
+      operationId: applyClubTemplate
       tags: [socialCards]
-      summary: Dismiss the "your retired design pack was replaced" notice for a kind
-      responses:
-        "204":
-          description: Dismissed
-        "404":
-          description: Not enabled for this club, unknown kind, or no template
-
-  /kind-templates/{kind}/apply:
-    parameters:
-      - name: kind
-        in: path
-        required: true
-        schema: { type: string }
-    post:
-      operationId: applyKindTemplate
-      tags: [socialCards]
-      summary: Apply a saved template version to this kind's unposted drafts
+      summary: Apply one of the club's templates to its kind's unposted drafts
       description: >-
-        Replaces the design of every unposted draft of the kind, one-off design
-        tweaks included; captions are kept. Each draft's previous design is saved
-        as a revision first. Drafts posted meanwhile are skipped.
+        Replaces the design of every unposted draft of the template's kind;
+        captions are kept. Each draft's previous design is saved as a revision
+        first. Drafts posted meanwhile are skipped.
       requestBody:
         required: true
         content:
@@ -6497,7 +6899,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApplyKindTemplateResult"
         "404":
-          description: Not enabled for this club, unknown kind, or no template
+          description: Not one of this club's templates
         "409":
           description: The template has been saved again since `version`
           content:
@@ -6697,6 +7099,75 @@ paths:
           description: Not a platform admin
         "503":
           description: Ingest database not configured
+
+  /platform/admin/library/designer:
+    get:
+      operationId: getTemplateDesigner
+      tags: [platformAdmin]
+      summary: The AI designer's state (configured?), its quality figure and recent designs
+      responses:
+        "200":
+          description: The designer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateDesigner"
+        "401":
+          description: Not a platform admin
+
+  /platform/admin/library/designer/generations:
+    post:
+      operationId: startTemplateGeneration
+      tags: [platformAdmin]
+      summary: Start an AI design from a brief and an optional uploaded reference image
+      description: >-
+        Runs in the background; poll the design until its status is done or
+        failed. The result is saved as an unlisted console template in the
+        library. The image must be an upload (PNG or JPEG, at most 5 MB); a
+        library photo can never be sent.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/StartTemplateGenerationRequest"
+      responses:
+        "202":
+          description: The queued design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateGeneration"
+        "400":
+          description: No brief or image, an unknown kind, a bad image, or a library photo
+        "401":
+          description: Not a platform admin
+        "413":
+          description: The image is over 5 MB
+        "503":
+          description: The designer isn't configured (no ANTHROPIC_API_KEY)
+
+  /platform/admin/library/designer/generations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getTemplateGeneration
+      tags: [platformAdmin]
+      summary: One AI design
+      responses:
+        "200":
+          description: The design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateGeneration"
+        "401":
+          description: Not a platform admin
+        "404":
+          description: No such design
 
   /admin/playhq-sync/status:
     get:
@@ -7146,7 +7617,86 @@ paths:
         "409":
           description: The draft is posted or dismissed
 
+  /social-drafts/{id}/set-design:
+    get:
+      operationId: getDraftSetDesign
+      tags: [socialCards]
+      summary: A carousel set draft as one multi-page design (carousel set editor plan, part 3)
+      description: >-
+        A queued templated carousel (ADR-010 v3) or a Round Team Lists draft, as
+        its set design: one document whose pages draw every slide. A draft
+        saved before set designs gets one assembled from its own design and the
+        same look's set template; nothing is stored until it is saved.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft's set design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSetDesign"
+        "404":
+          description: Not found
+        "409":
+          description: The draft isn't a carousel set, or has no design a set can be made from
+    put:
+      operationId: saveDraftSetDesign
+      tags: [socialCards]
+      summary: Save a carousel set draft's design, slide order and size (keeps a revision)
+      description: >-
+        Stores the set design on the draft. A queued carousel's slides follow
+        the design's arrangement (reordered, deleted, design pages added) and
+        its size; a list draft keeps the arrangement in its design. The draft's
+        data snapshot is unchanged. The new layout owes a check before
+        automation, as any templated edit does.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveDraftSetDesignRequest"
+      responses:
+        "200":
+          description: The updated draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: The design or slide order isn't valid
+        "404":
+          description: Not found
+        "409":
+          description: The draft can't be edited (posted, dismissed, or not a set)
+
   /social-drafts/{id}:
+    get:
+      operationId: getSocialDraft
+      tags: [socialCards]
+      summary: One draft, including one just opened in the editor and not yet edited
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
     patch:
       operationId: updateSocialDraft
       tags: [socialCards]
@@ -8851,6 +9401,173 @@ paths:
         "404":
           description: No such photo, or the player is not allowed a photo
 
+  /juniors/name-review:
+    get:
+      operationId: listJuniorNameReview
+      tags: [juniors]
+      responses:
+        "200":
+          description: Admin-only read-only name evidence and publication previews for this club.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorNameReview"
+        "401":
+          description: Admin required
+    post:
+      operationId: publishJuniorNames
+      tags: [juniors]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorNamesPublication"
+      responses:
+        "200":
+          description: Atomic publication completed; repeated submissions are skipped.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorNamesPublicationResult"
+        "400":
+          description: Invalid full name or selection
+        "401":
+          description: Admin required
+        "409":
+          description: Preview is stale; reload before confirming
+
+  /juniors/photo-library:
+    get:
+      operationId: listJuniorLibraryPhotos
+      tags: [juniors]
+      summary: The club's junior photo library, newest first (admin)
+      description: >-
+        Every junior photo with its folder fields and the children tagged in it.
+        `displayable` is the consent rule (kiosk-photo-rotation A): at least one
+        tagged child, and every tagged child neither photo-withheld nor private.
+        A photo that is not displayable never leaves admin.
+      responses:
+        "200":
+          description: Junior library photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "401":
+          description: Not signed in
+
+  /juniors/photo-library/ingest:
+    post:
+      operationId: ingestJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Convert uploaded objects into junior library photos (admin)
+      description: >-
+        Like the senior library's ingest: each object becomes an upright JPEG with
+        EXIF stripped, plus a thumbnail, stored under the private junior prefix;
+        the upload is deleted. Files fail independently. At most 50 per call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestJuniorLibraryPhotosRequest"
+      responses:
+        "200":
+          description: Per-object results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestJuniorLibraryPhotosResponse"
+        "400":
+          description: Invalid body or batch too large
+        "422":
+          description: A tagged participant is not a junior player of this club
+
+  /juniors/photo-library/tags:
+    post:
+      operationId: tagJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Tag children, season and match format on junior library photos (admin)
+      description: >-
+        A photo that stops being displayable (a withheld child tagged in, its last
+        tag removed) is stripped from open cards in the same request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagJuniorLibraryPhotosRequest"
+      responses:
+        "200":
+          description: The tagged photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: A photo is not in this club's junior library
+        "422":
+          description: A tagged participant is not a junior player of this club
+
+  /juniors/photo-library/move:
+    post:
+      operationId: moveJuniorLibraryPhotos
+      tags: [juniors]
+      summary: File junior photos into a library folder (grade x photo type) (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveClubPhotosRequest"
+      responses:
+        "200":
+          description: The moved photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: A photo is not in this club's junior library
+
+  /juniors/photo-library/delete:
+    post:
+      operationId: deleteJuniorLibraryPhotos
+      tags: [juniors]
+      summary: Remove photos from the junior library (admin); cards lose them at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteClubPhotosRequest"
+      responses:
+        "200":
+          description: Number of photos removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: integer
+        "404":
+          description: A photo is not in this club's junior library
+
   /juniors/privacy-overrides:
     get:
       operationId: listJuniorPrivacyOverrides
@@ -10117,6 +10834,412 @@ paths:
           description: Not authenticated.
         "404":
           description: No such exclusion.
+
+  /platform/admin/library/templates:
+    get:
+      operationId: listConsoleLibraryTemplates
+      tags: [platformAdmin]
+      summary: Every library template, listed or not (ADR-011 L7-A)
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: origin
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [bundle, console, club]
+        - name: listed
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Library templates by kind
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplateList"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: createConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: A new, unlisted console template at version 1; its fit check starts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConsoleLibraryTemplateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Unknown kind, bad name or look, or an invalid document.
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/library/templates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: One library template at its current version
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+    put:
+      operationId: saveConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: Save a console template; a new document is a new version
+      description: >-
+        A new document becomes the template's next version and starts its fit
+        check; earlier versions stay, so clubs' copies see an update. A name
+        or look alone changes no version. Bundle templates are refused: they
+        change with a deploy, and the console duplicates them instead.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveConsoleLibraryTemplateRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Invalid document, name or look.
+        "401":
+          description: Not authenticated.
+        "403":
+          description: A bundle template.
+        "404":
+          description: No such template.
+        "409":
+          description: Someone saved this template since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /platform/admin/library/templates/{id}/duplicate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: duplicateConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: A console copy of a template's current version (how bundle templates are edited)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DuplicateConsoleLibraryTemplateRequest"
+      responses:
+        "201":
+          description: The new console template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+
+  /platform/admin/library/templates/{id}/list:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: listConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: List a template in the library
+      description: >-
+        Refused unless the current version passed a real fit check (every
+        page, size and preset). A bundle template follows its bundle file, so
+        this only undoes an Ovation unlisting.
+      responses:
+        "200":
+          description: Listed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+        "409":
+          description: The fit check is pending, failed or skipped, or the bundle file unlists it.
+
+  /platform/admin/library/templates/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistConsoleLibraryTemplate
+      tags: [platformAdmin]
+      summary: Take a template out of the library (clubs' copies are untouched)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlistConsoleLibraryTemplateRequest"
+      responses:
+        "200":
+          description: Unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        "400":
+          description: Reason too long.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+
+  /platform/admin/library/elements:
+    get:
+      operationId: listConsoleLibraryElements
+      tags: [platformAdmin]
+      summary: Every library element, listed or not, with its open reports
+      description: >-
+        For moderation (editable-elements plan, D5): every element with its
+        author and how many reports are open, most-reported first, then
+        newest. 100 a page.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the name or tags.
+          schema: { type: string, maxLength: 60 }
+        - name: origin
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [bundle, console, club]
+        - name: reported
+          in: query
+          required: false
+          description: Only elements with an open report.
+          schema: { type: boolean }
+        - name: listed
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: page
+          in: query
+          required: false
+          description: Page number, from 1.
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: One page of elements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElementPage"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/library/elements/{id}/reports:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: listConsoleLibraryElementReports
+      tags: [platformAdmin]
+      summary: Every report of an element, open first
+      responses:
+        "200":
+          description: The reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryElementReportList"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistConsoleLibraryElement
+      tags: [platformAdmin]
+      summary: Take an element out of the library, as Ovation
+      description: >-
+        No club sees it any more; cards it was added to keep their copies.
+        Its open reports are resolved. A bundle sync keeps it unlisted.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlistConsoleLibraryElementRequest"
+      responses:
+        "200":
+          description: The element, now unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/list:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: listConsoleLibraryElement
+      tags: [platformAdmin]
+      summary: Put an element back in the library
+      description: Undoes either unlisting, the author's or Ovation's.
+      responses:
+        "200":
+          description: The element, listed again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
+  /platform/admin/library/elements/{id}/reports/dismiss:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: dismissConsoleLibraryElementReports
+      tags: [platformAdmin]
+      summary: Resolve an element's open reports and keep it listed
+      responses:
+        "200":
+          description: The element, with no open reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryElement"
+        "404":
+          description: No such element
+
+  /platform/admin/library/looks:
+    get:
+      operationId: listConsoleLibraryLooks
+      tags: [platformAdmin]
+      summary: Every look, with how many templates each holds
+      responses:
+        "200":
+          description: Looks in display order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryLookList"
+        "401":
+          description: Not authenticated.
+    post:
+      operationId: createConsoleLibraryLook
+      tags: [platformAdmin]
+      summary: A new console look
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConsoleLibraryLookRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsoleLibraryLook"
+        "400":
+          description: Bad slug or name.
+        "401":
+          description: Not authenticated.
+        "409":
+          description: The slug is taken.
+
+  /platform/admin/library/import/figma:
+    post:
+      operationId: importFigmaTemplate
+      tags: [platformAdmin]
+      summary: Import a Figma design as an unlisted console template (ADR-011 L8-B)
+      description: >-
+        Reads the link's frames (named <page>/<size>, or card-shaped) with
+        Ovation's read-only Figma token, maps them to the template format,
+        exports vectors as SVG and copies images to the library, then saves an
+        unlisted console template, validated and sent to the fit job. The
+        report lists everything that was changed or left out. Colours bound to
+        styles named ovation/* become the club's colour tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFigmaTemplateRequest"
+      responses:
+        "201":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaImportResult"
+        "400":
+          description: A bad link, an unknown kind, no frames, or a document the format refuses (with the report).
+        "401":
+          description: Not authenticated.
+        "404":
+          description: Figma can't find the file or frame.
+        "409":
+          description: The import is off (no FIGMA_ACCESS_TOKEN), the token has expired or been revoked, or the account can't open the file.
+        "429":
+          description: Figma is rate limiting Ovation's account.
+        "502":
+          description: Figma failed or couldn't be reached.
 
   /platform/admin/grade-decisions:
     get:
@@ -16179,10 +17302,10 @@ components:
         listId:
           type: integer
           nullable: true
-          description: The list sent to; null for a batch (Email all, scheduled), which spans lists
+          description: The list sent to; null for a batch (Email all, scheduled) or when the list was deleted. Delivery history is retained.
         listName:
           type: string
-          description: The list's name, or what sent a batch ("Email all team sheets (4 sides)")
+          description: The list's name, Deleted list after deletion, or what sent a batch ("Email all team sheets (4 sides)")
         kind:
           type: string
         subjectType:
@@ -18240,6 +19363,10 @@ components:
           type: ["integer", "null"]
         grade:
           type: ["string", "null"]
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the set was last saved.
 
     GenerateCardSetBody:
       type: object
@@ -19321,6 +20448,85 @@ components:
         open:
           type: integer
           description: Incidents still open after this run.
+
+    StartTemplateGenerationRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          description: The card kind to design.
+        brief:
+          type: string
+          maxLength: 2000
+        image:
+          type: string
+          format: binary
+          description: A reference image (PNG or JPEG, at most 5 MB).
+
+    TemplateGeneration:
+      type: object
+      required:
+        [id, kind, model, status, outcome, attempts, firstTryFit, tokens, costUsd, result, errors, createdAt, finishedAt]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        model: { type: string }
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        outcome:
+          type: ["string", "null"]
+          description: pass, warnings, invalid, refused or provider_error; null until it finishes.
+        attempts: { type: integer }
+        firstTryFit:
+          type: ["boolean", "null"]
+          description: The first reply was valid and fitted; null when no fit check ran.
+        tokens:
+          type: object
+          required: [input, output, cacheRead, cacheWrite]
+          properties:
+            input: { type: integer }
+            output: { type: integer }
+            cacheRead: { type: integer }
+            cacheWrite: { type: integer }
+        costUsd: { type: ["number", "null"] }
+        result:
+          description: The unlisted console template the design was saved as.
+          oneOf:
+            - type: object
+              required: [libraryTemplateId, version]
+              properties:
+                libraryTemplateId: { type: integer }
+                version: { type: integer }
+            - type: "null"
+        errors:
+          type: array
+          items: { type: string }
+          description: Why the last reply was invalid, while the server remembers it.
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: ["string", "null"], format: date-time }
+
+    TemplateDesigner:
+      type: object
+      required: [configured, model, quality, generations]
+      properties:
+        configured:
+          type: boolean
+          description: Whether the Claude API key is set.
+        model: { type: string }
+        quality:
+          type: object
+          required: [counted, firstTryFit, meanCostUsd]
+          description: Over the first 50 finished designs (the 70% bar counts first-try fits).
+          properties:
+            counted: { type: integer }
+            firstTryFit: { type: integer }
+            meanCostUsd: { type: ["number", "null"] }
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateGeneration"
 
     PlatformPlayhqSync:
       type: object
@@ -22136,6 +23342,20 @@ components:
         templateId:
           type: integer
           description: "Start from a saved editor template (its pack and adjustments)."
+        templateRef:
+          $ref: "#/components/schemas/TemplateRef"
+
+    TemplateRef:
+      type: object
+      required: [version]
+      description: >-
+        A template a draft or carousel is drawn with (ADR-011): one of the club's
+        templates (`copyId`) or a library template (`libraryTemplateId`), at a
+        version. Exactly one of the two ids.
+      properties:
+        copyId: { type: integer }
+        libraryTemplateId: { type: integer }
+        version: { type: integer }
 
     SaveDraftTemplateRequest:
       type: object
@@ -22158,66 +23378,6 @@ components:
         packId: { type: ["string", "null"] }
         adjustments: {}
         createdAt: { type: string, format: date-time }
-
-    KindTemplateSummary:
-      type: object
-      required: [kind, version, updatedAt, replacedPackId, noticeDismissed, waitingDrafts]
-      properties:
-        kind: { type: string }
-        version: { type: integer }
-        updatedAt: { type: ["string", "null"], format: date-time }
-        replacedPackId:
-          type: ["string", "null"]
-          description: The retired design pack this template replaced, if any (R19).
-        noticeDismissed: { type: boolean }
-        waitingDrafts:
-          type: integer
-          description: Unposted drafts of this kind an apply would change.
-
-    KindTemplateList:
-      type: object
-      required: [enabled, templates]
-      properties:
-        enabled:
-          type: boolean
-          description: Whether card kind templates are switched on for this club.
-        templates:
-          type: array
-          items:
-            $ref: "#/components/schemas/KindTemplateSummary"
-
-    KindTemplate:
-      allOf:
-        - $ref: "#/components/schemas/KindTemplateSummary"
-        - type: object
-          required: [document]
-          properties:
-            document:
-              $ref: "#/components/schemas/CardAdjustments"
-            updatedByName:
-              type: ["string", "null"]
-              description: Who saved the current version.
-
-    SaveKindTemplateRequest:
-      type: object
-      required: [baseVersion, document]
-      properties:
-        baseVersion:
-          type: integer
-          description: The version this edit started from.
-        document:
-          $ref: "#/components/schemas/CardAdjustments"
-
-    StartKindTemplateRequest:
-      type: object
-      required: [starter]
-      properties:
-        starter:
-          type: string
-          enum: [club-kit, broadcast, clubhouse]
-        baseVersion:
-          type: integer
-          description: Required when the kind already has a template.
 
     ApplyKindTemplateRequest:
       type: object
@@ -22245,6 +23405,701 @@ components:
         currentVersion: { type: integer }
         updatedAt: { type: ["string", "null"], format: date-time }
         updatedByName: { type: ["string", "null"] }
+
+    MakeCarouselSetRequest:
+      type: object
+      required: [setType]
+      properties:
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary, free]
+        from:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          description: The template to start from (one of the club's, or a library template).
+        lookId:
+          type: integer
+          description: Without `from`, the look whose set template to start from (Club Kit when absent).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    DraftSetDesign:
+      type: object
+      required: [draftId, setType, layout, document, templateRef, size]
+      properties:
+        draftId: { type: integer }
+        setType:
+          type: string
+          enum: [teamLists, results, matchDay, matchSummary, free]
+        layout:
+          type: string
+          enum: [carousel, list, pages]
+          description: >-
+            `carousel`: a queued set whose slides are stored (their order is the
+            payload's); `list`: a list card whose slides are worked out from its
+            data (their order is the design's arrangement); `pages`: a card made
+            into a free set of design pages, each drawn with the card's own data
+            (full draft editor plan, stage 2).
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+        size:
+          type: string
+          nullable: true
+          enum: [square, portrait, story, landscape, null]
+          description: A queued carousel's size; null for a list draft (it posts at every size the club has on).
+        stored:
+          type: boolean
+          description: Whether the draft already holds this set design (false when assembled for this read).
+
+    SaveDraftSetDesignRequest:
+      type: object
+      required: [document]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          allOf:
+            - $ref: "#/components/schemas/TemplateRef"
+          nullable: true
+          description: The set template the design now comes from (switching look); absent keeps the draft's.
+        size:
+          type: string
+          enum: [square, portrait, story, landscape]
+          description: A queued carousel's new size.
+
+    TemplateDocument:
+      type: object
+      description: >-
+        A template layer document, format v1 (`{ layers }`) or v2
+        (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own
+        the detailed shape; the server checks it on save.
+      additionalProperties: true
+
+    TemplateFitStatus:
+      type: string
+      enum: [pending, pass, fail]
+
+    TemplateFitReport:
+      type: ["object", "null"]
+      description: The fit check's warnings per page, size and preset; null until a check has run.
+      additionalProperties: true
+
+    TemplateCoverage:
+      type: object
+      required: [pages, sizes]
+      properties:
+        pages:
+          type: array
+          items: { type: string }
+        sizes:
+          type: array
+          items: { type: string }
+
+    LibraryLookRef:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        family:
+          type: string
+          description: The design system the look belongs to (a bundle look's `family`), when it has one.
+
+    LibraryTemplate:
+      type: object
+      required:
+        [id, slug, kind, name, origin, authorName, look, version, coverage, fitStatus, fitReport, listed, document]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        kind: { type: string }
+        name: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that published it.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        version:
+          type: integer
+          description: The template's current version.
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+        fitStatus:
+          $ref: "#/components/schemas/TemplateFitStatus"
+        fitReport:
+          $ref: "#/components/schemas/TemplateFitReport"
+        listed: { type: boolean }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    LibraryTemplatePage:
+      type: object
+      required: [templates, nextCursor]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryTemplate"
+        nextCursor:
+          type: ["integer", "null"]
+          description: Pass as `cursor` for the next page; null on the last page.
+
+    LibraryElementCategory:
+      type: string
+      description: The Elements panel's categories (`ELEMENT_CATEGORIES`).
+      enum: [frames, bands, badges, rules, glows, crest-frames, sponsor-strips, data-blocks]
+
+    LibraryElementDocument:
+      type: object
+      description: >-
+        A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`,
+        each layer keeping its geometry per size. The validator owns the
+        detailed shape; the server checks it on save.
+      additionalProperties: true
+
+    LibraryElement:
+      type: object
+      required:
+        [id, slug, name, category, tags, origin, authorName, mine, look, listed, document, thumbnailUrl, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        name: { type: string }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          items: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that saved it.
+        mine:
+          type: boolean
+          description: This club saved it, so it can unlist it.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        listed: { type: boolean }
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+        thumbnailUrl:
+          type: ["string", "null"]
+          description: A library image; null when the panel draws the element live.
+        createdAt: { type: string, format: date-time }
+
+    LibraryElementPage:
+      type: object
+      required: [elements, nextCursor]
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryElement"
+        nextCursor:
+          type: ["integer", "null"]
+          description: Pass as `cursor` for the next page; null on the last page.
+
+    SaveLibraryElementRequest:
+      type: object
+      required: [name, category, document]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          maxItems: 12
+          items: { type: string, minLength: 1, maxLength: 24 }
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+
+    ReportLibraryElementRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+
+    ConsoleLibraryElement:
+      type: object
+      required:
+        [id, slug, name, category, tags, origin, authorName, authorTenantId, look, listed, unlistedBy, unlistReason, unlistedAt, openReports, document, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: ["string", "null"] }
+        name: { type: string }
+        category:
+          $ref: "#/components/schemas/LibraryElementCategory"
+        tags:
+          type: array
+          items: { type: string }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        authorName:
+          type: string
+          description: Ovation, or the club that saved it.
+        authorTenantId:
+          type: ["integer", "null"]
+          description: The club that saved it; null for Ovation's.
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+        listed: { type: boolean }
+        unlistedBy:
+          type: ["string", "null"]
+          enum: [author, ovation, null]
+        unlistReason: { type: ["string", "null"] }
+        unlistedAt: { type: ["string", "null"], format: date-time }
+        openReports:
+          type: integer
+          description: Reports not yet resolved.
+        document:
+          $ref: "#/components/schemas/LibraryElementDocument"
+        createdAt: { type: string, format: date-time }
+
+    ConsoleLibraryElementPage:
+      type: object
+      required: [elements, total, page, pageSize]
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryElement"
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+
+    LibraryElementReport:
+      type: object
+      required: [id, clubName, reason, createdAt, resolvedAt]
+      properties:
+        id: { type: integer }
+        clubName: { type: string }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+
+    LibraryElementReportList:
+      type: object
+      required: [reports]
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryElementReport"
+
+    UnlistConsoleLibraryElementRequest:
+      type: object
+      properties:
+        reason: { type: string, maxLength: 500 }
+
+    LibraryLookTemplate:
+      type: object
+      required: [id, kind, name, version, coverage]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        name: { type: string }
+        version: { type: integer }
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+
+    LibraryLook:
+      type: object
+      required: [id, slug, name, description, authorName, templates]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        authorName: { type: string }
+        family:
+          type: string
+          description: >-
+            The design system the look belongs to ("Ovation Match Graphics"), when it has one.
+            The library shows a family's looks together.
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLookTemplate"
+
+    LibraryLookList:
+      type: object
+      required: [looks]
+      properties:
+        looks:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLook"
+
+    ConsoleLibraryTemplate:
+      allOf:
+        - $ref: "#/components/schemas/LibraryTemplate"
+        - type: object
+          required: [readOnly, unlistedBy, unlistReason, updatedAt]
+          properties:
+            readOnly:
+              type: boolean
+              description: A bundle template; the console duplicates it to edit.
+            unlistedBy:
+              type: ["string", "null"]
+              enum: [author, ovation, null]
+            unlistReason: { type: ["string", "null"] }
+            updatedAt: { type: string, format: date-time }
+
+    ConsoleLibraryTemplateList:
+      type: object
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryTemplate"
+
+    CreateConsoleLibraryTemplateRequest:
+      type: object
+      required: [kind, name, document]
+      properties:
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    SaveConsoleLibraryTemplateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion: { type: integer }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+
+    DuplicateConsoleLibraryTemplateRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+
+    UnlistConsoleLibraryTemplateRequest:
+      type: object
+      properties:
+        reason: { type: ["string", "null"], maxLength: 300 }
+
+    ConsoleLibraryLook:
+      type: object
+      required: [id, slug, name, description, origin, displayOrder, templates]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        origin:
+          type: string
+          enum: [bundle, console, club]
+        displayOrder: { type: integer }
+        templates:
+          type: integer
+          description: Library templates in this look, listed or not.
+
+    ConsoleLibraryLookList:
+      type: object
+      required: [looks]
+      properties:
+        looks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsoleLibraryLook"
+
+    CreateConsoleLibraryLookRequest:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string, maxLength: 60 }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        description: { type: ["string", "null"] }
+
+    CarouselAssemblyRequest:
+      type: object
+      required: [setType, pages]
+      properties:
+        setType:
+          type: string
+          enum: [matchDay, teamList, results, matchSummary]
+        pages:
+          type: array
+          maxItems: 20
+          description: The pages the set's slides draw; the title and sponsors pages are added.
+          items: { type: string }
+        templateRef:
+          description: The picked template; absent for the club's default.
+          oneOf:
+            - $ref: "#/components/schemas/TemplateRef"
+            - type: "null"
+
+    CarouselAssembly:
+      type: object
+      required: [document, templateRef]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        templateRef:
+          $ref: "#/components/schemas/TemplateRef"
+
+    ImportFigmaTemplateRequest:
+      type: object
+      required: [fileUrl, kind]
+      properties:
+        fileUrl:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: A Figma design link (with or without node-id), or a bare file key.
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+        lookId: { type: ["integer", "null"] }
+
+    FigmaReportLine:
+      type: object
+      required: [level, message]
+      properties:
+        level:
+          type: string
+          enum: [warn, info]
+        page: { type: string }
+        sizes:
+          type: array
+          items: { type: string }
+        layer:
+          type: string
+          description: The layer's name path in Figma.
+        message: { type: string }
+
+    FigmaFrameMatch:
+      type: object
+      required: [nodeId, name, page, size, by]
+      properties:
+        nodeId: { type: string }
+        name: { type: string }
+        page: { type: string }
+        size: { type: string }
+        by:
+          type: string
+          enum: [name, dimensions]
+
+    FigmaImportResult:
+      type: object
+      required: [template, fileName, frames, report, fonts, rendered]
+      properties:
+        template:
+          $ref: "#/components/schemas/ConsoleLibraryTemplate"
+        fileName: { type: string }
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaFrameMatch"
+        report:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaReportLine"
+        fonts:
+          type: array
+          description: Figma fonts outside the catalogue and what they became.
+          items:
+            type: object
+            required: [from, to]
+            properties:
+              from: { type: string }
+              to: { type: string }
+        rendered:
+          type: object
+          required: [vectors, images]
+          properties:
+            vectors: { type: integer }
+            images: { type: integer }
+
+    AdoptLookChange:
+      type: object
+      required: [kind, copyId, created]
+      properties:
+        kind: { type: string }
+        copyId: { type: integer }
+        created:
+          type: boolean
+          description: Whether a new copy was made (else an unedited one was reused).
+
+    AdoptLookResult:
+      type: object
+      required: [look, changed, unchanged]
+      properties:
+        look:
+          $ref: "#/components/schemas/LibraryLookRef"
+        changed:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdoptLookChange"
+        unchanged:
+          type: array
+          items:
+            type: object
+            required: [kind, copyId]
+            properties:
+              kind: { type: string }
+              copyId: { type: integer }
+
+    TemplatePreviewInput:
+      type: object
+      required: [kind, source, input]
+      properties:
+        kind: { type: string }
+        source:
+          type: string
+          enum: [draft, sample]
+        draftId: { type: integer }
+        input:
+          description: The draft's card input (ShareCardInput JSON); null for `sample`.
+
+    ClubTemplateOrigin:
+      type: object
+      required: [templateId, version, name, authorName, look]
+      properties:
+        templateId: { type: integer }
+        version:
+          type: integer
+          description: The library version this copy was taken from.
+        name: { type: string }
+        authorName: { type: string }
+        look:
+          oneOf:
+            - $ref: "#/components/schemas/LibraryLookRef"
+            - type: "null"
+
+    ClubTemplateSummary:
+      type: object
+      required:
+        [
+          id,
+          kind,
+          name,
+          version,
+          isDefault,
+          basedOn,
+          edited,
+          updateAvailable,
+          fitStatus,
+          fitReport,
+          coverage,
+          updatedAt,
+          waitingDrafts,
+        ]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        name: { type: string }
+        version:
+          type: integer
+          description: The copy's own save counter.
+        isDefault:
+          type: boolean
+          description: New drafts of this kind copy this template.
+        basedOn:
+          oneOf:
+            - $ref: "#/components/schemas/ClubTemplateOrigin"
+            - type: "null"
+        edited:
+          type: boolean
+          description: The club saved changes to it, so it is its own (no update prompts).
+        updateAvailable:
+          description: >-
+            A newer version of the library template it came from, for a copy the
+            club hasn't edited; null otherwise.
+          oneOf:
+            - type: object
+              required: [version]
+              properties:
+                version: { type: integer }
+            - type: "null"
+        fitStatus:
+          $ref: "#/components/schemas/TemplateFitStatus"
+        fitReport:
+          $ref: "#/components/schemas/TemplateFitReport"
+        coverage:
+          $ref: "#/components/schemas/TemplateCoverage"
+        updatedAt: { type: ["string", "null"], format: date-time }
+        waitingDrafts:
+          type: integer
+          description: For a default, the unposted drafts of its kind an apply would change; else 0.
+
+    ClubTemplate:
+      allOf:
+        - $ref: "#/components/schemas/ClubTemplateSummary"
+        - type: object
+          required: [document]
+          properties:
+            document:
+              $ref: "#/components/schemas/TemplateDocument"
+            updatedByName:
+              type: ["string", "null"]
+
+    ClubTemplateList:
+      type: object
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubTemplateSummary"
+
+    CreateClubTemplateRequest:
+      type: object
+      required: [libraryTemplateId]
+      properties:
+        libraryTemplateId: { type: integer }
+        version:
+          type: integer
+          description: A library version; the current one when absent.
+        makeDefault:
+          type: boolean
+          description: Also make the copy its kind's default (Use as default).
+
+    TakeTemplateUpdateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion:
+          type: integer
+          description: The template version the admin was looking at.
+
+    SaveClubTemplateRequest:
+      type: object
+      required: [baseVersion]
+      properties:
+        baseVersion:
+          type: integer
+          description: The version this edit started from.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
 
     CardAdjustments:
       type: object
@@ -22322,6 +24177,11 @@ components:
           type: ["integer", "null"]
           description: >-
             The card kind template version this draft copied; null for a draft that uses a pack.
+        templateRef:
+          description: The template this draft's design was copied from; null for a pack draft.
+          oneOf:
+            - $ref: "#/components/schemas/TemplateRef"
+            - type: "null"
         designEditedAt:
           type: ["string", "null"]
           format: date-time
@@ -24528,6 +26388,105 @@ components:
         playerName:
           type: ["string", "null"]
 
+    JuniorNameEvidence:
+      type: object
+      required: [source, sourceId, name, season, team]
+      properties:
+        source:
+          type: string
+          enum: [roster, batting, bowling, premiership]
+        sourceId:
+          type: integer
+        name:
+          type: string
+        season:
+          type: ["string", "null"]
+        team:
+          type: ["string", "null"]
+    JuniorNameReview:
+      type: object
+      required: [participantId, currentName, suggestedName, status, evidence, revision, firstSeason, lastSeason, teams, nameStyle, withheld, publicName, history]
+      properties:
+        participantId:
+          type: string
+        currentName:
+          type: string
+        suggestedName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [suggested, conflicting, abbreviated, missing, protected, expanded, identity_review]
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorNameEvidence"
+        revision:
+          type: string
+        firstSeason:
+          type: ["string", "null"]
+        lastSeason:
+          type: ["string", "null"]
+        teams:
+          type: ["string", "null"]
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        withheld:
+          type: boolean
+        publicName:
+          type: string
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorNameHistory"
+    JuniorNameHistory:
+      type: object
+      required: [id, before, after, by, at]
+      properties:
+        id:
+          type: integer
+        before:
+          type: ["string", "null"]
+        after:
+          type: ["string", "null"]
+        by:
+          type: ["string", "null"]
+        at:
+          type: string
+    JuniorNamesPublication:
+      type: object
+      required: [selections]
+      properties:
+        selections:
+          type: array
+          minItems: 1
+          maxItems: 750
+          items:
+            $ref: "#/components/schemas/JuniorNameSelection"
+    JuniorNameSelection:
+      type: object
+      required: [participantId, revision, name, mode]
+      properties:
+        participantId:
+          type: string
+          minLength: 1
+          maxLength: 150
+        revision:
+          type: string
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        mode:
+          type: string
+          enum: [suggestion, manual]
+    JuniorNamesPublicationResult:
+      type: object
+      required: [published, skipped]
+      properties:
+        published:
+          type: integer
+        skipped:
+          type: integer
     UpdateJuniorParticipantBody:
       type: object
       properties:
@@ -24600,6 +26559,144 @@ components:
         type: object
         additionalProperties:
           $ref: "#/components/schemas/JuniorTeamPublishMode"
+
+    JuniorLibraryPhotoParticipant:
+      type: object
+      required: [participantId, displayName, allowed]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+          description: The child's name (admin view; private names included).
+        allowed:
+          type: boolean
+          description: Neither photo-withheld nor private. Any one false hides the photo.
+
+    JuniorLibraryPhoto:
+      type: object
+      required:
+        [
+          id,
+          url,
+          thumbUrl,
+          width,
+          height,
+          season,
+          grade,
+          photoTypes,
+          matchFormat,
+          takenAt,
+          createdAt,
+          participants,
+          displayable,
+        ]
+      description: >-
+        A photo in the junior library. `url` and `thumbUrl` are gated: outside
+        admin they serve the image only while `displayable`.
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        thumbUrl:
+          type: string
+        width:
+          type: ["integer", "null"]
+        height:
+          type: ["integer", "null"]
+        season:
+          type: ["integer", "null"]
+        grade:
+          type: ["string", "null"]
+        photoTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubPhotoType"
+        matchFormat:
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
+        takenAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorLibraryPhotoParticipant"
+        displayable:
+          type: boolean
+
+    IngestJuniorLibraryPhotosRequest:
+      type: object
+      required: [objectPaths]
+      properties:
+        objectPaths:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        season:
+          type: integer
+        grade:
+          type: string
+        photoType:
+          $ref: "#/components/schemas/ClubPhotoType"
+        matchFormat:
+          $ref: "#/components/schemas/ClubPhotoMatchFormat"
+        participantIds:
+          type: array
+          items:
+            type: string
+          description: Junior players (PlayHQ participant ids) to tag on every photo.
+
+    IngestJuniorLibraryPhotosResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [objectPath, ok]
+            properties:
+              objectPath:
+                type: string
+              ok:
+                type: boolean
+              photo:
+                $ref: "#/components/schemas/JuniorLibraryPhoto"
+              error:
+                type: string
+
+    TagJuniorLibraryPhotosRequest:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+        season:
+          type: ["integer", "null"]
+          description: Set (or with null, clear) the season. Omit to leave unchanged.
+        matchFormat:
+          description: Set (or with null, clear) the match format. Omit to leave unchanged.
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
+        addParticipantIds:
+          type: array
+          items:
+            type: string
+        removeParticipantIds:
+          type: array
+          items:
+            type: string
 
     JuniorAdminParticipant:
       type: object

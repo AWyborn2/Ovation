@@ -61,11 +61,23 @@ export type RowsCell = {
    * How the cell shows its field: as text (default), as an image whose URL
    * the field holds (a player photo; never on a junior card), or as a
    * backdrop — the cell's background only, no content (a panel behind
-   * other cells).
+   * other cells). Format v2 adds `logo`: a crest or sponsor logo the row
+   * holds (`LOGO_ROW_FIELDS` only), drawn whole on any card.
    */
-  show?: "text" | "image" | "backdrop";
+  show?: "text" | "image" | "backdrop" | "logo";
+  /**
+   * Format v2: a stand-in for another cell, drawn only when that row field
+   * is empty (the opposition's monogram where its crest is missing).
+   */
+  fallbackFor?: string;
   style?: TemplateTextStyle;
 };
+
+/**
+ * The row fields a `logo` cell may show: crests and sponsor logos, never a
+ * photo, so a logo cell can't put a junior's photo on a card.
+ */
+export const LOGO_ROW_FIELDS: readonly string[] = ["crest", "logo"];
 
 /** A repeating list row (`kind: "rows"`): one styled row per data row. */
 export type RowsSpec = {
@@ -83,6 +95,12 @@ export type RowsSpec = {
   columns?: number;
   /** Gap between columns, in percent of the layer width. */
   columnGap?: number;
+  /**
+   * With columns, how rows fill them (format v2): `down` (default) fills the
+   * first column, then the next; `across` fills each line left to right, as a
+   * grid of tiles reads (Team of the Week).
+   */
+  flow?: "down" | "across";
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
   variants?: Record<string, Partial<Record<string, TemplateTextStyle>>>;
 };

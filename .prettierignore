@@ -11,3 +11,7 @@ lib/db/migrations/
 docs/design-handoffs/
 scripts/exports/
 artifacts/cricket-club/src/lib/google-fonts-catalogue.json
+lib/template-bundles/index.ts
+
+# Ovation Match Graphics, vendored as published (plan 2026-10-23, M1)
+scripts/src/data/ovation-match-graphics/

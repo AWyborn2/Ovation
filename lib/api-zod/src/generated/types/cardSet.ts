@@ -22,4 +22,6 @@ export interface CardSet {
   season?: number | null;
   /** @nullable */
   grade?: string | null;
+  /** When the set was last saved. */
+  updatedAt?: Date;
 }

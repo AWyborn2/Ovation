@@ -103,6 +103,188 @@ backgrounds with contrast guard.
 ### Previous (EM → SDE, selection-hub-redesign)
 
 **From:** Engineering Manager
+**To:** SDE (and Senior Engineer for review)
+**Feature:** social-template-library
+
+## Context
+
+- **Plan:** `.10x/decisions/engineering-manager/social-template-library.md`, with every task, its estimate, the dependencies, the four streams and the file ownership rules.
+- **Design:** `.10x/decisions/architect/social-template-library.md` and ADR-011. **Requirements:** `.10x/decisions/product-manager/social-template-library.md`.
+- **Delivery rule (Ash):** every PR branches off `wyborn21/social-template-library-pm` and targets it. A session merges its own slice PR into that branch once CI is green. Never target `main`, and never merge #411: Ash merges it after his final pass.
+- **Decided with Ash on 21 Oct 2026:**
+  - All seven converted looks gate the single merge, each signed off by Ash.
+  - At most four sessions at once; each stream keeps one PR open.
+  - The structured-output spike runs now, alongside L1-A (about US$20 approved).
+  - Ash tests at milestones M1–M5 on the local dev stack, not PR by PR. Every PR body still carries a "Test on the dev stack" script.
+
+## Start here, in order
+
+1. **Sync `main` into the integration branch.** It's 2 commits behind (#412).
+2. **Start three sessions together:**
+   - **Stream 1, L1-A format foundation (T1.1–T1.6).** Push T1.1's types early: the spike lines up with them.
+   - **Stream 2, the spike (S.0–S.4).** S.0 needs Ash to put `ANTHROPIC_API_KEY` in `.local/dev-stack/secrets.json` (in the `player-stats-pre-post-digital-96e790` worktree). The session makes `run.mjs` pass it and `FIGMA_ACCESS_TOKEN` through. Never print or commit either. Then L1-B, whose T1.11 uses the spike's decision.
+   - **Stream 4, L4-A1 converter capture (T4.1–T4.3).** It needs nothing new. It builds `scripts/src/lib/harness-browser.ts`, which L2-B reuses.
+3. **Stream 3 starts when L1-A merges:** L3-A store, then L3-B pipeline switch.
+4. Then follow each stream's sequence in the plan. Stream 1 frees up first and takes whatever is behind.
+
+## Traps
+
+- **The migration is 0058, not 0057.** #412 took 0057. Take the next free number when L3-A opens and renumber at each `main` sync.
+- **`scripts/src/ensure-constraints.ts` re-creates `card_templates_kind_unique`** after every migrate, in CI and in `post-merge.sh`. L3-A (T3.1) must swap it for `card_templates_kind_default_unique`, or a second copy of any kind fails.
+- **Bundles must be imported**, not read from disk at runtime: the API ships as one esbuild file.
+- **The dev stack has no object storage.** T3.12 adds the dev-only filesystem store behind `LOCAL_OBJECT_STORAGE_DIR`; `run.mjs` sets it.
+- **Structured outputs reject recursive schemas.** Nested stacks are unrolled, flattened or left to the prompt, as the spike decides.
+- **Shared files:** follow the ownership table in the plan. Regenerate codegen at rebase; never hand-merge generated files.
+- **Don't edit `.10x/status.md` in slice PRs.** Four sessions would collide; the milestone sync PRs update it.
+
+## Required tests
+
+- v1 documents render byte-identically (T1.6, T3.22)
+- tenant isolation for copies, defaults, adopt, updates and previews (T3.5, T3.11, T6.1)
+- no junior content in previews (T3.10, T1.15) or AI input (T7.9, T7.10)
+- the bundle fit job in CI as a required check (T2.8, T2.9)
+- the pilot carry-over (T3.2, T3.15, T3.22)
+
+## For the release (L9, Ash)
+
+- 0058 runs in Production SQL **right before** the republish, not earlier: today's code relies on the index it drops, and the publish's schema sync doesn't run its `UPDATE`.
+- New secrets: `ANTHROPIC_API_KEY` and `FIGMA_ACCESS_TOKEN`.
+- The runbook (T9.2) and the checks in `apply-production-sql.mjs` (T9.3) carry the steps.
+
+## Handoff History
+
+### Previous (Architect → Engineering Manager, social-template-library)
+
+**From:** Principal Architect
+**To:** Engineering Manager
+**Feature:** social-template-library
+
+## Context
+
+- **Design:** `.10x/decisions/architect/social-template-library.md` and `.10x/adrs/011-social-template-library.md` (ADR-011, accepted 21 Oct 2026). **Requirements:** `.10x/decisions/product-manager/social-template-library.md`.
+- **Delivery rule (Ash):**
+  - Every PR branches off `wyborn21/social-template-library-pm` and targets it (draft PR #411).
+  - Nothing merges to `main` until the whole feature is done and Ash has tested it on a local dev server. Never merge #411 itself.
+  - Keep syncing `main` into it.
+- **Choices made with Ash on 21 Oct 2026:**
+  - Ovation's converted looks and starters ship as repo JSON bundles (`lib/template-bundles/`), CI fit-checked and loaded at server start. Everything made later lives in the database.
+  - Stack groups handle reflow.
+  - Every club moves at once, and `KIND_TEMPLATES` is deleted.
+  - Claude Opus 5.5 is the AI provider.
+  - An edited copy becomes standalone (no update prompts).
+
+## Architecture in brief
+
+- **Format v2** (a superset; v1 `{ layers }` reads as the kind's primary page, and stored rows are never rewritten):
+  - pages per kind (Match Day: fixture/title/day/sponsors; Match Summary: result/day, which the Results set uses too; Team List: team; others: card)
+  - stack groups, `showWhen` conditions, text `fit` with two lines
+  - gradients, shadows, filters (duotone), sanitised vector layers
+  - `motion: { in, loop }` with rise/fade/pop/pulse/shine; R3 extends it
+  - capacity read from the rows layer
+- **Storage (migration 0057):**
+  - `template_looks`, `library_templates` and immutable `library_template_versions` (origin bundle/console/club)
+  - club copies in `card_templates` (`source = 'kind'`), with `is_kind_default` under a new partial unique index replacing `card_templates_kind_unique`, plus `origin_template_id`/`origin_version`, `edited_at` and fit columns
+  - `social_drafts.template_ref` and `template_generations`
+  - The pilot's rows only gain `is_kind_default = true`.
+- **Fit check:** one harness routine, `fitCheck(document, kind)`, over page × size × preset (× photo / sponsors) with worst-case content. It runs in CI for bundles (new Chromium job via `puppeteer-core`), on the server before listing, and after each copy save. Automation stays blocked until it passes (ADR-003 gate).
+- **Converter:** `scripts/src/convert-pack.ts` captures the rendered DOM through the harness (sentinel tokens and palettes) and writes bundles plus a per-pack report covering polish items, motion and pixel diff. Ash signs off Club Kit, Broadcast Dark and Duotone before the merge. Hidden looks list when ready.
+- **Retirement:**
+  - `PACK_TO_LOOK` replaces `PACK_TO_STARTER` (lazy defaults).
+  - Starters become bundles and their TypeScript is deleted.
+  - Pack code and `LEGACY_PACK_IDS` stay for drafts saved before the ship, then go in cleanup PRs once nothing references them.
+- **AI and Figma:** `template-ai/` (Opus 5.5, cached prompt, structured output, validate → fit → up to 2 retries → private draft, usage and cost per row) and `template-import/figma.ts`, both in the platform console in R1.
+
+## Slices to plan (detail in §15 of the design file)
+
+L1 format and renderer → L2 fit check → L3 store and pipeline (0057, bundles, defaults, carousel v3, switch removal) ∥ L4 converter and content → L5 library UI → L6 update available. L7 (AI designer tool) and L8 (Figma import) depend on L1 and L2 and run in parallel.
+
+## For the plan
+
+- Migration 0057 is Ash's to run in Production SQL before the republish that ships the feature.
+- New secrets: `ANTHROPIC_API_KEY`, `FIGMA_ACCESS_TOKEN`.
+- Spike in L1/L7: whether the format's JSON Schema fits structured outputs with nested stacks.
+- Tests to require:
+  - v1 documents render byte-identically
+  - tenant isolation for copies, defaults and previews
+  - no junior content in previews or AI input
+  - the bundle fit job in CI
+  - the pilot carry-over
+
+### Previous (PM → Architect, social-template-library)
+
+**From:** Product Manager
+**To:** Architect
+**Feature:** social-template-library
+
+## Context
+
+- Requirements: `.10x/decisions/product-manager/social-template-library.md`, approved by Ash on
+  21 Oct 2026. It follows the 21 Oct revision of `match-day-carousel-content.md`, which hides the
+  four legacy packs pending this library, and builds on card-kind-templates (ADR-001..003).
+- Two template systems exist today: code-built packs on the ADR-010 content contract (every
+  carousel, presets, capacity, CI fit grid), and kind-template layer documents (editor, starters,
+  warnings gate). The `KIND_TEMPLATES` switch is on for one pilot club in production. The
+  library ends with one format, layer documents bound to `CardContent` slots, and the code packs
+  retire.
+- **Delivery rule (Ash, 21 Oct 2026):** nothing for this feature merges to `main` until the whole
+  feature is complete. The integration branch is `wyborn21/social-template-library-pm` (draft
+  PR #411). Phase and slice PRs branch off it and target it, not `main`. Ash tests everything
+  on a local dev server first, then gives the go for one merge to `main`. The usual
+  "merge when green" rule doesn't apply to #411. Keep syncing `main` into the branch.
+
+## Requirements in priority order
+
+1. P0, release 1:
+   - One template format with preset visibility, declared capacity per size and preset, and
+     carousel page types.
+   - A per-template fit check that does the CI fit grid's job on data.
+   - Library store: many templates per kind, looks, versions, Ovation or club authorship,
+     listed or unlisted.
+   - Converter plus designer polish for Club Kit, Broadcast Dark, Duotone, Gold Foil, Bold Type,
+     Neon Night and Sunset; the three layer starters added as they are.
+   - Browse with kind and size filters and previews in the club's own data.
+   - Use as is or edit a copy; one default per kind; adopt a look; any template for a single
+     manual post.
+   - Pilot club's kind templates carried over with no visible change. Warnings gate unchanged.
+   - Motion parity: no converted pack loses its current motion. The format leaves room for
+     release 3's timeline.
+2. P1, release 1: "update available" on copies; an AI designer tool (brief or screenshot →
+   draft template, fit-check retries, sample data only); a Figma import for Ovation designers.
+3. P1, release 2:
+   - Design from scratch and publish to every club. Publishing requires the automatic checks
+     (fit, identity swapped for slots, flagged literal names, image rights).
+   - Author and Ovation can unlist; club credit and use count; style tags.
+   - Club-facing Generate (Canva exports come in this way), with a monthly cap per club, once
+     the designer tool clears its quality bar.
+   - Figma import with a club's own account.
+4. P2, release 2: sorting, favourites, reporting.
+5. P1, release 3: full motion. A per-layer timeline, loops and video-first templates, MP4
+   renders, and automatic publishing as video where Meta allows (otherwise a still).
+6. P2, release 4 (gated on the licensing hold and billing): premium Ovation looks by plan
+   through `entitlements.ts`. Club-made templates stay free.
+
+## Acceptance (from the success criteria)
+
+- New and converted templates go live with no app code change. Polish averages 5 half-days or
+  less per converted pack.
+- Zero auto-posts with a layout warning. Zero truncation or overflow across every listed
+  template, preset and size.
+- Saved carousels and drafts render as before, or as Club Kit for a hidden pack.
+- A club's private copies never show to another club. A published template carries no
+  author data and no junior or private-player data.
+
+## Open questions for the architect
+
+These are listed at the end of the requirements file: carousel page types in one template,
+shared and private storage against `card_templates` and its one-per-kind index, converter input
+and mapping, where the fit check runs, and what becomes of `KIND_TEMPLATES`, `PACK_TO_STARTER`
+and `LEGACY_PACK_IDS`. Also: motion in the format from release 1, the AI generation loop, the
+Figma node mapping and connection storage, and how premium looks plug into entitlements. Next
+ADR is 011.
+
+### Previous (EM → SDE, selection-hub-redesign; still the open handoff for that feature)
+
+**From:** Engineering Manager
 **To:** SDE
 **Feature:** selection-hub-redesign
 

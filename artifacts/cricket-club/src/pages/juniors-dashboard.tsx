@@ -166,7 +166,7 @@ function JuniorPremiershipsCard({ items }: { items: JuniorPremiership[] }) {
                   {p.season ?? "–"}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-semibold">
+                  <span className="block break-words font-semibold">
                     {p.teamName ?? p.ageGroup ?? "Junior side"}
                   </span>
                   {captain && (

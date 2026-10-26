@@ -1,170 +1,117 @@
-import { describe, it, expect, beforeAll, vi } from "vitest";
-import { screen, fireEvent, waitFor, within } from "@testing-library/react";
-import { renderAt } from "../test/render";
+/**
+ * Social Media Studio home (plan 2026-10-23): search, Create (size, then a
+ * template or blank, then the editor), Continue designing newest first,
+ * Templates for you, quick links, and "Your designs" at /admin/social/designs.
+ */
+import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
+import { placeholderDocument } from "@workspace/scorecard/kind-templates";
+import { renderWithHistory } from "../test/render";
 import { installApiMock } from "../test/mock-api";
-import { ConfirmProvider } from "@/components/confirm-dialog";
-import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
-import { packName } from "@/lib/social-studio";
-import type { CardTemplate } from "@workspace/api-client-react";
-import { LEGACY_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import AdminSocialStudio from "./admin-social-studio";
 
-/**
- * U3 — Studio pack switcher (R1, R2, R5, R7).
- *
- * These are state round-trips, not a visual check: what the selector reads,
- * what a selection PATCHes, and what the bulk action tells the admin BEFORE it
- * strips their own per-kind defaults. `defaultForKinds` is one namespace shared
- * by pack rows and tenant-authored templates and the server's `clearDefaultKinds`
- * is source-agnostic, so "one PATCH to one canonical row" and "the dialog names
- * the templates that lose a default" are correctness properties, not polish.
- */
-
-const ALL_KINDS = CARD_KIND_OPTIONS.map((o) => o.value);
-
-// The layer-template card in the fixture mounts the canvas thumbnail, which
-// jsdom can't provide. The component already degrades to a "Preview failed"
-// tile; stubbing keeps jsdom's not-implemented traces out of the run output.
 beforeAll(() => {
   HTMLCanvasElement.prototype.getContext = (() =>
     null) as unknown as HTMLCanvasElement["getContext"];
 });
 
-let nextId = 1;
-
-function packRow(
-  packId: string,
-  name: string,
-  variant: string,
-  defaultForKinds: string[] = [],
-): CardTemplate {
-  return {
-    id: nextId++,
-    name,
-    cardKinds: [...ALL_KINDS],
-    source: "pack",
-    packId,
-    packVariant: variant,
-    baseKind: null,
-    layers: [],
-    defaultForKinds,
-    backgroundImageUrl: null,
-    bgWidth: 1080,
-    bgHeight: 1080,
-    slots: [],
-    isActive: true,
-    isDefault: false,
-    displayOrder: 0,
-  } as CardTemplate;
-}
-
-function byoRow(
-  name: string,
-  source: "layers" | "background",
-  defaultForKinds: string[] = [],
-  cardKinds: string[] = [],
-): CardTemplate {
-  return {
-    id: nextId++,
-    name,
-    cardKinds,
-    source,
-    packId: null,
-    packVariant: null,
-    baseKind: "player",
-    layers: [],
-    defaultForKinds,
-    backgroundImageUrl: source === "background" ? "https://example.test/bg.png" : null,
-    bgWidth: 1080,
-    bgHeight: 1080,
-    slots: [],
-    isActive: true,
-    isDefault: false,
-    displayOrder: 0,
-  } as CardTemplate;
-}
-
-/**
- * A tenant with both packs materialised (three variants each, as
- * `ensurePackTemplates` writes them), a layer template holding the "player"
- * default, and an uploaded background template. `matchSummary` is claimed by
- * Broadcast Dark; `record` is claimed by Club Kit; `century` is unclaimed.
- */
-function fixtureTemplates() {
-  nextId = 100;
-  const broadcastSquare = packRow(
-    "broadcast-dark-v1",
-    "Broadcast Dark — Square (1080×1080)",
-    "square",
-    ["matchSummary"],
-  );
-  const broadcastPortrait = packRow(
-    "broadcast-dark-v1",
-    "Broadcast Dark — Portrait (1080×1350)",
-    "portrait",
-  );
-  const broadcastStory = packRow(
-    "broadcast-dark-v1",
-    "Broadcast Dark — Story (1080×1920)",
-    "story",
-  );
-  const kitSquare = packRow("club-kit-v1", "Club Kit — Square (1080×1080)", "square", ["record"]);
-  const kitPortrait = packRow("club-kit-v1", "Club Kit — Portrait (1080×1350)", "portrait");
-  const kitStory = packRow("club-kit-v1", "Club Kit — Story (1080×1920)", "story");
-  const layerTemplate = byoRow("My Player Layout", "layers", ["player"], ["player"]);
-  const backgroundTemplate = byoRow("My Uploaded Background", "background", [], ["debut"]);
-  return {
-    broadcastSquare,
-    broadcastPortrait,
-    broadcastStory,
-    kitSquare,
-    kitPortrait,
-    kitStory,
-    layerTemplate,
-    backgroundTemplate,
-    all: [
-      // Deliberately not id-ordered: `canonicalPackRowFor` must pick the lowest
-      // active id per pack, not the first row it happens to see.
-      broadcastStory,
-      kitPortrait,
-      broadcastSquare,
-      kitStory,
-      layerTemplate,
-      kitSquare,
-      broadcastPortrait,
-      backgroundTemplate,
-    ],
-  };
-}
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const BUNDLE = {
   settings: {
     sponsorsEnabled: false,
     clubHashtag: "#DEMO",
-    engineMatchSummary: false,
-    autoseedCarousels: false,
     matchSummaryGradeConfig: {},
+    postingPlanSaved: true,
+    postingPlan: {
+      version: 2,
+      styleId: null,
+      rows: { ladders: { enabled: false } },
+      bigMoments: {},
+    },
   },
-  brand: {
-    name: "Demo Cricket Club",
-    shortName: "Demo",
-    primaryColour: "#1d4ed8",
-    backgroundColour: "#0f172a",
-  },
+  brand: { name: "Demo Cricket Club", primaryColour: "#1d4ed8", backgroundColour: "#0f172a" },
   activeSponsors: [],
 };
 
+const LIB_TEMPLATE = {
+  id: 1,
+  slug: "club-kit/milestone",
+  kind: "milestone",
+  name: "Club Kit milestone",
+  origin: "bundle",
+  authorName: "Ovation",
+  look: { id: 10, slug: "club-kit", name: "Club Kit" },
+  version: 2,
+  coverage: { pages: ["card"], sizes: ["square", "story"] },
+  fitStatus: "pass",
+  fitReport: null,
+  listed: true,
+  document: placeholderDocument("milestone"),
+};
+
+const DRAFTS = [
+  {
+    id: 41,
+    engine: "ondemand",
+    status: "awaiting_review",
+    cardInput: { kind: "milestone" },
+    appPath: "/",
+    sourceMatchIsJunior: false,
+    createdAt: "2026-10-01T00:00:00Z",
+    editedAt: "2026-10-20T00:00:00Z",
+    packId: "club-kit-v1",
+  },
+];
+
+const SETS = [
+  {
+    id: 7,
+    name: "Round 5 results",
+    platformSize: "portrait",
+    slides: [],
+    isPublished: false,
+    updatedAt: "2026-10-22T00:00:00Z",
+  },
+];
+
 type Write = { url: string; method: string; body: Record<string, unknown> | null };
 
-/** Install the canned API and record every non-GET request the page issues. */
-function setupApi(templates: CardTemplate[]): Write[] {
+function open(path = "/admin/social") {
   installApiMock({
     "/social-settings": BUNDLE,
+    "/social-drafts": DRAFTS,
+    "/card-sets": SETS,
+    "/template-library/preview-input": { kind: "milestone", source: "sample", input: null },
+    "/template-library/elements": {
+      elements: [
+        {
+          id: 3,
+          slug: null,
+          name: "Milestone ribbon",
+          category: "badges",
+          tags: [],
+          origin: "bundle",
+          authorName: "Ovation",
+          mine: false,
+          look: null,
+          listed: true,
+          document: { layers: [] },
+          thumbnailUrl: null,
+          createdAt: "2026-10-01T00:00:00Z",
+        },
+      ],
+      nextCursor: null,
+    },
+    "/template-library": { templates: [LIB_TEMPLATE], nextCursor: null },
+    "/club-templates": { templates: [] },
     "/card-themes": [],
-    "/card-templates": templates,
   });
   const base = globalThis.fetch as unknown as (
-    input: RequestInfo | URL,
+    i: RequestInfo | URL,
     init?: RequestInit,
   ) => Promise<Response>;
   const writes: Write[] = [];
@@ -172,367 +119,123 @@ function setupApi(templates: CardTemplate[]): Write[] {
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const method = (init?.method ?? "GET").toUpperCase();
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       if (method !== "GET") {
-        const url =
-          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        writes.push({
-          url,
-          method,
-          body: init?.body ? JSON.parse(String(init.body)) : null,
+        writes.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : null });
+        return new Response(JSON.stringify({ ...DRAFTS[0], id: 99 }), {
+          status: 201,
+          headers: { "content-type": "application/json" },
         });
       }
       return base(input, init);
     }),
   );
-  return writes;
+  const { url } = renderWithHistory(<AdminSocialStudio />, path);
+  return { writes, url };
 }
 
-async function renderStudio(templates: CardTemplate[]) {
-  const writes = setupApi(templates);
-  renderAt(
-    <ConfirmProvider>
-      <AdminSocialStudio />
-    </ConfirmProvider>,
-  );
-  await screen.findByText("Pack per card type");
-  return writes;
-}
-
-/**
- * A STATEFUL card-templates API: the PATCH actually lands, and the next GET
- * serves the mutated store.
- *
- * `setupApi` above freezes the template list, so it can only ever assert what
- * the client SENDS. The selector's displayed value comes from
- * `resolvePackIdForKind(templates, kind)` — i.e. from what the refetch brings
- * BACK — so a frozen list makes the round trip unobservable and the control
- * appears to revert no matter what the server did. That gap is why a silent
- * no-op reached production.
- *
- * The PATCH handler mirrors routes/social-cards.ts:499-514 in the order that
- * matters: `clearDefaultKinds` strips the claimed kinds from every OTHER row of
- * the tenant first, then the target row is updated.
- */
-function setupStatefulApi(initial: CardTemplate[]) {
-  const store: CardTemplate[] = initial.map((t) => ({ ...t }));
-  installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
-  const base = globalThis.fetch as unknown as (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ) => Promise<Response>;
-
-  const json = (body: unknown) =>
-    new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
-
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url =
-        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      const method = (init?.method ?? "GET").toUpperCase();
-
-      if (url.includes("/card-templates")) {
-        if (method === "GET") return json(store);
-        const id = Number(url.split("/card-templates/")[1]);
-        const patch = init?.body
-          ? (JSON.parse(String(init.body)) as { defaultForKinds?: string[] })
-          : {};
-        const target = store.find((t) => t.id === id);
-        if (!target) return new Response("{}", { status: 404 });
-        const claimed = patch.defaultForKinds ?? [];
-        if (claimed.length > 0) {
-          for (const t of store) {
-            if (t.id === id) continue;
-            t.defaultForKinds = (t.defaultForKinds ?? []).filter((k) => !claimed.includes(k));
-          }
-        }
-        Object.assign(target, patch);
-        return json(target);
-      }
-      return base(input, init);
-    }),
-  );
-  return store;
-}
-
-async function renderStatefulStudio(templates: CardTemplate[]) {
-  const store = setupStatefulApi(templates);
-  renderAt(
-    <ConfirmProvider>
-      <AdminSocialStudio />
-    </ConfirmProvider>,
-  );
-  await screen.findByText("Pack per card type");
-  return store;
-}
-
-// U14 replaced the per-type <select> with one swatch radio per pack. These
-// helpers keep the old select semantics: value "" = the default pack.
-const PACK_IDS = ["broadcast-dark-v1", "club-kit-v1"];
-const packGroup = (label: string) =>
-  screen.getByRole("radiogroup", { name: `Design pack for ${label}` });
-const selectorFor = (label: string) => {
-  const checked = within(packGroup(label))
-    .getAllByRole("radio")
-    .find((r) => r.getAttribute("aria-checked") === "true");
-  const id = PACK_IDS.find((p) => packName(p) === checked?.getAttribute("aria-label")) ?? "";
-  return { value: id === "broadcast-dark-v1" ? "" : id };
-};
-const pickPack = (label: string, value: string) =>
-  fireEvent.click(
-    within(packGroup(label)).getByRole("radio", { name: packName(value || "broadcast-dark-v1") }),
-  );
-
-describe("admin social studio — per-kind pack selector (R1, R6)", () => {
-  it("changing a kind's selector issues one PATCH to that pack's canonical row", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    pickPack("Century", "club-kit-v1");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].method).toBe("PATCH");
-    // Canonical row = lowest active id for the pack (the square variant here).
-    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining(["record", "century"]));
-  });
-
-  it("selecting a different pack for a claimed kind produces exactly one claim", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    // `matchSummary` is currently claimed by Broadcast Dark. A default-pack
-    // claim presents as the leading "" option — the same option an unclaimed
-    // kind sits on, because both render that pack. The list carries the default
-    // pack once, not twice under two values that do the same thing.
-    expect(selectorFor("Match Summary").value).toBe("");
-    pickPack("Match Summary", "club-kit-v1");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
-    const claimed = writes[0].body?.defaultForKinds as string[];
-    expect(claimed.filter((k) => k === "matchSummary")).toHaveLength(1);
-    // The old owner is NOT patched from the client — the server clears it.
-    expect(writes.some((w) => w.url.includes(`/card-templates/${f.broadcastSquare.id}`))).toBe(
-      false,
-    );
-  });
-
-  it("selecting the leading default option writes an explicit Broadcast Dark claim", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    // `record` is claimed by Club Kit; move it back to the default pack.
-    expect(selectorFor("Record").value).toBe("club-kit-v1");
-    pickPack("Record", "");
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].url).toContain(`/card-templates/${f.broadcastSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(
-      expect.arrayContaining(["matchSummary", "record"]),
-    );
-  });
-
-  it("a kind with no claim renders on the default option, not blank", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    // The default pack's swatch is checked and the row names it — never blank.
-    expect(selectorFor("Century").value).toBe("");
-    const row = packGroup("Century").closest("li")!;
+describe("Studio home", () => {
+  it("asks what to design, with Create tiles for the kinds the club posts", async () => {
+    open();
     expect(
-      within(row).getByRole("radio", { name: "Broadcast Dark" }).getAttribute("aria-checked"),
-    ).toBe("true");
-    expect(row.textContent).toMatch(/Broadcast Dark/);
-  });
-
-  it("a kind whose default is a layers template shows the override warning", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
-  });
-});
-
-describe("admin social studio — legacy packs are hidden (P9)", () => {
-  it("offers no legacy pack anywhere, and shows a legacy claim as Club Kit", async () => {
-    const f = fixtureTemplates();
-    // A list that still carries legacy pack rows (the API hides them; this is the
-    // client's own guard), one of them holding the Century claim.
-    const legacy = LEGACY_PACK_IDS.map((id, i) =>
-      packRow(id, `Legacy ${i} — Square (1080×1080)`, "square", i === 0 ? ["century"] : []),
-    );
-    const duotone = {
-      ...packRow("duotone-v1", "Duotone — Square (1080×1080)", "square"),
-      cardKinds: ["matchDay", "matchSummary", "teamList"],
-    } as CardTemplate;
-    await renderStudio([...f.all, ...legacy, duotone]);
-
-    for (const id of LEGACY_PACK_IDS) {
-      const name = packName(id);
-      expect(screen.queryAllByRole("radio", { name })).toHaveLength(0);
-      expect(screen.queryByLabelText(`Use ${name} for every card`)).toBeNull();
-    }
-    expect(screen.getByLabelText("Use Club Kit for every card")).toBeInTheDocument();
-    expect(selectorFor("Century").value).toBe("club-kit-v1");
-    // The new pack (P8) stays offered for the kinds it designs.
-    expect(
-      within(packGroup("Match Summary")).getByRole("radio", { name: packName("duotone-v1") }),
+      screen.getByRole("heading", { name: "What will you design today?" }),
     ).toBeInTheDocument();
-  });
-});
-
-describe("admin social studio — the selection survives the round trip", () => {
-  /**
-   * The reported bug: pick a pack, a spinner flashes, the control goes back to
-   * "Broadcast Dark (default)". The write is asserted elsewhere in this file;
-   * what was never asserted is that the choice is still there once the refetch
-   * lands. The selector is controlled off `packIdByKind`, so it ALWAYS snaps
-   * back on the render `setPendingKind` forces — success and failure look
-   * identical until new data arrives. Only this assertion tells them apart.
-   */
-  it("shows the newly chosen pack after the refetch, not the default", async () => {
-    const f = fixtureTemplates();
-    await renderStatefulStudio(f.all);
-
-    expect(selectorFor("Century").value).toBe("");
-    pickPack("Century", "club-kit-v1");
-
-    await waitFor(() => expect(selectorFor("Century").value).toBe("club-kit-v1"));
-  });
-
-  it("persists the claim server-side on the pack's canonical row", async () => {
-    const f = fixtureTemplates();
-    const store = await renderStatefulStudio(f.all);
-
-    pickPack("Century", "club-kit-v1");
-
+    const create = screen.getByRole("heading", { name: "Create" }).closest("section")!;
+    expect(await within(create).findByRole("button", { name: "Match Day" })).toBeInTheDocument();
+    expect(within(create).getByRole("button", { name: "Carousel set" })).toBeInTheDocument();
+    expect(within(create).getByRole("button", { name: "Blank design" })).toBeInTheDocument();
+    // Ladders are off in the posting plan: Ladder waits under More.
     await waitFor(() =>
-      expect(store.find((t) => t.id === f.kitSquare.id)?.defaultForKinds).toContain("century"),
+      expect(within(create).queryByRole("button", { name: "Ladder" })).toBeNull(),
+    );
+    fireEvent.click(within(create).getByRole("button", { name: /More/ }));
+    expect(within(create).getByRole("button", { name: "Ladder" })).toBeInTheDocument();
+    // Quick links stay one click away.
+    const shortcuts = screen.getByRole("navigation", { name: "Studio shortcuts" });
+    expect(within(shortcuts).getByRole("link", { name: "Queue" })).toHaveAttribute(
+      "href",
+      "/admin/social/queue",
+    );
+    expect(within(shortcuts).getByRole("link", { name: "Posting plan" })).toHaveAttribute(
+      "href",
+      "/admin/social/plan",
     );
   });
 
-  it("shows the admin why a pack write failed instead of silently reverting", async () => {
-    // The regression this guards: `usePackSelection` sets an error and returns
-    // it, and for a release nothing rendered it. A 500 from the server looked
-    // identical to success — spinner, then the selector back on the default —
-    // because the control is driven by server state either way. Silence is the
-    // bug; the assertion is that SOMETHING legible reaches the screen.
-    const f = fixtureTemplates();
-    installApiMock({ "/social-settings": BUNDLE, "/card-themes": [] });
-    const base = globalThis.fetch as unknown as (
-      input: RequestInfo | URL,
-      init?: RequestInit,
-    ) => Promise<Response>;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url =
-          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-        const method = (init?.method ?? "GET").toUpperCase();
-        if (url.includes("/card-templates")) {
-          if (method === "GET")
-            return new Response(JSON.stringify(f.all), {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            });
-          return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        return base(input, init);
-      }),
+  it("creates from a template at the chosen size and opens the editor", async () => {
+    const { writes, url } = open();
+    fireEvent.click(await screen.findByRole("button", { name: "Milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Story" }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Use Club Kit milestone" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/99?format=story"));
+    expect(writes[0]).toMatchObject({ method: "POST" });
+    expect(writes[0]!.url).toContain("/social-drafts");
+    expect(writes[0]!.body).toMatchObject({
+      cardInput: { kind: "milestone" },
+      templateRef: { libraryTemplateId: 1, version: 2 },
+    });
+  });
+
+  it("starts a blank design from a size alone", async () => {
+    const { writes, url } = open();
+    fireEvent.click(screen.getByRole("button", { name: "Blank design" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Landscape" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/99?format=landscape"));
+    expect(writes[0]!.body).toMatchObject({ packId: "blank" });
+  });
+
+  it("lists recent work newest first, each opening where it's edited", async () => {
+    open();
+    const section = screen.getByRole("heading", { name: "Continue designing" }).closest("section")!;
+    const links = await within(section).findAllByRole("link", { name: /^Open / });
+    expect(links.map((l) => l.getAttribute("href"))).toEqual([
+      "/admin/social/sets?open=7",
+      "/admin/social/editor/41",
+    ]);
+    expect(within(section).getByText(/Carousel set · 0 slides · Portrait/)).toBeInTheDocument();
+    expect(within(section).getByRole("link", { name: "See all" })).toHaveAttribute(
+      "href",
+      "/admin/social/designs",
     );
-    renderAt(
-      <ConfirmProvider>
-        <AdminSocialStudio />
-      </ConfirmProvider>,
-    );
-    await screen.findByText("Pack per card type");
-
-    pickPack("Century", "club-kit-v1");
-
-    const banner = await screen.findByText(/internal server error/i);
-    expect(banner).toBeInTheDocument();
-    // ...and the control is honest about not having changed.
-    expect(selectorFor("Century").value).toBe("");
   });
 
-  it("moving a claimed kind to another pack leaves it claimed exactly once", async () => {
-    // `record` starts on Gold Foil. Moving it to the default pack must not end
-    // with both rows holding it, nor with neither — the server clears the old
-    // owner, and the control must end up reading the new one back.
-    const f = fixtureTemplates();
-    const store = await renderStatefulStudio(f.all);
-
-    expect(selectorFor("Record").value).toBe("club-kit-v1");
-    pickPack("Record", "");
-
-    await waitFor(() => expect(selectorFor("Record").value).toBe(""));
-    const holders = store.filter((t) => (t.defaultForKinds ?? []).includes("record"));
-    expect(holders.map((t) => t.id)).toEqual([f.broadcastSquare.id]);
-  });
-});
-
-describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
-  it("the background templates section shows no pack row and offers it no Delete", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    expect(screen.getByText("My Uploaded Background")).toBeInTheDocument();
-    expect(screen.queryByText("Gold Foil — Square (1080×1080)")).toBeNull();
-    expect(screen.queryByText("Broadcast Dark — Story (1080×1920)")).toBeNull();
-    // One uploaded background → exactly one Delete affordance in that section.
-    expect(screen.getAllByText(/^Delete$/)).toHaveLength(1);
+  it("Create → Carousel set picks the set, a look and a size, then opens the editor", async () => {
+    const { writes, url } = open();
+    const create = screen.getByRole("heading", { name: "Create" }).closest("section")!;
+    fireEvent.click(await within(create).findByRole("button", { name: "Carousel set" }));
+    const dialog = await screen.findByRole("dialog", { name: "Make a carousel set" });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Match day/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Club Kit" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Feed portrait" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Make the set" }));
+    await waitFor(() => expect(writes.some((w) => /club-templates\/sets$/.test(w.url))).toBe(true));
+    expect(writes.find((w) => /club-templates\/sets$/.test(w.url))!.body).toEqual({
+      setType: "matchDay",
+      lookId: 10,
+    });
+    await waitFor(() => expect(url()).toBe("/admin/social/template/99?size=portrait"));
   });
 
-  it("no gallery card captions a pack row as the default template", async () => {
-    const f = fixtureTemplates();
-    await renderStudio(f.all);
-
-    // The tenant's own default still gets a caption — a "layers" template
-    // overrides the pack outright, so it reads as the override rather than a
-    // plain default, and it is captioned exactly once (not once per phrasing).
-    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
-    expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
-    // Pack claims never surface as a "Default template" caption at all.
-    expect(screen.queryByText(/Default template: Club Kit/)).toBeNull();
-    expect(screen.queryByText(/Default template: Broadcast Dark/)).toBeNull();
-  });
-});
-
-describe("admin social studio — bulk apply is gated (R2, R7)", () => {
-  it("cancelling the confirm dialog issues no PATCH", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    fireEvent.click(screen.getByLabelText("Use Club Kit for every card"));
-    const cancel = await screen.findByRole("button", { name: /cancel/i });
-    fireEvent.click(cancel);
-
-    await waitFor(() => expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull());
-    expect(writes).toHaveLength(0);
+  it("searches card types, templates, elements and the club's designs, grouped", async () => {
+    open();
+    fireEvent.change(screen.getByPlaceholderText("Search templates, elements and your designs"), {
+      target: { value: "milestone" },
+    });
+    expect(await screen.findByRole("region", { name: "Card types" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Templates" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Elements" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Your designs" })).toBeInTheDocument();
   });
 
-  it("the confirm dialog names the tenant templates that lose a default, then one PATCH claims every kind", async () => {
-    const f = fixtureTemplates();
-    const writes = await renderStudio(f.all);
-
-    fireEvent.click(screen.getByLabelText("Use Club Kit for every card"));
-
-    const dialog = await screen.findByRole("alertdialog");
-    expect(dialog.textContent).toContain("My Player Layout");
-    expect(dialog.textContent).toContain(String(ALL_KINDS.length));
-
-    fireEvent.click(screen.getByRole("button", { name: /apply/i }));
-
-    await waitFor(() => expect(writes).toHaveLength(1));
-    expect(writes[0].method).toBe("PATCH");
-    expect(writes[0].url).toContain(`/card-templates/${f.kitSquare.id}`);
-    expect(writes[0].body?.defaultForKinds).toEqual(expect.arrayContaining([...ALL_KINDS]));
+  it("shows every design, with filters, at /admin/social/designs", async () => {
+    open("/admin/social/designs");
+    expect(screen.getByRole("heading", { name: "Your designs" })).toBeInTheDocument();
+    await screen.findAllByRole("link", { name: /^Open / });
+    fireEvent.change(screen.getByLabelText("Type"), { target: { value: "set" } });
+    const links = screen.getAllByRole("link", { name: /^Open / });
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/social/sets?open=7"]);
   });
 });

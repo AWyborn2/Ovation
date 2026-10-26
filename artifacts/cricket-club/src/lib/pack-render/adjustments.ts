@@ -11,22 +11,56 @@
  */
 
 import {
+  documentPageLayers,
+  flattenLayers,
+  isDocumentV2,
+  layerDropped,
+  LOGO_ROW_FIELDS,
+  normaliseDocument,
+  PHOTO_TOKEN,
+  primaryPage,
   rowsColumns,
+  type DerivedPalette,
+  type GroupLayerV2,
+  type PageKey,
   type RowsSpec,
+  type TemplateDocumentV2,
+  type TemplateLayerV2,
+  type TemplateStyleV2,
   type TemplateTextStyle,
+  type TemplateTimeline,
+  type TextLayerV2,
+  type VectorLayerV2,
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
-import { FIT_ATTR } from "./layer-fit";
+import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
-import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import {
-  clubKitPaletteFor,
-  clubKitVars,
-  clubStageVars,
-  type ClubKitPalette,
-} from "./club-kit-vars";
+  groupDepthAllowed,
+  layerShows,
+  renderGroup,
+  type DrawnLayer,
+  type LayoutContext,
+} from "./layer-layout";
+import { hasLoops, LOOP_KEYFRAMES, MOTION_KEYFRAMES, motionCss } from "./layer-motion";
+import {
+  clippedGlowCss,
+  colourResolver,
+  layerBoxCss,
+  layerNeedsV2,
+  overlayHtml,
+  paletteVars,
+  shapeFillCss,
+  skewCss,
+  textStyleCss,
+  type StyleContext,
+} from "./layer-style";
+import { duotonePaletteFor } from "./duotone-vars";
+import { renderVector } from "./layer-vector";
+import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import type { PackCardData, PackTokens } from "./types";
+import type { MatchColours } from "@workspace/scorecard/match-palette";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
@@ -50,7 +84,11 @@ export type FreeLayerKind =
   /** The card's photo (kind templates, ADR-001); never drawn on junior cards. */
   | "photo"
   /** One styled list row repeated per data row (kind templates, ADR-001). */
-  | "rows";
+  | "rows"
+  /** An inline SVG decoration (format v2, ADR-011). */
+  | "vector"
+  /** A group or stack of child layers (format v2, ADR-011). */
+  | "group";
 
 export type FreeLayer = {
   id: string;
@@ -63,6 +101,8 @@ export type FreeLayer = {
   locked?: boolean;
   /** Layers sharing a group id select and move together. */
   group?: string;
+  /** Layers sharing a link are one element drawn per size (format v2, Stream C). */
+  link?: string;
   /**
    * Text for `text` and `sticker`; image url for `image`; the milestone
    * (e.g. "100") for `medal`; unused for `shape` and `chart`.
@@ -113,6 +153,15 @@ export type CardAdjustments = {
   set?: { cover?: boolean; grouping?: "auto" | "none" };
   /** Per-slide edits for a set, by slide key (`cover`, `detail:<section>:<row>`). */
   slides?: Record<string, CardAdjustments>;
+  /**
+   * Format v2 (ADR-011): a v2 document's pages, in place of `layers`. The
+   * renderer reads every document through `normaliseDocument`, so a v1
+   * `layers` list is the kind's primary page.
+   */
+  formatVersion?: TemplateDocumentV2["formatVersion"];
+  pages?: TemplateDocumentV2["pages"];
+  timeline?: TemplateTimeline;
+  palettes?: DerivedPalette[];
 };
 
 /**
@@ -184,6 +233,11 @@ export function inheritedFormats(
   });
 }
 
+/** Whether a v2 document has a layer on any page. */
+const hasPageLayers = (adj: CardAdjustments): boolean =>
+  isDocumentV2(adj) &&
+  Object.values(adj.pages).some((page) => Array.isArray(page?.layers) && page.layers.length > 0);
+
 /** True when the adjustments change nothing, so the render stays byte-identical. */
 export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boolean {
   if (!adj) return true;
@@ -192,7 +246,8 @@ export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boo
     (adj.hidden ?? []).length === 0 &&
     Object.keys(adj.photo ?? {}).length === 0 &&
     Object.keys(adj.images ?? {}).length === 0 &&
-    (adj.layers ?? []).length === 0
+    (adj.layers ?? []).length === 0 &&
+    !hasPageLayers(adj)
   );
 }
 
@@ -245,18 +300,8 @@ export function hideFields(html: string, adj: CardAdjustments | null | undefined
   );
 }
 
-const ANIMATION: Record<LayerAnimation["kind"], string | null> = {
-  none: null,
-  rise: "packLayerRise .7s cubic-bezier(.2,.8,.2,1) both",
-  fade: "packLayerFade .6s ease-out both",
-  pop: "packLayerPop .5s cubic-bezier(.2,1.4,.4,1) both",
-};
-
 /** CSS a card needs for free-layer animations (inlined so exports carry it). */
-export const LAYER_KEYFRAMES =
-  "@keyframes packLayerRise{from{opacity:0;transform:translateY(8%)}to{opacity:1;transform:none}}" +
-  "@keyframes packLayerFade{from{opacity:0}to{opacity:1}}" +
-  "@keyframes packLayerPop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}";
+export const LAYER_KEYFRAMES = MOTION_KEYFRAMES;
 
 /** A style value safe to place inside a style attribute. */
 const cssValue = (v: string | undefined): string | undefined =>
@@ -276,9 +321,6 @@ const ALIGN = new Set(["left", "center", "right"]);
 const alignOf = (v: unknown): "left" | "center" | "right" =>
   typeof v === "string" && ALIGN.has(v) ? (v as "left" | "center" | "right") : "center";
 
-/** The palette a template overlay carries: Club Kit's, plus the club stage. */
-const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStageVars(p)}`;
-
 /** Per-render context for library elements (club colours, crest, live rows). */
 export interface FreeLayerContext {
   tokens?: PackTokens;
@@ -295,6 +337,27 @@ export interface FreeLayerContext {
   rowVariants?: Record<string, Array<string | undefined>>;
   /** The card photo for `photo` layers; null/absent draws nothing. */
   photoUrl?: string | null;
+  /**
+   * The card's photo placement sliders (focal point 0–1, zoom). Once moved off
+   * the centre they win over a `photo` layer's own focal point and zoom; left
+   * centred, the layer's own are kept, as in the pack path.
+   */
+  photoTransform?: { focalX: number; focalY: number; zoom?: number } | null;
+  /**
+   * The card's bound images (crests, sponsor logos, the club logo), for v2
+   * image tokens and conditions. Photos are already left out of a junior
+   * card the server hasn't cleared.
+   */
+  images?: Record<string, string>;
+  /** The card's kind and the page to draw (format v2); absent → the kind's primary page. */
+  kind?: string;
+  page?: PageKey;
+  /** The format of the document being drawn; v2-only rules apply to 2. Set by `renderFreeLayers`. */
+  formatVersion?: 1 | 2;
+  /** Whether the card is animated (loops that run on the text need it). Set by `renderFreeLayers`. */
+  animate?: boolean;
+  /** Both teams' colours, for the match palette (`--mt-*`); absent → the club against a neutral side. */
+  match?: MatchColours;
 }
 
 const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
@@ -311,8 +374,21 @@ export function substituteTokens(text: string, values: Record<string, string>): 
 /** A fittable element's designed size in cqw, for `FIT_ATTR`. */
 const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
 
-/** Inline CSS for a text box (text layers and list-row cells). */
-function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
+/** A v2 text width as `font-stretch`, or "" (none, or not a number). */
+function stretchCss(stretch: unknown): string {
+  if (typeof stretch !== "number" || !Number.isFinite(stretch)) return "";
+  return `font-stretch:${+Math.min(200, Math.max(50, stretch)).toFixed(1)}%`;
+}
+
+/**
+ * Inline CSS for a text box (text layers and list-row cells): `extra` before
+ * the text settings, `after` once they are set (v2 style additions).
+ */
+function textCss(
+  raw: TemplateTextStyle | undefined,
+  extra: string[] = [],
+  after: string[] = [],
+): string {
   const s = {
     ...(raw ?? {}),
     color: cssValue(raw?.color),
@@ -333,8 +409,12 @@ function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): stri
     "white-space:pre-wrap",
     s.letterSpacing != null ? `letter-spacing:${num(s.letterSpacing)}em` : "",
     s.uppercase === true ? "text-transform:uppercase" : "",
+    // v2 only (a v1 style can't hold them): the family's italic and its width.
+    (raw as TemplateStyleV2 | undefined)?.italic === true ? "font-style:italic" : "",
+    stretchCss((raw as TemplateStyleV2 | undefined)?.stretch),
     s.background ? `background:${s.background}` : "",
     s.radius != null ? `border-radius:${num(s.radius)}px` : "",
+    ...after,
   ]
     .filter(Boolean)
     .join(";");
@@ -362,10 +442,18 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
-      const style = {
-        ...cell.style,
-        ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
-      };
+      const override = variant ? spec.variants?.[variant]?.[cell.field] : undefined;
+      // On a v2 list, a row style's background for a key a backdrop holds colours that
+      // backdrop, not a text cell sharing the key that had none (a box behind the text).
+      const { background: _bg, ...textOverride } = override ?? {};
+      const own =
+        ctx.formatVersion === 2 &&
+        cell.show !== "backdrop" &&
+        cell.style?.background == null &&
+        spec.cells.some((c) => c.show === "backdrop" && c.field === cell.field)
+          ? textOverride
+          : override;
+      const style = { ...cell.style, ...own };
       const place = [
         "position:absolute",
         `left:${num(cell.x)}%`,
@@ -374,6 +462,16 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         cell.h === undefined ? "height:100%" : `height:${num(cell.h, 100)}%`,
         "overflow:hidden",
       ];
+      // A stand-in (a monogram) draws only where the field it stands in for is empty.
+      if (cell.fallbackFor && (row[cell.fallbackFor] ?? "").trim()) return "";
+      if (cell.show === "logo") {
+        // A crest or sponsor logo the row holds, whole, on any card. Only logo
+        // fields: a logo cell can never put a photo on a junior card.
+        const src = LOGO_ROW_FIELDS.includes(cell.field) ? (row[cell.field] ?? "").trim() : "";
+        if (!src) return "";
+        const radius = style.radius != null ? `;border-radius:${num(style.radius)}px` : "";
+        return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" /></div>`;
+      }
       if (cell.show === "backdrop") {
         const bg = cssValue(style.background);
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
@@ -387,12 +485,21 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
       }
       // Cells stay on one line so an overflow shows as width, which the fit
-      // step shrinks and, failing that, reports (KTD9).
-      const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
-      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
+      // step shrinks and, failing that, reports (KTD9). In format v2 it then
+      // ends the text in "…" after its last whole word that fits.
+      // A v2 cell draws its text shadows, stroke, text fill and line height too.
+      const after = ctx.formatVersion === 2 ? textStyleCss(style as TemplateStyleV2) : [];
+      const css = textCss(style, place, after).replace(
+        "white-space:pre-wrap",
+        "white-space:nowrap",
+      );
+      const words = ctx.formatVersion === 2 ? ` ${FIT_WORDS_ATTR}="1"` : "";
+      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}"${words} style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
-    const col = Math.floor(i / perColumn);
-    const top = (i % perColumn) * (rowHeight + gap);
+    // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
+    const acrossFirst = spec.flow === "across";
+    const col = acrossFirst ? i % columns : Math.floor(i / perColumn);
+    const top = (acrossFirst ? Math.floor(i / columns) : i % perColumn) * (rowHeight + gap);
     const across =
       columns > 1
         ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${colW.toFixed(3)}%`
@@ -402,21 +509,65 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
 }
 
+/** The card's sliders as a layer's photo adjust (percent focal point); null while untouched. */
+function sliderPhoto(t: FreeLayerContext["photoTransform"]): PhotoAdjust | null {
+  if (!t) return null;
+  const zoom = t.zoom ?? 1;
+  const centred = Math.abs(t.focalX - 0.5) < 0.005 && Math.abs(t.focalY - 0.5) < 0.005;
+  if (centred && Math.abs(zoom - 1) < 0.005) return null;
+  const pct = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 10;
+  return { focalX: pct(t.focalX), focalY: pct(t.focalY), zoom };
+}
+
 /** A `photo` layer: the card photo at this size's focal point and zoom. */
 function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
   // A junior card shows a photo only when the server marked it allowed — a junior
   // player's own photo the family consented to (ADR-007); never from the document alone.
   if ((ctx.junior && !ctx.juniorPhotoAllowed) || !ctx.photoUrl) return null;
-  const t = resolveGeometry(layer.photo, undefined, size)?.value ?? {
-    focalX: 50,
-    focalY: 50,
-    zoom: 1,
-  };
+  const t = sliderPhoto(ctx.photoTransform) ??
+    resolveGeometry(layer.photo, undefined, size)?.value ?? {
+      focalX: 50,
+      focalY: 50,
+      zoom: 1,
+    };
   const radius = layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : "";
   const fx = num(t.focalX, 50);
   const fy = num(t.focalY, 50);
-  const zoom = num(t.zoom, 1);
+  // Below 1× the photo shrinks inside its box, toward the focal point, so the
+  // sliders place the smaller photo (left/top at 0%, centred at 50%).
+  const zoom = Math.max(PHOTO_ZOOM_MIN, Math.min(PHOTO_ZOOM_MAX, num(t.zoom, 1)));
   return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${fx}% ${fy}%;transform:scale(${zoom});transform-origin:${fx}% ${fy}%" /></div>`;
+}
+
+/** The photo zoom range every control and renderer shares. */
+export const PHOTO_ZOOM_MIN = 0.5;
+export const PHOTO_ZOOM_MAX = 3;
+
+/**
+ * The size in pixels of the box a template draws the card photo in at `size`:
+ * the largest `photo` layer on the kind's primary page. The photo controls
+ * shape their frame to it, so dragging matches the card. Null when the
+ * document draws no photo layer at that size.
+ */
+export function photoBoxSize(
+  adj: unknown,
+  kind: string,
+  size: CardSize,
+  card: { w: number; h: number },
+): { w: number; h: number } | null {
+  if (!adj) return null;
+  const doc = normaliseDocument(adj as CardAdjustments, kind);
+  let best: { w: number; h: number } | null = null;
+  for (const layer of flattenLayers(documentPageLayers(doc, primaryPage(kind)))) {
+    if (layer.kind !== "photo" || layer.hidden) continue;
+    if (layer.sizes && !layer.sizes.includes(size)) continue;
+    const box = resolveGeometry(layer.geometry, layer.editedAt, size)?.value;
+    if (!box) continue;
+    const w = (num(box.w) / 100) * card.w;
+    const h = (num(box.h) / 100) * card.h;
+    if (w > 0 && h > 0 && (!best || w * h > best.w * best.h)) best = { w, h };
+  }
+  return best;
 }
 
 /** A layer's inner markup; null when it should not be drawn at all. */
@@ -445,14 +596,30 @@ function layerInner(
       if (tokens && text.trim() === "") return null;
       // Live-field text shrinks to fit (KTD9); other text renders as before.
       const fit = tokens ? ` ${FIT_ATTR}="${fitBase(raw)}"` : "";
-      return `<div${fit} style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
+      // Format v2 text: its fit rule (T1.17) and its style additions (L1-D).
+      const v2 = ctx.formatVersion === 2;
+      const fitMore = v2 && tokens ? textFitAttrs((layer as unknown as TextLayerV2).fit) : "";
+      const after = v2
+        ? textStyleCss(layer.style, (layer as unknown as TextLayerV2).motion, ctx.animate === true)
+        : [];
+      const body = fitMore
+        ? `<span ${FIT_TEXT_ATTR} style="min-width:0;max-width:100%">${escapeHtml(text)}</span>`
+        : escapeHtml(text);
+      return `<div${fit}${fitMore} style="${textCss(raw, ["width:100%", "height:100%"], after)}">${body}</div>`;
     }
     case "photo":
       return renderPhoto(layer, size, ctx);
     case "rows":
       return renderRows(layer, ctx);
-    case "shape":
-      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+    case "shape": {
+      // A v2 shape paints its fill (a colour or gradient) in place of v1's background,
+      // and nothing when it sets none (a frame line is a border on no fill); a v1
+      // shape that sets nothing keeps the accent it always had.
+      const v2 = ctx.formatVersion === 2;
+      const fill = v2 ? shapeFillCss(layer.style) : null;
+      const paint = fill ?? s.background ?? (v2 ? "transparent" : "var(--gold,#fbac27)");
+      return `<div style="width:100%;height:100%;background:${paint};border-radius:${num(s.radius)}px"></div>`;
+    }
     case "image": {
       // A template's image can be a field token (the club crest, the club's
       // ground photo), resolved from the club's own brand so no template holds
@@ -460,6 +627,8 @@ function layerInner(
       if (hasFieldTokens(layer.content)) {
         const src = substituteTokens(layer.content ?? "", {
           ...values,
+          // v2 images bind any image token the page has (crests, sponsor logos).
+          ...(ctx.formatVersion === 2 ? ctx.images : undefined),
           clubLogo: ctx.brand?.logoUrl ?? "",
           groundPhoto: ctx.brand?.groundPhotoUrl ?? "",
         }).trim();
@@ -490,13 +659,38 @@ function layerInner(
             photoUrl: ctx.photoUrl ?? null,
           })
         : "";
+    case "vector":
+    case "group":
+      // Drawn by `renderFreeLayers` itself (v2 only): a group from its children, a vector from its SVG.
+      return null;
   }
+}
+
+/** Whether a free-layer context has a value for a token: text, an image or rows. */
+function hasToken(token: string, values: Record<string, string>, ctx: FreeLayerContext): boolean {
+  if ((values[token] ?? "").trim()) return true;
+  if (token === "clubLogo") return !!ctx.brand?.logoUrl;
+  if (token === "groundPhoto") return !!ctx.brand?.groundPhotoUrl;
+  if (token === PHOTO_TOKEN) return !!ctx.photoUrl && !(ctx.junior && !ctx.juniorPhotoAllowed);
+  if ((ctx.images?.[token] ?? "").trim()) return true;
+  const rows =
+    ctx.rows && Object.prototype.hasOwnProperty.call(ctx.rows, token) ? ctx.rows[token] : null;
+  return Array.isArray(rows) && rows.length > 0;
 }
 
 /**
  * The free-layer overlay for `size`: an absolutely positioned layer above the
  * template, each layer boxed in percent of the artboard. Returns "" when there
  * are no layers, so unadjusted cards are unchanged.
+ *
+ * Every document is read through `normaliseDocument` (format v2) and the
+ * requested page drawn (`ctx.page`, default the kind's primary page, where a
+ * v1 document's layers are). A v1 document draws exactly as it always has;
+ * the drop rule, conditions, groups, vectors and v2 styles apply to v2
+ * documents only, except that a layer carrying v2-only content (a library
+ * element inserted into a v1 draft: a fill, a clip, a group) draws by v2's
+ * styles wherever it is. A stored v1 document can't hold those, so its
+ * renders are unchanged.
  */
 export function renderFreeLayers(
   adj: CardAdjustments | null | undefined,
@@ -507,41 +701,108 @@ export function renderFreeLayers(
   /** Club colours / crest / live rows for library elements. */
   ctx: FreeLayerContext = {},
 ): string {
-  const layers = adj?.layers ?? [];
+  const kind = ctx.kind ?? "";
+  const page = ctx.page ?? primaryPage(kind);
+  const doc = normaliseDocument(adj, kind);
+  const layers = documentPageLayers(doc, page);
   if (layers.length === 0) return "";
+  const v2 = doc.sourceFormat === 2;
+  const drawCtx: FreeLayerContext = {
+    ...ctx,
+    formatVersion: doc.sourceFormat,
+    animate: opts.animate === true,
+  };
+  const v2Ctx: FreeLayerContext = { ...drawCtx, formatVersion: 2 };
+  // What v2 styles read: the card's colours (an SVG filter needs real ones)
+  // and the filter definitions the overlay carries.
+  const tokens = ctx.tokens;
+  const styleCtx: StyleContext = {
+    colours: colourResolver(tokens, ctx.brand),
+    ...(tokens ? { duotone: () => duotonePaletteFor(tokens, ctx.brand) } : {}),
+    defs: new Map(),
+  };
   // Library elements read the Club Kit palette, derived from the club's
   // brand; only an overlay that uses it gets the extra declarations.
   // Template styles may name the palette directly (`var(--ck-stage)`), with
   // or without an element on the card.
-  const hasElement =
-    layers.some((l) => l.kind === "element" && !l.hidden) ||
-    JSON.stringify(layers).includes("var(--ck-");
-  const palette =
-    hasElement && ctx.tokens
-      ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}`
-      : "";
-  const parts = layers.map((layer) => {
-    if (layer.hidden) return "";
-    if (layer.sizes && !layer.sizes.includes(size)) return "";
+  const palette = paletteVars(doc, layers, ctx);
+  const has = (token: string) => hasToken(token, values, ctx);
+  const layout: LayoutContext = {
+    kind,
+    page,
+    size,
+    junior: ctx.junior === true,
+    has,
+    hasPhoto: has(PHOTO_TOKEN),
+    hasSponsors: ["sponsor1", "sponsor2", "sponsor3", "sponsors"].some(has),
+  };
+
+  /**
+   * One layer, positioned on the artboard; null when it isn't drawn on this
+   * card. `depth` is how deep it sits in groups (1 = the page's own layer);
+   * `inV2` is true inside a layer drawn by v2's styles.
+   */
+  const draw = (layer: TemplateLayerV2, depth: number, inV2 = false): DrawnLayer | null => {
+    if (layer.hidden) return null;
+    if (layer.sizes && !layer.sizes.includes(size)) return null;
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
-    if (!box) return "";
-    const inner = layerInner(layer, values, ctx, size);
-    if (inner === null) return "";
+    if (!box) return null;
+    if (v2 && (!layerShows(layer, layout) || layerDropped(layer, { kind, page, has }))) return null;
+    // Its styles are v2's in a v2 document, or when it carries v2-only content.
+    const styled = v2 || inV2 || layerNeedsV2(layer);
+    let inner: string | null;
+    if (layer.kind === "group") {
+      // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
+      if (!groupDepthAllowed(depth)) return null;
+      const children = (Array.isArray(layer.children) ? layer.children : [])
+        .map((child) => draw(child, depth + 1, styled))
+        .filter((child): child is DrawnLayer => child !== null);
+      inner = renderGroup(layer as GroupLayerV2, box.value, children, layout);
+    } else if (layer.kind === "vector") {
+      inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
+    } else {
+      inner = layerInner(layer as unknown as FreeLayer, values, styled ? v2Ctx : drawCtx, size);
+    }
+    if (inner === null) return null;
     const { x, y, w, h, rotate } = box.value;
-    const anim = opts.animate ? ANIMATION[layer.animation?.kind ?? "none"] : null;
+    // A v2 skew slants the layer after its rotation.
+    const transform = [
+      rotate ? `rotate(${num(rotate)}deg)` : "",
+      styled ? skewCss(layer.style) : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    let boxCss = styled ? layerBoxCss(layer, styleCtx) : [];
+    // A grain or halftone texture sits over the layer's content (v2).
+    if (styled) inner += overlayHtml(layer.style);
+    // A clipped layer's glow is drawn round it: its box styles move to an inner wrapper.
+    const glow = styled ? clippedGlowCss(layer) : null;
+    if (glow) {
+      inner = `<div style="position:absolute;inset:0;${boxCss.join(";")}">${inner}</div>`;
+      boxCss = glow;
+    }
+    const style = [
+      transform ? `transform:${transform}` : "",
+      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
+      ...motionCss(layer.motion, opts.animate === true),
+      ...boxCss,
+    ].filter(Boolean);
     const css = [
       "position:absolute",
       `left:${num(x)}%`,
       `top:${num(y)}%`,
       `width:${num(w)}%`,
       `height:${num(h)}%`,
-      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
-      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
-      anim ? `animation:${anim}` : "",
-      anim && layer.animation?.delayMs ? `animation-delay:${num(layer.animation.delayMs)}ms` : "",
-    ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
-  });
-  const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
-  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
+      ...style,
+    ];
+    const attrs = ` data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""}`;
+    const html = `<div${attrs} style="${css.join(";")}">${inner}</div>`;
+    return { layer, box: box.value, attrs, style, inner, html };
+  };
+
+  const parts = layers.map((layer) => draw(layer, 1)?.html ?? "");
+  const loops = v2 && hasLoops(flattenLayers(layers)) ? LOOP_KEYFRAMES : "";
+  const style = opts.animate ? `<style>${MOTION_KEYFRAMES}${loops}</style>` : "";
+  const defs = [...styleCtx.defs.values()].join("");
+  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${defs}${parts.join("")}</div>`;
 }

@@ -1,5 +1,10 @@
-import { planTemplateSlides, type LayerDocument } from "@workspace/scorecard/kind-templates";
-import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
+import {
+  isSetDocument,
+  planTemplateSlides,
+  type LayerDocument,
+} from "@workspace/scorecard/kind-templates";
+import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
+import { setDraftSlides, slideDocument } from "@/lib/set-draft";
 import { slidesForSize, type PlannedSlide } from "@/lib/card-sets/plan";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 
@@ -17,7 +22,23 @@ export function modalSlides(
   input: ShareCardInput,
   size: CardSize,
   templateDoc: LayerDocument | null | undefined,
+  data: PackCardData = {} as PackCardData,
 ): ModalSlide[] {
+  // A set design (carousel set editor plan): each slide on its own page.
+  if (isSetDocument(templateDoc)) {
+    const slides = setDraftSlides({ cardInput: input }, templateDoc, data);
+    return slides.map(
+      (s, i) =>
+        ({
+          key: s.key,
+          role: i === 0 ? "cover" : "detail",
+          input: s.input,
+          page: i + 1,
+          of: slides.length,
+          adjustments: slideDocument(templateDoc, s),
+        }) as ModalSlide,
+    );
+  }
   if (templateDoc) {
     const adjustments = templateDoc as unknown as CardAdjustments;
     return planTemplateSlides(
