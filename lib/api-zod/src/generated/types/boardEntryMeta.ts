@@ -17,4 +17,8 @@ export interface BoardEntryMeta {
   competition?: string | null;
   /** 1-based rank for ranked list boards (points, win counts). */
   rank?: number | null;
+  /** The entry's headline figure for table layouts, e.g. "312" (games), "147*" (a score) or "6/23" (bowling figures). */
+  figure?: string | null;
+  /** Seasons the player played for the club, e.g. "2009–25" or "2024/25". */
+  seasonSpan?: string | null;
 }

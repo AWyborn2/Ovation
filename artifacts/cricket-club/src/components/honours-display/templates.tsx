@@ -257,6 +257,71 @@ export function ListBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Leaderboard layout — rank · player · figure · seasons (kiosk redesign C1).
+// A long board flows into the board's list columns like a list does.
+// ---------------------------------------------------------------------------
+
+export function LeaderboardBoard({ board, brand, kiosk, cfg, entries }: LayoutProps) {
+  const rows = entries ?? board.entries;
+  const colCount = Math.min(3, Math.max(1, board.display?.columns ?? 1));
+  const per = colCount >= 2 && rows.length > colCount ? Math.ceil(rows.length / colCount) : 0;
+  const chunks = per
+    ? Array.from({ length: colCount }, (_, c) => rows.slice(c * per, (c + 1) * per))
+    : [rows];
+
+  const renderTable = (slice: BoardEntry[]) => (
+    <table className="hb-table hb-leader-table">
+      <thead>
+        <tr>
+          <th className="hb-lead">#</th>
+          <th className="hb-name">Player</th>
+          <th className="hb-figure">{board.figureLabel ?? ""}</th>
+          <th className="hb-span">Seasons</th>
+        </tr>
+      </thead>
+      <tbody>
+        {slice.map((e, i) => (
+          <tr className="row" key={i}>
+            <td className="hb-lead">
+              <span className="hb-rank">{e.meta?.rank ?? ""}</span>
+            </td>
+            <td className="hb-name">
+              <NameLink playerId={e.playerId} kiosk={kiosk}>
+                {e.primaryText}
+              </NameLink>
+            </td>
+            <td className="hb-figure">{e.meta?.figure ?? e.detail ?? ""}</td>
+            <td className="hb-span">{e.meta?.seasonSpan ?? ""}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="hb-board hb-list hb-leaderboard">
+      <BoardHead board={board} brand={brand} cfg={cfg} />
+      <BoardBody>
+        {chunks.length > 1 ? (
+          <div
+            className="hb-list-cols"
+            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          >
+            {chunks.map((ch, ci) => (
+              <div className="hb-list-col" key={ci}>
+                {renderTable(ch)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderTable(rows)
+        )}
+      </BoardBody>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Composite "columns" layout — several list boards rendered side-by-side.
 // Rendered as a single CSS grid so rows line up across columns (used by the
 // season-aligned transform, where every column is index-aligned by season).

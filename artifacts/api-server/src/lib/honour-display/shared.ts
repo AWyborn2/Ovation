@@ -83,8 +83,10 @@ export function resolveDisplay(
   layout: BoardLayout,
   override: BoardDisplayConfigJson | undefined,
 ): BoardDisplayOut {
-  // Multi-column flow only makes sense for plain lists; other layouts stay 1.
-  const cols = layout === "list" ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1))) : 1;
+  // Multi-column flow only makes sense for lists (and leaderboards, which
+  // render as ranked lists); other layouts stay 1.
+  const listLike = layout === "list" || layout === "leaderboard";
+  const cols = listLike ? Math.min(3, Math.max(1, Math.round(override?.columns ?? 1))) : 1;
   // "wrap" only applies to grid boards; other layouts fall back to a slideshow.
   let transition = override?.transition ?? DEFAULT_DISPLAY.transition;
   if (transition === "wrap" && layout !== "grid") transition = "slide";

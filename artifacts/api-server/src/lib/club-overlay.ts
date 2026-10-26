@@ -1168,10 +1168,14 @@ export function clubRecordLeaders(
   filter: CentralRecordsFilter = {},
 ): CentralRecordLeader[] {
   const lastSeason = new Map<string, number>();
+  const firstSeason = new Map<string, number>();
   for (const b of stats.buckets) {
     if (b.season === null || b.careerGrain) continue;
     if (b.season > (lastSeason.get(b.participantId) ?? -Infinity)) {
       lastSeason.set(b.participantId, b.season);
+    }
+    if (b.season < (firstSeason.get(b.participantId) ?? Infinity)) {
+      firstSeason.set(b.participantId, b.season);
     }
   }
   const pick = (f: CentralPartialFigures): number =>
@@ -1196,6 +1200,7 @@ export function clubRecordLeaders(
       displayName: p?.displayName ?? null,
       value,
       lastSeason: lastSeason.get(pid) ?? null,
+      firstSeason: firstSeason.get(pid) ?? null,
     });
   }
   return out.sort(

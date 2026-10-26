@@ -7,7 +7,7 @@
  */
 
 /**
- * Natural render layout for this board (skin only changes the look).
+ * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan.
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
@@ -19,4 +19,5 @@ export const DisplayBoardLayout = {
   columns: 'columns',
   grid: 'grid',
   lifeMembers: 'lifeMembers',
+  leaderboard: 'leaderboard',
 } as const;

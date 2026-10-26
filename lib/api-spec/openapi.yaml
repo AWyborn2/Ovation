@@ -21286,6 +21286,16 @@ components:
           type: integer
           nullable: true
           description: 1-based rank for ranked list boards (points, win counts).
+        figure:
+          type: string
+          nullable: true
+          description: >-
+            The entry's headline figure for table layouts, e.g. "312" (games),
+            "147*" (a score) or "6/23" (bowling figures).
+        seasonSpan:
+          type: string
+          nullable: true
+          description: Seasons the player played for the club, e.g. "2009–25" or "2024/25".
 
     BoardEntry:
       type: object
@@ -21732,7 +21742,11 @@ components:
             - columns
             - grid
             - lifeMembers
-          description: Natural render layout for this board (skin only changes the look).
+            - leaderboard
+          description: >-
+            Natural render layout for this board (skin only changes the look).
+            "leaderboard" is a ranked table (rank, player, figure, seasons) whose
+            entries carry meta.rank, meta.figure and meta.seasonSpan.
         title:
           type: string
         subtitle:
@@ -21763,6 +21777,12 @@ components:
           type: string
           nullable: true
           description: Free-text footnote rendered under the board.
+        figureLabel:
+          type: string
+          nullable: true
+          description: >-
+            Column heading for the entries' meta.figure in table layouts
+            (e.g. "Games", "Runs").
         display:
           $ref: "#/components/schemas/BoardDisplay"
 

@@ -163,6 +163,7 @@ function columnRule(board: KioskBoardShape): { fallback: number | "club"; max: n
     case "columns":
       return { fallback: "club", max: board.columns?.length || 5 };
     case "list":
+    case "leaderboard":
       return { fallback: 1, max: 3 };
     // Today's TV shows two life-member cards across and as many plaques as fit
     // (about seven on a 1080p TV); keep that look until the board sets one.
@@ -192,7 +193,9 @@ export function resolveKioskDisplay(
   const columnsPerScreen = Math.min(
     max,
     num(c.columnsPerScreen, RANGES.columnsPerScreen) ??
-      (board.layout === "list" ? num(c.columns, RANGES.columnsPerScreen) : undefined) ??
+      (board.layout === "list" || board.layout === "leaderboard"
+        ? num(c.columns, RANGES.columnsPerScreen)
+        : undefined) ??
       (rule.fallback === "club" ? look.columnsPerScreen : rule.fallback),
   );
 

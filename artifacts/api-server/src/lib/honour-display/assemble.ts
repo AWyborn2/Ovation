@@ -29,7 +29,7 @@ import {
   buildClubRecords,
   buildFiveWicketHauls,
   buildMilestoneBoard,
-  buildMostGames,
+  buildLeaderboards,
   buildPartnerships,
   buildRecordsByGrade,
   buildRecordsLeaderboards,
@@ -66,7 +66,7 @@ export async function assembleBoards(
     recordsByGrade,
     teamOfDecade,
     clubRecords,
-    mostGames,
+    leaderboards,
   ] = await Promise.all([
     buildPremierships(tenantId, central),
     buildPremiershipsGrid(tenantId, gridCols("premierships_grid")),
@@ -85,7 +85,7 @@ export async function assembleBoards(
     buildRecordsByGrade(source),
     buildTeamOfDecade(tenantId),
     buildClubRecords(tenantId),
-    buildMostGames(source),
+    buildLeaderboards(source),
   ]);
 
   const boards: HonourBoardOut[] = [];
@@ -99,7 +99,7 @@ export async function assembleBoards(
   if (partnerships) boards.push(partnerships);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
-  if (mostGames) boards.push(mostGames);
+  boards.push(...leaderboards);
   if (milestones) boards.push(milestones);
   boards.push(...awardPoints);
   boards.push(...recordsLeaderboards);
@@ -109,7 +109,7 @@ export async function assembleBoards(
   if (lifeMembers) boards.push(lifeMembers);
 
   // Composite "columns" boards reference the base boards above, so build them
-  // last (after Most Games) and append.
+  // last (after the leaderboards) and append.
   boards.push(...buildComposites(settings.composites ?? [], boards));
 
   // Admin-built custom grid boards (independent of the base boards).

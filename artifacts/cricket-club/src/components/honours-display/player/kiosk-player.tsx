@@ -229,7 +229,10 @@ export function KioskPlayer(props: KioskPlayerProps) {
         if (signal.aborted) return;
         const grouped = headings.length ? sliceBoardColumns(item.board, group) : item.board;
         const label = item.groups.length > 1 ? columnGroupLabel(headings, group) : "";
-        const listCols = grouped.layout === "list" ? d.columnsPerScreen : grouped.display.columns;
+        const listCols =
+          grouped.layout === "list" || grouped.layout === "leaderboard"
+            ? d.columnsPerScreen
+            : grouped.display.columns;
         const board: DisplayBoard = {
           ...grouped,
           display: { ...grouped.display, columns: listCols },
