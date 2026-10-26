@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  planDeciderLink,
   planPremiershipSeed,
   premiershipResult,
   premiershipYear,
@@ -214,5 +215,49 @@ describe("pickDeciderMatch", () => {
         match({ matchId: 2, matchDate: "2024-03-09" }),
       ]),
     ).toBe(2);
+  });
+});
+
+describe("planDeciderLink (kiosk redesign C5)", () => {
+  const details = {
+    matchId: 77,
+    grade: "A Grade",
+    season: "2024/25",
+    matchDate: "2025-03-15",
+    venue: "Club Oval",
+    opponent: "Pinjarra Cricket Club",
+    clubScore: "4/191",
+    opponentScore: "185",
+    outcome: "won" as const,
+    matchResultText: "Halls Head won",
+    players: [
+      { participantId: "g1", name: "Ann Opener", isPrivate: false, order: 1 },
+      { participantId: "g2", name: "Hidden Name", isPrivate: true, order: 2 },
+    ],
+  };
+
+  it("fills a bare row from the match, masking private players", () => {
+    const plan = planDeciderLink(
+      { venue: null, matchDate: null, result: "Premiers", playerCount: 0 },
+      details,
+    );
+    expect(plan.set).toEqual({
+      centralMatchId: 77,
+      venue: "Club Oval",
+      matchDate: "2025-03-15",
+      result: "4/191 def Pinjarra 185",
+    });
+    expect(plan.players).toEqual([
+      { name: "Ann Opener", participantId: "g1", battingOrder: 1 },
+      { name: PRIVATE_PLAYER_NAME, participantId: null, battingOrder: 2 },
+    ]);
+  });
+
+  it("never overwrites what the club entered", () => {
+    const plan = planDeciderLink(
+      { venue: "Home Ground", matchDate: "2025-03-16", result: "Our words", playerCount: 11 },
+      details,
+    );
+    expect(plan).toEqual({ set: { centralMatchId: 77 }, players: [] });
   });
 });

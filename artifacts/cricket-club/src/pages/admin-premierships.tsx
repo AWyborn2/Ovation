@@ -5,7 +5,10 @@ import {
   useCreatePremiership,
   useUpdatePremiership,
   useDeletePremiership,
+  useLinkPremiershipDecider,
+  useListMatches,
   getListPremiershipsQueryKey,
+  type MatchSummary,
   type Premiership,
   type PremiershipPlayer,
 } from "@workspace/api-client-react";
@@ -196,8 +199,12 @@ export default function AdminPremierships() {
         }
       >
         {editing && (
+          <GrandFinalLink prem={editing} onLinked={invalidate} onError={(msg) => setError(msg)} />
+        )}
+        {editing && (
           <PremForm
-            key={editing.id}
+            // Remount when a link fills the row, so the form shows what it filled.
+            key={`${editing.id}:${editing.matchId ?? ""}:${editing.players.length}`}
             initial={toForm(editing)}
             pending={update.isPending}
             onSubmit={(v) => {
@@ -219,6 +226,96 @@ export default function AdminPremierships() {
         )}
       </EditDrawer>
     </div>
+  );
+}
+
+/** "Grand Final · A Grade · v Mandurah · 15 Mar 2025". */
+function matchLabel(m: MatchSummary): string {
+  const when = m.matchDate ? ` · ${m.matchDate}` : "";
+  const stage = m.stage ?? (m.round != null ? `Round ${m.round}` : "Match");
+  return `${stage} · ${m.grade} · v ${m.opponent ?? "?"}${when}`;
+}
+
+/**
+ * Link the premiership to its grand final (kiosk redesign C5): pick the match
+ * from the club's matches that season and fill what the row is missing —
+ * venue, date, result and team — without touching what's been entered.
+ * Clubs reading from the central database only (the server says otherwise).
+ */
+function GrandFinalLink({
+  prem,
+  onLinked,
+  onError,
+}: {
+  prem: Premiership;
+  onLinked: () => void;
+  onError: (msg: string) => void;
+}) {
+  // A premiership year is its season's end year; finals can fall either side.
+  const before = useListMatches({ season: prem.year - 1 });
+  const during = useListMatches({ season: prem.year });
+  const link = useLinkPremiershipDecider();
+  const [pick, setPick] = useState("");
+  const matches = [...(before.data ?? []), ...(during.data ?? [])]
+    .filter((m) => !m.abandoned)
+    .sort(
+      (a, b) =>
+        Number(b.stage != null) - Number(a.stage != null) ||
+        Number(b.grade === prem.grade) - Number(a.grade === prem.grade) ||
+        (b.matchDate ?? "").localeCompare(a.matchDate ?? ""),
+    );
+
+  return (
+    <section className="mb-6 space-y-2 rounded-lg border bg-muted/30 p-3" aria-label="Grand final">
+      <div className="text-sm font-medium">Grand final</div>
+      <p className="text-xs text-muted-foreground">
+        {prem.matchId != null
+          ? "Linked to the grand final scorecard. Pick another match to change it."
+          : "Pick the grand final to link its scorecard and fill the venue, date, result and team you haven't entered."}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <select
+          className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-sm"
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          aria-label="Grand final match"
+          data-testid="select-gf-match"
+        >
+          <option value="">
+            {before.isLoading || during.isLoading ? "Loading matches…" : "Choose a match…"}
+          </option>
+          {matches.map((m) => (
+            <option key={m.id} value={m.id}>
+              {matchLabel(m)}
+            </option>
+          ))}
+        </select>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!pick || link.isPending}
+          onClick={() =>
+            link.mutate(
+              { id: prem.id, data: { matchId: Number(pick) } },
+              {
+                onSuccess: () => {
+                  setPick("");
+                  onLinked();
+                },
+                onError: (e) => {
+                  const msg = handleAdminMutationError(e);
+                  if (msg) onError(msg);
+                },
+              },
+            )
+          }
+          data-testid="button-link-gf"
+        >
+          {link.isPending ? "Linking…" : "Link and fill"}
+        </Button>
+      </div>
+    </section>
   );
 }
 
