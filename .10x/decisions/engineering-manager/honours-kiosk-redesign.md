@@ -85,6 +85,12 @@ harness and a dev deploy; test on the real clubroom TV browser (performance risk
   images without an admin session and a withdrawal takes effect at the next image load.
 - Migration `0068_kiosk_photo_slideshows.sql` (later options live in the same jsonb).
 
+**Up to 10 columns (27 Oct 2026, Ash):** season grids and composite column boards can show up to
+10 columns on one screen (club default or per board); plaques and record panels stay at 5, life
+members and lists at 3. From 7 columns a screen uses a dense style: tighter cells, smaller type,
+long names as initial and surname (wrapping rather than clipping), and ordinal grade headings as
+numerals ("1st Grade"). The settings screen warns from 7 to check readability on the TV.
+
 ## Parallel stream: junior photo library (est. 5–8 days, own branch → `main`)
 
 Independent of the kiosk files, so it runs in its own session in parallel with Milestone A, with

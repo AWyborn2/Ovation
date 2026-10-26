@@ -5,6 +5,9 @@ import type { DisplayBoard } from "../types";
 import {
   boardColumnHeadings,
   columnGroupLabel,
+  compactBoard,
+  compactHeading,
+  compactName,
   sliceBoardColumns,
   splitColumnGroups,
 } from "./column-groups";
@@ -365,5 +368,68 @@ describe("photo slideshow passes", () => {
     const pick = urls(slideshowPass(item("random", 3), 0, () => 0));
     expect(pick).toHaveLength(3);
     expect(new Set(pick).size).toBe(3);
+  });
+});
+
+describe("dense screens (up to 10 columns)", () => {
+  it("shortens long names to initial and surname, keeping short ones and non-names", () => {
+    expect(compactName("Jonathan Prendergast")).toBe("J. Prendergast");
+    expect(compactName("Johan van der Merwe")).toBe("J. van der Merwe");
+    expect(compactName("Sam Lee")).toBe("Sam Lee");
+    expect(compactName("Featherstonehaugh")).toBe("Featherstonehaugh");
+    expect(compactName("—")).toBe("—");
+  });
+
+  it("writes ordinal grade headings as numerals", () => {
+    expect(compactHeading("First Grade")).toBe("1st Grade");
+    expect(compactHeading("Women's Second Grade")).toBe("Women's 2nd Grade");
+    expect(compactHeading("Under 17")).toBe("Under 17");
+  });
+
+  it("compacts a grid's headings and names, and a composite's columns after Season", () => {
+    const g = compactBoard({
+      ...grid(["First Grade"], 1),
+      grid: {
+        rowHeading: "Season",
+        columnHeadings: ["First Grade"],
+        rows: [{ heading: "2024/25", cells: [{ entries: [{ text: "Jonathan Prendergast" }] }] }],
+      },
+    });
+    expect(g.grid!.columnHeadings).toEqual(["1st Grade"]);
+    expect(g.grid!.rows[0]!.cells[0]!.entries[0]!.text).toBe("J. Prendergast");
+    expect(g.grid!.rows[0]!.heading).toBe("2024/25");
+
+    const c = compactBoard({
+      ...list(0, "columns"),
+      columns: [
+        { heading: "Season", entries: [{ primaryText: "2024/25 Season Long", season: "" }] },
+        {
+          heading: "Third Grade",
+          entries: [{ primaryText: "Christopher Vandenberg", season: "" }],
+        },
+      ],
+    });
+    expect(c.columns!.map((col) => col.heading)).toEqual(["Season", "3rd Grade"]);
+    expect(c.columns![0]!.entries[0]!.primaryText).toBe("2024/25 Season Long");
+    expect(c.columns![1]!.entries[0]!.primaryText).toBe("C. Vandenberg");
+  });
+
+  it("puts ten grades on one screen when the board asks for 10", () => {
+    const look = resolveClubLook({});
+    const items = buildRotation({
+      boards: [grid(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], 2)],
+      settings: {
+        kioskSequence: [],
+        boardConfigs: { champions: { columnsPerScreen: 10 } },
+        kioskSponsorSlideEvery: 3,
+        kioskSponsorSlideStyle: "grid",
+      },
+      look,
+      sponsors: [],
+      ads: [],
+      sponsorSlides: false,
+    });
+    const item = items[0]!;
+    expect(item.kind === "board" && item.groups).toEqual([{ start: 0, count: 10 }]);
   });
 });
