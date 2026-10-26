@@ -5,6 +5,8 @@ import {
   isPerformanceRepeat,
   kindFields,
   MAX_PICK_COUNT,
+  MAX_PICK_MIN_RUNS,
+  MAX_PICK_MIN_WICKETS,
   pageRepeat,
   pickStat,
   rowsCapacity,
@@ -45,11 +47,38 @@ const chip = (on: boolean) =>
     on && "border-[var(--ed-accent)] bg-[var(--ed-card)] font-semibold",
   );
 
+type Sort = NonNullable<RowsPick["sort"]>;
+
+/** Each stat's sorts, best first; "Scorecard order" is no sort. */
+const SORTS: Record<"batting" | "bowling", Array<{ value: Sort; label: string }>> = {
+  batting: [
+    { value: "runs", label: "Runs" },
+    { value: "balls", label: "Balls faced" },
+    { value: "strikeRate", label: "Strike rate" },
+  ],
+  bowling: [
+    { value: "wickets", label: "Wickets" },
+    { value: "economy", label: "Economy" },
+  ],
+};
+
+/**
+ * The sort a list's menu shows: its own, figures as wickets (the same order),
+ * and stage 4's other-stat sort as the list's first (a list orders by its own
+ * stat whatever it is set to).
+ */
+function shownSort(stat: "batting" | "bowling", sort: Sort | undefined): Sort | "" {
+  if (!sort) return "";
+  if (sort === "figures") return "wickets";
+  return SORTS[stat].some((o) => o.value === sort) ? sort : SORTS[stat][0]!.value;
+}
+
 /**
  * Which rows a result's batting or bowling list draws (full draft editor
- * plan, stage 4): whose (a performance list only; an innings list is one
- * side's), how many and sorted how. A performance list starts as the club's
- * top three (D4).
+ * plan, stages 4 and 5): whose (a performance list only; an innings list is
+ * one side's), how many, sorted how, and which count (at least so many runs
+ * or wickets, not outs only). Without a choice a list shows every row in
+ * scorecard order (D4). The list settings and the add chooser share these.
  */
 export function PickControls({
   repeat,
@@ -73,9 +102,11 @@ export function PickControls({
     { value: "opposition", label: "Opposition" },
     { value: "both", label: "Both" },
   ];
-  // A list orders by its own stat: runs for batting, wickets for bowling.
-  const best = stat === "bowling" ? "wickets" : "runs";
-  const sort = shown.sort ? best : "";
+  const whose = shown.side ?? "both";
+  const minimum = (v: string, max: number): number | undefined => {
+    const n = Math.round(Number(v));
+    return v.trim() !== "" && Number.isFinite(n) && n > 0 ? Math.min(max, n) : undefined;
+  };
   if (!stat) return null;
   return (
     <div className="mt-3 flex flex-col gap-2" role="group" aria-label="Which rows">
@@ -86,9 +117,9 @@ export function PickControls({
             <button
               key={side.value}
               type="button"
-              aria-pressed={(shown.side ?? "club") === side.value}
+              aria-pressed={whose === side.value}
               onClick={() => onPick({ side: side.value })}
-              className={chip((shown.side ?? "club") === side.value)}
+              className={chip(whose === side.value)}
             >
               {side.label}
             </button>
@@ -139,16 +170,63 @@ export function PickControls({
         <span className="w-16">Sort by</span>
         <select
           aria-label="Sort by"
-          value={sort}
-          onChange={(e) =>
-            onPick({ sort: e.target.value ? (e.target.value as RowsPick["sort"]) : undefined })
-          }
+          value={shownSort(stat, shown.sort)}
+          onChange={(e) => onPick({ sort: e.target.value ? (e.target.value as Sort) : undefined })}
           className={input}
         >
-          <option value="">As listed</option>
-          <option value={best}>{best === "runs" ? "Runs" : "Wickets"}</option>
+          <option value="">Scorecard order</option>
+          {SORTS[stat].map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </select>
       </label>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--ed-ink2)]">
+        <span className="w-16">Only</span>
+        <label className="flex items-center gap-1">
+          At least
+          {stat === "batting" ? (
+            <input
+              type="number"
+              aria-label="Minimum runs"
+              min={0}
+              max={MAX_PICK_MIN_RUNS}
+              step={1}
+              value={shown.minRuns || ""}
+              placeholder="0"
+              onChange={(e) => onPick({ minRuns: minimum(e.target.value, MAX_PICK_MIN_RUNS) })}
+              className={cn(input, "w-16")}
+            />
+          ) : (
+            <input
+              type="number"
+              aria-label="Minimum wickets"
+              min={0}
+              max={MAX_PICK_MIN_WICKETS}
+              step={1}
+              value={shown.minWickets || ""}
+              placeholder="0"
+              onChange={(e) =>
+                onPick({ minWickets: minimum(e.target.value, MAX_PICK_MIN_WICKETS) })
+              }
+              className={cn(input, "w-16")}
+            />
+          )}
+          {stat === "batting" ? "runs" : "wickets"}
+        </label>
+        {stat === "batting" && (
+          <label className="ml-2 flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={!!shown.notOutOnly}
+              onChange={(e) => onPick({ notOutOnly: e.target.checked || undefined })}
+              className="h-4 w-4 accent-[var(--ed-accent)]"
+            />
+            Not outs only
+          </label>
+        )}
+      </div>
       {isPerformanceRepeat(repeat) && (
         <p className="text-xs text-[var(--ed-ink2)]">
           A junior card shows your club&apos;s players only.

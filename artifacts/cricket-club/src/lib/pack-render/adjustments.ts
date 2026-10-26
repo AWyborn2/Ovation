@@ -434,8 +434,8 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const listed = own(ctx.rowVariants);
   const boundVariants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
   // A result's batting and bowling lists draw the rows their pick chooses
-  // (whose, sorted how, how many); a performance list without one, the
-  // club's top three (D4). Any other list draws every row.
+  // (whose, which, sorted how, how many); without one, every row as bound
+  // (D4). Any other list draws every row.
   const picked = pickRowIndexes(spec.repeat, bound as Array<Record<string, string>>, spec.pick);
   if (picked.length === 0) return null;
   const rows = picked.map((i) => (bound as Array<Record<string, string>>)[i]!);

@@ -1,11 +1,16 @@
 /**
- * Performance lists on the renderer (full draft editor plan, stage 4): both
- * innings' batters and bowlers as one list each, and a list's row choice
- * (whose, how many, sorted how). The server's render binds and draws through
- * the same code, so a draft posts what the editor shows.
+ * Performance lists on the renderer (full draft editor plan, stages 4 and
+ * 5): both innings' batters and bowlers as one list each, a list's row
+ * choice (whose, which, how many, sorted how), and a list that continues on
+ * extra slides (D8). The server's render plans, binds and draws through the
+ * same code, so a draft posts what the editor shows.
  */
 import { describe, expect, it } from "vitest";
-import type { RowsPick } from "@workspace/scorecard/kind-templates";
+import {
+  planTemplateSlides,
+  type LayerDocument,
+  type RowsPick,
+} from "@workspace/scorecard/kind-templates";
 import {
   BLANK_PACK_ID,
   renderPackCard,
@@ -97,7 +102,7 @@ const INPUT = {
   ],
 } as unknown as ShareCardInput;
 
-const listDoc = (repeat: string, pick?: RowsPick): CardAdjustments =>
+const listDoc = (repeat: string, pick?: RowsPick, h = 80): CardAdjustments =>
   ({
     formatVersion: 2,
     pages: {
@@ -106,7 +111,7 @@ const listDoc = (repeat: string, pick?: RowsPick): CardAdjustments =>
           {
             id: "list",
             kind: "rows",
-            geometry: { square: { x: 0, y: 10, w: 100, h: 80 } },
+            geometry: { square: { x: 0, y: 10, w: 100, h } },
             rows: {
               repeat,
               rowHeight: 5,
@@ -123,17 +128,13 @@ const listDoc = (repeat: string, pick?: RowsPick): CardAdjustments =>
   }) as CardAdjustments;
 
 /** The names a rendered list draws, in order. */
-function drawn(input: ShareCardInput, repeat: string, pick?: RowsPick): string[] {
-  const html = renderPackCard(
-    input,
-    "square",
-    true,
-    tokens(),
-    false,
-    DATA,
-    BLANK_PACK_ID,
-    listDoc(repeat, pick),
-  );
+function drawn(
+  input: ShareCardInput,
+  repeat: string,
+  pick?: RowsPick,
+  doc: CardAdjustments = listDoc(repeat, pick),
+): string[] {
+  const html = renderPackCard(input, "square", true, tokens(), false, DATA, BLANK_PACK_ID, doc);
   return [...html.matchAll(/data-row-cell="name"[^>]*>([^<]*)</g)].map((m) => m[1]!);
 }
 
@@ -192,6 +193,12 @@ describe("performance rows", () => {
     ]);
   });
 
+  it("gives each batter a strike rate and each bowler an economy", () => {
+    expect(bound.rows["performances.batting"]![4]!.values.strikeRate).toBe("110.9");
+    expect(bound.rows["performances.bowling"]![0]!.values.economy).toBe("2.35");
+    expect(bound.rows["innings1.batting"]![0]!.values.strikeRate).toBe("72.7");
+  });
+
   it("leaves the innings lists at the top three", () => {
     expect(bound.rows["innings2.batting"]!.map((r) => r.values.name)).toEqual([
       "Dexter Trego",
@@ -201,13 +208,47 @@ describe("performance rows", () => {
 });
 
 describe("a list's row choice on the card", () => {
-  it("draws the club's top three without a choice (D4), never the opposition's", () => {
+  it("draws every performance of both teams in scorecard order without a choice (D4)", () => {
     expect(drawn(INPUT, "performances.batting")).toEqual([
-      "Alex Bell", // 61 off 55 beats 61 off 70
+      "Kane Standing",
+      "Lee Moss",
+      "Ian Grey",
       "Dexter Trego",
+      "Alex Bell",
       "Chris Low",
+      "Dan Fry",
     ]);
-    expect(drawn(INPUT, "performances.bowling")).toEqual(["Tom Miles", "Sam Ross", "Ben Hart"]);
+    expect(drawn(INPUT, "performances.bowling")).toEqual([
+      "Tom Miles",
+      "Sam Ross",
+      "Ben Hart",
+      "Joe Wood",
+      "Ryan Smart",
+      "Josh Rudge",
+    ]);
+  });
+
+  it("sorts by strike rate or economy and filters by runs, wickets and not outs", () => {
+    expect(drawn(INPUT, "performances.batting", { sort: "strikeRate", count: 3 })).toEqual([
+      "Alex Bell", // 110.9
+      "Chris Low", // 90.9
+      "Dexter Trego", // 87.1
+    ]);
+    // Tom Miles: 18 off 7.4 overs (46 balls), 2.35 an over.
+    expect(drawn(INPUT, "performances.bowling", { sort: "economy", count: 2 })).toEqual([
+      "Tom Miles",
+      "Sam Ross",
+    ]);
+    expect(drawn(INPUT, "performances.batting", { minRuns: 50, side: "club" })).toEqual([
+      "Dexter Trego",
+      "Alex Bell",
+    ]);
+    expect(drawn(INPUT, "performances.batting", { notOutOnly: true })).toEqual(["Dexter Trego"]);
+    expect(drawn(INPUT, "performances.bowling", { minWickets: 3 })).toEqual([
+      "Tom Miles",
+      "Sam Ross",
+      "Ryan Smart",
+    ]);
   });
 
   it("draws the opposition's, or both sides, when set to", () => {
@@ -256,6 +297,41 @@ describe("a list's row choice on the card", () => {
       "Alex Bell",
       "Chris Low",
       "Dan Fry",
+    ]);
+  });
+});
+
+describe("a performance list that continues on extra slides (D8)", () => {
+  /** Each slide's drawn names, planned and rendered as the server and editor do. */
+  const slides = (pick: RowsPick | undefined, h: number) => {
+    const doc = listDoc("performances.batting", pick, h);
+    const plan = planTemplateSlides(
+      INPUT as unknown as Record<string, unknown>,
+      doc as unknown as LayerDocument,
+      "square",
+    );
+    return plan.slides.map((s) =>
+      drawn(s.input as unknown as ShareCardInput, "performances.batting", pick, doc),
+    );
+  };
+
+  it("draws each slide's share of every performance, in order", () => {
+    // Rows of 5% of the width in a 15%-high box: three a slide, seven rows.
+    expect(slides(undefined, 15)).toEqual([
+      ["Kane Standing", "Lee Moss", "Ian Grey"],
+      ["Dexter Trego", "Alex Bell"],
+      ["Chris Low", "Dan Fry"],
+    ]);
+  });
+
+  it("splits the sorted, filtered choice and never draws past its count", () => {
+    expect(slides({ side: "club", sort: "runs" }, 10)).toEqual([
+      ["Alex Bell", "Dexter Trego"],
+      ["Chris Low", "Dan Fry"],
+    ]);
+    expect(slides({ count: 3, sort: "runs" }, 10)).toEqual([
+      ["Kane Standing", "Alex Bell"],
+      ["Dexter Trego"],
     ]);
   });
 });

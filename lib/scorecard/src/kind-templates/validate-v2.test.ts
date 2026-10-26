@@ -531,13 +531,48 @@ describe("a list's row choice (full draft editor, stage 4)", () => {
       "result/p.rows.pick.count must be a whole number from 0 to 30.",
     ]);
     expect(errors("performances.batting", { sort: "economy" })).toEqual([
-      "result/p.rows.pick.sort must be runs, wickets or figures.",
+      "result/p.rows.pick.sort must be runs, balls, strike rate, wickets or figures on a batting list.",
+    ]);
+    expect(errors("performances.bowling", { sort: "strikeRate" })).toEqual([
+      "result/p.rows.pick.sort must be wickets, figures, economy or runs on a bowling list.",
     ]);
     expect(errors("performances.batting", { top: 3 })).toEqual([
       "result/p.rows.pick.top isn't a list choice.",
     ]);
     expect(errors("performances.batting", "club")).toEqual([
       "result/p.rows.pick must be an object.",
+    ]);
+  });
+
+  it("accepts stage 5's sorts and filters on their own stat's lists", () => {
+    expect(
+      errors("performances.batting", {
+        sort: "strikeRate",
+        minRuns: 20,
+        notOutOnly: true,
+      }),
+    ).toEqual([]);
+    expect(errors("performances.batting", { sort: "balls", minRuns: 0 })).toEqual([]);
+    expect(errors("performances.bowling", { sort: "economy", minWickets: 2 })).toEqual([]);
+    expect(errors("innings2.bowling", { sort: "economy", minWickets: 1, count: 3 })).toEqual([]);
+  });
+
+  it("refuses a filter on the other stat's list, and values out of range", () => {
+    expect(errors("performances.bowling", { minRuns: 10, notOutOnly: true })).toEqual([
+      "result/p.rows.pick.minRuns is for a batting list.",
+      "result/p.rows.pick.notOutOnly is for a batting list.",
+    ]);
+    expect(errors("performances.batting", { minWickets: 2 })).toEqual([
+      "result/p.rows.pick.minWickets is for a bowling list.",
+    ]);
+    expect(errors("performances.batting", { minRuns: 401 })).toEqual([
+      "result/p.rows.pick.minRuns must be a whole number from 0 to 400.",
+    ]);
+    expect(errors("performances.bowling", { minWickets: 11 })).toEqual([
+      "result/p.rows.pick.minWickets must be a whole number from 0 to 10.",
+    ]);
+    expect(errors("performances.batting", { notOutOnly: "yes" })).toEqual([
+      "result/p.rows.pick.notOutOnly must be true or false.",
     ]);
   });
 

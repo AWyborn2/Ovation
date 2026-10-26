@@ -114,6 +114,7 @@ describe("match graphics content (M9)", () => {
         runsOnly: "53",
         notOut: "",
         balls: "121",
+        strikeRate: "43.8",
       },
       {
         name: "********",
@@ -124,12 +125,14 @@ describe("match graphics content (M9)", () => {
         runsOnly: "22",
         notOut: "*",
         balls: "40",
+        strikeRate: "55.0",
       },
     ]);
     expect(bound.rows["innings1.bowling"]![0]!.values).toMatchObject({
       figures: "3/18",
       figuresDash: "3-18",
       overs: "7.4",
+      economy: "2.35",
     });
     const pairs = bound.rows["innings2.pairs"]!.map((r) => r.values);
     expect(pairs).toHaveLength(2);

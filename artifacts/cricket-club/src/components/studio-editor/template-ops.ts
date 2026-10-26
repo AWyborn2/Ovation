@@ -7,7 +7,6 @@
  */
 import {
   addLayerToSizes,
-  defaultPick,
   emptySizes,
   kindFields,
   layerOnSize,
@@ -15,6 +14,7 @@ import {
   TEMPLATE_SIZE_ORDER,
   type KindRepeat,
   type RowsCell,
+  type RowsPick,
   type TemplateTextStyle,
 } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer, LayerBox } from "@/lib/pack-render";
@@ -166,11 +166,10 @@ export function logoLayer(size: CardSize): FreeLayer {
 /**
  * A list element for one of the kind's repeats: the first few fields across
  * the row. A result's batting or bowling list starts as a name and its runs
- * or figures; a performance list also with the club's top three (D4).
+ * or figures, unfiltered (every row, D4) unless the add chooser gave a `pick`.
  */
-export function rowsLayer(repeat: KindRepeat, size: CardSize): FreeLayer {
+export function rowsLayer(repeat: KindRepeat, size: CardSize, pick?: RowsPick): FreeLayer {
   const stat = pickStat(repeat.key);
-  const pick = defaultPick(repeat.key);
   const cells: RowsCell[] = stat
     ? [
         { field: "name", x: 0, w: 72, style: { fontSize: 3.6, fontWeight: 800, align: "left" } },
@@ -199,7 +198,13 @@ export function rowsLayer(repeat: KindRepeat, size: CardSize): FreeLayer {
       id: newId(),
       kind: "rows",
       name: repeat.label,
-      rows: { repeat: repeat.key, rowHeight: 7, gap: 1, cells, ...(pick ? { pick } : {}) },
+      rows: {
+        repeat: repeat.key,
+        rowHeight: 7,
+        gap: 1,
+        cells,
+        ...(pick && Object.keys(pick).length ? { pick } : {}),
+      },
       geometry: { [size]: box(6, 24, 88, 56) },
     },
     size,
@@ -207,16 +212,12 @@ export function rowsLayer(repeat: KindRepeat, size: CardSize): FreeLayer {
 }
 
 /** Change a list's row choice (whose, how many, sorted how); an empty choice is removed. */
-export function setRowsPick(
-  doc: EditorDoc,
-  id: string,
-  patch: Partial<NonNullable<NonNullable<FreeLayer["rows"]>["pick"]>>,
-): EditorDoc {
+export function setRowsPick(doc: EditorDoc, id: string, patch: Partial<RowsPick>): EditorDoc {
   return {
     ...doc,
     layers: layersOf(doc).map((l) => {
       if (l.id !== id || !l.rows) return l;
-      const pick = { ...(l.rows.pick ?? defaultPick(l.rows.repeat)), ...patch };
+      const pick = { ...l.rows.pick, ...patch };
       for (const k of Object.keys(pick) as Array<keyof typeof pick>)
         if (pick[k] === undefined) delete pick[k];
       const { pick: _old, ...rest } = l.rows;

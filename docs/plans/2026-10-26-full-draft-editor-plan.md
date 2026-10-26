@@ -57,7 +57,8 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
   - There are more ways to sort (runs, balls, strike rate, wickets, economy, figures) and to filter
     (a minimum of runs or wickets).
   - Junior cards keep their privacy rules.
-  - **To build (stage 5).**
+  - **Built (stage 5a):** the Fields panel's add chooser, sorts by balls, strike rate and economy,
+    and minimum runs or wickets and "not outs only" filters (`rows-pick.ts`).
 - **D5, agreed and to build (stage 5):** Applying a changed template to waiting drafts skips
   drafts whose design was edited by hand, and says how many it skipped.
 - **D6, agreed:** Performances come as two lists, batting and bowling, not one "both" list: one row
@@ -65,7 +66,8 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
 - **D7, agreed:** A list's "whose" setting appears on performance lists only. Single-innings lists
   are one side's already, so only "how many" and "sort" apply to them.
 - **D8, changed:** A performance list's rows that don't fit its box continue on extra slides with
-  the same design, as the older lists do. **To build (stage 5).**
+  the same design, as the older lists do. **Built (stage 5a):** `planTemplateSlides` splits a
+  performance list's chosen rows by its box, and each slide carries its share (`performanceRows`).
 - **D9, changed:** "Make a carousel set" offers the look's matching pages to start the set from
   (cover, per-team, sponsors), as the template library's "Make a carousel set" does, instead of
   only the design and a copy. **To build (stage 5).**

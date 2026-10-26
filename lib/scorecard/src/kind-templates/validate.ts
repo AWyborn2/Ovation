@@ -46,7 +46,15 @@ import {
 } from "./format";
 import { kindHasPage } from "./pages";
 import { pageRepeat, pageTokenKeys } from "./page-tokens";
-import { isPickableRepeat, MAX_PICK_COUNT, PICK_SIDES, PICK_SORTS } from "./rows-pick";
+import {
+  isPickableRepeat,
+  MAX_PICK_COUNT,
+  MAX_PICK_MIN_RUNS,
+  MAX_PICK_MIN_WICKETS,
+  PICK_SIDES,
+  pickSortsFor,
+  pickStat,
+} from "./rows-pick";
 import {
   isRepeatSlot,
   isSetType,
@@ -496,13 +504,22 @@ function checkTokens(errors: Errors, where: string, text: string, allowed: Set<s
   }
 }
 
-/** A list's row choice (format v2): whose, how many and sorted how (`rows-pick.ts`). */
+const PICK_KEYS = ["side", "count", "sort", "minRuns", "minWickets", "notOutOnly"];
+const SORT_WORDS: Record<string, string> = { strikeRate: "strike rate" };
+
+/**
+ * A list's row choice (format v2): whose, how many, sorted how and which
+ * performances count (`rows-pick.ts`). A batting list takes batting sorts and
+ * filters, a bowling list bowling ones (and stage 4's runs, wickets and
+ * figures on either).
+ */
 function checkPick(errors: Errors, where: string, v: unknown, repeat: string, scope: Scope): void {
   if (!scope.v2) {
     errors.push(`${where} is a format v2 option.`);
     return;
   }
-  if (!isPickableRepeat(repeat)) {
+  const stat = pickStat(repeat);
+  if (!isPickableRepeat(repeat) || !stat) {
     errors.push(`${where} is only for a result's batting and bowling lists.`);
     return;
   }
@@ -511,13 +528,30 @@ function checkPick(errors: Errors, where: string, v: unknown, repeat: string, sc
     return;
   }
   for (const key of Object.keys(v))
-    if (key !== "side" && key !== "count" && key !== "sort")
-      errors.push(`${where}.${key.slice(0, 30)} isn't a list choice.`);
+    if (!PICK_KEYS.includes(key)) errors.push(`${where}.${key.slice(0, 30)} isn't a list choice.`);
   if (v.side !== undefined && !(PICK_SIDES as readonly unknown[]).includes(v.side))
     errors.push(`${where}.side must be club, opposition or both.`);
   if (v.count !== undefined) numberIn(errors, `${where}.count`, v.count, 0, MAX_PICK_COUNT, true);
-  if (v.sort !== undefined && !(PICK_SORTS as readonly unknown[]).includes(v.sort))
-    errors.push(`${where}.sort must be runs, wickets or figures.`);
+  const sorts = pickSortsFor(stat);
+  if (v.sort !== undefined && !(sorts as readonly unknown[]).includes(v.sort)) {
+    const words = sorts.map((s) => SORT_WORDS[s] ?? s);
+    errors.push(
+      `${where}.sort must be ${words.slice(0, -1).join(", ")} or ${words.at(-1)} on a ${stat} list.`,
+    );
+  }
+  if (v.minRuns !== undefined) {
+    if (stat !== "batting") errors.push(`${where}.minRuns is for a batting list.`);
+    else numberIn(errors, `${where}.minRuns`, v.minRuns, 0, MAX_PICK_MIN_RUNS, true);
+  }
+  if (v.minWickets !== undefined) {
+    if (stat !== "bowling") errors.push(`${where}.minWickets is for a bowling list.`);
+    else numberIn(errors, `${where}.minWickets`, v.minWickets, 0, MAX_PICK_MIN_WICKETS, true);
+  }
+  if (v.notOutOnly !== undefined) {
+    if (stat !== "batting") errors.push(`${where}.notOutOnly is for a batting list.`);
+    else if (typeof v.notOutOnly !== "boolean")
+      errors.push(`${where}.notOutOnly must be true or false.`);
+  }
 }
 
 function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): void {
