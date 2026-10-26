@@ -23,7 +23,16 @@ const KIND_CHIP: Readonly<Record<RotationItemKind, string>> = {
  * duplicate or remove a row; add boards, the sponsor wall or an ad. Saves to
  * `kiosk_sequence` through the page's save bar.
  */
-export function RotationBuilder({ form }: { form: HonoursDisplayForm }) {
+export function RotationBuilder({
+  form,
+  selected,
+  onSelect,
+}: {
+  form: HonoursDisplayForm;
+  /** The selected item's token; every row holding it is highlighted. */
+  selected: string | null;
+  onSelect: (token: string) => void;
+}) {
   const {
     sequence,
     seqLabel,
@@ -73,13 +82,13 @@ export function RotationBuilder({ form }: { form: HonoursDisplayForm }) {
         Rotation
       </h3>
       <p className="text-xs text-muted-foreground mb-3">
-        What the clubroom TV shows, in order. Drag a row, or focus it and press Alt+↑ / Alt+↓, to
-        move it. An item can appear more than once.
+        What the clubroom TV shows, in order. Drag a row, or focus its handle and press Alt+↑ /
+        Alt+↓, to move it. Select a board to set how it plays. An item can appear more than once.
       </p>
 
       {sequence.length === 0 ? (
         <div
-          className="max-w-2xl rounded border border-dashed px-4 py-3 text-sm text-muted-foreground"
+          className="rounded border border-dashed px-4 py-3 text-sm text-muted-foreground"
           data-testid="rotation-empty"
         >
           No rotation set, so the TV shows every board in the default order.{" "}
@@ -96,7 +105,7 @@ export function RotationBuilder({ form }: { form: HonoursDisplayForm }) {
       ) : (
         <ul
           ref={listRef}
-          className="space-y-1 max-w-2xl"
+          className="space-y-1"
           aria-label="Kiosk rotation"
           onDragOver={(e) => dragFrom !== null && e.preventDefault()}
         >
@@ -112,6 +121,7 @@ export function RotationBuilder({ form }: { form: HonoursDisplayForm }) {
                 draggable
                 className={cn(
                   "relative flex items-center gap-2 border rounded px-2 py-2 bg-card",
+                  selected === token && "border-primary ring-1 ring-primary",
                   dragFrom === idx && "opacity-40",
                 )}
                 onDragStart={(e) => {
@@ -170,14 +180,20 @@ export function RotationBuilder({ form }: { form: HonoursDisplayForm }) {
                 >
                   {ROTATION_KIND_LABEL[kind]}
                 </span>
-                <span className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-pressed={selected === token}
+                  onClick={() => onSelect(token)}
+                  data-testid={`seq-select-${idx}`}
+                >
                   <span data-title className="block truncate text-sm font-medium">
                     {label}
                   </span>
                   {sub && (
                     <span className="block truncate text-xs text-muted-foreground">{sub}</span>
                   )}
-                </span>
+                </button>
                 <RowButton
                   label={`Move ${label} up`}
                   disabled={idx === 0}

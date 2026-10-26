@@ -14,6 +14,7 @@ import {
   SkinSection,
   GlobalColoursSection,
   KioskSection,
+  TvLookSection,
   SponsorSection,
   PerBoardSection,
   CompositeSection,
@@ -107,6 +108,7 @@ function SettingsForm({ bundle, onSaved }: { bundle: HonourDisplayBundle; onSave
         </TabsContent>
 
         <TabsContent value="look" className="mt-6 space-y-6">
+          <TvLookSection form={form} />
           <SkinSection form={form} />
           <GlobalColoursSection form={form} />
         </TabsContent>

@@ -8,5 +8,6 @@
 export { SkinSection } from "./skin-section";
 export { GlobalColoursSection } from "./global-colours-section";
 export { KioskSection } from "./kiosk-section";
+export { TvLookSection } from "./tv-look-section";
 export { SponsorSection } from "./sponsor-section";
 export { PerBoardSection, CompositeSection, CustomGridSection } from "./board-sections";
