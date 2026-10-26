@@ -366,7 +366,12 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       centuries: { move: "credits", trans: "fade", speed: 160 },
       grade_records: { move: "pages", trans: "flip", columnsPerScreen: 4 },
       "partnerships_grade:First Grade": { move: "fit", trans: "wipe" },
-      "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
+      "life-members": {
+        move: "pages",
+        trans: "left",
+        columnsPerScreen: 1,
+        photoBackground: { slideshowId: "photos:fixture", dim: "light" },
+      },
     },
     composites: [],
   },

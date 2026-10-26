@@ -47,13 +47,22 @@ interface Screen {
   paging?: boolean;
   /** The photo a slideshow screen shows. */
   photo?: KioskSlideshowPhoto;
+  /** A board's photo background (P2) and its panel strength. */
+  backdrop?: { url: string; dim: string };
 }
 
 /** How long a slideshow waits for a photo before skipping it. */
 const PHOTO_LOAD_TIMEOUT_MS = 15_000;
 
+/** How long a board waits for its background photo before going without. */
+const BACKDROP_LOAD_TIMEOUT_MS = 4_000;
+
 /** Load an image ahead of showing it; false when it fails or takes too long. */
-function preloadImage(url: string, signal: AbortSignal): Promise<boolean> {
+function preloadImage(
+  url: string,
+  signal: AbortSignal,
+  timeoutMs = PHOTO_LOAD_TIMEOUT_MS,
+): Promise<boolean> {
   return new Promise((resolve) => {
     if (signal.aborted || typeof Image === "undefined") return resolve(false);
     const img = new Image();
@@ -64,7 +73,7 @@ function preloadImage(url: string, signal: AbortSignal): Promise<boolean> {
       resolve(ok);
     };
     const abort = () => finish(false);
-    const timer = setTimeout(abort, PHOTO_LOAD_TIMEOUT_MS);
+    const timer = setTimeout(abort, timeoutMs);
     signal.addEventListener("abort", abort, { once: true });
     img.onload = () => finish(true);
     img.onerror = () => finish(false);
@@ -160,8 +169,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
   const mounted = useRef(new Map<number, () => void>());
   // Aborted to cut the current item short (a video ad that fails to load).
   const skipRef = useRef<AbortController | null>(null);
-  // Passes each slideshow has played, so "newest" works down its photos.
-  const passes = useRef(new Map<string, number>());
+  // Photos each slideshow has shown, so "newest" and "manual" work down the list.
+  const shownCount = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
     for (const s of layers) {
@@ -267,6 +276,17 @@ export function KioskPlayer(props: KioskPlayerProps) {
       const cfgs = latest.current.boardConfigs;
       const headings = boardColumnHeadings(item.board);
       const move = d.move === "credits" && reduced() ? "pages" : d.move;
+      // The board's photo background: the slideshow's next photo, kept for all
+      // of this board's screens. One that doesn't load in time is left off.
+      let backdrop: Screen["backdrop"];
+      if (item.backdrop) {
+        const { slideshowId, photos, dim } = item.backdrop;
+        const cursor = shownCount.current.get(slideshowId) ?? 0;
+        shownCount.current.set(slideshowId, cursor + 1);
+        const url = photos[cursor % photos.length]!.url;
+        if (await preloadImage(url, signal, BACKDROP_LOAD_TIMEOUT_MS)) backdrop = { url, dim };
+        if (signal.aborted) return;
+      }
       for (const group of item.groups) {
         if (signal.aborted) return;
         const grouped = headings.length ? sliceBoardColumns(item.board, group) : item.board;
@@ -283,6 +303,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           cfg: screenCfg(item, cfgs?.[item.board.id], label),
           scale: d.textScale,
           position,
+          backdrop,
         };
         const screen = await enter({ ...base, board }, signal);
         if (signal.aborted) return;
@@ -369,10 +390,11 @@ export function KioskPlayer(props: KioskPlayerProps) {
 
     /** One pass of a slideshow: each photo cross-fades in once it has loaded. */
     async function playPhotos(item: PhotosItem, signal: AbortSignal) {
-      const pass = passes.current.get(item.slideshow.id) ?? 0;
-      passes.current.set(item.slideshow.id, pass + 1);
+      const cursor = shownCount.current.get(item.slideshow.id) ?? 0;
+      const photos = slideshowPass(item, cursor);
+      shownCount.current.set(item.slideshow.id, cursor + photos.length);
       const secs = Math.max(2, item.slideshow.secondsPerPhoto);
-      const photos = slideshowPass(item, pass);
+      const fade = item.slideshow.crossfade !== false && !reduced();
       let next = preloadImage(photos[0]!.url, signal);
       let shown = 0;
       for (let k = 0; k < photos.length; k++) {
@@ -381,7 +403,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
         // Start loading the next photo while this one shows.
         if (k + 1 < photos.length) next = preloadImage(photos[k + 1]!.url, signal);
         if (!ok) continue;
-        await enter({ item, photo: photos[k], scale: 1 }, signal, reduced() ? "cut" : "fade");
+        await enter({ item, photo: photos[k], scale: 1 }, signal, fade ? "fade" : "cut");
         await sleep(secs * 1000, signal);
         shown++;
       }
@@ -440,8 +462,9 @@ export function KioskPlayer(props: KioskPlayerProps) {
         >
           {s.item.kind === "board" && s.board ? (
             <div
-              className="hb-kp-board"
+              className={`hb-kp-board${s.backdrop ? " hb-kp-photobg" : ""}`}
               data-move={s.item.display.move}
+              data-dim={s.backdrop?.dim}
               style={
                 {
                   "--hb-kp-scale": s.scale,
@@ -449,6 +472,15 @@ export function KioskPlayer(props: KioskPlayerProps) {
                 } as CSSProperties
               }
             >
+              {s.backdrop ? (
+                <img
+                  className="hb-kp-photobg-img"
+                  src={s.backdrop.url}
+                  alt=""
+                  aria-hidden="true"
+                  data-testid="kiosk-board-photobg"
+                />
+              ) : null}
               <KioskChromeContext.Provider value={{ page: s.page, position: s.position }}>
                 <BoardRenderer board={s.board} brand={brand} kiosk cfg={s.cfg} skins={skins} />
               </KioskChromeContext.Provider>
@@ -460,7 +492,12 @@ export function KioskPlayer(props: KioskPlayerProps) {
               <SponsorSlide sponsors={sponsors} brand={brand} />
             )
           ) : s.item.kind === "photos" && s.photo ? (
-            <PhotoSlide photo={s.photo} brand={brand} captions={s.item.slideshow.captions} />
+            <PhotoSlide
+              photo={s.photo}
+              brand={brand}
+              captions={s.item.slideshow.captions}
+              frame={s.item.slideshow.frame ?? "fill"}
+            />
           ) : s.item.kind === "ad" ? (
             <AdSlide ad={s.item.ad} onError={() => skipRef.current?.abort()} />
           ) : null}

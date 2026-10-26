@@ -443,17 +443,26 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   };
 
   // ---- Photo slideshows (D2) --------------------------------------------
-  /** Add a slideshow with sensible defaults and place it at the end of the rotation. */
-  const addSlideshow = () => {
+  /**
+   * Add a slideshow with sensible defaults and place it at the end of the
+   * rotation. The "recent" preset is the plan's one-click Recent moments: the
+   * last 21 days from both libraries, random.
+   */
+  const addSlideshow = (preset: "default" | "recent" = "default") => {
     const id = `photos:${crypto.randomUUID()}`;
     setSlideshows((prev) => [
       ...prev,
       {
         id,
-        name: prev.length ? `Photos ${prev.length + 1}` : "Club photos",
-        library: "senior",
-        source: "all",
-        recentDays: null,
+        name:
+          preset === "recent"
+            ? "Recent moments"
+            : prev.length
+              ? `Photos ${prev.length + 1}`
+              : "Club photos",
+        library: preset === "recent" ? "both" : "senior",
+        source: preset === "recent" ? "recent" : "all",
+        recentDays: preset === "recent" ? 21 : null,
         types: null,
         grades: null,
         order: "random",
@@ -470,6 +479,16 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const removeSlideshow = (id: string) => {
     setSlideshows((prev) => prev.filter((x) => x.id !== id));
     setSequence((prev) => prev.filter((s) => s !== id));
+    // Boards that took their photo background from it go back to none.
+    setBoardConfigs((prev) => {
+      const next = { ...prev };
+      for (const [boardId, cfg] of Object.entries(prev)) {
+        if (cfg.photoBackground?.slideshowId === id) {
+          next[boardId] = { ...cfg, photoBackground: null };
+        }
+      }
+      return next;
+    });
   };
   /** Photos the server picked for each saved slideshow (an unsaved one has none yet). */
   const slideshowPhotoCount = useMemo(

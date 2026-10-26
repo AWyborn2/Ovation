@@ -321,9 +321,44 @@ describe("photo slideshow passes", () => {
 
   it("works down the newest photos pass by pass, wrapping round", () => {
     expect(urls(slideshowPass(item("newest", 2), 0))).toEqual(["a", "b"]);
-    expect(urls(slideshowPass(item("newest", 2), 1))).toEqual(["c", "d"]);
-    expect(urls(slideshowPass(item("newest", 2), 2))).toEqual(["e", "a"]);
+    expect(urls(slideshowPass(item("newest", 2), 2))).toEqual(["c", "d"]);
+    expect(urls(slideshowPass(item("newest", 2), 4))).toEqual(["e", "a"]);
+    // An interlude shows one photo, carrying on from where the slideshow got to.
+    expect(urls(slideshowPass({ ...item("newest", 2), interlude: true }, 3))).toEqual(["d"]);
     expect(urls(slideshowPass(item("newest", 9), 0))).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("places an interlude after every N boards from a slideshow that has photos", () => {
+    const look = resolveClubLook({});
+    const slideshow = (id: string, interludeEvery: number | null) => ({
+      ...item("random", 5).slideshow,
+      id,
+      interludeEvery,
+    });
+    const items = buildRotation({
+      boards: ["a", "b", "c", "d", "e"].map((id) => ({ ...list(1), id, title: id })),
+      settings: {
+        kioskSequence: [],
+        boardConfigs: {},
+        kioskSponsorSlideEvery: 3,
+        kioskSponsorSlideStyle: "grid",
+      },
+      look,
+      sponsors: [],
+      ads: [],
+      slideshows: [
+        slideshow("photos:x", 2),
+        slideshow("photos:empty", 1),
+        slideshow("photos:off", null),
+      ],
+      slideshowPhotos: { "photos:x": photos, "photos:off": photos },
+      sponsorSlides: false,
+    });
+    expect(
+      items.map((i) =>
+        i.kind === "board" ? i.board.id : i.kind === "photos" && i.interlude ? "+" : "?",
+      ),
+    ).toEqual(["a", "b", "+", "c", "d", "+", "e"]);
   });
 
   it("picks a random set without repeats", () => {

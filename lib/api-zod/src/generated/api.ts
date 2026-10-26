@@ -10175,10 +10175,20 @@ export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 8
 
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const getHonourDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10205,6 +10215,8 @@ export const getHonourDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getHonourDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+
+export const getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10391,14 +10403,25 @@ export const GetHonourDisplayResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -10423,6 +10446,10 @@ export const GetHonourDisplayResponse = zod.object({
   "hold": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsHoldMin).max(getHonourDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10547,10 +10574,20 @@ export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80
 
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const getKioskDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10577,6 +10614,8 @@ export const getKioskDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+
+export const getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10763,14 +10802,25 @@ export const GetKioskDisplayResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -10795,6 +10845,10 @@ export const GetKioskDisplayResponse = zod.object({
   "hold": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsHoldMin).max(getKioskDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10944,10 +10998,20 @@ export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax = 80
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax = 20;
 
@@ -10963,6 +11027,8 @@ export const updateHonourDisplaySettingsBodyBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsBodyBoardConfigsHoldMax = 60;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 5;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
@@ -11006,14 +11072,25 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -11026,6 +11103,10 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "hold": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsHoldMin).max(updateHonourDisplaySettingsBodyBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -11105,10 +11186,20 @@ export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax 
 
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMax = 20;
@@ -11135,6 +11226,8 @@ export const updateHonourDisplaySettingsResponseBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsResponseBoardConfigsHoldMax = 60;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 5;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
@@ -11167,14 +11260,25 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -11199,6 +11303,10 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "hold": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsHoldMin).max(updateHonourDisplaySettingsResponseBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
   "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),

@@ -93,6 +93,28 @@ describe("honour display settings: kiosk look (integration)", () => {
     expect(res.body.kioskPhotoSlideshows).toEqual([slideshow]);
     await patch({ kioskPhotoSlideshows: [{ ...slideshow, perPass: 0 }] }).expect(400);
     await patch({ kioskPhotoSlideshows: [{ ...slideshow, library: "everyone" }] }).expect(400);
+    // P0/P1 options: hand-picked photos in a manual order, folders, framing,
+    // cross-fade and interludes.
+    const picked = {
+      ...slideshow,
+      source: "picked",
+      order: "manual",
+      picked: [
+        { library: "junior", id: 7 },
+        { library: "senior", id: 3 },
+      ],
+      folders: [{ grade: "club-wide", type: null }],
+      frame: "whole",
+      crossfade: false,
+      interludeEvery: 3,
+    };
+    const res2 = await patch({ kioskPhotoSlideshows: [picked] }).expect(200);
+    expect(res2.body.kioskPhotoSlideshows).toEqual([picked]);
+    await patch({
+      kioskPhotoSlideshows: [{ ...picked, picked: [{ library: "staff", id: 1 }] }],
+    }).expect(400);
+    await patch({ kioskPhotoSlideshows: [{ ...picked, interludeEvery: 0 }] }).expect(400);
+    await patch({ kioskPhotoSlideshows: [slideshow] }).expect(200);
 
     const bundle = await request(app)
       .get("/api/honour-display")

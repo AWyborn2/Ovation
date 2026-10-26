@@ -296,6 +296,19 @@ export function RotationBuilder({
         >
           <Plus className="h-3.5 w-3.5 mr-1.5" /> Photo slideshow
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const id = addSlideshow("recent");
+            setAnnouncement("Recent moments slideshow added");
+            onSelect(id);
+          }}
+          data-testid="add-recent-moments-to-seq"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> Recent moments
+        </Button>
         {slideshows.length > 0 && (
           <select
             className="px-2 py-1.5 rounded border bg-card text-sm"

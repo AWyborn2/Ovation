@@ -1026,6 +1026,12 @@
   --hb12-rule: rgba(216, 178, 94, 0.35);
   --hb-bg: #1a0f07;
   --hb-board-bg: #301d10;
+  /* The timber plate, shared with the kiosk photo-background panel. */
+  --hb12-board-bg:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 23px),
+    linear-gradient(180deg, var(--hb12-timber-2), var(--hb12-timber-1) 60%, var(--hb12-timber-3));
+  --hb-kp-panel-bg: var(--hb12-board-bg);
   --hb-board-border: var(--hb12-gold-lo);
   --hb-shadow: none;
   --hb-radius: 4px;
@@ -1047,10 +1053,7 @@
 }
 .skin-p12 .hb-board {
   border: 0;
-  background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 23px),
-    linear-gradient(180deg, var(--hb12-timber-2), var(--hb12-timber-1) 60%, var(--hb12-timber-3));
+  background: var(--hb12-board-bg);
   box-shadow:
     inset 0 0 0 0.6cqw #1a0f07,
     inset 0 0 0 0.75cqw var(--hb12-gold-lo),
@@ -1423,6 +1426,56 @@
   background: transparent !important;
   box-shadow: none !important;
 }
+/* Kiosk photo background (kiosk-photo-rotation P2). The photo fills the screen
+   behind the board, blurred; the board's own panel is redrawn over it at the
+   dim strength (never under 72%), so the text keeps the contrast its skin was
+   designed for. During a page turn the incoming layer drops both, like its
+   board background above. */
+.hb-kp-photobg {
+  position: relative;
+}
+.hb-kp-photobg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(4px) saturate(0.9);
+  transform: scale(1.04);
+  z-index: 0;
+}
+.hb-kp-photobg > :not(.hb-kp-photobg-img) {
+  position: relative;
+  z-index: 1;
+}
+.hb-kp-photobg {
+  --hb-kp-dim: 0.82;
+}
+.hb-kp-photobg[data-dim="light"] {
+  --hb-kp-dim: 0.72;
+}
+.hb-kp-photobg[data-dim="strong"] {
+  --hb-kp-dim: 0.9;
+}
+.hb-kiosk .hb-kp-photobg .hb-board {
+  background: transparent !important;
+  position: relative;
+  isolation: isolate;
+}
+.hb-kiosk .hb-kp-photobg .hb-board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--hb-kp-panel-bg, var(--hb-board-bg));
+  opacity: var(--hb-kp-dim);
+  pointer-events: none;
+}
+.hb-kp-paging .hb-kp-photobg-img,
+.hb-kp-paging .hb-kp-photobg .hb-board::before {
+  display: none;
+}
 /* Wipe transition: the gold rule that sweeps across. */
 .hb-kp-wipe {
   position: absolute;
@@ -1783,6 +1836,9 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.hb-photo-slide[data-frame="fill"] .hb-photo-slide-img {
+  object-fit: cover;
 }
 .hb-photo-slide-crest {
   position: absolute;

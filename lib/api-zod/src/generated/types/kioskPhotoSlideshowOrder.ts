@@ -6,10 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.
+ */
 export type KioskPhotoSlideshowOrder = typeof KioskPhotoSlideshowOrder[keyof typeof KioskPhotoSlideshowOrder];
 
 
 export const KioskPhotoSlideshowOrder = {
   random: 'random',
   newest: 'newest',
+  manual: 'manual',
 } as const;
