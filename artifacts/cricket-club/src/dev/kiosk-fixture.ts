@@ -312,13 +312,27 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     name: "Halls Head Cricket Club",
     shortName: "Halls Head",
     monogram: "HH",
+    logoUrl: "/placeholder-club-logo.svg",
     backgroundColour: "#0e3b2e",
     primaryColour: "#d8b25e",
     juniorsColour: "#0e3b2e",
   },
   settings: {
     defaultTemplate: "p12",
-    kioskSequence: [],
+    // Every board in order, with the photo slideshow after the plaques.
+    kioskSequence: [
+      "premierships",
+      "photos:fixture",
+      "club-champions",
+      "captains",
+      "office-bearers",
+      "batting-records",
+      "most_runs",
+      "centuries",
+      "grade_records",
+      "partnerships_grade:First Grade",
+      "life-members",
+    ],
     kioskDwellMs: 3500,
     kioskScrollSpeed: 36,
     kioskEndHoldMs: 3000,
@@ -326,7 +340,18 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
-    kioskPhotoSlideshows: [],
+    kioskPhotoSlideshows: [
+      {
+        id: "photos:fixture",
+        name: "Clubroom photos",
+        library: "senior",
+        source: "all",
+        order: "newest",
+        perPass: 3,
+        secondsPerPhoto: 3,
+        captions: true,
+      },
+    ],
     // Short timings so a browser check sees every movement quickly.
     kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
     // One board per movement, with a spread of transitions.
@@ -345,4 +370,15 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     composites: [],
   },
   activeSponsors: [],
+  // A wide photo, a missing one (skipped) and a tall one.
+  photoSlideshows: [
+    {
+      id: "photos:fixture",
+      photos: [
+        { url: "/opengraph.jpg", width: 1200, height: 630, caption: "First Grade · 2025/26" },
+        { url: "/missing-photo.jpg", width: 800, height: 600, caption: "Never shown" },
+        { url: "/mockup/broadcast-current-square.jpg", width: 1080, height: 1080, caption: null },
+      ],
+    },
+  ],
 };

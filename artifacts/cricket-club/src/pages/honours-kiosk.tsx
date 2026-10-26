@@ -96,6 +96,11 @@ export default function HonoursKiosk({
     !!settings?.kioskSponsorStrip && activeSponsors.length > 0 && !overlayShowing;
   const sponsorSlidesOn = !!settings?.kioskSponsorSlides && activeSponsors.length > 0;
 
+  const photoSlideshows = data?.photoSlideshows;
+  const slideshowPhotos = useMemo(
+    () => Object.fromEntries((photoSlideshows ?? []).map((s) => [s.id, s.photos])),
+    [photoSlideshows],
+  );
   const items = useMemo(
     () =>
       settings
@@ -105,10 +110,12 @@ export default function HonoursKiosk({
             look,
             sponsors: activeSponsors,
             ads: settings.kioskAds ?? [],
+            slideshows: settings.kioskPhotoSlideshows ?? [],
+            slideshowPhotos,
             sponsorSlides: sponsorSlidesOn,
           })
         : [],
-    [boards, settings, look, activeSponsors, sponsorSlidesOn],
+    [boards, settings, look, activeSponsors, slideshowPhotos, sponsorSlidesOn],
   );
 
   const exit = () => {

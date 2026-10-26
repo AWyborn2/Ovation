@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { isListLikeLayout, type ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
-import type { Sponsor } from "@workspace/api-client-react";
+import type { KioskSlideshowPhoto, Sponsor } from "@workspace/api-client-react";
 import { BoardRenderer } from "../board-renderer";
 import { KioskChromeContext, type KioskChrome } from "../kiosk-chrome";
 import { AdSlide, SponsorSlide, SponsorSlideSingle } from "../sponsor-ads";
@@ -14,7 +14,8 @@ import {
   ROW_SELECTOR,
   type ConcreteTransition,
 } from "./transitions";
-import type { RotationItem } from "./rotation";
+import { slideshowPass, type RotationItem } from "./rotation";
+import { PhotoSlide } from "./photo-slide";
 
 /**
  * The clubroom-TV player (honours kiosk redesign, A2). Plays the rotation:
@@ -29,6 +30,7 @@ import type { RotationItem } from "./rotation";
  */
 
 type BoardItem = Extract<RotationItem, { kind: "board" }>;
+type PhotosItem = Extract<RotationItem, { kind: "photos" }>;
 
 interface Screen {
   id: number;
@@ -43,6 +45,31 @@ interface Screen {
   position?: KioskChrome["position"];
   /** Set while a page turn plays on this (incoming) layer. */
   paging?: boolean;
+  /** The photo a slideshow screen shows. */
+  photo?: KioskSlideshowPhoto;
+}
+
+/** How long a slideshow waits for a photo before skipping it. */
+const PHOTO_LOAD_TIMEOUT_MS = 15_000;
+
+/** Load an image ahead of showing it; false when it fails or takes too long. */
+function preloadImage(url: string, signal: AbortSignal): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (signal.aborted || typeof Image === "undefined") return resolve(false);
+    const img = new Image();
+    const finish = (ok: boolean) => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", abort);
+      img.onload = img.onerror = null;
+      resolve(ok);
+    };
+    const abort = () => finish(false);
+    const timer = setTimeout(abort, PHOTO_LOAD_TIMEOUT_MS);
+    signal.addEventListener("abort", abort, { once: true });
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
+    img.src = url;
+  });
 }
 
 export interface KioskPlayerProps {
@@ -133,6 +160,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
   const mounted = useRef(new Map<number, () => void>());
   // Aborted to cut the current item short (a video ad that fails to load).
   const skipRef = useRef<AbortController | null>(null);
+  // Passes each slideshow has played, so "newest" works down its photos.
+  const passes = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
     for (const s of layers) {
@@ -325,6 +354,28 @@ export function KioskPlayer(props: KioskPlayerProps) {
       }
     }
 
+    /** One pass of a slideshow: each photo cross-fades in once it has loaded. */
+    async function playPhotos(item: PhotosItem, signal: AbortSignal) {
+      const pass = passes.current.get(item.slideshow.id) ?? 0;
+      passes.current.set(item.slideshow.id, pass + 1);
+      const secs = Math.max(2, item.slideshow.secondsPerPhoto);
+      const photos = slideshowPass(item, pass);
+      let next = preloadImage(photos[0]!.url, signal);
+      let shown = 0;
+      for (let k = 0; k < photos.length; k++) {
+        const ok = await next;
+        if (signal.aborted) return;
+        // Start loading the next photo while this one shows.
+        if (k + 1 < photos.length) next = preloadImage(photos[k + 1]!.url, signal);
+        if (!ok) continue;
+        await enter({ item, photo: photos[k], scale: 1 }, signal, reduced() ? "cut" : "fade");
+        await sleep(secs * 1000, signal);
+        shown++;
+      }
+      // Every photo failed: pause so a rotation of only this never spins.
+      if (!shown) await sleep(1000, signal);
+    }
+
     async function run() {
       let i = 0;
       while (!life.signal.aborted) {
@@ -349,6 +400,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
           // "Board N of M" counts boards, not sponsor or ad slides.
           const boards = items.filter((x) => x.kind === "board");
           await playBoard(item, { index: boards.indexOf(item), count: boards.length }, signal);
+        } else if (item.kind === "photos") {
+          await playPhotos(item, signal);
         } else {
           await enter({ item, scale: 1 }, signal);
           const look = latest.current.look;
@@ -393,6 +446,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
             ) : (
               <SponsorSlide sponsors={sponsors} brand={brand} />
             )
+          ) : s.item.kind === "photos" && s.photo ? (
+            <PhotoSlide photo={s.photo} brand={brand} captions={s.item.slideshow.captions} />
           ) : s.item.kind === "ad" ? (
             <AdSlide ad={s.item.ad} onError={() => skipRef.current?.abort()} />
           ) : null}
