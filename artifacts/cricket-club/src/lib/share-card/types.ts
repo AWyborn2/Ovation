@@ -62,6 +62,10 @@ export type MatchSummaryInnings = {
   declared?: boolean;
   topBatters: MatchSummaryBatter[];
   topBowlers: MatchSummaryBowler[];
+  /** Every batter, most runs first (the performance lists); absent on older inputs. */
+  batters?: MatchSummaryBatter[];
+  /** Everyone who bowled, most wickets then fewest runs first; absent on older inputs. */
+  bowlers?: MatchSummaryBowler[];
 };
 
 // --- Pack A card shapes ------------------------------------------------------

@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
+  effectivePick,
+  isPerformanceRepeat,
   kindFields,
+  MAX_PICK_COUNT,
+  pageRepeat,
+  pickStat,
   rowsCapacity,
+  type PageKey,
+  type RowsPick,
   type TemplateTextStyle,
 } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { layersOf, type EditorDoc } from "./document";
-import { setRows, setRowsCell, setVariantStyle } from "./template-ops";
+import { setRows, setRowsCell, setRowsPick, setVariantStyle } from "./template-ops";
 import { TextStyleBar } from "./text-style-bar";
 
 const input =
@@ -20,8 +27,136 @@ export const isImageRowField = (key: string): boolean => /photo$/i.test(key);
 
 const VARIANT_LABEL: Record<string, string> = {
   club: "Your club's row",
+  opposition: "Opposition rows",
   junior: "Junior rows",
 };
+
+/** How many rows a result's batting or bowling list keeps: the presets, else a number. */
+const COUNT_PRESETS: Array<{ value: number; label: string }> = [
+  { value: 0, label: "All" },
+  { value: 1, label: "Best" },
+  { value: 3, label: "Top 3" },
+  { value: 5, label: "Top 5" },
+];
+
+const chip = (on: boolean) =>
+  cn(
+    "rounded-full border border-[var(--ed-line)] px-3 py-1 text-xs",
+    on && "border-[var(--ed-accent)] bg-[var(--ed-card)] font-semibold",
+  );
+
+/**
+ * Which rows a result's batting or bowling list draws (full draft editor
+ * plan, stage 4): whose (a performance list only; an innings list is one
+ * side's), how many and sorted how. A performance list starts as the club's
+ * top three (D4).
+ */
+export function PickControls({
+  repeat,
+  pick,
+  clubLabel,
+  onPick,
+}: {
+  repeat: string;
+  pick: RowsPick | undefined;
+  /** The club's short name for "Whose"; "Club" without one. */
+  clubLabel?: string;
+  onPick: (patch: Partial<RowsPick>) => void;
+}) {
+  const stat = pickStat(repeat);
+  const shown = effectivePick(repeat, pick) ?? {};
+  const count = shown.count ?? 0;
+  const preset = COUNT_PRESETS.some((p) => p.value === count);
+  const [custom, setCustom] = useState(!preset);
+  const sides: Array<{ value: NonNullable<RowsPick["side"]>; label: string }> = [
+    { value: "club", label: clubLabel?.trim() || "Club" },
+    { value: "opposition", label: "Opposition" },
+    { value: "both", label: "Both" },
+  ];
+  // A list orders by its own stat: runs for batting, wickets for bowling.
+  const best = stat === "bowling" ? "wickets" : "runs";
+  const sort = shown.sort ? best : "";
+  if (!stat) return null;
+  return (
+    <div className="mt-3 flex flex-col gap-2" role="group" aria-label="Which rows">
+      {isPerformanceRepeat(repeat) && (
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Whose">
+          <span className="w-16 text-xs text-[var(--ed-ink2)]">Whose</span>
+          {sides.map((side) => (
+            <button
+              key={side.value}
+              type="button"
+              aria-pressed={(shown.side ?? "club") === side.value}
+              onClick={() => onPick({ side: side.value })}
+              className={chip((shown.side ?? "club") === side.value)}
+            >
+              {side.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="How many">
+        <span className="w-16 text-xs text-[var(--ed-ink2)]">How many</span>
+        {COUNT_PRESETS.map((p) => (
+          <button
+            key={p.value}
+            type="button"
+            aria-pressed={!custom && count === p.value}
+            onClick={() => {
+              setCustom(false);
+              onPick({ count: p.value });
+            }}
+            className={chip(!custom && count === p.value)}
+          >
+            {p.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-pressed={custom}
+          onClick={() => setCustom(true)}
+          className={chip(custom)}
+        >
+          Other
+        </button>
+        {custom && (
+          <input
+            type="number"
+            aria-label="Number of rows"
+            min={1}
+            max={MAX_PICK_COUNT}
+            step={1}
+            value={count || ""}
+            onChange={(e) => {
+              const n = Math.round(Number(e.target.value));
+              if (Number.isFinite(n) && n >= 1) onPick({ count: Math.min(MAX_PICK_COUNT, n) });
+            }}
+            className={cn(input, "w-16")}
+          />
+        )}
+      </div>
+      <label className="flex items-center gap-1.5 text-xs text-[var(--ed-ink2)]">
+        <span className="w-16">Sort by</span>
+        <select
+          aria-label="Sort by"
+          value={sort}
+          onChange={(e) =>
+            onPick({ sort: e.target.value ? (e.target.value as RowsPick["sort"]) : undefined })
+          }
+          className={input}
+        >
+          <option value="">As listed</option>
+          <option value={best}>{best === "runs" ? "Runs" : "Wickets"}</option>
+        </select>
+      </label>
+      {isPerformanceRepeat(repeat) && (
+        <p className="text-xs text-[var(--ed-ink2)]">
+          A junior card shows your club&apos;s players only.
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * The list element's settings (R8): the row height and gap, the cells across
@@ -34,17 +169,25 @@ export function RowsPanel({
   doc,
   layer,
   kind,
+  page,
   size,
+  clubLabel,
   onEdit,
 }: {
   doc: EditorDoc;
   layer: FreeLayer;
   kind: string;
+  /** The page on show; its own lists (a result's innings and performances) when it has them. */
+  page?: PageKey;
   size: CardSize;
+  /** The club's short name, for a performance list's "Whose". */
+  clubLabel?: string;
   onEdit: (next: EditorDoc) => void;
 }) {
   const spec = layer.rows!;
-  const repeat = kindFields(kind)?.repeats.find((r) => r.key === spec.repeat);
+  const repeat =
+    (page ? pageRepeat(kind, page, spec.repeat) : null) ??
+    kindFields(kind)?.repeats.find((r) => r.key === spec.repeat);
   const fields = repeat?.fields ?? [];
   const variants = repeat?.variants ?? [];
   const [cellIndex, setCellIndex] = useState(0);
@@ -101,6 +244,14 @@ export function RowsPanel({
           {capacity} {capacity === 1 ? "row fits" : "rows fit"} on this size
         </span>
       </div>
+
+      <PickControls
+        key={spec.repeat}
+        repeat={spec.repeat}
+        pick={spec.pick}
+        clubLabel={clubLabel}
+        onPick={(patch) => onEdit(setRowsPick(doc, layer.id, patch))}
+      />
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Row cells">
         {spec.cells.map((c, i) => (

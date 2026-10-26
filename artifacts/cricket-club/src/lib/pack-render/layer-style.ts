@@ -443,10 +443,14 @@ export function layerNeedsV2(layer: TemplateLayerV2): boolean {
     !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
   if (v2Style(layer.style)) return true;
   // A list whose cells or row styles use v2's (italic, a glow).
-  const rows = (layer as { rows?: { cells?: Array<{ style?: unknown }>; variants?: object } }).rows;
+  const rows = (
+    layer as { rows?: { cells?: Array<{ style?: unknown }>; variants?: object; pick?: object } }
+  ).rows;
   return (
     !!rows &&
-    ((rows.cells ?? []).some((c) => v2Style(c.style)) ||
+    // A list's row choice (whose, how many, sorted how) is v2's too.
+    (!!rows.pick ||
+      (rows.cells ?? []).some((c) => v2Style(c.style)) ||
       Object.values(rows.variants ?? {}).some((cells) =>
         Object.values(cells as object).some(v2Style),
       ))

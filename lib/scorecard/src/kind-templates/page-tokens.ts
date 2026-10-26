@@ -186,6 +186,7 @@ const ROW_FIELD_LABELS: Record<string, string> = {
   figures: "Figures (W/R)",
   figuresDash: "Figures (W-R)",
   overs: "Overs",
+  team: "Team",
 };
 
 const rowFields = (keys: readonly string[], prefix = ""): PageToken[] =>
@@ -223,6 +224,29 @@ const INNINGS_REPEATS = (n: 1 | 2): PageRepeat[] => [
       ...rowFields(PAIR_ROW_FIELDS.slice(0, BATTING_ROW_FIELDS.length), "Batter: "),
       ...rowFields(PAIR_ROW_FIELDS.slice(BATTING_ROW_FIELDS.length), "Bowler: "),
     ],
+  },
+];
+
+/**
+ * The performance lists (full draft editor plan, stage 4): both innings'
+ * batting or bowling rows, each with its team. A list's `pick` chooses whose,
+ * sorted how and how many (`rows-pick.ts`); a row's style can differ by side
+ * (`club`, `opposition`).
+ */
+const PERFORMANCE_LISTS: PageRepeat[] = [
+  {
+    key: "performances.batting",
+    label: "Performances: batting",
+    variants: ["club", "opposition"],
+    content: "result.performers",
+    fields: rowFields([...BATTING_ROW_FIELDS, "team"]),
+  },
+  {
+    key: "performances.bowling",
+    label: "Performances: bowling",
+    variants: ["club", "opposition"],
+    content: "result.performers",
+    fields: rowFields([...BOWLING_ROW_FIELDS, "team"]),
   },
 ];
 
@@ -267,6 +291,7 @@ const MATCH_GRAPHICS_KEYS = [
   "loser.logo",
   "innings1.",
   "innings2.",
+  "performances.",
 ];
 
 /** Whether a layer binds the match graphics content (tokens or rows), which only v2 holds. */
@@ -280,7 +305,7 @@ export function usesMatchGraphicsContent(layer: unknown): boolean {
 
 /** Repeats `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
 const SINGLE_PAGE_EXTRA_REPEATS: Record<string, PageRepeat[]> = {
-  matchSummary: [...INNINGS_REPEATS(1), ...INNINGS_REPEATS(2)],
+  matchSummary: [...INNINGS_REPEATS(1), ...INNINGS_REPEATS(2), ...PERFORMANCE_LISTS],
 };
 
 /** Content fields of each team-list row field. */

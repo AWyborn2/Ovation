@@ -36,6 +36,14 @@ export type MatchSummaryInnings = {
   declared?: boolean;
   topBatters: MatchSummaryBatter[];
   topBowlers: MatchSummaryBowler[];
+  /**
+   * Every batter of the innings, most runs first (full draft editor plan,
+   * stage 4: the performance lists). Optional: older saved inputs have only
+   * the top three. On a junior card they follow the top lists' privacy rules.
+   */
+  batters?: MatchSummaryBatter[];
+  /** Everyone who bowled in the innings, most wickets then fewest runs first. */
+  bowlers?: MatchSummaryBowler[];
 };
 
 /** Self-contained input for a match-summary share card. */

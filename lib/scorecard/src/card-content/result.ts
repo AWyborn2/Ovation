@@ -137,7 +137,13 @@ export function resultSlideInput(
     junior: c.junior,
     carouselDetail: c.kind === "matchSummary" && c.hasPerformers,
     ...(c.kind === "results"
-      ? { innings: s.innings.map((i) => ({ ...i, topBatters: [], topBowlers: [] })) }
+      ? {
+          innings: s.innings.map(({ batters: _b, bowlers: _w, ...i }) => ({
+            ...i,
+            topBatters: [],
+            topBowlers: [],
+          })),
+        }
       : {}),
   };
 }

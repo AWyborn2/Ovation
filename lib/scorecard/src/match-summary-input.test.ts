@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  allBatters,
+  allBowlers,
   deriveWinner,
   topBatters,
   topBowlers,
@@ -225,6 +227,47 @@ describe("topBowlers", () => {
 });
 
 // ---------------------------------------------------------------------------
+// allBatters / allBowlers (the performance lists, full draft editor stage 4)
+// ---------------------------------------------------------------------------
+
+describe("allBatters and allBowlers", () => {
+  it("keeps every batter, most runs first, with the same exclusions as the top three", () => {
+    const batsmen = [
+      bat("A", 10),
+      bat("B", 50),
+      bat("Private Player", 99),
+      bat("C", 30),
+      bat("D", 20),
+      bat("E", 40),
+    ];
+    expect(allBatters(batsmen, "Private Player").map((b) => b.name)).toEqual([
+      "B",
+      "E",
+      "C",
+      "D",
+      "A",
+    ]);
+    // The top three are the full list's first three (the cap stays at three).
+    expect(topBatters(batsmen, "Private Player")).toEqual(
+      allBatters(batsmen, "Private Player").slice(0, 3),
+    );
+  });
+
+  it("keeps everyone who bowled, most wickets then fewest runs first", () => {
+    const bowlers = [
+      bowl("A", 1, 40),
+      bowl("B", 3, 25),
+      bowl("C", 3, 20),
+      bowl("D", 2, 30),
+      bowl("E", 0, 50),
+      bowl("F", 0, 10, null),
+    ];
+    expect(allBowlers(bowlers).map((b) => b.name)).toEqual(["C", "B", "D", "A", "E"]);
+    expect(topBowlers(bowlers)).toEqual(allBowlers(bowlers).slice(0, 3));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // seasonLabel
 // ---------------------------------------------------------------------------
 
@@ -391,6 +434,10 @@ describe("matchToSummaryInput: primary path", () => {
     expect(input.innings[1].overs).toBe("38.2");
     expect(input.innings[1].topBatters[0].name).toBe("P Lee");
     expect(input.innings[1].topBatters[0].runs).toBe(55);
+
+    // Every batter and bowler, for the performance lists (stage 4).
+    expect(input.innings[0].batters!.map((b) => b.name)).toEqual(["A Smith", "B Jones"]);
+    expect(input.innings[1].bowlers!.map((b) => b.name)).toEqual(["C Brown", "D White"]);
   });
 
   it("formats result as 'Match abandoned' when abandoned flag is set", () => {

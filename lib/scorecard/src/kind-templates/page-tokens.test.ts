@@ -48,6 +48,8 @@ describe("page token catalogues", () => {
       "innings2.batting",
       "innings2.bowling",
       "innings2.pairs",
+      "performances.batting",
+      "performances.bowling",
     ]);
     const keys = cat.fields.map((f) => f.key);
     for (const k of ["venue", "competition", "innings1.score", "innings2.scoreDash", "club.short"])
@@ -60,6 +62,28 @@ describe("page token catalogues", () => {
       expect.arrayContaining(["batSurname", "batRuns", "bowlFiguresDash", "bowlOvers"]),
     );
     expect(pairs.content).toBe("result.performers");
+  });
+
+  it("offers both innings' performances as batting and bowling lists (stage 4)", () => {
+    const batting = pageRepeat("matchSummary", "result", "performances.batting")!;
+    const bowling = pageRepeat("matchSummary", "result", "performances.bowling")!;
+    expect(batting.label).toBe("Performances: batting");
+    expect(bowling.label).toBe("Performances: bowling");
+    expect(batting.fields.map((f) => f.key)).toEqual(
+      expect.arrayContaining(["name", "runs", "balls", "team"]),
+    );
+    expect(bowling.fields.map((f) => f.key)).toEqual(
+      expect.arrayContaining(["name", "figures", "overs", "team"]),
+    );
+    expect(bowling.fields.find((f) => f.key === "team")!.label).toBe("Team");
+    // A row's style can differ by side; the list shows with the performers.
+    expect(batting.variants).toEqual(["club", "opposition"]);
+    expect(batting.content).toBe("result.performers");
+    expect(tokenContentField("matchSummary", "result", "performances.bowling")).toBe(
+      "result.performers",
+    );
+    // The Results kind reads the Match Summary's catalogue.
+    expect(pageRepeat("results", "result", "performances.batting")).not.toBeNull();
   });
 
   it("lists each token once per page", () => {
