@@ -7229,6 +7229,10 @@ export interface BoardEntryMeta {
   competition?: string | null;
   /** 1-based rank for ranked list boards (points, win counts). */
   rank?: number | null;
+  /** The entry's headline figure for table layouts, e.g. "312" (games), "147*" (a score) or "6/23" (bowling figures). */
+  figure?: string | null;
+  /** Seasons the player played for the club, e.g. "2009–25" or "2024/25". */
+  seasonSpan?: string | null;
 }
 
 /**
@@ -7654,7 +7658,7 @@ export interface CompositeDef {
 }
 
 /**
- * Natural render layout for this board (skin only changes the look).
+ * Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan.
  */
 export type DisplayBoardLayout = typeof DisplayBoardLayout[keyof typeof DisplayBoardLayout];
 
@@ -7666,6 +7670,7 @@ export const DisplayBoardLayout = {
   columns: 'columns',
   grid: 'grid',
   lifeMembers: 'lifeMembers',
+  leaderboard: 'leaderboard',
 } as const;
 
 /**
@@ -7709,7 +7714,7 @@ export interface DisplayBoard {
   id: string;
   /** Free-text board category used for grouping/labelling. */
   category: string;
-  /** Natural render layout for this board (skin only changes the look). */
+  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. */
   layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;
@@ -7722,6 +7727,8 @@ export interface DisplayBoard {
   skin?: string | null;
   /** Free-text footnote rendered under the board. */
   footnote?: string | null;
+  /** Column heading for the entries' meta.figure in table layouts (e.g. "Games", "Runs"). */
+  figureLabel?: string | null;
   display: BoardDisplay;
 }
 

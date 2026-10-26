@@ -25,6 +25,10 @@ export interface BoardEntryMeta {
   parentGrade?: string | null;
   competition?: string | null;
   rank?: number | null;
+  // Table layouts: the headline figure ("312", "147*", "6/23") and the
+  // player's seasons for the club ("2009–25").
+  figure?: string | null;
+  seasonSpan?: string | null;
 }
 
 // Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
@@ -71,8 +75,9 @@ export interface BoardEntry {
 // "columns" is a composite layout: several list boards rendered side-by-side.
 // "grid" is the opt-in season-grid matrix (rows × admin-chosen columns).
 // "lifeMembers" is the two-column stat-tile + bio card layout.
+// "leaderboard" is a ranked table: rank, player, figure, seasons.
 export type BoardLayout =
-  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers";
+  "premiership" | "teamOfDecade" | "list" | "columns" | "grid" | "lifeMembers" | "leaderboard";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 
@@ -134,6 +139,8 @@ export interface HonourBoardOut {
   // board config / composite / custom-grid definition by assembleBoards.
   skin?: string | null;
   footnote?: string | null;
+  // Table layouts: the heading over the entries' meta.figure ("Games").
+  figureLabel?: string | null;
   // Stamped onto every board by assembleBoards before serialization.
   display?: BoardDisplayOut;
 }

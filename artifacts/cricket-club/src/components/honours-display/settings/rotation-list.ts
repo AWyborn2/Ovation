@@ -29,6 +29,7 @@ export const BOARD_LAYOUT_LABEL: Readonly<Record<DisplayBoardLayout, string>> = 
   columns: "Composite columns",
   grid: "Season grid",
   lifeMembers: "Life members",
+  leaderboard: "Leaderboard",
 };
 
 /** The list with the item at `from` moved to index `to` (clamped). */

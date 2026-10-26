@@ -214,6 +214,27 @@ export async function nativeLastSeasons(playerIds: number[]): Promise<Map<number
   );
 }
 
+/** First and last season (start years) per player, across every grade. */
+export async function nativeSeasonSpans(
+  playerIds: number[],
+): Promise<Map<number, { first: number; last: number }>> {
+  if (playerIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      playerId: pgss.playerId,
+      first: sql<number | null>`min(${pgss.season})`,
+      last: sql<number | null>`max(${pgss.season})`,
+    })
+    .from(pgss)
+    .where(and(inArray(pgss.playerId, playerIds), isNotNull(pgss.season)))
+    .groupBy(pgss.playerId);
+  return new Map(
+    rows
+      .filter((r) => r.first !== null && r.last !== null)
+      .map((r) => [r.playerId, { first: Number(r.first), last: Number(r.last) }] as const),
+  );
+}
+
 export interface NativePlayerRef {
   playerId: number;
 }

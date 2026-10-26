@@ -1,5 +1,5 @@
 import { RotateCcw } from "lucide-react";
-import type { DisplayBoard } from "@workspace/api-client-react";
+import type { BoardDisplayConfig, DisplayBoard } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
 import { BOARD_LAYOUT_LABEL, rotationItemKind } from "./rotation-list";
@@ -12,6 +12,7 @@ const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   lifeMembers: "Columns",
   premiership: "Plaques across",
   teamOfDecade: "Columns",
+  leaderboard: "Columns",
 };
 
 /**
@@ -64,11 +65,37 @@ function BoardTvSettings({ form, board }: { form: HonoursDisplayForm; board: Dis
   const cfg = form.boardConfigs[board.id] ?? {};
   const resolve = (value: typeof cfg) => form.resolveBoard(board, value);
   const maxColumns = resolve({ columnsPerScreen: 5 }).columnsPerScreen;
-  const overridden = MOTION_KEYS.some((k) => cfg[k] !== undefined);
+  const leaderboard = board.layout === "leaderboard";
+  const overridden =
+    MOTION_KEYS.some((k) => cfg[k] !== undefined) || (leaderboard && cfg.top !== undefined);
   const repeats = form.sequence.filter((t) => t === board.id).length;
 
   return (
     <Panel title={board.title} sub={`TV settings · ${BOARD_LAYOUT_LABEL[board.layout]}`}>
+      {leaderboard && (
+        <label className="block space-y-1">
+          <span className="block text-xs font-medium text-muted-foreground">Show top</span>
+          <select
+            className="w-full rounded border bg-card px-2 py-1.5 text-sm"
+            value={cfg.top ?? ""}
+            onChange={(e) =>
+              form.setConfig(board.id, {
+                top: e.target.value
+                  ? (Number(e.target.value) as BoardDisplayConfig["top"])
+                  : undefined,
+              })
+            }
+            data-testid={`board-tv-${board.id}-top`}
+          >
+            <option value="">Default · 20</option>
+            {[10, 20, 50].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <TvMotionFields
         value={cfg}
         defaults={motionDefaults(cfg, resolve)}

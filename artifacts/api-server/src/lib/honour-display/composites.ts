@@ -57,7 +57,8 @@ export function buildComposites(
       if (!ref || NON_COMPOSITE_REFS.has(ref.boardId)) continue;
       if (ref.boardId.startsWith("composite:")) continue; // no nesting
       const src = byId.get(ref.boardId);
-      if (!src || src.layout !== "list") continue; // only list boards
+      // Only list-style boards (lists, and leaderboards, which keep list text).
+      if (!src || (src.layout !== "list" && src.layout !== "leaderboard")) continue;
       cols.push({
         heading: (ref.heading ?? "").trim() || src.title,
         entries: src.entries,

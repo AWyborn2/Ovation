@@ -18,7 +18,13 @@ type Board = {
   layout: string;
   title: string;
   subtitle?: string | null;
-  entries: Array<{ primaryText: string; detail?: string | null; season?: string }>;
+  figureLabel?: string | null;
+  entries: Array<{
+    primaryText: string;
+    detail?: string | null;
+    season?: string;
+    meta?: { rank?: number | null; figure?: string | null } | null;
+  }>;
   columns?: Array<{ heading: string; entries: unknown[] }> | null;
   display?: BoardDisplay;
 };
@@ -86,12 +92,16 @@ describe("honour display: Most Games board, display stamps, composites (integrat
 
     const mostGames = bundle.boards.find((b) => b.id === "most_games");
     expect(mostGames).toBeDefined();
-    expect(mostGames!.layout).toBe("list");
+    // A ranked leaderboard (kiosk redesign C1); entries keep a "312 games"
+    // detail so list renderers and composite columns still read it.
+    expect(mostGames!.layout).toBe("leaderboard");
+    expect(mostGames!.figureLabel).toBe("Games");
     expect(mostGames!.entries.length).toBeGreaterThan(0);
-    // Every entry should name a player and report a games count.
     for (const e of mostGames!.entries) {
       expect(e.primaryText.length).toBeGreaterThan(0);
       expect(e.detail ?? "").toMatch(/games/);
+      expect(e.meta?.rank).toBeGreaterThan(0);
+      expect(e.meta?.figure).toMatch(/^[\d,]+$/);
     }
 
     // Every board carries a resolved display stamp.

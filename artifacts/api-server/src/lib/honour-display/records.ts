@@ -22,7 +22,9 @@ import {
 
 import { buildMilestonesForSource } from "../../routes/milestones";
 import type { DataSource } from "../tenant";
-import { buildClubStats, clubCareers, clubRecords, loadClubOverlay } from "../club-overlay";
+import { buildClubStats, clubRecordLeaders, clubRecords, loadClubOverlay } from "../club-overlay";
+import { nativeRecordLeaders, nativeSeasonSpans } from "../records-native";
+import { rankLeaders } from "../records-analytics";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { seasonLabel } from "./premierships";
 import { gradeRank } from "./shared";
@@ -441,65 +443,167 @@ async function buildNativeRecordsByGrade(): Promise<HonourBoardOut[]> {
   return out;
 }
 
-const MOST_GAMES_LIMIT = 50;
+const LEADERBOARD_LIMIT = 50;
 
-function mostGamesBoard(
-  rows: { name: string; games: number; playerId: number | null }[],
-): HonourBoardOut | null {
-  if (rows.length === 0) return null;
-  return {
+/** The four career leaderboards (honours kiosk redesign C1), in display order. */
+export const LEADERBOARDS = [
+  {
+    metric: "games",
     id: "most_games",
-    category: "most_games",
-    layout: "list",
     title: "Most Games Played",
-    subtitle: "Career appearances for the club",
-    entries: rows.map((r, i) => ({
+    subtitle: "Senior games for the club, all grades",
+    figureLabel: "Games",
+    unit: "games",
+  },
+  {
+    metric: "runs",
+    id: "most_runs",
+    title: "Most Runs",
+    subtitle: "Senior career runs for the club, all grades",
+    figureLabel: "Runs",
+    unit: "runs",
+  },
+  {
+    metric: "wickets",
+    id: "most_wickets",
+    title: "Most Wickets",
+    subtitle: "Senior career wickets for the club, all grades",
+    figureLabel: "Wickets",
+    unit: "wickets",
+  },
+  {
+    metric: "catches",
+    id: "most_catches",
+    title: "Most Catches",
+    subtitle: "Senior career catches for the club, all grades",
+    figureLabel: "Catches",
+    unit: "catches",
+  },
+] as const;
+export type LeaderboardDef = (typeof LEADERBOARDS)[number];
+
+export interface LeaderboardRow {
+  name: string;
+  value: number;
+  playerId: number | null;
+  /** First and last season (start years) for the club, when known. */
+  firstSeason?: number | null;
+  lastSeason?: number | null;
+}
+
+/** "2009–25" for 2009/10 to 2024/25; "2024/25" for one season; "" when unknown. */
+export function seasonSpan(first: number | null | undefined, last: number | null | undefined) {
+  if (first == null || last == null) return "";
+  if (first === last) return seasonLabel(first);
+  return `${first}–${String((last + 1) % 100).padStart(2, "0")}`;
+}
+
+/**
+ * One leaderboard board from rows sorted highest first: top 50, tied values
+ * share a rank. Entries keep a "312 games" detail so list renderers (composite
+ * columns, the public display) still read sensibly.
+ */
+export function leaderboardBoard(
+  def: LeaderboardDef,
+  rows: LeaderboardRow[],
+): HonourBoardOut | null {
+  const ranked = rankLeaders(rows, LEADERBOARD_LIMIT);
+  if (ranked.length === 0) return null;
+  return {
+    id: def.id,
+    category: def.id,
+    layout: "leaderboard",
+    title: def.title,
+    subtitle: def.subtitle,
+    figureLabel: def.figureLabel,
+    entries: ranked.map((r) => ({
       season: "",
       primaryText: r.name,
-      detail: `${r.games} games`,
+      detail: `${r.value} ${def.unit}`,
       playerId: r.playerId,
-      meta: { rank: i + 1 },
+      meta: {
+        rank: r.rank,
+        figure: r.value.toLocaleString("en-AU"),
+        seasonSpan: seasonSpan(r.firstSeason, r.lastSeason) || null,
+      },
     })),
   };
 }
 
 /**
- * Most career appearances for the club. Native: real players only
- * (id < FILL_IN_THRESHOLD), games > 0. Central: the tenant club's senior
- * careers from central, private and unnamed players left out, linked through
- * the tenant's crosswalk.
+ * Career leaderboards: most games, runs, wickets and catches (senior only,
+ * fill-ins excluded, private players never shown). Central tenants read the
+ * same overlay-aware leaders as the Records page; the native tenant reads its
+ * own stats tables.
  */
-export async function buildMostGames(source: DataSource): Promise<HonourBoardOut | null> {
-  if (source.kind === "central") return buildCentralMostGames(source);
-  return buildNativeMostGames();
+export async function buildLeaderboards(source: DataSource): Promise<HonourBoardOut[]> {
+  const boards =
+    source.kind === "central"
+      ? await buildCentralLeaderboards(source)
+      : await buildNativeLeaderboards();
+  return boards.filter((b): b is HonourBoardOut => b !== null);
 }
 
-async function buildCentralMostGames(
+async function buildCentralLeaderboards(
   source: Extract<DataSource, { kind: "central" }>,
-): Promise<HonourBoardOut | null> {
-  const { centralPlayerCareers } = await import("@workspace/db/central-queries");
-  // Confirmed merges fold into the keeper: a merged pair's games are one career.
+): Promise<(HonourBoardOut | null)[]> {
+  const { centralRecordLeaders } = await import("@workspace/db/central-queries");
+  // Confirmed merges fold into the keeper: a merged pair ranks as one player.
   const overlay = await loadClubOverlay(source.tenantId);
   const stats = overlay.active
     ? await buildClubStats(overlay, source.tenantId, source.clubId)
     : null;
   const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
-  const careers = stats
-    ? clubCareers(stats)
-    : await centralPlayerCareers(source.clubId, undefined, overlay.identity.merges);
-  const rows = careers
-    .filter((c) => !c.isPrivate && c.games > 0 && (c.displayName ?? "").trim() !== "")
-    .map((c) => ({
-      name: c.displayName!.trim(),
-      games: c.games,
-      playerId: intByGuid.get(c.participantId) ?? null,
-    }))
-    .sort((a, b) => b.games - a.games || a.name.localeCompare(b.name))
-    .slice(0, MOST_GAMES_LIMIT);
-  return mostGamesBoard(rows);
+  return Promise.all(
+    LEADERBOARDS.map(async (def) => {
+      const leaders = stats
+        ? clubRecordLeaders(stats, def.metric)
+        : await centralRecordLeaders(source.clubId, def.metric, {}, overlay.identity.merges);
+      const rows = leaders
+        .filter((l) => (l.displayName ?? "").trim() !== "")
+        .map((l) => ({
+          name: l.displayName!.trim(),
+          value: l.value,
+          playerId: intByGuid.get(l.participantId) ?? null,
+          firstSeason: l.firstSeason ?? null,
+          lastSeason: l.lastSeason,
+        }));
+      return leaderboardBoard(def, rows);
+    }),
+  );
 }
 
-async function buildNativeMostGames(): Promise<HonourBoardOut | null> {
+async function buildNativeLeaderboards(): Promise<(HonourBoardOut | null)[]> {
+  return Promise.all(
+    LEADERBOARDS.map(async (def) => {
+      const rows =
+        def.metric === "games"
+          ? await nativeMostGames()
+          : (await nativeRecordLeaders(def.metric, {}))
+              .slice(0, LEADERBOARD_LIMIT * 2)
+              .map((r) => ({
+                name: `${r.givenName ?? ""} ${r.surname}`.trim(),
+                value: r.value,
+                playerId: r.playerId,
+              }));
+      const spans = await nativeSeasonSpans(
+        rows
+          .slice(0, LEADERBOARD_LIMIT * 2)
+          .flatMap((r) => (r.playerId != null ? [r.playerId] : [])),
+      );
+      return leaderboardBoard(
+        def,
+        rows.map((r) => {
+          const span = r.playerId != null ? spans.get(r.playerId) : undefined;
+          return { ...r, firstSeason: span?.first ?? null, lastSeason: span?.last ?? null };
+        }),
+      );
+    }),
+  );
+}
+
+/** Native career games: real players only (id < FILL_IN_THRESHOLD), games > 0. */
+async function nativeMostGames(): Promise<LeaderboardRow[]> {
   const rows = await db
     .select({
       id: playersTable.id,
@@ -510,12 +614,10 @@ async function buildNativeMostGames(): Promise<HonourBoardOut | null> {
     .from(playersTable)
     .where(and(lt(playersTable.id, FILL_IN_THRESHOLD), gt(playersTable.totalGames, 0)))
     .orderBy(desc(playersTable.totalGames), asc(playersTable.surname))
-    .limit(MOST_GAMES_LIMIT);
-  return mostGamesBoard(
-    rows.map((r) => ({
-      name: `${r.givenName ?? ""} ${r.surname}`.trim(),
-      games: r.totalGames ?? 0,
-      playerId: r.id,
-    })),
-  );
+    .limit(LEADERBOARD_LIMIT * 2);
+  return rows.map((r) => ({
+    name: `${r.givenName ?? ""} ${r.surname}`.trim(),
+    value: r.totalGames ?? 0,
+    playerId: r.id,
+  }));
 }
