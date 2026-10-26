@@ -1784,6 +1784,9 @@
   height: 100%;
   object-fit: contain;
 }
+.hb-photo-slide[data-frame="fill"] .hb-photo-slide-img {
+  object-fit: cover;
+}
 .hb-photo-slide-crest {
   position: absolute;
   top: clamp(16px, 3vh, 40px);

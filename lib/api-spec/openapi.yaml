@@ -22241,10 +22241,11 @@ components:
             child may be shown in), or both.
         source:
           type: string
-          enum: [all, recent, season, types, grades]
+          enum: [all, recent, season, types, grades, folders, picked]
           description: >-
-            The whole library, the last recentDays, this season, or photos
-            with any of types / grades.
+            The whole library, the last recentDays, this season, photos with
+            any of types / grades, photos in any of folders, or the picked
+            photos (each names its library).
         recentDays:
           type: integer
           nullable: true
@@ -22260,9 +22261,24 @@ components:
           nullable: true
           items:
             type: string
+        folders:
+          type: array
+          nullable: true
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/KioskSlideshowFolder"
+        picked:
+          type: array
+          nullable: true
+          maxItems: 60
+          items:
+            $ref: "#/components/schemas/KioskSlideshowPick"
         order:
           type: string
-          enum: [random, newest]
+          enum: [random, newest, manual]
+          description: >-
+            Random picks afresh each pass; newest works down the newest
+            photos; manual keeps the picked order.
         perPass:
           type: integer
           minimum: 1
@@ -22275,6 +22291,51 @@ components:
         captions:
           type: boolean
           description: Grade and season under each photo (never names).
+        frame:
+          type: string
+          nullable: true
+          enum: [fill, whole]
+          description: >-
+            fill crops each photo to the screen (the default); whole shows the
+            whole photo over a blurred fill.
+        crossfade:
+          type: boolean
+          nullable: true
+          description: Cross-fade between photos (default on); off cuts.
+        interludeEvery:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 20
+          description: >-
+            Photo interludes: also show one photo from this slideshow after
+            every N boards. Null = off.
+
+    KioskSlideshowFolder:
+      type: object
+      required: [grade]
+      description: >-
+        A photo library folder: grade is a grade name or "club-wide" (no
+        grade); type is a photo type, "unsorted" (no type) or null for the
+        whole grade folder.
+      properties:
+        grade:
+          type: string
+          maxLength: 80
+        type:
+          type: string
+          nullable: true
+          maxLength: 40
+
+    KioskSlideshowPick:
+      type: object
+      required: [library, id]
+      properties:
+        library:
+          type: string
+          enum: [senior, junior]
+        id:
+          type: integer
 
     KioskSlideshowPhoto:
       type: object

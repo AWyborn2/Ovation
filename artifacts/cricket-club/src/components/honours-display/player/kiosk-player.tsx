@@ -160,8 +160,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
   const mounted = useRef(new Map<number, () => void>());
   // Aborted to cut the current item short (a video ad that fails to load).
   const skipRef = useRef<AbortController | null>(null);
-  // Passes each slideshow has played, so "newest" works down its photos.
-  const passes = useRef(new Map<string, number>());
+  // Photos each slideshow has shown, so "newest" and "manual" work down the list.
+  const shownCount = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
     for (const s of layers) {
@@ -369,10 +369,11 @@ export function KioskPlayer(props: KioskPlayerProps) {
 
     /** One pass of a slideshow: each photo cross-fades in once it has loaded. */
     async function playPhotos(item: PhotosItem, signal: AbortSignal) {
-      const pass = passes.current.get(item.slideshow.id) ?? 0;
-      passes.current.set(item.slideshow.id, pass + 1);
+      const cursor = shownCount.current.get(item.slideshow.id) ?? 0;
+      const photos = slideshowPass(item, cursor);
+      shownCount.current.set(item.slideshow.id, cursor + photos.length);
       const secs = Math.max(2, item.slideshow.secondsPerPhoto);
-      const photos = slideshowPass(item, pass);
+      const fade = item.slideshow.crossfade !== false && !reduced();
       let next = preloadImage(photos[0]!.url, signal);
       let shown = 0;
       for (let k = 0; k < photos.length; k++) {
@@ -381,7 +382,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
         // Start loading the next photo while this one shows.
         if (k + 1 < photos.length) next = preloadImage(photos[k + 1]!.url, signal);
         if (!ok) continue;
-        await enter({ item, photo: photos[k], scale: 1 }, signal, reduced() ? "cut" : "fade");
+        await enter({ item, photo: photos[k], scale: 1 }, signal, fade ? "fade" : "cut");
         await sleep(secs * 1000, signal);
         shown++;
       }
@@ -460,7 +461,12 @@ export function KioskPlayer(props: KioskPlayerProps) {
               <SponsorSlide sponsors={sponsors} brand={brand} />
             )
           ) : s.item.kind === "photos" && s.photo ? (
-            <PhotoSlide photo={s.photo} brand={brand} captions={s.item.slideshow.captions} />
+            <PhotoSlide
+              photo={s.photo}
+              brand={brand}
+              captions={s.item.slideshow.captions}
+              frame={s.item.slideshow.frame ?? "fill"}
+            />
           ) : s.item.kind === "ad" ? (
             <AdSlide ad={s.item.ad} onError={() => skipRef.current?.abort()} />
           ) : null}

@@ -137,19 +137,45 @@ export interface KioskPhotoSlideshowJson {
   name: string;
   // Which library: senior club photos, the junior library (consent-checked), or both.
   library: "senior" | "junior" | "both";
-  // Which photos: the whole library, the last `recentDays`, this season, or
-  // ones with any of `types` / `grades`.
-  source: "all" | "recent" | "season" | "types" | "grades";
+  // Which photos: the whole library, the last `recentDays`, this season, ones
+  // with any of `types` / `grades`, ones in any of `folders`, or the `picked`
+  // photos (which name their own library).
+  source: "all" | "recent" | "season" | "types" | "grades" | "folders" | "picked";
   recentDays?: number | null;
   types?: string[] | null;
   grades?: string[] | null;
-  // "random" shuffles each pass; "newest" shows the newest first.
-  order: "random" | "newest";
+  folders?: KioskSlideshowFolderJson[] | null;
+  picked?: KioskSlideshowPickJson[] | null;
+  // "random" shuffles each pass; "newest" shows the newest first; "manual"
+  // keeps the picked order.
+  order: "random" | "newest" | "manual";
   // Photos shown each time the slideshow comes round.
   perPass: number;
   secondsPerPhoto: number;
   // Grade and season under each photo (never names).
   captions: boolean;
+  // "fill" crops to the screen (the default); "whole" shows the whole photo
+  // over a blurred fill.
+  frame?: "fill" | "whole" | null;
+  // Cross-fade between photos (default on); off cuts.
+  crossfade?: boolean | null;
+  // Photo interludes (kiosk-photo-rotation P1): also show one photo from this
+  // slideshow after every N boards. Null/absent = off.
+  interludeEvery?: number | null;
+}
+
+// A library folder (the photo library's grade / type view): `grade` is a grade
+// name or "club-wide" (no grade); `type` is a photo type, "unsorted" (no type)
+// or null for the whole grade folder.
+export interface KioskSlideshowFolderJson {
+  grade: string;
+  type?: string | null;
+}
+
+// One hand-picked photo: its library and id.
+export interface KioskSlideshowPickJson {
+  library: "senior" | "junior";
+  id: number;
 }
 
 // An admin-authored skin/theme. Built-in skins (p1..p8) are CSS-only and not

@@ -5,9 +5,12 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { KioskPhotoSlideshowFrame } from './kioskPhotoSlideshowFrame';
 import type { KioskPhotoSlideshowLibrary } from './kioskPhotoSlideshowLibrary';
 import type { KioskPhotoSlideshowOrder } from './kioskPhotoSlideshowOrder';
 import type { KioskPhotoSlideshowSource } from './kioskPhotoSlideshowSource';
+import type { KioskSlideshowFolder } from './kioskSlideshowFolder';
+import type { KioskSlideshowPick } from './kioskSlideshowPick';
 
 export interface KioskPhotoSlideshow {
   /** "photos:<uuid>"; the rotation places it by this id. */
@@ -16,7 +19,7 @@ export interface KioskPhotoSlideshow {
   name: string;
   /** Senior club photos, the junior library (only photos every tagged child may be shown in), or both. */
   library: KioskPhotoSlideshowLibrary;
-  /** The whole library, the last recentDays, this season, or photos with any of types / grades. */
+  /** The whole library, the last recentDays, this season, photos with any of types / grades, photos in any of folders, or the picked photos (each names its library). */
   source: KioskPhotoSlideshowSource;
   /**
      * @minimum 1
@@ -25,6 +28,11 @@ export interface KioskPhotoSlideshow {
   recentDays?: number | null;
   types?: string[] | null;
   grades?: string[] | null;
+  /** @maxItems 50 */
+  folders?: KioskSlideshowFolder[] | null;
+  /** @maxItems 60 */
+  picked?: KioskSlideshowPick[] | null;
+  /** Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order. */
   order: KioskPhotoSlideshowOrder;
   /**
      * Photos shown each time the slideshow comes round.
@@ -39,4 +47,14 @@ export interface KioskPhotoSlideshow {
   secondsPerPhoto: number;
   /** Grade and season under each photo (never names). */
   captions: boolean;
+  /** fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill. */
+  frame?: KioskPhotoSlideshowFrame;
+  /** Cross-fade between photos (default on); off cuts. */
+  crossfade?: boolean | null;
+  /**
+     * Photo interludes: also show one photo from this slideshow after every N boards. Null = off.
+     * @minimum 1
+     * @maximum 20
+     */
+  interludeEvery?: number | null;
 }

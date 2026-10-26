@@ -443,17 +443,26 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   };
 
   // ---- Photo slideshows (D2) --------------------------------------------
-  /** Add a slideshow with sensible defaults and place it at the end of the rotation. */
-  const addSlideshow = () => {
+  /**
+   * Add a slideshow with sensible defaults and place it at the end of the
+   * rotation. The "recent" preset is the plan's one-click Recent moments: the
+   * last 21 days from both libraries, random.
+   */
+  const addSlideshow = (preset: "default" | "recent" = "default") => {
     const id = `photos:${crypto.randomUUID()}`;
     setSlideshows((prev) => [
       ...prev,
       {
         id,
-        name: prev.length ? `Photos ${prev.length + 1}` : "Club photos",
-        library: "senior",
-        source: "all",
-        recentDays: null,
+        name:
+          preset === "recent"
+            ? "Recent moments"
+            : prev.length
+              ? `Photos ${prev.length + 1}`
+              : "Club photos",
+        library: preset === "recent" ? "both" : "senior",
+        source: preset === "recent" ? "recent" : "all",
+        recentDays: preset === "recent" ? 21 : null,
         types: null,
         grades: null,
         order: "random",

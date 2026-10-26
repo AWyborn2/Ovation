@@ -26,12 +26,14 @@ export type RotationItem =
   // A sponsor slide: `sponsor` set → one large sponsor; null → grid of all.
   | { kind: "sponsor"; key: string; sponsor: Sponsor | null }
   | { kind: "ad"; key: string; ad: KioskAd }
-  // A photo slideshow: the server-picked photos; the player shows `perPass` a pass.
+  // A photo slideshow: the server-picked photos; the player shows `perPass` a
+  // pass, or one for a photo interlude.
   | {
       kind: "photos";
       key: string;
       slideshow: KioskPhotoSlideshow;
       photos: KioskSlideshowPhoto[];
+      interlude?: boolean;
     };
 
 export interface RotationInput {
@@ -81,7 +83,8 @@ export function boardItem(
  * for a photo slideshow, skipped while it has no photos); empty means
  * every board in order. When sponsor slides are on, one is also inserted after
  * every N boards (and at least once). A "single" sponsor style shows each
- * sponsor on its own slide in turn.
+ * sponsor on its own slide in turn. A slideshow with `interludeEvery` set also
+ * shows one of its photos after every N boards (photo interludes).
  */
 export function buildRotation(input: RotationInput): RotationItem[] {
   const { boards, settings, look, sponsors, ads, sponsorSlides } = input;
@@ -94,6 +97,9 @@ export function buildRotation(input: RotationInput): RotationItem[] {
   const out: RotationItem[] = [];
   let boardCount = 0;
   let autoCount = 0;
+  const interludes = slideshows.filter(
+    (s) => s.interludeEvery && (input.slideshowPhotos?.[s.id]?.length ?? 0) > 0,
+  );
 
   const pushSponsor = (keyBase: string) => {
     if (!sponsors.length) return;
@@ -129,6 +135,17 @@ export function buildRotation(input: RotationInput): RotationItem[] {
     out.push(boardItem(board, settings, look, `board:${board.id}:${i}`));
     boardCount++;
     if (sponsorSlides && boardCount % every === 0) pushSponsor(`auto-sponsor:${autoCount++}`);
+    for (const s of interludes) {
+      if (boardCount % s.interludeEvery! === 0) {
+        out.push({
+          kind: "photos",
+          key: `interlude:${s.id}:${i}`,
+          slideshow: s,
+          photos: input.slideshowPhotos![s.id]!,
+          interlude: true,
+        });
+      }
+    }
   });
 
   if (sponsorSlides && autoCount === 0 && out.some((f) => f.kind === "board")) {
@@ -138,17 +155,18 @@ export function buildRotation(input: RotationInput): RotationItem[] {
 }
 
 /**
- * The photos one pass of a slideshow shows: `perPass` of them, a fresh random
- * pick each pass, or the newest working down the list pass by pass (`pass`
- * counts the slideshow's passes so far).
+ * The photos one pass of a slideshow shows: `perPass` of them (one for an
+ * interlude), a fresh random pick each pass, or otherwise working down the
+ * list (newest or the picked order) from `cursor`, the number of this
+ * slideshow's photos shown so far.
  */
 export function slideshowPass(
   item: Extract<RotationItem, { kind: "photos" }>,
-  pass: number,
+  cursor: number,
   random: () => number = Math.random,
 ): KioskSlideshowPhoto[] {
   const { photos, slideshow } = item;
-  const n = Math.min(Math.max(1, slideshow.perPass), photos.length);
+  const n = item.interlude ? 1 : Math.min(Math.max(1, slideshow.perPass), photos.length);
   if (slideshow.order === "random") {
     const pool = [...photos];
     for (let k = pool.length - 1; k > 0; k--) {
@@ -157,6 +175,6 @@ export function slideshowPass(
     }
     return pool.slice(0, n);
   }
-  const start = (pass * n) % photos.length;
+  const start = cursor % photos.length;
   return Array.from({ length: n }, (_, k) => photos[(start + k) % photos.length]!);
 }

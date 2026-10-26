@@ -3,6 +3,7 @@ import type { KioskPhotoSlideshow } from "@workspace/api-client-react";
 import { PHOTO_TYPES, PHOTO_TYPE_LABELS } from "@workspace/scorecard";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
+import { FoldersField, PickedPhotosField } from "./slideshow-photo-picker";
 
 const LIBRARY_LABEL: Record<KioskPhotoSlideshow["library"], string> = {
   senior: "Club photo library",
@@ -16,7 +17,11 @@ const SOURCE_LABEL: Record<KioskPhotoSlideshow["source"], string> = {
   season: "This season",
   types: "Photo types",
   grades: "Grades",
+  folders: "Library folders",
+  picked: "Hand-picked photos",
 };
+
+const INTERLUDE_EVERY = [1, 2, 3, 4, 5, 6, 8, 10];
 
 const PER_PASS = [5, 10, 15, 20, 30];
 const SECONDS = [4, 6, 8, 10, 15];
@@ -51,15 +56,17 @@ export function SlideshowPanel({
           data-testid={id("name")}
         />
       </Field>
-      <Field label="Photos from" htmlFor={id("library")}>
-        <Select
-          id={id("library")}
-          value={s.library}
-          options={LIBRARY_LABEL}
-          onChange={(library) => patch({ library })}
-        />
-      </Field>
-      {s.library !== "senior" && (
+      {s.source !== "picked" && (
+        <Field label="Photos from" htmlFor={id("library")}>
+          <Select
+            id={id("library")}
+            value={s.library}
+            options={LIBRARY_LABEL}
+            onChange={(library) => patch({ library })}
+          />
+        </Field>
+      )}
+      {(s.library !== "senior" || s.source === "picked") && (
         <p className="text-[11px] text-muted-foreground">
           A junior photo only shows when every child tagged in it may be shown, and it stops showing
           as soon as a family withdraws.
@@ -70,9 +77,29 @@ export function SlideshowPanel({
           id={id("source")}
           value={s.source}
           options={SOURCE_LABEL}
-          onChange={(source) => patch({ source })}
+          onChange={(source) =>
+            patch({
+              source,
+              // Manual order only means something for picked photos.
+              ...(source !== "picked" && s.order === "manual" ? { order: "random" } : {}),
+            })
+          }
         />
       </Field>
+      {s.source === "picked" && (
+        <PickedPhotosField
+          idPrefix={id("pick")}
+          picked={s.picked ?? []}
+          onChange={(picked) => patch({ picked })}
+        />
+      )}
+      {s.source === "folders" && (
+        <FoldersField
+          idPrefix={id("folders")}
+          folders={s.folders ?? []}
+          onChange={(folders) => patch({ folders })}
+        />
+      )}
       {s.source === "recent" && (
         <Field label="Taken in the last (days)" htmlFor={id("days")}>
           <input
@@ -136,7 +163,11 @@ export function SlideshowPanel({
           <Select
             id={id("order")}
             value={s.order}
-            options={{ random: "Random", newest: "Newest first" }}
+            options={
+              s.source === "picked"
+                ? { manual: "As picked", random: "Random", newest: "Newest first" }
+                : { random: "Random", newest: "Newest first" }
+            }
             onChange={(order) => patch({ order })}
           />
         </Field>
@@ -183,7 +214,48 @@ export function SlideshowPanel({
           />
           Grade and season captions
         </label>
+        <Field label="Framing" htmlFor={id("frame")}>
+          <Select
+            id={id("frame")}
+            value={s.frame ?? "fill"}
+            options={{ fill: "Fill the screen", whole: "Whole photo" }}
+            onChange={(frame) => patch({ frame })}
+          />
+        </Field>
+        <label className="flex items-center gap-2 self-end pb-1.5 text-sm">
+          <input
+            type="checkbox"
+            checked={s.crossfade !== false}
+            onChange={(e) => patch({ crossfade: e.target.checked })}
+            data-testid={id("crossfade")}
+          />
+          Cross-fade between photos
+        </label>
       </div>
+      <Field label="Photo interludes" htmlFor={id("interlude")}>
+        <select
+          id={id("interlude")}
+          className="w-full rounded border bg-card px-2 py-1.5 text-sm"
+          value={s.interludeEvery ?? ""}
+          onChange={(e) =>
+            patch({ interludeEvery: e.target.value ? Number(e.target.value) : null })
+          }
+          data-testid={id("interlude")}
+        >
+          <option value="">Off</option>
+          {INTERLUDE_EVERY.map((n) => (
+            <option key={n} value={n}>
+              One photo after {n === 1 ? "every board" : `every ${n} boards`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {s.interludeEvery ? (
+        <p className="text-[11px] text-muted-foreground">
+          Between boards the TV also shows one photo from this slideshow, even when the slideshow
+          itself isn’t in the rotation.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3">
         <p className="text-[11px] text-muted-foreground" data-testid={id("count")}>
           {count == null
@@ -233,7 +305,7 @@ function Select<T extends string>({
 }: {
   id: string;
   value: T;
-  options: Record<T, string>;
+  options: Partial<Record<T, string>>;
   onChange: (v: T) => void;
 }) {
   return (

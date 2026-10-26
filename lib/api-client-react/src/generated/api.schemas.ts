@@ -7894,7 +7894,7 @@ export const KioskPhotoSlideshowLibrary = {
 } as const;
 
 /**
- * The whole library, the last recentDays, this season, or photos with any of types / grades.
+ * The whole library, the last recentDays, this season, photos with any of types / grades, photos in any of folders, or the picked photos (each names its library).
  */
 export type KioskPhotoSlideshowSource = typeof KioskPhotoSlideshowSource[keyof typeof KioskPhotoSlideshowSource];
 
@@ -7905,15 +7905,55 @@ export const KioskPhotoSlideshowSource = {
   season: 'season',
   types: 'types',
   grades: 'grades',
+  folders: 'folders',
+  picked: 'picked',
 } as const;
 
+/**
+ * Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.
+ */
 export type KioskPhotoSlideshowOrder = typeof KioskPhotoSlideshowOrder[keyof typeof KioskPhotoSlideshowOrder];
 
 
 export const KioskPhotoSlideshowOrder = {
   random: 'random',
   newest: 'newest',
+  manual: 'manual',
 } as const;
+
+/**
+ * fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.
+ */
+export type KioskPhotoSlideshowFrame = typeof KioskPhotoSlideshowFrame[keyof typeof KioskPhotoSlideshowFrame] | null;
+
+
+export const KioskPhotoSlideshowFrame = {
+  fill: 'fill',
+  whole: 'whole',
+} as const;
+
+/**
+ * A photo library folder: grade is a grade name or "club-wide" (no grade); type is a photo type, "unsorted" (no type) or null for the whole grade folder.
+ */
+export interface KioskSlideshowFolder {
+  /** @maxLength 80 */
+  grade: string;
+  /** @maxLength 40 */
+  type?: string | null;
+}
+
+export type KioskSlideshowPickLibrary = typeof KioskSlideshowPickLibrary[keyof typeof KioskSlideshowPickLibrary];
+
+
+export const KioskSlideshowPickLibrary = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+export interface KioskSlideshowPick {
+  library: KioskSlideshowPickLibrary;
+  id: number;
+}
 
 export interface KioskPhotoSlideshow {
   /** "photos:<uuid>"; the rotation places it by this id. */
@@ -7922,7 +7962,7 @@ export interface KioskPhotoSlideshow {
   name: string;
   /** Senior club photos, the junior library (only photos every tagged child may be shown in), or both. */
   library: KioskPhotoSlideshowLibrary;
-  /** The whole library, the last recentDays, this season, or photos with any of types / grades. */
+  /** The whole library, the last recentDays, this season, photos with any of types / grades, photos in any of folders, or the picked photos (each names its library). */
   source: KioskPhotoSlideshowSource;
   /**
      * @minimum 1
@@ -7931,6 +7971,11 @@ export interface KioskPhotoSlideshow {
   recentDays?: number | null;
   types?: string[] | null;
   grades?: string[] | null;
+  /** @maxItems 50 */
+  folders?: KioskSlideshowFolder[] | null;
+  /** @maxItems 60 */
+  picked?: KioskSlideshowPick[] | null;
+  /** Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order. */
   order: KioskPhotoSlideshowOrder;
   /**
      * Photos shown each time the slideshow comes round.
@@ -7945,6 +7990,16 @@ export interface KioskPhotoSlideshow {
   secondsPerPhoto: number;
   /** Grade and season under each photo (never names). */
   captions: boolean;
+  /** fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill. */
+  frame?: KioskPhotoSlideshowFrame;
+  /** Cross-fade between photos (default on); off cuts. */
+  crossfade?: boolean | null;
+  /**
+     * Photo interludes: also show one photo from this slideshow after every N boards. Null = off.
+     * @minimum 1
+     * @maximum 20
+     */
+  interludeEvery?: number | null;
 }
 
 export interface KioskSlideshowPhoto {

@@ -7,7 +7,7 @@
  */
 
 /**
- * The whole library, the last recentDays, this season, or photos with any of types / grades.
+ * The whole library, the last recentDays, this season, photos with any of types / grades, photos in any of folders, or the picked photos (each names its library).
  */
 export type KioskPhotoSlideshowSource = typeof KioskPhotoSlideshowSource[keyof typeof KioskPhotoSlideshowSource];
 
@@ -18,4 +18,6 @@ export const KioskPhotoSlideshowSource = {
   season: 'season',
   types: 'types',
   grades: 'grades',
+  folders: 'folders',
+  picked: 'picked',
 } as const;
