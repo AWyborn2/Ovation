@@ -55,3 +55,13 @@ Each stage is complete and safe on its own, because `main` is what Ash publishes
   when a list is set to show them. Junior cards keep their privacy rules.
 - **D5:** Applying a changed template to waiting drafts (ADR-002) skips drafts whose design was
   edited by hand. To come with stage 2.
+- **D6 (stage 4):** Performances come as two lists, batting and bowling, not one "both" list:
+  one row design can't show runs and figures in the same cells.
+- **D7 (stage 4):** A list's "whose" setting applies to performance lists only. Single-innings
+  lists are one side's already, so only "how many" and "sort" apply to them.
+- **D8 (stage 4):** Performance lists don't spill onto extra slides, because they aren't in the
+  card's data. The list's box and its "how many" setting limit the rows, so an "All" list longer
+  than its box is cut off.
+- **D9 (stage 2):** "Make a carousel set" makes a free set from the design: the design as page 1
+  and a copy as page 2. Every page draws the card's own data, and the draft posts one slide per
+  page.
