@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearch } from "wouter";
+import { Redirect, useParams, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
@@ -122,6 +122,7 @@ import {
   type LayerDocument,
 } from "@workspace/scorecard/kind-templates";
 import { DraftDesignEditor } from "./admin-draft-design-editor";
+import { setDraftLayout } from "@/lib/set-draft";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { resolvePackIdForKind } from "@/lib/card-template";
@@ -211,6 +212,10 @@ export default function AdminStudioEditor() {
   // A draft made from a template edits its own copy of the design in the full
   // editor (full draft editor plan, stage 1). Carousel sets have their own editor,
   // and drafts on the older packs keep this one.
+  // A card made into pages (stage 2) edits in the set editor.
+  if (draft.templateVersion != null && setDraftLayout(draft) === "pages") {
+    return <Redirect to={`/admin/social/set/${draft.id}`} />;
+  }
   if (draft.templateVersion != null && !isSetDocument(draft.adjustments)) {
     return (
       <DraftDesignEditor

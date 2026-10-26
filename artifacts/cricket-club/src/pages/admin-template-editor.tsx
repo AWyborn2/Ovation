@@ -1538,7 +1538,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             enterScope(null);
           }}
           addOptions={[
-            { id: "blank", label: "Blank page", detail: `A page drawn like ${cur.label}, no data` },
+            {
+              id: "blank",
+              label: "Blank page",
+              // A draft's own pages all draw its card's data (stage 2).
+              detail: draftMode
+                ? `A page drawn like ${cur.label}`
+                : `A page drawn like ${cur.label}, no data`,
+            },
             ...(setNow?.arrangement?.removed ?? []).map((key) => ({
               id: `restore:${key}`,
               label: "Restore a deleted slide",

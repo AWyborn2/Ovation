@@ -1,6 +1,6 @@
 /** The full draft editor's helpers (full draft editor plan, stage 1). */
 import { describe, expect, it } from "vitest";
-import { withRootLayersOnPage } from "@/pages/admin-draft-design-editor";
+import { withRootLayersOnPage } from "@/lib/draft-design";
 import { contentLabel } from "../layers-drawer";
 
 describe("withRootLayersOnPage", () => {

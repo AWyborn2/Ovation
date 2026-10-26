@@ -12464,8 +12464,8 @@ export const GetDraftSetDesignParams = zod.object({
 
 export const GetDraftSetDesignResponse = zod.object({
   "draftId": zod.number(),
-  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary']),
-  "layout": zod.enum(['carousel', 'list']).describe('`carousel`: a queued set whose slides are stored (their order is the payload\'s); `list`: a list card whose slides are worked out from its data (their order is the design\'s arrangement).'),
+  "setType": zod.enum(['teamLists', 'results', 'matchDay', 'matchSummary', 'free']),
+  "layout": zod.enum(['carousel', 'list', 'pages']).describe('`carousel`: a queued set whose slides are stored (their order is the payload\'s); `list`: a list card whose slides are worked out from its data (their order is the design\'s arrangement); `pages`: a card made into a free set of design pages, each drawn with the card\'s own data (full draft editor plan, stage 2).'),
   "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
   "templateRef": zod.object({
   "copyId": zod.number().optional(),

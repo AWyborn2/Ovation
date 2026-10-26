@@ -42,6 +42,7 @@ import {
 import { SetPageThumb, useLibraryPreviewData } from "@/components/template-library/previews";
 import { draftHeading } from "@/components/social-queue/draft-meta";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
+import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { setDraftSlides } from "@/lib/set-draft";
 import type { CardSize } from "@/lib/share-card";
 import {
@@ -123,7 +124,12 @@ function SetDraftEditor({
   onReload: () => Promise<void>;
 }) {
   const qc = useQueryClient();
-  const { data: brand } = useKindTemplateData("matchDay", { photoUrl: null });
+  const { data: club } = useKindTemplateData("matchDay", { photoUrl: null });
+  // A card made into pages (stage 2) draws its own card on every page, with
+  // the draft editor's content panels beside the editor's.
+  const pages = design.layout === "pages";
+  const content = useDraftContent(draft);
+  const brand = pages ? content.data : club;
   const [size, setSize] = useState<CardSize>((design.size ?? "square") as CardSize);
   const [current, setCurrent] = useState(draft);
   const [lookOpen, setLookOpen] = useState(false);
@@ -165,7 +171,7 @@ function SetDraftEditor({
     },
     status: () => (
       <span className="rounded-full bg-[var(--ed-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-ink2)]">
-        {design.layout === "carousel" ? "Queued set" : "Round set"} ·{" "}
+        {design.layout === "carousel" ? "Queued set" : pages ? "Pages" : "Round set"} ·{" "}
         {current.status === "ready" ? "Ready" : "To review"}
       </span>
     ),
@@ -176,11 +182,21 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
+        draftMode={
+          pages
+            ? {
+                input: content.input as unknown as Record<string, unknown>,
+                data: content.data,
+                panels: content.panels,
+              }
+            : undefined
+        }
         slidesMode={{
           slides: (doc) => setDraftSlides(current, doc, brand),
           size,
           onSize: setSize,
-          actions: (
+          // A free set of pages has no look's set to switch to.
+          actions: pages ? undefined : (
             <button
               type="button"
               onClick={() => setLookOpen(true)}

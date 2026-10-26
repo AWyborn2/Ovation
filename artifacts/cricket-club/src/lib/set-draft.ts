@@ -51,10 +51,16 @@ export type SetDraftSlide = {
 export type SetDraftSource = {
   cardInput: unknown;
   sourceMatchIsJunior?: boolean;
+  adjustments?: unknown;
 };
 
-/** Which layout a draft's set is (`null`: not a set the editor opens). */
-export function setDraftLayout(draft: SetDraftSource): "carousel" | "list" | null {
+/**
+ * Which layout a draft's set is (`null`: not a set the editor opens). `pages`:
+ * a card made into a free set of design pages, each drawn with the card's own
+ * data (full draft editor plan, stage 2).
+ */
+export function setDraftLayout(draft: SetDraftSource): "carousel" | "list" | "pages" | null {
+  if (isSetDocument(draft.adjustments) && draft.adjustments.set === "free") return "pages";
   const carousel = readQueuedCarousel(draft.cardInput);
   if (carousel) return carousel.version === 3 ? "carousel" : null;
   const input = (draft.cardInput ?? {}) as Input;
