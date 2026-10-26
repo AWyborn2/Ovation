@@ -113,6 +113,8 @@ describe("photo pick (R5, AE2)", () => {
     expect(pick).toEqual({
       url: `/api/storage/objects/library/action-${STAMP}`,
       source: "auto:library-player",
+      // The player it was picked for, so a group photo crops to their area.
+      playerId: playerIds[0],
     });
   });
 
