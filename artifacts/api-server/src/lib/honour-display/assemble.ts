@@ -25,9 +25,9 @@ import { buildComposites, buildCustomGrids } from "./composites";
 import { buildCaptains, buildCaptainsGrid, buildCommittee, buildLifeMembers } from "./people";
 import { buildPremierships, buildPremiershipsGrid, premParentGrade } from "./premierships";
 import {
-  buildCenturies,
   buildClubRecords,
-  buildFiveWicketHauls,
+  buildHatTricks,
+  buildHonourList,
   buildMilestoneBoard,
   buildLeaderboards,
   buildPartnerships,
@@ -55,6 +55,7 @@ export async function assembleBoards(
     awardWinnersGrid,
     centuries,
     fiveFor,
+    hatTricks,
     lifeMembers,
     captains,
     captainsGrid,
@@ -72,8 +73,9 @@ export async function assembleBoards(
     buildPremiershipsGrid(tenantId, gridCols("premierships_grid")),
     buildAwardBoards(tenantId),
     buildAwardWinnersGrid(tenantId, gridCols("award_winners")),
-    buildCenturies(tenantId),
-    buildFiveWicketHauls(tenantId),
+    buildHonourList("century", source),
+    buildHonourList("fiveFor", source),
+    buildHatTricks(tenantId),
     buildLifeMembers(tenantId),
     buildCaptains(tenantId),
     buildCaptainsGrid(tenantId, gridCols("captains_grid")),
@@ -99,6 +101,7 @@ export async function assembleBoards(
   if (partnerships) boards.push(partnerships);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
+  if (hatTricks) boards.push(hatTricks);
   boards.push(...leaderboards);
   if (milestones) boards.push(milestones);
   boards.push(...awardPoints);

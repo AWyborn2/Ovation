@@ -21,4 +21,6 @@ export interface BoardEntryMeta {
   figure?: string | null;
   /** Seasons the player played for the club, e.g. "2009–25" or "2024/25". */
   seasonSpan?: string | null;
+  /** The side the achievement came against, e.g. "Mandurah". */
+  opponent?: string | null;
 }

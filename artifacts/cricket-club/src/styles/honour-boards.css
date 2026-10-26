@@ -315,6 +315,20 @@
   white-space: nowrap;
   color: var(--hb-muted);
 }
+.hb-table .hb-grade,
+.hb-table .hb-opponent {
+  white-space: nowrap;
+  color: var(--hb-muted);
+}
+/* An achievement list's tally, under its subtitle ("47 centuries"). */
+.hb-tally {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--hb-accent);
+}
 .hb-lead {
   width: 64px;
   white-space: nowrap;
@@ -1127,7 +1141,14 @@
   font-family: var(--hb-title-font);
   color: var(--hb12-gold);
 }
-.skin-p12 .hb-table td.hb-span {
+.skin-p12 .hb-tally {
+  font: 600 0.9cqw var(--hb-title-font);
+  letter-spacing: 0.24em;
+  color: var(--hb12-gold);
+}
+.skin-p12 .hb-table td.hb-span,
+.skin-p12 .hb-table td.hb-grade,
+.skin-p12 .hb-table td.hb-opponent {
   font-style: italic;
   color: rgba(240, 223, 180, 0.7);
 }

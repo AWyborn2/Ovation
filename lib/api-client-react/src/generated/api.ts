@@ -202,6 +202,9 @@ import type {
   GradeDecisionResult,
   GradeDistribution,
   GradeSummary,
+  HatTrick,
+  HatTrickInput,
+  HatTrickUpdate,
   HealthStatus,
   HistoryBoundary,
   HistoryImportBatch,
@@ -5927,6 +5930,299 @@ export const useDeleteLifeMember = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteLifeMemberMutationOptions(options));
+    }
+
+export const getListHatTricksUrl = () => {
+
+
+
+
+  return `/api/hat-tricks`
+}
+
+/**
+ * The club's curated hat-tricks (scorecards can't show them), newest
+season first. Shown on the honours display as an achievement list.
+
+ * @summary List the club's hat-tricks
+ */
+export const listHatTricks = async ( options?: RequestInit): Promise<HatTrick[]> => {
+
+  return customFetch<HatTrick[]>(getListHatTricksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListHatTricksQueryKey = () => {
+    return [
+    `/api/hat-tricks`
+    ] as const;
+    }
+
+
+export const getListHatTricksQueryOptions = <TData = Awaited<ReturnType<typeof listHatTricks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHatTricks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListHatTricksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listHatTricks>>> = ({ signal }) => listHatTricks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listHatTricks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListHatTricksQueryResult = NonNullable<Awaited<ReturnType<typeof listHatTricks>>>
+export type ListHatTricksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the club's hat-tricks
+ */
+
+export function useListHatTricks<TData = Awaited<ReturnType<typeof listHatTricks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listHatTricks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListHatTricksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateHatTrickUrl = () => {
+
+
+
+
+  return `/api/hat-tricks`
+}
+
+/**
+ * @summary Add a hat-trick
+ */
+export const createHatTrick = async (hatTrickInput: HatTrickInput, options?: RequestInit): Promise<HatTrick> => {
+
+  return customFetch<HatTrick>(getCreateHatTrickUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      hatTrickInput,)
+  }
+);}
+
+
+
+
+export const getCreateHatTrickMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHatTrick>>, TError,{data: BodyType<HatTrickInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createHatTrick>>, TError,{data: BodyType<HatTrickInput>}, TContext> => {
+
+const mutationKey = ['createHatTrick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createHatTrick>>, {data: BodyType<HatTrickInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createHatTrick(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateHatTrickMutationResult = NonNullable<Awaited<ReturnType<typeof createHatTrick>>>
+    export type CreateHatTrickMutationBody = BodyType<HatTrickInput>
+    export type CreateHatTrickMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a hat-trick
+ */
+export const useCreateHatTrick = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createHatTrick>>, TError,{data: BodyType<HatTrickInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createHatTrick>>,
+        TError,
+        {data: BodyType<HatTrickInput>},
+        TContext
+      > => {
+      return useMutation(getCreateHatTrickMutationOptions(options));
+    }
+
+export const getUpdateHatTrickUrl = (id: number,) => {
+
+
+
+
+  return `/api/hat-tricks/${id}`
+}
+
+/**
+ * @summary Update a hat-trick
+ */
+export const updateHatTrick = async (id: number,
+    hatTrickUpdate: HatTrickUpdate, options?: RequestInit): Promise<HatTrick> => {
+
+  return customFetch<HatTrick>(getUpdateHatTrickUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      hatTrickUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateHatTrickMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHatTrick>>, TError,{id: number;data: BodyType<HatTrickUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateHatTrick>>, TError,{id: number;data: BodyType<HatTrickUpdate>}, TContext> => {
+
+const mutationKey = ['updateHatTrick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateHatTrick>>, {id: number;data: BodyType<HatTrickUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateHatTrick(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateHatTrickMutationResult = NonNullable<Awaited<ReturnType<typeof updateHatTrick>>>
+    export type UpdateHatTrickMutationBody = BodyType<HatTrickUpdate>
+    export type UpdateHatTrickMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a hat-trick
+ */
+export const useUpdateHatTrick = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateHatTrick>>, TError,{id: number;data: BodyType<HatTrickUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateHatTrick>>,
+        TError,
+        {id: number;data: BodyType<HatTrickUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateHatTrickMutationOptions(options));
+    }
+
+export const getDeleteHatTrickUrl = (id: number,) => {
+
+
+
+
+  return `/api/hat-tricks/${id}`
+}
+
+/**
+ * @summary Delete a hat-trick
+ */
+export const deleteHatTrick = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteHatTrickUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteHatTrickMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHatTrick>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteHatTrick>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteHatTrick'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteHatTrick>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteHatTrick(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteHatTrickMutationResult = NonNullable<Awaited<ReturnType<typeof deleteHatTrick>>>
+
+    export type DeleteHatTrickMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a hat-trick
+ */
+export const useDeleteHatTrick = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteHatTrick>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteHatTrick>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteHatTrickMutationOptions(options));
     }
 
 export const getListPremiershipsUrl = () => {

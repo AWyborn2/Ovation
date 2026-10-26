@@ -227,8 +227,39 @@ const mostRuns: DisplayBoard = {
   display: display(),
 };
 
+// An achievement list (C2): season, player, figure, grade, opponent + tally.
+const centuries: DisplayBoard = {
+  id: "centuries",
+  category: "centuries",
+  layout: "achievements",
+  title: "Centuries",
+  subtitle: "Hundreds for the club",
+  figureLabel: "Score",
+  tallyLabel: "36 centuries",
+  entries: Array.from({ length: 36 }, (_, i) => ({
+    season: season(2025 - Math.floor(i * 0.7)),
+    primaryText: name(i * 5 + 2),
+    detail: `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}`,
+    meta: {
+      figure: `${100 + ((i * 37) % 96)}${i % 4 === 1 ? "*" : ""}`,
+      grade: GRADES[(i * 3) % 4],
+      opponent: OPPONENTS[i % OPPONENTS.length],
+    },
+  })),
+  display: display(),
+};
+
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
-  boards: [premierships, champions, captains, officeBearers, battingRecords, mostRuns, lifeMembers],
+  boards: [
+    premierships,
+    champions,
+    captains,
+    officeBearers,
+    battingRecords,
+    mostRuns,
+    centuries,
+    lifeMembers,
+  ],
   brand: {
     name: "Halls Head Cricket Club",
     shortName: "Halls Head",
@@ -257,6 +288,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
       "batting-records": { move: "fit", trans: "pop" },
       most_runs: { move: "pages", trans: "rows", top: 20 },
+      centuries: { move: "credits", trans: "fade", speed: 160 },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
     },
     composites: [],
