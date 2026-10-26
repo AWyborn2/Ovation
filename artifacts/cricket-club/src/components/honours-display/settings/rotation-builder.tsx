@@ -12,7 +12,7 @@ import {
 } from "./rotation-list";
 
 const KIND_CHIP: Readonly<Record<RotationItemKind, string>> = {
-  board: "bg-primary/10 text-primary",
+  board: "bg-primary/10 text-primary-text",
   sponsor: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
   ad: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
 };
