@@ -184,23 +184,44 @@ export async function setTeamNameOverride(
     await db.delete(teamNameOverridesTable).where(match);
     return;
   }
-  await db
-    .insert(teamNameOverridesTable)
-    .values({ tenantId, centralClubId, gradeKey: grade, shortName: name })
-    .onConflictDoUpdate({
-      // Target the portable partial unique index for all-grades overrides.
-      // Publish may introspect the three-column constraint as ordinary UNIQUE.
-      target:
-        grade === null
-          ? [teamNameOverridesTable.tenantId, teamNameOverridesTable.centralClubId]
-          : [
-              teamNameOverridesTable.tenantId,
-              teamNameOverridesTable.centralClubId,
-              teamNameOverridesTable.gradeKey,
-            ],
-      targetWhere: grade === null ? isNull(teamNameOverridesTable.gradeKey) : undefined,
-      set: { shortName: name, updatedAt: sql`now()` },
-    });
+  const upsert = () =>
+    db
+      .insert(teamNameOverridesTable)
+      .values({ tenantId, centralClubId, gradeKey: grade, shortName: name })
+      .onConflictDoUpdate({
+        // Target the portable partial unique index for all-grades overrides.
+        // Publish may introspect the three-column constraint as ordinary UNIQUE.
+        target:
+          grade === null
+            ? [teamNameOverridesTable.tenantId, teamNameOverridesTable.centralClubId]
+            : [
+                teamNameOverridesTable.tenantId,
+                teamNameOverridesTable.centralClubId,
+                teamNameOverridesTable.gradeKey,
+              ],
+        targetWhere: grade === null ? isNull(teamNameOverridesTable.gradeKey) : undefined,
+        set: { shortName: name, updatedAt: sql`now()` },
+      });
+  // An all-grades row is covered by two unique rules, and ON CONFLICT only
+  // arbitrates on the partial index it targets. Two saves racing for the same
+  // club can both pass that check, and the second then fails on the
+  // three-column constraint once the first commits. Retrying turns it into the
+  // update it should have been (the first save's row now exists).
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await upsert();
+      return;
+    } catch (err) {
+      if (grade !== null || attempt >= 3 || !isAllGradesRaceViolation(err)) throw err;
+    }
+  }
+}
+
+/** The duplicate-key error a racing all-grades save hits (Drizzle wraps the pg error). */
+function isAllGradesRaceViolation(err: unknown): boolean {
+  const e = err as { code?: string; constraint?: string; cause?: unknown } | null;
+  const pg = (e?.code ? e : e?.cause) as { code?: string; constraint?: string } | undefined;
+  return pg?.code === "23505" && pg.constraint === "team_name_overrides_tenant_club_grade_unique";
 }
 
 /** Set (or, with an empty label, clear) the tenant's card label for an app grade. */
