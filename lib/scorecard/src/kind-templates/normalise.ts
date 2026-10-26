@@ -23,6 +23,7 @@ import {
   type TemplatePage,
 } from "./format";
 import { primaryPage } from "./pages";
+import { isPageBackground } from "./svg";
 
 /** A document read as v2, and the format it was stored in. */
 export type NormalisedDocument = TemplateDocumentV2 & { sourceFormat: 1 | 2 };
@@ -80,7 +81,11 @@ export function normaliseDocument(doc: unknown, kind: string): NormalisedDocumen
     const pages: Partial<Record<PageKey, TemplatePage>> = {};
     for (const key of PAGE_KEYS) {
       const page = (doc.pages as Record<string, unknown>)[key];
-      if (isObject(page)) pages[key] = { layers: readLayers(page.layers) };
+      if (isObject(page))
+        pages[key] = {
+          layers: readLayers(page.layers),
+          ...(isPageBackground(page.background) ? { background: page.background } : {}),
+        };
     }
     return {
       formatVersion: FORMAT_VERSION,

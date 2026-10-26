@@ -93,6 +93,8 @@ export type SetPage = {
   /** That kind's page (`pages.ts`). */
   page: PageKey;
   layers: TemplateLayerV2[];
+  /** The colour behind the page's layers (`TemplatePage.background`). */
+  background?: string;
 };
 
 /**
@@ -220,11 +222,12 @@ export function repeatSource(type: SetType, slot: SetRepeatSlot): Source | null 
  */
 export function setPageDocument(
   doc: Pick<SetDocument, "palettes" | "sponsorLock">,
-  page: Pick<SetPage, "page" | "layers">,
+  page: Pick<SetPage, "page" | "layers" | "background">,
 ): TemplateDocumentV2 {
+  const body = { layers: page.layers, ...(page.background ? { background: page.background } : {}) };
   return {
     formatVersion: FORMAT_VERSION,
-    pages: { [page.page]: { layers: page.layers } },
+    pages: { [page.page]: body },
     ...(doc.palettes?.length ? { palettes: [...doc.palettes] } : {}),
     ...(doc.sponsorLock ? { sponsorLock: true } : {}),
   };
@@ -238,10 +241,10 @@ export function setPageDocument(
  */
 export function setPageRenderDocument(
   doc: Pick<SetDocument, "palettes" | "sponsorLock">,
-  page: Pick<SetPage, "kind" | "page" | "layers">,
+  page: Pick<SetPage, "kind" | "page" | "layers" | "background">,
 ): TemplateDocumentV2 {
   const out = setPageDocument(doc, page);
-  out.pages[primaryPage(page.kind)] = { layers: page.layers };
+  out.pages[primaryPage(page.kind)] = out.pages[page.page];
   return out;
 }
 

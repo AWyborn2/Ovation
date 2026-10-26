@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ArrowDown,
   BookmarkPlus,
@@ -51,6 +52,7 @@ export function EditorToolbar({
   onPaste,
   canPaste = false,
   onSaveElement,
+  page,
   arrange,
 }: {
   selected: FreeLayer[];
@@ -71,6 +73,8 @@ export function EditorToolbar({
   canPaste?: boolean;
   /** Publish the selection to the element library (editable-elements plan, D4). */
   onSaveElement?: () => void;
+  /** The page's own colour, offered with nothing selected (`TemplatePage.background`). */
+  page?: PageColourProps;
   /** Align, distribute and match size; `count` is how many units can move. */
   arrange?: {
     count: number;
@@ -94,6 +98,7 @@ export function EditorToolbar({
   if (selected.length === 0) {
     return (
       <div className="flex h-11 items-center gap-2 px-3 text-sm text-[var(--ed-ink2)]">
+        {page && <PageColour {...page} />}
         Select a layer to edit it, or add one from the panel.
         {canPaste && pasteBtn}
       </div>
@@ -263,6 +268,92 @@ export function EditorToolbar({
       >
         <Trash2 className="h-4 w-4" />
       </button>
+    </div>
+  );
+}
+
+type PageColourProps = {
+  /** The page's colour; absent is the club's stage colour. */
+  background?: string;
+  onBackground: (colour: string | undefined) => void;
+  /** The club's colours, to show the token swatches as they'll look. */
+  swatches: { gold: string; panel: string };
+};
+
+/**
+ * The page colour (editor issue 1, 26 Oct 2026): white, black, the club's
+ * colours, the stage colour the card had before, or any colour picked.
+ */
+function PageColour({ background, onBackground, swatches }: PageColourProps) {
+  const [open, setOpen] = useState(false);
+  const options: { label: string; value: string | undefined; show: string }[] = [
+    { label: "White", value: "#FFFFFF", show: "#FFFFFF" },
+    { label: "Black", value: "#000000", show: "#000000" },
+    { label: "Club colour", value: "var(--gold)", show: swatches.gold },
+    { label: "Club panel", value: "var(--panel)", show: swatches.panel },
+    {
+      label: "Club stage (the card's own)",
+      value: undefined,
+      show: `linear-gradient(135deg, ${swatches.panel}, #111111)`,
+    },
+  ];
+  const hex = background && background.startsWith("#") ? background.slice(0, 7) : "#ffffff";
+  const current =
+    options.find((o) => o.value === background)?.show ?? background ?? options[4]!.show;
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        className={btn}
+        aria-label="Page colour"
+        aria-expanded={open}
+        title="Page colour"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span
+          aria-hidden
+          className="h-4 w-4 rounded border border-[var(--ed-line)]"
+          style={{ background: current }}
+        />
+        Page colour
+      </button>
+      {open && (
+        <div
+          role="group"
+          aria-label="Page colours"
+          className="absolute left-0 top-10 z-20 flex w-56 flex-col gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] p-2 shadow-xl"
+        >
+          {options.map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              aria-pressed={o.value === background}
+              onClick={() => {
+                onBackground(o.value);
+                setOpen(false);
+              }}
+              className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-sm text-[var(--ed-ink)] hover:bg-[var(--ed-card)] aria-pressed:bg-[var(--ed-card)]"
+            >
+              <span
+                aria-hidden
+                className="h-5 w-5 shrink-0 rounded border border-[var(--ed-line)]"
+                style={{ background: o.show }}
+              />
+              {o.label}
+            </button>
+          ))}
+          <label className="flex items-center gap-2 px-2 py-1 text-sm text-[var(--ed-ink)]">
+            <input
+              type="color"
+              aria-label="Any colour"
+              value={hex}
+              onChange={(e) => onBackground(e.target.value.toUpperCase())}
+              className="h-5 w-5 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent p-0"
+            />
+            Any colour
+          </label>
+        </div>
+      )}
     </div>
   );
 }

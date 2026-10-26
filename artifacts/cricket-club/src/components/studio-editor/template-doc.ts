@@ -14,6 +14,7 @@
  */
 import {
   isDocumentV2,
+  isPageBackground,
   kindPages,
   MAX_STACK_DEPTH,
   pageTokens,
@@ -52,7 +53,7 @@ export type EditorLayer = Omit<FreeLayer, "style" | "kind"> &
 /** A whole template as the editor holds it: always pages. */
 export type TemplateDoc = Omit<CardAdjustments, "pages" | "formatVersion"> & {
   formatVersion: 2;
-  pages: Partial<Record<PageKey, { layers: FreeLayer[] }>>;
+  pages: Partial<Record<PageKey, { layers: FreeLayer[]; background?: string }>>;
 };
 
 /** The whole document as the renderer takes it (it reads pages through `normaliseDocument`). */
@@ -70,7 +71,11 @@ export function openTemplate(document: unknown, kind: string): OpenedTemplate {
   if (isDocumentV2(document)) {
     const pages: TemplateDoc["pages"] = {};
     for (const [key, page] of Object.entries(document.pages ?? {})) {
-      pages[key as PageKey] = { layers: asLayers((page as { layers?: unknown }).layers) };
+      const background = (page as { background?: unknown }).background;
+      pages[key as PageKey] = {
+        layers: asLayers((page as { layers?: unknown }).layers),
+        ...(isPageBackground(background) ? { background } : {}),
+      };
     }
     return {
       doc: {
@@ -98,15 +103,18 @@ export const editorPages = (kind: string): readonly PageKey[] => kindPages(kind)
 
 /** One page as a flat editor document (a kind page, or a set page by id). */
 export function pageDoc(doc: TemplateDoc, page: PageKey | string): EditorDoc {
+  const body = doc.pages[page as PageKey];
   return {
-    layers: doc.pages[page as PageKey]?.layers ?? [],
+    layers: body?.layers ?? [],
+    ...(body?.background ? { background: body.background } : {}),
     ...(doc.sponsorLock ? { sponsorLock: true } : {}),
   };
 }
 
 /**
- * The whole document with one page replaced. An emptied kind page is dropped;
- * a set's page stays (it is in the set's page list until deleted from it).
+ * The whole document with one page replaced. An emptied kind page is dropped
+ * (unless it keeps a colour); a set's page stays (it is in the set's page list
+ * until deleted from it).
  */
 export function withPage<D extends TemplateDoc>(
   doc: D,
@@ -116,7 +124,9 @@ export function withPage<D extends TemplateDoc>(
   const pages = { ...doc.pages };
   const layers = next.layers ?? [];
   const key = page as PageKey;
-  if (layers.length || "setDesign" in doc) pages[key] = { layers };
+  const background = next.background;
+  if (layers.length || background || "setDesign" in doc)
+    pages[key] = { layers, ...(background ? { background } : {}) };
   else delete pages[key];
   const out: D = { ...doc, pages };
   if (next.sponsorLock) out.sponsorLock = true;
@@ -146,6 +156,8 @@ export function layerIsV2Only(layer: EditorLayer): boolean {
 export function needsV2(doc: TemplateDoc, kind: string): boolean {
   const primary = primaryPage(kind);
   if (doc.timeline || doc.palettes?.length) return true;
+  // Only format v2 holds a page's own colour.
+  if (Object.values(doc.pages).some((p) => p?.background)) return true;
   if (
     Object.entries(doc.pages).some(
       ([page, p]) =>
@@ -168,7 +180,8 @@ export function storedDocument(doc: TemplateDoc, kind: string, sourceFormat: 1 |
     };
   }
   const pages: TemplateDoc["pages"] = {};
-  for (const [k, p] of Object.entries(doc.pages)) if (p?.layers.length) pages[k as PageKey] = p;
+  for (const [k, p] of Object.entries(doc.pages))
+    if (p?.layers.length || p?.background) pages[k as PageKey] = p;
   return {
     formatVersion: 2,
     pages,

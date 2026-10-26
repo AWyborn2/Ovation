@@ -69,7 +69,7 @@ import {
   type SetPage,
   type SetType,
 } from "./set-document";
-import { isColourTokenName, sanitiseSvg } from "./svg";
+import { isColourTokenName, isPageBackground, sanitiseSvg } from "./svg";
 
 /** A v1 document's layer limit (the v1 editor's clipboard reads it too). */
 export const MAX_DOCUMENT_LAYERS = 300;
@@ -926,7 +926,9 @@ function v2DocumentErrors(doc: Record<string, unknown>, kind: string): string[] 
       errors.push(`${page} needs a list of layers.`);
       continue;
     }
-    knownKeys(errors, page, body, new Set(["layers"]));
+    knownKeys(errors, page, body, new Set(["layers", "background"]));
+    if (body.background !== undefined && !isPageBackground(body.background))
+      errors.push(`${page}'s background must be a hex colour or a card colour.`);
     const w: Walk = { errors, ids, pageLayers: 0 };
     const scope = v2Scope(kind, page);
     body.layers.forEach((layer, i) => checkLayerV2(w, layer, page, i, scope, 1));
@@ -1097,8 +1099,10 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
       errors,
       where,
       raw,
-      new Set(["id", "name", "role", "slot", "kind", "page", "layers"]),
+      new Set(["id", "name", "role", "slot", "kind", "page", "layers", "background"]),
     );
+    if (raw.background !== undefined && !isPageBackground(raw.background))
+      errors.push(`${where}'s background must be a hex colour or a card colour.`);
     if (typeof raw.id !== "string" || !/^[A-Za-z0-9_-]{1,40}$/.test(raw.id))
       errors.push(`${where} needs a short id (letters, digits, - or _).`);
     else if (ids.has(raw.id)) errors.push(`${where} repeats the id of another page.`);

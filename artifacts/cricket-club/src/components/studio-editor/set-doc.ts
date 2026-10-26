@@ -53,8 +53,12 @@ export type EditorTemplateDoc = Omit<TemplateDoc, "set"> & { setDesign?: EditorS
 
 /** Open a stored set document: pages by id, the page list beside them. */
 export function openSetTemplate(doc: SetDocument): OpenedTemplate & { doc: EditorTemplateDoc } {
-  const pages: Record<string, { layers: FreeLayer[] }> = {};
-  for (const p of doc.pages) pages[p.id] = { layers: p.layers as unknown as FreeLayer[] };
+  const pages: Record<string, { layers: FreeLayer[]; background?: string }> = {};
+  for (const p of doc.pages)
+    pages[p.id] = {
+      layers: p.layers as unknown as FreeLayer[],
+      ...(p.background ? { background: p.background } : {}),
+    };
   return {
     doc: {
       formatVersion: 2,
@@ -63,7 +67,7 @@ export function openSetTemplate(doc: SetDocument): OpenedTemplate & { doc: Edito
       ...(doc.sponsorLock ? { sponsorLock: true } : {}),
       setDesign: {
         type: doc.set,
-        pages: doc.pages.map(({ layers: _layers, ...meta }) => meta),
+        pages: doc.pages.map(({ layers: _layers, background: _background, ...meta }) => meta),
         ...(doc.arrangement ? { arrangement: doc.arrangement } : {}),
       },
     },
@@ -74,13 +78,17 @@ export function openSetTemplate(doc: SetDocument): OpenedTemplate & { doc: Edito
 /** The editor's set as the stored set document. */
 export function storedSetDocument(doc: EditorTemplateDoc): SetDocument {
   const set = doc.setDesign!;
-  const pages = doc.pages as Record<string, { layers: FreeLayer[] } | undefined>;
+  const pages = doc.pages as Record<
+    string,
+    { layers: FreeLayer[]; background?: string } | undefined
+  >;
   return {
     formatVersion: 2,
     set: set.type,
     pages: set.pages.map((meta) => ({
       ...meta,
       layers: (pages[meta.id]?.layers ?? []) as unknown as SetPage["layers"],
+      ...(pages[meta.id]?.background ? { background: pages[meta.id]!.background } : {}),
     })),
     ...(doc.palettes?.length ? { palettes: doc.palettes as SetDocument["palettes"] } : {}),
     ...(doc.sponsorLock ? { sponsorLock: true } : {}),
@@ -123,11 +131,17 @@ export function pageRenderDocument(
   page: Pick<EditorPage, "id" | "kind" | "page">,
 ): CardAdjustments {
   if (!doc.setDesign) return doc as unknown as CardAdjustments;
-  const layers = (doc.pages as Record<string, { layers: FreeLayer[] } | undefined>)[page.id]
-    ?.layers;
+  const body = (
+    doc.pages as Record<string, { layers: FreeLayer[]; background?: string } | undefined>
+  )[page.id];
   return setPageRenderDocument(
     { palettes: doc.palettes as SetDocument["palettes"], sponsorLock: doc.sponsorLock },
-    { kind: page.kind, page: page.page, layers: (layers ?? []) as unknown as SetPage["layers"] },
+    {
+      kind: page.kind,
+      page: page.page,
+      layers: (body?.layers ?? []) as unknown as SetPage["layers"],
+      ...(body?.background ? { background: body.background } : {}),
+    },
   ) as unknown as CardAdjustments;
 }
 

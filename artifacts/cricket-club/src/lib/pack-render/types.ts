@@ -68,6 +68,12 @@ export type PackPhotoPlacement = "contained" | "fullBleed";
  */
 export interface PackCardData {
   /**
+   * The template editor only: sample text for any field the card has no value
+   * for, so a data block from another kind (a match scoreboard on a team list)
+   * shows how it reads while designing. Never set on a real card.
+   */
+  sampleValues?: Record<string, string> | null;
+  /**
    * The club's short names, labels and crests for teams and competitions
    * (ADR-010 P1). Every team name a card binds resolves through it, then the
    * automatic short name. Absent → automatic names only.

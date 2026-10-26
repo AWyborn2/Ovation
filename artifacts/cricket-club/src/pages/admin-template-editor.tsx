@@ -34,6 +34,7 @@ import {
   primaryPage,
   SET_TYPE_LABELS,
   setTypeOfKind,
+  TEMPLATE_CARD_KINDS,
   type ContentPreset,
   type LayerDocument,
   type LayoutWarning,
@@ -627,7 +628,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         );
   // A set draft's slide draws with its own data (its photo, the club's sponsors).
   const shownInput = slide ? slide.input : input;
-  const shownData = slide ? slide.data : (draftMode?.data ?? data);
+  // Designing a template, a data block from another kind shows sample text.
+  const sampleValues = useMemo(
+    () => (draftMode ? null : allKindSamples(data, clubName)),
+    [draftMode, data, clubName],
+  );
+  const shownData = slide
+    ? slide.data
+    : (draftMode?.data ?? (sampleValues ? { ...data, sampleValues } : data));
   const values = packFieldValues(shownInput, shownData, BLANK_PACK_ID);
 
   // Every edit is to the page on show; the whole document is what history keeps.
@@ -1151,6 +1159,21 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               canPaste={canPaste}
               // A club's save is credited to it; the console has no club to credit.
               onSaveElement={host.club ? () => setSavingElement(true) : undefined}
+              page={
+                scope === null
+                  ? {
+                      background: pageFull.background,
+                      onBackground: (colour) => {
+                        const { background: _old, ...rest } = pageFull;
+                        editPage(colour ? { ...rest, background: colour } : rest);
+                      },
+                      swatches: (() => {
+                        const t = resolveCardTokens({ junior: false, data, packId: BLANK_PACK_ID });
+                        return { gold: t.accent, panel: t.panel };
+                      })(),
+                    }
+                  : undefined
+              }
               arrange={{
                 count: unitCount(doc, format, selection, inside),
                 onAlign: (to) => edit(align(doc, format, selection, to, inside)),
@@ -1714,4 +1737,24 @@ export function TemplateEditorV2<T extends EditorTemplate>({
       />
     </div>
   );
+}
+
+/**
+ * Every card kind's sample values in one map, first kind first: the template
+ * editor's fallback text for a field the design's own kind has no value for.
+ */
+function allKindSamples(
+  data: PackCardData,
+  clubName: string | null | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const kind of TEMPLATE_CARD_KINDS) {
+    const values = packFieldValues(
+      previewSample(kind as ShareCardInput["kind"], clubName),
+      data,
+      BLANK_PACK_ID,
+    );
+    for (const [key, value] of Object.entries(values)) if (value && !out[key]) out[key] = value;
+  }
+  return out;
 }

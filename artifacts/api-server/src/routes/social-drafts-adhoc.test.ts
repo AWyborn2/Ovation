@@ -155,6 +155,20 @@ describe("POST /social-drafts (ad-hoc)", () => {
     expect(edited.body.cardInput).toEqual(body.cardInput);
   });
 
+  it("keeps a blank design's pages and page colour on create", async () => {
+    const adjustments = {
+      formatVersion: 2,
+      pages: { card: { layers: [], background: "#FFFFFF" } },
+    };
+    const created = await as(0).post("/social-drafts", {
+      cardInput: signing,
+      packId: "blank",
+      adjustments,
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.adjustments).toEqual(adjustments);
+  });
+
   it("authenticates large social draft requests and keeps a bounded body limit", async () => {
     const large = { cardInput: { ...signing, headline: "x".repeat(110 * 1024) } };
     const anonymous = await request(app)
