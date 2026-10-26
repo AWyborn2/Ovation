@@ -99,6 +99,38 @@ PRs to `main` on green (it is an admin juniors feature, not on the TV). Per
 `junior_photo_participants` join + backfill, `juniorLibraryPhotoAllowed`, Juniors admin library
 UI reusing the senior components. D3 waits for it.
 
+## Status (27 Oct 2026): everything built and on `main`
+
+Checked against the code on `main` after #546 merged. Each item is present and covered by tests.
+
+| Item                       | Where it lives                                                                          | PR(s)                 |
+| -------------------------- | --------------------------------------------------------------------------------------- | --------------------- |
+| A0 harness                 | `src/dev/kiosk-fixture.ts`, route `/__kiosk-fixture`                                    | Milestone A PRs       |
+| A1 settings model          | `kiosk_look`, `KioskMotionJson`, `resolveKioskDisplay` + legacy mapping                 | Milestone A PRs       |
+| A2 player engine           | `components/honours-display/player/*` (movement, transitions, groups, rotation)         | Milestone A PRs       |
+| A3 Classic timber          | built-in skin `p12`                                                                     | Milestone A PRs, #532 |
+| A4 season grid             | grid layout on the new engine, column groups                                            | Milestone A PRs       |
+| B1–B4 settings screen      | tabs Rotation · Look · Sponsors & ads · TV link; builder; per-board panel; preview      | Milestone B PRs, #531 |
+| C1 leaderboards            | `honour-display/records.ts` `LEADERBOARDS`                                              | #534                  |
+| C2 achievements            | centuries, five-fors, hat-tricks (`hat_tricks`, migration 0067)                         | #535                  |
+| C3 record panels           | grade records per grade                                                                 | #536                  |
+| C4 partnerships            | `central/partnerships.ts`, records tables                                               | #538                  |
+| C5 plaques                 | grand-final link + picker; plaque fit fix                                               | #539, #532            |
+| C6 office bearers          | Office Bearers season grid                                                              | #539                  |
+| D1–D3 photo slideshows     | slideshows (migration 0068), TV screen, junior consent                                  | #540                  |
+| Photo plan P0 rest, P1, P2 | hand-picked, folders, manual order, Recent moments, interludes, board photo backgrounds | #546                  |
+| Up to 10 columns           | dense season grids                                                                      | #548                  |
+
+**Still for Ash (needs a person and the real TV):** the milestone checks. Test on the clubroom TV's
+browser (transition and credits performance, readability at 10 columns from across the room) and
+spot-check figures against Halls Head's records. The production migrations below must be run by
+hand before the republish.
+
+**Production SQL, in order** (each idempotent; run in Replit's Production SQL runner before
+republishing): `0065_kiosk_look`, `0066_library_element_textures` (textures stream),
+`0067_hat_tricks`, `0068_kiosk_photo_slideshows`, `0069_library_element_icons` (icons stream).
+Verified 27 Oct 2026: all apply on a fresh database and each re-runs without error.
+
 ## Risks
 
 - **TV browser performance** (transitions, credits on a cheap TV browser): test on the real TV at
