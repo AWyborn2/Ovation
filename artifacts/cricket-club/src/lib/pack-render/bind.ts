@@ -22,6 +22,11 @@ import {
   type CardNames,
 } from "@workspace/scorecard/card-names";
 import { summaryResultWord } from "@workspace/scorecard/card-content";
+import {
+  economyText,
+  performanceEntries,
+  strikeRateText,
+} from "@workspace/scorecard/kind-templates";
 
 export function set(
   target: Record<string, string>,
@@ -906,6 +911,7 @@ const batterRow = (b: MatchSummaryInnings["topBatters"][number]): Record<string,
   runsOnly: String(b.runs),
   notOut: b.notOut ? "*" : "",
   balls: b.balls != null ? String(b.balls) : "",
+  strikeRate: strikeRateText(b.runs, b.balls),
 });
 
 const bowlerRow = (b: MatchSummaryInnings["topBowlers"][number]): Record<string, string> => ({
@@ -916,6 +922,7 @@ const bowlerRow = (b: MatchSummaryInnings["topBowlers"][number]): Record<string,
   figures: `${b.wickets}/${b.runs}`,
   figuresDash: `${b.wickets}-${b.runs}`,
   overs: b.overs,
+  economy: economyText(b.runs, b.overs),
 });
 
 const prefixed = (prefix: string, row: Record<string, string>) =>
@@ -981,6 +988,31 @@ function bindMatchGraphics(
       }),
     );
   });
+  // The performance lists (full draft editor plan, stages 4 and 5): every
+  // innings' batters and bowlers in scorecard order (`performanceEntries`),
+  // each with its side and team. A list's `pick` chooses whose, how sorted
+  // and how many as it renders. A slide of a list that continues on extra
+  // slides (D8) binds only its share (`performanceRows`, from the slide
+  // planner): the rows the pick chose, so applying the pick again keeps them.
+  const perf = performanceEntries(input.innings);
+  const share = (repeat: string, all: BoundInput["rows"][string]) => {
+    const own = input.performanceRows?.[repeat];
+    return Array.isArray(own) ? own.flatMap((i) => (all[i] ? [all[i]] : [])) : all;
+  };
+  rows["performances.batting"] = share(
+    "performances.batting",
+    perf.batting.map(({ player, side: s }) => ({
+      values: { ...batterRow(player), team: name(s), side: s },
+      variant: s,
+    })),
+  );
+  rows["performances.bowling"] = share(
+    "performances.bowling",
+    perf.bowling.map(({ player, side: s }) => ({
+      values: { ...bowlerRow(player), team: name(s), side: s },
+      variant: s,
+    })),
+  );
 }
 
 /**

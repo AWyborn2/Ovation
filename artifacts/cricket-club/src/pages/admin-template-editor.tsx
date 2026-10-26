@@ -1170,7 +1170,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
               />
             )}
             {single?.kind === "rows" && single.rows && (
-              <RowsPanel doc={doc} layer={single} kind={pageKind} size={format} onEdit={edit} />
+              <RowsPanel
+                doc={doc}
+                layer={single}
+                kind={pageKind}
+                page={page}
+                size={format}
+                clubLabel={values["club.short"]}
+                onEdit={edit}
+              />
             )}
             {single?.kind === "element" && (
               <ElementPropsEditor

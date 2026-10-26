@@ -16,6 +16,7 @@ import {
   isDocumentV2,
   layerDropped,
   LOGO_ROW_FIELDS,
+  pickRowIndexes,
   normaliseDocument,
   PHOTO_TOKEN,
   primaryPage,
@@ -428,10 +429,17 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
     o && Object.prototype.hasOwnProperty.call(o, spec.repeat)
       ? (o as Record<string, unknown>)[spec.repeat]
       : undefined;
-  const rows = own(ctx.rows);
-  if (!Array.isArray(rows) || rows.length === 0 || !Array.isArray(spec.cells)) return null;
+  const bound = own(ctx.rows);
+  if (!Array.isArray(bound) || bound.length === 0 || !Array.isArray(spec.cells)) return null;
   const listed = own(ctx.rowVariants);
-  const variants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
+  const boundVariants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
+  // A result's batting and bowling lists draw the rows their pick chooses
+  // (whose, which, sorted how, how many); without one, every row as bound
+  // (D4). Any other list draws every row.
+  const picked = pickRowIndexes(spec.repeat, bound as Array<Record<string, string>>, spec.pick);
+  if (picked.length === 0) return null;
+  const rows = picked.map((i) => (bound as Array<Record<string, string>>)[i]!);
+  const variants = picked.map((i) => boundVariants[i]);
   const gap = num(spec.gap);
   const rowHeight = num(spec.rowHeight, 7);
   // Several columns: rows fill the first column, then the next, evenly.

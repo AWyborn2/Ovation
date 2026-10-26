@@ -8,5 +8,8 @@
 
 export interface ApplyKindTemplateResult {
   changed: number;
+  /** Waiting drafts posted in the meantime. */
   skipped: number;
+  /** Waiting drafts whose design was edited by hand, which keep it. */
+  edited: number;
 }

@@ -495,6 +495,109 @@ describe("rows that fill across (Club Kit polish)", () => {
   });
 });
 
+describe("a list's row choice (full draft editor, stage 4)", () => {
+  const list = (repeat: string, pick: unknown, field = "name") => ({
+    id: "p",
+    kind: "rows",
+    geometry,
+    rows: { repeat, rowHeight: 7, pick, cells: [{ field, x: 0, w: 100 }] },
+  });
+  const errors = (repeat: string, pick: unknown) =>
+    templateDocumentErrors(doc({ result: [list(repeat, pick)] }), "matchSummary");
+
+  it("accepts whose, how many and sort on a performance list", () => {
+    expect(errors("performances.batting", { side: "club", count: 3, sort: "runs" })).toEqual([]);
+    expect(errors("performances.bowling", { side: "both", count: 0, sort: "figures" })).toEqual([]);
+    expect(errors("performances.bowling", { count: 30, sort: "wickets" })).toEqual([]);
+    // An innings list takes a choice too (its side is ignored).
+    expect(errors("innings1.batting", { count: 1, sort: "runs" })).toEqual([]);
+    // A performance row can show its team.
+    expect(
+      templateDocumentErrors(
+        doc({ result: [list("performances.batting", { count: 1 }, "team")] }),
+        "matchSummary",
+      ),
+    ).toEqual([]);
+  });
+
+  it("refuses unknown values, counts out of range and stray keys", () => {
+    expect(errors("performances.batting", { side: "mine" })).toEqual([
+      "result/p.rows.pick.side must be club, opposition or both.",
+    ]);
+    expect(errors("performances.batting", { count: 31 })).toEqual([
+      "result/p.rows.pick.count must be a whole number from 0 to 30.",
+    ]);
+    expect(errors("performances.batting", { count: 2.5 })).toEqual([
+      "result/p.rows.pick.count must be a whole number from 0 to 30.",
+    ]);
+    expect(errors("performances.batting", { sort: "economy" })).toEqual([
+      "result/p.rows.pick.sort must be runs, balls, strike rate, wickets or figures on a batting list.",
+    ]);
+    expect(errors("performances.bowling", { sort: "strikeRate" })).toEqual([
+      "result/p.rows.pick.sort must be wickets, figures, economy or runs on a bowling list.",
+    ]);
+    expect(errors("performances.batting", { top: 3 })).toEqual([
+      "result/p.rows.pick.top isn't a list choice.",
+    ]);
+    expect(errors("performances.batting", "club")).toEqual([
+      "result/p.rows.pick must be an object.",
+    ]);
+  });
+
+  it("accepts stage 5's sorts and filters on their own stat's lists", () => {
+    expect(
+      errors("performances.batting", {
+        sort: "strikeRate",
+        minRuns: 20,
+        notOutOnly: true,
+      }),
+    ).toEqual([]);
+    expect(errors("performances.batting", { sort: "balls", minRuns: 0 })).toEqual([]);
+    expect(errors("performances.bowling", { sort: "economy", minWickets: 2 })).toEqual([]);
+    expect(errors("innings2.bowling", { sort: "economy", minWickets: 1, count: 3 })).toEqual([]);
+  });
+
+  it("refuses a filter on the other stat's list, and values out of range", () => {
+    expect(errors("performances.bowling", { minRuns: 10, notOutOnly: true })).toEqual([
+      "result/p.rows.pick.minRuns is for a batting list.",
+      "result/p.rows.pick.notOutOnly is for a batting list.",
+    ]);
+    expect(errors("performances.batting", { minWickets: 2 })).toEqual([
+      "result/p.rows.pick.minWickets is for a bowling list.",
+    ]);
+    expect(errors("performances.batting", { minRuns: 401 })).toEqual([
+      "result/p.rows.pick.minRuns must be a whole number from 0 to 400.",
+    ]);
+    expect(errors("performances.bowling", { minWickets: 11 })).toEqual([
+      "result/p.rows.pick.minWickets must be a whole number from 0 to 10.",
+    ]);
+    expect(errors("performances.batting", { notOutOnly: "yes" })).toEqual([
+      "result/p.rows.pick.notOutOnly must be true or false.",
+    ]);
+  });
+
+  it("refuses a choice on another list, and on a v1 document", () => {
+    const pairs = list("innings1.pairs", { count: 3 }, "batName");
+    expect(templateDocumentErrors(doc({ result: [pairs] }), "matchSummary")).toEqual([
+      "result/p.rows.pick is only for a result's batting and bowling lists.",
+    ]);
+    const players = {
+      id: "p",
+      kind: "rows",
+      geometry,
+      rows: {
+        repeat: "players",
+        rowHeight: 7,
+        pick: { count: 3 },
+        cells: [{ field: "name", x: 0, w: 100 }],
+      },
+    };
+    expect(templateDocumentErrors({ layers: [players] }, "teamOfWeek")).toEqual([
+      "Layer 1.rows.pick is a format v2 option.",
+    ]);
+  });
+});
+
 describe("what the converter dropped (B4)", () => {
   const styled = (kind: string, style: Record<string, unknown>) =>
     doc({

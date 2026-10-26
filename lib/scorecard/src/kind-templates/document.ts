@@ -103,6 +103,31 @@ export type RowsSpec = {
   flow?: "down" | "across";
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
   variants?: Record<string, Partial<Record<string, TemplateTextStyle>>>;
+  /**
+   * Which rows the list draws (format v2; a result's performance and innings
+   * lists, `rows-pick.ts`): whose, sorted how, and how many.
+   */
+  pick?: RowsPick;
+};
+
+/**
+ * A list's row choice (full draft editor plan, stages 4 and 5). `side` is
+ * whose performances (a performance list only: an innings list is one
+ * side's; none is both); `sort` orders them best first; `count` keeps that
+ * many (0 is all, 1 the best); `minRuns`, `minWickets` and `notOutOnly`
+ * filter a batting or bowling list. A list without one draws every row in
+ * scorecard order (D4).
+ */
+export type RowsPick = {
+  side?: "club" | "opposition" | "both";
+  count?: number;
+  sort?: "runs" | "balls" | "strikeRate" | "wickets" | "figures" | "economy";
+  /** A batting list: only innings of at least this many runs. */
+  minRuns?: number;
+  /** A bowling list: only spells of at least this many wickets. */
+  minWickets?: number;
+  /** A batting list: only not-out innings. */
+  notOutOnly?: boolean;
 };
 
 /** The size-related shape every template layer shares. */

@@ -62,6 +62,10 @@ export type MatchSummaryInnings = {
   declared?: boolean;
   topBatters: MatchSummaryBatter[];
   topBowlers: MatchSummaryBowler[];
+  /** Every batter, in batting order (the performance lists); absent on older inputs. */
+  batters?: MatchSummaryBatter[];
+  /** Everyone who bowled, in bowling order; absent on older inputs. */
+  bowlers?: MatchSummaryBowler[];
 };
 
 // --- Pack A card shapes ------------------------------------------------------
@@ -276,6 +280,11 @@ export type ShareCardInput =
        * are the first result's; the layout prints only these rows.
        */
       carouselDay?: { heading: string; results: DayResultRow[] };
+      /**
+       * A slide's share of a performance list that continues on extra slides:
+       * per list, the indexes of its rows this slide draws (`planTemplateSlides`).
+       */
+      performanceRows?: Partial<Record<string, number[]>>;
       /**
        * Marks this as a JUNIOR card: forces the junior brown palette and a
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.

@@ -36,6 +36,15 @@ export type MatchSummaryInnings = {
   declared?: boolean;
   topBatters: MatchSummaryBatter[];
   topBowlers: MatchSummaryBowler[];
+  /**
+   * Every batter of the innings, in batting order (full draft editor plan,
+   * stages 4 and 5: the performance lists). Optional: older saved inputs have
+   * only the top three. On a junior card they follow the top lists' privacy
+   * rules.
+   */
+  batters?: MatchSummaryBatter[];
+  /** Everyone who bowled in the innings, in bowling order. */
+  bowlers?: MatchSummaryBowler[];
 };
 
 /** Self-contained input for a match-summary share card. */
@@ -54,4 +63,9 @@ export type MatchSummaryInput = {
   innings: MatchSummaryInnings[];
   headline?: string;
   junior?: boolean;
+  /**
+   * A slide's share of a performance list that continues on extra slides
+   * (`planTemplateSlides`, `PERFORMANCE_ROWS_KEY`); set only on planned slides.
+   */
+  performanceRows?: Partial<Record<string, number[]>>;
 };

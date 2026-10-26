@@ -322,9 +322,31 @@ describe("club templates", () => {
         cardInput: { kind: "milestone", playerName: "B" },
       })
       .returning();
-    const res = await me().post(`/club-templates/${def!.id}/apply`, { version: def!.version });
+    // A design edited by hand keeps it (full draft editor plan, D5).
+    const handEdited = { formatVersion: 2, pages: { card: { layers: [] } } };
+    const [edited] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId,
+        engine: "milestone",
+        cardInput: { kind: "milestone", playerName: "C" },
+        adjustments: handEdited,
+        templateVersion: 1,
+        designEditedAt: new Date(),
+      })
+      .returning();
+    const res = await me().post(`/club-templates/${def!.id}/apply`, {
+      version: def!.version,
+      expectedDrafts: 2,
+    });
     expect(res.status).toBe(200);
-    expect(res.body.changed).toBe(1);
+    expect(res.body).toEqual({ changed: 1, skipped: 0, edited: 1 });
+    const [keptEdit] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(eq(socialDraftsTable.id, edited!.id));
+    expect(keptEdit!.adjustments).toEqual(handEdited);
+    expect(keptEdit!.templateRef).toBeNull();
     const [after] = await db
       .select()
       .from(socialDraftsTable)

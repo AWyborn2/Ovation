@@ -47,6 +47,15 @@ import {
 import { kindHasPage } from "./pages";
 import { pageRepeat, pageTokenKeys } from "./page-tokens";
 import {
+  isPickableRepeat,
+  MAX_PICK_COUNT,
+  MAX_PICK_MIN_RUNS,
+  MAX_PICK_MIN_WICKETS,
+  PICK_SIDES,
+  pickSortsFor,
+  pickStat,
+} from "./rows-pick";
+import {
   isRepeatSlot,
   isSetType,
   MAX_SET_DOCUMENT_BYTES,
@@ -495,6 +504,56 @@ function checkTokens(errors: Errors, where: string, text: string, allowed: Set<s
   }
 }
 
+const PICK_KEYS = ["side", "count", "sort", "minRuns", "minWickets", "notOutOnly"];
+const SORT_WORDS: Record<string, string> = { strikeRate: "strike rate" };
+
+/**
+ * A list's row choice (format v2): whose, how many, sorted how and which
+ * performances count (`rows-pick.ts`). A batting list takes batting sorts and
+ * filters, a bowling list bowling ones (and stage 4's runs, wickets and
+ * figures on either).
+ */
+function checkPick(errors: Errors, where: string, v: unknown, repeat: string, scope: Scope): void {
+  if (!scope.v2) {
+    errors.push(`${where} is a format v2 option.`);
+    return;
+  }
+  const stat = pickStat(repeat);
+  if (!isPickableRepeat(repeat) || !stat) {
+    errors.push(`${where} is only for a result's batting and bowling lists.`);
+    return;
+  }
+  if (!isObject(v)) {
+    errors.push(`${where} must be an object.`);
+    return;
+  }
+  for (const key of Object.keys(v))
+    if (!PICK_KEYS.includes(key)) errors.push(`${where}.${key.slice(0, 30)} isn't a list choice.`);
+  if (v.side !== undefined && !(PICK_SIDES as readonly unknown[]).includes(v.side))
+    errors.push(`${where}.side must be club, opposition or both.`);
+  if (v.count !== undefined) numberIn(errors, `${where}.count`, v.count, 0, MAX_PICK_COUNT, true);
+  const sorts = pickSortsFor(stat);
+  if (v.sort !== undefined && !(sorts as readonly unknown[]).includes(v.sort)) {
+    const words = sorts.map((s) => SORT_WORDS[s] ?? s);
+    errors.push(
+      `${where}.sort must be ${words.slice(0, -1).join(", ")} or ${words.at(-1)} on a ${stat} list.`,
+    );
+  }
+  if (v.minRuns !== undefined) {
+    if (stat !== "batting") errors.push(`${where}.minRuns is for a batting list.`);
+    else numberIn(errors, `${where}.minRuns`, v.minRuns, 0, MAX_PICK_MIN_RUNS, true);
+  }
+  if (v.minWickets !== undefined) {
+    if (stat !== "bowling") errors.push(`${where}.minWickets is for a bowling list.`);
+    else numberIn(errors, `${where}.minWickets`, v.minWickets, 0, MAX_PICK_MIN_WICKETS, true);
+  }
+  if (v.notOutOnly !== undefined) {
+    if (stat !== "batting") errors.push(`${where}.notOutOnly is for a batting list.`);
+    else if (typeof v.notOutOnly !== "boolean")
+      errors.push(`${where}.notOutOnly must be true or false.`);
+  }
+}
+
 function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): void {
   if (!isObject(v)) {
     errors.push(`${where} must describe a list row.`);
@@ -518,6 +577,7 @@ function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): voi
     else if (v.flow !== "down" && v.flow !== "across")
       errors.push(`${where}.flow must be down or across.`);
   }
+  if (v.pick !== undefined) checkPick(errors, `${where}.pick`, v.pick, v.repeat as string, scope);
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
     errors.push(`${where}.cells must be a list of at most ${MAX_CELLS} cells.`);
   } else {

@@ -132,11 +132,12 @@ export function layerIsV2Only(layer: EditorLayer): boolean {
   const v2Style = (style: unknown) =>
     !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
   if (v2Style(layer.style)) return true;
-  // A list's cells and row styles (italic row text) count too.
+  // A list's cells, row styles (italic row text) and row choice count too.
   const rows = layer.rows;
   return (
     !!rows &&
-    ((rows.cells ?? []).some((c) => v2Style(c.style)) ||
+    (!!rows.pick ||
+      (rows.cells ?? []).some((c) => v2Style(c.style)) ||
       Object.values(rows.variants ?? {}).some((cells) => Object.values(cells).some(v2Style)))
   );
 }
