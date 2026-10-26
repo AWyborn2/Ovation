@@ -148,6 +148,8 @@ export type CardAdjustments = {
   images?: Record<string, string>;
   /** Keep the sponsor strip on the card: its slots can't be hidden while on. */
   sponsorLock?: boolean;
+  /** The editor's page on show: the colour behind its layers (`TemplatePage.background`). */
+  background?: string;
   /**
    * Balanced card sets (plan 2026-10-01-001): the set's options (cover,
    * grouping), stored on the card's root adjustments only.
@@ -236,9 +238,12 @@ export function inheritedFormats(
 }
 
 /** Whether a v2 document has a layer on any page. */
+/** A page-based document with something on a page: layers, or the page's own colour. */
 const hasPageLayers = (adj: CardAdjustments): boolean =>
   isDocumentV2(adj) &&
-  Object.values(adj.pages).some((page) => Array.isArray(page?.layers) && page.layers.length > 0);
+  Object.values(adj.pages).some(
+    (page) => (Array.isArray(page?.layers) && page.layers.length > 0) || !!page?.background,
+  );
 
 /** True when the adjustments change nothing, so the render stays byte-identical. */
 export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boolean {

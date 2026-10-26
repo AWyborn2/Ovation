@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { LoadingState } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
+import { primaryPage } from "@workspace/scorecard/kind-templates";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
@@ -155,7 +156,14 @@ function TemplateStep({
       <Button
         variant="outline"
         disabled={busy}
-        onClick={() => start({ cardInput, packId: BLANK_PACK_ID })}
+        onClick={() =>
+          start({
+            cardInput,
+            packId: BLANK_PACK_ID,
+            // A blank design starts as one white page in the full editor.
+            adjustments: blankDesign(kind) as unknown as CreateSocialDraftRequest["adjustments"],
+          })
+        }
       >
         <Square className="mr-2 h-4 w-4" aria-hidden /> Start blank
       </Button>
@@ -257,7 +265,16 @@ export function CreatePicker({
   };
   const pickSize = (s: CardSize) => {
     if (blank) {
-      design.start({ cardInput: cardInputOf(blankInput), packId: BLANK_PACK_ID }, s);
+      design.start(
+        {
+          cardInput: cardInputOf(blankInput),
+          packId: BLANK_PACK_ID,
+          adjustments: blankDesign(
+            BLANK_DESIGN_KIND,
+          ) as unknown as CreateSocialDraftRequest["adjustments"],
+        },
+        s,
+      );
       return;
     }
     setSize(s);
@@ -314,4 +331,12 @@ export function CreatePicker({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** A blank design: the kind's main page, empty and white. */
+export function blankDesign(kind: string) {
+  return {
+    formatVersion: 2,
+    pages: { [primaryPage(kind)]: { layers: [], background: "#FFFFFF" } },
+  };
 }
