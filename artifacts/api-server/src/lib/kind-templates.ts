@@ -295,13 +295,15 @@ const draftKind = (draft: Pick<SocialDraftRow, "cardInput">): string | null => {
 /**
  * Copy a club template's current document into the unposted drafts of its
  * kind, inside `tx` (the caller has checked the version the admin saw). Each
- * draft records the template it came from (`template_ref`, ADR-011).
+ * draft records the template it came from (`template_ref`, ADR-011). A draft
+ * whose design an admin edited by hand keeps it (`edited`; full draft editor
+ * plan, D5).
  */
 export async function applyTemplateToDrafts(
   tx: Tx,
   template: CardTemplateRow,
   expectedDrafts?: number,
-): Promise<{ changed: number; skipped: number }> {
+): Promise<{ changed: number; skipped: number; edited: number }> {
   const tenantId = template.tenantId;
   const kind = template.baseKind ?? "";
   // Lock the unposted drafts: a publish racing this apply waits for it, and
@@ -321,10 +323,16 @@ export async function applyTemplateToDrafts(
     )
     .for("update");
   let changed = 0;
+  let edited = 0;
   for (const draft of candidates) {
     if (draftKind(draft) !== kind) continue;
     // A draft with a set design (a Round Team Lists set edited as one) keeps it.
     if (isSetDocument(draft.adjustments)) continue;
+    // So does a design edited by hand in the full editor.
+    if (draft.designEditedAt !== null) {
+      edited += 1;
+      continue;
+    }
     await recordDraftRevision(draft, "template", tx);
     await tx
       .update(socialDraftsTable)
@@ -340,8 +348,9 @@ export async function applyTemplateToDrafts(
       .where(eq(socialDraftsTable.id, draft.id));
     changed += 1;
   }
-  const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
-  return { changed, skipped };
+  const skipped =
+    expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed - edited);
+  return { changed, skipped, edited };
 }
 
 /** The design columns a new draft takes from a template. */

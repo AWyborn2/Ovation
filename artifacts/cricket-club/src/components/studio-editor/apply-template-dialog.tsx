@@ -16,9 +16,9 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 /**
  * After a save, offer to update the cards already waiting (R16, AE4). Shown
  * only when drafts of the kind are waiting; "Don't apply" is the default.
- * Applying replaces each waiting card's design with the saved version —
- * one-off design tweaks are reset, captions are kept — and reports what
- * changed and what was skipped (posted in the meantime).
+ * Applying replaces each waiting card's design with the saved version, keeping
+ * captions, and reports what changed. Cards whose design was edited by hand
+ * keep it (full draft editor plan, D5), as do cards posted in the meantime.
  */
 export function ApplyTemplateDialog({
   copyId,
@@ -75,10 +75,13 @@ export function ApplyTemplateDialog({
           <DialogDescription>
             {result
               ? `${plural(result.changed, "card", "cards")} now ${result.changed === 1 ? "uses" : "use"} this design.` +
+                (result.edited > 0
+                  ? ` ${plural(result.edited, "card was", "cards were")} edited by hand and kept ${result.edited === 1 ? "its" : "their"} design.`
+                  : "") +
                 (result.skipped > 0
                   ? ` ${plural(result.skipped, "card was", "cards were")} posted in the meantime and kept ${result.skipped === 1 ? "its" : "their"} design.`
                   : "")
-              : `${plural(waiting, `${label} card is`, `${label} cards are`)} waiting in the queue with the previous design. Applying gives them this design: any one-off design tweaks on them are reset. Their captions are kept. New cards use this design either way.`}
+              : `${plural(waiting, `${label} card is`, `${label} cards are`)} waiting in the queue with the previous design. Applying gives them this design and keeps their captions. Cards whose design was edited by hand keep it. New cards use this design either way.`}
           </DialogDescription>
         </DialogHeader>
         {apply.isError && (

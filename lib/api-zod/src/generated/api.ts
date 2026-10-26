@@ -11719,7 +11719,8 @@ export const ApplyClubTemplateBody = zod.object({
 
 export const ApplyClubTemplateResponse = zod.object({
   "changed": zod.number(),
-  "skipped": zod.number()
+  "skipped": zod.number().describe('Waiting drafts posted in the meantime.'),
+  "edited": zod.number().describe('Waiting drafts whose design was edited by hand, which keep it.')
 })
 
 

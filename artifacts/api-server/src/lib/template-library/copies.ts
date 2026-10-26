@@ -517,7 +517,7 @@ export async function applyCopy(
   id: number,
   version: number,
   expectedDrafts?: number,
-): Promise<{ changed: number; skipped: number }> {
+): Promise<{ changed: number; skipped: number; edited: number }> {
   return db.transaction(async (tx) => {
     const row = await loadCopy(tenantId, id, tx);
     if (row.version !== version) throw await conflict(row);
