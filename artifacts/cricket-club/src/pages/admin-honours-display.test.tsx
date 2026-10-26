@@ -52,7 +52,13 @@ function uploadOverride(contentType: string, objectPath: string) {
   };
 }
 
+/** Ads live on the Sponsors & ads tab (Radix tabs switch on mouse-down). */
+async function openSponsorsTab() {
+  fireEvent.mouseDown(await screen.findByTestId("tab-sponsors"));
+}
+
 async function addAdRow() {
+  await openSponsorsTab();
   fireEvent.click(await screen.findByTestId("button-add-ad"));
   return screen.getByTestId(/^ad-file-/);
 }
@@ -113,7 +119,37 @@ describe("AdEditor MP4 upload", () => {
       },
     });
     renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    await openSponsorsTab();
     const preview = await screen.findByTestId(/^ad-preview-/);
     expect(preview.tagName).toBe("IMG");
+  });
+});
+
+describe("settings tabs (kiosk redesign B1)", () => {
+  it("opens on Rotation and shows each tab's cards", async () => {
+    installApiMock({ "/honour-display": BUNDLE });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    expect((await screen.findByTestId("tab-rotation")).getAttribute("data-state")).toBe("active");
+    expect(await screen.findByText("TV kiosk")).toBeTruthy();
+    expect(screen.queryByText("Global colours & font")).toBeNull();
+
+    fireEvent.mouseDown(screen.getByTestId("tab-look"));
+    expect(await screen.findByText("Global colours & font")).toBeTruthy();
+    expect(screen.queryByText("TV kiosk")).toBeNull();
+
+    fireEvent.mouseDown(screen.getByTestId("tab-sponsors"));
+    expect(await screen.findByTestId("button-add-ad")).toBeTruthy();
+  });
+
+  it("keeps unsaved changes when switching tabs, under one save bar", async () => {
+    installApiMock({ "/honour-display": BUNDLE });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.mouseDown(await screen.findByTestId("tab-sponsors"));
+    fireEvent.click(await screen.findByTestId("button-add-ad"));
+    expect(screen.getAllByTestId(/^ad-file-/)).toHaveLength(1);
+
+    fireEvent.mouseDown(screen.getByTestId("tab-look"));
+    fireEvent.mouseDown(screen.getByTestId("tab-sponsors"));
+    expect(await screen.findAllByTestId(/^ad-file-/)).toHaveLength(1);
   });
 });
