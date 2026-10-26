@@ -249,6 +249,52 @@ const centuries: DisplayBoard = {
   display: display(),
 };
 
+// Grade record panels (C3): one panel per grade.
+const gradeRecords: DisplayBoard = {
+  id: "grade_records",
+  category: "grade_records",
+  layout: "recordPanels",
+  title: "Grade Records",
+  subtitle: "Leading performances in each grade",
+  entries: GRADES.map((g, k) => ({
+    season: "",
+    primaryText: g,
+    lines: [
+      { label: "Most Games", value: String(180 - k * 9), holder: name(k * 3) },
+      { label: "Most Runs", value: String(6400 - k * 410), holder: name(k * 3 + 4) },
+      {
+        label: "Highest Score",
+        value: `${148 + ((k * 23) % 80)}${k % 2 ? "*" : ""}`,
+        holder: name(k * 3 + 7),
+      },
+      { label: "Most Wickets", value: String(312 - k * 21), holder: name(k * 3 + 9) },
+      {
+        label: "Best Bowling",
+        value: `${7 + (k % 3)}/${12 + ((k * 7) % 30)}`,
+        holder: name(k * 3 + 2),
+      },
+      { label: "Most Catches", value: String(96 - k * 6), holder: name(k * 3 + 5) },
+    ],
+  })),
+  display: display(),
+};
+
+// A records table (C4): the highest partnership for each wicket.
+const partnershipRecords: DisplayBoard = {
+  id: "partnerships_grade:First Grade",
+  category: "partnership_records",
+  layout: "recordsTable",
+  title: "First Grade Partnerships",
+  subtitle: "Highest partnership for each wicket",
+  figureLabel: "Runs",
+  entries: [212, 187, 176, 158, 149, 133, 121, 98, 87, 74].map((runs, i) => ({
+    season: season(2024 - i * 3),
+    primaryText: `${name(i * 2)} & ${name(i * 2 + 5)}`,
+    meta: { wicket: i + 1, figure: String(runs), opponent: OPPONENTS[i % OPPONENTS.length] },
+  })),
+  display: display(),
+};
+
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
   boards: [
     premierships,
@@ -258,19 +304,35 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     battingRecords,
     mostRuns,
     centuries,
+    gradeRecords,
+    partnershipRecords,
     lifeMembers,
   ],
   brand: {
     name: "Halls Head Cricket Club",
     shortName: "Halls Head",
     monogram: "HH",
+    logoUrl: "/placeholder-club-logo.svg",
     backgroundColour: "#0e3b2e",
     primaryColour: "#d8b25e",
     juniorsColour: "#0e3b2e",
   },
   settings: {
     defaultTemplate: "p12",
-    kioskSequence: [],
+    // Every board in order, with the photo slideshow after the plaques.
+    kioskSequence: [
+      "premierships",
+      "photos:fixture",
+      "club-champions",
+      "captains",
+      "office-bearers",
+      "batting-records",
+      "most_runs",
+      "centuries",
+      "grade_records",
+      "partnerships_grade:First Grade",
+      "life-members",
+    ],
     kioskDwellMs: 3500,
     kioskScrollSpeed: 36,
     kioskEndHoldMs: 3000,
@@ -278,6 +340,18 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSponsorSlides: false,
     kioskSponsorSlideEvery: 3,
     kioskAds: [],
+    kioskPhotoSlideshows: [
+      {
+        id: "photos:fixture",
+        name: "Clubroom photos",
+        library: "senior",
+        source: "all",
+        order: "newest",
+        perPass: 3,
+        secondsPerPhoto: 3,
+        captions: true,
+      },
+    ],
     // Short timings so a browser check sees every movement quickly.
     kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
     // One board per movement, with a spread of transitions.
@@ -289,9 +363,22 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       "batting-records": { move: "fit", trans: "pop" },
       most_runs: { move: "pages", trans: "rows", top: 20 },
       centuries: { move: "credits", trans: "fade", speed: 160 },
+      grade_records: { move: "pages", trans: "flip", columnsPerScreen: 4 },
+      "partnerships_grade:First Grade": { move: "fit", trans: "wipe" },
       "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
     },
     composites: [],
   },
   activeSponsors: [],
+  // A wide photo, a missing one (skipped) and a tall one.
+  photoSlideshows: [
+    {
+      id: "photos:fixture",
+      photos: [
+        { url: "/opengraph.jpg", width: 1200, height: 630, caption: "First Grade · 2025/26" },
+        { url: "/missing-photo.jpg", width: 800, height: 600, caption: "Never shown" },
+        { url: "/mockup/broadcast-current-square.jpg", width: 1080, height: 1080, caption: null },
+      ],
+    },
+  ],
 };

@@ -22,7 +22,13 @@ import {
   buildTeamOfDecade,
 } from "./awards";
 import { buildComposites, buildCustomGrids } from "./composites";
-import { buildCaptains, buildCaptainsGrid, buildCommittee, buildLifeMembers } from "./people";
+import {
+  buildCaptains,
+  buildCaptainsGrid,
+  buildCommittee,
+  buildLifeMembers,
+  buildOfficeBearers,
+} from "./people";
 import { buildPremierships, buildPremiershipsGrid, premParentGrade } from "./premierships";
 import {
   buildClubRecords,
@@ -30,8 +36,9 @@ import {
   buildHonourList,
   buildMilestoneBoard,
   buildLeaderboards,
+  buildPartnershipBoards,
   buildPartnerships,
-  buildRecordsByGrade,
+  buildGradeRecordBoards,
   buildRecordsLeaderboards,
   roleRank,
 } from "./records";
@@ -60,7 +67,9 @@ export async function assembleBoards(
     captains,
     captainsGrid,
     committee,
+    officeBearers,
     partnerships,
+    partnershipBoards,
     milestones,
     awardPoints,
     recordsLeaderboards,
@@ -80,11 +89,13 @@ export async function assembleBoards(
     buildCaptains(tenantId),
     buildCaptainsGrid(tenantId, gridCols("captains_grid")),
     buildCommittee(tenantId, gridCols("committee")),
+    buildOfficeBearers(tenantId),
     buildPartnerships(tenantId),
+    buildPartnershipBoards(source),
     buildMilestoneBoard(source),
     buildAwardPoints(tenantId),
     buildRecordsLeaderboards(tenantId),
-    buildRecordsByGrade(source),
+    buildGradeRecordBoards(source),
     buildTeamOfDecade(tenantId),
     buildClubRecords(tenantId),
     buildLeaderboards(source),
@@ -97,8 +108,10 @@ export async function assembleBoards(
   if (awardWinnersGrid) boards.push(awardWinnersGrid);
   boards.push(...teamOfDecade);
   if (clubRecords) boards.push(clubRecords);
-  boards.push(...recordsByGrade);
+  boards.push(...recordsByGrade.byGrade);
+  if (recordsByGrade.panels) boards.push(recordsByGrade.panels);
   if (partnerships) boards.push(partnerships);
+  boards.push(...partnershipBoards);
   if (centuries) boards.push(centuries);
   if (fiveFor) boards.push(fiveFor);
   if (hatTricks) boards.push(hatTricks);
@@ -109,6 +122,7 @@ export async function assembleBoards(
   boards.push(...captains);
   if (captainsGrid) boards.push(captainsGrid);
   if (committee) boards.push(committee);
+  if (officeBearers) boards.push(officeBearers);
   if (lifeMembers) boards.push(lifeMembers);
 
   // Composite "columns" boards reference the base boards above, so build them

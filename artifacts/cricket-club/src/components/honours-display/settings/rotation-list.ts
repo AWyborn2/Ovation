@@ -4,15 +4,17 @@ import type { DisplayBoardLayout } from "@workspace/api-client-react";
  * Pure helpers for the kiosk rotation builder (honours kiosk redesign B2).
  *
  * The rotation is stored as the existing `kiosk_sequence`: an ordered list of
- * tokens, each a board id, "sponsor" (the sponsor wall) or "ad:<id>" (an
- * advert). The same token may appear more than once.
+ * tokens, each a board id, "sponsor" (the sponsor wall), "ad:<id>" (an
+ * advert) or "photos:<id>" (a photo slideshow). The same token may appear
+ * more than once.
  */
 
-export type RotationItemKind = "board" | "sponsor" | "ad";
+export type RotationItemKind = "board" | "sponsor" | "ad" | "photos";
 
 export function rotationItemKind(token: string): RotationItemKind {
   if (token === "sponsor") return "sponsor";
   if (token.startsWith("ad:")) return "ad";
+  if (token.startsWith("photos:")) return "photos";
   return "board";
 }
 
@@ -20,6 +22,7 @@ export const ROTATION_KIND_LABEL: Readonly<Record<RotationItemKind, string>> = {
   board: "Board",
   sponsor: "Sponsor wall",
   ad: "Ad",
+  photos: "Photo slideshow",
 };
 
 export const BOARD_LAYOUT_LABEL: Readonly<Record<DisplayBoardLayout, string>> = {
@@ -31,6 +34,8 @@ export const BOARD_LAYOUT_LABEL: Readonly<Record<DisplayBoardLayout, string>> = 
   lifeMembers: "Life members",
   leaderboard: "Leaderboard",
   achievements: "Achievement list",
+  recordPanels: "Record panels",
+  recordsTable: "Records table",
 };
 
 /** The list with the item at `from` moved to index `to` (clamped). */

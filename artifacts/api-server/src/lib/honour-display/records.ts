@@ -241,6 +241,115 @@ export async function buildPartnerships(tenantId: number): Promise<HonourBoardOu
   };
 }
 
+/** A partnership for a records table: a curated row or a derived stand. */
+export interface PartnershipRow {
+  grade: string;
+  wicket: number;
+  runs: number;
+  /** "Ann Allrounder & Bea Batter". */
+  batters: string;
+  season: string;
+  opponent: string | null;
+  source: "curated" | "derived";
+}
+
+/** 3 from "3rd", "3", "3rd Wkt"; null when there's no wicket number 1–10. */
+export function wicketNumber(raw: string): number | null {
+  const n = parseInt(raw.match(/\d+/)?.[0] ?? "", 10);
+  return n >= 1 && n <= 10 ? n : null;
+}
+
+/**
+ * The Partnership Records boards (kiosk redesign C4): one "records table" per
+ * grade with the highest partnership for each wicket. Derived stands (from
+ * fall-of-wicket data) and the club's curated records (its older seasons)
+ * compete per wicket; the higher wins, and on a tie the club's own record.
+ */
+export function partnershipBoards(rows: PartnershipRow[]): HonourBoardOut[] {
+  const best = new Map<string, PartnershipRow>();
+  for (const r of rows) {
+    const key = `${r.grade}\u0000${r.wicket}`;
+    const cur = best.get(key);
+    if (
+      !cur ||
+      r.runs > cur.runs ||
+      (r.runs === cur.runs && r.source === "curated" && cur.source !== "curated")
+    ) {
+      best.set(key, r);
+    }
+  }
+  const byGrade = new Map<string, PartnershipRow[]>();
+  for (const r of best.values()) {
+    if (!byGrade.has(r.grade)) byGrade.set(r.grade, []);
+    byGrade.get(r.grade)!.push(r);
+  }
+  return [...byGrade.entries()]
+    .sort((a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]))
+    .map(([grade, list]) => ({
+      id: `partnerships_grade:${grade}`,
+      category: "partnership_records",
+      layout: "recordsTable" as const,
+      title: `${grade} Partnerships`,
+      subtitle: "Highest partnership for each wicket",
+      figureLabel: "Runs",
+      entries: list
+        .sort((a, b) => a.wicket - b.wicket)
+        .map((r) => ({
+          season: r.season,
+          primaryText: r.batters,
+          detail: `${r.runs} runs · ${r.wicket} wkt${r.opponent ? ` · v ${r.opponent}` : ""}`,
+          meta: { grade, wicket: r.wicket, figure: String(r.runs), opponent: r.opponent },
+        })),
+    }));
+}
+
+/**
+ * Partnership records per grade: a central tenant's derived stands with its
+ * curated records; the native tenant's curated records alone.
+ */
+export async function buildPartnershipBoards(source: DataSource): Promise<HonourBoardOut[]> {
+  const curated = await db
+    .select()
+    .from(partnershipRecordsTable)
+    .where(eq(partnershipRecordsTable.tenantId, source.tenantId));
+  const rows: PartnershipRow[] = [];
+  for (const c of curated) {
+    const wicket = wicketNumber(c.wicket);
+    if (wicket === null || !c.batsmen.trim()) continue;
+    rows.push({
+      grade: c.grade,
+      wicket,
+      runs: c.runs,
+      batters: c.batsmen.trim(),
+      season: c.season ?? "",
+      opponent: opponentName(c.opposition),
+      source: "curated",
+    });
+  }
+  if (source.kind === "central") {
+    const { centralPartnershipRecords } = await import("@workspace/db/central-queries");
+    const overlay = await loadClubOverlay(source.tenantId);
+    const [derived, opponents] = await Promise.all([
+      centralPartnershipRecords(source.clubId, overlay.identity.merges),
+      centralOpponentsByMatch(source.clubId),
+    ]);
+    for (const d of derived) {
+      const names = d.batters.map((b) => (b.displayName ?? "").trim());
+      if (names.some((n) => !n)) continue;
+      rows.push({
+        grade: d.grade,
+        wicket: d.wicket,
+        runs: d.runs,
+        batters: names.join(" & "),
+        season: d.season,
+        opponent: opponents.get(d.matchId) ?? null,
+        source: "derived",
+      });
+    }
+  }
+  return partnershipBoards(rows);
+}
+
 /** Recently-achieved milestones (reuses the /milestones feed, tenant-scoped). */
 export async function buildMilestoneBoard(source: DataSource): Promise<HonourBoardOut | null> {
   const { items } = await buildMilestonesForSource(source);
@@ -404,14 +513,110 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
   return out;
 }
 
-function recordsByGradeBoard(grade: string, entries: BoardEntry[]): HonourBoardOut {
+/** One record in a grade: "Most Runs", "4321", "Jane Smith". */
+export interface GradeRecordLine {
+  label: string;
+  value: string;
+  holder: string | null;
+  playerId: number | null;
+}
+
+/** A grade's record holders, in the order the boards list them. */
+export interface GradeRecords {
+  grade: string;
+  lines: GradeRecordLine[];
+}
+
+function recordsByGradeBoard({ grade, lines }: GradeRecords): HonourBoardOut {
   return {
     id: `records_grade:${grade}`,
     category: "records_by_grade",
     layout: "list",
     title: `${grade} Records`,
     subtitle: "Leading performances in this grade",
-    entries,
+    entries: lines.map((l) => ({
+      season: "",
+      primaryText: l.label,
+      detail: l.holder ? `${l.value} — ${l.holder}` : l.value,
+      playerId: l.playerId,
+    })),
+  };
+}
+
+/** "games record holders" → "games record holders" without punctuation, for matching. */
+const labelKey = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+/**
+ * The Grade Records board (kiosk redesign C3): one panel per grade, the
+ * derived record holders with the club's curated records for that grade on
+ * top. A curated record whose type names a derived one ("Most Runs") replaces
+ * it; any other curated record for the grade is added to the panel.
+ */
+export function gradeRecordPanels(
+  derived: GradeRecords[],
+  curated: { recordType: string; grade: string | null; detail: string | null }[],
+): HonourBoardOut | null {
+  const byGrade = new Map(derived.map((g) => [g.grade, { grade: g.grade, lines: [...g.lines] }]));
+  for (const c of curated) {
+    const grade = c.grade?.trim();
+    const label = c.recordType.trim();
+    const value = (c.detail ?? "").trim();
+    if (!grade || !label || !value) continue;
+    let panel = byGrade.get(grade);
+    if (!panel) {
+      panel = { grade, lines: [] };
+      byGrade.set(grade, panel);
+    }
+    const line = { label, value, holder: null, playerId: null };
+    const i = panel.lines.findIndex((l) => labelKey(l.label) === labelKey(label));
+    if (i >= 0) panel.lines[i] = line;
+    else panel.lines.push(line);
+  }
+  const panels = [...byGrade.values()]
+    .filter((p) => p.lines.length > 0)
+    .sort((a, b) => gradeRank(a.grade) - gradeRank(b.grade) || a.grade.localeCompare(b.grade));
+  if (panels.length === 0) return null;
+  return {
+    id: "grade_records",
+    category: "grade_records",
+    layout: "recordPanels",
+    title: "Grade Records",
+    subtitle: "Leading performances in each grade",
+    entries: panels.map((p) => ({
+      season: "",
+      primaryText: p.grade,
+      lines: p.lines,
+    })),
+  };
+}
+
+/**
+ * The per-grade record boards (one list board per grade, as before) and the
+ * Grade Records panels board (C3), from one read of the grade records. The
+ * curated records are the tenant's own `club_records` rows.
+ */
+export async function buildGradeRecordBoards(
+  source: DataSource,
+): Promise<{ byGrade: HonourBoardOut[]; panels: HonourBoardOut | null }> {
+  const [derived, curated] = await Promise.all([
+    gradeRecords(source),
+    db
+      .select({
+        recordType: clubRecordsTable.recordType,
+        grade: clubRecordsTable.grade,
+        detail: clubRecordsTable.detail,
+      })
+      .from(clubRecordsTable)
+      .where(eq(clubRecordsTable.tenantId, source.tenantId))
+      .orderBy(asc(clubRecordsTable.id)),
+  ]);
+  return {
+    byGrade: derived.map(recordsByGradeBoard),
+    panels: gradeRecordPanels(derived, curated),
   };
 }
 
@@ -419,17 +624,20 @@ function recordsByGradeBoard(grade: string, entries: BoardEntry[]): HonourBoardO
  * Per-grade statistical record holders (mirrors the Records "By Grade" tab).
  *
  * The native stats tables hold only tenant #1's history, so a central tenant
- * builds the same boards from its own central club (senior grades only,
+ * builds the same records from its own central club (senior grades only,
  * private players never shown), with holders linked through its crosswalk.
  */
-export async function buildRecordsByGrade(source: DataSource): Promise<HonourBoardOut[]> {
-  if (source.kind === "central") return buildCentralRecordsByGrade(source);
-  return buildNativeRecordsByGrade();
+async function gradeRecords(source: DataSource): Promise<GradeRecords[]> {
+  const out =
+    source.kind === "central" ? await centralGradeRecords(source) : await nativeGradeRecords();
+  return out
+    .filter((g) => g.lines.length > 0)
+    .sort((a, b) => gradeRank(a.grade) - gradeRank(b.grade) || a.grade.localeCompare(b.grade));
 }
 
-async function buildCentralRecordsByGrade(
+async function centralGradeRecords(
   source: Extract<DataSource, { kind: "central" }>,
-): Promise<HonourBoardOut[]> {
+): Promise<GradeRecords[]> {
   const { centralClubRecords, centralGradesForSeason } =
     await import("@workspace/db/central-queries");
   // The club overlay's identity: crosswalk ids with confirmed merges folded,
@@ -457,11 +665,8 @@ async function buildCentralRecordsByGrade(
     })),
   );
 
-  const out: HonourBoardOut[] = [];
-  for (const { grade, records } of perGrade.sort(
-    (a, b) => gradeRank(a.grade) - gradeRank(b.grade) || a.grade.localeCompare(b.grade),
-  )) {
-    const entries: BoardEntry[] = [];
+  return perGrade.map(({ grade, records }) => {
+    const lines: GradeRecordLine[] = [];
     const push = (
       label: string,
       h: { participantId: string; displayName: string | null; value: number | string } | null,
@@ -469,10 +674,10 @@ async function buildCentralRecordsByGrade(
       if (!h || h.value === 0 || h.value === "") return;
       const name = (h.displayName ?? "").trim();
       if (!name) return;
-      entries.push({
-        season: "",
-        primaryText: label,
-        detail: `${h.value} — ${name}`,
+      lines.push({
+        label,
+        value: String(h.value),
+        holder: name,
         playerId: intByGuid.get(h.participantId) ?? null,
       });
     };
@@ -482,12 +687,11 @@ async function buildCentralRecordsByGrade(
     push("Most Wickets", records.mostWickets);
     push("Best Bowling", records.bestBowling);
     push("Most Catches", records.mostCatches);
-    if (entries.length > 0) out.push(recordsByGradeBoard(grade, entries));
-  }
-  return out;
+    return { grade, lines };
+  });
 }
 
-async function buildNativeRecordsByGrade(): Promise<HonourBoardOut[]> {
+async function nativeGradeRecords(): Promise<GradeRecords[]> {
   const rows = await db
     .select({
       playerId: playerGradeStatsTable.playerId,
@@ -517,19 +721,11 @@ async function buildNativeRecordsByGrade(): Promise<HonourBoardOut[]> {
   type Row = (typeof rows)[number];
   const name = (r: Row) => `${r.givenName} ${r.surname}`.trim();
 
-  const out: HonourBoardOut[] = [];
-  for (const [grade, recs] of [...byGrade.entries()].sort(
-    (a, b) => gradeRank(a[0]) - gradeRank(b[0]) || a[0].localeCompare(b[0]),
-  )) {
-    const entries: BoardEntry[] = [];
+  return [...byGrade.entries()].map(([grade, recs]) => {
+    const lines: GradeRecordLine[] = [];
     const pushTop = (label: string, pick: Row | undefined, value: string | number | null) => {
       if (!pick || value == null || value === "" || value === 0) return;
-      entries.push({
-        season: "",
-        primaryText: label,
-        detail: `${value} — ${name(pick)}`,
-        playerId: pick.playerId,
-      });
+      lines.push({ label, value: String(value), holder: name(pick), playerId: pick.playerId });
     };
     const topBy = (sel: (r: Row) => number) => recs.slice().sort((a, b) => sel(b) - sel(a))[0];
 
@@ -548,11 +744,8 @@ async function buildNativeRecordsByGrade(): Promise<HonourBoardOut[]> {
     pushTop("Most Wickets", mostWickets, mostWickets?.wickets ?? 0);
     pushTop("Best Bowling", bestBowling, bestBowling?.bestBowling ?? null);
     pushTop("Most Catches", mostCatches, mostCatches?.catches ?? 0);
-
-    if (entries.length === 0) continue;
-    out.push(recordsByGradeBoard(grade, entries));
-  }
-  return out;
+    return { grade, lines };
+  });
 }
 
 const LEADERBOARD_LIMIT = 50;

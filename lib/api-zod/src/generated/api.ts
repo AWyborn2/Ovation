@@ -2647,6 +2647,46 @@ export const DeleteHatTrickParams = zod.object({
 
 
 /**
+ * For a club that reads from the central database: links the premiership
+to the match an admin picked as its grand final (when setup couldn't
+pick it) and fills the details the row is missing from that match —
+venue and date when blank, the result line when blank or a bare
+"Premiers", and the team list when the row has no players. Never
+overwrites what an admin has entered.
+
+ * @summary Link a premiership to its grand final and fill its details
+ */
+export const LinkPremiershipDeciderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const LinkPremiershipDeciderBody = zod.object({
+  "matchId": zod.number().describe('The central match id of the grand final.')
+})
+
+export const LinkPremiershipDeciderResponse = zod.object({
+  "id": zod.number(),
+  "year": zod.number(),
+  "grade": zod.string(),
+  "competition": zod.string(),
+  "venue": zod.string().nullish(),
+  "matchDate": zod.string().nullish(),
+  "result": zod.string().nullish(),
+  "mom": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "matchId": zod.number().nullish().describe('Id of the Grand Final scorecard match for this premiership\'s grade and\nseason, when one exists in the match database; null otherwise.\n'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "premiershipId": zod.number(),
+  "playerId": zod.number().nullish(),
+  "name": zod.string(),
+  "isCaptain": zod.boolean(),
+  "battingOrder": zod.number().nullish()
+}))
+})
+
+
+/**
  * @summary List all premierships with rosters
  */
 export const ListPremiershipsResponseItem = zod.object({
@@ -10131,6 +10171,15 @@ export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getHonourDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
 
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
 export const getHonourDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookPerPageMax = 20;
 
@@ -10171,7 +10220,7 @@ export const GetHonourDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels', 'recordsTable']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines. \"recordsTable\" lists partnerships (wicket, runs, partners, season, opponent) whose entries carry meta.wicket, meta.figure and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10191,7 +10240,8 @@ export const GetHonourDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10220,7 +10270,13 @@ export const GetHonourDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -10241,7 +10297,8 @@ export const GetHonourDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10270,7 +10327,13 @@ export const GetHonourDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({
@@ -10324,6 +10387,19 @@ export const GetHonourDisplayResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10440,7 +10516,16 @@ export const GetHonourDisplayResponse = zod.object({
   "key": zod.string(),
   "label": zod.string()
 }).describe('An available column an admin can add to a grid-capable board.'))
-}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.'),
+  "photoSlideshows": zod.array(zod.object({
+  "id": zod.string(),
+  "photos": zod.array(zod.object({
+  "url": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "caption": zod.string().nullish()
+}))
+})).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
 
 
@@ -10457,6 +10542,15 @@ export const getKioskDisplayResponseBoardsItemDisplayColumnsMax = 3;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMin = 2;
 export const getKioskDisplayResponseBoardsItemDisplayWrapBlocksMax = 4;
 
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
 
 export const getKioskDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10498,7 +10592,7 @@ export const GetKioskDisplayResponse = zod.object({
   "boards": zod.array(zod.object({
   "id": zod.string().describe('Stable board id (also the kiosk sequence key).'),
   "category": zod.string().describe('Free-text board category used for grouping\/labelling.'),
-  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent.'),
+  "layout": zod.enum(['premiership', 'teamOfDecade', 'list', 'columns', 'grid', 'lifeMembers', 'leaderboard', 'achievements', 'recordPanels', 'recordsTable']).describe('Natural render layout for this board (skin only changes the look). \"leaderboard\" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. \"achievements\" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. \"recordPanels\" is one panel per grade: each entry is a grade (primaryText) with its record lines. \"recordsTable\" lists partnerships (wicket, runs, partners, season, opponent) whose entries carry meta.wicket, meta.figure and meta.opponent.'),
   "title": zod.string(),
   "subtitle": zod.string().nullish(),
   "entries": zod.array(zod.object({
@@ -10518,7 +10612,8 @@ export const GetKioskDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10547,7 +10642,13 @@ export const GetKioskDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 })),
   "columns": zod.array(zod.object({
   "heading": zod.string(),
@@ -10568,7 +10669,8 @@ export const GetKioskDisplayResponse = zod.object({
   "rank": zod.number().nullish().describe('1-based rank for ranked list boards (points, win counts).'),
   "figure": zod.string().nullish().describe('The entry\'s headline figure for table layouts, e.g. \"312\" (games), \"147\*\" (a score) or \"6\/23\" (bowling figures).'),
   "seasonSpan": zod.string().nullish().describe('Seasons the player played for the club, e.g. \"2009–25\" or \"2024\/25\".'),
-  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".')
+  "opponent": zod.string().nullish().describe('The side the achievement came against, e.g. \"Mandurah\".'),
+  "wicket": zod.number().nullish().describe('Records tables, the wicket a partnership was for (1–10).')
 }).optional(),
   "squad": zod.array(zod.object({
   "name": zod.string(),
@@ -10597,7 +10699,13 @@ export const GetKioskDisplayResponse = zod.object({
   "runOuts": zod.number(),
   "gradesPlayed": zod.array(zod.string())
 }).nullish().describe('Aggregated career stats (null when the member has no linked player).')
-}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.')
+}).nullish().describe('Extra data for the life-members board (career stats + bio), populated only for boards with the \"lifeMembers\" layout.'),
+  "lines": zod.array(zod.object({
+  "label": zod.string().describe('The record, e.g. \"Most Runs\".'),
+  "value": zod.string().describe('The figure, e.g. \"4321\" or \"7\/20\".'),
+  "holder": zod.string().nullish().describe('Who holds it (null for a curated record that names no one separately).'),
+  "playerId": zod.number().nullish()
+})).nullish().describe('Record panels: one grade\'s records, in board order (populated only for boards with the \"recordPanels\" layout).')
 }))
 }).describe('A single column of a composite \'columns\' layout board.')).nullish().describe('Side-by-side columns for the \'columns\' layout (else null).'),
   "grid": zod.object({
@@ -10651,6 +10759,19 @@ export const GetKioskDisplayResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10767,7 +10888,16 @@ export const GetKioskDisplayResponse = zod.object({
   "key": zod.string(),
   "label": zod.string()
 }).describe('An available column an admin can add to a grid-capable board.'))
-}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.')
+}).describe('A grid-capable board and the columns an admin can choose from for its season-grid layout. Drives the admin column pickers.')).optional().describe('Grid-capable boards and their selectable columns, for the admin season-grid column pickers.'),
+  "photoSlideshows": zod.array(zod.object({
+  "id": zod.string(),
+  "photos": zod.array(zod.object({
+  "url": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "caption": zod.string().nullish()
+}))
+})).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
 
 
@@ -10809,6 +10939,17 @@ export const updateHonourDisplaySettingsBodyKioskLookHoldMax = 60;
 
 export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 5;
 
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax = 80;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax = 20;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMin = 0;
 export const updateHonourDisplaySettingsBodyBoardConfigsPerPageMax = 20;
@@ -10861,6 +11002,19 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional(),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
   "trans": zod.enum(['fade', 'up', 'down', 'left', 'right', 'pop', 'zoom', 'flip', 'wipe', 'rows', 'cut', 'random']).optional().describe('How a board, or its next page, arrives.'),
@@ -10947,6 +11101,15 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
 })
 
 
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax = 80;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax = 365;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax = 30;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMax = 20;
 
@@ -11000,6 +11163,19 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "imageUrl": zod.string().describe('Full-screen ad image URL (or uploaded object path).'),
   "mediaType": zod.enum(['image', 'video']).optional().describe('The creative\'s media type. Defaults to \"image\" when absent (ads created before video support existed).')
 }).describe('A full-screen advertising creative the admin can place between boards in the kiosk rotation (distinct from the club sponsor library).')).optional().describe('Admin-uploaded full-screen ad creatives for the kiosk.'),
+  "kioskPhotoSlideshows": zod.array(zod.object({
+  "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
+  "name": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax),
+  "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
+  "types": zod.array(zod.string()).nullish(),
+  "grades": zod.array(zod.string()).nullish(),
+  "order": zod.enum(['random', 'newest']),
+  "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
+  "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+})).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),

@@ -481,8 +481,15 @@
     {
       "idx": 68,
       "version": "7",
-      "when": 1792995236901,
-      "tag": "0068_library_element_icons",
+      "when": 1792997319341,
+      "tag": "0068_kiosk_photo_slideshows",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793000252098,
+      "tag": "0069_library_element_icons",
       "breakpoints": true
     }
   ]

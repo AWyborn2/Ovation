@@ -13,6 +13,7 @@ import type { HonourDisplaySettingsUpdateKioskSponsorSlideStyle } from './honour
 import type { HonourSkin } from './honourSkin';
 import type { KioskAd } from './kioskAd';
 import type { KioskLook } from './kioskLook';
+import type { KioskPhotoSlideshow } from './kioskPhotoSlideshow';
 
 export interface HonourDisplaySettingsUpdate {
   kioskLook?: KioskLook;
@@ -28,6 +29,8 @@ export interface HonourDisplaySettingsUpdate {
   kioskSponsorSlideStyle?: HonourDisplaySettingsUpdateKioskSponsorSlideStyle;
   kioskSponsorIds?: number[];
   kioskAds?: KioskAd[];
+  /** @maxItems 20 */
+  kioskPhotoSlideshows?: KioskPhotoSlideshow[];
   boardConfigs?: HonourDisplaySettingsUpdateBoardConfigs;
   composites?: CompositeDef[];
   customGrids?: CustomGridDef[];

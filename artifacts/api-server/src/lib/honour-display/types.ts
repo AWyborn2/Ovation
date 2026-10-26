@@ -31,6 +31,8 @@ export interface BoardEntryMeta {
   seasonSpan?: string | null;
   // Achievement lists: the side it came against ("Mandurah").
   opponent?: string | null;
+  // Records tables: the wicket a partnership was for (1–10).
+  wicket?: number | null;
 }
 
 // Aggregated career stats for a life member (mirrors the app's LifeMemberStats,
@@ -71,6 +73,15 @@ export interface BoardEntry {
   meta?: BoardEntryMeta;
   squad?: BoardSquadMember[] | null;
   lifeMember?: LifeMemberInfoOut | null;
+  // Record panels: one grade's records ("Most Runs", "4321", "Jane Smith").
+  lines?: BoardRecordLineOut[] | null;
+}
+
+export interface BoardRecordLineOut {
+  label: string;
+  value: string;
+  holder?: string | null;
+  playerId?: number | null;
 }
 
 // Each board keeps its NATURAL layout; the chosen skin only changes the look.
@@ -79,7 +90,11 @@ export interface BoardEntry {
 // "lifeMembers" is the two-column stat-tile + bio card layout.
 // "leaderboard" is a ranked table: rank, player, figure, seasons.
 // "achievements" is a dated list: season, player, figure, grade, opponent.
+// "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
 // "achievements" is a dated list: season, player, figure, grade, opponent.
+// "recordPanels" is one panel per grade; each entry is a grade with its lines.
+// "recordsTable" lists partnerships: wicket, runs, partners, season, opponent.
 export type BoardLayout =
   | "premiership"
   | "teamOfDecade"
@@ -88,7 +103,9 @@ export type BoardLayout =
   | "grid"
   | "lifeMembers"
   | "leaderboard"
-  | "achievements";
+  | "achievements"
+  | "recordPanels"
+  | "recordsTable";
 
 export type BoardTransition = "scroll" | "slide" | "wrap";
 

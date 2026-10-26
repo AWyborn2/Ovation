@@ -38,6 +38,7 @@ type Entry = {
   detail?: string | null;
   playerId?: number | null;
   meta?: { rank?: number | null; figure?: string | null; seasonSpan?: string | null };
+  lines?: { label: string; value: string; holder: string | null; playerId: number | null }[];
 };
 type Board = { id: string; category: string; layout?: string; title: string; entries: Entry[] };
 type Bundle = { boards: Board[] };
@@ -213,6 +214,17 @@ describe.skipIf(!process.env.DATABASE_URL)("honour display: stats boards are ten
     expect(mostWickets!.entries).toEqual([
       expect.objectContaining({ primaryText: "Casey Fixture", detail: "2 wickets" }),
     ]);
+
+    // The Grade Records panels board (kiosk redesign C3) reads the same holders.
+    const panels = bundle.boards.find((b) => b.id === "grade_records");
+    expect(panels?.layout).toBe("recordPanels");
+    const aPanel = panels!.entries.find((e) => e.primaryText === "A Grade")!;
+    expect(aPanel.lines).toContainEqual({
+      label: "Most Runs",
+      value: "41",
+      holder: "Casey Fixture",
+      playerId: casey!.playerId,
+    });
 
     const aGrade = bundle.boards.find((b) => b.id === "records_grade:A Grade");
     expect(aGrade).toBeDefined();

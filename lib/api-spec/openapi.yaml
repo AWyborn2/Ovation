@@ -2051,6 +2051,42 @@ paths:
         "404":
           description: Not found
 
+  /premierships/{id}/link-match:
+    post:
+      operationId: linkPremiershipDecider
+      tags: [grades]
+      summary: Link a premiership to its grand final and fill its details
+      description: |
+        For a club that reads from the central database: links the premiership
+        to the match an admin picked as its grand final (when setup couldn't
+        pick it) and fills the details the row is missing from that match —
+        venue and date when blank, the result line when blank or a bare
+        "Premiers", and the team list when the row has no players. Never
+        overwrites what an admin has entered.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiershipMatchLink"
+      responses:
+        "200":
+          description: Linked and filled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Premiership"
+        "400":
+          description: Not a central club, or the match isn't one of the club's
+        "404":
+          description: Not found
+
   /premierships:
     get:
       operationId: listPremierships
@@ -18052,6 +18088,14 @@ components:
           items:
             $ref: "#/components/schemas/PremiershipPlayerInput"
 
+    PremiershipMatchLink:
+      type: object
+      required: [matchId]
+      properties:
+        matchId:
+          type: integer
+          description: The central match id of the grand final.
+
     PremiershipPlayerInput:
       type: object
       required: [name, isCaptain]
@@ -21450,6 +21494,10 @@ components:
           type: string
           nullable: true
           description: The side the achievement came against, e.g. "Mandurah".
+        wicket:
+          type: integer
+          nullable: true
+          description: Records tables, the wicket a partnership was for (1–10).
 
     BoardEntry:
       type: object
@@ -21510,6 +21558,34 @@ components:
                 - $ref: "#/components/schemas/LifeMemberStats"
               nullable: true
               description: Aggregated career stats (null when the member has no linked player).
+        lines:
+          type: array
+          nullable: true
+          description: >-
+            Record panels: one grade's records, in board order (populated only
+            for boards with the "recordPanels" layout).
+          items:
+            $ref: "#/components/schemas/BoardRecordLine"
+
+    BoardRecordLine:
+      type: object
+      required:
+        - label
+        - value
+      properties:
+        label:
+          type: string
+          description: The record, e.g. "Most Runs".
+        value:
+          type: string
+          description: The figure, e.g. "4321" or "7/20".
+        holder:
+          type: string
+          nullable: true
+          description: Who holds it (null for a curated record that names no one separately).
+        playerId:
+          type: integer
+          nullable: true
 
     BoardDisplay:
       type: object
@@ -21898,12 +21974,18 @@ components:
             - lifeMembers
             - leaderboard
             - achievements
+            - recordPanels
+            - recordsTable
           description: >-
             Natural render layout for this board (skin only changes the look).
             "leaderboard" is a ranked table (rank, player, figure, seasons) whose
             entries carry meta.rank, meta.figure and meta.seasonSpan.
             "achievements" is a dated list (season, player, figure, grade,
             opponent) whose entries carry meta.figure, meta.grade and meta.opponent.
+            "recordPanels" is one panel per grade: each entry is a grade
+            (primaryText) with its record lines. "recordsTable" lists
+            partnerships (wicket, runs, partners, season, opponent) whose
+            entries carry meta.wicket, meta.figure and meta.opponent.
         title:
           type: string
         subtitle:
@@ -22141,6 +22223,84 @@ components:
           items:
             $ref: "#/components/schemas/CustomGridColumn"
 
+    KioskPhotoSlideshow:
+      type: object
+      required: [id, name, library, source, order, perPass, secondsPerPhoto, captions]
+      properties:
+        id:
+          type: string
+          description: '"photos:<uuid>"; the rotation places it by this id.'
+        name:
+          type: string
+          maxLength: 80
+        library:
+          type: string
+          enum: [senior, junior, both]
+          description: >-
+            Senior club photos, the junior library (only photos every tagged
+            child may be shown in), or both.
+        source:
+          type: string
+          enum: [all, recent, season, types, grades]
+          description: >-
+            The whole library, the last recentDays, this season, or photos
+            with any of types / grades.
+        recentDays:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 365
+        types:
+          type: array
+          nullable: true
+          items:
+            type: string
+        grades:
+          type: array
+          nullable: true
+          items:
+            type: string
+        order:
+          type: string
+          enum: [random, newest]
+        perPass:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Photos shown each time the slideshow comes round.
+        secondsPerPhoto:
+          type: integer
+          minimum: 2
+          maximum: 30
+        captions:
+          type: boolean
+          description: Grade and season under each photo (never names).
+
+    KioskSlideshowPhoto:
+      type: object
+      required: [url, width, height]
+      properties:
+        url:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        caption:
+          type: string
+          nullable: true
+
+    KioskSlideshowPhotos:
+      type: object
+      required: [id, photos]
+      properties:
+        id:
+          type: string
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/KioskSlideshowPhoto"
+
     KioskAd:
       type: object
       description: >-
@@ -22249,6 +22409,7 @@ components:
         - boardConfigs
         - composites
         - kioskLook
+        - kioskPhotoSlideshows
       properties:
         defaultTemplate:
           type: string
@@ -22303,6 +22464,13 @@ components:
           description: Admin-uploaded full-screen ad creatives for the kiosk.
           items:
             $ref: "#/components/schemas/KioskAd"
+        kioskPhotoSlideshows:
+          type: array
+          description: >-
+            Photo slideshows placed in the rotation as "photos:<id>". The
+            bundle's photoSlideshows carries each one's resolved photos.
+          items:
+            $ref: "#/components/schemas/KioskPhotoSlideshow"
         kioskToken:
           type: string
           nullable: true
@@ -22397,6 +22565,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/KioskAd"
+        kioskPhotoSlideshows:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/KioskPhotoSlideshow"
         boardConfigs:
           type: object
           additionalProperties:
@@ -22449,6 +22622,13 @@ components:
             season-grid column pickers.
           items:
             $ref: "#/components/schemas/GridCatalogEntry"
+        photoSlideshows:
+          type: array
+          description: >-
+            Each photo slideshow's photos, resolved on the server (tenant-scoped;
+            junior photos only when every tagged child may be shown).
+          items:
+            $ref: "#/components/schemas/KioskSlideshowPhotos"
 
     TourStepContent:
       type: object

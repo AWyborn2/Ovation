@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
 import { BOARD_LAYOUT_LABEL, rotationItemKind } from "./rotation-list";
 import { MOTION_KEYS, TvMotionFields, motionDefaults } from "./tv-motion-fields";
+import { SlideshowPanel } from "./slideshow-panel";
 
 const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   grid: "Grade columns per screen",
@@ -14,12 +15,15 @@ const COLUMNS_LABEL: Record<DisplayBoard["layout"], string> = {
   teamOfDecade: "Columns",
   leaderboard: "Columns",
   achievements: "Columns",
+  recordPanels: "Panels across",
+  recordsTable: "Columns",
 };
 
 /**
  * Settings for the rotation item selected in the builder (honours kiosk
  * redesign B3). A board gets the TV controls its layout uses, each defaulting
- * to the club look; sponsor walls and ads point to where they are set up.
+ * to the club look; a photo slideshow gets its own settings; sponsor walls and
+ * ads point to where they are set up.
  */
 export function RotationItemPanel({
   form,
@@ -38,6 +42,20 @@ export function RotationItemPanel({
     );
   }
   const kind = rotationItemKind(token);
+  if (kind === "photos") {
+    const slideshow = form.slideshows.find((s) => s.id === token);
+    return (
+      <Panel title={form.seqLabel(token)} sub={slideshow ? "Photo slideshow" : undefined}>
+        {slideshow ? (
+          <SlideshowPanel key={slideshow.id} form={form} slideshow={slideshow} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            This slideshow no longer exists. Remove it from the rotation.
+          </p>
+        )}
+      </Panel>
+    );
+  }
   if (kind !== "board") {
     return (
       <Panel title={form.seqLabel(token)}>

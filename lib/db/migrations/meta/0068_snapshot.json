@@ -1,5 +1,5 @@
 {
-  "id": "451f6dc7-9319-4ef0-9558-8be5054f56dd",
+  "id": "5f4f847f-6428-4a56-bda5-aa3e6d1b200d",
   "prevId": "0dcbfc1c-7cee-4c17-87a9-f2b366fc0ab4",
   "version": "7",
   "dialect": "postgresql",
@@ -6309,6 +6309,13 @@
         },
         "kiosk_ads": {
           "name": "kiosk_ads",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "kiosk_photo_slideshows": {
+          "name": "kiosk_photo_slideshows",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
@@ -16336,7 +16343,7 @@
         },
         "library_elements_category_check": {
           "name": "library_elements_category_check",
-          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers')"
+          "value": "\"category\" IN ('frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures')"
         },
         "library_elements_unlisted_by_check": {
           "name": "library_elements_unlisted_by_check",

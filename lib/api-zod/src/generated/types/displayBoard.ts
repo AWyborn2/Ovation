@@ -16,7 +16,7 @@ export interface DisplayBoard {
   id: string;
   /** Free-text board category used for grouping/labelling. */
   category: string;
-  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. */
+  /** Natural render layout for this board (skin only changes the look). "leaderboard" is a ranked table (rank, player, figure, seasons) whose entries carry meta.rank, meta.figure and meta.seasonSpan. "achievements" is a dated list (season, player, figure, grade, opponent) whose entries carry meta.figure, meta.grade and meta.opponent. "recordPanels" is one panel per grade: each entry is a grade (primaryText) with its record lines. "recordsTable" lists partnerships (wicket, runs, partners, season, opponent) whose entries carry meta.wicket, meta.figure and meta.opponent. */
   layout: DisplayBoardLayout;
   title: string;
   subtitle?: string | null;

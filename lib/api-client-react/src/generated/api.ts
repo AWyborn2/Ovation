@@ -374,6 +374,7 @@ import type {
   PostingSlotsRunResponse,
   Premiership,
   PremiershipInput,
+  PremiershipMatchLink,
   PremiershipUpdate,
   ProvisionTenantBody,
   ProvisioningExclusion,
@@ -6223,6 +6224,85 @@ export const useDeleteHatTrick = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteHatTrickMutationOptions(options));
+    }
+
+export const getLinkPremiershipDeciderUrl = (id: number,) => {
+
+
+
+
+  return `/api/premierships/${id}/link-match`
+}
+
+/**
+ * For a club that reads from the central database: links the premiership
+to the match an admin picked as its grand final (when setup couldn't
+pick it) and fills the details the row is missing from that match —
+venue and date when blank, the result line when blank or a bare
+"Premiers", and the team list when the row has no players. Never
+overwrites what an admin has entered.
+
+ * @summary Link a premiership to its grand final and fill its details
+ */
+export const linkPremiershipDecider = async (id: number,
+    premiershipMatchLink: PremiershipMatchLink, options?: RequestInit): Promise<Premiership> => {
+
+  return customFetch<Premiership>(getLinkPremiershipDeciderUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      premiershipMatchLink,)
+  }
+);}
+
+
+
+
+export const getLinkPremiershipDeciderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkPremiershipDecider>>, TError,{id: number;data: BodyType<PremiershipMatchLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkPremiershipDecider>>, TError,{id: number;data: BodyType<PremiershipMatchLink>}, TContext> => {
+
+const mutationKey = ['linkPremiershipDecider'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkPremiershipDecider>>, {id: number;data: BodyType<PremiershipMatchLink>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkPremiershipDecider(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkPremiershipDeciderMutationResult = NonNullable<Awaited<ReturnType<typeof linkPremiershipDecider>>>
+    export type LinkPremiershipDeciderMutationBody = BodyType<PremiershipMatchLink>
+    export type LinkPremiershipDeciderMutationError = ErrorType<void>
+
+    /**
+ * @summary Link a premiership to its grand final and fill its details
+ */
+export const useLinkPremiershipDecider = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkPremiershipDecider>>, TError,{id: number;data: BodyType<PremiershipMatchLink>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkPremiershipDecider>>,
+        TError,
+        {id: number;data: BodyType<PremiershipMatchLink>},
+        TContext
+      > => {
+      return useMutation(getLinkPremiershipDeciderMutationOptions(options));
     }
 
 export const getListPremiershipsUrl = () => {

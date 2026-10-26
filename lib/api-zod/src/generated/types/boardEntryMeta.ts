@@ -23,4 +23,6 @@ export interface BoardEntryMeta {
   seasonSpan?: string | null;
   /** The side the achievement came against, e.g. "Mandurah". */
   opponent?: string | null;
+  /** Records tables, the wicket a partnership was for (1–10). */
+  wicket?: number | null;
 }
