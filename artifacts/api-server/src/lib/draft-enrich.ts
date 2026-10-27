@@ -31,6 +31,7 @@ import { DEFAULT_TEMPLATES, CAPTION_VARIATIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
 import { draftPhotoFocus } from "./photo-focus-snapshot";
 import { draftFrameAspect } from "./photo-frame-aspect";
+import { PLAYER_SPONSOR_KINDS } from "@workspace/scorecard/card-sponsors";
 
 /**
  * What every auto-draft carries from the moment it is created (Social Studio
@@ -44,7 +45,24 @@ export type DraftEnrichment = {
   photoSource: PhotoSource | null;
   /** The photo's focus snapshot (photo focus areas); null = centred crop. */
   photoFocus: PhotoFocus | null;
+  /** The one player a player-centred card is about (player sponsors); null otherwise. */
+  subjectPlayerId: number | null;
 };
+
+/**
+ * The player whose sponsors a draft carries (player sponsors): a senior,
+ * non-fill-in player on a player-centred card kind. Junior cards never follow
+ * a player's sponsors.
+ */
+export function draftSubjectPlayerId(
+  kind: string,
+  playerId: number | null | undefined,
+  junior: boolean,
+): number | null {
+  if (junior || !PLAYER_SPONSOR_KINDS.has(kind)) return null;
+  if (playerId == null || !Number.isInteger(playerId) || playerId <= 0) return null;
+  return isFillInPlayerId(playerId) ? null : playerId;
+}
 
 /**
  * How a draft's photo was chosen. `auto:*` picks (including the club's card
@@ -1197,5 +1215,10 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
           frameAspect: () => draftFrameAspect(input.tenantId, kind),
         }),
   ]);
-  return { packId, caption, ...(await photoColumns(input.tenantId, photo)) };
+  return {
+    packId,
+    caption,
+    ...(await photoColumns(input.tenantId, photo)),
+    subjectPlayerId: draftSubjectPlayerId(kind, playerId, junior),
+  };
 }
