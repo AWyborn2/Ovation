@@ -26,4 +26,9 @@ export interface CreateSocialDraftRequest {
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
   templateRef?: TemplateRef;
+  /**
+     * The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club's senior players.
+     * @nullable
+     */
+  subjectPlayerId?: number | null;
 }

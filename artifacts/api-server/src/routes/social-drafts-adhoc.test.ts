@@ -17,6 +17,7 @@ import {
   socialSettingsTable,
   cardTemplatesTable,
   captionTemplatesTable,
+  playersTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { randomUUID } from "node:crypto";
@@ -684,5 +685,47 @@ describe("editor templates", () => {
     const draft = await as(0).post("/social-drafts", { cardInput: signing });
     const res = await as(0).post(`/social-drafts/${draft.body.id}/save-template`, { name: "" });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /social-drafts: the card's player (player sponsors)", () => {
+  let seniorId = 0;
+
+  beforeAll(async () => {
+    const [p] = await db
+      .insert(playersTable)
+      .values({ surname: `Sponsored${STAMP}`, givenName: "Sam" })
+      .returning({ id: playersTable.id });
+    seniorId = p.id;
+  });
+
+  afterAll(async () => {
+    await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenantIds));
+    await db.delete(playersTable).where(eq(playersTable.id, seniorId));
+  });
+
+  it("a player card made by hand records its senior player", async () => {
+    const res = await as(0)
+      .post("/social-drafts", { cardInput: signing, subjectPlayerId: seniorId })
+      .expect(201);
+    expect(res.body.subjectPlayerId).toBe(seniorId);
+  });
+
+  it("no player given records none", async () => {
+    const res = await as(0).post("/social-drafts", { cardInput: signing }).expect(201);
+    expect(res.body.subjectPlayerId).toBeNull();
+  });
+
+  it("refuses a fill-in, an unknown player, a non-player card or a junior card", async () => {
+    const bodies = [
+      { cardInput: signing, subjectPlayerId: 90001 },
+      { cardInput: signing, subjectPlayerId: 2_000_000_000 },
+      { cardInput: { kind: "ladder", rows: [] }, subjectPlayerId: seniorId },
+      { cardInput: { ...signing, kind: "milestone", junior: true }, subjectPlayerId: seniorId },
+    ];
+    for (const body of bodies) {
+      const res = await as(0).post("/social-drafts", body).expect(400);
+      expect(res.body.error).toMatch(/senior players/);
+    }
   });
 });

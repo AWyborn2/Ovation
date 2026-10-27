@@ -11763,7 +11763,8 @@ export const CreateSocialDraftBody = zod.object({
   "copyId": zod.number().optional(),
   "libraryTemplateId": zod.number().optional(),
   "version": zod.number()
-}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
+}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),
+  "subjectPlayerId": zod.number().nullish().describe('The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club\'s senior players.')
 })
 
 

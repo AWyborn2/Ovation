@@ -370,6 +370,7 @@ export function ShareCardModal({
               <OpenInEditorButton
                 input={input}
                 packId={isPackCard ? packId : null}
+                subjectPlayerId={sponsorPlayerId}
                 onOpened={() => onOpenChange(false)}
               >
                 <PenSquare className="h-3.5 w-3.5 mr-1" aria-hidden />

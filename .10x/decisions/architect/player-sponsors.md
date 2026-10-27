@@ -87,9 +87,11 @@ participants can't be tagged. Juniors isolation holds: no junior table is read.
    render and every web surface call `cardSponsors` with the player; tests both sides.
 4. **Admin UI** — player tags on the sponsor form and rows (search, chips, senior-only hint, the
    "personal sponsor" note).
-   4b. **Create a card player pick (P1, follow-up)** — `CreateSocialDraftBody.subjectPlayerId` and a
-   player picker in Create a card, so a hand-made player card carries the player's sponsors.
-   Until then a hand-made card shows the club strip.
+   4b. **Create a card player pick (P1)** — `CreateSocialDraftRequest.subjectPlayerId` (checked
+   with `draftSubjectPlayerId` and `nonSeniorPlayerIds`, 400 otherwise). Create a card offers an
+   optional Player on senior player cards (filled by the career milestone prefill); the preview,
+   the share modal, Open in editor and the editor starters carry it, so the hand-made draft shows
+   the player's sponsors.
 5. **Templates (P1)** — the Sponsors player pack (announcement, season thank-you, a
    sponsor-featured version of each player kind) with its own fields `{{playerSponsorLogo}}`,
    `{{playerSponsorName}}`, `{{playerSponsor2Logo}}`, `{{playerSponsor2Name}}`, filled from the
