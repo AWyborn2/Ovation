@@ -4,9 +4,9 @@
 
 - Scope: `decisions/product-manager/social-template-library.md`, Release 2.
 - Design: `decisions/architect/template-library-release-2.md` and `.10x/adrs/012-club-published-templates.md`
-  (proposed).
+  (accepted).
 
-**Status:** Planned; waiting on Ash to accept ADR-012.
+**Status:** Planned; ADR-012 accepted 27 Oct 2026. R2-A in progress.
 
 ## Delivery model
 

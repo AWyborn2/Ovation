@@ -1,6 +1,6 @@
 # ADR-012: Clubs publish templates, generate drafts and import from Figma
 
-**Status:** Proposed
+**Status:** Accepted (Ash, 27 Oct 2026)
 **Date:** 2026-10-27
 **Feature:** social-template-library, release 2
 **Author:** 10x-Team (Principal Architect)

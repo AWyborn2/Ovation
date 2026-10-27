@@ -1,6 +1,6 @@
 # Architect: template library release 2 (ADR-012)
 
-**Status:** Proposed 27 Oct 2026. **Scope:** `decisions/product-manager/social-template-library.md`
+**Status:** Accepted by Ash 27 Oct 2026. **Scope:** `decisions/product-manager/social-template-library.md`
 (Release 2). **ADR:** `.10x/adrs/012-club-published-templates.md`.
 
 ## Answers from Ash (27 Oct 2026)

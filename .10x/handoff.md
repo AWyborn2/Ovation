@@ -7,7 +7,7 @@
 ## Context
 
 - Scope: `decisions/product-manager/social-template-library.md` (Release 2). Design:
-  `decisions/architect/template-library-release-2.md`, ADR-012 (proposed). Plan:
+  `decisions/architect/template-library-release-2.md`, ADR-012 (accepted). Plan:
   `decisions/engineering-manager/template-library-release-2.md`.
 - Ash's answers (27 Oct 2026): Generate cap 20 per club per month; Figma by sign-in and by
   pasted token; check the designer's first-try fit rate before Generate goes live.
