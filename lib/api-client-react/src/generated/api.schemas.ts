@@ -10025,6 +10025,8 @@ export type ConsoleLibraryTemplate = LibraryTemplate & ({
   /** @nullable */
   unlistReason: string | null;
   updatedAt: string;
+  /** Clubs' reports not yet resolved (release 2). */
+  openReports?: number;
 });
 
 export interface ConsoleLibraryTemplateList {
@@ -13467,6 +13469,10 @@ export type ListConsoleLibraryTemplatesParams = {
 kind?: string;
 origin?: ListConsoleLibraryTemplatesOrigin;
 listed?: boolean;
+/**
+ * Only templates with an open report (release 2).
+ */
+reported?: boolean;
 };
 
 export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplatesOrigin[keyof typeof ListConsoleLibraryTemplatesOrigin];

@@ -337,6 +337,71 @@ describe("club-published templates (release 2)", () => {
     expect(await within(dialog).findByRole("status")).toHaveTextContent("Unlisted");
   });
 
+  it("reports a template to Ovation, but not the club's own", async () => {
+    const writes = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Open Club Kit milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Report" }));
+    const form = within(dialog).getByRole("form", { name: "Report this template" });
+    const send = within(form).getByRole("button", { name: "Send report" });
+    expect(send).toBeDisabled();
+    fireEvent.change(within(form).getByLabelText(/What.s wrong with it/), {
+      target: { value: "  Uses our logo  " },
+    });
+    fireEvent.click(send);
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toMatchObject({ method: "POST", body: { reason: "Uses our logo" } });
+    expect(writes[0]!.url).toContain("/template-library/1/report");
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("Reported");
+    expect(within(dialog).queryByRole("form", { name: "Report this template" })).toBeNull();
+  });
+
+  it("stars a template from the grid and from its dialog", async () => {
+    const writes = setup();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add Club Kit record to favourites" }),
+    );
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toMatchObject({ method: "PUT" });
+    expect(writes[0]!.url).toContain("/template-library/2/favourite");
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Club Kit milestone" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add to favourites" }));
+    await waitFor(() => expect(writes).toHaveLength(2));
+    expect(writes[1]!.url).toContain("/template-library/1/favourite");
+    // The dialog answers at once; taking it off again deletes it.
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Favourite" }));
+    await waitFor(() => expect(writes).toHaveLength(3));
+    expect(writes[2]).toMatchObject({ method: "DELETE" });
+  });
+
+  it("filters by style and favourites, and sorts", async () => {
+    const mock = installApiMock({
+      "/template-library/looks": LOOKS,
+      "/template-library/preview-input": { kind: "milestone", source: "sample", input: null },
+      "/template-library": LIBRARY,
+      "/club-templates": CLUB,
+      "/social-settings": {},
+    });
+    renderAt(<AdminTemplateLibrary />);
+    await screen.findByRole("button", { name: "Open Club Kit milestone" });
+    fireEvent.change(screen.getByLabelText("Style"), { target: { value: "dark" } });
+    fireEvent.change(screen.getByLabelText("Sort"), { target: { value: "popular" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Favourites only" }));
+    await waitFor(() =>
+      expect(
+        mock.calls.some(
+          (u) =>
+            /\/template-library\?/.test(u) &&
+            /tags=dark/.test(u) &&
+            /sort=popular/.test(u) &&
+            /favourites=true/.test(u),
+        ),
+      ).toBe(true),
+    );
+  });
+
   it("offers New design in Your templates", async () => {
     setup();
     fireEvent.mouseDown(await screen.findByRole("tab", { name: "Your templates" }));

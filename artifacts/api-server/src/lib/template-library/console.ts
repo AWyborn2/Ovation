@@ -10,7 +10,7 @@
  * listed only when its current version passed a real fit check, which draws
  * every page, size and preset; one recorded while no fit job ran doesn't count.
  */
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 import {
   db,
   libraryTemplatesTable,
@@ -26,6 +26,7 @@ import { documentCoverage } from "./coverage";
 import { TemplateLibraryError, libraryNotFound } from "./errors";
 import { initialFit, requestFit } from "./fit";
 import { lookRef, OVATION_AUTHOR, type LibraryTemplateView } from "./store";
+import { openTemplateReports, resolveTemplateReports } from "./template-moderation";
 
 export const MAX_LIBRARY_NAME = 80;
 export const MAX_UNLIST_REASON = 300;
@@ -38,6 +39,8 @@ export type ConsoleTemplateView = LibraryTemplateView & {
   unlistedBy: "author" | "ovation" | null;
   unlistReason: string | null;
   updatedAt: string;
+  /** Clubs' reports not yet resolved (release 2). */
+  openReports: number;
 };
 
 const columns = {
@@ -59,6 +62,7 @@ const columns = {
   fitStatus: libraryTemplateVersionsTable.fitStatus,
   fitReport: libraryTemplateVersionsTable.fitReport,
   document: libraryTemplateVersionsTable.document,
+  openReports: openTemplateReports,
 };
 
 function consoleQuery() {
@@ -100,20 +104,32 @@ function present(row: Row): ConsoleTemplateView {
     unlistedBy: row.unlistedBy,
     unlistReason: row.unlistReason,
     updatedAt: row.updatedAt.toISOString(),
+    openReports: Number(row.openReports),
   };
 }
 
-export type ConsoleListQuery = { kind?: string; origin?: TemplateOrigin; listed?: boolean };
+export type ConsoleListQuery = {
+  kind?: string;
+  origin?: TemplateOrigin;
+  listed?: boolean;
+  /** Only templates with an open report, most-reported first (release 2). */
+  reported?: boolean;
+};
 
-/** Every library template (listed or not), by kind then id. */
+/** Every library template (listed or not), by kind then id; reported ones by report count. */
 export async function listConsoleTemplates(q: ConsoleListQuery): Promise<ConsoleTemplateView[]> {
   const where: SQL[] = [];
   if (q.kind) where.push(eq(libraryTemplatesTable.kind, q.kind));
   if (q.origin) where.push(eq(libraryTemplatesTable.origin, q.origin));
   if (q.listed !== undefined) where.push(eq(libraryTemplatesTable.listed, q.listed));
+  if (q.reported) where.push(sql`${openTemplateReports} > 0`);
   const rows = await consoleQuery()
     .where(where.length ? and(...where) : undefined)
-    .orderBy(asc(libraryTemplatesTable.kind), asc(libraryTemplatesTable.id))
+    .orderBy(
+      ...(q.reported ? [desc(openTemplateReports)] : []),
+      asc(libraryTemplatesTable.kind),
+      asc(libraryTemplatesTable.id),
+    )
     .limit(CONSOLE_LIST_LIMIT);
   return rows.map(present);
 }
@@ -307,6 +323,12 @@ export async function listTemplate(id: number): Promise<ConsoleTemplateView> {
         : "This version failed the layout check. Fix it and save a new version first.",
     });
   }
+  // A club's own unlisting stands: the club lists it again by publishing (ADR-012).
+  if (t.origin === "club" && t.unlistedBy === "author") {
+    throw new TemplateLibraryError(409, {
+      error: "The club that made this template unlisted it. It lists again when they publish it.",
+    });
+  }
   // Boot sync lists a bundle template from its file; the console can only undo its own unlisting.
   if (t.readOnly && (t.unlistedBy !== "ovation" || bundleFileUnlists(t.slug))) {
     throw new TemplateLibraryError(409, {
@@ -331,7 +353,8 @@ export async function listTemplate(id: number): Promise<ConsoleTemplateView> {
 
 /**
  * Take a template out of the library. Clubs' copies keep their documents and
- * still see updates. An Ovation unlisting of a bundle template survives boot sync.
+ * still see updates. An Ovation unlisting of a bundle template survives boot
+ * sync, and it deals with the template's open reports (release 2).
  */
 export async function unlistTemplate(
   id: number,
@@ -352,6 +375,7 @@ export async function unlistTemplate(
       updatedAt: new Date(),
     })
     .where(eq(libraryTemplatesTable.id, id));
+  await resolveTemplateReports(id);
   return getConsoleTemplate(id);
 }
 

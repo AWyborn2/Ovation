@@ -119,6 +119,74 @@ function stubApi(routes: Record<string, (req: Req) => unknown> = {}) {
 }
 
 describe("console library page", () => {
+  it("shows a club template's open reports, and dismisses them", async () => {
+    const reported = template({
+      id: 6,
+      slug: null,
+      name: "Copied milestone",
+      origin: "club",
+      authorName: "Borrowers CC",
+      readOnly: false,
+      openReports: 2,
+    });
+    const requests = stubApi({
+      "GET /platform/admin/library/templates": () => ({ templates: [reported] }),
+      "GET /platform/admin/library/templates/6/reports": () => [
+        {
+          id: 1,
+          clubName: "Halls Head",
+          reason: "Uses our crest",
+          createdAt: "2026-10-26T00:00:00.000Z",
+          resolvedAt: null,
+        },
+      ],
+      // The server answers 204; the stub's Response can't carry a body with it.
+      "POST /platform/admin/library/templates/6/reports/dismiss": () => ({}),
+    });
+    renderAt(<LibraryPage />, "/platform-admin/library");
+    const list = await screen.findByTestId("library-templates");
+    const row = within(list).getByRole("listitem");
+    expect(row.textContent).toMatch(/Copied milestone.*2 open reports/);
+    expect(row.textContent).toMatch(/Club \(Borrowers CC\)/);
+    fireEvent.click(within(row).getByRole("button", { name: "Reports" }));
+    const reports = await within(row).findByRole("list", { name: "Reports" });
+    expect(reports.textContent).toMatch(/Halls Head.*Uses our crest/);
+    fireEvent.click(within(row).getByRole("button", { name: "Keep it, dismiss reports" }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.method === "POST" && /6\/reports\/dismiss$/.test(r.url))).toBe(
+        true,
+      ),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent("Reports dismissed");
+  });
+
+  it("filters to reported templates, and won't relist one its club unlisted", async () => {
+    const requests = stubApi({
+      "GET /platform/admin/library/templates": () => ({
+        templates: [
+          template({
+            id: 7,
+            slug: null,
+            name: "Withdrawn milestone",
+            origin: "club",
+            readOnly: false,
+            listed: false,
+            unlistedBy: "author",
+            openReports: 0,
+          }),
+        ],
+      }),
+    });
+    renderAt(<LibraryPage />, "/platform-admin/library");
+    const row = within(await screen.findByTestId("library-templates")).getByRole("listitem");
+    expect(row.textContent).toMatch(/Unlisted by its club/);
+    expect(within(row).queryByRole("button", { name: "List" })).toBeNull();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Reported only" }));
+    await waitFor(() =>
+      expect(requests.some((r) => /library\/templates\?.*reported=true/.test(r.url))).toBe(true),
+    );
+  });
+
   it("shows every template with its origin, listing and fit", async () => {
     stubApi();
     renderAt(<LibraryPage />, "/platform-admin/library");

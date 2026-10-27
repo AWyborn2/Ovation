@@ -36739,6 +36739,7 @@ export const getListConsoleLibraryTemplatesUrl = (params?: ListConsoleLibraryTem
 }
 
 /**
+ * By kind, then id. With `reported`, only templates with an open report, most-reported first (release 2).
  * @summary Every library template, listed or not (ADR-011 L7-A)
  */
 export const listConsoleLibraryTemplates = async (params?: ListConsoleLibraryTemplatesParams, options?: RequestInit): Promise<ConsoleLibraryTemplateList> => {

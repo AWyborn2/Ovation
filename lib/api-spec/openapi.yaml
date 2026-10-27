@@ -11642,6 +11642,9 @@ paths:
       operationId: listConsoleLibraryTemplates
       tags: [platformAdmin]
       summary: Every library template, listed or not (ADR-011 L7-A)
+      description: >-
+        By kind, then id. With `reported`, only templates with an open report,
+        most-reported first (release 2).
       parameters:
         - name: kind
           in: query
@@ -11656,6 +11659,11 @@ paths:
         - name: listed
           in: query
           required: false
+          schema: { type: boolean }
+        - name: reported
+          in: query
+          required: false
+          description: Only templates with an open report (release 2).
           schema: { type: boolean }
       responses:
         "200":
@@ -25532,6 +25540,9 @@ components:
               enum: [author, ovation, null]
             unlistReason: { type: ["string", "null"] }
             updatedAt: { type: string, format: date-time }
+            openReports:
+              type: integer
+              description: Clubs' reports not yet resolved (release 2).
 
     ConsoleLibraryTemplateList:
       type: object

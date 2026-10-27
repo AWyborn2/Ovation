@@ -16,4 +16,6 @@ export type ConsoleLibraryTemplate = LibraryTemplate & ({
   /** @nullable */
   unlistReason: string | null;
   updatedAt: Date;
+  /** Clubs' reports not yet resolved (release 2). */
+  openReports?: number;
 });

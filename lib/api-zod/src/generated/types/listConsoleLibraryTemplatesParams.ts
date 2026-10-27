@@ -11,4 +11,8 @@ export type ListConsoleLibraryTemplatesParams = {
 kind?: string;
 origin?: ListConsoleLibraryTemplatesOrigin;
 listed?: boolean;
+/**
+ * Only templates with an open report (release 2).
+ */
+reported?: boolean;
 };

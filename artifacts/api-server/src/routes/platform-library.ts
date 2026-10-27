@@ -30,6 +30,10 @@ import {
   unlistTemplate,
 } from "../lib/template-library/console";
 import {
+  dismissTemplateReports,
+  listTemplateReports,
+} from "../lib/template-library/template-moderation";
+import {
   dismissElementReports,
   listConsoleElements,
   listElementReports,
@@ -70,7 +74,7 @@ router.get(
   "/platform/admin/library/templates",
   requirePlatformAdmin,
   async (req, res): Promise<void> => {
-    const { kind, origin, listed } = req.query;
+    const { kind, origin, listed, reported } = req.query;
     if (origin !== undefined && !ORIGINS.includes(origin as (typeof ORIGINS)[number])) {
       res.status(400).json({ error: "origin is bundle, console or club." });
       return;
@@ -79,10 +83,15 @@ router.get(
       res.status(400).json({ error: "listed is true or false." });
       return;
     }
+    if (reported !== undefined && reported !== "true" && reported !== "false") {
+      res.status(400).json({ error: "reported is true or false." });
+      return;
+    }
     const templates = await listConsoleTemplates({
       kind: typeof kind === "string" && kind ? kind : undefined,
       origin: origin as (typeof ORIGINS)[number] | undefined,
       listed: listed === undefined ? undefined : listed === "true",
+      reported: reported === "true",
     });
     res.json({ templates });
   },
@@ -194,6 +203,37 @@ router.post(
       const t = await unlistTemplate(id, parsed.data);
       logger.info({ templateId: id }, "library template unlisted");
       res.json(t);
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+// Clubs' reports of a template, open first (release 2, ADR-012 R2-C).
+router.get(
+  "/platform/admin/library/templates/:id/reports",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    try {
+      res.json(await listTemplateReports(id));
+    } catch (err) {
+      fail(res, err);
+    }
+  },
+);
+
+router.post(
+  "/platform/admin/library/templates/:id/reports/dismiss",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const id = idParam(req, res);
+    if (id === null) return;
+    try {
+      await dismissTemplateReports(id);
+      logger.info({ templateId: id }, "library template reports dismissed");
+      res.status(204).end();
     } catch (err) {
       fail(res, err);
     }

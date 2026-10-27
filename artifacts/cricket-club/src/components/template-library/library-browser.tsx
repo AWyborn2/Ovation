@@ -6,21 +6,26 @@
  * original never changes); "Use as default" and "Save to my templates" make the
  * copy without leaving. Double-clicking a tile, or its Edit button, customises
  * straight away. Release 2: a club's template credits the club and counts the
- * other clubs using it, and the club that published it can unlist it.
+ * other clubs using it, and the club that published it can unlist it; clubs
+ * filter by style tag, sort, keep favourites and report a template to Ovation.
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Pencil } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createClubTemplate,
+  favouriteLibraryTemplate,
   getListClubTemplatesQueryKey,
   getListLibraryLooksQueryKey,
   listLibraryTemplates,
+  reportLibraryTemplate,
+  unfavouriteLibraryTemplate,
   unlistOwnLibraryTemplate,
   useListLibraryLooks,
   type LibraryTemplate,
   type ListLibraryTemplatesSize,
+  type ListLibraryTemplatesSort,
 } from "@workspace/api-client-react";
 import {
   isSetDocument,
@@ -45,6 +50,7 @@ import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
 import { groupFamilies, lookLabel } from "./look-families";
 import { MakeSetDialog } from "./make-set-dialog";
+import { TAG_LABELS } from "./style-tags";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -75,6 +81,16 @@ const PAGE_LABELS: Record<string, string> = {
 
 export const pageLabel = (page: string) => PAGE_LABELS[page] ?? page;
 
+const SORT_LABELS: Record<ListLibraryTemplatesSort, string> = {
+  popular: "Most used",
+  new: "Newest",
+  ovation: "Ovation's first",
+  club: "Clubs' first",
+};
+
+/** The longest report reason (the API's limit). */
+const MAX_REPORT = 500;
+
 /** "Used by 3 clubs", or null when no other club has a copy. */
 export function usedByLabel(t: Pick<LibraryTemplate, "usedBy">): string | null {
   const n = t.usedBy ?? 0;
@@ -83,6 +99,50 @@ export function usedByLabel(t: Pick<LibraryTemplate, "usedBy">): string | null {
 export const sizeLabel = (size: string) => SIZE_LABELS[size as CardSize] ?? size;
 
 type Preview = LibraryPreview;
+
+/**
+ * Add or take a template off the club's favourites, refreshing the library.
+ * Answers the new state, or null when it failed.
+ */
+export function useToggleFavourite() {
+  const qc = useQueryClient();
+  return async (template: Pick<LibraryTemplate, "id">, favourite: boolean) => {
+    try {
+      if (favourite) await favouriteLibraryTemplate(template.id);
+      else await unfavouriteLibraryTemplate(template.id);
+      await qc.invalidateQueries({ queryKey: ["template-library"] });
+      return favourite;
+    } catch {
+      return null;
+    }
+  };
+}
+
+/** The star that adds a template to, or takes it off, the club's favourites. */
+function FavouriteButton({
+  name,
+  favourite,
+  onToggle,
+  className = "",
+}: {
+  name: string;
+  favourite: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
+  return (
+    <Button
+      size="icon"
+      variant="secondary"
+      className={`h-8 w-8 shadow-sm ${className}`}
+      aria-label={favourite ? `Remove ${name} from favourites` : `Add ${name} to favourites`}
+      aria-pressed={favourite}
+      onClick={onToggle}
+    >
+      <Star className={`h-4 w-4 ${favourite ? "fill-current text-amber-500" : ""}`} />
+    </Button>
+  );
+}
 
 /**
  * Make the club's copy of a library template (a `card_templates` row from the
@@ -118,12 +178,14 @@ function TemplateTile({
   preview,
   onOpen,
   onCustomise,
+  onFavourite,
   busy,
 }: {
   template: LibraryTemplate;
   preview: Preview;
   onOpen: () => void;
   onCustomise: () => void;
+  onFavourite: () => void;
   busy: boolean;
 }) {
   const input = usePreviewInput(template.kind, preview.clubName);
@@ -169,6 +231,16 @@ function TemplateTile({
       >
         <Pencil className="h-3.5 w-3.5" /> Edit
       </Button>
+      <FavouriteButton
+        name={template.name}
+        favourite={template.favourite === true}
+        onToggle={onFavourite}
+        className={`absolute left-3 top-3 transition-opacity ${
+          template.favourite
+            ? ""
+            : "sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover:opacity-100"
+        }`}
+      />
     </li>
   );
 }
@@ -190,6 +262,40 @@ export function TemplateDetailDialog({
   const custom = useCustomiseTemplate();
   const set = template && isSetDocument(template.document) ? template.document : null;
   const [making, setMaking] = useState(false);
+  const toggleFavourite = useToggleFavourite();
+  // The dialog holds its own copy of the star, so it answers before the list refreshes.
+  const [favourite, setFavourite] = useState<{ id: number; on: boolean } | null>(null);
+  const isFavourite = template
+    ? favourite?.id === template.id
+      ? favourite.on
+      : template.favourite === true
+    : false;
+  const [reporting, setReporting] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const favourited = async () => {
+    if (!template) return;
+    const on = await toggleFavourite(template, !isFavourite);
+    if (on === null) setStatus("Couldn't change your favourites. Try again.");
+    else setFavourite({ id: template.id, on });
+  };
+
+  // Any club but the author can tell Ovation something is wrong with it.
+  const report = async () => {
+    if (!template || !reason.trim()) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      await reportLibraryTemplate(template.id, { reason: reason.trim() });
+      setReporting(false);
+      setReason("");
+      setStatus("Reported. Ovation will take a look.");
+    } catch (e) {
+      setStatus(handleAdminMutationError(e) ?? "Couldn't send the report. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // The club that published it takes it out of the library; copies keep working.
   const unlist = async () => {
@@ -236,6 +342,8 @@ export function TemplateDetailDialog({
       onOpenChange={(open) => {
         if (!open) {
           setStatus(null);
+          setReporting(false);
+          setReason("");
           onClose();
         }
       }}
@@ -327,12 +435,63 @@ export function TemplateDetailDialog({
                   Unlist
                 </Button>
               )}
+              {template.listed && (
+                <Button variant="ghost" className="gap-1" onClick={favourited}>
+                  <Star className={`h-4 w-4 ${isFavourite ? "fill-current text-amber-500" : ""}`} />
+                  {isFavourite ? "Favourite" : "Add to favourites"}
+                </Button>
+              )}
+              {!template.ownedByClub && template.listed && !reporting && (
+                <Button variant="ghost" disabled={busy} onClick={() => setReporting(true)}>
+                  Report
+                </Button>
+              )}
               {(custom.error ?? status) && (
                 <span role="status" className="text-sm text-muted-foreground">
                   {custom.error ?? status}
                 </span>
               )}
             </div>
+            {reporting && (
+              <form
+                className="space-y-2 rounded-lg border border-border p-3"
+                aria-label="Report this template"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void report();
+                }}
+              >
+                <label className="flex flex-col gap-1 text-sm font-medium" htmlFor="report-reason">
+                  What&rsquo;s wrong with it?
+                  <textarea
+                    id="report-reason"
+                    className="min-h-20 rounded-md border border-input bg-background px-2 py-1 text-sm font-normal"
+                    maxLength={MAX_REPORT}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Ovation reads every report. The club that made it isn&rsquo;t told who sent it.
+                </p>
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" disabled={busy || !reason.trim()}>
+                    Send report
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setReporting(false);
+                      setReason("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
           </>
         )}
       </DialogContent>
@@ -354,14 +513,22 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
   const [kind, setKind] = useState("");
   const [size, setSize] = useState("");
   const [look, setLook] = useState("");
+  const [tag, setTag] = useState("");
+  const [sort, setSort] = useState("");
+  const [favourites, setFavourites] = useState(false);
   const [open, setOpen] = useState<LibraryTemplate | null>(null);
+  const [favouriteError, setFavouriteError] = useState<string | null>(null);
   const custom = useCustomiseTemplate();
+  const toggleFavourite = useToggleFavourite();
   const looksQ = useListLibraryLooks({ query: { queryKey: getListLibraryLooksQueryKey() } });
 
   const filters = {
     ...(kind ? { kind } : {}),
     ...(size ? { size: size as ListLibraryTemplatesSize } : {}),
     ...(look ? { look } : {}),
+    ...(tag ? { tags: tag } : {}),
+    ...(sort ? { sort: sort as ListLibraryTemplatesSort } : {}),
+    ...(favourites ? { favourites: true } : {}),
   };
   const listQ = useInfiniteQuery({
     queryKey: ["template-library", filters],
@@ -398,9 +565,9 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
 
   return (
     <div className="space-y-4">
-      {custom.error && (
+      {(custom.error ?? favouriteError) && (
         <p role="alert" className="text-sm text-destructive">
-          {custom.error}
+          {custom.error ?? favouriteError}
         </p>
       )}
       <div className="flex flex-wrap gap-3">
@@ -421,6 +588,22 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
             (l) => [l.slug, lookLabel(l)] as [string, string],
           ),
         ])}
+        {select("library-tag", "Style", tag, setTag, [
+          ["", "Every style"],
+          ...Object.entries(TAG_LABELS),
+        ])}
+        {select("library-sort", "Sort", sort, setSort, [
+          ["", "Library order"],
+          ...Object.entries(SORT_LABELS),
+        ])}
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input
+            type="checkbox"
+            checked={favourites}
+            onChange={(e) => setFavourites(e.target.checked)}
+          />
+          Favourites only
+        </label>
       </div>
 
       {listQ.isError ? (
@@ -429,7 +612,9 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
         <LoadingState label="Loading templates…" />
       ) : templates.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No templates match. Try another card, size or look.
+          {favourites
+            ? "No favourites here yet. Star a template to keep it handy."
+            : "No templates match. Try another card, size, look or style."}
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -440,6 +625,12 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
               preview={preview}
               onOpen={() => setOpen(t)}
               onCustomise={() => custom.customise(t)}
+              onFavourite={async () => {
+                const on = await toggleFavourite(t, !t.favourite);
+                setFavouriteError(
+                  on === null ? "Couldn't change your favourites. Try again." : null,
+                );
+              }}
               busy={custom.busyId === t.id}
             />
           ))}

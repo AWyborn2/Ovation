@@ -5,12 +5,15 @@ import { Loader2 } from "lucide-react";
 import {
   getListConsoleLibraryLooksQueryKey,
   getListConsoleLibraryTemplatesQueryKey,
+  getListLibraryTemplateReportsQueryKey,
   useCreateConsoleLibraryLook,
   useCreateConsoleLibraryTemplate,
+  useDismissLibraryTemplateReports,
   useDuplicateConsoleLibraryTemplate,
   useListConsoleLibraryLooks,
   useListConsoleLibraryTemplate,
   useListConsoleLibraryTemplates,
+  useListLibraryTemplateReports,
   useUnlistConsoleLibraryTemplate,
   type ConsoleLibraryTemplate,
   type ListConsoleLibraryTemplatesParams,
@@ -48,6 +51,31 @@ function fitPill(t: ConsoleLibraryTemplate) {
   return f ? <StatusPill tone={f.tone}>{f.label}</StatusPill> : null;
 }
 
+/** `getListLibraryTemplateReportsQueryKey(id)` for any template. */
+const REPORTS_KEY = /\/library\/templates\/\d+\/reports$/;
+
+const dateOf = (iso: string) => new Date(iso).toLocaleDateString("en-AU");
+
+/** A template's reports, open first, with the club that sent each (release 2). */
+function TemplateReports({ id }: { id: number }) {
+  const q = useListLibraryTemplateReports(id, {
+    query: { queryKey: getListLibraryTemplateReportsQueryKey(id) },
+  });
+  if (q.isLoading) return <p className="text-xs text-muted-foreground">Loading reports…</p>;
+  const reports = q.data ?? [];
+  if (reports.length === 0) return <p className="text-xs text-muted-foreground">No reports.</p>;
+  return (
+    <ul className="mt-2 space-y-1 text-xs" aria-label="Reports">
+      {reports.map((r) => (
+        <li key={r.id} className={r.resolvedAt ? "text-muted-foreground" : undefined}>
+          <span className="font-semibold">{r.clubName}</span> ({dateOf(r.createdAt)}
+          {r.resolvedAt ? `, resolved ${dateOf(r.resolvedAt)}` : ""}): {r.reason}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** What a failed request says, from its body. */
 const errorOf = (err: unknown, fallback: string): string => {
   const data = (err as { data?: { error?: unknown } } | null)?.data;
@@ -60,7 +88,8 @@ const errorOf = (err: unknown, fallback: string): string => {
  * template; a bundle template changes only with a deploy, so editing one
  * starts from a duplicate), edit them in editor v2 where each save is a new
  * version, and list them once their layout check has passed at every page,
- * size and preset.
+ * size and preset. Release 2: clubs' reports of a template show here; Ovation
+ * unlists it (resolving them) or keeps it and dismisses them.
  */
 export default function LibraryPage() {
   const qc = useQueryClient();
@@ -69,6 +98,14 @@ export default function LibraryPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [unlisting, setUnlisting] = useState<{ id: number; reason: string } | null>(null);
+  const [showReports, setShowReports] = useState<Set<number>>(new Set());
+  const toggleReports = (id: number) =>
+    setShowReports((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const templatesQ = useListConsoleLibraryTemplates(filters, {
     query: { queryKey: getListConsoleLibraryTemplatesQueryKey(filters) },
@@ -79,6 +116,10 @@ export default function LibraryPage() {
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: getListConsoleLibraryTemplatesQueryKey() });
     void qc.invalidateQueries({ queryKey: getListConsoleLibraryLooksQueryKey() });
+    // Every template's reports: an unlisting or a dismissal resolves them.
+    void qc.invalidateQueries({
+      predicate: (query) => REPORTS_KEY.test(String(query.queryKey[0])),
+    });
   };
   const done = (message: string) => {
     setError(null);
@@ -115,6 +156,13 @@ export default function LibraryPage() {
     },
   });
 
+  const dismiss = useDismissLibraryTemplateReports({
+    mutation: {
+      onSuccess: () => done("Reports dismissed. The template stays listed."),
+      onError: failed("Couldn't dismiss the reports."),
+    },
+  });
+
   // New template.
   const [newKind, setNewKind] = useState<string>(TEMPLATE_CARD_KINDS[0]);
   const [newName, setNewName] = useState("");
@@ -147,7 +195,7 @@ export default function LibraryPage() {
     setFilters((f) => {
       const next = { ...f } as Record<string, unknown>;
       if (value === "") delete next[key];
-      else next[key] = key === "listed" ? value === "true" : value;
+      else next[key] = key === "listed" || key === "reported" ? value === "true" : value;
       return next as ListConsoleLibraryTemplatesParams;
     });
 
@@ -213,6 +261,14 @@ export default function LibraryPage() {
                 <option value="true">Listed</option>
                 <option value="false">Unlisted</option>
               </select>
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={filters.reported === true}
+                  onChange={(e) => setFilter("reported", e.target.checked ? "true" : "")}
+                />
+                Reported only
+              </label>
             </div>
 
             {templatesQ.isLoading ? (
@@ -237,15 +293,37 @@ export default function LibraryPage() {
                           {t.listed ? "Listed" : "Unlisted"}
                         </StatusPill>
                         {fitPill(t)}
+                        {(t.openReports ?? 0) > 0 && (
+                          <StatusPill tone="danger">
+                            {t.openReports} open {t.openReports === 1 ? "report" : "reports"}
+                          </StatusPill>
+                        )}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {kindLabel(t.kind)} · {ORIGIN_LABEL[t.origin]}
                         {t.origin === "club" ? ` (${t.authorName})` : ""}
                         {t.look ? ` · ${t.look.name}` : ""} · v{t.version}
                         {t.unlistReason ? ` · Unlisted: ${t.unlistReason}` : ""}
+                        {!t.listed && t.unlistedBy === "author" ? " · Unlisted by its club" : ""}
                       </p>
+                      {showReports.has(t.id) && <TemplateReports id={t.id} />}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      {t.origin === "club" || (t.openReports ?? 0) > 0 ? (
+                        <Button size="sm" variant="ghost" onClick={() => toggleReports(t.id)}>
+                          {showReports.has(t.id) ? "Hide reports" : "Reports"}
+                        </Button>
+                      ) : null}
+                      {(t.openReports ?? 0) > 0 && t.listed && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={dismiss.isPending}
+                          onClick={() => dismiss.mutate({ id: t.id })}
+                        >
+                          Keep it, dismiss reports
+                        </Button>
+                      )}
                       {t.readOnly ? (
                         <Button
                           size="sm"
@@ -309,7 +387,7 @@ export default function LibraryPage() {
                             Unlist…
                           </Button>
                         )
-                      ) : (
+                      ) : t.origin === "club" && t.unlistedBy === "author" ? null : (
                         <Button
                           size="sm"
                           disabled={list.isPending}

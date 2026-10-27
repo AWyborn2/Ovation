@@ -33,20 +33,10 @@ import { buildPackData } from "@/lib/pack-card-data";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import type { ShareCardInput } from "@/lib/share-card";
 import { TemplateThumb } from "./previews";
+import { TAG_LABELS } from "./style-tags";
 
 /** The most style tags one template carries (`MAX_TEMPLATE_TAGS` on the server). */
 export const MAX_TAGS = 4;
-
-const TAG_LABELS: Record<TemplateStyleTag, string> = {
-  "photo-led": "Photo-led",
-  "bold-type": "Bold type",
-  minimal: "Minimal",
-  dark: "Dark",
-  light: "Light",
-  retro: "Retro",
-  broadcast: "Broadcast",
-  textured: "Textured",
-};
 
 /** Another club, so the preview shows the slots filled by someone else's name and colours. */
 const OTHER_CLUB = "Another Cricket Club";

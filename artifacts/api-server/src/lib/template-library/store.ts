@@ -12,6 +12,7 @@ import {
   and,
   arrayContains,
   asc,
+  desc,
   eq,
   gt,
   ilike,
@@ -26,6 +27,7 @@ import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
   db,
   cardTemplatesTable,
+  libraryTemplateFavouritesTable,
   libraryTemplatesTable,
   libraryTemplateVersionsTable,
   templateLooksTable,
@@ -36,6 +38,7 @@ import {
   type TemplateOrigin,
 } from "@workspace/db";
 import { libraryNotFound } from "./errors";
+import { favouriteIds } from "./template-moderation";
 
 /** Templates per library page (PM: 24 a page). */
 export const LIBRARY_PAGE_SIZE = 24;
@@ -83,6 +86,8 @@ export type LibraryTemplateView = {
   usedBy?: number;
   /** The asking club published it, so it can unlist it (release 2). */
   ownedByClub?: boolean;
+  /** The asking club has it in its favourites (release 2). */
+  favourite?: boolean;
 };
 
 export const OVATION_AUTHOR = "Ovation";
@@ -179,11 +184,16 @@ async function withClubFields(
   rows: ViewRow[],
   tenantId: number | null,
 ): Promise<LibraryTemplateView[]> {
-  const used = await usedByCounts(rows.map((r) => r.id));
+  const ids = rows.map((r) => r.id);
+  const [used, favourites] = await Promise.all([
+    usedByCounts(ids),
+    tenantId === null ? new Set<number>() : favouriteIds(tenantId, ids),
+  ]);
   return rows.map((row) => ({
     ...present(row),
     usedBy: used.get(row.id) ?? 0,
     ownedByClub: tenantId !== null && row.origin === "club" && row.authorTenantId === tenantId,
+    favourite: favourites.has(row.id),
   }));
 }
 
@@ -202,8 +212,38 @@ export type LibraryListQuery = {
   look?: string;
   /** Style tags, comma-separated; a template must carry every one. */
   tags?: string;
-  /** The last template id of the previous page. */
+  /** Release 2: most clubs using it, newest listed, Ovation's first, or club-made first. */
+  sort?: LibrarySort;
+  /** Release 2: only the asking club's favourites. */
+  favourites?: boolean;
+  /**
+   * The previous page's `nextCursor`: the last template id in the library's own
+   * order, or how many templates were already shown when sorted.
+   */
   cursor?: number;
+};
+
+export type LibrarySort = "popular" | "new" | "ovation" | "club";
+
+/** Clubs other than the author holding a copy, per template (as `usedByCounts`). */
+const usedBySql = sql<number>`(
+  select count(distinct ${cardTemplatesTable.tenantId})::int from ${cardTemplatesTable}
+  where ${cardTemplatesTable.originTemplateId} = ${libraryTemplatesTable.id}
+    and ${cardTemplatesTable.source} = 'kind'
+    and ${cardTemplatesTable.tenantId} is distinct from ${libraryTemplatesTable.authorTenantId}
+)`;
+
+const isClubMade = sql`${libraryTemplatesTable.origin} = 'club'`;
+
+/** Each sort's order; the id last, so a page boundary never moves. */
+const SORT_ORDER: Record<LibrarySort, SQL[]> = {
+  popular: [desc(usedBySql), asc(libraryTemplatesTable.id)],
+  new: [
+    desc(sql`coalesce(${libraryTemplatesTable.listedAt}, ${libraryTemplatesTable.createdAt})`),
+    desc(libraryTemplatesTable.id),
+  ],
+  ovation: [asc(isClubMade), asc(libraryTemplatesTable.id)],
+  club: [desc(isClubMade), asc(libraryTemplatesTable.id)],
 };
 
 export async function listLibraryTemplates(
@@ -235,15 +275,32 @@ export async function listLibraryTemplates(
       )!,
     );
   }
-  if (q.cursor !== undefined) where.push(gt(libraryTemplatesTable.id, q.cursor));
+  if (q.favourites) {
+    // Favourites are a club's own; without a club there are none.
+    if (tenantId === null) return { templates: [], nextCursor: null };
+    where.push(
+      sql`exists (select 1 from ${libraryTemplateFavouritesTable}
+        where ${libraryTemplateFavouritesTable.tenantId} = ${tenantId}
+          and ${libraryTemplateFavouritesTable.templateId} = ${libraryTemplatesTable.id})`,
+    );
+  }
+  // Sorted pages go by position; the library's own order pages by id.
+  const offset = q.sort ? Math.max(0, Math.floor(q.cursor ?? 0)) : 0;
+  if (!q.sort && q.cursor !== undefined) where.push(gt(libraryTemplatesTable.id, q.cursor));
   const rows = await viewQuery()
     .where(and(...where))
-    .orderBy(asc(libraryTemplatesTable.id))
-    .limit(LIBRARY_PAGE_SIZE + 1);
+    .orderBy(...(q.sort ? SORT_ORDER[q.sort] : [asc(libraryTemplatesTable.id)]))
+    .limit(LIBRARY_PAGE_SIZE + 1)
+    .offset(offset);
   const page = await withClubFields(rows.slice(0, LIBRARY_PAGE_SIZE), tenantId);
+  const more = rows.length > LIBRARY_PAGE_SIZE;
   return {
     templates: page,
-    nextCursor: rows.length > LIBRARY_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null,
+    nextCursor: !more
+      ? null
+      : q.sort
+        ? offset + LIBRARY_PAGE_SIZE
+        : (page[page.length - 1]?.id ?? null),
   };
 }
 
