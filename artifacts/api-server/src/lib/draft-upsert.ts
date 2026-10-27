@@ -77,7 +77,7 @@ export type DraftUpsert = {
    * (ADR-007). Used as is on insert and on every refresh (it counts as an
    * automatic pick, so an admin's chosen photo still wins); `null` = none.
    */
-  photo?: { url: string; source: PhotoSource } | null;
+  photo?: { url: string; source: PhotoSource; participantId?: string } | null;
   /**
    * Finds a pre-key draft for the same event (drafts created before source keys
    * existed). The match returned gets the key backfilled.

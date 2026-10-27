@@ -11,8 +11,11 @@ import {
   DeleteJuniorLibraryPhotosBody,
   IngestJuniorLibraryPhotosBody,
   MoveJuniorLibraryPhotosBody,
+  SetJuniorLibraryPhotoFocusBody,
+  SetJuniorLibraryPhotoFocusParams,
   TagJuniorLibraryPhotosBody,
 } from "@workspace/api-zod";
+import { FRAME_SHAPES, normaliseFocusBox, type FocusBox } from "@workspace/scorecard";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { juniorParticipantJoin } from "../lib/junior-participant-scope";
@@ -61,6 +64,7 @@ async function present(tenantId: number, rows: JuniorPhotoRow[]) {
           photoWithheld: juniorParticipantsTable.photoWithheld,
           isPrivate: juniorParticipantsTable.isPrivate,
           privacyOverride: juniorParticipantsTable.privacyOverride,
+          area: juniorPhotoParticipantsTable.area,
         })
         .from(juniorPhotoParticipantsTable)
         .leftJoin(
@@ -102,6 +106,16 @@ async function present(tenantId: number, rows: JuniorPhotoRow[]) {
       }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName)),
     displayable: consent.get(r.id) === true,
+    // Photo focus areas.
+    focusBox: normaliseFocusBox(r.focusBox),
+    offShapes: FRAME_SHAPES.filter((shape) => r.offShapes.includes(shape)),
+    participantAreas: tags
+      .filter((t) => t.photoId === r.id)
+      .flatMap((t) => {
+        const box = normaliseFocusBox(t.area);
+        return box ? [{ participantId: t.participantId, box }] : [];
+      })
+      .sort((a, b) => a.participantId.localeCompare(b.participantId)),
   }));
 }
 
@@ -299,6 +313,88 @@ router.post("/juniors/photo-library/tags", requireAdmin, async (req, res): Promi
   if (lost.length > 0) await withdrawJuniorPhotoIds(tenantId, lost);
   res.json(await present(tenantId, await loadRows(tenantId, owned)));
 });
+
+/**
+ * Photo focus areas on a junior photo: its focus box, the frame shapes switched off for
+ * it and where each tagged child is. Areas are only for children already tagged (tagging
+ * is a consent question and stays on the tags route). Fields left out are kept.
+ */
+router.put(
+  "/juniors/photo-library/:photoId/focus",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = SetJuniorLibraryPhotoFocusParams.safeParse(req.params);
+    const parsed = SetJuniorLibraryPhotoFocusBody.safeParse(req.body);
+    if (!params.success || !parsed.success) {
+      res.status(400).json({ error: (params.error ?? parsed.error)?.message ?? "Invalid body" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { photoId } = params.data;
+    const { focusBox, offShapes, participantAreas = [] } = parsed.data;
+    const box =
+      focusBox === undefined ? undefined : focusBox === null ? null : normaliseFocusBox(focusBox);
+    if (box === null && focusBox !== null) {
+      res.status(400).json({ error: "The focus box is too small or off the photo." });
+      return;
+    }
+    const areas: Array<{ key: string; box: FocusBox | null }> = [];
+    for (const a of participantAreas) {
+      const area = a.box === null ? null : normaliseFocusBox(a.box);
+      if (a.box !== null && !area) {
+        res.status(400).json({ error: "A player's area is too small or off the photo." });
+        return;
+      }
+      areas.push({ key: a.participantId.toLowerCase(), box: area });
+    }
+    if (new Set(areas.map((a) => a.key)).size !== areas.length) {
+      res.status(400).json({ error: "Give each player one area." });
+      return;
+    }
+    if ((await tenantPhotoIds(tenantId, [photoId])).length === 0) {
+      res.status(404).json({ error: "photo not found" });
+      return;
+    }
+    const tags = await db
+      .select({ participantId: juniorPhotoParticipantsTable.participantId })
+      .from(juniorPhotoParticipantsTable)
+      .where(
+        and(
+          eq(juniorPhotoParticipantsTable.tenantId, tenantId),
+          eq(juniorPhotoParticipantsTable.photoId, photoId),
+        ),
+      );
+    const tagged = new Set(tags.map((t) => t.participantId.toLowerCase()));
+    if (areas.some((a) => !tagged.has(a.key))) {
+      res.status(400).json({ error: "Tag a player on the photo before marking where they are." });
+      return;
+    }
+    await db.transaction(async (tx) => {
+      const patch: { focusBox?: FocusBox | null; offShapes?: SQL } = {};
+      if (box !== undefined) patch.focusBox = box;
+      if (offShapes !== undefined)
+        patch.offShapes = textArray(FRAME_SHAPES.filter((shape) => offShapes.includes(shape)));
+      if (Object.keys(patch).length > 0)
+        await tx
+          .update(juniorPhotosTable)
+          .set(patch)
+          .where(and(eq(juniorPhotosTable.tenantId, tenantId), eq(juniorPhotosTable.id, photoId)));
+      for (const area of areas)
+        await tx
+          .update(juniorPhotoParticipantsTable)
+          .set({ area: area.box })
+          .where(
+            and(
+              eq(juniorPhotoParticipantsTable.tenantId, tenantId),
+              eq(juniorPhotoParticipantsTable.photoId, photoId),
+              sql`lower(${juniorPhotoParticipantsTable.participantId}) = ${area.key}`,
+            ),
+          );
+    });
+    const [photo] = await present(tenantId, await loadRows(tenantId, [photoId]));
+    res.json(photo);
+  },
+);
 
 /** File photos into a folder: the grade (null = Club-wide) and one photo type (null = Unsorted). */
 router.post("/juniors/photo-library/move", requireAdmin, async (req, res): Promise<void> => {

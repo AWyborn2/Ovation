@@ -11872,6 +11872,11 @@ export interface JuniorLibraryPhotoParticipant {
   allowed: boolean;
 }
 
+export type JuniorLibraryPhotoParticipantAreasItem = {
+  participantId: string;
+  box: PhotoFocusBox;
+};
+
 /**
  * A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.
  */
@@ -11894,6 +11899,23 @@ export interface JuniorLibraryPhoto {
   createdAt: string;
   participants: JuniorLibraryPhotoParticipant[];
   displayable: boolean;
+  /** The part of the photo that matters; null = a centred crop. */
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Where each tagged child is on the photo (children with an area only). */
+  participantAreas?: JuniorLibraryPhotoParticipantAreasItem[];
+}
+
+export type SetJuniorPhotoFocusRequestParticipantAreasItem = {
+  participantId: string;
+  box: PhotoFocusBox | null;
+};
+
+export interface SetJuniorPhotoFocusRequest {
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Areas to set (box) or clear (null), per tagged child. */
+  participantAreas?: SetJuniorPhotoFocusRequestParticipantAreasItem[];
 }
 
 export interface IngestJuniorLibraryPhotosRequest {
