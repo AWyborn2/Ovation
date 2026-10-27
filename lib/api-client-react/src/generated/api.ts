@@ -416,6 +416,7 @@ import type {
   SeniorOverview,
   SetClubPhotoFocusRequest,
   SetGradeDecisionBody,
+  SetJuniorPhotoFocusRequest,
   SetJuniorSeniorLinkBody,
   SetPlannedTimeRequest,
   SetPlayerPrivacyBody,
@@ -30661,6 +30662,79 @@ export const useTagJuniorLibraryPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getTagJuniorLibraryPhotosMutationOptions(options));
+    }
+
+export const getSetJuniorLibraryPhotoFocusUrl = (photoId: number,) => {
+
+
+
+
+  return `/api/juniors/photo-library/${photoId}/focus`
+}
+
+/**
+ * Photo focus areas on the junior library, as on the senior one. Areas are only for children already tagged on the photo; tagging stays on the tags route. Fields left out are kept.
+ * @summary Set a junior library photo's focus box, switched-off frame shapes and participant areas (admin)
+ */
+export const setJuniorLibraryPhotoFocus = async (photoId: number,
+    setJuniorPhotoFocusRequest: SetJuniorPhotoFocusRequest, options?: RequestInit): Promise<JuniorLibraryPhoto> => {
+
+  return customFetch<JuniorLibraryPhoto>(getSetJuniorLibraryPhotoFocusUrl(photoId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setJuniorPhotoFocusRequest,)
+  }
+);}
+
+
+
+
+export const getSetJuniorLibraryPhotoFocusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>, TError,{photoId: number;data: BodyType<SetJuniorPhotoFocusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>, TError,{photoId: number;data: BodyType<SetJuniorPhotoFocusRequest>}, TContext> => {
+
+const mutationKey = ['setJuniorLibraryPhotoFocus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>, {photoId: number;data: BodyType<SetJuniorPhotoFocusRequest>}> = (props) => {
+          const {photoId,data} = props ?? {};
+
+          return  setJuniorLibraryPhotoFocus(photoId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetJuniorLibraryPhotoFocusMutationResult = NonNullable<Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>>
+    export type SetJuniorLibraryPhotoFocusMutationBody = BodyType<SetJuniorPhotoFocusRequest>
+    export type SetJuniorLibraryPhotoFocusMutationError = ErrorType<void>
+
+    /**
+ * @summary Set a junior library photo's focus box, switched-off frame shapes and participant areas (admin)
+ */
+export const useSetJuniorLibraryPhotoFocus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>, TError,{photoId: number;data: BodyType<SetJuniorPhotoFocusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setJuniorLibraryPhotoFocus>>,
+        TError,
+        {photoId: number;data: BodyType<SetJuniorPhotoFocusRequest>},
+        TContext
+      > => {
+      return useMutation(getSetJuniorLibraryPhotoFocusMutationOptions(options));
     }
 
 export const getMoveJuniorLibraryPhotosUrl = () => {

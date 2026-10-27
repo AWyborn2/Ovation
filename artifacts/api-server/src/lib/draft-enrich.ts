@@ -80,7 +80,7 @@ export type EnrichInput = {
    * A photo the engine already picked (a junior player's own photo). Used as is,
    * instead of the automatic pick; `null` means the engine picked none.
    */
-  photo?: { url: string; source: PhotoSource } | null;
+  photo?: { url: string; source: PhotoSource; participantId?: string } | null;
   /** Stable per-draft seed for a random photo rule (the draft's source key). */
   seed?: string | null;
   /**
@@ -564,12 +564,18 @@ export const ROTATION_WINDOW_DAYS = 28;
  * A picked photo. `playerId` is the player it was picked for (a tagged library
  * photo of them), so the draft crops to their area on a group photo.
  */
-type PhotoPick = { url: string; source: PhotoSource; playerId?: number };
+type PhotoPick = {
+  url: string;
+  source: PhotoSource;
+  playerId?: number;
+  /** A junior card's featured child (junior engines). */
+  participantId?: string;
+};
 
 /** The draft columns for a picked photo (or none), focus snapshot included. */
 async function photoColumns(
   tenantId: number,
-  photo: { url: string; source: PhotoSource; playerId?: number } | null,
+  photo: PhotoPick | null,
 ): Promise<{
   photoUrl: string | null;
   photoSource: PhotoSource | null;
@@ -578,7 +584,14 @@ async function photoColumns(
   return {
     photoUrl: photo?.url ?? null,
     photoSource: photo?.source ?? null,
-    photoFocus: photo ? await draftPhotoFocus(tenantId, photo.url, photo.playerId ?? null) : null,
+    photoFocus: photo
+      ? await draftPhotoFocus(
+          tenantId,
+          photo.url,
+          photo.playerId ?? null,
+          photo.participantId ?? null,
+        )
+      : null,
   };
 }
 

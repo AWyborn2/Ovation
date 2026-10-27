@@ -9667,6 +9667,39 @@ paths:
         "422":
           description: A tagged participant is not a junior player of this club
 
+  /juniors/photo-library/{photoId}/focus:
+    put:
+      operationId: setJuniorLibraryPhotoFocus
+      tags: [juniors]
+      summary: Set a junior library photo's focus box, switched-off frame shapes and participant areas (admin)
+      description: >-
+        Photo focus areas on the junior library, as on the senior one. Areas
+        are only for children already tagged on the photo; tagging stays on
+        the tags route. Fields left out are kept.
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetJuniorPhotoFocusRequest"
+      responses:
+        "200":
+          description: The updated photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorLibraryPhoto"
+        "400":
+          description: Invalid body, or an area for a child not tagged on the photo
+        "404":
+          description: The photo is not in this club's junior library
+
   /juniors/photo-library/move:
     post:
       operationId: moveJuniorLibraryPhotos
@@ -27212,6 +27245,49 @@ components:
             $ref: "#/components/schemas/JuniorLibraryPhotoParticipant"
         displayable:
           type: boolean
+        focusBox:
+          description: The part of the photo that matters; null = a centred crop.
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocusBox"
+            - type: "null"
+        offShapes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhotoFrameShape"
+        participantAreas:
+          type: array
+          description: Where each tagged child is on the photo (children with an area only).
+          items:
+            type: object
+            required: [participantId, box]
+            properties:
+              participantId: { type: string }
+              box:
+                $ref: "#/components/schemas/PhotoFocusBox"
+
+    SetJuniorPhotoFocusRequest:
+      type: object
+      properties:
+        focusBox:
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocusBox"
+            - type: "null"
+        offShapes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PhotoFrameShape"
+        participantAreas:
+          type: array
+          description: Areas to set (box) or clear (null), per tagged child.
+          items:
+            type: object
+            required: [participantId, box]
+            properties:
+              participantId: { type: string }
+              box:
+                oneOf:
+                  - $ref: "#/components/schemas/PhotoFocusBox"
+                  - type: "null"
 
     IngestJuniorLibraryPhotosRequest:
       type: object

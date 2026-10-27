@@ -15903,7 +15903,23 @@ export const ListJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const ListJuniorLibraryPhotosResponse = zod.array(ListJuniorLibraryPhotosResponseItem)
 
@@ -15945,7 +15961,23 @@ export const IngestJuniorLibraryPhotosResponse = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).optional().describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.'),
   "error": zod.string().optional()
 }))
@@ -15984,9 +16016,89 @@ export const TagJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const TagJuniorLibraryPhotosResponse = zod.array(TagJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * Photo focus areas on the junior library, as on the senior one. Areas are only for children already tagged on the photo; tagging stays on the tags route. Fields left out are kept.
+ * @summary Set a junior library photo's focus box, switched-off frame shapes and participant areas (admin)
+ */
+export const SetJuniorLibraryPhotoFocusParams = zod.object({
+  "photoId": zod.coerce.number()
+})
+
+export const SetJuniorLibraryPhotoFocusBody = zod.object({
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()])
+})).optional().describe('Areas to set (box) or clear (null), per tagged child.')
+})
+
+export const SetJuniorLibraryPhotoFocusResponse = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 
 
 /**
@@ -16018,7 +16130,23 @@ export const MoveJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const MoveJuniorLibraryPhotosResponse = zod.array(MoveJuniorLibraryPhotosResponseItem)
 
