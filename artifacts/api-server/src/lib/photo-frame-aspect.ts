@@ -1,11 +1,24 @@
+import { eq } from "drizzle-orm";
+import { db, socialSettingsTable } from "@workspace/db";
 import { photoFrameAspect, type TemplateSize } from "@workspace/scorecard/kind-templates";
 import { loadKindTemplate } from "./kind-templates";
-import { ensureSettings } from "./social-cards-helpers";
 
-/** The size a club's cards post at first (its first switched-on size; square if none). */
+/**
+ * The size a club's cards post at first (its first switched-on size; square if
+ * none). Read-only: a club with no settings yet posts square.
+ */
 async function primarySize(tenantId: number): Promise<TemplateSize> {
-  const s = await ensureSettings(tenantId);
-  if (s.sizeSquare) return "square";
+  const [s] = await db
+    .select({
+      sizeSquare: socialSettingsTable.sizeSquare,
+      sizePortrait: socialSettingsTable.sizePortrait,
+      sizeStory: socialSettingsTable.sizeStory,
+      sizeLandscape: socialSettingsTable.sizeLandscape,
+    })
+    .from(socialSettingsTable)
+    .where(eq(socialSettingsTable.tenantId, tenantId))
+    .limit(1);
+  if (!s || s.sizeSquare) return "square";
   if (s.sizePortrait) return "portrait";
   if (s.sizeStory) return "story";
   if (s.sizeLandscape) return "landscape";
