@@ -13013,6 +13013,106 @@ export const GetTenantPlayhqSyncStatusResponse = zod.object({
 
 
 /**
+ * Kept apart from the photo library. Deleted uploads are left out.
+ * @summary The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+ */
+export const listClubUploadsQueryQMax = 80;
+
+
+
+export const ListClubUploadsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listClubUploadsQueryQMax).optional().describe('Words that must each appear in the upload\'s name.')
+})
+
+export const ListClubUploadsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListClubUploadsResponse = zod.array(ListClubUploadsResponseItem)
+
+
+/**
+ * Each object (uploaded through the signed-URL flow) becomes an upload. PNG, JPEG and WebP keep their own format (PNG keeps its transparency) with metadata stripped; HEIC becomes JPEG. An SVG is cleaned to what vector layers allow and kept as markup, so it can be recoloured. Results are per file; one bad file doesn't stop the rest.
+ * @summary Turn uploaded files into Uploads (admin)
+ */
+export const ingestClubUploadsBodyFilesItemNameMax = 80;
+
+export const ingestClubUploadsBodyFilesMax = 50;
+
+
+
+export const IngestClubUploadsBody = zod.object({
+  "files": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string().min(1).max(ingestClubUploadsBodyFilesItemNameMax).describe('The upload\'s name (the file name without its extension, by default).')
+})).min(1).max(ingestClubUploadsBodyFilesMax)
+})
+
+export const IngestClubUploadsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "error": zod.string().optional(),
+  "upload": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+}).optional()
+}))
+})
+
+
+/**
+ * @summary Rename an upload (admin)
+ */
+export const RenameClubUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const renameClubUploadBodyNameMax = 80;
+
+
+
+export const RenameClubUploadBody = zod.object({
+  "name": zod.string().min(1).max(renameClubUploadBodyNameMax)
+})
+
+export const RenameClubUploadResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * It leaves Uploads at once. The file is kept, so cards and templates that already use it still draw.
+ * @summary Delete an upload from Uploads (admin)
+ */
+export const DeleteClubUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List the club's photo library, newest first (admin)
  */
 export const ListClubPhotosQueryParams = zod.object({

@@ -7661,6 +7661,98 @@ paths:
         "401":
           description: Not signed in as a club admin
 
+  /club-uploads:
+    get:
+      operationId: listClubUploads
+      tags: [socialCards]
+      summary: The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+      description: >-
+        Kept apart from the photo library. Deleted uploads are left out.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Words that must each appear in the upload's name.
+          schema: { type: string, maxLength: 80 }
+      responses:
+        "200":
+          description: The uploads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubUpload"
+        "401":
+          description: Not signed in
+
+  /club-uploads/ingest:
+    post:
+      operationId: ingestClubUploads
+      tags: [socialCards]
+      summary: Turn uploaded files into Uploads (admin)
+      description: >-
+        Each object (uploaded through the signed-URL flow) becomes an upload.
+        PNG, JPEG and WebP keep their own format (PNG keeps its transparency)
+        with metadata stripped; HEIC becomes JPEG. An SVG is cleaned to what
+        vector layers allow and kept as markup, so it can be recoloured.
+        Results are per file; one bad file doesn't stop the rest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestClubUploadsRequest"
+      responses:
+        "200":
+          description: One result per file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestClubUploadsResponse"
+        "400":
+          description: Invalid body, or too many files
+
+  /club-uploads/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    patch:
+      operationId: renameClubUpload
+      tags: [socialCards]
+      summary: Rename an upload (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameClubUploadRequest"
+      responses:
+        "200":
+          description: The upload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubUpload"
+        "400":
+          description: An empty or too long name
+        "404":
+          description: Not this club's upload
+    delete:
+      operationId: deleteClubUpload
+      tags: [socialCards]
+      summary: Delete an upload from Uploads (admin)
+      description: >-
+        It leaves Uploads at once. The file is kept, so cards and templates
+        that already use it still draw.
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not this club's upload
+
   /club-photos:
     get:
       operationId: listClubPhotos
@@ -20651,6 +20743,67 @@ components:
         The match format a library photo is from (One Day, T20, Two Day). A
         separate tag from the photo type: a card from a format (a T20
         premiership) prefers photos of that format.
+
+    ClubUpload:
+      type: object
+      required: [id, name, kind, url, thumbUrl, svg, width, height, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        kind:
+          type: string
+          enum: [image, svg]
+        url:
+          type: ["string", "null"]
+          description: The image (kind image); null for an SVG.
+        thumbUrl: { type: ["string", "null"] }
+        svg:
+          type: ["string", "null"]
+          description: The cleaned markup (kind svg), drawn as a vector layer.
+        width: { type: integer }
+        height: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    IngestClubUploadsRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: object
+            required: [objectPath, name]
+            properties:
+              objectPath: { type: string }
+              name:
+                type: string
+                minLength: 1
+                maxLength: 80
+                description: The upload's name (the file name without its extension, by default).
+
+    IngestClubUploadsResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [objectPath, ok]
+            properties:
+              objectPath: { type: string }
+              ok: { type: boolean }
+              error: { type: string }
+              upload:
+                $ref: "#/components/schemas/ClubUpload"
+
+    RenameClubUploadRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
 
     ClubPhoto:
       type: object
