@@ -19671,7 +19671,7 @@ components:
 
     Sponsor:
       type: object
-      required: [id, name, logoUrl, link, displayOrder, cardKinds, isPresenting, tier]
+      required: [id, name, logoUrl, link, displayOrder, cardKinds, isPresenting, tier, players]
       properties:
         id:
           type: integer
@@ -19707,6 +19707,24 @@ components:
           type: integer
         tier:
           $ref: "#/components/schemas/SponsorTier"
+        players:
+          type: array
+          description: >-
+            Player sponsors: the senior players this sponsor backs. On a card about one
+            of them, that player's sponsors replace the club strip. A sponsor with players
+            shows on other cards only where its card types are set. Each name is the one
+            saved with the tag, a label only.
+          items:
+            $ref: "#/components/schemas/SponsorPlayer"
+
+    SponsorPlayer:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
 
     SponsorInput:
       type: object
@@ -19731,6 +19749,13 @@ components:
           description: The grades whose team-list cards show this sponsor as their one logo.
           items:
             type: string
+        playerIds:
+          type: array
+          description: >-
+            The senior players this sponsor backs (player sponsors); replaces the set.
+            Junior participants and fill-ins are rejected.
+          items:
+            type: integer
         isPresenting:
           type: boolean
           description: >-
@@ -19763,6 +19788,13 @@ components:
           description: The grades whose team-list cards show this sponsor as their one logo.
           items:
             type: string
+        playerIds:
+          type: array
+          description: >-
+            The senior players this sponsor backs (player sponsors); replaces the set.
+            Junior participants and fill-ins are rejected.
+          items:
+            type: integer
         isPresenting:
           type: boolean
           description: >-
@@ -25915,6 +25947,11 @@ components:
           oneOf:
             - $ref: "#/components/schemas/PhotoFocus"
             - type: "null"
+        subjectPlayerId:
+          type: ["integer", "null"]
+          description: >-
+            The one player a player-centred card is about (player sponsors): that
+            player's sponsors replace the club strip. Null for every other draft.
         layerPhotos:
           description: >-
             The photos of the design's sourced photo layers (a team list player's

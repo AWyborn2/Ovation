@@ -985,6 +985,7 @@ export * from './socialSettingsUpdate';
 export * from './socialSettingsUpdateMatchSummaryGradeConfig';
 export * from './sponsor';
 export * from './sponsorInput';
+export * from './sponsorPlayer';
 export * from './sponsorTier';
 export * from './sponsorUpdate';
 export * from './squadContact';

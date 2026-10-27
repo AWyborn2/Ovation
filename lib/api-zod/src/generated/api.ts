@@ -7016,7 +7016,11 @@ export const ListSponsorsResponseItem = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
 
@@ -7032,6 +7036,7 @@ export const CreateSponsorBody = zod.object({
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
+  "playerIds": zod.array(zod.number()).optional().describe('The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional(),
   "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
@@ -7053,6 +7058,7 @@ export const UpdateSponsorBody = zod.object({
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
+  "playerIds": zod.array(zod.number()).optional().describe('The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional(),
   "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
@@ -7069,7 +7075,11 @@ export const UpdateSponsorResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })
 
 
@@ -8568,7 +8578,11 @@ export const GetSocialSettingsResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })),
   "brand": zod.union([zod.object({
   "name": zod.string(),
@@ -10602,7 +10616,11 @@ export const GetHonourDisplayResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -11008,7 +11026,11 @@ export const GetKioskDisplayResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -11659,6 +11681,7 @@ export const ListSocialDraftsResponseItem = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -13783,6 +13806,7 @@ export const ApproveSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -13912,6 +13936,7 @@ export const SaveDraftSetDesignResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14007,6 +14032,7 @@ export const GetSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14115,6 +14141,7 @@ export const UpdateSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14344,6 +14371,7 @@ export const GetSocialCalendarResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14435,6 +14463,7 @@ export const GetSocialCalendarResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14548,6 +14577,7 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14653,6 +14683,7 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14752,6 +14783,7 @@ export const SendBackSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14847,6 +14879,7 @@ export const ReopenSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -14964,6 +14997,7 @@ export const RevertSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -15059,6 +15093,7 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({
@@ -15163,6 +15198,7 @@ export const GenerateRecapsResponseItem = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
   "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
   "url": zod.string(),
   "focus": zod.union([zod.object({

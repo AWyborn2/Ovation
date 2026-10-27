@@ -15,6 +15,7 @@ const sponsor = (over: Partial<Sponsor> = {}): Sponsor => ({
   grades: [],
   isPresenting: false,
   tier: "standard",
+  players: [],
   ...over,
 });
 

@@ -519,6 +519,13 @@
       "when": 1793069374574,
       "tag": "0073_club_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793078005247,
+      "tag": "0074_player_sponsors",
+      "breakpoints": true
     }
   ]
 }

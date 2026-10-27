@@ -4987,6 +4987,11 @@ export const SponsorTier = {
   standard: 'standard',
 } as const;
 
+export interface SponsorPlayer {
+  id: number;
+  name: string;
+}
+
 export interface Sponsor {
   id: number;
   name: string;
@@ -5004,6 +5009,8 @@ export interface Sponsor {
   isPresenting: boolean;
   displayOrder: number;
   tier: SponsorTier;
+  /** Player sponsors: the senior players this sponsor backs. On a card about one of them, that player's sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only. */
+  players: SponsorPlayer[];
 }
 
 export interface SponsorInput {
@@ -5017,6 +5024,8 @@ export interface SponsorInput {
   cardKinds?: CardKind[];
   /** The grades whose team-list cards show this sponsor as their one logo. */
   grades?: string[];
+  /** The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected. */
+  playerIds?: number[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -5034,6 +5043,8 @@ export interface SponsorUpdate {
   cardKinds?: CardKind[];
   /** The grades whose team-list cards show this sponsor as their one logo. */
   grades?: string[];
+  /** The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected. */
+  playerIds?: number[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -10368,6 +10379,11 @@ export interface SocialDraft {
   photoSource?: string | null;
   /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
   photoFocus?: PhotoFocus | null;
+  /**
+     * The one player a player-centred card is about (player sponsors): that player's sponsors replace the club strip. Null for every other draft.
+     * @nullable
+     */
+  subjectPlayerId?: number | null;
   /** The photos of the design's sourced photo layers (a team list player's photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft's photo is automatic. Null for junior drafts and designs with no source. */
   layerPhotos?: LayerPhotos | null;
   adjustments?: unknown;

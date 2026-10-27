@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardKind } from './cardKind';
+import type { SponsorPlayer } from './sponsorPlayer';
 import type { SponsorTier } from './sponsorTier';
 
 export interface Sponsor {
@@ -25,4 +26,6 @@ export interface Sponsor {
   isPresenting: boolean;
   displayOrder: number;
   tier: SponsorTier;
+  /** Player sponsors: the senior players this sponsor backs. On a card about one of them, that player's sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only. */
+  players: SponsorPlayer[];
 }

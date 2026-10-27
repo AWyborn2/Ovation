@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { SocialSettingsBundle } from "@workspace/api-client-react";
-import { sponsorAppliesToKind, type CardSponsor, type ShareCardInput } from "@/lib/share-card";
+import type { CardSponsor, ShareCardInput } from "@/lib/share-card";
 import { maxSponsorLogos, sponsorsForCard } from "@/lib/share-card/sponsor-limit";
 import { cardGrade } from "@/lib/pack-card-data";
 
@@ -21,12 +21,10 @@ export function useSponsors({
   const sponsors: CardSponsor[] = useMemo(() => {
     if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return [];
     // A team list carries its team's own sponsor, else the presenting one.
-    return sponsorsForCard(
-      bundle?.activeSponsors ?? [],
-      input.kind,
-      cardGrade(input),
-      sponsorAppliesToKind,
-    )
+    return sponsorsForCard(bundle?.activeSponsors ?? [], {
+      kind: input.kind,
+      grade: cardGrade(input),
+    })
       .slice(0, maxSponsorLogos(input.kind))
       .map((s) => ({
         name: s.name,
