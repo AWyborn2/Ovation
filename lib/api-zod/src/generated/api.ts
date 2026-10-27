@@ -10487,7 +10487,7 @@ export const GetHonourDisplayResponse = zod.object({
   "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
@@ -10618,7 +10618,14 @@ export const GetHonourDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -10886,7 +10893,7 @@ export const GetKioskDisplayResponse = zod.object({
   "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
@@ -11017,7 +11024,14 @@ export const GetKioskDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -11156,7 +11170,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
@@ -11344,7 +11358,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
@@ -12995,6 +13009,106 @@ export const GetTenantPlayhqSyncStatusResponse = zod.object({
   "matches": zod.number().describe('PlayHQ matches the club has in this competition.'),
   "reason": zod.string()
 })).optional().describe('Competitions this club\'s PlayHQ organisation plays in that Ovation can\'t place in a grade, so their matches are not shown. Empty when everything is recognised.')
+})
+
+
+/**
+ * Kept apart from the photo library. Deleted uploads are left out.
+ * @summary The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+ */
+export const listClubUploadsQueryQMax = 80;
+
+
+
+export const ListClubUploadsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listClubUploadsQueryQMax).optional().describe('Words that must each appear in the upload\'s name.')
+})
+
+export const ListClubUploadsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListClubUploadsResponse = zod.array(ListClubUploadsResponseItem)
+
+
+/**
+ * Each object (uploaded through the signed-URL flow) becomes an upload. PNG, JPEG and WebP keep their own format (PNG keeps its transparency) with metadata stripped; HEIC becomes JPEG. An SVG is cleaned to what vector layers allow and kept as markup, so it can be recoloured. Results are per file; one bad file doesn't stop the rest.
+ * @summary Turn uploaded files into Uploads (admin)
+ */
+export const ingestClubUploadsBodyFilesItemNameMax = 80;
+
+export const ingestClubUploadsBodyFilesMax = 50;
+
+
+
+export const IngestClubUploadsBody = zod.object({
+  "files": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string().min(1).max(ingestClubUploadsBodyFilesItemNameMax).describe('The upload\'s name (the file name without its extension, by default).')
+})).min(1).max(ingestClubUploadsBodyFilesMax)
+})
+
+export const IngestClubUploadsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "error": zod.string().optional(),
+  "upload": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+}).optional()
+}))
+})
+
+
+/**
+ * @summary Rename an upload (admin)
+ */
+export const RenameClubUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const renameClubUploadBodyNameMax = 80;
+
+
+
+export const RenameClubUploadBody = zod.object({
+  "name": zod.string().min(1).max(renameClubUploadBodyNameMax)
+})
+
+export const RenameClubUploadResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * It leaves Uploads at once. The file is kept, so cards and templates that already use it still draw.
+ * @summary Delete an upload from Uploads (admin)
+ */
+export const DeleteClubUploadParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

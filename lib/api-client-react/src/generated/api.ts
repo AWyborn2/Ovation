@@ -134,6 +134,7 @@ import type {
   ClubTemplate,
   ClubTemplateGeneration,
   ClubTemplateList,
+  ClubUpload,
   CommitImportInput,
   CommitImportResult,
   ConsoleLibraryElement,
@@ -240,6 +241,8 @@ import type {
   ImportSquadBody,
   IngestClubPhotosRequest,
   IngestClubPhotosResponse,
+  IngestClubUploadsRequest,
+  IngestClubUploadsResponse,
   IngestJuniorLibraryPhotosRequest,
   IngestJuniorLibraryPhotosResponse,
   IssueAdminResetBody,
@@ -304,6 +307,7 @@ import type {
   LifeMemberUpdate,
   ListClubPhotosParams,
   ListClubTemplatesParams,
+  ListClubUploadsParams,
   ListConsoleLibraryElementsParams,
   ListConsoleLibraryTemplatesParams,
   ListEmailSendsParams,
@@ -409,6 +413,7 @@ import type {
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
+  RenameClubUploadRequest,
   ReplaceHistoryBoundariesBody,
   ReportLibraryElementRequest,
   ReportLibraryTemplateRequest,
@@ -25007,6 +25012,306 @@ export function useGetTenantPlayhqSyncStatus<TData = Awaited<ReturnType<typeof g
 
 
 
+
+export const getListClubUploadsUrl = (params?: ListClubUploadsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-uploads?${stringifiedParams}` : `/api/club-uploads`
+}
+
+/**
+ * Kept apart from the photo library. Deleted uploads are left out.
+ * @summary The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+ */
+export const listClubUploads = async (params?: ListClubUploadsParams, options?: RequestInit): Promise<ClubUpload[]> => {
+
+  return customFetch<ClubUpload[]>(getListClubUploadsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubUploadsQueryKey = (params?: ListClubUploadsParams,) => {
+    return [
+    `/api/club-uploads`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListClubUploadsQueryOptions = <TData = Awaited<ReturnType<typeof listClubUploads>>, TError = ErrorType<void>>(params?: ListClubUploadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubUploads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubUploadsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubUploads>>> = ({ signal }) => listClubUploads(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubUploads>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubUploadsQueryResult = NonNullable<Awaited<ReturnType<typeof listClubUploads>>>
+export type ListClubUploadsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+ */
+
+export function useListClubUploads<TData = Awaited<ReturnType<typeof listClubUploads>>, TError = ErrorType<void>>(
+ params?: ListClubUploadsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubUploads>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubUploadsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getIngestClubUploadsUrl = () => {
+
+
+
+
+  return `/api/club-uploads/ingest`
+}
+
+/**
+ * Each object (uploaded through the signed-URL flow) becomes an upload. PNG, JPEG and WebP keep their own format (PNG keeps its transparency) with metadata stripped; HEIC becomes JPEG. An SVG is cleaned to what vector layers allow and kept as markup, so it can be recoloured. Results are per file; one bad file doesn't stop the rest.
+ * @summary Turn uploaded files into Uploads (admin)
+ */
+export const ingestClubUploads = async (ingestClubUploadsRequest: IngestClubUploadsRequest, options?: RequestInit): Promise<IngestClubUploadsResponse> => {
+
+  return customFetch<IngestClubUploadsResponse>(getIngestClubUploadsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ingestClubUploadsRequest,)
+  }
+);}
+
+
+
+
+export const getIngestClubUploadsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubUploads>>, TError,{data: BodyType<IngestClubUploadsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestClubUploads>>, TError,{data: BodyType<IngestClubUploadsRequest>}, TContext> => {
+
+const mutationKey = ['ingestClubUploads'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestClubUploads>>, {data: BodyType<IngestClubUploadsRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestClubUploads(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestClubUploadsMutationResult = NonNullable<Awaited<ReturnType<typeof ingestClubUploads>>>
+    export type IngestClubUploadsMutationBody = BodyType<IngestClubUploadsRequest>
+    export type IngestClubUploadsMutationError = ErrorType<void>
+
+    /**
+ * @summary Turn uploaded files into Uploads (admin)
+ */
+export const useIngestClubUploads = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubUploads>>, TError,{data: BodyType<IngestClubUploadsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestClubUploads>>,
+        TError,
+        {data: BodyType<IngestClubUploadsRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestClubUploadsMutationOptions(options));
+    }
+
+export const getRenameClubUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-uploads/${id}`
+}
+
+/**
+ * @summary Rename an upload (admin)
+ */
+export const renameClubUpload = async (id: number,
+    renameClubUploadRequest: RenameClubUploadRequest, options?: RequestInit): Promise<ClubUpload> => {
+
+  return customFetch<ClubUpload>(getRenameClubUploadUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      renameClubUploadRequest,)
+  }
+);}
+
+
+
+
+export const getRenameClubUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameClubUpload>>, TError,{id: number;data: BodyType<RenameClubUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameClubUpload>>, TError,{id: number;data: BodyType<RenameClubUploadRequest>}, TContext> => {
+
+const mutationKey = ['renameClubUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameClubUpload>>, {id: number;data: BodyType<RenameClubUploadRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameClubUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameClubUploadMutationResult = NonNullable<Awaited<ReturnType<typeof renameClubUpload>>>
+    export type RenameClubUploadMutationBody = BodyType<RenameClubUploadRequest>
+    export type RenameClubUploadMutationError = ErrorType<void>
+
+    /**
+ * @summary Rename an upload (admin)
+ */
+export const useRenameClubUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameClubUpload>>, TError,{id: number;data: BodyType<RenameClubUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameClubUpload>>,
+        TError,
+        {id: number;data: BodyType<RenameClubUploadRequest>},
+        TContext
+      > => {
+      return useMutation(getRenameClubUploadMutationOptions(options));
+    }
+
+export const getDeleteClubUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-uploads/${id}`
+}
+
+/**
+ * It leaves Uploads at once. The file is kept, so cards and templates that already use it still draw.
+ * @summary Delete an upload from Uploads (admin)
+ */
+export const deleteClubUpload = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClubUploadUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClubUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubUpload>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClubUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubUpload>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClubUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubUploadMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubUpload>>>
+
+    export type DeleteClubUploadMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an upload from Uploads (admin)
+ */
+export const useDeleteClubUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubUpload>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClubUploadMutationOptions(options));
+    }
 
 export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
   const normalizedParams = new URLSearchParams();

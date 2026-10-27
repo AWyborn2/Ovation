@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CloudSun, Loader2, Lock, Palette, Radio, Scissors, Search, Upload } from "lucide-react";
+import { CloudSun, Loader2, Lock, Palette, Radio, Scissors, Search } from "lucide-react";
 import {
   useListClubPhotos,
   getListClubPhotosQueryKey,
@@ -22,7 +22,6 @@ import {
   type ChartType,
 } from "@/lib/pack-render/layer-kinds";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
-import { uploadLibraryPhotos } from "@/components/social-queue/library-upload";
 import { cn } from "@/lib/utils";
 import { newId } from "./document";
 import { chartFromInput, liveField, playerBlock } from "./content";
@@ -214,50 +213,8 @@ function LibraryTile({
   );
 }
 
-/**
- * Uploads: files go through the senior-only library ingest (HEIC converted,
- * EXIF stripped) and then appear in Photos.
- */
-export function UploadsPanel() {
-  const qc = useQueryClient();
-  const [state, setState] = useState<string | null>(null);
-  const onFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setState("Uploading…");
-    let failed = 0;
-    await uploadLibraryPhotos(Array.from(files), {
-      onState: (_i, s) => {
-        if (s.phase === "error") failed += 1;
-      },
-    });
-    qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
-    setState(
-      failed ? `${failed} couldn't be added.` : "Added to your photo library. Find them in Photos.",
-    );
-  };
-  return (
-    <div className="mt-3 space-y-3">
-      <label className="flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--ed-line)] text-sm hover:bg-[var(--ed-card)]">
-        {state === "Uploading…" ? (
-          <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
-        ) : (
-          <Upload className="h-6 w-6" aria-hidden />
-        )}
-        <span className="font-semibold">Drop photos or click to upload</span>
-        <span className="text-xs text-[var(--ed-ink2)]">JPEG, PNG, WebP or iPhone HEIC</span>
-        <input
-          type="file"
-          multiple
-          accept="image/*,.heic,.heif"
-          className="sr-only"
-          aria-label="Upload photos"
-          onChange={(e) => void onFiles(e.target.files)}
-        />
-      </label>
-      {state && <p className="text-sm text-[var(--ed-ink2)]">{state}</p>}
-    </div>
-  );
-}
+/** Uploads: the club's own logos, artwork and SVG shapes (see `uploads-panel.tsx`). */
+export { UploadsPanel } from "./uploads-panel";
 
 /** Players: search the senior squad and add a grouped, player-bound block. */
 export function PlayersPanel({

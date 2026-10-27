@@ -6183,6 +6183,72 @@ export const ClubPhotoMatchFormat = {
   two_day: 'two_day',
 } as const;
 
+export type ClubUploadKind = typeof ClubUploadKind[keyof typeof ClubUploadKind];
+
+
+export const ClubUploadKind = {
+  image: 'image',
+  svg: 'svg',
+} as const;
+
+export interface ClubUpload {
+  id: number;
+  name: string;
+  kind: ClubUploadKind;
+  /**
+     * The image (kind image); null for an SVG.
+     * @nullable
+     */
+  url: string | null;
+  /** @nullable */
+  thumbUrl: string | null;
+  /**
+     * The cleaned markup (kind svg), drawn as a vector layer.
+     * @nullable
+     */
+  svg: string | null;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export type IngestClubUploadsRequestFilesItem = {
+  objectPath: string;
+  /**
+     * The upload's name (the file name without its extension, by default).
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+};
+
+export interface IngestClubUploadsRequest {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  files: IngestClubUploadsRequestFilesItem[];
+}
+
+export type IngestClubUploadsResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  error?: string;
+  upload?: ClubUpload;
+};
+
+export interface IngestClubUploadsResponse {
+  results: IngestClubUploadsResponseResultsItem[];
+}
+
+export interface RenameClubUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
 /**
  * A box on a photo in fractions (0–1) of its width and height.
  */
@@ -8057,12 +8123,13 @@ export const KioskPhotoSlideshowOrder = {
 } as const;
 
 /**
- * fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.
+ * auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.
  */
 export type KioskPhotoSlideshowFrame = typeof KioskPhotoSlideshowFrame[keyof typeof KioskPhotoSlideshowFrame] | null;
 
 
 export const KioskPhotoSlideshowFrame = {
+  auto: 'auto',
   fill: 'fill',
   whole: 'whole',
 } as const;
@@ -8125,7 +8192,7 @@ export interface KioskPhotoSlideshow {
   secondsPerPhoto: number;
   /** Grade and season under each photo (never names). */
   captions: boolean;
-  /** fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill. */
+  /** auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops. */
   frame?: KioskPhotoSlideshowFrame;
   /** Cross-fade between photos (default on); off cuts. */
   crossfade?: boolean | null;
@@ -8142,6 +8209,10 @@ export interface KioskSlideshowPhoto {
   width: number;
   height: number;
   caption?: string | null;
+  /** The part of the photo that matters (photo focus areas); null = none marked. */
+  focusBox?: PhotoFocusBox | null;
+  /** The admin switched wide crops off for this photo, so the TV shows it whole. */
+  noWideCrop?: boolean;
 }
 
 export interface KioskSlideshowPhotos {
@@ -13194,6 +13265,14 @@ export type FigmaOAuthCallbackParams = {
 code?: string;
 state: string;
 error?: string;
+};
+
+export type ListClubUploadsParams = {
+/**
+ * Words that must each appear in the upload's name.
+ * @maxLength 80
+ */
+q?: string;
 };
 
 export type ListClubPhotosParams = {

@@ -148,7 +148,12 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
         />
       ),
     },
-    { id: "uploads", label: "Uploads", icon: Upload, render: () => <UploadsPanel /> },
+    {
+      id: "uploads",
+      label: "Uploads",
+      icon: Upload,
+      render: ({ size, add }) => <UploadsPanel size={size} onAdd={(l) => add([l])} />,
+    },
     {
       id: "live",
       label: "Live stats",
