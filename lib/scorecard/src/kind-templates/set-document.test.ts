@@ -38,6 +38,8 @@ function looks(): Array<{ look: string; docs: Map<string, unknown> }> {
       };
       docs.set(file.replace(/\.json$/, ""), parsed.document);
     }
+    // Nor does a pack with no match day, result or team list design (Sponsored Player).
+    if (!["matchDay", "matchSummary", "teamList"].some((k) => docs.has(k))) continue;
     out.push({ look, docs });
   }
   return out;
