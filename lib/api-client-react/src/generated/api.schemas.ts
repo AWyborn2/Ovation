@@ -6183,6 +6183,72 @@ export const ClubPhotoMatchFormat = {
   two_day: 'two_day',
 } as const;
 
+export type ClubUploadKind = typeof ClubUploadKind[keyof typeof ClubUploadKind];
+
+
+export const ClubUploadKind = {
+  image: 'image',
+  svg: 'svg',
+} as const;
+
+export interface ClubUpload {
+  id: number;
+  name: string;
+  kind: ClubUploadKind;
+  /**
+     * The image (kind image); null for an SVG.
+     * @nullable
+     */
+  url: string | null;
+  /** @nullable */
+  thumbUrl: string | null;
+  /**
+     * The cleaned markup (kind svg), drawn as a vector layer.
+     * @nullable
+     */
+  svg: string | null;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export type IngestClubUploadsRequestFilesItem = {
+  objectPath: string;
+  /**
+     * The upload's name (the file name without its extension, by default).
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+};
+
+export interface IngestClubUploadsRequest {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  files: IngestClubUploadsRequestFilesItem[];
+}
+
+export type IngestClubUploadsResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  error?: string;
+  upload?: ClubUpload;
+};
+
+export interface IngestClubUploadsResponse {
+  results: IngestClubUploadsResponseResultsItem[];
+}
+
+export interface RenameClubUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
 /**
  * A box on a photo in fractions (0–1) of its width and height.
  */
@@ -13194,6 +13260,14 @@ export type FigmaOAuthCallbackParams = {
 code?: string;
 state: string;
 error?: string;
+};
+
+export type ListClubUploadsParams = {
+/**
+ * Words that must each appear in the upload's name.
+ * @maxLength 80
+ */
+q?: string;
 };
 
 export type ListClubPhotosParams = {

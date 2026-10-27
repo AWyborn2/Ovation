@@ -601,7 +601,7 @@ function EditorApp({ draftId }: { draftId: number }) {
                 onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
               />
             )}
-            {panel === "uploads" && <UploadsPanel />}
+            {panel === "uploads" && <UploadsPanel size={format} onAdd={addFreeLayer} />}
             {panel === "live" && (
               <LiveStatsPanel
                 size={format}

@@ -58,3 +58,4 @@ export * from "./email_lists";
 export * from "./photo_usage";
 export * from "./template_library";
 export * from "./figma_connections";
+export * from "./club_uploads";
