@@ -36,6 +36,7 @@ import playhqSyncStatusRouter from "./playhq-sync-status";
 import socialDraftsRouter from "./social-drafts";
 import socialCalendarRouter from "./social-calendar";
 import libraryElementsRouter from "./library-elements";
+import clubGenerateRouter from "./club-generate";
 import templateLibraryRouter from "./template-library";
 import figmaConnectionRouter from "./figma-connection";
 import templateDesignerRouter from "./template-designer";
@@ -119,6 +120,8 @@ router.use(clubPhotoCollectionsRouter);
 router.use(libraryElementsRouter);
 // Before the template library: `/club-templates/import/figma` is a club Figma import.
 router.use(figmaConnectionRouter);
+// Before the library router: its /club-templates/:id would take /club-templates/generations.
+router.use(clubGenerateRouter);
 router.use(templateLibraryRouter);
 router.use(templateDesignerRouter);
 router.use(socialConnectionsRouter);

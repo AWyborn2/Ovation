@@ -30,8 +30,18 @@ const gen = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+const clubGenerate = (over: Record<string, unknown> = {}) => ({
+  enabled: false,
+  configured: true,
+  quality: { counted: 50, firstTryFit: 40, meanCostUsd: 0.3 },
+  barMet: true,
+  available: false,
+  ...over,
+});
+
 function stubApi(designer: Record<string, unknown> = {}) {
   const posts: FormData[] = [];
+  const switches: unknown[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -43,6 +53,12 @@ function stubApi(designer: Record<string, unknown> = {}) {
         posts.push(init!.body as FormData);
         status = 202;
         payload = gen({ id: 3, status: "queued", outcome: null, result: null });
+      } else if (method === "PUT" && /designer\/club-generate$/.test(url)) {
+        const body = JSON.parse(String(init!.body)) as { enabled: boolean };
+        switches.push(body);
+        payload = clubGenerate({ enabled: body.enabled, available: body.enabled });
+      } else if (/designer\/club-generate$/.test(url)) {
+        payload = clubGenerate();
       } else if (/library\/designer$/.test(url)) {
         payload = {
           configured: true,
@@ -68,7 +84,7 @@ function stubApi(designer: Record<string, unknown> = {}) {
       });
     }),
   );
-  return posts;
+  return Object.assign(posts, { switches });
 }
 
 describe("AI designer page", () => {
@@ -132,6 +148,19 @@ describe("AI designer page", () => {
     expect(posts[0]!.get("kind")).toBe("record");
     expect(posts[0]!.get("brief")).toBe("Neon outlines");
     expect((posts[0]!.get("image") as File).name).toBe("ref.png");
+  });
+
+  it("shows the club Generate bar and switches it on", async () => {
+    const { switches } = stubApi();
+    renderAt(<AiDesignerPage />, "/platform-admin/designer");
+    const card = await screen.findByTestId("club-generate");
+    await waitFor(() => expect(card.textContent).toMatch(/80% first-try fit \(50 of 50 counted/));
+    expect(screen.getByTestId("club-generate-available").textContent).toBe("No");
+    fireEvent.click(screen.getByRole("switch", { name: "Offer Generate to clubs" }));
+    await waitFor(() => expect(switches).toEqual([{ enabled: true }]));
+    await waitFor(() =>
+      expect(screen.getByTestId("club-generate-available").textContent).toBe("Yes"),
+    );
   });
 
   it("refuses an image that isn't a PNG or JPEG before sending it", () => {

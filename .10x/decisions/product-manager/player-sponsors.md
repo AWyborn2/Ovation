@@ -38,3 +38,19 @@ nothing. Admins fix it by hand or not at all.
 ## Open questions for the architect
 
 - Storage: a `sponsor_players` join (tenant, sponsor, player) is the likely shape.
+
+## Settled with the design (Ash, 27 Oct 2026)
+
+Design: `decisions/architect/player-sponsors.md`.
+
+- **Player-centred kinds:** `milestone`, `century`, `fiveFor`, `debut`, `player` (player cards,
+  player of the week) and `newSigning`. Match results, team lists, records, grade leaders and
+  every other kind keep the club strip.
+- **Personal sponsors stay personal:** a sponsor tagged with players and no card types shows only
+  on its players' cards. With card types picked it also shows club-wide on those types, but never
+  on another player's card.
+- **The "presented by" line** on a player's card names the player's first sponsor.
+- **Worked out when the card is drawn**, not frozen on the draft (supersedes "a draft keeps its
+  sponsor once made"): the draft records which player it is about, and the sponsors are looked up
+  like the club strip, so a sponsor tagged mid-week reaches that player's queued cards and an
+  ended sponsorship drops off. Posted images never change.

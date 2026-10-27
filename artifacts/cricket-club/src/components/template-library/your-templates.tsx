@@ -5,8 +5,9 @@
  * the library credits it: "Based on X by Y". An unedited copy whose library
  * template has a newer version offers it side by side (ADR-011 T6.3). "New
  * design" starts a blank template for a card and opens it in the editor
- * (release 2, ADR-012 TB.1). Import from Figma makes a private template from
- * the club's own Figma (R2-E).
+ * (release 2, ADR-012 TB.1); Generate (ADR-012 R2-D) sits beside it when
+ * Ovation offers it. Import from Figma makes a private template from the
+ * club's own Figma (R2-E).
  */
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -39,6 +40,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { isSetDocument, TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
 import { kindLabel } from "@/lib/social-studio";
+import { GenerateButton } from "./generate-dialog";
 import { FigmaImportDialog } from "./figma-import-dialog";
 import {
   SetPageThumb,
@@ -342,9 +344,10 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   if (q.isError) return <QueryError onRetry={() => q.refetch()} />;
   if (q.isLoading) return <LoadingState label="Loading your templates…" />;
   const templates = q.data?.templates ?? [];
-  const actions = (
-    <div className="flex flex-wrap items-end gap-2">
+  const toolbar = (
+    <div className="flex flex-wrap items-end gap-2" data-testid="your-templates-toolbar">
       <NewDesignButton />
+      <GenerateButton />
       <Button size="sm" variant="outline" onClick={() => setFigmaOpen(true)}>
         Import from Figma
       </Button>
@@ -354,7 +357,7 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   if (templates.length === 0) {
     return (
       <div className="space-y-4">
-        {actions}
+        {toolbar}
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Your club has no templates yet. Start a new design, import one from Figma, use one from
           the library, or adopt a look.
@@ -365,7 +368,7 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   const kinds = [...new Set(templates.map((t) => t.kind))];
   return (
     <div className="space-y-5">
-      {actions}
+      {toolbar}
       {status && (
         <p role="status" className="text-sm text-muted-foreground">
           {status}
