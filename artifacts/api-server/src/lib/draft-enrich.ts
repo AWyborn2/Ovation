@@ -249,14 +249,14 @@ function formatRank(format: MatchFormat | null | undefined): SQL | null {
 /**
  * Rank a photo by how its focus box fits the card's photo frame (photo focus
  * areas), as `focusFit` does: 0 fits (or has no box: a centred crop, as
- * before), 1 a tight fit, 2 no fit, 3 the frame's shape is switched off for
- * the photo. `area` is a tagged player's area, which wins over the photo's
- * box. Only reorders: a photo that doesn't fit is still picked when nothing
- * else is there. Null when the frame's shape isn't known.
+ * before), 1 a tight fit, 2 no fit. (A shape switched off for the photo is
+ * left out altogether, by {@link shapeAllowed}.) `area` is a tagged player's
+ * area, which wins over the photo's box. Only reorders: a photo that doesn't
+ * fit is still picked when nothing else is there. Null when the frame's shape
+ * isn't known.
  */
 function fitRank(frameAspect: number | null | undefined, area?: SQL): SQL | null {
   if (!frameAspect || !(frameAspect > 0)) return null;
-  const shape = frameShapeOf(frameAspect);
   const box = area
     ? sql`COALESCE(${area}, ${clubPhotosTable.focusBox})`
     : sql`${clubPhotosTable.focusBox}`;
@@ -266,7 +266,17 @@ function fitRank(frameAspect: number | null | undefined, area?: SQL): SQL | null
   const vx = sql`(CASE WHEN ${photo} > ${aspect} THEN ${aspect} / ${photo} ELSE 1 END)`;
   const vy = sql`(CASE WHEN ${photo} > ${aspect} THEN 1 ELSE ${photo} / ${aspect} END)`;
   const kept = sql`LEAST(1, ${vx} / NULLIF((${box}->>'w')::float8, 0), ${vy} / NULLIF((${box}->>'h')::float8, 0))`;
-  return sql`CASE WHEN ${shape} = ANY(${clubPhotosTable.offShapes}) THEN 3 WHEN ${box} IS NULL THEN 0 WHEN ${kept} >= 0.999 THEN 0 WHEN ${kept} >= ${sql.raw(String(FOCUS_TIGHT_KEEP))} THEN 1 ELSE 2 END`;
+  return sql`CASE WHEN ${box} IS NULL THEN 0 WHEN ${kept} >= 0.999 THEN 0 WHEN ${kept} >= ${sql.raw(String(FOCUS_TIGHT_KEEP))} THEN 1 ELSE 2 END`;
+}
+
+/**
+ * Leaves out photos the admin switched off for the card frame's shape (photo
+ * focus areas): automatic posts never put a photo in a shape that's off.
+ * Undefined (no condition) when the frame's shape isn't known.
+ */
+function shapeAllowed(frameAspect: number | null | undefined): SQL | undefined {
+  if (!frameAspect || !(frameAspect > 0)) return undefined;
+  return sql`NOT (${frameShapeOf(frameAspect)} = ANY(${clubPhotosTable.offShapes}))`;
 }
 
 /** The type preference, then the format preference (when any), then newest first. */
@@ -357,6 +367,7 @@ async function playerPhoto(
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.playerId, playerId),
+        shapeAllowed(frameAspect),
       ),
     )
     .orderBy(
@@ -474,7 +485,13 @@ async function randomGradePhoto(
       fit: fit ?? sql<number>`0`,
     })
     .from(clubPhotosTable)
-    .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, grade)))
+    .where(
+      and(
+        eq(clubPhotosTable.tenantId, tenantId),
+        eq(clubPhotosTable.grade, grade),
+        shapeAllowed(frameAspect),
+      ),
+    )
     .orderBy(...newestFirst());
   if (rows.length === 0) return null;
   // The photos that fit the card's frame best, then the rule's own narrowing.
@@ -754,7 +771,13 @@ export async function pickDraftPhoto(
     const [gradePhoto] = await db
       .select({ objectPath: clubPhotosTable.objectPath })
       .from(clubPhotosTable)
-      .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, opts.grade)))
+      .where(
+        and(
+          eq(clubPhotosTable.tenantId, tenantId),
+          eq(clubPhotosTable.grade, opts.grade),
+          shapeAllowed(aspectOf(opts)),
+        ),
+      )
       .orderBy(...ranks, playerTagged, ...newestFirst())
       .limit(1);
     if (gradePhoto) return { url: objectUrl(gradePhoto.objectPath), source: "auto:library-grade" };
@@ -775,6 +798,7 @@ async function gradeTeamPhoto(tenantId: number, opts: PhotoPickOptions): Promise
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotosTable.grade, opts.grade),
         sql`${clubPhotosTable.photoTypes} && ARRAY['team','celebrating']::text[]`,
+        shapeAllowed(aspectOf(opts)),
       ),
     )
     .orderBy(
@@ -905,6 +929,7 @@ export async function pickCandidatePhoto(
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.tenantId, tenantId),
         inArray(clubPhotoPlayersTable.playerId, ids),
+        shapeAllowed(opts.frameAspect),
       ),
     )
     .orderBy(
