@@ -78,11 +78,21 @@ const api = (
   method: "get" | "post" | "patch" | "delete",
   path: string,
   as: "own" | "other" = "own",
-) =>
-  request(app)
-    [method](`/api${path}`)
+) => {
+  const agent = request(app);
+  const url = `/api${path}`;
+  const req =
+    method === "get"
+      ? agent.get(url)
+      : method === "post"
+        ? agent.post(url)
+        : method === "patch"
+          ? agent.patch(url)
+          : agent.delete(url);
+  return req
     .set("Cookie", as === "own" ? cookie : otherCookie)
     .set("x-tenant-id", String(as === "own" ? tenantId : otherTenantId));
+};
 
 /** A v2 document with these photo layers on the Team List card page. */
 const docWith = (...layers: Array<Record<string, unknown>>) => ({
