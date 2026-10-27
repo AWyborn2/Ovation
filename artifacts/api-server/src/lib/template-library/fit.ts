@@ -13,10 +13,11 @@
  * L2-B lands. Bundles are fit-checked in CI either way, and the release ships
  * with the runner in place.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import {
   db,
   cardTemplatesTable,
+  libraryTemplatesTable,
   libraryTemplateVersionsTable,
   type TemplateFitReportColumn,
   type TemplateFitStatus,
@@ -46,6 +47,7 @@ export async function writeFitResult(target: FitTarget, result: FitResult): Prom
           eq(libraryTemplateVersionsTable.version, target.version),
         ),
       );
+    if (result.status === "pass") await listPassedClubVersion(target.templateId, target.version);
     return;
   }
   // A copy saved again since the check started keeps its newer status.
@@ -57,6 +59,31 @@ export async function writeFitResult(target: FitTarget, result: FitResult): Prom
         eq(cardTemplatesTable.id, target.copyId),
         eq(cardTemplatesTable.tenantId, target.tenantId),
         eq(cardTemplatesTable.version, target.version),
+      ),
+    );
+}
+
+/**
+ * A club-published template is listed once its current version passes
+ * (ADR-012 decision 3: no approval queue). Unless the author or Ovation
+ * unlisted it since, and only for the version that is still current.
+ * Ovation's own templates are listed by hand in the console.
+ */
+export async function listPassedClubVersion(
+  templateId: number,
+  version: number,
+  tx: Pick<typeof db, "update"> = db,
+): Promise<void> {
+  await tx
+    .update(libraryTemplatesTable)
+    .set({ listed: true, listedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(libraryTemplatesTable.id, templateId),
+        eq(libraryTemplatesTable.origin, "club"),
+        eq(libraryTemplatesTable.currentVersion, version),
+        eq(libraryTemplatesTable.listed, false),
+        isNull(libraryTemplatesTable.unlistedBy),
       ),
     );
 }

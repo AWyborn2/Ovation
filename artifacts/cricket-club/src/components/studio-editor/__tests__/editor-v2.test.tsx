@@ -73,6 +73,15 @@ function open(current = copy(), saved: Record<string, unknown> = {}) {
           document: (body as { document: unknown }).document,
           ...saved,
         });
+      } else if (/club-templates\/9\/publish-preview$/.test(url)) {
+        payload = {
+          document: current.document,
+          changes: [],
+          flags: [{ page: "fixture", layerId: "venue", kind: "sponsorName", text: "Acme" }],
+          assetErrors: [],
+          tagChecks: [],
+          published: null,
+        };
       } else if (/club-templates\/9$/.test(url)) payload = current;
       else if (/social-settings/.test(url))
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };
@@ -122,6 +131,27 @@ describe("editor v2", () => {
     const pages = body.document.pages as Record<string, { layers: unknown[] }>;
     expect(pages.fixture!.layers).toEqual(MATCH_DAY.layers);
     expect(pages.title!.layers.length).toBeGreaterThan(0);
+  });
+
+  it("opens Publish, and a flag selects its layer (release 2)", async () => {
+    open();
+    await screen.findByRole("navigation", { name: "Pages" });
+    expect(screen.queryByTestId("selection-box")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+    const dialog = await screen.findByRole("dialog", { name: "Publish to the library" });
+    fireEvent.click(await within(dialog).findByRole("button", { name: /“Acme” names a sponsor/ }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByTestId("selection-box")).toBeTruthy();
+  });
+
+  it("can't publish an unchanged library copy", async () => {
+    open(
+      copy({
+        basedOn: { templateId: 3, version: 1, name: "Club Kit", authorName: "Ovation", look: null },
+      }),
+    );
+    await screen.findByRole("navigation", { name: "Pages" });
+    expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
   });
 
   it("sets when a layer shows from the Layer panel", async () => {
