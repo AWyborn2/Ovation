@@ -1,102 +1,56 @@
 # Player sponsors
 
-**Status:** Scoped with Ash 27 Oct 2026. **Priority:** P1.
-**Next:** Principal Architect (`decisions/architect/player-sponsors.md`).
+**Status:** Scoped with Ash 27 Oct 2026. **Next:** Principal Architect.
 
 ## Problem
 
-Clubs sell personal sponsorships: a local business backs one player for the season. Today a
-sponsor can be tied to card types and to teams (team list cards), but not to a player, so the
-player's own sponsor never appears on the cards that are about that player. Admins either leave
-it off or edit every milestone card by hand.
-
-## Target user
-
-Club sponsorship and social media managers who sell player sponsorships and post player cards
-from Social Studio.
-
-## Today (checked in code, 27 Oct 2026)
-
-- `sponsors` rows carry `card_kinds` (empty = every card), `grades` (a team list for that grade
-  shows that sponsor as its one logo), `is_presenting` and `tier`.
-- The strip on a card is chosen by `sponsorsForCard` in the web app
-  (`artifacts/cricket-club/src/lib/share-card/sponsor-limit.ts`). The server's post render
-  (`api-server/src/lib/draft-render.ts`) filters by card type only, so a team list rendered for
-  posting does not yet carry its team's sponsor the way the preview does.
-- A draft does not record which player it is about; the photo picker reads it from the card's
-  link (`/players/42`) or the sweep's `playerId`.
+Some clubs sell sponsorships tied to one player. Social Studio only knows club sponsors (by card
+kind and grade), so a card about that player shows the club's strip and the player's sponsor gets
+nothing. Admins fix it by hand or not at all.
 
 ## Decisions (Ash, 27 Oct 2026)
 
-1. **Tag players on a sponsor**, in the sponsor library, next to "Team sponsor".
-2. **Player cards carry the player's sponsors.** On a card about one player (milestone, feats,
-   player and new signing cards, records, grade leaders, debut, big moment, trading card) the
-   player's active sponsors replace the club sponsor strip. Two active sponsors for that player:
-   both show.
-3. **Senior players only.** Junior participants can't be tagged (the same rule as photo tags);
-   juniors wait on a consent decision.
-4. **Build after photo focus areas**, alongside template library release 2.
-
-## User stories
-
-- As a sponsorship manager, I want to tag a sponsor with the players it backs, so that their
-  cards show the sponsor without editing each one.
-- As a social media manager, I want a milestone card for a sponsored player to show that
-  player's sponsor instead of the club strip, so that the sponsor gets the credit they paid for.
-- As a social media manager, I want a card for a player with no sponsor of their own to show the
-  usual club strip, without other players' personal sponsors.
-- As a social media manager, I want a personal sponsor to stay off the club's other cards unless
-  I choose card types for it.
+1. **Tag players on a sponsor** in the Sponsors section. A sponsor can back one or more players,
+   with the same active dates the sponsor already has.
+2. **On the player's cards, the player's sponsor replaces the club strip.** Club sponsors don't
+   show on that card.
+3. **Which cards:** cards centred on one player: milestones and feats (centuries, five-fors,
+   milestones, debuts and caps, player of the week) and the player / new signing cards. Match
+   results and team lists keep the club strip.
+4. **Sponsors player pack:** library templates for a "Meet our sponsored player" announcement, a
+   season thank-you card, and a sponsor-featured version of each player card kind.
 
 ## Requirements
 
-### P0 (must have)
+- **P0** Sponsor ↔ player tags (senior players; juniors out of scope until consent is decided).
+- **P0** Card data resolves the player's active sponsor for the kinds above; the strip shows only
+  that sponsor (logo, name, presented-by line).
+- **P0** Drafts made by the sweep and by hand both get it; a draft keeps its sponsor once made.
+- **P1** The pack's templates, fit-checked like every library template.
+- **P1** Sponsors page shows each sponsor's players; player page shows their sponsor.
 
-- **Players on a sponsor:** a sponsor can be tagged with any number of the club's senior players;
-  a player can have several sponsors. Junior participants and fill-ins are rejected.
-- **Player cards:** on a player-centred card with a known player, the strip is that player's
-  sponsors whose dates cover today (in the library's order), and the "presented by" line names
-  the first of them. No sponsor of their own: the club strip as today, leaving out sponsors that
-  belong to other players.
-- **Personal sponsors stay personal:** a sponsor with players and no card types shows only on its
-  players' cards. With card types picked, it also shows on those card types for the club (but
-  never on another player's card).
-- **Preview equals post:** the Studio preview, the share card and the server's post render choose
-  the same sponsors (one shared rule). Team list posts carry their team's sponsor as the preview
-  does.
-- **Drafts follow the library:** a draft records which player it is about; which sponsors show is
-  worked out when the card is drawn, as the club strip is today. Tagging a player mid-week updates
-  their queued cards; an ended sponsorship drops off.
-- **Sponsors switch:** the club's "sponsors on cards" switch still turns every strip off.
+## Settled (Ash, 27 Oct 2026)
 
-### P1 (should have)
+- **Two active sponsors on one player: show both.** Templates need room for two player sponsors.
+- **New fields where needed** (for example `{{playerSponsorLogo}}`, `{{playerSponsorName}}`, and a
+  second pair), rather than reusing the club strip's `sponsor1`–`sponsor3`.
 
-- A "Player sponsors" chip on the sponsor row listing the tagged players by name.
-- Create a card: pick the card's player so a hand-made player card carries their sponsor.
+## Open questions for the architect
 
-### P2 (nice to have)
+- Storage: a `sponsor_players` join (tenant, sponsor, player) is the likely shape.
 
-- Sponsor templates: a sponsorship announcement, a season thank-you and a sponsor-featured player
-  card (large sponsor logo beside the player). Built on the template library once release 2 lands.
-- The player's sponsors on their public player page.
+## Settled with the design (Ash, 27 Oct 2026)
 
-### P3 (won't do now)
+Design: `decisions/architect/player-sponsors.md`.
 
-- Junior player sponsors (consent decision first).
-- Sponsorship billing, contracts or reporting.
-
-## Success criteria
-
-- Every player card posted for a tagged player in the four weeks after release carries their
-  sponsor, with no hand edit.
-- No player card shows another player's personal sponsor.
-- No difference between the preview and the posted image's sponsors (checked by the shared rule's
-  tests and one browser check).
-
-## Risks
-
-- **Preview and post drifting:** the strip rule lives in the web app today. Mitigation: move it
-  to `@workspace/scorecard` and use it on both sides.
-- **A club-wide sponsor that also backs one player** leaves other players' cards (it is now a
-  player sponsor). Mitigation: the sponsor form says so; revisit if clubs ask for both.
-- **Production migration:** new table and column; Ash runs the SQL before republishing.
+- **Player-centred kinds:** `milestone`, `century`, `fiveFor`, `debut`, `player` (player cards,
+  player of the week) and `newSigning`. Match results, team lists, records, grade leaders and
+  every other kind keep the club strip.
+- **Personal sponsors stay personal:** a sponsor tagged with players and no card types shows only
+  on its players' cards. With card types picked it also shows club-wide on those types, but never
+  on another player's card.
+- **The "presented by" line** on a player's card names the player's first sponsor.
+- **Worked out when the card is drawn**, not frozen on the draft (supersedes "a draft keeps its
+  sponsor once made"): the draft records which player it is about, and the sponsors are looked up
+  like the club strip, so a sponsor tagged mid-week reaches that player's queued cards and an
+  ended sponsorship drops off. Posted images never change.

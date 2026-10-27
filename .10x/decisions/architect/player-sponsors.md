@@ -1,6 +1,6 @@
 # Player sponsors: design
 
-**Status:** Proposed 27 Oct 2026. **Scope:** `.10x/decisions/product-manager/player-sponsors.md`.
+**Status:** Accepted by Ash 27 Oct 2026. **Scope:** `.10x/decisions/product-manager/player-sponsors.md`.
 
 ## Data (migration 0074)
 
@@ -45,8 +45,8 @@ and `maxSponsorLogos`, and gains the player rule:
 cardSponsors(sponsors, { kind, grade, playerId }) → { sponsors, presentingName }
 ```
 
-1. `PLAYER_SPONSOR_KINDS` = milestone, player, record, gradeLeader, debut, century, fiveFor,
-   bigMoment, newSigning, tradingCard.
+1. `PLAYER_SPONSOR_KINDS` = milestone, century, fiveFor, debut, player, newSigning (the scope's
+   list; results, team lists, records, grade leaders and the rest keep the club strip).
 2. **Player card with a player:** the sponsors tagged with that player, in the given order
    (card types ignored: the tag is the choice). If any: they are the strip and `presentingName`
    is the first one's name.
@@ -87,6 +87,9 @@ participants can't be tagged. Juniors isolation holds: no junior table is read.
    render and every web surface call `cardSponsors` with the player; tests both sides.
 4. **Admin UI** — player tags on the sponsor form and rows (search, chips, senior-only hint, the
    "personal sponsor" note); Create a card player pick (P1).
-5. **Templates (P2)** — after template library release 2.
+5. **Templates (P1)** — the Sponsors player pack (announcement, season thank-you, a
+   sponsor-featured version of each player kind) with its own fields `{{playerSponsorLogo}}`,
+   `{{playerSponsorName}}`, `{{playerSponsor2Logo}}`, `{{playerSponsor2Name}}`, filled from the
+   same `cardSponsors` result; after template library release 2.
 
 Ash runs migration 0074 in Production SQL before the republish that carries slice 2.

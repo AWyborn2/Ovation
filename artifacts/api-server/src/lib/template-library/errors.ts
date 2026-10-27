@@ -1,7 +1,7 @@
 /** A template-library failure the routes answer with its status and body. */
 export class TemplateLibraryError extends Error {
   constructor(
-    readonly status: 400 | 403 | 404 | 409,
+    readonly status: 400 | 403 | 404 | 409 | 422,
     readonly body: Record<string, unknown>,
   ) {
     super(String(body.error ?? "template library error"));
