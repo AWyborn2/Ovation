@@ -4,6 +4,7 @@
  * set as default (not while its layout check is running). A copy taken from
  * the library credits it: "Based on X by Y". An unedited copy whose library
  * template has a newer version offers it side by side (ADR-011 T6.3).
+ * Generate (ADR-012 R2-D) sits at the top when Ovation offers it.
  */
 import { useState } from "react";
 import { Link } from "wouter";
@@ -34,6 +35,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { isSetDocument } from "@workspace/scorecard/kind-templates";
+import { GenerateButton } from "./generate-dialog";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -287,16 +289,25 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   if (q.isError) return <QueryError onRetry={() => q.refetch()} />;
   if (q.isLoading) return <LoadingState label="Loading your templates…" />;
   const templates = q.data?.templates ?? [];
+  const toolbar = (
+    <div className="flex flex-wrap justify-end gap-2" data-testid="your-templates-toolbar">
+      <GenerateButton />
+    </div>
+  );
   if (templates.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Your club has no templates yet. Use one from the library, or adopt a look.
-      </p>
+      <div className="space-y-3">
+        {toolbar}
+        <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Your club has no templates yet. Use one from the library, or adopt a look.
+        </p>
+      </div>
     );
   }
   const kinds = [...new Set(templates.map((t) => t.kind))];
   return (
     <div className="space-y-5">
+      {toolbar}
       {status && (
         <p role="status" className="text-sm text-muted-foreground">
           {status}
