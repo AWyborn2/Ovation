@@ -47,7 +47,7 @@ export interface KioskPhotoSlideshow {
   secondsPerPhoto: number;
   /** Grade and season under each photo (never names). */
   captions: boolean;
-  /** fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill. */
+  /** auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops. */
   frame?: KioskPhotoSlideshowFrame;
   /** Cross-fade between photos (default on); off cuts. */
   crossfade?: boolean | null;

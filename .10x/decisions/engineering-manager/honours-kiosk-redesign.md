@@ -85,6 +85,12 @@ harness and a dev deploy; test on the real clubroom TV browser (performance risk
   images without an admin session and a withdrawal takes effect at the next image load.
 - Migration `0068_kiosk_photo_slideshows.sql` (later options live in the same jsonb).
 
+**Smart photo framing (27 Oct 2026, Ash: photos were cut off):** the slideshow default is now
+"Smart". It crops a photo to fill the screen only when nothing important is cut: its focus box
+(photo focus areas) fits a 16:9 crop, or, with no box, the photo is within 8% of the screen's
+shape. Otherwise it shows the whole photo over a blurred fill. "Always fill" aims its crop at the
+focus box; a photo with wide crops switched off always shows whole.
+
 **Up to 10 columns (27 Oct 2026, Ash):** season grids and composite column boards can show up to
 10 columns on one screen (club default or per board); plaques and record panels stay at 5, life
 members and lists at 3. From 7 columns a screen uses a dense style: tighter cells, smaller type,

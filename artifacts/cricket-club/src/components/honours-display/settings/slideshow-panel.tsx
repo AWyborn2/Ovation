@@ -217,10 +217,19 @@ export function SlideshowPanel({
         <Field label="Framing" htmlFor={id("frame")}>
           <Select
             id={id("frame")}
-            value={s.frame ?? "fill"}
-            options={{ fill: "Fill the screen", whole: "Whole photo" }}
+            value={s.frame ?? "auto"}
+            options={{
+              auto: "Smart: fill when nothing important is cut",
+              fill: "Always fill the screen",
+              whole: "Always the whole photo",
+            }}
             onChange={(frame) => patch({ frame })}
           />
+          {(s.frame ?? "auto") !== "whole" ? (
+            <p className="text-[11px] text-muted-foreground">
+              Crops aim at each photo’s focus area (set it in the photo library).
+            </p>
+          ) : null}
         </Field>
         <label className="flex items-center gap-2 self-end pb-1.5 text-sm">
           <input
