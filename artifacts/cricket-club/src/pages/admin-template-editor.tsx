@@ -693,16 +693,15 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   const isGroup =
     selected.length > 1 && selected.every((l) => l.group && l.group === selected[0].group);
 
-  // Live fields by label in the Layers list ("Opposition name", not "{{opposition.name}}").
-  const fieldLabels = useMemo(
-    () =>
-      Object.fromEntries(
-        (pageTokens(pageKind, page)?.fields ?? kindFields(pageKind)?.fields ?? []).map((f) => [
-          f.key,
-          f.label,
-        ]),
-      ),
+  // The page's live fields: searched from the text box, and shown by label in
+  // the Layers list ("Opposition name", not "{{opposition.name}}").
+  const pageFields = useMemo(
+    () => pageTokens(pageKind, page)?.fields ?? kindFields(pageKind)?.fields ?? [],
     [pageKind, page],
+  );
+  const fieldLabels = useMemo(
+    () => Object.fromEntries(pageFields.map((f) => [f.key, f.label])),
+    [pageFields],
   );
 
   // The editor's own panels, then a draft's content panels.
@@ -1126,6 +1125,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             <EditorToolbar
               selected={selected}
               isGroup={isGroup}
+              fields={pageFields}
               onText={(t) =>
                 single && edit(updateLayer(doc, single.id, { content: t, name: t.slice(0, 24) }))
               }
