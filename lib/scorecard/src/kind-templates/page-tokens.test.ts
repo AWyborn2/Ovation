@@ -178,3 +178,34 @@ describe("page token catalogues", () => {
     expect(pageTokens("matchDay", "title")!.fields.some((f) => f.key === "x")).toBe(false);
   });
 });
+
+describe("player sponsor fields (player sponsors)", () => {
+  const keys = [
+    "playerSponsorName",
+    "playerSponsor2Name",
+    "playerSponsorLogo",
+    "playerSponsor2Logo",
+  ];
+
+  it("every player card and the announcement offers the player's two sponsors", () => {
+    for (const kind of [
+      "milestone",
+      "century",
+      "fiveFor",
+      "debut",
+      "player",
+      "newSigning",
+      "announcement",
+    ]) {
+      const tokens = pageTokenKeys(kind, primaryPage(kind));
+      for (const key of keys) expect(tokens.has(key), `${kind} ${key}`).toBe(true);
+    }
+  });
+
+  it("results, team lists and records don't", () => {
+    for (const kind of ["matchSummary", "teamList", "record", "ladder"]) {
+      const tokens = pageTokenKeys(kind, primaryPage(kind));
+      for (const key of keys) expect(tokens.has(key), `${kind} ${key}`).toBe(false);
+    }
+  });
+});

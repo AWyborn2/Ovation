@@ -376,6 +376,10 @@ describe("post pack sponsors (player sponsors, sponsor per team)", () => {
     for (const r of renders) {
       expect(sponsorNames(r.options)).toEqual(["Joe's Plumbing"]);
       expect(presented(r.options)).toBe("Joe's Plumbing");
+      // The {{playerSponsor…}} fields' data.
+      expect((r.options.data as { playerSponsors?: unknown }).playerSponsors).toEqual([
+        { name: "Joe's Plumbing", logoUrl: "/joe.png" },
+      ]);
     }
   });
 
@@ -387,6 +391,7 @@ describe("post pack sponsors (player sponsors, sponsor per team)", () => {
     expect(names[0]).toBe("Club Major");
     expect(names).not.toContain("Joe's Plumbing");
     expect(presented(renders[0].options)).toBe("Club Major");
+    expect(renders[0].options.data).not.toHaveProperty("playerSponsors");
   });
 
   it("a team list carries its team's own sponsor, as the preview does", async () => {

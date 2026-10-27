@@ -115,6 +115,12 @@ export interface PackCardData {
    */
   presentingSponsorName?: string | null;
   /**
+   * The card's player's own sponsors (player sponsors), in order: the
+   * `{{playerSponsorName}}` / `{{playerSponsorLogo}}` fields and the second
+   * pair. Empty (or absent) when the card isn't about a sponsored player.
+   */
+  playerSponsors?: Array<{ name: string; logoUrl: string }> | null;
+  /**
    * Uploaded / gallery-selected photo. Overrides the input's own `photoUrl` in
    * the `photo` slot.
    */

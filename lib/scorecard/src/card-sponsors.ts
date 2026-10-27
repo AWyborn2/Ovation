@@ -17,7 +17,8 @@ const ONE_SPONSOR_KINDS: ReadonlySet<string> = new Set(["matchSummary", "premier
 /**
  * Cards about one player (player sponsors): the player's own sponsors replace
  * the club strip. Results, team lists, records, grade leaders and the rest
- * keep the club strip.
+ * keep the club strip. An announcement follows a player only when one is
+ * picked for it by hand ("Meet our sponsored player").
  */
 export const PLAYER_SPONSOR_KINDS: ReadonlySet<string> = new Set([
   "milestone",
@@ -26,7 +27,15 @@ export const PLAYER_SPONSOR_KINDS: ReadonlySet<string> = new Set([
   "debut",
   "player",
   "newSigning",
+  "announcement",
 ]);
+
+/**
+ * The template fields a player-sponsor card offers: the player's first and
+ * second sponsor (name and logo), empty when the card's player has none.
+ */
+export const PLAYER_SPONSOR_FIELDS = ["playerSponsorName", "playerSponsor2Name"] as const;
+export const PLAYER_SPONSOR_IMAGES = ["playerSponsorLogo", "playerSponsor2Logo"] as const;
 
 /** The most sponsor logos a card of `kind` shows; undefined = the renderer's own cap. */
 export function maxSponsorLogos(kind: string): number | undefined {
@@ -120,14 +129,16 @@ export function sponsorsForCard<S extends SponsorLike>(
 }
 
 /**
- * The card's strip and its "presented by" name. On a player's card that
- * carries their own sponsors, the line names the first of them; otherwise it
- * names the club's presenting sponsor (null when there is none).
+ * The card's strip, its "presented by" name and the player's own sponsors.
+ * On a player's card that carries their sponsors, the line names the first of
+ * them and `playerSponsors` lists them (the `{{playerSponsor…}}` fields);
+ * otherwise the line names the club's presenting sponsor (null when there is
+ * none) and `playerSponsors` is empty.
  */
 export function cardSponsors<S extends SponsorLike>(
   sponsors: readonly S[],
   ctx: CardSponsorContext,
-): { sponsors: S[]; presentingName: string | null } {
+): { sponsors: S[]; presentingName: string | null; playerSponsors: S[] } {
   const strip = sponsorsForCard(sponsors, ctx);
   const playerId = sponsoredPlayer(ctx);
   const first = strip[0];
@@ -138,5 +149,6 @@ export function cardSponsors<S extends SponsorLike>(
   return {
     sponsors: strip,
     presentingName: ownStrip ? first.name : (sponsors.find((sp) => sp.isPresenting)?.name ?? null),
+    playerSponsors: ownStrip ? strip : [],
   };
 }

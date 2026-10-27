@@ -250,6 +250,12 @@ export async function renderDraftSlides(
     hashtag: settings.clubHashtag || (shortName ? `#${shortName.replace(/\s+/g, "")}` : ""),
     sponsors: sponsorsOn ? strip.sponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })) : [],
     presentingSponsorName: sponsorsOn ? strip.presentingName : null,
+    // The player's own sponsors → the `{{playerSponsor…}}` template fields.
+    ...(sponsorsOn && strip.playerSponsors.length
+      ? {
+          playerSponsors: strip.playerSponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
+        }
+      : {}),
     // A junior card shows a photo only behind the engines' positive marker: a junior
     // player's own photo the family allows (ADR-007). Nothing else reaches it.
     photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,

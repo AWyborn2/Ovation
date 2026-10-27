@@ -62,6 +62,8 @@ export interface BuildPackDataOptions {
   sponsors?: Array<{ name: string; logoUrl: string }> | null;
   /** Designated presenting sponsor NAME → the "presented by <sponsor>" line. */
   presentingSponsorName?: string | null;
+  /** The card's player's own sponsors → the `{{playerSponsor…}}` fields. Only sent when set. */
+  playerSponsors?: Array<{ name: string; logoUrl: string }> | null;
   /** Uploaded / gallery-selected photo, overriding the input's own photoUrl. */
   photoUrl?: string | null;
   /** Focal point + zoom; only the focal point is applied in the pack path. */
@@ -106,6 +108,7 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     hashtag,
     sponsors,
     presentingSponsorName,
+    playerSponsors,
     photoUrl,
     photoTransform,
     photoFocus,
@@ -142,6 +145,8 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     hashtag,
     sponsors,
     presentingSponsorName,
+    // Only sent when the card's player has sponsors, so other renders are unchanged.
+    ...(playerSponsors && playerSponsors.length ? { playerSponsors } : {}),
     photoUrl,
     photoTransform,
     // Only sent when set, so a render without one is unchanged.
@@ -260,8 +265,13 @@ export function cardSponsorData(
   enabled: boolean,
   /** The one player the card is about (a draft's `subjectPlayerId`). */
   playerId?: number | null,
-): { sponsors: Array<{ name: string; logoUrl: string }>; presentingSponsorName: string | null } {
-  if (!enabled || !bundle?.activeSponsors) return { sponsors: [], presentingSponsorName: null };
+): {
+  sponsors: Array<{ name: string; logoUrl: string }>;
+  presentingSponsorName: string | null;
+  playerSponsors: Array<{ name: string; logoUrl: string }>;
+} {
+  if (!enabled || !bundle?.activeSponsors)
+    return { sponsors: [], presentingSponsorName: null, playerSponsors: [] };
   const strip = cardSponsors(bundle.activeSponsors, {
     kind: input.kind,
     grade: cardGrade(input),
@@ -270,6 +280,7 @@ export function cardSponsorData(
   return {
     sponsors: strip.sponsors.map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl })),
     presentingSponsorName: strip.presentingName,
+    playerSponsors: strip.playerSponsors.map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl })),
   };
 }
 

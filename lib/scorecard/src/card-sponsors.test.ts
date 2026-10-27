@@ -119,3 +119,29 @@ describe("cardSponsors", () => {
     expect(cardSponsors(SPONSORS.slice(0, 1), { kind: "ladder" }).presentingName).toBeNull();
   });
 });
+
+describe("cardSponsors: the player's own sponsors", () => {
+  const LIST = [
+    ...SPONSORS,
+    { name: "Joe's Plumbing", cardKinds: [], players: [{ id: 42 }] },
+    { name: "Bakery", cardKinds: [], players: [{ id: 42 }] },
+  ];
+
+  it("lists them for the {{playerSponsor…}} fields on the player's card", () => {
+    expect(
+      cardSponsors(LIST, { kind: "century", playerId: 42 }).playerSponsors.map((s) => s.name),
+    ).toEqual(["Joe's Plumbing", "Bakery"]);
+  });
+
+  it("an announcement follows a player picked for it", () => {
+    const r = cardSponsors(LIST, { kind: "announcement", playerId: 42 });
+    expect(r.sponsors.map((s) => s.name)).toEqual(["Joe's Plumbing", "Bakery"]);
+    expect(r.playerSponsors).toHaveLength(2);
+  });
+
+  it("is empty for a player without sponsors and on other cards", () => {
+    expect(cardSponsors(LIST, { kind: "century", playerId: 7 }).playerSponsors).toEqual([]);
+    expect(cardSponsors(LIST, { kind: "matchSummary", playerId: 42 }).playerSponsors).toEqual([]);
+    expect(cardSponsors(LIST, { kind: "announcement" }).playerSponsors).toEqual([]);
+  });
+});

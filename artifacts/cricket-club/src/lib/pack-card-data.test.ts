@@ -217,6 +217,7 @@ describe("cardSponsorData (player sponsors)", () => {
     expect(cardSponsorData(bundle, { kind: "milestone" }, true, 42)).toEqual({
       sponsors: [{ name: "Joe's Plumbing", logoUrl: "/joe.png" }],
       presentingSponsorName: "Joe's Plumbing",
+      playerSponsors: [{ name: "Joe's Plumbing", logoUrl: "/joe.png" }],
     });
   });
 
@@ -224,6 +225,7 @@ describe("cardSponsorData (player sponsors)", () => {
     expect(cardSponsorData(bundle, { kind: "milestone" }, true, 7)).toEqual({
       sponsors: [{ name: "Club Major", logoUrl: "/major.png" }],
       presentingSponsorName: "Club Major",
+      playerSponsors: [],
     });
     expect(cardSponsorData(bundle, { kind: "ladder" }, true, null).sponsors).toEqual([
       { name: "Club Major", logoUrl: "/major.png" },
@@ -234,6 +236,7 @@ describe("cardSponsorData (player sponsors)", () => {
     expect(cardSponsorData(bundle, { kind: "milestone" }, false, 42)).toEqual({
       sponsors: [],
       presentingSponsorName: null,
+      playerSponsors: [],
     });
   });
 });

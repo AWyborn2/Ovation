@@ -896,6 +896,15 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
   // orphan "presented by" prose is left behind.
   values["sponsorPresentedBy"] = data.presentingSponsorName ?? "";
 
+  // Player sponsors: the card's player's own sponsors → their name and logo
+  // fields. Bound as "" when there are none, so a sample never shows and a
+  // layer shown only with a sponsor (`showWhen`) drops out.
+  const [first, second] = data.playerSponsors ?? [];
+  values["playerSponsorName"] = first?.name ?? "";
+  values["playerSponsor2Name"] = second?.name ?? "";
+  if (first?.logoUrl) images["playerSponsorLogo"] = first.logoUrl;
+  if (second?.logoUrl) images["playerSponsor2Logo"] = second.logoUrl;
+
   // S4: a match day card's note ("BAR & KITCHEN OPEN") is the admin's own
   // words or nothing: the sample must never print on a real card. Empty, the
   // note box drops out (`data-drop-if-field`).

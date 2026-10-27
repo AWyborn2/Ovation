@@ -48,11 +48,17 @@ export function useSponsors({
   // the strip, so the line only appears when sponsors are enabled and included.
   const presentingSponsorName = strip?.presentingName ?? null;
 
+  // The player's own sponsors → the `{{playerSponsor…}}` template fields.
+  const playerSponsors = useMemo(
+    () => (strip?.playerSponsors ?? []).map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
+    [strip],
+  );
+
   const sponsorSig = useMemo(
     () =>
       `${sponsors.map((s) => `${s.name}|${s.logoUrl}`).join("~")}#${presentingSponsorName ?? ""}`,
     [sponsors, presentingSponsorName],
   );
 
-  return { sponsors, presentingSponsorName, sponsorSig };
+  return { sponsors, presentingSponsorName, playerSponsors, sponsorSig };
 }

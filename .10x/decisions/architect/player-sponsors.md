@@ -46,7 +46,8 @@ cardSponsors(sponsors, { kind, grade, playerId }) → { sponsors, presentingName
 ```
 
 1. `PLAYER_SPONSOR_KINDS` = milestone, century, fiveFor, debut, player, newSigning (the scope's
-   list; results, team lists, records, grade leaders and the rest keep the club strip).
+   list), plus announcement when a player is picked for it by hand ("Meet our sponsored player",
+   templates slice). Results, team lists, records, grade leaders and the rest keep the club strip.
 2. **Player card with a player:** the sponsors tagged with that player, in the given order
    (card types ignored: the tag is the choice). If any: they are the strip and `presentingName`
    is the first one's name.
@@ -68,6 +69,11 @@ ignored when it is a fill-in.
 | Studio editor / draft panels           | `draft.subjectPlayerId`                                                                                  |
 | Share card modal                       | its `playerId` prop                                                                                      |
 | Template previews, sets, carousels     | none (sample data / not player cards)                                                                    |
+
+`cardSponsors` also returns `playerSponsors` (the strip when it is the player's own, else
+empty), which fills the templates' `{{playerSponsorName}}` / `{{playerSponsorLogo}}` and second
+pair (registered for those kinds in `page-tokens.ts`; bound empty when there are none; the fit
+check tries none and both with long names).
 
 Server and web call the same `cardSponsors`; a test in `lib/scorecard` pins the rule and the
 server test checks the render payload for a tagged player.
