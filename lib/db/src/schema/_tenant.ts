@@ -124,6 +124,10 @@ import { tenantsTable } from "./tenants";
  *   junior_participants is now keyed `(tenant_id, participant_id)` so a child at two
  *   clubs is two independent rows; junior_matches gains a partial unique
  *   `(tenant_id, playhq_match_id)`.
+ * APPLIED (photo collections, migration 0071):
+ *   club_photo_collections, club_photo_collection_photos — directly
+ *   tenant-scoped from day one (every read filters, every write sets it), even
+ *   though membership also cascades from its collection and photo.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

@@ -69,6 +69,7 @@ export function ShareCardModal({
   matchId,
   photoUrl,
   photoFocus,
+  layerPhotos,
   packId: packIdProp,
   templateDoc,
   onApprove,
@@ -223,6 +224,8 @@ export function ShareCardModal({
       photoTransform: transform,
       // The draft photo's focus box, while that photo is the one shown.
       photoFocus: photoFocus && effectivePhotoUrl === photoUrl ? photoFocus : null,
+      // Sourced photo layers keep their photos while the draft's own is shown.
+      layerPhotos: effectivePhotoUrl === photoUrl ? layerPhotos : null,
       // Reuse the existing placement toggle — the shared builder maps the
       // canvas vocabulary ("feature"/"headshot") onto the pack's own.
       photoPlacement,

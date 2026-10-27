@@ -41,6 +41,7 @@ import templateDesignerRouter from "./template-designer";
 import socialConnectionsRouter from "./social-connections";
 import socialPublicationsRouter from "./social-publications";
 import clubPhotosRouter from "./club-photos";
+import clubPhotoCollectionsRouter from "./club-photo-collections";
 import cardPhotoRulesRouter from "./card-photo-rules";
 import studioToolsRouter from "./studio-tools";
 import notificationsRouter from "./notifications";
@@ -110,6 +111,8 @@ router.use(playhqSyncStatusRouter);
 router.use(fixturesResultsRouter);
 router.use(socialDraftsRouter);
 router.use(socialCalendarRouter);
+// Before the template library, which owns the other `/club-templates/*` routes.
+router.use(clubPhotoCollectionsRouter);
 // Before the template library: its `/template-library/:id` would take `/elements`.
 router.use(libraryElementsRouter);
 router.use(templateLibraryRouter);

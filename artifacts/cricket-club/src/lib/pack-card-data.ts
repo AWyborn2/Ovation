@@ -73,6 +73,8 @@ export interface BuildPackDataOptions {
   photoTransform?: PhotoTransform | null;
   /** The photo's focus box and size (a draft's `photoFocus`); frames crop to it. */
   photoFocus?: PackCardData["photoFocus"];
+  /** Sourced photo layers' own photos (a draft's `layerPhotos`); only sent when set. */
+  layerPhotos?: PackCardData["layerPhotos"];
   /**
    * The canvas renderer's placement vocabulary ("feature" | "headshot"), mapped
    * onto the pack's own ("fullBleed" | "contained") below. Absent → contained,
@@ -112,6 +114,7 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     photoUrl,
     photoTransform,
     photoFocus,
+    layerPhotos,
     photoPlacement,
     imageOverrides,
     packColourModes,
@@ -148,6 +151,7 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     photoTransform,
     // Only sent when set, so a render without one is unchanged.
     ...(photoFocus ? { photoFocus } : {}),
+    ...(layerPhotos && Object.keys(layerPhotos).length ? { layerPhotos } : {}),
     // On a pack card, "feature" promotes the photo to a full-bleed action shot;
     // "headshot" (and absent) keeps it contained in the template's framed region.
     photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",
@@ -192,6 +196,19 @@ function packModesFrom(
  * Sample content reads as prose ("Mandurah won by 5 wickets"), where the full
  * legal name is noise. Falls back to the input when stripping would empty it.
  */
+/**
+ * A draft's sourced photo layers' photos (photo layer sources) while its photo
+ * is automatic; null once an admin chose or cleared the photo, which then
+ * shows on every photo layer (KTD6).
+ */
+export function draftLayerPhotos(draft: {
+  photoSource?: string | null;
+  layerPhotos?: PackCardData["layerPhotos"];
+}): PackCardData["layerPhotos"] {
+  const auto = draft.photoSource == null || draft.photoSource.startsWith("auto:");
+  return auto ? (draft.layerPhotos ?? null) : null;
+}
+
 export function shortClubName(name: string): string {
   return name.replace(/\s+Cricket Club$/i, "").trim() || name;
 }

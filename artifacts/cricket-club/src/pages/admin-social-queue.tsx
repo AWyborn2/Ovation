@@ -3,6 +3,7 @@ import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { draftSetDocument, setDraftLayout, setDraftSlides } from "@/lib/set-draft";
 import type { PackCardData } from "@/lib/pack-render";
+import { draftLayerPhotos } from "@/lib/pack-card-data";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { Link, useLocation, useSearch } from "wouter";
 import {
@@ -530,6 +531,7 @@ export default function AdminSocialQueue() {
         // renders it), plus the player's gallery to swap in.
         photoUrl={preview?.photoUrl ?? null}
         photoFocus={preview?.photoFocus ?? null}
+        layerPhotos={preview ? draftLayerPhotos(preview) : null}
         packId={preview?.packId ?? null}
         templateDoc={
           preview?.templateVersion != null

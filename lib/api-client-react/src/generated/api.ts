@@ -121,6 +121,9 @@ import type {
   ClubCorrectionsStatus,
   ClubIdentityDriftItem,
   ClubPhoto,
+  ClubPhotoCollection,
+  ClubPhotoCollectionName,
+  ClubPhotoCollectionPhotosRequest,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -278,6 +281,8 @@ import type {
   KioskTokenResponse,
   KnownCardCrestList,
   LadderCardRow,
+  LayerPhotoPreview,
+  LayerPhotoPreviewRequest,
   LibraryElement,
   LibraryElementPage,
   LibraryElementReportList,
@@ -24389,6 +24394,515 @@ export const useDeleteClubPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteClubPhotosMutationOptions(options));
+    }
+
+export const getListClubPhotoCollectionsUrl = () => {
+
+
+
+
+  return `/api/club-photo-collections`
+}
+
+/**
+ * @summary List the club's photo collections (admin)
+ */
+export const listClubPhotoCollections = async ( options?: RequestInit): Promise<ClubPhotoCollection[]> => {
+
+  return customFetch<ClubPhotoCollection[]>(getListClubPhotoCollectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubPhotoCollectionsQueryKey = () => {
+    return [
+    `/api/club-photo-collections`
+    ] as const;
+    }
+
+
+export const getListClubPhotoCollectionsQueryOptions = <TData = Awaited<ReturnType<typeof listClubPhotoCollections>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotoCollections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubPhotoCollectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubPhotoCollections>>> = ({ signal }) => listClubPhotoCollections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubPhotoCollections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubPhotoCollectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listClubPhotoCollections>>>
+export type ListClubPhotoCollectionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the club's photo collections (admin)
+ */
+
+export function useListClubPhotoCollections<TData = Awaited<ReturnType<typeof listClubPhotoCollections>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotoCollections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubPhotoCollectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClubPhotoCollectionUrl = () => {
+
+
+
+
+  return `/api/club-photo-collections`
+}
+
+/**
+ * @summary Create a photo collection (admin)
+ */
+export const createClubPhotoCollection = async (clubPhotoCollectionName: ClubPhotoCollectionName, options?: RequestInit): Promise<ClubPhotoCollection> => {
+
+  return customFetch<ClubPhotoCollection>(getCreateClubPhotoCollectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubPhotoCollectionName,)
+  }
+);}
+
+
+
+
+export const getCreateClubPhotoCollectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubPhotoCollection>>, TError,{data: BodyType<ClubPhotoCollectionName>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubPhotoCollection>>, TError,{data: BodyType<ClubPhotoCollectionName>}, TContext> => {
+
+const mutationKey = ['createClubPhotoCollection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubPhotoCollection>>, {data: BodyType<ClubPhotoCollectionName>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubPhotoCollection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubPhotoCollectionMutationResult = NonNullable<Awaited<ReturnType<typeof createClubPhotoCollection>>>
+    export type CreateClubPhotoCollectionMutationBody = BodyType<ClubPhotoCollectionName>
+    export type CreateClubPhotoCollectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a photo collection (admin)
+ */
+export const useCreateClubPhotoCollection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubPhotoCollection>>, TError,{data: BodyType<ClubPhotoCollectionName>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubPhotoCollection>>,
+        TError,
+        {data: BodyType<ClubPhotoCollectionName>},
+        TContext
+      > => {
+      return useMutation(getCreateClubPhotoCollectionMutationOptions(options));
+    }
+
+export const getRenameClubPhotoCollectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-photo-collections/${id}`
+}
+
+/**
+ * @summary Rename a photo collection (admin)
+ */
+export const renameClubPhotoCollection = async (id: number,
+    clubPhotoCollectionName: ClubPhotoCollectionName, options?: RequestInit): Promise<ClubPhotoCollection> => {
+
+  return customFetch<ClubPhotoCollection>(getRenameClubPhotoCollectionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubPhotoCollectionName,)
+  }
+);}
+
+
+
+
+export const getRenameClubPhotoCollectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameClubPhotoCollection>>, TError,{id: number;data: BodyType<ClubPhotoCollectionName>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameClubPhotoCollection>>, TError,{id: number;data: BodyType<ClubPhotoCollectionName>}, TContext> => {
+
+const mutationKey = ['renameClubPhotoCollection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameClubPhotoCollection>>, {id: number;data: BodyType<ClubPhotoCollectionName>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameClubPhotoCollection(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameClubPhotoCollectionMutationResult = NonNullable<Awaited<ReturnType<typeof renameClubPhotoCollection>>>
+    export type RenameClubPhotoCollectionMutationBody = BodyType<ClubPhotoCollectionName>
+    export type RenameClubPhotoCollectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Rename a photo collection (admin)
+ */
+export const useRenameClubPhotoCollection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameClubPhotoCollection>>, TError,{id: number;data: BodyType<ClubPhotoCollectionName>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameClubPhotoCollection>>,
+        TError,
+        {id: number;data: BodyType<ClubPhotoCollectionName>},
+        TContext
+      > => {
+      return useMutation(getRenameClubPhotoCollectionMutationOptions(options));
+    }
+
+export const getDeleteClubPhotoCollectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-photo-collections/${id}`
+}
+
+/**
+ * The photos stay in the library. Photo layers that took a photo from the collection fall back to the card's photo.
+ * @summary Delete a photo collection (admin)
+ */
+export const deleteClubPhotoCollection = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteClubPhotoCollectionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteClubPhotoCollectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotoCollection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotoCollection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteClubPhotoCollection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubPhotoCollection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteClubPhotoCollection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubPhotoCollectionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubPhotoCollection>>>
+
+    export type DeleteClubPhotoCollectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a photo collection (admin)
+ */
+export const useDeleteClubPhotoCollection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotoCollection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubPhotoCollection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteClubPhotoCollectionMutationOptions(options));
+    }
+
+export const getAddClubPhotoCollectionPhotosUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-photo-collections/${id}/photos`
+}
+
+/**
+ * Photos already in the collection are left as they are. Open drafts whose photo layers take a photo from the collection re-pick afterwards.
+ * @summary Add library photos to a collection (admin)
+ */
+export const addClubPhotoCollectionPhotos = async (id: number,
+    clubPhotoCollectionPhotosRequest: ClubPhotoCollectionPhotosRequest, options?: RequestInit): Promise<ClubPhotoCollection> => {
+
+  return customFetch<ClubPhotoCollection>(getAddClubPhotoCollectionPhotosUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubPhotoCollectionPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getAddClubPhotoCollectionPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext> => {
+
+const mutationKey = ['addClubPhotoCollectionPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>, {id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addClubPhotoCollectionPhotos(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddClubPhotoCollectionPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>>
+    export type AddClubPhotoCollectionPhotosMutationBody = BodyType<ClubPhotoCollectionPhotosRequest>
+    export type AddClubPhotoCollectionPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Add library photos to a collection (admin)
+ */
+export const useAddClubPhotoCollectionPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addClubPhotoCollectionPhotos>>,
+        TError,
+        {id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getAddClubPhotoCollectionPhotosMutationOptions(options));
+    }
+
+export const getRemoveClubPhotoCollectionPhotosUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-photo-collections/${id}/photos/remove`
+}
+
+/**
+ * The photos stay in the library.
+ * @summary Take photos out of a collection (admin)
+ */
+export const removeClubPhotoCollectionPhotos = async (id: number,
+    clubPhotoCollectionPhotosRequest: ClubPhotoCollectionPhotosRequest, options?: RequestInit): Promise<ClubPhotoCollection> => {
+
+  return customFetch<ClubPhotoCollection>(getRemoveClubPhotoCollectionPhotosUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubPhotoCollectionPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getRemoveClubPhotoCollectionPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext> => {
+
+const mutationKey = ['removeClubPhotoCollectionPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>, {id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  removeClubPhotoCollectionPhotos(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveClubPhotoCollectionPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>>
+    export type RemoveClubPhotoCollectionPhotosMutationBody = BodyType<ClubPhotoCollectionPhotosRequest>
+    export type RemoveClubPhotoCollectionPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Take photos out of a collection (admin)
+ */
+export const useRemoveClubPhotoCollectionPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>, TError,{id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeClubPhotoCollectionPhotos>>,
+        TError,
+        {id: number;data: BodyType<ClubPhotoCollectionPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getRemoveClubPhotoCollectionPhotosMutationOptions(options));
+    }
+
+export const getPreviewLayerPhotosUrl = () => {
+
+
+
+
+  return `/api/club-templates/layer-photo-preview`
+}
+
+/**
+ * For the template editor's preview. Collection sources pick from the collection as a draft would; player sources use the club's latest published senior team list. Layers whose source finds nothing are left out (they show the card's photo). Junior kinds get none.
+ * @summary The photos a template's sourced photo layers would show (admin)
+ */
+export const previewLayerPhotos = async (layerPhotoPreviewRequest: LayerPhotoPreviewRequest, options?: RequestInit): Promise<LayerPhotoPreview> => {
+
+  return customFetch<LayerPhotoPreview>(getPreviewLayerPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      layerPhotoPreviewRequest,)
+  }
+);}
+
+
+
+
+export const getPreviewLayerPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewLayerPhotos>>, TError,{data: BodyType<LayerPhotoPreviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewLayerPhotos>>, TError,{data: BodyType<LayerPhotoPreviewRequest>}, TContext> => {
+
+const mutationKey = ['previewLayerPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewLayerPhotos>>, {data: BodyType<LayerPhotoPreviewRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewLayerPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewLayerPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof previewLayerPhotos>>>
+    export type PreviewLayerPhotosMutationBody = BodyType<LayerPhotoPreviewRequest>
+    export type PreviewLayerPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary The photos a template's sourced photo layers would show (admin)
+ */
+export const usePreviewLayerPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewLayerPhotos>>, TError,{data: BodyType<LayerPhotoPreviewRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewLayerPhotos>>,
+        TError,
+        {data: BodyType<LayerPhotoPreviewRequest>},
+        TContext
+      > => {
+      return useMutation(getPreviewLayerPhotosMutationOptions(options));
     }
 
 export const getListCardPhotoRulesUrl = () => {

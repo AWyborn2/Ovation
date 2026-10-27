@@ -29,6 +29,12 @@ import {
 } from "@/components/social-queue/library-upload";
 import { pickDrivePhotos } from "@/components/social-queue/google-drive-picker";
 import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
+import {
+  AddToCollection,
+  CollectionHeader,
+  CollectionTiles,
+  useCollections,
+} from "@/components/social-queue/photo-collections";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS, isJuniorGradeLabel } from "@workspace/scorecard";
 import {
@@ -98,6 +104,11 @@ function FolderTile({
  * moving or removal. The current folder lives in the URL
  * (`?grade=A%20Grade&type=batting`). Photos here feed auto-drafts, never
  * junior cards.
+ *
+ * Collections (`?collection=<id>`) sit beside the folders: hand-picked sets of
+ * photos, a photo in any number, that a template's photo layer can take a
+ * random photo from. A selection is added to a collection from the selection
+ * panel; inside a collection it can be taken out again.
  */
 export default function AdminPhotoLibrary() {
   const qc = useQueryClient();
@@ -105,7 +116,28 @@ export default function AdminPhotoLibrary() {
   const search = useSearch();
   const [location, navigate] = useLocation();
   const folder = useMemo(() => parseFolder(search), [search]);
-  const openFolder = (next: FolderPath) => navigate(`${location}${folderSearch(search, next)}`);
+  const collectionId = useMemo(() => {
+    const id = Number(new URLSearchParams(search).get("collection"));
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+  }, [search]);
+  const withoutCollection = (s: string) => {
+    const params = new URLSearchParams(s);
+    params.delete("collection");
+    const out = params.toString();
+    return out ? `?${out}` : "";
+  };
+  const openFolder = (next: FolderPath) =>
+    navigate(`${location}${folderSearch(withoutCollection(search), next)}`);
+  const openCollection = (id: number | null) => {
+    const params = new URLSearchParams(folderSearch(search, { grade: null, type: null }));
+    if (id != null) params.set("collection", String(id));
+    else params.delete("collection");
+    const out = params.toString();
+    navigate(`${location}${out ? `?${out}` : ""}`);
+  };
+  const collections = useCollections();
+  const collection =
+    collectionId != null ? (collections.find((c) => c.id === collectionId) ?? null) : null;
 
   const photosQ = useListClubPhotos(undefined, {
     query: { queryKey: getListClubPhotosQueryKey() },
@@ -130,12 +162,17 @@ export default function AdminPhotoLibrary() {
   const counts = useMemo(() => folderCounts(photos), [photos]);
 
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
+  // The photos on show: the open collection's, or the open folder's.
   const inFolder = useMemo(
     () =>
-      folder.grade && folder.type
-        ? photos.filter((p) => gradeFolderOf(p) === folder.grade && typeFolderOf(p) === folder.type)
-        : [],
-    [photos, folder.grade, folder.type],
+      collectionId != null
+        ? photos.filter((p) => p.collectionIds?.includes(collectionId))
+        : folder.grade && folder.type
+          ? photos.filter(
+              (p) => gradeFolderOf(p) === folder.grade && typeFolderOf(p) === folder.type,
+            )
+          : [],
+    [photos, folder.grade, folder.type, collectionId],
   );
   const shown = useMemo(
     () =>
@@ -163,12 +200,12 @@ export default function AdminPhotoLibrary() {
   const [driveBusy, setDriveBusy] = useState(false);
   const [driveError, setDriveError] = useState<string | null>(null);
 
-  // A selection belongs to the folder it was made in.
+  // A selection belongs to the folder (or collection) it was made in.
   useEffect(() => {
     setSelected(new Set());
     setMoving(null);
     setFormatFilter("all");
-  }, [folder.grade, folder.type]);
+  }, [folder.grade, folder.type, collectionId]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
   const tagM = useTagClubPhotos({
@@ -319,7 +356,7 @@ export default function AdminPhotoLibrary() {
       <nav aria-label="Breadcrumb">
         <ol className="flex flex-wrap items-center gap-1 text-sm">
           <li>
-            {folder.grade ? (
+            {folder.grade || collectionId != null ? (
               <button
                 type="button"
                 className="font-medium text-primary-text hover:underline"
@@ -359,10 +396,25 @@ export default function AdminPhotoLibrary() {
               </span>
             </li>
           )}
+          {collectionId != null && (
+            <li className="flex items-center gap-1">
+              <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+              <span aria-current="page" className="font-medium text-foreground">
+                {collection?.name ?? "Collection"}
+              </span>
+            </li>
+          )}
         </ol>
       </nav>
 
-      {juniorFolder ? (
+      {collectionId != null ? (
+        <p
+          role="note"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+        >
+          To add photos, open a folder, select them and choose Add to collection.
+        </p>
+      ) : juniorFolder ? (
         <p
           role="note"
           className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
@@ -410,7 +462,7 @@ export default function AdminPhotoLibrary() {
         </div>
       )}
 
-      {!juniorFolder && (
+      {!juniorFolder && collectionId == null && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <label htmlFor="upload-format" className="text-muted-foreground">
             Match format for new photos
@@ -431,7 +483,7 @@ export default function AdminPhotoLibrary() {
         </div>
       )}
 
-      {driveQ.data && !juniorFolder && (
+      {driveQ.data && !juniorFolder && collectionId == null && (
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
@@ -483,7 +535,7 @@ export default function AdminPhotoLibrary() {
       {selected.size > 0 && (
         <SettingsCard
           title={`${selected.size} selected`}
-          description="Tag the players, season and match format, or move them to another folder."
+          description="Tag the players, season and match format, move them to another folder, or add them to a collection."
         >
           <SettingsRow label="Players" helper="Senior players only" htmlFor="tag-players">
             <div className="w-64 space-y-2">
@@ -538,6 +590,11 @@ export default function AdminPhotoLibrary() {
               <option value="none">No format</option>
             </select>
           </SettingsRow>
+          <AddToCollection
+            photoIds={Array.from(selected)}
+            openCollection={collection}
+            onDone={() => setSelected(new Set())}
+          />
           {moving && (
             <SettingsRow label="Move to" helper="A photo sits in one folder: its team and type.">
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Move to">
@@ -634,29 +691,32 @@ export default function AdminPhotoLibrary() {
           message="We couldn’t load the photo library."
           onRetry={() => photosQ.refetch()}
         />
-      ) : !folder.grade ? (
-        <section aria-labelledby="library-folders" className="space-y-3">
-          <h2 id="library-folders" className="text-base font-semibold text-foreground">
-            Folders
-          </h2>
-          <ul
-            className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
-            aria-label="Team folders"
-          >
-            {gradeFolders.map((g) => (
-              <FolderTile
-                key={g}
-                label={gradeFolderLabel(g)}
-                count={counts.byGrade.get(g) ?? 0}
-                onOpen={() => openFolder({ grade: g, type: null })}
-              />
-            ))}
-          </ul>
-        </section>
-      ) : !folder.type ? (
+      ) : collectionId == null && !folder.grade ? (
+        <>
+          <section aria-labelledby="library-folders" className="space-y-3">
+            <h2 id="library-folders" className="text-base font-semibold text-foreground">
+              Folders
+            </h2>
+            <ul
+              className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+              aria-label="Team folders"
+            >
+              {gradeFolders.map((g) => (
+                <FolderTile
+                  key={g}
+                  label={gradeFolderLabel(g)}
+                  count={counts.byGrade.get(g) ?? 0}
+                  onOpen={() => openFolder({ grade: g, type: null })}
+                />
+              ))}
+            </ul>
+          </section>
+          <CollectionTiles onOpen={(id) => openCollection(id)} />
+        </>
+      ) : collectionId == null && !folder.type ? (
         <section aria-labelledby="library-grade" className="space-y-3">
           <h2 id="library-grade" className="text-base font-semibold text-foreground">
-            {gradeFolderLabel(folder.grade)}
+            {gradeFolderLabel(folder.grade!)}
           </h2>
           <ul
             className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
@@ -674,9 +734,19 @@ export default function AdminPhotoLibrary() {
         </section>
       ) : (
         <section aria-labelledby="library-folder" className="space-y-3">
-          <h2 id="library-folder" className="text-base font-semibold text-foreground">
-            {folderLabel(folder.grade, folder.type)}
-          </h2>
+          {collectionId != null ? (
+            collection ? (
+              <CollectionHeader collection={collection} onDeleted={() => openCollection(null)} />
+            ) : (
+              <h2 id="library-folder" className="text-base font-semibold text-foreground">
+                Collection
+              </h2>
+            )
+          ) : (
+            <h2 id="library-folder" className="text-base font-semibold text-foreground">
+              {folderLabel(folder.grade!, folder.type!)}
+            </h2>
+          )}
           {inFolder.length > 0 && (
             <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by match format">
               {(["all", ...MATCH_FORMATS] as const).map((f) => (
@@ -698,6 +768,11 @@ export default function AdminPhotoLibrary() {
               <EmptyState
                 title="No photos of this format"
                 message="Tag photos with a match format from the selection panel."
+              />
+            ) : collectionId != null ? (
+              <EmptyState
+                title="No photos in this collection"
+                message="Open a folder, select photos and choose Add to collection."
               />
             ) : (
               <EmptyState

@@ -498,6 +498,13 @@
       "when": 1793056408832,
       "tag": "0070_photo_focus_areas",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793061736068,
+      "tag": "0071_photo_collections",
+      "breakpoints": true
     }
   ]
 }

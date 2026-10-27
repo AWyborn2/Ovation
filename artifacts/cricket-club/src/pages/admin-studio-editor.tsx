@@ -132,6 +132,7 @@ import { useBrand } from "@/lib/brand-context";
 import {
   withGroundPhoto,
   buildPackData,
+  draftLayerPhotos,
   kindSponsors,
   cardGrade,
   presentingSponsorName,
@@ -267,8 +268,22 @@ function EditorApp({ draftId }: { draftId: number }) {
       photoUrl: draft.photoUrl ?? undefined,
       // The photo's focus box: frames the design hasn't positioned crop to it.
       ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+      // Sourced photo layers' own photos, while the draft's photo is automatic.
+      layerPhotos: draftLayerPhotos({
+        photoSource: draft.photoSource,
+        layerPhotos: draft.layerPhotos,
+      }),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl, draft.photoFocus],
+    [
+      bundle,
+      brand,
+      input.kind,
+      grade,
+      draft.photoUrl,
+      draft.photoFocus,
+      draft.photoSource,
+      draft.layerPhotos,
+    ],
   );
 
   const saved = (draft.adjustments ?? {}) as CardAdjustments;

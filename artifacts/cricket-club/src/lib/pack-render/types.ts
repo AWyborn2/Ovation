@@ -5,6 +5,7 @@
 
 import type { CardNames } from "@workspace/scorecard/card-names";
 import type { PhotoFocus } from "@workspace/scorecard/photo-focus";
+import type { LayerPhotos } from "@workspace/scorecard/kind-templates";
 
 // ---------------------------------------------------------------------------
 // Public token contract
@@ -127,6 +128,12 @@ export interface PackCardData {
    * untouched. Applies to `photoUrl` only.
    */
   photoFocus?: PhotoFocus | null;
+  /**
+   * Sourced photo layers' own photos (photo layer sources, a draft's
+   * `layerPhotos`), by layer key. Template photo layers only; a layer without
+   * an entry shows `photoUrl`. Never applied to a junior card.
+   */
+  layerPhotos?: LayerPhotos | null;
   /**
    * How the player hero photo is placed (see {@link PackPhotoPlacement}).
    * Absent / `"contained"` keeps the template's framed placement (default,

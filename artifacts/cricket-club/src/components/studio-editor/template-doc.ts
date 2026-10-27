@@ -26,6 +26,7 @@ import {
   V2_STYLE_KEYS,
   type LayerMotion,
   type PageKey,
+  type PhotoLayerSource,
   type ShowWhen,
   type StackSpec,
   type TemplateStyleV2,
@@ -46,6 +47,8 @@ export type LayerV2Extras = {
   children?: EditorLayer[];
   svg?: string;
   style?: TemplateStyleV2;
+  /** A photo layer's source (photo layer sources). */
+  source?: PhotoLayerSource;
 };
 export type EditorLayer = Omit<FreeLayer, "style" | "kind"> &
   LayerV2Extras & { kind: FreeLayer["kind"] | "group" | "vector" };
@@ -137,7 +140,8 @@ export function withPage<D extends TemplateDoc>(
 /** Whether a layer (or any child) uses something only format v2 can hold. */
 export function layerIsV2Only(layer: EditorLayer): boolean {
   if (layer.kind === "group" || layer.kind === "vector") return true;
-  if (layer.showWhen || layer.fit || layer.motion || layer.stack || layer.children) return true;
+  if (layer.showWhen || layer.fit || layer.motion || layer.stack || layer.children || layer.source)
+    return true;
   if (usesMatchGraphicsContent(layer)) return true;
   const v2Style = (style: unknown) =>
     !!style && V2_STYLE_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);

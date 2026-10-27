@@ -6237,6 +6237,8 @@ export interface ClubPhoto {
   offShapes?: PhotoFrameShape[];
   /** Where each tagged player is on the photo (tagged players with an area only). */
   playerAreas?: ClubPhotoPlayerArea[];
+  /** The photo collections this photo is in. */
+  collectionIds?: number[];
 }
 
 /**
@@ -6246,6 +6248,69 @@ export interface PhotoFocus {
   box: PhotoFocusBox;
   width: number;
   height: number;
+}
+
+/**
+ * A sourced photo layer's photo, and the focus it crops to (null = centred).
+ */
+export interface LayerPhoto {
+  url: string;
+  focus?: PhotoFocus | null;
+}
+
+/**
+ * Sourced photo layers' photos, keyed by layer (its link, else its id).
+ */
+export interface LayerPhotos {[key: string]: LayerPhoto}
+
+/**
+ * A named set of library photos an admin makes (a photo can be in many). A template's photo layer can take a random photo from one.
+ */
+export interface ClubPhotoCollection {
+  id: number;
+  name: string;
+  photoCount: number;
+  /**
+     * The newest photo's thumbnail; null when empty.
+     * @nullable
+     */
+  coverUrl: string | null;
+  createdAt: string;
+}
+
+export interface ClubPhotoCollectionName {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+}
+
+export interface ClubPhotoCollectionPhotosRequest {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  photoIds: number[];
+}
+
+export interface LayerPhotoPreviewRequest {
+  /** The card kind the document is for. */
+  kind: string;
+  /** The template document whose sourced photo layers to resolve. */
+  document: unknown;
+}
+
+export interface LayerPhotoPreviewTeamList {
+  grade: string;
+  /** @nullable */
+  opponent: string | null;
+}
+
+export interface LayerPhotoPreview {
+  layerPhotos: LayerPhotos;
+  /** The team list that player sources were resolved against (the club's latest published senior team list); null when the club has none. */
+  teamList: LayerPhotoPreviewTeamList | null;
 }
 
 export type SetClubPhotoFocusRequestPlayerAreasItem = {
@@ -9954,6 +10019,8 @@ export interface SocialDraft {
   photoSource?: string | null;
   /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
   photoFocus?: PhotoFocus | null;
+  /** The photos of the design's sourced photo layers (a team list player's photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft's photo is automatic. Null for junior drafts and designs with no source. */
+  layerPhotos?: LayerPhotos | null;
   adjustments?: unknown;
   /** @nullable */
   editedAt?: string | null;
