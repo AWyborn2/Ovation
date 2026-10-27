@@ -22,10 +22,12 @@ import {
   preferredMatchFormat,
   preferredPhotoTypes,
   type MatchFormat,
+  type PhotoFocus,
   type PhotoType,
 } from "@workspace/scorecard";
 import { DEFAULT_TEMPLATES, CAPTION_VARIATIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
+import { draftPhotoFocus } from "./photo-focus-snapshot";
 
 /**
  * What every auto-draft carries from the moment it is created (Social Studio
@@ -37,6 +39,8 @@ export type DraftEnrichment = {
   caption: string;
   photoUrl: string | null;
   photoSource: PhotoSource | null;
+  /** The photo's focus snapshot (photo focus areas); null = centred crop. */
+  photoFocus: PhotoFocus | null;
 };
 
 /**
@@ -503,7 +507,27 @@ export const PHOTO_POLICY: Readonly<Record<string, "side" | "game" | "gradeTeam"
 /** How far back Team List rotation looks at the photos used on posts. */
 export const ROTATION_WINDOW_DAYS = 28;
 
-type PhotoPick = { url: string; source: PhotoSource };
+/**
+ * A picked photo. `playerId` is the player it was picked for (a tagged library
+ * photo of them), so the draft crops to their area on a group photo.
+ */
+type PhotoPick = { url: string; source: PhotoSource; playerId?: number };
+
+/** The draft columns for a picked photo (or none), focus snapshot included. */
+async function photoColumns(
+  tenantId: number,
+  photo: { url: string; source: PhotoSource; playerId?: number } | null,
+): Promise<{
+  photoUrl: string | null;
+  photoSource: PhotoSource | null;
+  photoFocus: PhotoFocus | null;
+}> {
+  return {
+    photoUrl: photo?.url ?? null,
+    photoSource: photo?.source ?? null,
+    photoFocus: photo ? await draftPhotoFocus(tenantId, photo.url, photo.playerId ?? null) : null,
+  };
+}
 
 /** A match title stage that is a grand final ("A Grade • Grand Final"). */
 const GRAND_FINAL = /\bgrand[\s-]*final\b|\bGF\b/i;
@@ -584,7 +608,12 @@ async function pickByRuleKind(
           : opts.playerId;
     if (featured != null && featured > 0 && !isFillInPlayerId(featured)) {
       const photo = await playerPhoto(tenantId, featured, types, format);
-      if (photo) return { url: photo.url, source: "auto:rule-player" };
+      if (photo)
+        return {
+          url: photo.url,
+          source: "auto:rule-player",
+          ...(photo.from === "library" ? { playerId: featured } : {}),
+        };
     }
   }
 
@@ -637,10 +666,9 @@ export async function pickDraftPhoto(
   if (opts.playerId != null) {
     const photo = await playerPhoto(tenantId, opts.playerId, types, format);
     if (photo)
-      return {
-        url: photo.url,
-        source: photo.from === "library" ? "auto:library-player" : "auto:headshot",
-      };
+      return photo.from === "library"
+        ? { url: photo.url, source: "auto:library-player", playerId: opts.playerId }
+        : { url: photo.url, source: "auto:headshot" };
   }
 
   if (opts.grade) {
@@ -809,7 +837,8 @@ export async function pickCandidatePhoto(
     opts.order,
     opts.seed,
   );
-  if (library) return { url: library.url, source: "auto:library-player" };
+  if (library)
+    return { url: library.url, source: "auto:library-player", playerId: library.playerId };
 
   const headshots = await db
     .select({
@@ -911,7 +940,7 @@ export async function fillMissingDraftPhotos(tenantId: number): Promise<number> 
     if (!photo) continue;
     const updated = await db
       .update(socialDraftsTable)
-      .set({ photoUrl: photo.url, photoSource: photo.source })
+      .set(await photoColumns(tenantId, photo))
       .where(
         and(
           eq(socialDraftsTable.id, d.id),
@@ -970,8 +999,13 @@ async function repickAutoDraftPhotos(
     const opts = await draftPickOptions(tenantId, d);
     if (opts.junior || (scope && opts.grade !== scope.grade)) continue;
     const photo = await pickDraftPhoto(tenantId, opts);
-    const next = { photoUrl: photo?.url ?? null, photoSource: photo?.source ?? null };
-    if (next.photoUrl === d.photoUrl && next.photoSource === d.photoSource) continue;
+    const next = await photoColumns(tenantId, photo);
+    if (
+      next.photoUrl === d.photoUrl &&
+      next.photoSource === d.photoSource &&
+      JSON.stringify(next.photoFocus) === JSON.stringify(d.photoFocus ?? null)
+    )
+      continue;
     const updated = await db
       .update(socialDraftsTable)
       .set(next)
@@ -1044,10 +1078,5 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
           matchFormat: preferredMatchFormat(input.cardInput),
         }),
   ]);
-  return {
-    packId,
-    caption,
-    photoUrl: photo?.url ?? null,
-    photoSource: photo?.source ?? null,
-  };
+  return { packId, caption, ...(await photoColumns(input.tenantId, photo)) };
 }

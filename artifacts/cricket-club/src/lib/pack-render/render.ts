@@ -279,6 +279,8 @@ export function renderPackCard(
               : null)),
         // The photo placement sliders (the share dialog, a queued draft's photo).
         photoTransform: data?.photoTransform ?? null,
+        // The draft photo's focus box: only for the photo it was taken from.
+        photoFocus: !withholdPhotos && data?.photoUrl ? (data.photoFocus ?? null) : null,
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,

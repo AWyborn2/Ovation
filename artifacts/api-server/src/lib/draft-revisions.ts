@@ -6,6 +6,7 @@ import {
   type SocialDraftRow,
   type SocialDraftRevisionRow,
 } from "@workspace/db";
+import { draftPhotoFocus } from "./photo-focus-snapshot";
 
 /** Revisions kept per draft; the oldest are dropped beyond this (KTD2). */
 export const MAX_DRAFT_REVISIONS = 20;
@@ -125,6 +126,12 @@ export async function revertDraftToRevision(
         caption: rev.caption,
         photoUrl: rev.photoUrl,
         photoSource: rev.photoSource,
+        // Revisions don't keep the focus snapshot: the same photo keeps the
+        // draft's, another one takes its library box (photo focus areas).
+        photoFocus:
+          rev.photoUrl === draft.photoUrl
+            ? draft.photoFocus
+            : await draftPhotoFocus(draft.tenantId, rev.photoUrl),
         adjustments: rev.adjustments,
         ...designBase,
         editedAt: new Date(),

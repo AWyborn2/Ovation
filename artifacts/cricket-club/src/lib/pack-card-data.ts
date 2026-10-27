@@ -71,6 +71,8 @@ export interface BuildPackDataOptions {
   photoUrl?: string | null;
   /** Focal point + zoom; only the focal point is applied in the pack path. */
   photoTransform?: PhotoTransform | null;
+  /** The photo's focus box and size (a draft's `photoFocus`); frames crop to it. */
+  photoFocus?: PackCardData["photoFocus"];
   /**
    * The canvas renderer's placement vocabulary ("feature" | "headshot"), mapped
    * onto the pack's own ("fullBleed" | "contained") below. Absent → contained,
@@ -109,6 +111,7 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     presentingSponsorName,
     photoUrl,
     photoTransform,
+    photoFocus,
     photoPlacement,
     imageOverrides,
     packColourModes,
@@ -143,6 +146,8 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     presentingSponsorName,
     photoUrl,
     photoTransform,
+    // Only sent when set, so a render without one is unchanged.
+    ...(photoFocus ? { photoFocus } : {}),
     // On a pack card, "feature" promotes the photo to a full-bleed action shot;
     // "headshot" (and absent) keeps it contained in the template's framed region.
     photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",

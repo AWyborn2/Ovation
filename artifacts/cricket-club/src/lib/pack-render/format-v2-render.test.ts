@@ -370,3 +370,51 @@ describe("the template editor's sample text", () => {
     expect(html).not.toContain("Not Me");
   });
 });
+
+describe("photo focus areas", () => {
+  // A tall frame (30% x 80% of a square card) over a wide photo with the
+  // subject at its left: the frame crops to the box, not the centre.
+  const tall = { square: { x: 0, y: 0, w: 30, h: 80 } };
+  const photoLayer = (photo?: unknown) =>
+    ({
+      formatVersion: 2,
+      pages: {
+        card: {
+          layers: [{ id: "pic", kind: "photo", geometry: tall, ...(photo ? { photo } : {}) }],
+        },
+      },
+    }) as CardAdjustments;
+  const focus = { box: { x: 0.05, y: 0.2, w: 0.15, h: 0.4 }, width: 3000, height: 2000 };
+  const draw = (doc: CardAdjustments, ctx: Record<string, unknown> = {}) =>
+    renderFreeLayers(
+      doc,
+      "square",
+      {},
+      {},
+      {
+        kind: "player",
+        photoUrl: "/api/storage/objects/library/a.jpg",
+        ...ctx,
+      },
+    );
+  const position = (html: string) =>
+    /object-position:([\d.]+)% ([\d.]+)%/.exec(html)?.slice(1).map(Number);
+
+  it("crops an unpositioned frame to the focus box", () => {
+    expect(position(draw(photoLayer()))).toEqual([50, 50]);
+    const [fx] = position(draw(photoLayer(), { photoFocus: focus }))!;
+    expect(fx).toBeLessThan(20);
+  });
+
+  it("lets the sliders and a hand-set position win", () => {
+    const moved = draw(photoLayer(), {
+      photoFocus: focus,
+      photoTransform: { focalX: 0.9, focalY: 0.5, zoom: 1 },
+    });
+    expect(position(moved)).toEqual([90, 50]);
+    const own = draw(photoLayer({ square: { focalX: 70, focalY: 40, zoom: 1 } }), {
+      photoFocus: focus,
+    });
+    expect(position(own)).toEqual([70, 40]);
+  });
+});

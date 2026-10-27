@@ -4,6 +4,7 @@
  */
 
 import type { CardNames } from "@workspace/scorecard/card-names";
+import type { PhotoFocus } from "@workspace/scorecard/photo-focus";
 
 // ---------------------------------------------------------------------------
 // Public token contract
@@ -120,6 +121,12 @@ export interface PackCardData {
   /** Focal point + zoom for the photo. Only the focal point is applied (as
    * `object-position`) in the pack path; see {@link resolveSlots}. */
   photoTransform?: { focalX: number; focalY: number; zoom: number } | null;
+  /**
+   * The photo's focus box and size (photo focus areas, the draft's
+   * `photoFocus`): a template's photo frame crops to it while the sliders are
+   * untouched. Applies to `photoUrl` only.
+   */
+  photoFocus?: PhotoFocus | null;
   /**
    * How the player hero photo is placed (see {@link PackPhotoPlacement}).
    * Absent / `"contained"` keeps the template's framed placement (default,
