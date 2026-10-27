@@ -189,7 +189,8 @@ describe("set templates (carousel set editor plan, part 1)", () => {
 
   it("lists four set templates for every look, each page a kind target of the look", () => {
     // A design system's looks (a `family`, Ovation Match Graphics) design one kind each,
-    // so they assemble no sets.
+    // so they assemble no sets; nor does a pack with no match day, result or team list
+    // design (Sponsored Player).
     const family = (look: string) =>
       !!(
         JSON.parse(
@@ -198,11 +199,14 @@ describe("set templates (carousel set editor plan, part 1)", () => {
           family?: string;
         }
       ).family;
+    const setKinds = ["matchDay", "matchSummary", "teamList"];
+    const designsSets = (look: string) =>
+      all.some((t) => !t.parts && setKinds.some((k) => t.id === `${look}/${k}`));
     const looks = new Set(
       all
         .filter((t) => !t.parts)
         .map((t) => t.id.split("/")[0]!)
-        .filter((look) => !family(look)),
+        .filter((look) => !family(look) && designsSets(look)),
     );
     expect(sets).toHaveLength(looks.size * 4);
     const ids = new Set(all.map((t) => t.id));

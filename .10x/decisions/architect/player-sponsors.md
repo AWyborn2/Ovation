@@ -98,9 +98,13 @@ participants can't be tagged. Juniors isolation holds: no junior table is read.
    optional Player on senior player cards (filled by the career milestone prefill); the preview,
    the share modal, Open in editor and the editor starters carry it, so the hand-made draft shows
    the player's sponsors.
-5. **Templates (P1)** — the Sponsors player pack (announcement, season thank-you, a
-   sponsor-featured version of each player kind) with its own fields `{{playerSponsorLogo}}`,
-   `{{playerSponsorName}}`, `{{playerSponsor2Logo}}`, `{{playerSponsor2Name}}`, filled from the
-   same `cardSponsors` result; after template library release 2.
+5. **Templates (P1)** — the **Sponsored Player** look (`lib/template-bundles/sponsored-player/`):
+   a sponsor-featured milestone, century, five-for, debut, player profile and new signing, each
+   with a "Proudly sponsored by" panel of `{{playerSponsorLogo}}` (and the second logo when there
+   is one), shown only when the card's player has a sponsor; "Meet our sponsored player" on the
+   announcement (pick the player in Create a card); and a sponsor thank-you on the sponsor kind.
+   Club Kit palette, so club colours follow. These templates carry no club sponsor strip: on a
+   player without a sponsor the panel is simply absent. The look designs no match day, result or
+   team list, so it assembles no carousel sets.
 
 Ash runs migration 0074 in Production SQL before the republish that carries slice 2.
