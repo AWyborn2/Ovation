@@ -57,7 +57,7 @@ const writes = [requireAdmin, requireEntitlement("socialStudio")] as const;
 
 /** The settings page the sign-in returns to, on the host this request came in on. */
 function returnUrl(req: Request): string {
-  return `${req.protocol}://${req.get("host")}/admin/social/cards`;
+  return `${req.protocol}://${req.get("host")}/admin/social/cards#figma`;
 }
 
 function requestOrigin(req: Request): string {

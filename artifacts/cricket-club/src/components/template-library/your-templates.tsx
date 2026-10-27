@@ -3,7 +3,8 @@
  * per card kind, its default first. Duplicate, delete (never the default) and
  * set as default (not while its layout check is running). A copy taken from
  * the library credits it: "Based on X by Y". An unedited copy whose library
- * template has a newer version offers it side by side (ADR-011 T6.3).
+ * template has a newer version offers it side by side (ADR-011 T6.3). Import
+ * from Figma makes a private template from the club's own Figma (R2-E).
  */
 import { useState } from "react";
 import { Link } from "wouter";
@@ -34,6 +35,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { isSetDocument } from "@workspace/scorecard/kind-templates";
+import { FigmaImportDialog } from "./figma-import-dialog";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -251,6 +253,7 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   );
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [figmaOpen, setFigmaOpen] = useState(false);
 
   const onAction = async (action: "default" | "duplicate" | "delete", t: ClubTemplateSummary) => {
     if (
@@ -287,16 +290,29 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   if (q.isError) return <QueryError onRetry={() => q.refetch()} />;
   if (q.isLoading) return <LoadingState label="Loading your templates…" />;
   const templates = q.data?.templates ?? [];
+  const actions = (
+    <div className="flex justify-end">
+      <Button size="sm" variant="outline" onClick={() => setFigmaOpen(true)}>
+        Import from Figma
+      </Button>
+      <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} />
+    </div>
+  );
   if (templates.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Your club has no templates yet. Use one from the library, or adopt a look.
-      </p>
+      <div className="space-y-3">
+        {actions}
+        <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Your club has no templates yet. Use one from the library, adopt a look, or import a design
+          from Figma.
+        </p>
+      </div>
     );
   }
   const kinds = [...new Set(templates.map((t) => t.kind))];
   return (
     <div className="space-y-5">
+      {actions}
       {status && (
         <p role="status" className="text-sm text-muted-foreground">
           {status}

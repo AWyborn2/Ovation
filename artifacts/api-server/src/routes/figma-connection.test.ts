@@ -470,6 +470,7 @@ describe("Sign in with Figma", () => {
     expect(res.status).toBe(302);
     const back = new URL(res.headers.location!);
     expect(back.pathname).toBe("/admin/social/cards");
+    expect(back.hash).toBe("#figma");
     expect(back.searchParams.get("figma")).toBe("connected");
     expectNoSecret(res.headers.location!);
     expectNoSecret(logs);
