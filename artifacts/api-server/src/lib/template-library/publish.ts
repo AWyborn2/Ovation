@@ -165,8 +165,7 @@ function largestPhotoShare(layers: readonly TemplateLayerV2[]): number {
   let best = 0;
   for (const layer of flattenLayers(layers)) {
     if (layer.kind !== "photo") continue;
-    const geometry = (layer as { geometry?: Record<string, { w?: number; h?: number }> })
-      .geometry;
+    const geometry = (layer as { geometry?: Record<string, { w?: number; h?: number }> }).geometry;
     const sizes = (layer as { sizes?: string[] }).sizes;
     for (const size of TEMPLATE_SIZE_ORDER) {
       if (sizes && !sizes.includes(size)) continue;
@@ -191,7 +190,8 @@ export function styleTagChecks(document: unknown, kind: string): TagCheck[] {
   const lum = background ? luminance(background) : null;
   const toneReason = (tone: "dark" | "light"): string | null => {
     if (!background) return `Give the main page a ${tone} background colour first.`;
-    if (lum === null) return "The background takes each club's colours, so it isn't always " + tone + ".";
+    if (lum === null)
+      return "The background takes each club's colours, so it isn't always " + tone + ".";
     const dark = lum < DARK_LUMINANCE;
     if (tone === "dark" ? dark : !dark) return null;
     return `The main page's background is ${dark ? "dark" : "light"}.`;
@@ -223,7 +223,9 @@ async function publishable(tenantId: number, row: CardTemplateRow) {
   const kind = row.baseKind ?? "";
   if (setTypeOfKind(kind)) throw bad("Set designs can't be published to the library yet.");
   if (row.originTemplateId !== null && row.editedAt === null) {
-    throw bad("This is a library template you haven't changed, so there's nothing of yours to publish.");
+    throw bad(
+      "This is a library template you haven't changed, so there's nothing of yours to publish.",
+    );
   }
   const identity = await loadPublishIdentity(tenantId);
   const result = publishableDocument(row.adjustments ?? { layers: [] }, identity);
@@ -407,8 +409,6 @@ export async function unlistOwnTemplate(
   await db
     .update(libraryTemplatesTable)
     .set({ listed: false, unlistedBy: "author", unlistedAt: new Date(), updatedAt: new Date() })
-    .where(
-      and(own, sql`${libraryTemplatesTable.unlistedBy} is distinct from 'ovation'`),
-    );
+    .where(and(own, sql`${libraryTemplatesTable.unlistedBy} is distinct from 'ovation'`));
   return getOwnLibraryTemplate(tenantId, id);
 }

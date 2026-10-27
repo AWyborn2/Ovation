@@ -8,7 +8,19 @@
  * open an unlisted template it already holds a copy of (to see its credit and,
  * from L6, an update).
  */
-import { and, arrayContains, asc, eq, gt, ilike, inArray, notLike, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  asc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  notLike,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { SET_KIND_PREFIX } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
