@@ -22690,10 +22690,12 @@ components:
         frame:
           type: string
           nullable: true
-          enum: [fill, whole]
+          enum: [auto, fill, whole]
           description: >-
-            fill crops each photo to the screen (the default); whole shows the
-            whole photo over a blurred fill.
+            auto (the default, also when null) crops a photo to fill the screen
+            only when that keeps its focus box (or, without one, loses almost
+            nothing), and otherwise shows the whole photo over a blurred fill;
+            fill always crops, aiming at the focus box; whole never crops.
         crossfade:
           type: boolean
           nullable: true
@@ -22763,6 +22765,14 @@ components:
         caption:
           type: string
           nullable: true
+        focusBox:
+          allOf:
+            - $ref: "#/components/schemas/PhotoFocusBox"
+          nullable: true
+          description: The part of the photo that matters (photo focus areas); null = none marked.
+        noWideCrop:
+          type: boolean
+          description: The admin switched wide crops off for this photo, so the TV shows it whole.
 
     KioskSlideshowPhotos:
       type: object
