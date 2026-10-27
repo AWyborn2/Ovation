@@ -3,13 +3,16 @@
  * per card kind, its default first. Duplicate, delete (never the default) and
  * set as default (not while its layout check is running). A copy taken from
  * the library credits it: "Based on X by Y". An unedited copy whose library
- * template has a newer version offers it side by side (ADR-011 T6.3).
- * Generate (ADR-012 R2-D) sits at the top when Ovation offers it.
+ * template has a newer version offers it side by side (ADR-011 T6.3). "New
+ * design" starts a blank template for a card and opens it in the editor
+ * (release 2, ADR-012 TB.1); Generate (ADR-012 R2-D) sits beside it when
+ * Ovation offers it.
  */
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  createBlankClubTemplate,
   deleteClubTemplate,
   duplicateClubTemplate,
   getGetClubTemplateQueryKey,
@@ -34,7 +37,8 @@ import { Button } from "@/components/ui/button";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { isSetDocument } from "@workspace/scorecard/kind-templates";
+import { isSetDocument, TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
+import { kindLabel } from "@/lib/social-studio";
 import { GenerateButton } from "./generate-dialog";
 import {
   SetPageThumb,
@@ -243,6 +247,54 @@ function CopyRow({
   );
 }
 
+/** Pick a card and start its template from a blank canvas, in the editor. */
+export function NewDesignButton() {
+  const qc = useQueryClient();
+  const [, navigate] = useLocation();
+  const [kind, setKind] = useState<string>(TEMPLATE_CARD_KINDS[0] ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const start = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const t = await createBlankClubTemplate({ kind });
+      await qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
+      navigate(`/admin/social/template/${t.id}`);
+    } catch (e) {
+      setError(handleAdminMutationError(e) ?? "Couldn't start a design. Try again.");
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-1 text-xs font-medium text-muted-foreground">
+        Card
+        <select
+          aria-label="Card for the new design"
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+          value={kind}
+          onChange={(e) => setKind(e.target.value)}
+        >
+          {TEMPLATE_CARD_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {kindLabel(k)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Button disabled={busy || !kind} onClick={start}>
+        New design
+      </Button>
+      {error && (
+        <span role="alert" className="text-sm text-destructive">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function YourTemplates({ preview }: { preview: Preview }) {
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -290,16 +342,18 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   if (q.isLoading) return <LoadingState label="Loading your templates…" />;
   const templates = q.data?.templates ?? [];
   const toolbar = (
-    <div className="flex flex-wrap justify-end gap-2" data-testid="your-templates-toolbar">
+    <div className="flex flex-wrap items-end gap-2" data-testid="your-templates-toolbar">
+      <NewDesignButton />
       <GenerateButton />
     </div>
   );
   if (templates.length === 0) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {toolbar}
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Your club has no templates yet. Use one from the library, or adopt a look.
+          Your club has no templates yet. Start a new design, use one from the library, or adopt a
+          look.
         </p>
       </div>
     );

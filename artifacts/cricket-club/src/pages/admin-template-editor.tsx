@@ -10,6 +10,7 @@ import {
   Shapes,
   SlidersHorizontal,
   Type,
+  Upload,
 } from "lucide-react";
 import {
   getGetClubTemplateQueryKey,
@@ -175,6 +176,7 @@ import {
 import { previewSample, sampleItem, stressSample } from "@/lib/kind-templates/samples";
 import { PackCard } from "@/components/pack-card";
 import { MakeSetDialog } from "@/components/template-library/make-set-dialog";
+import { PublishDialog } from "@/components/template-library/publish-dialog";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { draftInput } from "@/components/social-queue/draft-meta";
 import { kindLabel } from "@/lib/social-studio";
@@ -348,10 +350,13 @@ function ClubTemplateEditor({
   initialFormat?: CardSize;
 }) {
   const [making, setMaking] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const qc = useQueryClient();
   const save = useSaveClubTemplate();
   const [current, setCurrent] = useState(template);
   const [applyFor, setApplyFor] = useState<{ version: number; waiting: number } | null>(null);
+  // An unchanged library copy holds nothing of the club's to publish.
+  const unchangedCopy = current.basedOn !== null && !current.edited;
   const host: EditorHost<ClubTemplate> = {
     club: true,
     backHref: TEMPLATES,
@@ -394,16 +399,46 @@ function ClubTemplateEditor({
         host={host}
         initialFormat={initialFormat}
         actions={
-          // A card template can start a carousel set (part 4); a set already is one.
-          setTypeOfKind(template.kind) ? undefined : (
-            <button
-              type="button"
-              onClick={() => setMaking(true)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
-            >
-              <Layers3 className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
-            </button>
-          )
+          // A card template can start a carousel set (part 4) and be published
+          // to the library (release 2); a set does neither.
+          setTypeOfKind(template.kind)
+            ? undefined
+            : ({ dirty, selectLayer }) => (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setMaking(true)}
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)]"
+                  >
+                    <Layers3 className="h-3.5 w-3.5" aria-hidden /> Make a carousel set
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPublishing(true)}
+                    disabled={unchangedCopy}
+                    title={
+                      unchangedCopy
+                        ? "This is a library template you haven't changed yet"
+                        : undefined
+                    }
+                    className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ed-line)] px-2 text-xs font-semibold text-[var(--ed-ink)] hover:bg-[var(--ed-card)] disabled:opacity-50"
+                  >
+                    <Upload className="h-3.5 w-3.5" aria-hidden /> Publish
+                  </button>
+                  <PublishDialog
+                    copyId={current.id}
+                    kind={current.kind}
+                    name={current.name}
+                    dirty={dirty}
+                    open={publishing}
+                    onClose={() => setPublishing(false)}
+                    onSelectLayer={(page, layerId) => {
+                      setPublishing(false);
+                      selectLayer(page, layerId);
+                    }}
+                  />
+                </>
+              )
         }
       />
       {!setTypeOfKind(template.kind) && (
@@ -481,6 +516,13 @@ export type EditorDraftMode = {
   }) => ReactNode;
 };
 
+/** What the top bar's own controls can see and do in the editor. */
+export type EditorActionsContext = {
+  dirty: boolean;
+  /** Show `page` and select `layerId` on it, entering its group if it sits in one. */
+  selectLayer: (page: string, layerId: string) => void;
+};
+
 export function TemplateEditorV2<T extends EditorTemplate>({
   template,
   viewport,
@@ -499,8 +541,11 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   draftMode?: EditorDraftMode;
   /** The size the editor opens at (a new set's, picked when it was made). */
   initialFormat?: CardSize;
-  /** Extra controls in the top bar (Make a carousel set). */
-  actions?: ReactNode;
+  /**
+   * Extra controls in the top bar (Make a carousel set, Publish). The render
+   * form gets the unsaved state and selects a layer on a page (a publish flag).
+   */
+  actions?: ReactNode | ((ctx: EditorActionsContext) => ReactNode);
 }) {
   const kind = template.kind;
   const open = useCallback(
@@ -690,6 +735,14 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     setScope(group);
     setInside(null);
     setSelection(ids);
+  };
+
+  const selectLayer = (pageKey: string, layerId: string) => {
+    const target = pageList.find((p) => p.id === pageKey) ?? cur;
+    const hit = findLayer(pageDoc(full, target.id), layerId);
+    setPageId(target.id);
+    setAddPrompt(null);
+    enterScope(hit?.parent?.id ?? null, hit ? [layerId] : []);
   };
 
   const layers = layersOnSize(doc, format);
@@ -1001,7 +1054,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         actions={
           <>
             {slidesMode?.actions}
-            {actions}
+            {typeof actions === "function" ? actions({ dirty, selectLayer }) : actions}
             {draftMode?.actions?.({
               document: (full.setDesign
                 ? storedSetDocument(full)

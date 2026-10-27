@@ -8,7 +8,19 @@
  * open an unlisted template it already holds a copy of (to see its credit and,
  * from L6, an update).
  */
-import { and, asc, eq, gt, ilike, inArray, notLike, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  arrayContains,
+  asc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  notLike,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { SET_KIND_PREFIX } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
@@ -65,6 +77,12 @@ export type LibraryTemplateView = {
   fitReport: TemplateFitReportColumn | null;
   listed: boolean;
   document: unknown;
+  /** Style tags (release 2). */
+  tags?: string[];
+  /** How many clubs other than the author hold a copy (release 2). */
+  usedBy?: number;
+  /** The asking club published it, so it can unlist it (release 2). */
+  ownedByClub?: boolean;
 };
 
 export const OVATION_AUTHOR = "Ovation";
@@ -77,6 +95,8 @@ const viewColumns = {
   name: libraryTemplatesTable.name,
   origin: libraryTemplatesTable.origin,
   listed: libraryTemplatesTable.listed,
+  tags: libraryTemplatesTable.tags,
+  authorTenantId: libraryTemplatesTable.authorTenantId,
   version: libraryTemplatesTable.currentVersion,
   lookId: templateLooksTable.id,
   lookSlug: templateLooksTable.slug,
@@ -123,7 +143,48 @@ function present(row: ViewRow): LibraryTemplateView {
     fitReport: row.fitReport,
     listed: row.listed,
     document: row.document,
+    tags: row.tags,
   };
+}
+
+/**
+ * How many clubs other than the author hold a copy of each template ("used
+ * by N clubs", on `card_templates_origin_template_idx`).
+ */
+export async function usedByCounts(ids: readonly number[]): Promise<Map<number, number>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({
+      id: cardTemplatesTable.originTemplateId,
+      clubs: sql<number>`count(distinct ${cardTemplatesTable.tenantId})::int`,
+    })
+    .from(cardTemplatesTable)
+    .innerJoin(
+      libraryTemplatesTable,
+      eq(libraryTemplatesTable.id, cardTemplatesTable.originTemplateId),
+    )
+    .where(
+      and(
+        inArray(cardTemplatesTable.originTemplateId, [...ids]),
+        eq(cardTemplatesTable.source, "kind"),
+        sql`${cardTemplatesTable.tenantId} is distinct from ${libraryTemplatesTable.authorTenantId}`,
+      ),
+    )
+    .groupBy(cardTemplatesTable.originTemplateId);
+  return new Map(rows.map((r) => [r.id!, r.clubs]));
+}
+
+/** Views with the release 2 counts and ownership for the asking club. */
+async function withClubFields(
+  rows: ViewRow[],
+  tenantId: number | null,
+): Promise<LibraryTemplateView[]> {
+  const used = await usedByCounts(rows.map((r) => r.id));
+  return rows.map((row) => ({
+    ...present(row),
+    usedBy: used.get(row.id) ?? 0,
+    ownedByClub: tenantId !== null && row.origin === "club" && row.authorTenantId === tenantId,
+  }));
 }
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -139,12 +200,15 @@ export type LibraryListQuery = {
   size?: string;
   /** A look's slug. */
   look?: string;
+  /** Style tags, comma-separated; a template must carry every one. */
+  tags?: string;
   /** The last template id of the previous page. */
   cursor?: number;
 };
 
 export async function listLibraryTemplates(
   q: LibraryListQuery,
+  tenantId: number | null = null,
 ): Promise<{ templates: LibraryTemplateView[]; nextCursor: number | null }> {
   const where: SQL[] = [visible()];
   // Set templates (`set:<type>`) list only when asked for by kind: the library's
@@ -153,6 +217,14 @@ export async function listLibraryTemplates(
   else where.push(notLike(libraryTemplatesTable.kind, `${SET_KIND_PREFIX}%`));
   if (q.size) where.push(sql`${libraryTemplateVersionsTable.coverage}->'sizes' ? ${q.size}`);
   if (q.look) where.push(eq(templateLooksTable.slug, q.look));
+  const tags = (q.tags ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  if (tags.length > 0) {
+    where.push(arrayContains(libraryTemplatesTable.tags, tags));
+  }
   for (const word of (q.q ?? "").toLowerCase().split(/\s+/).filter(Boolean).slice(0, 6)) {
     const pattern = `%${likeEscape(word)}%`;
     where.push(
@@ -168,7 +240,7 @@ export async function listLibraryTemplates(
     .where(and(...where))
     .orderBy(asc(libraryTemplatesTable.id))
     .limit(LIBRARY_PAGE_SIZE + 1);
-  const page = rows.slice(0, LIBRARY_PAGE_SIZE).map(present);
+  const page = await withClubFields(rows.slice(0, LIBRARY_PAGE_SIZE), tenantId);
   return {
     templates: page,
     nextCursor: rows.length > LIBRARY_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null,
@@ -185,8 +257,11 @@ export async function getLibraryTemplate(
 ): Promise<LibraryTemplateView> {
   const [row] = await viewQuery().where(eq(libraryTemplatesTable.id, id));
   if (!row) throw libraryNotFound();
-  const view = present(row);
+  const [view] = await withClubFields([row], tenantId);
+  if (!view) throw libraryNotFound();
   if (view.listed && view.fitStatus === "pass") return view;
+  // The author always sees its own, listed or not.
+  if (view.ownedByClub) return view;
   const [copy] = await db
     .select({ id: cardTemplatesTable.id })
     .from(cardTemplatesTable)
@@ -200,6 +275,23 @@ export async function getLibraryTemplate(
     .limit(1);
   if (!copy) throw libraryNotFound();
   return view;
+}
+
+/** A template this club published, listed or not (404 for anyone else's). */
+export async function getOwnLibraryTemplate(
+  tenantId: number,
+  id: number,
+): Promise<LibraryTemplateView> {
+  const [row] = await viewQuery().where(
+    and(
+      eq(libraryTemplatesTable.id, id),
+      eq(libraryTemplatesTable.authorTenantId, tenantId),
+      eq(libraryTemplatesTable.origin, "club"),
+    ),
+  );
+  if (!row) throw libraryNotFound("That isn't a template your club published.");
+  const [view] = await withClubFields([row], tenantId);
+  return view!;
 }
 
 /** A library version's document and fit, for copying (any version of a visible template). */

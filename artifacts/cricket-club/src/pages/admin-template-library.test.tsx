@@ -276,6 +276,75 @@ describe("update available (T6.3)", () => {
   });
 });
 
+describe("club-published templates (release 2)", () => {
+  it("credits the club, counts the clubs using it and lets its author unlist it", async () => {
+    installApiMock({
+      "/template-library/looks": LOOKS,
+      "/template-library/preview-input": { kind: "milestone", source: "sample", input: null },
+      "/template-library": {
+        templates: [
+          template({
+            id: 7,
+            slug: null,
+            origin: "club",
+            name: "Our milestone",
+            authorName: "Demo Cricket Club",
+            look: null,
+            usedBy: 3,
+            ownedByClub: true,
+          }),
+          template({ id: 8, slug: null, origin: "club", name: "Their record", usedBy: 0 }),
+        ],
+        nextCursor: null,
+      },
+      "/club-templates": CLUB,
+      "/social-settings": {},
+    });
+    const base = globalThis.fetch as unknown as typeof fetch;
+    const writes: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if ((init?.method ?? "GET").toUpperCase() !== "GET") {
+          writes.push(String(input));
+          return new Response(JSON.stringify(template({ id: 7, listed: false })), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return base(input, init);
+      }),
+    );
+    renderAt(<AdminTemplateLibrary />);
+    const tile = (await screen.findByRole("button", { name: "Open Our milestone" })).closest("li")!;
+    expect(within(tile).getByText("Used by 3 clubs")).toBeInTheDocument();
+    const other = screen.getByRole("button", { name: "Open Their record" }).closest("li")!;
+    expect(within(other).queryByText(/Used by/)).toBeNull();
+
+    // Another club's template has no Unlist.
+    fireEvent.click(screen.getByRole("button", { name: "Open Their record" }));
+    let dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("button", { name: "Unlist" })).toBeNull();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Our milestone" }));
+    dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/by your club · Used by 3 clubs/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Unlist" }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toContain("/template-library/7/unlist");
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("Unlisted");
+  });
+
+  it("offers New design in Your templates", async () => {
+    setup();
+    fireEvent.mouseDown(await screen.findByRole("tab", { name: "Your templates" }));
+    expect(await screen.findByRole("button", { name: "New design" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Card for the new design" })).toBeInTheDocument();
+  });
+});
+
 describe("defaultsAdoptionChanges", () => {
   it("skips kinds already on the look's current, unedited template", () => {
     const look = LOOKS.looks[0]!;

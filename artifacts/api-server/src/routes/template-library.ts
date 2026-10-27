@@ -10,11 +10,13 @@ import {
   AdoptLibraryLookParams,
   AssembleCarouselTemplateBody,
   ApplyClubTemplateBody,
+  CreateBlankClubTemplateBody,
   CreateClubTemplateBody,
   GetTemplatePreviewInputQueryParams,
   ListClubTemplatesQueryParams,
   ListLibraryTemplatesQueryParams,
   MakeCarouselSetBody,
+  PublishClubTemplateBody,
   SaveClubTemplateBody,
   TakeClubTemplateUpdateBody,
 } from "@workspace/api-zod";
@@ -37,6 +39,12 @@ import {
   takeUpdate,
 } from "../lib/template-library/copies";
 import { TemplateLibraryError } from "../lib/template-library/errors";
+import {
+  createBlankCopy,
+  publishCopy,
+  publishPreview,
+  unlistOwnTemplate,
+} from "../lib/template-library/publish";
 import { makeSetCopy } from "../lib/template-library/set-design";
 import { previewInputFor } from "../lib/template-library/preview";
 import { assembleCarouselPages, setTemplateKind } from "../lib/template-library/draw";
@@ -81,7 +89,7 @@ router.get("/template-library", requireAdmin, async (req, res): Promise<void> =>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  res.json(await listLibraryTemplates(parsed.data));
+  res.json(await listLibraryTemplates(parsed.data, getTenantId(req)));
 });
 
 router.get("/template-library/looks", requireAdmin, async (_req, res): Promise<void> => {
@@ -161,6 +169,20 @@ router.get("/template-library/:id", requireAdmin, async (req, res): Promise<void
   }
 });
 
+// The club takes a template it published out of the library (release 2, ADR-012).
+router.post("/template-library/:id/unlist", ...writes, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  const tenantId = getTenantId(req);
+  try {
+    const view = await unlistOwnTemplate(tenantId, id);
+    logger.info({ tenantId, libraryTemplateId: id }, "club template unlisted by its author");
+    res.json(view);
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
 // ── Club templates ──────────────────────────────────────────────────────────
 
 router.get("/club-templates", requireAdmin, async (req, res): Promise<void> => {
@@ -191,6 +213,21 @@ router.post("/club-templates/sets", ...writes, async (req, res): Promise<void> =
   }
 });
 
+// A blank canvas for a kind (release 2).
+router.post("/club-templates/blank", ...writes, async (req, res): Promise<void> => {
+  const parsed = CreateBlankClubTemplateBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  try {
+    const row = await createBlankCopy(getTenantId(req), parsed.data, adminId(req));
+    res.status(201).json(await presentCopy(row));
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
 router.post("/club-templates", ...writes, async (req, res): Promise<void> => {
   const parsed = CreateClubTemplateBody.safeParse(req.body);
   if (!parsed.success) {
@@ -210,6 +247,35 @@ router.get("/club-templates/:id", requireAdmin, async (req, res): Promise<void> 
   if (id === null) return;
   try {
     res.json(await presentCopy(await loadCopy(getTenantId(req), id)));
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+router.get("/club-templates/:id/publish-preview", requireAdmin, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  try {
+    res.json(await publishPreview(getTenantId(req), id));
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+// Publish to every club: create or version its library template, then the fit check (ADR-012).
+router.post("/club-templates/:id/publish", ...writes, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  const parsed = PublishClubTemplateBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  try {
+    const result = await publishCopy(tenantId, id, parsed.data, adminId(req));
+    logger.info({ tenantId, copyId: id, ...result }, "club template published");
+    res.status(202).json(result);
   } catch (err) {
     fail(res, err);
   }
