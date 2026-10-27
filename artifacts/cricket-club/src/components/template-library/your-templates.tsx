@@ -6,7 +6,8 @@
  * template has a newer version offers it side by side (ADR-011 T6.3). "New
  * design" starts a blank template for a card and opens it in the editor
  * (release 2, ADR-012 TB.1); Generate (ADR-012 R2-D) sits beside it when
- * Ovation offers it.
+ * Ovation offers it. Import from Figma makes a private template from the
+ * club's own Figma (R2-E).
  */
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -40,6 +41,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { isSetDocument, TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
 import { kindLabel } from "@/lib/social-studio";
 import { GenerateButton } from "./generate-dialog";
+import { FigmaImportDialog } from "./figma-import-dialog";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -305,6 +307,7 @@ export function YourTemplates({ preview }: { preview: Preview }) {
   );
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [figmaOpen, setFigmaOpen] = useState(false);
 
   const onAction = async (action: "default" | "duplicate" | "delete", t: ClubTemplateSummary) => {
     if (
@@ -345,6 +348,10 @@ export function YourTemplates({ preview }: { preview: Preview }) {
     <div className="flex flex-wrap items-end gap-2" data-testid="your-templates-toolbar">
       <NewDesignButton />
       <GenerateButton />
+      <Button size="sm" variant="outline" onClick={() => setFigmaOpen(true)}>
+        Import from Figma
+      </Button>
+      <FigmaImportDialog open={figmaOpen} onOpenChange={setFigmaOpen} />
     </div>
   );
   if (templates.length === 0) {
@@ -352,8 +359,8 @@ export function YourTemplates({ preview }: { preview: Preview }) {
       <div className="space-y-4">
         {toolbar}
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Your club has no templates yet. Start a new design, use one from the library, or adopt a
-          look.
+          Your club has no templates yet. Start a new design, import one from Figma, use one from
+          the library, or adopt a look.
         </p>
       </div>
     );

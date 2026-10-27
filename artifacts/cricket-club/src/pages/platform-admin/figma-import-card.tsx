@@ -4,46 +4,17 @@ import {
   useImportFigmaTemplate,
   type ConsoleLibraryLook,
   type FigmaImportResult,
-  type FigmaReportLine,
 } from "@workspace/api-client-react";
 import { TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { kindLabel } from "@/lib/social-studio";
+import { FigmaReport, figmaImportError } from "@/components/template-library/figma-report";
 
 const selectClass =
   "h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const inputClass =
   "h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-
-const errorOf = (
-  err: unknown,
-): { message: string; problems: string[]; report: FigmaReportLine[] } => {
-  const data = (err as { data?: { error?: unknown; problems?: unknown; report?: unknown } } | null)
-    ?.data;
-  return {
-    message: typeof data?.error === "string" ? data.error : "The import failed. Try again.",
-    problems: Array.isArray(data?.problems) ? (data.problems as string[]) : [],
-    report: Array.isArray(data?.report) ? (data.report as FigmaReportLine[]) : [],
-  };
-};
-
-const where = (l: FigmaReportLine) =>
-  [l.page, l.sizes?.join(", "), l.layer].filter(Boolean).join(" · ");
-
-function Report({ lines }: { lines: readonly FigmaReportLine[] }) {
-  if (lines.length === 0) return null;
-  return (
-    <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto text-xs" aria-label="Import report">
-      {lines.map((l, i) => (
-        <li key={i} className={l.level === "warn" ? "text-destructive" : "text-muted-foreground"}>
-          {where(l) ? <span className="font-medium">{where(l)}: </span> : null}
-          {l.message}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /**
  * Console → Library → Import from Figma (ADR-011 L8-B, T8.9): a Figma link
@@ -65,7 +36,7 @@ export function FigmaImportCard({
   const [name, setName] = useState("");
   const [look, setLook] = useState("");
   const [result, setResult] = useState<FigmaImportResult | null>(null);
-  const [failure, setFailure] = useState<ReturnType<typeof errorOf> | null>(null);
+  const [failure, setFailure] = useState<ReturnType<typeof figmaImportError> | null>(null);
   const run = useImportFigmaTemplate({
     mutation: {
       onSuccess: (r) => {
@@ -75,7 +46,7 @@ export function FigmaImportCard({
       },
       onError: (err) => {
         setResult(null);
-        setFailure(errorOf(err));
+        setFailure(figmaImportError(err));
       },
     },
   });
@@ -164,7 +135,7 @@ export function FigmaImportCard({
                 ))}
               </ul>
             ) : null}
-            <Report lines={failure.report} />
+            <FigmaReport lines={failure.report} />
           </div>
         ) : null}
 
@@ -184,7 +155,7 @@ export function FigmaImportCard({
                 Fonts replaced: {result.fonts.map((f) => `${f.from} → ${f.to}`).join(", ")}
               </p>
             ) : null}
-            <Report lines={result.report} />
+            <FigmaReport lines={result.report} />
           </div>
         ) : null}
       </CardContent>

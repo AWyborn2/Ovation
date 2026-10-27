@@ -6,7 +6,8 @@
  * Variables need Figma Enterprise, so colours come from styles instead
  * (`figma-map.ts`, decision O7).
  *
- * The token goes in the `X-Figma-Token` header and nowhere else: never in a
+ * The token goes in the `X-Figma-Token` header (or `Authorization: Bearer`
+ * for a club's OAuth token) and nowhere else: never in a
  * URL, a log line or an error message. A refused token (expired or revoked)
  * gives one clear message saying how to replace it.
  */
@@ -137,6 +138,11 @@ export type FigmaClient = {
 
 export type FigmaClientOptions = {
   token: string;
+  /**
+   * How the token is sent: `X-Figma-Token` for a personal access token (the
+   * default), `Authorization: Bearer` for an OAuth access token.
+   */
+  auth?: "personal" | "oauth";
   fetch?: FigmaFetch;
   baseUrl?: string;
   timeoutMs?: number;
@@ -153,7 +159,10 @@ export function createFigmaClient(opts: FigmaClientOptions): FigmaClient {
     let res: Awaited<ReturnType<FigmaFetch>>;
     try {
       res = await fetchImpl(url, {
-        headers: { "X-Figma-Token": opts.token },
+        headers:
+          opts.auth === "oauth"
+            ? { Authorization: `Bearer ${opts.token}` }
+            : { "X-Figma-Token": opts.token },
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {
