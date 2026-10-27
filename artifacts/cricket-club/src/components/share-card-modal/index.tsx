@@ -167,7 +167,7 @@ export function ShareCardModal({
     }
   }, [open, enabledSizes, activeSize]);
 
-  const { sponsors, presentingSponsorName, sponsorSig } = useSponsors({
+  const { sponsors, presentingSponsorName, playerSponsors, sponsorSig } = useSponsors({
     bundle,
     includeSponsors,
     input,
@@ -222,6 +222,7 @@ export function ShareCardModal({
       hashtag,
       sponsors,
       presentingSponsorName,
+      playerSponsors,
       photoUrl: effectivePhotoUrl,
       photoTransform: transform,
       // The draft photo's focus box, while that photo is the one shown.

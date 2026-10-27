@@ -17,6 +17,7 @@
 import { contentFields, KIND_FIELDS, type KindField, type KindFieldCatalogue } from "./fields";
 import type { PageKey } from "./format";
 import { kindHasPage, primaryPage, templateKindFor } from "./pages";
+import { PLAYER_SPONSOR_KINDS } from "../card-sponsors";
 
 /** A token a page can bind, with the ADR-010 content field that shows it, if any. */
 export type PageToken = {
@@ -271,7 +272,23 @@ const PERFORMANCE_LISTS: PageRepeat[] = [
 ];
 
 /** Tokens `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
+/**
+ * Player sponsors: on a card about one player, that player's first and second
+ * sponsor, empty when they have none (`cardSponsors` in card-sponsors.ts).
+ */
+const PLAYER_SPONSOR_FIELD_TOKENS: PageToken[] = [
+  { key: "playerSponsorName", label: "Player's sponsor" },
+  { key: "playerSponsor2Name", label: "Player's second sponsor" },
+];
+const PLAYER_SPONSOR_IMAGE_TOKENS: PageImageToken[] = [
+  { key: "playerSponsorLogo", label: "Player's sponsor logo", type: "logo" },
+  { key: "playerSponsor2Logo", label: "Player's second sponsor logo", type: "logo" },
+];
+const playerSponsorExtras = <T>(tokens: T[]): Record<string, T[]> =>
+  Object.fromEntries([...PLAYER_SPONSOR_KINDS].map((k) => [k, tokens]));
+
 const SINGLE_PAGE_EXTRA_FIELDS: Record<string, PageToken[]> = {
+  ...playerSponsorExtras(PLAYER_SPONSOR_FIELD_TOKENS),
   matchDay: [{ key: "opposition.monogram", label: "Opposition monogram (no crest)" }],
   matchSummary: [
     { key: "club.monogram", label: "Club side monogram (no crest)" },
@@ -289,6 +306,7 @@ const SINGLE_PAGE_EXTRA_FIELDS: Record<string, PageToken[]> = {
 
 /** Images `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
 const SINGLE_PAGE_EXTRA_IMAGES: Record<string, PageImageToken[]> = {
+  ...playerSponsorExtras(PLAYER_SPONSOR_IMAGE_TOKENS),
   matchSummary: [
     { key: "innings1.logo", label: "Innings 1 team logo", type: "logo", content: "result.scores" },
     { key: "innings2.logo", label: "Innings 2 team logo", type: "logo", content: "result.scores" },

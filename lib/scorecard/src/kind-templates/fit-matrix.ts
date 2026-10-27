@@ -48,6 +48,10 @@ export interface FitVariant {
 /** Tokens and repeats that carry the club's sponsors. */
 const SPONSOR_TOKENS = new Set([
   "sponsorPresentedBy",
+  "playerSponsorName",
+  "playerSponsor2Name",
+  "playerSponsorLogo",
+  "playerSponsor2Logo",
   "sponsor1",
   "sponsor2",
   "sponsor3",
