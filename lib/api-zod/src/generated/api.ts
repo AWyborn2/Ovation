@@ -18497,7 +18497,8 @@ export const DeleteProvisioningExclusionParams = zod.object({
 export const ListConsoleLibraryTemplatesQueryParams = zod.object({
   "kind": zod.coerce.string().optional(),
   "origin": zod.enum(['bundle', 'console', 'club']).optional(),
-  "listed": zod.coerce.boolean().optional()
+  "listed": zod.coerce.boolean().optional(),
+  "reported": zod.coerce.boolean().optional().describe('Only templates with an open report from a club (release 2).')
 })
 
 export const ListConsoleLibraryTemplatesResponse = zod.object({
@@ -18529,6 +18530,7 @@ export const ListConsoleLibraryTemplatesResponse = zod.object({
   "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -18586,6 +18588,7 @@ export const GetConsoleLibraryTemplateResponse = zod.object({
   "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -18639,6 +18642,7 @@ export const SaveConsoleLibraryTemplateResponse = zod.object({
   "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -18697,6 +18701,7 @@ export const ListConsoleLibraryTemplateResponse = zod.object({
   "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -18746,6 +18751,7 @@ export const UnlistConsoleLibraryTemplateResponse = zod.object({
   "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()

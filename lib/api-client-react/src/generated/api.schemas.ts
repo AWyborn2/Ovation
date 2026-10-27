@@ -10025,6 +10025,8 @@ export const ConsoleLibraryTemplateUnlistedBy = {
 export type ConsoleLibraryTemplate = LibraryTemplate & ({
   /** A bundle template; the console duplicates it to edit. */
   readOnly: boolean;
+  /** Clubs' reports Ovation hasn't dealt with yet (release 2). */
+  openReports: number;
   /** @nullable */
   unlistedBy: ConsoleLibraryTemplateUnlistedBy;
   /** @nullable */
@@ -13472,6 +13474,10 @@ export type ListConsoleLibraryTemplatesParams = {
 kind?: string;
 origin?: ListConsoleLibraryTemplatesOrigin;
 listed?: boolean;
+/**
+ * Only templates with an open report from a club (release 2).
+ */
+reported?: boolean;
 };
 
 export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplatesOrigin[keyof typeof ListConsoleLibraryTemplatesOrigin];

@@ -17,6 +17,7 @@ import {
   ListLibraryTemplatesQueryParams,
   MakeCarouselSetBody,
   PublishClubTemplateBody,
+  ReportLibraryTemplateBody,
   SaveClubTemplateBody,
   TakeClubTemplateUpdateBody,
 } from "@workspace/api-zod";
@@ -50,9 +51,12 @@ import { previewInputFor } from "../lib/template-library/preview";
 import { assembleCarouselPages, setTemplateKind } from "../lib/template-library/draw";
 import { resolveDraftPack } from "../lib/draft-enrich";
 import {
+  favouriteLibraryTemplate,
   getLibraryTemplate,
   listLibraryLooks,
   listLibraryTemplates,
+  reportLibraryTemplate,
+  unfavouriteLibraryTemplate,
 } from "../lib/template-library/store";
 import { logger } from "../lib/logger";
 
@@ -89,7 +93,9 @@ router.get("/template-library", requireAdmin, async (req, res): Promise<void> =>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  res.json(await listLibraryTemplates(parsed.data, getTenantId(req)));
+  // A query string's "false" is truthy to `coerce.boolean`; only "true" asks for favourites.
+  const favourites = req.query.favourites === "true";
+  res.json(await listLibraryTemplates({ ...parsed.data, favourites }, getTenantId(req)));
 });
 
 router.get("/template-library/looks", requireAdmin, async (_req, res): Promise<void> => {
@@ -181,6 +187,43 @@ router.post("/template-library/:id/unlist", ...writes, async (req, res): Promise
   } catch (err) {
     fail(res, err);
   }
+});
+
+// A club tells Ovation what's wrong with a template (release 2, ADR-012 R2-C).
+router.post("/template-library/:id/report", requireAdmin, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  const parsed = ReportLibraryTemplateBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Say what's wrong with it." });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  try {
+    await reportLibraryTemplate(tenantId, adminId(req), id, parsed.data.reason);
+    logger.info({ tenantId, libraryTemplateId: id }, "library template reported");
+    res.status(204).end();
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+router.put("/template-library/:id/favourite", ...writes, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  try {
+    await favouriteLibraryTemplate(getTenantId(req), id);
+    res.status(204).end();
+  } catch (err) {
+    fail(res, err);
+  }
+});
+
+router.delete("/template-library/:id/favourite", ...writes, async (req, res): Promise<void> => {
+  const id = idParam(req, res);
+  if (id === null) return;
+  await unfavouriteLibraryTemplate(getTenantId(req), id);
+  res.status(204).end();
 });
 
 // ── Club templates ──────────────────────────────────────────────────────────

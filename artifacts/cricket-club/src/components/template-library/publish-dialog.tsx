@@ -37,7 +37,7 @@ import { TemplateThumb } from "./previews";
 /** The most style tags one template carries (`MAX_TEMPLATE_TAGS` on the server). */
 export const MAX_TAGS = 4;
 
-const TAG_LABELS: Record<TemplateStyleTag, string> = {
+export const TAG_LABELS: Record<TemplateStyleTag, string> = {
   "photo-led": "Photo-led",
   "bold-type": "Bold type",
   minimal: "Minimal",

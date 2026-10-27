@@ -7,11 +7,16 @@
  * The one tenant-aware read is `getLibraryTemplate`, which also lets a club
  * open an unlisted template it already holds a copy of (to see its credit and,
  * from L6, an update).
+ *
+ * Release 2 (ADR-012, R2-C): a club reports a template to Ovation (one report
+ * per club, replaced when sent again), keeps favourites, and sorts the library
+ * by popularity, newness or who made it.
  */
 import {
   and,
   arrayContains,
   asc,
+  desc,
   eq,
   gt,
   ilike,
@@ -26,6 +31,8 @@ import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import {
   db,
   cardTemplatesTable,
+  libraryTemplateFavouritesTable,
+  libraryTemplateReportsTable,
   libraryTemplatesTable,
   libraryTemplateVersionsTable,
   templateLooksTable,
@@ -35,7 +42,7 @@ import {
   type TemplateFitStatus,
   type TemplateOrigin,
 } from "@workspace/db";
-import { libraryNotFound } from "./errors";
+import { TemplateLibraryError, libraryNotFound } from "./errors";
 
 /** Templates per library page (PM: 24 a page). */
 export const LIBRARY_PAGE_SIZE = 24;
@@ -83,6 +90,8 @@ export type LibraryTemplateView = {
   usedBy?: number;
   /** The asking club published it, so it can unlist it (release 2). */
   ownedByClub?: boolean;
+  /** In the asking club's favourites (release 2). */
+  favourite?: boolean;
 };
 
 export const OVATION_AUTHOR = "Ovation";
@@ -174,18 +183,55 @@ export async function usedByCounts(ids: readonly number[]): Promise<Map<number, 
   return new Map(rows.map((r) => [r.id!, r.clubs]));
 }
 
-/** Views with the release 2 counts and ownership for the asking club. */
+/** Which of `ids` are in the club's favourites. */
+async function favouriteIds(tenantId: number | null, ids: readonly number[]): Promise<Set<number>> {
+  if (tenantId === null || ids.length === 0) return new Set();
+  const rows = await db
+    .select({ id: libraryTemplateFavouritesTable.templateId })
+    .from(libraryTemplateFavouritesTable)
+    .where(
+      and(
+        eq(libraryTemplateFavouritesTable.tenantId, tenantId),
+        inArray(libraryTemplateFavouritesTable.templateId, [...ids]),
+      ),
+    );
+  return new Set(rows.map((r) => r.id));
+}
+
+/** Views with the release 2 counts, ownership and favourites for the asking club. */
 async function withClubFields(
   rows: ViewRow[],
   tenantId: number | null,
 ): Promise<LibraryTemplateView[]> {
-  const used = await usedByCounts(rows.map((r) => r.id));
+  const ids = rows.map((r) => r.id);
+  const [used, favourites] = await Promise.all([usedByCounts(ids), favouriteIds(tenantId, ids)]);
   return rows.map((row) => ({
     ...present(row),
     usedBy: used.get(row.id) ?? 0,
     ownedByClub: tenantId !== null && row.origin === "club" && row.authorTenantId === tenantId,
+    favourite: favourites.has(row.id),
   }));
 }
+
+/** Other clubs holding a copy, per template (the `popular` sort; as `usedByCounts`). */
+const usedByCount = sql<number>`(
+  select count(distinct ${cardTemplatesTable.tenantId})::int from ${cardTemplatesTable}
+  where ${cardTemplatesTable.originTemplateId} = ${libraryTemplatesTable.id}
+    and ${cardTemplatesTable.source} = 'kind'
+    and ${cardTemplatesTable.tenantId} is distinct from ${libraryTemplatesTable.authorTenantId}
+)`;
+
+const clubMade = sql`(${libraryTemplatesTable.origin} = 'club')`;
+
+/** The library's sort orders (release 2); none is the library's own order, by id. */
+export type LibrarySort = "popular" | "new" | "ovation" | "club";
+
+const SORT_ORDER: Record<LibrarySort, SQL[]> = {
+  popular: [desc(usedByCount), asc(libraryTemplatesTable.id)],
+  new: [sql`${libraryTemplatesTable.listedAt} desc nulls last`, desc(libraryTemplatesTable.id)],
+  ovation: [asc(clubMade), asc(libraryTemplatesTable.id)],
+  club: [desc(clubMade), asc(libraryTemplatesTable.id)],
+};
 
 const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -202,7 +248,13 @@ export type LibraryListQuery = {
   look?: string;
   /** Style tags, comma-separated; a template must carry every one. */
   tags?: string;
-  /** The last template id of the previous page. */
+  sort?: LibrarySort;
+  /** Only the asking club's favourites. */
+  favourites?: boolean;
+  /**
+   * The previous page's `nextCursor`: the last template id in the library's
+   * own order, or how many templates were already shown with a sort.
+   */
   cursor?: number;
 };
 
@@ -235,15 +287,31 @@ export async function listLibraryTemplates(
       )!,
     );
   }
-  if (q.cursor !== undefined) where.push(gt(libraryTemplatesTable.id, q.cursor));
+  if (q.favourites) {
+    if (tenantId === null) return { templates: [], nextCursor: null };
+    where.push(
+      sql`exists (select 1 from ${libraryTemplateFavouritesTable}
+        where ${libraryTemplateFavouritesTable.tenantId} = ${tenantId}
+          and ${libraryTemplateFavouritesTable.templateId} = ${libraryTemplatesTable.id})`,
+    );
+  }
+  // A sort pages by offset; the library's own order by id (stable while templates are added).
+  const offset = q.sort ? Math.max(0, Math.floor(q.cursor ?? 0)) : 0;
+  if (!q.sort && q.cursor !== undefined) where.push(gt(libraryTemplatesTable.id, q.cursor));
   const rows = await viewQuery()
     .where(and(...where))
-    .orderBy(asc(libraryTemplatesTable.id))
-    .limit(LIBRARY_PAGE_SIZE + 1);
+    .orderBy(...(q.sort ? SORT_ORDER[q.sort] : [asc(libraryTemplatesTable.id)]))
+    .limit(LIBRARY_PAGE_SIZE + 1)
+    .offset(offset);
   const page = await withClubFields(rows.slice(0, LIBRARY_PAGE_SIZE), tenantId);
+  const more = rows.length > LIBRARY_PAGE_SIZE;
   return {
     templates: page,
-    nextCursor: rows.length > LIBRARY_PAGE_SIZE ? (page[page.length - 1]?.id ?? null) : null,
+    nextCursor: !more
+      ? null
+      : q.sort
+        ? offset + LIBRARY_PAGE_SIZE
+        : (page[page.length - 1]?.id ?? null),
   };
 }
 
@@ -275,6 +343,55 @@ export async function getLibraryTemplate(
     .limit(1);
   if (!copy) throw libraryNotFound();
   return view;
+}
+
+/**
+ * Report a template to Ovation. One report per club and template: sending
+ * again replaces the reason and reopens it. A club's own template is unlisted,
+ * not reported.
+ */
+export async function reportLibraryTemplate(
+  tenantId: number,
+  adminId: number | null,
+  id: number,
+  reason: string,
+): Promise<void> {
+  const template = await getLibraryTemplate(tenantId, id);
+  if (template.ownedByClub) {
+    throw new TemplateLibraryError(400, {
+      error: "This is your club's template: unlist it instead.",
+    });
+  }
+  const text = reason.trim();
+  if (!text) throw new TemplateLibraryError(400, { error: "Say what's wrong with it." });
+  await db
+    .insert(libraryTemplateReportsTable)
+    .values({ templateId: id, tenantId, adminId, reason: text })
+    .onConflictDoUpdate({
+      target: [libraryTemplateReportsTable.templateId, libraryTemplateReportsTable.tenantId],
+      set: { reason: text, adminId, createdAt: new Date(), resolvedAt: null },
+    });
+}
+
+/** Add a template the club can see to its favourites (again is fine). */
+export async function favouriteLibraryTemplate(tenantId: number, id: number): Promise<void> {
+  await getLibraryTemplate(tenantId, id);
+  await db
+    .insert(libraryTemplateFavouritesTable)
+    .values({ tenantId, templateId: id })
+    .onConflictDoNothing();
+}
+
+/** Take a template out of the club's favourites (whether or not it was in them). */
+export async function unfavouriteLibraryTemplate(tenantId: number, id: number): Promise<void> {
+  await db
+    .delete(libraryTemplateFavouritesTable)
+    .where(
+      and(
+        eq(libraryTemplateFavouritesTable.tenantId, tenantId),
+        eq(libraryTemplateFavouritesTable.templateId, id),
+      ),
+    );
 }
 
 /** A template this club published, listed or not (404 for anyone else's). */

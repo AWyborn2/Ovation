@@ -11657,6 +11657,11 @@ paths:
           in: query
           required: false
           schema: { type: boolean }
+        - name: reported
+          in: query
+          required: false
+          description: Only templates with an open report from a club (release 2).
+          schema: { type: boolean }
       responses:
         "200":
           description: Library templates by kind
@@ -25529,11 +25534,14 @@ components:
       allOf:
         - $ref: "#/components/schemas/LibraryTemplate"
         - type: object
-          required: [readOnly, unlistedBy, unlistReason, updatedAt]
+          required: [readOnly, unlistedBy, unlistReason, updatedAt, openReports]
           properties:
             readOnly:
               type: boolean
               description: A bundle template; the console duplicates it to edit.
+            openReports:
+              type: integer
+              description: Clubs' reports Ovation hasn't dealt with yet (release 2).
             unlistedBy:
               type: ["string", "null"]
               enum: [author, ovation, null]
