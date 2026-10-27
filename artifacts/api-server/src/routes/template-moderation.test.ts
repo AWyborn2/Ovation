@@ -114,7 +114,8 @@ beforeAll(async () => {
       })
       .returning();
     adminIds.push(admin!.id);
-    cookies[key] = `${SESSION_COOKIE}=${encodeSession({ adminId: admin!.id, issuedAt: Date.now() })}`;
+    cookies[key] =
+      `${SESSION_COOKIE}=${encodeSession({ adminId: admin!.id, issuedAt: Date.now() })}`;
   }
   const [pa] = await db
     .insert(platformAdminsTable)
@@ -167,7 +168,9 @@ afterAll(async () => {
 
 describe("reporting a library template", () => {
   it("takes one report per club, the latest reason winning", async () => {
-    expect((await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "Rude" })).status).toBe(204);
+    expect(
+      (await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "Rude" })).status,
+    ).toBe(204);
     expect(
       (await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "Very rude" })).status,
     ).toBe(204);
@@ -180,12 +183,18 @@ describe("reporting a library template", () => {
   });
 
   it("refuses an empty reason, the club's own template and an unlisted one", async () => {
-    expect((await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "" })).status).toBe(400);
+    expect(
+      (await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "" })).status,
+    ).toBe(400);
     const own = await as("author").post(`/template-library/${t.clubOld}/report`, { reason: "x" });
     expect(own.status).toBe(400);
     expect(own.body.error).toMatch(/unlist it instead/);
-    expect((await as("b").post(`/template-library/${t.unlisted}/report`, { reason: "x" })).status).toBe(404);
-    expect((await as("b").post(`/template-library/99999999/report`, { reason: "x" })).status).toBe(404);
+    expect(
+      (await as("b").post(`/template-library/${t.unlisted}/report`, { reason: "x" })).status,
+    ).toBe(404);
+    expect((await as("b").post(`/template-library/99999999/report`, { reason: "x" })).status).toBe(
+      404,
+    );
   });
 
   it("is admin-only", async () => {
@@ -203,15 +212,16 @@ describe("console moderation", () => {
     const list = await console_.get(`/platform/admin/library/templates?kind=${KIND}&reported=true`);
     expect(list.status).toBe(200);
     expect(list.body.templates.map((x: { id: number }) => x.id)).toEqual([t.clubOld]);
-    expect(list.body.templates[0]).toMatchObject({ openReports: 2, authorName: `R2C author ${STAMP}` });
+    expect(list.body.templates[0]).toMatchObject({
+      openReports: 2,
+      authorName: `R2C author ${STAMP}`,
+    });
     const all = await console_.get(`/platform/admin/library/templates?kind=${KIND}`);
     expect(all.body.templates).toHaveLength(4);
-    expect(
-      all.body.templates.find((x: { id: number }) => x.id === t.ovation).openReports,
-    ).toBe(0);
-    expect(
-      (await console_.get(`/platform/admin/library/templates?reported=maybe`)).status,
-    ).toBe(400);
+    expect(all.body.templates.find((x: { id: number }) => x.id === t.ovation).openReports).toBe(0);
+    expect((await console_.get(`/platform/admin/library/templates?reported=maybe`)).status).toBe(
+      400,
+    );
 
     const reports = await console_.get(`/platform/admin/library/templates/${t.clubOld}/reports`);
     expect(reports.status).toBe(200);
@@ -222,17 +232,27 @@ describe("console moderation", () => {
   });
 
   it("is platform-admin only", async () => {
-    expect((await request(app).get(`/api/platform/admin/library/templates/${t.clubOld}/reports`)).status).toBe(401);
     expect(
-      (await request(app).post(`/api/platform/admin/library/templates/${t.clubOld}/reports/dismiss`)).status,
+      (await request(app).get(`/api/platform/admin/library/templates/${t.clubOld}/reports`)).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(app).post(
+          `/api/platform/admin/library/templates/${t.clubOld}/reports/dismiss`,
+        )
+      ).status,
     ).toBe(401);
     // A club admin isn't a platform admin.
-    expect((await as("b").get(`/platform/admin/library/templates/${t.clubOld}/reports`)).status).toBe(401);
+    expect(
+      (await as("b").get(`/platform/admin/library/templates/${t.clubOld}/reports`)).status,
+    ).toBe(401);
   });
 
   it("dismisses reports and keeps the template listed", async () => {
     await as("b").post(`/template-library/${t.ovation}/report`, { reason: "Meh" });
-    const res = await console_.post(`/platform/admin/library/templates/${t.ovation}/reports/dismiss`);
+    const res = await console_.post(
+      `/platform/admin/library/templates/${t.ovation}/reports/dismiss`,
+    );
     expect(res.status).toBe(204);
     const [row] = await db
       .select()
@@ -253,10 +273,14 @@ describe("console moderation", () => {
     expect(unlist.status).toBe(200);
     expect(unlist.body).toMatchObject({ listed: false, unlistedBy: "ovation", openReports: 0 });
     const reports = await console_.get(`/platform/admin/library/templates/${t.clubOld}/reports`);
-    expect(reports.body.every((r: { resolvedAt: string | null }) => r.resolvedAt !== null)).toBe(true);
+    expect(reports.body.every((r: { resolvedAt: string | null }) => r.resolvedAt !== null)).toBe(
+      true,
+    );
     // Unlisted: clubs no longer see it, nor can report it.
     expect(ids(await browse("b", ""))).not.toContain(t.clubOld);
-    expect((await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "x" })).status).toBe(404);
+    expect(
+      (await as("b").post(`/template-library/${t.clubOld}/report`, { reason: "x" })).status,
+    ).toBe(404);
 
     const relist = await console_.post(`/platform/admin/library/templates/${t.clubOld}/list`);
     expect(relist.status).toBe(200);
