@@ -119,6 +119,8 @@ import type {
   ClubCorrectionMatch,
   ClubCorrectionMatchDetail,
   ClubCorrectionsStatus,
+  ClubGenerateSettings,
+  ClubGenerationList,
   ClubIdentityDriftItem,
   ClubPhoto,
   ClubPhotoCollection,
@@ -130,6 +132,7 @@ import type {
   ClubRoleUpdate,
   ClubSeasonGradeLeaders,
   ClubTemplate,
+  ClubTemplateGeneration,
   ClubTemplateList,
   CommitImportInput,
   CommitImportResult,
@@ -139,6 +142,7 @@ import type {
   ConsoleLibraryLookList,
   ConsoleLibraryTemplate,
   ConsoleLibraryTemplateList,
+  CreateBlankClubTemplateRequest,
   CreateClubTemplateRequest,
   CreateConsoleLibraryLookRequest,
   CreateConsoleLibraryTemplateRequest,
@@ -171,7 +175,11 @@ import type {
   ErrorEnvelope,
   FetchGoogleDriveFilesRequest,
   FetchGoogleDriveFilesResponse,
+  FigmaClubImportResult,
+  FigmaConnection,
   FigmaImportResult,
+  FigmaOAuthCallbackParams,
+  FigmaOAuthStart,
   FiveWicketHaul,
   Fixture,
   FixtureForecast,
@@ -225,6 +233,7 @@ import type {
   HonourDisplayBundle,
   HonourDisplaySettings,
   HonourDisplaySettingsUpdate,
+  ImportFigmaClubTemplateRequest,
   ImportFigmaTemplateRequest,
   ImportPreview,
   ImportRecord,
@@ -289,6 +298,7 @@ import type {
   LibraryLookList,
   LibraryTemplate,
   LibraryTemplatePage,
+  LibraryTemplateReport,
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
@@ -383,6 +393,10 @@ import type {
   PremiershipUpdate,
   ProvisionTenantBody,
   ProvisioningExclusion,
+  PublishBlocked,
+  PublishClubTemplateRequest,
+  PublishClubTemplateResult,
+  PublishPreview,
   PublishSweepSummary,
   PutJuniorTeamListBody,
   PutTeamListBody,
@@ -397,6 +411,7 @@ import type {
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
   ReportLibraryElementRequest,
+  ReportLibraryTemplateRequest,
   ReschedulePublicationRequest,
   RoundResults,
   SaveCardPhotoRulesRequest,
@@ -404,6 +419,7 @@ import type {
   SaveConsoleLibraryTemplateRequest,
   SaveDraftSetDesignRequest,
   SaveDraftTemplateRequest,
+  SaveFigmaTokenRequest,
   SaveLibraryElementRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
@@ -419,6 +435,7 @@ import type {
   SelectionSide,
   SelectionStatusSetBody,
   SeniorOverview,
+  SetClubGenerateSettingsBody,
   SetClubPhotoFocusRequest,
   SetGradeDecisionBody,
   SetJuniorPhotoFocusRequest,
@@ -21797,6 +21814,290 @@ export function useGetLibraryTemplate<TData = Awaited<ReturnType<typeof getLibra
 
 
 
+export const getUnlistOwnLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}/unlist`
+}
+
+/**
+ * Other clubs stop seeing it. Copies clubs already made keep working. Publishing the club's template again lists it again.
+ * @summary Take a template this club published out of the library (release 2)
+ */
+export const unlistOwnLibraryTemplate = async (id: number, options?: RequestInit): Promise<LibraryTemplate> => {
+
+  return customFetch<LibraryTemplate>(getUnlistOwnLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUnlistOwnLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unlistOwnLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unlistOwnLibraryTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlistOwnLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>>
+
+    export type UnlistOwnLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Take a template this club published out of the library (release 2)
+ */
+export const useUnlistOwnLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlistOwnLibraryTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnlistOwnLibraryTemplateMutationOptions(options));
+    }
+
+export const getReportLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}/report`
+}
+
+/**
+ * One report per club and template; reporting again replaces the reason. A club cannot report its own template (it can unlist it instead).
+ * @summary Report a library template to Ovation (release 2)
+ */
+export const reportLibraryTemplate = async (id: number,
+    reportLibraryTemplateRequest: ReportLibraryTemplateRequest, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getReportLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reportLibraryTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getReportLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryTemplate>>, TError,{id: number;data: BodyType<ReportLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportLibraryTemplate>>, TError,{id: number;data: BodyType<ReportLibraryTemplateRequest>}, TContext> => {
+
+const mutationKey = ['reportLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportLibraryTemplate>>, {id: number;data: BodyType<ReportLibraryTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportLibraryTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof reportLibraryTemplate>>>
+    export type ReportLibraryTemplateMutationBody = BodyType<ReportLibraryTemplateRequest>
+    export type ReportLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Report a library template to Ovation (release 2)
+ */
+export const useReportLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportLibraryTemplate>>, TError,{id: number;data: BodyType<ReportLibraryTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportLibraryTemplate>>,
+        TError,
+        {id: number;data: BodyType<ReportLibraryTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getReportLibraryTemplateMutationOptions(options));
+    }
+
+export const getFavouriteLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}/favourite`
+}
+
+/**
+ * @summary Add a library template to this club's favourites (release 2)
+ */
+export const favouriteLibraryTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getFavouriteLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+export const getFavouriteLibraryTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof favouriteLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof favouriteLibraryTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['favouriteLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof favouriteLibraryTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  favouriteLibraryTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FavouriteLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof favouriteLibraryTemplate>>>
+
+    export type FavouriteLibraryTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a library template to this club's favourites (release 2)
+ */
+export const useFavouriteLibraryTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof favouriteLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof favouriteLibraryTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getFavouriteLibraryTemplateMutationOptions(options));
+    }
+
+export const getUnfavouriteLibraryTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/template-library/${id}/favourite`
+}
+
+/**
+ * @summary Remove a library template from this club's favourites
+ */
+export const unfavouriteLibraryTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnfavouriteLibraryTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnfavouriteLibraryTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['unfavouriteLibraryTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  unfavouriteLibraryTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnfavouriteLibraryTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>>
+
+    export type UnfavouriteLibraryTemplateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a library template from this club's favourites
+ */
+export const useUnfavouriteLibraryTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unfavouriteLibraryTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getUnfavouriteLibraryTemplateMutationOptions(options));
+    }
+
 export const getListLibraryElementsUrl = (params?: ListLibraryElementsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -22331,6 +22632,909 @@ export const useCreateClubTemplate = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateClubTemplateMutationOptions(options));
     }
+
+export const getCreateBlankClubTemplateUrl = () => {
+
+
+
+
+  return `/api/club-templates/blank`
+}
+
+/**
+ * A new private template for the kind, with the kind's pages and no layers. It is not the kind's default and never came from the library.
+ * @summary Start a club template from a blank canvas (release 2)
+ */
+export const createBlankClubTemplate = async (createBlankClubTemplateRequest: CreateBlankClubTemplateRequest, options?: RequestInit): Promise<ClubTemplate> => {
+
+  return customFetch<ClubTemplate>(getCreateBlankClubTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createBlankClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getCreateBlankClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBlankClubTemplate>>, TError,{data: BodyType<CreateBlankClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBlankClubTemplate>>, TError,{data: BodyType<CreateBlankClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['createBlankClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBlankClubTemplate>>, {data: BodyType<CreateBlankClubTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBlankClubTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBlankClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createBlankClubTemplate>>>
+    export type CreateBlankClubTemplateMutationBody = BodyType<CreateBlankClubTemplateRequest>
+    export type CreateBlankClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Start a club template from a blank canvas (release 2)
+ */
+export const useCreateBlankClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBlankClubTemplate>>, TError,{data: BodyType<CreateBlankClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBlankClubTemplate>>,
+        TError,
+        {data: BodyType<CreateBlankClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateBlankClubTemplateMutationOptions(options));
+    }
+
+export const getGetClubTemplatePublishPreviewUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/publish-preview`
+}
+
+/**
+ * The template with this club's logo, photos, sponsors, colours and name swapped for data slots and tokens, what was swapped, and the text that still names the club or a sponsor (which blocks publishing until it is replaced with a field).
+ * @summary What other clubs would see if this template were published (release 2)
+ */
+export const getClubTemplatePublishPreview = async (id: number, options?: RequestInit): Promise<PublishPreview> => {
+
+  return customFetch<PublishPreview>(getGetClubTemplatePublishPreviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubTemplatePublishPreviewQueryKey = (id: number,) => {
+    return [
+    `/api/club-templates/${id}/publish-preview`
+    ] as const;
+    }
+
+
+export const getGetClubTemplatePublishPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getClubTemplatePublishPreview>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplatePublishPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubTemplatePublishPreviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubTemplatePublishPreview>>> = ({ signal }) => getClubTemplatePublishPreview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubTemplatePublishPreview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubTemplatePublishPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getClubTemplatePublishPreview>>>
+export type GetClubTemplatePublishPreviewQueryError = ErrorType<void>
+
+
+/**
+ * @summary What other clubs would see if this template were published (release 2)
+ */
+
+export function useGetClubTemplatePublishPreview<TData = Awaited<ReturnType<typeof getClubTemplatePublishPreview>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplatePublishPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubTemplatePublishPreviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPublishClubTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/${id}/publish`
+}
+
+/**
+ * Saves the publishable document as a new version of the club's library template (creating it the first time), records the rights confirmation and starts the fit check. It is listed for every club once the check passes at every page, size and preset; no one approves it. Copies other clubs made are offered the new version as an update.
+ * @summary Publish this club's template to every club (release 2)
+ */
+export const publishClubTemplate = async (id: number,
+    publishClubTemplateRequest: PublishClubTemplateRequest, options?: RequestInit): Promise<PublishClubTemplateResult> => {
+
+  return customFetch<PublishClubTemplateResult>(getPublishClubTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      publishClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getPublishClubTemplateMutationOptions = <TError = ErrorType<void | PublishBlocked>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishClubTemplate>>, TError,{id: number;data: BodyType<PublishClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishClubTemplate>>, TError,{id: number;data: BodyType<PublishClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['publishClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishClubTemplate>>, {id: number;data: BodyType<PublishClubTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  publishClubTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof publishClubTemplate>>>
+    export type PublishClubTemplateMutationBody = BodyType<PublishClubTemplateRequest>
+    export type PublishClubTemplateMutationError = ErrorType<void | PublishBlocked>
+
+    /**
+ * @summary Publish this club's template to every club (release 2)
+ */
+export const usePublishClubTemplate = <TError = ErrorType<void | PublishBlocked>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishClubTemplate>>, TError,{id: number;data: BodyType<PublishClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishClubTemplate>>,
+        TError,
+        {id: number;data: BodyType<PublishClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getPublishClubTemplateMutationOptions(options));
+    }
+
+export const getListClubTemplateGenerationsUrl = () => {
+
+
+
+
+  return `/api/club-templates/generations`
+}
+
+/**
+ * @summary This club's AI designs, and how many it has left this month (release 2)
+ */
+export const listClubTemplateGenerations = async ( options?: RequestInit): Promise<ClubGenerationList> => {
+
+  return customFetch<ClubGenerationList>(getListClubTemplateGenerationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubTemplateGenerationsQueryKey = () => {
+    return [
+    `/api/club-templates/generations`
+    ] as const;
+    }
+
+
+export const getListClubTemplateGenerationsQueryOptions = <TData = Awaited<ReturnType<typeof listClubTemplateGenerations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplateGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubTemplateGenerationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubTemplateGenerations>>> = ({ signal }) => listClubTemplateGenerations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubTemplateGenerations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubTemplateGenerationsQueryResult = NonNullable<Awaited<ReturnType<typeof listClubTemplateGenerations>>>
+export type ListClubTemplateGenerationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This club's AI designs, and how many it has left this month (release 2)
+ */
+
+export function useListClubTemplateGenerations<TData = Awaited<ReturnType<typeof listClubTemplateGenerations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubTemplateGenerations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubTemplateGenerationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStartClubTemplateGenerationUrl = () => {
+
+
+
+
+  return `/api/club-templates/generations`
+}
+
+/**
+ * Runs in the background; poll until done or failed. The result is a private club template, never listed. Sample data only reaches the model, and the image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent. Each club has 20 a month (Perth calendar month); designs that fail at the provider or are refused don't count.
+ * @summary Design a private club template with AI from a brief and an optional reference image
+ */
+export const startClubTemplateGeneration = async (startTemplateGenerationRequest: StartTemplateGenerationRequest, options?: RequestInit): Promise<ClubTemplateGeneration> => {
+    const formData = new FormData();
+formData.append(`kind`, startTemplateGenerationRequest.kind);
+if(startTemplateGenerationRequest.brief !== undefined) {
+ formData.append(`brief`, startTemplateGenerationRequest.brief);
+ }
+if(startTemplateGenerationRequest.image !== undefined) {
+ formData.append(`image`, startTemplateGenerationRequest.image);
+ }
+
+  return customFetch<ClubTemplateGeneration>(getStartClubTemplateGenerationUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getStartClubTemplateGenerationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startClubTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startClubTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext> => {
+
+const mutationKey = ['startClubTemplateGeneration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startClubTemplateGeneration>>, {data: BodyType<StartTemplateGenerationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startClubTemplateGeneration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartClubTemplateGenerationMutationResult = NonNullable<Awaited<ReturnType<typeof startClubTemplateGeneration>>>
+    export type StartClubTemplateGenerationMutationBody = BodyType<StartTemplateGenerationRequest>
+    export type StartClubTemplateGenerationMutationError = ErrorType<void>
+
+    /**
+ * @summary Design a private club template with AI from a brief and an optional reference image
+ */
+export const useStartClubTemplateGeneration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startClubTemplateGeneration>>, TError,{data: BodyType<StartTemplateGenerationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startClubTemplateGeneration>>,
+        TError,
+        {data: BodyType<StartTemplateGenerationRequest>},
+        TContext
+      > => {
+      return useMutation(getStartClubTemplateGenerationMutationOptions(options));
+    }
+
+export const getGetClubTemplateGenerationUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-templates/generations/${id}`
+}
+
+/**
+ * @summary One of this club's AI designs
+ */
+export const getClubTemplateGeneration = async (id: number, options?: RequestInit): Promise<ClubTemplateGeneration> => {
+
+  return customFetch<ClubTemplateGeneration>(getGetClubTemplateGenerationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubTemplateGenerationQueryKey = (id: number,) => {
+    return [
+    `/api/club-templates/generations/${id}`
+    ] as const;
+    }
+
+
+export const getGetClubTemplateGenerationQueryOptions = <TData = Awaited<ReturnType<typeof getClubTemplateGeneration>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubTemplateGenerationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubTemplateGeneration>>> = ({ signal }) => getClubTemplateGeneration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubTemplateGeneration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubTemplateGenerationQueryResult = NonNullable<Awaited<ReturnType<typeof getClubTemplateGeneration>>>
+export type GetClubTemplateGenerationQueryError = ErrorType<void>
+
+
+/**
+ * @summary One of this club's AI designs
+ */
+
+export function useGetClubTemplateGeneration<TData = Awaited<ReturnType<typeof getClubTemplateGeneration>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubTemplateGeneration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubTemplateGenerationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getImportFigmaClubTemplateUrl = () => {
+
+
+
+
+  return `/api/club-templates/import/figma`
+}
+
+/**
+ * Reads the link with this club's own Figma connection and maps it to the template format, as the platform import does. Images go to the club's own storage. The result is a private club template with the import report.
+ * @summary Import a Figma frame into a private club template (release 2)
+ */
+export const importFigmaClubTemplate = async (importFigmaClubTemplateRequest: ImportFigmaClubTemplateRequest, options?: RequestInit): Promise<FigmaClubImportResult> => {
+
+  return customFetch<FigmaClubImportResult>(getImportFigmaClubTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      importFigmaClubTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getImportFigmaClubTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaClubTemplate>>, TError,{data: BodyType<ImportFigmaClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importFigmaClubTemplate>>, TError,{data: BodyType<ImportFigmaClubTemplateRequest>}, TContext> => {
+
+const mutationKey = ['importFigmaClubTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importFigmaClubTemplate>>, {data: BodyType<ImportFigmaClubTemplateRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importFigmaClubTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportFigmaClubTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof importFigmaClubTemplate>>>
+    export type ImportFigmaClubTemplateMutationBody = BodyType<ImportFigmaClubTemplateRequest>
+    export type ImportFigmaClubTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Import a Figma frame into a private club template (release 2)
+ */
+export const useImportFigmaClubTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importFigmaClubTemplate>>, TError,{data: BodyType<ImportFigmaClubTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importFigmaClubTemplate>>,
+        TError,
+        {data: BodyType<ImportFigmaClubTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getImportFigmaClubTemplateMutationOptions(options));
+    }
+
+export const getGetFigmaConnectionUrl = () => {
+
+
+
+
+  return `/api/figma-connection`
+}
+
+/**
+ * @summary This club's Figma connection, without its token (release 2)
+ */
+export const getFigmaConnection = async ( options?: RequestInit): Promise<FigmaConnection> => {
+
+  return customFetch<FigmaConnection>(getGetFigmaConnectionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFigmaConnectionQueryKey = () => {
+    return [
+    `/api/figma-connection`
+    ] as const;
+    }
+
+
+export const getGetFigmaConnectionQueryOptions = <TData = Awaited<ReturnType<typeof getFigmaConnection>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFigmaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFigmaConnectionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFigmaConnection>>> = ({ signal }) => getFigmaConnection({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFigmaConnection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFigmaConnectionQueryResult = NonNullable<Awaited<ReturnType<typeof getFigmaConnection>>>
+export type GetFigmaConnectionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This club's Figma connection, without its token (release 2)
+ */
+
+export function useGetFigmaConnection<TData = Awaited<ReturnType<typeof getFigmaConnection>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFigmaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFigmaConnectionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDisconnectFigmaUrl = () => {
+
+
+
+
+  return `/api/figma-connection`
+}
+
+/**
+ * @summary Disconnect Figma and delete the stored token
+ */
+export const disconnectFigma = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDisconnectFigmaUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDisconnectFigmaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectFigma>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectFigma>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectFigma'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectFigma>>, void> = () => {
+
+
+          return  disconnectFigma(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectFigmaMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectFigma>>>
+
+    export type DisconnectFigmaMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disconnect Figma and delete the stored token
+ */
+export const useDisconnectFigma = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectFigma>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectFigma>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectFigmaMutationOptions(options));
+    }
+
+export const getSaveFigmaTokenUrl = () => {
+
+
+
+
+  return `/api/figma-connection/token`
+}
+
+/**
+ * The token is checked with Figma first and stored only if it works, encrypted. It is never shown again.
+ * @summary Connect Figma with a pasted personal access token
+ */
+export const saveFigmaToken = async (saveFigmaTokenRequest: SaveFigmaTokenRequest, options?: RequestInit): Promise<FigmaConnection> => {
+
+  return customFetch<FigmaConnection>(getSaveFigmaTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveFigmaTokenRequest,)
+  }
+);}
+
+
+
+
+export const getSaveFigmaTokenMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFigmaToken>>, TError,{data: BodyType<SaveFigmaTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveFigmaToken>>, TError,{data: BodyType<SaveFigmaTokenRequest>}, TContext> => {
+
+const mutationKey = ['saveFigmaToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveFigmaToken>>, {data: BodyType<SaveFigmaTokenRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveFigmaToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveFigmaTokenMutationResult = NonNullable<Awaited<ReturnType<typeof saveFigmaToken>>>
+    export type SaveFigmaTokenMutationBody = BodyType<SaveFigmaTokenRequest>
+    export type SaveFigmaTokenMutationError = ErrorType<void>
+
+    /**
+ * @summary Connect Figma with a pasted personal access token
+ */
+export const useSaveFigmaToken = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFigmaToken>>, TError,{data: BodyType<SaveFigmaTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveFigmaToken>>,
+        TError,
+        {data: BodyType<SaveFigmaTokenRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveFigmaTokenMutationOptions(options));
+    }
+
+export const getStartFigmaOAuthUrl = () => {
+
+
+
+
+  return `/api/figma-connection/oauth/start`
+}
+
+/**
+ * Returns Figma's sign-in address for the admin's browser. Figma sends the admin back to `/api/figma/oauth/callback`.
+ * @summary Start signing in with Figma
+ */
+export const startFigmaOAuth = async ( options?: RequestInit): Promise<FigmaOAuthStart> => {
+
+  return customFetch<FigmaOAuthStart>(getStartFigmaOAuthUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartFigmaOAuthMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFigmaOAuth>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startFigmaOAuth>>, TError,void, TContext> => {
+
+const mutationKey = ['startFigmaOAuth'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startFigmaOAuth>>, void> = () => {
+
+
+          return  startFigmaOAuth(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartFigmaOAuthMutationResult = NonNullable<Awaited<ReturnType<typeof startFigmaOAuth>>>
+
+    export type StartFigmaOAuthMutationError = ErrorType<void>
+
+    /**
+ * @summary Start signing in with Figma
+ */
+export const useStartFigmaOAuth = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startFigmaOAuth>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startFigmaOAuth>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartFigmaOAuthMutationOptions(options));
+    }
+
+export const getFigmaOAuthCallbackUrl = (params: FigmaOAuthCallbackParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/figma/oauth/callback?${stringifiedParams}` : `/api/figma/oauth/callback`
+}
+
+/**
+ * @summary Figma's sign-in callback (public; the signed state carries the club)
+ */
+export const figmaOAuthCallback = async (params: FigmaOAuthCallbackParams, options?: RequestInit): Promise<unknown> => {
+
+  return customFetch<unknown>(getFigmaOAuthCallbackUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFigmaOAuthCallbackQueryKey = (params?: FigmaOAuthCallbackParams,) => {
+    return [
+    `/api/figma/oauth/callback`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getFigmaOAuthCallbackQueryOptions = <TData = Awaited<ReturnType<typeof figmaOAuthCallback>>, TError = ErrorType<void>>(params: FigmaOAuthCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof figmaOAuthCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFigmaOAuthCallbackQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof figmaOAuthCallback>>> = ({ signal }) => figmaOAuthCallback(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof figmaOAuthCallback>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type FigmaOAuthCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof figmaOAuthCallback>>>
+export type FigmaOAuthCallbackQueryError = ErrorType<void>
+
+
+/**
+ * @summary Figma's sign-in callback (public; the signed state carries the club)
+ */
+
+export function useFigmaOAuthCallback<TData = Awaited<ReturnType<typeof figmaOAuthCallback>>, TError = ErrorType<void>>(
+ params: FigmaOAuthCallbackParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof figmaOAuthCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getFigmaOAuthCallbackQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getMakeCarouselSetUrl = () => {
 
@@ -35732,6 +36936,302 @@ export const useUnlistConsoleLibraryTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUnlistConsoleLibraryTemplateMutationOptions(options));
+    }
+
+export const getListLibraryTemplateReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/reports`
+}
+
+/**
+ * @summary Clubs' reports of a library template (release 2)
+ */
+export const listLibraryTemplateReports = async (id: number, options?: RequestInit): Promise<LibraryTemplateReport[]> => {
+
+  return customFetch<LibraryTemplateReport[]>(getListLibraryTemplateReportsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLibraryTemplateReportsQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/library/templates/${id}/reports`
+    ] as const;
+    }
+
+
+export const getListLibraryTemplateReportsQueryOptions = <TData = Awaited<ReturnType<typeof listLibraryTemplateReports>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplateReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLibraryTemplateReportsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLibraryTemplateReports>>> = ({ signal }) => listLibraryTemplateReports(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplateReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLibraryTemplateReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listLibraryTemplateReports>>>
+export type ListLibraryTemplateReportsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Clubs' reports of a library template (release 2)
+ */
+
+export function useListLibraryTemplateReports<TData = Awaited<ReturnType<typeof listLibraryTemplateReports>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLibraryTemplateReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLibraryTemplateReportsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDismissLibraryTemplateReportsUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/library/templates/${id}/reports/dismiss`
+}
+
+/**
+ * @summary Close a template's open reports without unlisting it
+ */
+export const dismissLibraryTemplateReports = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissLibraryTemplateReportsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissLibraryTemplateReportsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissLibraryTemplateReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissLibraryTemplateReports>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['dismissLibraryTemplateReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissLibraryTemplateReports>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  dismissLibraryTemplateReports(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissLibraryTemplateReportsMutationResult = NonNullable<Awaited<ReturnType<typeof dismissLibraryTemplateReports>>>
+
+    export type DismissLibraryTemplateReportsMutationError = ErrorType<void>
+
+    /**
+ * @summary Close a template's open reports without unlisting it
+ */
+export const useDismissLibraryTemplateReports = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissLibraryTemplateReports>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissLibraryTemplateReports>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDismissLibraryTemplateReportsMutationOptions(options));
+    }
+
+export const getGetClubGenerateSettingsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer/club-generate`
+}
+
+/**
+ * @summary Whether club Generate is on, and the quality bar it depends on (release 2)
+ */
+export const getClubGenerateSettings = async ( options?: RequestInit): Promise<ClubGenerateSettings> => {
+
+  return customFetch<ClubGenerateSettings>(getGetClubGenerateSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubGenerateSettingsQueryKey = () => {
+    return [
+    `/api/platform/admin/library/designer/club-generate`
+    ] as const;
+    }
+
+
+export const getGetClubGenerateSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getClubGenerateSettings>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubGenerateSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubGenerateSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubGenerateSettings>>> = ({ signal }) => getClubGenerateSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubGenerateSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubGenerateSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getClubGenerateSettings>>>
+export type GetClubGenerateSettingsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Whether club Generate is on, and the quality bar it depends on (release 2)
+ */
+
+export function useGetClubGenerateSettings<TData = Awaited<ReturnType<typeof getClubGenerateSettings>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubGenerateSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubGenerateSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetClubGenerateSettingsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/library/designer/club-generate`
+}
+
+/**
+ * Clubs see Generate only when this is on AND the designer's first 50 finished designs reached 70% first-try fits.
+ * @summary Switch club Generate on or off
+ */
+export const setClubGenerateSettings = async (setClubGenerateSettingsBody: SetClubGenerateSettingsBody, options?: RequestInit): Promise<ClubGenerateSettings> => {
+
+  return customFetch<ClubGenerateSettings>(getSetClubGenerateSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setClubGenerateSettingsBody,)
+  }
+);}
+
+
+
+
+export const getSetClubGenerateSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubGenerateSettings>>, TError,{data: BodyType<SetClubGenerateSettingsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setClubGenerateSettings>>, TError,{data: BodyType<SetClubGenerateSettingsBody>}, TContext> => {
+
+const mutationKey = ['setClubGenerateSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setClubGenerateSettings>>, {data: BodyType<SetClubGenerateSettingsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setClubGenerateSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetClubGenerateSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof setClubGenerateSettings>>>
+    export type SetClubGenerateSettingsMutationBody = BodyType<SetClubGenerateSettingsBody>
+    export type SetClubGenerateSettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Switch club Generate on or off
+ */
+export const useSetClubGenerateSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setClubGenerateSettings>>, TError,{data: BodyType<SetClubGenerateSettingsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setClubGenerateSettings>>,
+        TError,
+        {data: BodyType<SetClubGenerateSettingsBody>},
+        TContext
+      > => {
+      return useMutation(getSetClubGenerateSettingsMutationOptions(options));
     }
 
 export const getListConsoleLibraryElementsUrl = (params?: ListConsoleLibraryElementsParams,) => {

@@ -11774,6 +11774,8 @@ export const DeleteEditorTemplateParams = zod.object({
  */
 export const listLibraryTemplatesQueryQMax = 60;
 
+export const listLibraryTemplatesQueryTagsMax = 200;
+
 
 
 export const ListLibraryTemplatesQueryParams = zod.object({
@@ -11781,6 +11783,9 @@ export const ListLibraryTemplatesQueryParams = zod.object({
   "kind": zod.coerce.string().optional(),
   "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional(),
   "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "tags": zod.coerce.string().max(listLibraryTemplatesQueryTagsMax).optional().describe('Style tags (comma-separated); a template must carry every one (release 2).'),
+  "sort": zod.enum(['popular', 'new', 'ovation', 'club']).optional().describe('popular (most clubs using it), new (newest listed), ovation (Ovation\'s first) or club (club-made first). Default: the library\'s own order.'),
+  "favourites": zod.coerce.boolean().optional().describe('Only this club\'s favourites (release 2).'),
   "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
 })
 
@@ -11806,7 +11811,11 @@ export const ListLibraryTemplatesResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 })),
   "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
 })
@@ -11937,7 +11946,81 @@ export const GetLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+})
+
+
+/**
+ * Other clubs stop seeing it. Copies clubs already made keep working. Publishing the club's template again lists it again.
+ * @summary Take a template this club published out of the library (release 2)
+ */
+export const UnlistOwnLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlistOwnLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+})
+
+
+/**
+ * One report per club and template; reporting again replaces the reason. A club cannot report its own template (it can unlist it instead).
+ * @summary Report a library template to Ovation (release 2)
+ */
+export const ReportLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reportLibraryTemplateBodyReasonMax = 500;
+
+
+
+export const ReportLibraryTemplateBody = zod.object({
+  "reason": zod.string().min(1).max(reportLibraryTemplateBodyReasonMax)
+})
+
+
+/**
+ * @summary Add a library template to this club's favourites (release 2)
+ */
+export const FavouriteLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Remove a library template from this club's favourites
+ */
+export const UnfavouriteLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -12130,6 +12213,232 @@ export const CreateClubTemplateBody = zod.object({
   "libraryTemplateId": zod.number(),
   "version": zod.number().optional().describe('A library version; the current one when absent.'),
   "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * A new private template for the kind, with the kind's pages and no layers. It is not the kind's default and never came from the library.
+ * @summary Start a club template from a blank canvas (release 2)
+ */
+export const createBlankClubTemplateBodyNameMax = 80;
+
+
+
+export const CreateBlankClubTemplateBody = zod.object({
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(createBlankClubTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * The template with this club's logo, photos, sponsors, colours and name swapped for data slots and tokens, what was swapped, and the text that still names the club or a sponsor (which blocks publishing until it is replaced with a field).
+ * @summary What other clubs would see if this template were published (release 2)
+ */
+export const GetClubTemplatePublishPreviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplatePublishPreviewResponse = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "changes": zod.array(zod.object({
+  "page": zod.string(),
+  "layerId": zod.string(),
+  "what": zod.enum(['clubLogo', 'sponsorLogo', 'photo', 'clubColour', 'clubName'])
+}).describe('Something the publish step swapped for a data slot or token.')),
+  "flags": zod.array(zod.object({
+  "page": zod.string(),
+  "layerId": zod.string(),
+  "kind": zod.enum(['clubName', 'sponsorName']),
+  "text": zod.string().describe('The name found.')
+}).describe('Text that still names the club or a sponsor; publishing waits until it\'s a field.')),
+  "assetErrors": zod.array(zod.string()),
+  "tagChecks": zod.array(zod.object({
+  "tag": zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).'),
+  "ok": zod.boolean(),
+  "reason": zod.string().nullish()
+})).describe('Every style tag, and whether this design can carry it.'),
+  "published": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+}),zod.null()]).describe('The library template this template already publishes to, if any.')
+})
+
+
+/**
+ * Saves the publishable document as a new version of the club's library template (creating it the first time), records the rights confirmation and starts the fit check. It is listed for every club once the check passes at every page, size and preset; no one approves it. Copies other clubs made are offered the new version as an update.
+ * @summary Publish this club's template to every club (release 2)
+ */
+export const PublishClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const publishClubTemplateBodyNameMax = 80;
+
+export const publishClubTemplateBodyTagsMax = 4;
+
+
+
+export const PublishClubTemplateBody = zod.object({
+  "name": zod.string().min(1).max(publishClubTemplateBodyNameMax),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).max(publishClubTemplateBodyTagsMax),
+  "rightsConfirmed": zod.boolean().describe('The admin confirms the club has the rights to any artwork left in the design. Must be true.')
+})
+
+
+/**
+ * @summary This club's AI designs, and how many it has left this month (release 2)
+ */
+export const ListClubTemplateGenerationsResponse = zod.object({
+  "available": zod.boolean().describe('Whether Generate is offered (configured, above the quality bar and switched on).'),
+  "limit": zod.number(),
+  "remaining": zod.number().describe('Designs left this month (Perth calendar month).'),
+  "generations": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "result": zod.union([zod.object({
+  "copyId": zod.number()
+}),zod.null()]).describe('The private club template the design was saved as.'),
+  "errors": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Runs in the background; poll until done or failed. The result is a private club template, never listed. Sample data only reaches the model, and the image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent. Each club has 20 a month (Perth calendar month); designs that fail at the provider or are refused don't count.
+ * @summary Design a private club template with AI from a brief and an optional reference image
+ */
+export const startClubTemplateGenerationBodyBriefMax = 2000;
+
+
+
+export const StartClubTemplateGenerationBody = zod.object({
+  "kind": zod.string().describe('The card kind to design.'),
+  "brief": zod.string().max(startClubTemplateGenerationBodyBriefMax).optional(),
+  "image": zod.instanceof(File).optional().describe('A reference image (PNG or JPEG, at most 5 MB).')
+})
+
+
+/**
+ * @summary One of this club's AI designs
+ */
+export const GetClubTemplateGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplateGenerationResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "result": zod.union([zod.object({
+  "copyId": zod.number()
+}),zod.null()]).describe('The private club template the design was saved as.'),
+  "errors": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * Reads the link with this club's own Figma connection and maps it to the template format, as the platform import does. Images go to the club's own storage. The result is a private club template with the import report.
+ * @summary Import a Figma frame into a private club template (release 2)
+ */
+export const importFigmaClubTemplateBodyFileUrlMax = 2000;
+
+export const importFigmaClubTemplateBodyNameMax = 80;
+
+
+
+export const ImportFigmaClubTemplateBody = zod.object({
+  "fileUrl": zod.string().min(1).max(importFigmaClubTemplateBodyFileUrlMax).describe('A Figma design link (with or without node-id), or a bare file key.'),
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(importFigmaClubTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * @summary This club's Figma connection, without its token (release 2)
+ */
+export const GetFigmaConnectionResponse = zod.object({
+  "connected": zod.boolean(),
+  "method": zod.union([zod.literal('oauth'),zod.literal('token'),zod.literal(null)]).nullable(),
+  "status": zod.union([zod.literal('connected'),zod.literal('needs_reconnect'),zod.literal(null)]).nullable(),
+  "figmaHandle": zod.string().nullable(),
+  "statusReason": zod.string().nullable(),
+  "connectedAt": zod.coerce.date().nullable(),
+  "oauthAvailable": zod.boolean().describe('Whether Sign in with Figma is set up (FIGMA_CLIENT_ID).')
+})
+
+
+/**
+ * The token is checked with Figma first and stored only if it works, encrypted. It is never shown again.
+ * @summary Connect Figma with a pasted personal access token
+ */
+export const saveFigmaTokenBodyTokenMin = 10;
+export const saveFigmaTokenBodyTokenMax = 400;
+
+
+
+export const SaveFigmaTokenBody = zod.object({
+  "token": zod.string().min(saveFigmaTokenBodyTokenMin).max(saveFigmaTokenBodyTokenMax)
+})
+
+export const SaveFigmaTokenResponse = zod.object({
+  "connected": zod.boolean(),
+  "method": zod.union([zod.literal('oauth'),zod.literal('token'),zod.literal(null)]).nullable(),
+  "status": zod.union([zod.literal('connected'),zod.literal('needs_reconnect'),zod.literal(null)]).nullable(),
+  "figmaHandle": zod.string().nullable(),
+  "statusReason": zod.string().nullable(),
+  "connectedAt": zod.coerce.date().nullable(),
+  "oauthAvailable": zod.boolean().describe('Whether Sign in with Figma is set up (FIGMA_CLIENT_ID).')
+})
+
+
+/**
+ * Returns Figma's sign-in address for the admin's browser. Figma sends the admin back to `/api/figma/oauth/callback`.
+ * @summary Start signing in with Figma
+ */
+export const StartFigmaOAuthResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary Figma's sign-in callback (public; the signed state carries the club)
+ */
+export const FigmaOAuthCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string(),
+  "error": zod.coerce.string().optional()
 })
 
 
@@ -18062,7 +18371,11 @@ export const ListConsoleLibraryTemplatesResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -18115,7 +18428,11 @@ export const GetConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -18164,7 +18481,11 @@ export const SaveConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -18218,7 +18539,11 @@ export const ListConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
@@ -18263,13 +18588,79 @@ export const UnlistConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
 }))
+
+
+/**
+ * @summary Clubs' reports of a library template (release 2)
+ */
+export const ListLibraryTemplateReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListLibraryTemplateReportsResponseItem = zod.object({
+  "id": zod.number(),
+  "clubName": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+export const ListLibraryTemplateReportsResponse = zod.array(ListLibraryTemplateReportsResponseItem)
+
+
+/**
+ * @summary Close a template's open reports without unlisting it
+ */
+export const DismissLibraryTemplateReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Whether club Generate is on, and the quality bar it depends on (release 2)
+ */
+export const GetClubGenerateSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Ovation\'s switch.'),
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designer-tool designs.'),
+  "barMet": zod.boolean().describe('50 designs counted and at least 70% fitted first time.'),
+  "available": zod.boolean().describe('What clubs see (configured, bar met and switched on).')
+})
+
+
+/**
+ * Clubs see Generate only when this is on AND the designer's first 50 finished designs reached 70% first-try fits.
+ * @summary Switch club Generate on or off
+ */
+export const SetClubGenerateSettingsBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const SetClubGenerateSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Ovation\'s switch.'),
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designer-tool designs.'),
+  "barMet": zod.boolean().describe('50 designs counted and at least 70% fitted first time.'),
+  "available": zod.boolean().describe('What clubs see (configured, bar met and switched on).')
+})
 
 
 /**

@@ -505,6 +505,13 @@
       "when": 1793061736068,
       "tag": "0071_photo_collections",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793067004790,
+      "tag": "0072_template_library_release_2",
+      "breakpoints": true
     }
   ]
 }
