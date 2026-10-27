@@ -6503,6 +6503,25 @@ paths:
           required: false
           description: A look's slug.
           schema: { type: string }
+        - name: tags
+          in: query
+          required: false
+          description: Style tags (comma-separated); a template must carry every one (release 2).
+          schema: { type: string, maxLength: 200 }
+        - name: sort
+          in: query
+          required: false
+          description: >-
+            popular (most clubs using it), new (newest listed), ovation (Ovation's
+            first) or club (club-made first). Default: the library's own order.
+          schema:
+            type: string
+            enum: [popular, new, ovation, club]
+        - name: favourites
+          in: query
+          required: false
+          description: Only this club's favourites (release 2).
+          schema: { type: boolean }
         - name: cursor
           in: query
           required: false
@@ -6631,6 +6650,79 @@ paths:
                 $ref: "#/components/schemas/LibraryTemplate"
         "404":
           description: Not in the library
+
+  /template-library/{id}/unlist:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: unlistOwnLibraryTemplate
+      tags: [socialCards]
+      summary: Take a template this club published out of the library (release 2)
+      description: >-
+        Other clubs stop seeing it. Copies clubs already made keep working.
+        Publishing the club's template again lists it again.
+      responses:
+        "200":
+          description: The template, now unlisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryTemplate"
+        "404":
+          description: Not a template this club published
+
+  /template-library/{id}/report:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: reportLibraryTemplate
+      tags: [socialCards]
+      summary: Report a library template to Ovation (release 2)
+      description: >-
+        One report per club and template; reporting again replaces the reason.
+        A club cannot report its own template (it can unlist it instead).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportLibraryTemplateRequest"
+      responses:
+        "204":
+          description: Reported
+        "400":
+          description: No reason given, or the club's own template
+        "404":
+          description: No such listed template
+
+  /template-library/{id}/favourite:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    put:
+      operationId: favouriteLibraryTemplate
+      tags: [socialCards]
+      summary: Add a library template to this club's favourites (release 2)
+      responses:
+        "204":
+          description: Added (or already a favourite)
+        "404":
+          description: No such listed template
+    delete:
+      operationId: unfavouriteLibraryTemplate
+      tags: [socialCards]
+      summary: Remove a library template from this club's favourites
+      responses:
+        "204":
+          description: Removed (or wasn't a favourite)
 
   /template-library/elements:
     get:
@@ -6816,6 +6908,278 @@ paths:
           description: Not in the library, or no such version
         "409":
           description: makeDefault while the version's fit check is pending
+
+  /club-templates/blank:
+    post:
+      operationId: createBlankClubTemplate
+      tags: [socialCards]
+      summary: Start a club template from a blank canvas (release 2)
+      description: >-
+        A new private template for the kind, with the kind's pages and no
+        layers. It is not the kind's default and never came from the library.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBlankClubTemplateRequest"
+      responses:
+        "201":
+          description: The new template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplate"
+        "400":
+          description: Not a kind templates cover
+
+  /club-templates/{id}/publish-preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getClubTemplatePublishPreview
+      tags: [socialCards]
+      summary: What other clubs would see if this template were published (release 2)
+      description: >-
+        The template with this club's logo, photos, sponsors, colours and name
+        swapped for data slots and tokens, what was swapped, and the text that
+        still names the club or a sponsor (which blocks publishing until it is
+        replaced with a field).
+      responses:
+        "200":
+          description: The preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishPreview"
+        "404":
+          description: Not this club's template
+
+  /club-templates/{id}/publish:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: publishClubTemplate
+      tags: [socialCards]
+      summary: Publish this club's template to every club (release 2)
+      description: >-
+        Saves the publishable document as a new version of the club's library
+        template (creating it the first time), records the rights confirmation
+        and starts the fit check. It is listed for every club once the check
+        passes at every page, size and preset; no one approves it. Copies other
+        clubs made are offered the new version as an update.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishClubTemplateRequest"
+      responses:
+        "202":
+          description: Published; the fit check is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishClubTemplateResult"
+        "400":
+          description: No rights confirmation, a bad name or tags, or a style tag the design doesn't match
+        "404":
+          description: Not this club's template
+        "422":
+          description: Text still names the club or a sponsor, or the document breaks the library's asset rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishBlocked"
+
+  /club-templates/generations:
+    get:
+      operationId: listClubTemplateGenerations
+      tags: [socialCards]
+      summary: This club's AI designs, and how many it has left this month (release 2)
+      responses:
+        "200":
+          description: The club's designs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubGenerationList"
+    post:
+      operationId: startClubTemplateGeneration
+      tags: [socialCards]
+      summary: Design a private club template with AI from a brief and an optional reference image
+      description: >-
+        Runs in the background; poll until done or failed. The result is a
+        private club template, never listed. Sample data only reaches the
+        model, and the image must be an upload (PNG or JPEG, at most 5 MB); a
+        library photo can never be sent. Each club has 20 a month (Perth
+        calendar month); designs that fail at the provider or are refused
+        don't count.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/StartTemplateGenerationRequest"
+      responses:
+        "202":
+          description: The queued design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplateGeneration"
+        "400":
+          description: No brief or image, an unknown kind, a bad image, or a library photo
+        "413":
+          description: The image is over 5 MB
+        "429":
+          description: This month's designs are used up
+        "503":
+          description: Generate isn't available (not configured, below the quality bar, or switched off)
+
+  /club-templates/generations/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: getClubTemplateGeneration
+      tags: [socialCards]
+      summary: One of this club's AI designs
+      responses:
+        "200":
+          description: The design
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubTemplateGeneration"
+        "404":
+          description: Not this club's design
+
+  /club-templates/import/figma:
+    post:
+      operationId: importFigmaClubTemplate
+      tags: [socialCards]
+      summary: Import a Figma frame into a private club template (release 2)
+      description: >-
+        Reads the link with this club's own Figma connection and maps it to the
+        template format, as the platform import does. Images go to the club's
+        own storage. The result is a private club template with the import
+        report.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFigmaClubTemplateRequest"
+      responses:
+        "201":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaClubImportResult"
+        "400":
+          description: A bad link, an unknown kind, no frames, or a document the format refuses (with the report)
+        "404":
+          description: Figma can't find the file or frame
+        "409":
+          description: No Figma connection, or it needs reconnecting
+        "429":
+          description: Figma is rate limiting this account
+        "502":
+          description: Figma failed or couldn't be reached
+
+  /figma-connection:
+    get:
+      operationId: getFigmaConnection
+      tags: [socialCards]
+      summary: This club's Figma connection, without its token (release 2)
+      responses:
+        "200":
+          description: The connection (connected false when there is none)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaConnection"
+    delete:
+      operationId: disconnectFigma
+      tags: [socialCards]
+      summary: Disconnect Figma and delete the stored token
+      responses:
+        "204":
+          description: Disconnected
+
+  /figma-connection/token:
+    post:
+      operationId: saveFigmaToken
+      tags: [socialCards]
+      summary: Connect Figma with a pasted personal access token
+      description: >-
+        The token is checked with Figma first and stored only if it works,
+        encrypted. It is never shown again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFigmaTokenRequest"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaConnection"
+        "400":
+          description: Figma refused the token
+
+  /figma-connection/oauth/start:
+    post:
+      operationId: startFigmaOAuth
+      tags: [socialCards]
+      summary: Start signing in with Figma
+      description: >-
+        Returns Figma's sign-in address for the admin's browser. Figma sends the
+        admin back to `/api/figma/oauth/callback`.
+      responses:
+        "200":
+          description: Where to send the admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FigmaOAuthStart"
+        "503":
+          description: Sign in with Figma isn't set up (no FIGMA_CLIENT_ID)
+
+  /figma/oauth/callback:
+    get:
+      operationId: figmaOAuthCallback
+      tags: [socialCards]
+      summary: Figma's sign-in callback (public; the signed state carries the club)
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+        - name: error
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302":
+          description: Back to the club's Social Studio settings, connected or with the reason it failed
 
   /club-templates/sets:
     post:
@@ -11375,6 +11739,84 @@ paths:
           description: Not authenticated.
         "404":
           description: No such template.
+
+  /platform/admin/library/templates/{id}/reports:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      operationId: listLibraryTemplateReports
+      tags: [platformAdmin]
+      summary: Clubs' reports of a library template (release 2)
+      responses:
+        "200":
+          description: The reports, open first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LibraryTemplateReport"
+        "401":
+          description: Not a platform admin
+
+  /platform/admin/library/templates/{id}/reports/dismiss:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: dismissLibraryTemplateReports
+      tags: [platformAdmin]
+      summary: Close a template's open reports without unlisting it
+      responses:
+        "204":
+          description: Dismissed
+        "401":
+          description: Not a platform admin
+
+  /platform/admin/library/designer/club-generate:
+    get:
+      operationId: getClubGenerateSettings
+      tags: [platformAdmin]
+      summary: Whether club Generate is on, and the quality bar it depends on (release 2)
+      responses:
+        "200":
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubGenerateSettings"
+        "401":
+          description: Not a platform admin
+    put:
+      operationId: setClubGenerateSettings
+      tags: [platformAdmin]
+      summary: Switch club Generate on or off
+      description: >-
+        Clubs see Generate only when this is on AND the designer's first 50
+        finished designs reached 70% first-try fits.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubGenerateSettings"
+        "401":
+          description: Not a platform admin
 
   /platform/admin/library/elements:
     get:
@@ -24386,6 +24828,281 @@ components:
         listed: { type: boolean }
         document:
           $ref: "#/components/schemas/TemplateDocument"
+        tags:
+          type: array
+          description: Style tags (release 2).
+          items:
+            $ref: "#/components/schemas/TemplateStyleTag"
+        usedBy:
+          type: integer
+          description: How many clubs other than the author hold a copy (release 2).
+        favourite:
+          type: boolean
+          description: Whether this club has it in its favourites (release 2).
+        ownedByClub:
+          type: boolean
+          description: Whether this club published it, so it can unlist it (release 2).
+
+    TemplateStyleTag:
+      type: string
+      description: A style tag on a library template (`TEMPLATE_STYLE_TAGS`).
+      enum: [photo-led, bold-type, minimal, dark, light, retro, broadcast, textured]
+
+    CreateBlankClubTemplateRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+
+    PublishChange:
+      type: object
+      required: [page, layerId, what]
+      description: Something the publish step swapped for a data slot or token.
+      properties:
+        page: { type: string }
+        layerId: { type: string }
+        what:
+          type: string
+          enum: [clubLogo, sponsorLogo, photo, clubColour, clubName]
+
+    PublishFlag:
+      type: object
+      required: [page, layerId, kind, text]
+      description: Text that still names the club or a sponsor; publishing waits until it's a field.
+      properties:
+        page: { type: string }
+        layerId: { type: string }
+        kind:
+          type: string
+          enum: [clubName, sponsorName]
+        text:
+          type: string
+          description: The name found.
+
+    TagCheck:
+      type: object
+      required: [tag, ok]
+      properties:
+        tag:
+          $ref: "#/components/schemas/TemplateStyleTag"
+        ok: { type: boolean }
+        reason: { type: ["string", "null"] }
+
+    PublishPreview:
+      type: object
+      required: [document, changes, flags, assetErrors, tagChecks, published]
+      properties:
+        document:
+          $ref: "#/components/schemas/TemplateDocument"
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublishChange"
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublishFlag"
+        assetErrors:
+          type: array
+          items: { type: string }
+        tagChecks:
+          type: array
+          description: Every style tag, and whether this design can carry it.
+          items:
+            $ref: "#/components/schemas/TagCheck"
+        published:
+          description: The library template this template already publishes to, if any.
+          oneOf:
+            - $ref: "#/components/schemas/LibraryTemplate"
+            - type: "null"
+
+    PublishClubTemplateRequest:
+      type: object
+      required: [name, tags, rightsConfirmed]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        tags:
+          type: array
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/TemplateStyleTag"
+        rightsConfirmed:
+          type: boolean
+          description: The admin confirms the club has the rights to any artwork left in the design. Must be true.
+
+    PublishClubTemplateResult:
+      type: object
+      required: [libraryTemplateId, version, fitStatus, listed]
+      properties:
+        libraryTemplateId: { type: integer }
+        version: { type: integer }
+        fitStatus:
+          $ref: "#/components/schemas/TemplateFitStatus"
+        listed: { type: boolean }
+
+    PublishBlocked:
+      type: object
+      required: [error, flags, assetErrors]
+      properties:
+        error: { type: string }
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublishFlag"
+        assetErrors:
+          type: array
+          items: { type: string }
+
+    ReportLibraryTemplateRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+
+    LibraryTemplateReport:
+      type: object
+      required: [id, clubName, reason, createdAt, resolvedAt]
+      properties:
+        id: { type: integer }
+        clubName: { type: string }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+
+    ClubTemplateGeneration:
+      type: object
+      required: [id, kind, status, outcome, attempts, result, errors, createdAt, finishedAt]
+      properties:
+        id: { type: integer }
+        kind: { type: string }
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        outcome:
+          type: ["string", "null"]
+          description: pass, warnings, invalid, refused or provider_error; null until it finishes.
+        attempts: { type: integer }
+        result:
+          description: The private club template the design was saved as.
+          oneOf:
+            - type: object
+              required: [copyId]
+              properties:
+                copyId: { type: integer }
+            - type: "null"
+        errors:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: ["string", "null"], format: date-time }
+
+    ClubGenerationList:
+      type: object
+      required: [available, limit, remaining, generations]
+      properties:
+        available:
+          type: boolean
+          description: Whether Generate is offered (configured, above the quality bar and switched on).
+        limit: { type: integer }
+        remaining:
+          type: integer
+          description: Designs left this month (Perth calendar month).
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubTemplateGeneration"
+
+    ClubGenerateSettings:
+      type: object
+      required: [enabled, configured, quality, barMet, available]
+      properties:
+        enabled:
+          type: boolean
+          description: Ovation's switch.
+        configured:
+          type: boolean
+          description: Whether the Claude API key is set.
+        quality:
+          type: object
+          required: [counted, firstTryFit, meanCostUsd]
+          description: Over the first 50 finished designer-tool designs.
+          properties:
+            counted: { type: integer }
+            firstTryFit: { type: integer }
+            meanCostUsd: { type: ["number", "null"] }
+        barMet:
+          type: boolean
+          description: 50 designs counted and at least 70% fitted first time.
+        available:
+          type: boolean
+          description: What clubs see (configured, bar met and switched on).
+
+    FigmaConnection:
+      type: object
+      required: [connected, method, status, figmaHandle, statusReason, connectedAt, oauthAvailable]
+      properties:
+        connected: { type: boolean }
+        method:
+          type: ["string", "null"]
+          enum: [oauth, token, null]
+        status:
+          type: ["string", "null"]
+          enum: [connected, needs_reconnect, null]
+        figmaHandle: { type: ["string", "null"] }
+        statusReason: { type: ["string", "null"] }
+        connectedAt: { type: ["string", "null"], format: date-time }
+        oauthAvailable:
+          type: boolean
+          description: Whether Sign in with Figma is set up (FIGMA_CLIENT_ID).
+
+    SaveFigmaTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 10, maxLength: 400 }
+
+    FigmaOAuthStart:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+
+    ImportFigmaClubTemplateRequest:
+      type: object
+      required: [fileUrl, kind]
+      properties:
+        fileUrl:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: A Figma design link (with or without node-id), or a bare file key.
+        kind: { type: string }
+        name: { type: string, minLength: 1, maxLength: 80 }
+
+    FigmaClubImportResult:
+      type: object
+      required: [template, fileName, frames, report, fonts]
+      properties:
+        template:
+          $ref: "#/components/schemas/ClubTemplate"
+        fileName: { type: string }
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaFrameMatch"
+        report:
+          type: array
+          items:
+            $ref: "#/components/schemas/FigmaReportLine"
+        fonts:
+          type: array
+          items:
+            type: object
+            required: [from, to]
+            properties:
+              from: { type: string }
+              to: { type: string }
 
     LibraryTemplatePage:
       type: object

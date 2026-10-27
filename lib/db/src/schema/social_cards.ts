@@ -255,8 +255,16 @@ export const cardTemplatesTable = pgTable(
     // library read correctly; the app always sets it when it writes.
     fitStatus: text("fit_status").$type<TemplateFitStatus>().notNull().default("pass"),
     fitReport: jsonb("fit_report").$type<TemplateFitReportColumn>(),
+    // The library template this club template publishes to (release 2,
+    // ADR-012): set on first publish, so publishing again adds a version.
+    publishedTemplateId: integer("published_template_id").references(
+      () => libraryTemplatesTable.id,
+      { onDelete: "set null" },
+    ),
   },
   (t) => ({
+    // "Used by N clubs": the clubs holding a copy of a library template.
+    idxOriginTemplate: index("card_templates_origin_template_idx").on(t.originTemplateId),
     uniqPack: uniqueIndex("card_templates_pack_unique")
       .on(t.tenantId, t.source, t.packId, t.packVariant)
       .where(sql`source = 'pack'`),

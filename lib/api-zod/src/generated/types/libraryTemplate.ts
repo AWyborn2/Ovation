@@ -11,6 +11,7 @@ import type { TemplateCoverage } from './templateCoverage';
 import type { TemplateDocument } from './templateDocument';
 import type { TemplateFitReport } from './templateFitReport';
 import type { TemplateFitStatus } from './templateFitStatus';
+import type { TemplateStyleTag } from './templateStyleTag';
 
 export interface LibraryTemplate {
   id: number;
@@ -29,4 +30,12 @@ export interface LibraryTemplate {
   fitReport: TemplateFitReport | null;
   listed: boolean;
   document: TemplateDocument;
+  /** Style tags (release 2). */
+  tags?: TemplateStyleTag[];
+  /** How many clubs other than the author hold a copy (release 2). */
+  usedBy?: number;
+  /** Whether this club has it in its favourites (release 2). */
+  favourite?: boolean;
+  /** Whether this club published it, so it can unlist it (release 2). */
+  ownedByClub?: boolean;
 }
