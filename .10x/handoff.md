@@ -1,5 +1,23 @@
 # Handoff
 
+**From:** Principal Architect / Engineering Manager
+**To:** SDE (one session per slice)
+**Feature:** social-template-library, release 2
+
+## Context
+
+- Scope: `decisions/product-manager/social-template-library.md` (Release 2). Design:
+  `decisions/architect/template-library-release-2.md`, ADR-012 (proposed). Plan:
+  `decisions/engineering-manager/template-library-release-2.md`.
+- Ash's answers (27 Oct 2026): Generate cap 20 per club per month; Figma by sign-in and by
+  pasted token; check the designer's first-try fit rate before Generate goes live.
+- Start with R2-A (migration, OpenAPI, shared `publishableDocument`). Then R2-B, R2-D and R2-E in
+  parallel; R2-C after R2-B. Each slice is a PR to `main`.
+
+## Handoff History
+
+### Previous (Product Manager to Principal Architect, photo-focus-areas)
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** photo-focus-areas
@@ -22,8 +40,6 @@
 - Constraints: OpenAPI first; juniors isolation; withheld junior photos stay withheld; existing
   drafts unchanged; builds in parallel with the remaining template library work, so PRs go to
   `main` in small slices.
-
-## Handoff History
 
 ### Previous (Engineering Manager to Senior Engineer, honours-kiosk-redesign)
 
