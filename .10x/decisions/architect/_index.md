@@ -8,6 +8,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
 - [selection-hub-decoupling](selection-hub-decoupling.md) — on-demand rounds/drafts, carry-over, admin status, participant crosswalk, public-name flag (design proposed 19 Oct 2026; ADR-008)
+- [player-sponsors](player-sponsors.md) — `sponsor_players` join table (name snapshot), `social_drafts.subject_player_id`; one `cardSponsors` rule in `@workspace/scorecard` for preview and post; sponsors resolved at draw time (proposed 27 Oct 2026)
 
 ## Feature ADRs
 
