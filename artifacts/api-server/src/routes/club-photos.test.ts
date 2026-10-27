@@ -22,6 +22,7 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
 import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
+import { pickCandidatePhoto, pickDraftPhoto } from "../lib/draft-enrich";
 
 const STAMP = Date.now();
 const objects = new Map<string, Buffer>();
@@ -469,5 +470,42 @@ describe("focus areas", () => {
       focusBox: { x: 0, y: 0, w: 0.5, h: 0.5 },
     });
     expect(other.status).toBe(404);
+  });
+});
+
+describe("shape-aware picking", () => {
+  it("never puts a photo in a frame shape switched off for it", async () => {
+    const path = await upload("no-tall.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({
+      objectPaths: [path],
+      playerIds: [playerIds[1]],
+    });
+    const photo = ingest.body.results[0].photo as { id: number; url: string };
+    await api("put", `/club-photos/${photo.id}/focus`).send({ offShapes: ["tall"] });
+    const pick = (frameAspect: number | null) =>
+      pickCandidatePhoto(tenantId, [playerIds[1]], {
+        order: "ranked",
+        seed: null,
+        types: [],
+        format: null,
+        frameAspect,
+      });
+    // Newest first when the frame doesn't matter, or is wide.
+    expect((await pick(null))?.url).toBe(photo.url);
+    expect((await pick(16 / 9))?.url).toBe(photo.url);
+    // A tall frame takes the player's other photo.
+    const tall = await pick(4 / 5);
+    expect(tall?.url).toBeTruthy();
+    expect(tall?.url).not.toBe(photo.url);
+    // Even as a grade's only photo: no photo beats a shape switched off.
+    const grade = `Shape ${STAMP}`;
+    const only = await upload("only.jpg", await jpeg(300, 200));
+    const solo = await api("post", "/club-photos/ingest").send({ objectPaths: [only], grade });
+    const soloPhoto = solo.body.results[0].photo as { id: number; url: string };
+    await api("put", `/club-photos/${soloPhoto.id}/focus`).send({ offShapes: ["tall"] });
+    const gradePick = (frameAspect: number) =>
+      pickDraftPhoto(tenantId, { playerId: null, grade, junior: false, frameAspect });
+    expect(await gradePick(4 / 5)).toBeNull();
+    expect((await gradePick(16 / 9))?.url).toBe(soloPhoto.url);
   });
 });

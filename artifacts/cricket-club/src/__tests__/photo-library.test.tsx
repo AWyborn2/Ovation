@@ -393,6 +393,24 @@ describe("selection inside a folder", () => {
     expect(screen.getByText("No photos of this format")).toBeTruthy();
   });
 
+  it("marks photos with a focus, filters to those that need one, and opens the editor", async () => {
+    stubLibrary([
+      { ...photo(1, "A Grade", ["team"]), focusBox: { x: 0.1, y: 0.1, w: 0.5, h: 0.5 } },
+      photo(2, "A Grade", ["team"]),
+    ]);
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?grade=A%20Grade&type=team");
+    const grid = await screen.findByRole("list", { name: "Library photos" });
+    expect(within(grid).getByRole("button", { name: "Photo 1" }).textContent).toContain(
+      "Focus set",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Needs focus" }));
+    expect(within(grid).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(grid).getByRole("button", { name: "Photo 2" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Set the focus of photo 2" }));
+    expect(await screen.findByRole("dialog", { name: "Photo focus" })).toBeTruthy();
+  });
+
   it("carries no raw hex colours", () => {
     for (const f of [
       join(__dirname, "..", "pages", "admin-photo-library.tsx"),

@@ -22,3 +22,4 @@ export * from "./worst-case";
 export * from "./worst-case-names";
 export * from "./set-document";
 export * from "./set-slides";
+export * from "./photo-frame";

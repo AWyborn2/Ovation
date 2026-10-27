@@ -12,6 +12,7 @@
     "test:watch": "vitest --config vitest.config.ts"
   },
   "devDependencies": {
+    "@mediapipe/tasks-vision": "^1.1.1",
     "@radix-ui/react-alert-dialog": "^1.1.23",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-dropdown-menu": "^2.1.24",

@@ -22,12 +22,15 @@ import {
   preferredMatchFormat,
   preferredPhotoTypes,
   type MatchFormat,
+  FOCUS_TIGHT_KEEP,
+  frameShapeOf,
   type PhotoFocus,
   type PhotoType,
 } from "@workspace/scorecard";
 import { DEFAULT_TEMPLATES, CAPTION_VARIATIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
 import { draftPhotoFocus } from "./photo-focus-snapshot";
+import { draftFrameAspect } from "./photo-frame-aspect";
 
 /**
  * What every auto-draft carries from the moment it is created (Social Studio
@@ -243,9 +246,46 @@ function formatRank(format: MatchFormat | null | undefined): SQL | null {
   return sql`CASE WHEN ${clubPhotosTable.matchFormat} = ${format} THEN 0 ELSE 1 END`;
 }
 
+/**
+ * Rank a photo by how its focus box fits the card's photo frame (photo focus
+ * areas), as `focusFit` does: 0 fits (or has no box: a centred crop, as
+ * before), 1 a tight fit, 2 no fit. (A shape switched off for the photo is
+ * left out altogether, by {@link shapeAllowed}.) `area` is a tagged player's
+ * area, which wins over the photo's box. Only reorders: a photo that doesn't
+ * fit is still picked when nothing else is there. Null when the frame's shape
+ * isn't known.
+ */
+function fitRank(frameAspect: number | null | undefined, area?: SQL): SQL | null {
+  if (!frameAspect || !(frameAspect > 0)) return null;
+  const box = area
+    ? sql`COALESCE(${area}, ${clubPhotosTable.focusBox})`
+    : sql`${clubPhotosTable.focusBox}`;
+  const aspect = sql.raw(String(frameAspect));
+  const photo = sql`(${clubPhotosTable.width}::float8 / NULLIF(${clubPhotosTable.height}, 0))`;
+  // The share of the photo a covering frame shows across and down.
+  const vx = sql`(CASE WHEN ${photo} > ${aspect} THEN ${aspect} / ${photo} ELSE 1 END)`;
+  const vy = sql`(CASE WHEN ${photo} > ${aspect} THEN 1 ELSE ${photo} / ${aspect} END)`;
+  const kept = sql`LEAST(1, ${vx} / NULLIF((${box}->>'w')::float8, 0), ${vy} / NULLIF((${box}->>'h')::float8, 0))`;
+  return sql`CASE WHEN ${box} IS NULL THEN 0 WHEN ${kept} >= 0.999 THEN 0 WHEN ${kept} >= ${sql.raw(String(FOCUS_TIGHT_KEEP))} THEN 1 ELSE 2 END`;
+}
+
+/**
+ * Leaves out photos the admin switched off for the card frame's shape (photo
+ * focus areas): automatic posts never put a photo in a shape that's off.
+ * Undefined (no condition) when the frame's shape isn't known.
+ */
+function shapeAllowed(frameAspect: number | null | undefined): SQL | undefined {
+  if (!frameAspect || !(frameAspect > 0)) return undefined;
+  return sql`NOT (${frameShapeOf(frameAspect)} = ANY(${clubPhotosTable.offShapes}))`;
+}
+
 /** The type preference, then the format preference (when any), then newest first. */
-const preferredThenNewest = (types: readonly PhotoType[], format?: MatchFormat | null) => [
-  ...[typeRank(types), formatRank(format)].filter((r): r is SQL => r !== null),
+const preferredThenNewest = (
+  types: readonly PhotoType[],
+  format?: MatchFormat | null,
+  fit?: SQL | null,
+) => [
+  ...[fit ?? null, typeRank(types), formatRank(format)].filter((r): r is SQL => r !== null),
   ...newestFirst(),
 ];
 
@@ -316,6 +356,7 @@ export async function playerPhoto(
   playerId: number,
   types: readonly PhotoType[],
   format: MatchFormat | null = null,
+  frameAspect: number | null = null,
 ): Promise<{ url: string; from: "library" | "headshot" } | null> {
   const [tagged] = await db
     .select({ objectPath: clubPhotosTable.objectPath })
@@ -326,9 +367,16 @@ export async function playerPhoto(
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.playerId, playerId),
+        shapeAllowed(frameAspect),
       ),
     )
-    .orderBy(...preferredThenNewest(types, format))
+    .orderBy(
+      ...preferredThenNewest(
+        types,
+        format,
+        fitRank(frameAspect, sql`${clubPhotoPlayersTable.area}`),
+      ),
+    )
     .limit(1);
   if (tagged) return { url: objectUrl(tagged.objectPath), from: "library" };
 
@@ -425,19 +473,31 @@ async function randomGradePhoto(
   ruleType: PhotoType | null,
   types: readonly PhotoType[],
   format: MatchFormat | null,
+  frameAspect: number | null = null,
 ): Promise<string | null> {
+  const fit = fitRank(frameAspect);
   const rows = await db
     .select({
       id: clubPhotosTable.id,
       objectPath: clubPhotosTable.objectPath,
       photoTypes: clubPhotosTable.photoTypes,
       matchFormat: clubPhotosTable.matchFormat,
+      fit: fit ?? sql<number>`0`,
     })
     .from(clubPhotosTable)
-    .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, grade)))
+    .where(
+      and(
+        eq(clubPhotosTable.tenantId, tenantId),
+        eq(clubPhotosTable.grade, grade),
+        shapeAllowed(frameAspect),
+      ),
+    )
     .orderBy(...newestFirst());
   if (rows.length === 0) return null;
-  const ruled = ruleType ? preferredPool(rows, [ruleType]) : rows;
+  // The photos that fit the card's frame best, then the rule's own narrowing.
+  const bestFit = Math.min(...rows.map((r) => Number(r.fit)));
+  const fitting = rows.filter((r) => Number(r.fit) === bestFit);
+  const ruled = ruleType ? preferredPool(fitting, [ruleType]) : fitting;
   return objectUrl(seededPick(formatPool(preferredPool(ruled, types), format), seed).objectPath);
 }
 
@@ -476,7 +536,17 @@ export type PhotoPickOptions = {
   matchFormat?: MatchFormat | null;
   /** The players a `side` / `game` policy kind may show (see {@link PHOTO_POLICY}). */
   candidatePlayerIds?: CandidatePlayers;
+  /**
+   * The shape (width / height) of the frame the card draws its photo in, or a
+   * lazy lookup (photo focus areas). Photos whose focus box fits it come
+   * first; null or omitted = shape doesn't matter.
+   */
+  frameAspect?: number | null | (() => Promise<number | null>);
 };
+
+/** The frame shape a pick ranks by, once resolved at the top of {@link pickDraftPhoto}. */
+const aspectOf = (opts: PhotoPickOptions): number | null =>
+  typeof opts.frameAspect === "number" ? opts.frameAspect : null;
 
 /**
  * Candidate players for a photo, in order (a match result's are ranked best
@@ -607,7 +677,7 @@ async function pickByRuleKind(
           ? opts.featuredPlayerId
           : opts.playerId;
     if (featured != null && featured > 0 && !isFillInPlayerId(featured)) {
-      const photo = await playerPhoto(tenantId, featured, types, format);
+      const photo = await playerPhoto(tenantId, featured, types, format, aspectOf(opts));
       if (photo)
         return {
           url: photo.url,
@@ -625,6 +695,7 @@ async function pickByRuleKind(
     ruleType,
     types,
     format,
+    aspectOf(opts),
   );
   return url ? { url, source: "auto:rule-random" } : null;
 }
@@ -643,6 +714,10 @@ export async function pickDraftPhoto(
   opts: PhotoPickOptions,
 ): Promise<PhotoPick | null> {
   if (opts.junior) return null;
+  // Resolved once, so every step below ranks by the same frame.
+  if (typeof opts.frameAspect === "function") {
+    opts = { ...opts, frameAspect: await opts.frameAspect().catch(() => null) };
+  }
   const ruled = await pickByRule(tenantId, opts);
   if (ruled) return ruled;
 
@@ -658,13 +733,14 @@ export async function pickDraftPhoto(
       seed: opts.seed ?? null,
       types: opts.photoTypes ?? [],
       format: opts.matchFormat ?? null,
+      frameAspect: aspectOf(opts),
     });
   }
 
   const types = opts.photoTypes ?? [];
   const format = opts.matchFormat ?? null;
   if (opts.playerId != null) {
-    const photo = await playerPhoto(tenantId, opts.playerId, types, format);
+    const photo = await playerPhoto(tenantId, opts.playerId, types, format, aspectOf(opts));
     if (photo)
       return photo.from === "library"
         ? { url: photo.url, source: "auto:library-player", playerId: opts.playerId }
@@ -676,11 +752,19 @@ export async function pickDraftPhoto(
     // team shot (no individual player tags) over a player's action photo; then
     // the newest.
     const playerTagged = sql`EXISTS (SELECT 1 FROM ${clubPhotoPlayersTable} WHERE ${clubPhotoPlayersTable.photoId} = ${clubPhotosTable.id} AND ${clubPhotoPlayersTable.tenantId} = ${tenantId})`;
-    const ranks = [typeRank(types), formatRank(format)].filter((r): r is SQL => r !== null);
+    const ranks = [fitRank(aspectOf(opts)), typeRank(types), formatRank(format)].filter(
+      (r): r is SQL => r !== null,
+    );
     const [gradePhoto] = await db
       .select({ objectPath: clubPhotosTable.objectPath })
       .from(clubPhotosTable)
-      .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, opts.grade)))
+      .where(
+        and(
+          eq(clubPhotosTable.tenantId, tenantId),
+          eq(clubPhotosTable.grade, opts.grade),
+          shapeAllowed(aspectOf(opts)),
+        ),
+      )
       .orderBy(...ranks, playerTagged, ...newestFirst())
       .limit(1);
     if (gradePhoto) return { url: objectUrl(gradePhoto.objectPath), source: "auto:library-grade" };
@@ -701,9 +785,12 @@ async function gradeTeamPhoto(tenantId: number, opts: PhotoPickOptions): Promise
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotosTable.grade, opts.grade),
         sql`${clubPhotosTable.photoTypes} && ARRAY['team','celebrating']::text[]`,
+        shapeAllowed(aspectOf(opts)),
       ),
     )
-    .orderBy(...preferredThenNewest(TEAM_PHOTO_TYPES, opts.matchFormat ?? null))
+    .orderBy(
+      ...preferredThenNewest(TEAM_PHOTO_TYPES, opts.matchFormat ?? null, fitRank(aspectOf(opts))),
+    )
     .limit(1);
   return photo ? { url: objectUrl(photo.objectPath), source: "auto:library-grade" } : null;
 }
@@ -805,6 +892,8 @@ export async function pickCandidatePhoto(
     seed: string | null;
     types: readonly PhotoType[];
     format: MatchFormat | null;
+    /** The card's photo frame shape; photos that fit it come first. */
+    frameAspect?: number | null;
   },
 ): Promise<PhotoPick | null> {
   const ids = [
@@ -827,9 +916,16 @@ export async function pickCandidatePhoto(
         eq(clubPhotosTable.tenantId, tenantId),
         eq(clubPhotoPlayersTable.tenantId, tenantId),
         inArray(clubPhotoPlayersTable.playerId, ids),
+        shapeAllowed(opts.frameAspect),
       ),
     )
-    .orderBy(...preferredThenNewest(opts.types, opts.format));
+    .orderBy(
+      ...preferredThenNewest(
+        opts.types,
+        opts.format,
+        fitRank(opts.frameAspect, sql`${clubPhotoPlayersTable.area}`),
+      ),
+    );
   const library = await chooseCandidatePhoto(
     tenantId,
     ids,
@@ -909,6 +1005,9 @@ async function draftPickOptions(tenantId: number, d: SocialDraftRow): Promise<Ph
             return matchDraftFeaturedPlayer(tenantId, d);
           }
         : playerId,
+    // The draft's own design when it is templated, else the club's template.
+    frameAspect: () =>
+      draftFrameAspect(tenantId, kind, d.templateVersion !== null ? d.adjustments : undefined),
   };
 }
 
@@ -1082,6 +1181,7 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
           candidatePlayerIds: input.candidatePlayerIds,
           photoTypes: preferredPhotoTypes(input.cardInput),
           matchFormat: preferredMatchFormat(input.cardInput),
+          frameAspect: () => draftFrameAspect(input.tenantId, kind),
         }),
   ]);
   return { packId, caption, ...(await photoColumns(input.tenantId, photo)) };
