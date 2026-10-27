@@ -51,11 +51,12 @@ const api = (
   method: "get" | "post" | "patch" | "delete",
   path: string,
   as: "own" | "other" = "own",
-) =>
-  request(app)
-    [method](`/api${path}`)
+) => {
+  const agent = request(app);
+  return agent[method](`/api${path}`)
     .set("Cookie", as === "own" ? cookie : otherCookie)
     .set("x-tenant-id", String(as === "own" ? tenantId : otherTenantId));
+};
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-club-uploads";

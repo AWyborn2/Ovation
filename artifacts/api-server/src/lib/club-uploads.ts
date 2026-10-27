@@ -34,7 +34,10 @@ export type IngestedUpload =
 
 /** Whether the bytes look like SVG markup (after any BOM, XML prolog or comments). */
 export function looksLikeSvg(data: Buffer): boolean {
-  const head = data.subarray(0, 4096).toString("utf8").replace(/^﻿/, "");
+  const head = data
+    .subarray(0, 4096)
+    .toString("utf8")
+    .replace(/^\uFEFF/, "");
   return /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*|<!DOCTYPE[^>]*>\s*)*<svg[\s>]/i.test(head);
 }
 
@@ -64,7 +67,7 @@ const STYLE_PROPS = new Set([
  */
 export function cleanUploadedSvg(markup: string): ReturnType<typeof sanitiseSvg> {
   let s = markup
-    .replace(/^﻿/, "")
+    .replace(/^\uFEFF/, "")
     .replace(/<\?xml[^>]*>/gi, "")
     .replace(/<!DOCTYPE[^>]*>/gi, "")
     .replace(/<!--[\s\S]*?-->/g, "")
