@@ -345,7 +345,9 @@ describe("photo focus areas", () => {
     const res = await put({
       focusBox: { x: 0.1, y: 0.1, w: 0.6, h: 0.6 },
       offShapes: ["wide"],
-      participantAreas: [{ participantId: AVA.toUpperCase(), box: { x: 0.5, y: 0.2, w: 0.2, h: 0.5 } }],
+      participantAreas: [
+        { participantId: AVA.toUpperCase(), box: { x: 0.5, y: 0.2, w: 0.2, h: 0.5 } },
+      ],
     });
     expect(res.status).toBe(200);
     expect(res.body.focusBox).toEqual({ x: 0.1, y: 0.1, w: 0.6, h: 0.6 });
