@@ -38,6 +38,18 @@ function setup(sponsors: Sponsor[]) {
           headers: { "content-type": "application/json" },
         });
       }
+      // The player search (player sponsors).
+      if (String(input).includes("/api/players?")) {
+        return new Response(
+          JSON.stringify({
+            players: [{ id: 55, givenName: "Kim", surname: "Lee" }],
+            total: 1,
+            page: 1,
+            limit: 8,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
       return base(input, init);
     }),
   );
@@ -64,5 +76,37 @@ describe("SponsorsCard tier (ADR-010 P6)", () => {
     expect(writes[0].method).toBe("PATCH");
     expect(writes[0].url).toContain("/sponsors/7");
     expect(writes[0].body).toEqual({ tier: "major" });
+  });
+});
+
+describe("SponsorsCard player sponsors", () => {
+  it("shows the players a sponsor backs", async () => {
+    setup([sponsor({ players: [{ id: 42, name: "Sam Keeper" }] })]);
+    expect(await screen.findByText("Sam Keeper")).toBeInTheDocument();
+  });
+
+  it("removing a player saves the rest", async () => {
+    const writes = setup([
+      sponsor({
+        players: [
+          { id: 42, name: "Sam Keeper" },
+          { id: 43, name: "Alex Bowler" },
+        ],
+      }),
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Sam Keeper" }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].url).toContain("/sponsors/7");
+    expect(writes[0].body).toEqual({ playerIds: [43] });
+  });
+
+  it("adding a player from the search saves them", async () => {
+    const writes = setup([sponsor({ players: [{ id: 42, name: "Sam Keeper" }] })]);
+    fireEvent.change(await screen.findByLabelText("Player sponsor for"), {
+      target: { value: "Ki" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "+ Kim Lee" }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toEqual({ playerIds: [42, 55] });
   });
 });
