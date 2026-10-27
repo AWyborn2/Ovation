@@ -37,6 +37,7 @@ import socialDraftsRouter from "./social-drafts";
 import socialCalendarRouter from "./social-calendar";
 import libraryElementsRouter from "./library-elements";
 import templateLibraryRouter from "./template-library";
+import figmaConnectionRouter from "./figma-connection";
 import templateDesignerRouter from "./template-designer";
 import socialConnectionsRouter from "./social-connections";
 import socialPublicationsRouter from "./social-publications";
@@ -115,6 +116,8 @@ router.use(socialCalendarRouter);
 router.use(clubPhotoCollectionsRouter);
 // Before the template library: its `/template-library/:id` would take `/elements`.
 router.use(libraryElementsRouter);
+// Before the template library: `/club-templates/import/figma` is a club Figma import.
+router.use(figmaConnectionRouter);
 router.use(templateLibraryRouter);
 router.use(templateDesignerRouter);
 router.use(socialConnectionsRouter);

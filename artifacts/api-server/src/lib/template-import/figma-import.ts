@@ -118,6 +118,11 @@ export function setFigmaImportDeps(next: FigmaImportDeps | null): void {
   testDeps = next;
 }
 
+/** The test seam's downloads and fonts, for the club import (which brings its own client). */
+export function figmaImportTestDeps(): FigmaImportDeps | null {
+  return testDeps;
+}
+
 /** A Figma link mapped to a template document, before anything is saved. */
 export type FigmaMapped = Omit<FigmaImportOutcome, "template"> & { document: unknown };
 
