@@ -29,6 +29,7 @@ import {
 } from "@/components/social-queue/library-upload";
 import { pickDrivePhotos } from "@/components/social-queue/google-drive-picker";
 import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
+import { PhotoFocusDialog } from "@/components/photo-library/photo-focus-dialog";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS, isJuniorGradeLabel } from "@workspace/scorecard";
 import {
@@ -130,6 +131,9 @@ export default function AdminPhotoLibrary() {
   const counts = useMemo(() => folderCounts(photos), [photos]);
 
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
+  // Photo focus areas: only photos with no focus box yet.
+  const [needsFocus, setNeedsFocus] = useState(false);
+  const [focusing, setFocusing] = useState<ClubPhoto | null>(null);
   const inFolder = useMemo(
     () =>
       folder.grade && folder.type
@@ -139,8 +143,11 @@ export default function AdminPhotoLibrary() {
   );
   const shown = useMemo(
     () =>
-      formatFilter === "all" ? inFolder : inFolder.filter((p) => p.matchFormat === formatFilter),
-    [inFolder, formatFilter],
+      (formatFilter === "all"
+        ? inFolder
+        : inFolder.filter((p) => p.matchFormat === formatFilter)
+      ).filter((p) => !needsFocus || !p.focusBox),
+    [inFolder, formatFilter, needsFocus],
   );
 
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -168,6 +175,7 @@ export default function AdminPhotoLibrary() {
     setSelected(new Set());
     setMoving(null);
     setFormatFilter("all");
+    setNeedsFocus(false);
   }, [folder.grade, folder.type]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
@@ -691,10 +699,24 @@ export default function AdminPhotoLibrary() {
                   {f === "all" ? "All formats" : MATCH_FORMAT_LABELS[f]}
                 </Button>
               ))}
+              <Button
+                type="button"
+                size="sm"
+                variant={needsFocus ? "default" : "outline"}
+                aria-pressed={needsFocus}
+                onClick={() => setNeedsFocus((v) => !v)}
+              >
+                Needs focus
+              </Button>
             </div>
           )}
           {shown.length === 0 ? (
-            inFolder.length > 0 ? (
+            needsFocus && inFolder.length > 0 ? (
+              <EmptyState
+                title="Every photo here has a focus"
+                message="Cards crop these photos to the part you marked."
+              />
+            ) : inFolder.length > 0 ? (
               <EmptyState
                 title="No photos of this format"
                 message="Tag photos with a match format from the selection panel."
@@ -747,17 +769,32 @@ export default function AdminPhotoLibrary() {
                             {MATCH_FORMAT_LABELS[p.matchFormat]}
                           </span>
                         )}
+                        {p.focusBox && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                            Focus set
+                          </span>
+                        )}
                       </span>
                     </button>
                     {!isJuniorGradeLabel(p.grade) && (
-                      <button
-                        type="button"
-                        aria-label={`Use photo ${p.id} for cards`}
-                        onClick={() => setUseFor({ photoId: p.id, nonce: Date.now() })}
-                        className="px-2 text-xs font-medium text-primary-text hover:underline"
-                      >
-                        Use for…
-                      </button>
+                      <span className="flex gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Use photo ${p.id} for cards`}
+                          onClick={() => setUseFor({ photoId: p.id, nonce: Date.now() })}
+                          className="px-2 text-xs font-medium text-primary-text hover:underline"
+                        >
+                          Use for…
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Set the focus of photo ${p.id}`}
+                          onClick={() => setFocusing(p)}
+                          className="px-2 text-xs font-medium text-primary-text hover:underline"
+                        >
+                          Focus…
+                        </button>
+                      </span>
                     )}
                   </li>
                 );
@@ -775,6 +812,12 @@ export default function AdminPhotoLibrary() {
       )}
 
       <CardPhotoRules photos={photos} useFor={useFor} />
+      <PhotoFocusDialog
+        photo={focusing}
+        open={focusing !== null}
+        onOpenChange={(o) => !o && setFocusing(null)}
+        onSaved={() => refresh()}
+      />
     </div>
   );
 }
