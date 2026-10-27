@@ -22,7 +22,7 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
 import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
-import { pickCandidatePhoto } from "../lib/draft-enrich";
+import { pickCandidatePhoto, pickDraftPhoto } from "../lib/draft-enrich";
 
 const STAMP = Date.now();
 const objects = new Map<string, Buffer>();
@@ -474,7 +474,7 @@ describe("focus areas", () => {
 });
 
 describe("shape-aware picking", () => {
-  it("passes over a photo switched off for the card's frame shape", async () => {
+  it("never puts a photo in a frame shape switched off for it", async () => {
     const path = await upload("no-tall.jpg", await jpeg(300, 200));
     const ingest = await api("post", "/club-photos/ingest").send({
       objectPaths: [path],
@@ -497,5 +497,15 @@ describe("shape-aware picking", () => {
     const tall = await pick(4 / 5);
     expect(tall?.url).toBeTruthy();
     expect(tall?.url).not.toBe(photo.url);
+    // Even as a grade's only photo: no photo beats a shape switched off.
+    const grade = `Shape ${STAMP}`;
+    const only = await upload("only.jpg", await jpeg(300, 200));
+    const solo = await api("post", "/club-photos/ingest").send({ objectPaths: [only], grade });
+    const soloPhoto = solo.body.results[0].photo as { id: number; url: string };
+    await api("put", `/club-photos/${soloPhoto.id}/focus`).send({ offShapes: ["tall"] });
+    const gradePick = (frameAspect: number) =>
+      pickDraftPhoto(tenantId, { playerId: null, grade, junior: false, frameAspect });
+    expect(await gradePick(4 / 5)).toBeNull();
+    expect((await gradePick(16 / 9))?.url).toBe(soloPhoto.url);
   });
 });
