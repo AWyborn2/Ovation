@@ -5,7 +5,9 @@ import type { ClubUpload } from "@workspace/api-client-react";
 
 const rename = vi.fn();
 const remove = vi.fn();
-const ingest = vi.fn(async () => ({ results: [{ objectPath: "/objects/uploads/a", ok: true }] }));
+const ingest = vi.fn(async (_body: unknown) => ({
+  results: [{ objectPath: "/objects/uploads/a", ok: true }],
+}));
 const listParams: unknown[] = [];
 const UPLOADS: ClubUpload[] = [
   {
