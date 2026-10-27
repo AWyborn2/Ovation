@@ -21,6 +21,7 @@ import {
 } from "@/components/admin-social";
 import { AutoPostCard } from "@/components/social-queue/auto-post-card";
 import { MetaConnectionCard } from "@/components/social-queue/meta-connection-card";
+import { FigmaConnectionCard } from "@/components/template-library/figma-connection-card";
 import { RoundSchedulesCard } from "@/components/social-queue/round-schedules-card";
 
 /**
@@ -72,6 +73,7 @@ export default function AdminSocial() {
         <>
           <RoundSchedulesCard settings={bundle.data.settings} />
           <MetaConnectionCard />
+          <FigmaConnectionCard />
           <AutoPostCard settings={bundle.data.settings} />
           <SettingsCard settings={bundle.data.settings} onSaved={invalidate} />
           <ThemesCard themes={themesQ.data ?? []} onChanged={invalidateThemes} />

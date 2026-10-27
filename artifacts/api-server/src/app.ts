@@ -9,6 +9,7 @@ import { requireAdmin } from "./middlewares/require-admin";
 import internalDraftSweepRouter from "./routes/internal-draft-sweep";
 import internalPlayhqIngestRouter from "./routes/internal-playhq-ingest";
 import metaCallbacksRouter from "./routes/meta-callbacks";
+import figmaCallbacksRouter from "./routes/figma-callbacks";
 import internalPublishSweepRouter from "./routes/internal-publish-sweep";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
@@ -129,6 +130,8 @@ app.use("/api/internal", internalPublishSweepRouter);
 // Meta's OAuth callback and app callbacks live on the one platform host Meta
 // knows; the tenant comes from a signed state or signed request, never the host.
 app.use("/api/meta", metaCallbacksRouter);
+// Figma's sign-in callback: one registered address; the club comes from the signed state.
+app.use("/api/figma", figmaCallbacksRouter);
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).
