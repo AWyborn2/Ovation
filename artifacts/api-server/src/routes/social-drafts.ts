@@ -69,7 +69,8 @@ import {
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
-import { isAutoPhoto, resolveDraftPack } from "../lib/draft-enrich";
+import { draftSubjectPlayerId, isAutoPhoto, resolveDraftPack } from "../lib/draft-enrich";
+import { nonSeniorPlayerIds } from "../lib/club-photo-library";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
@@ -491,6 +492,25 @@ router.post(
       return;
     }
     const tenantId = getTenantId(req);
+    // The player a hand-made player card is about (player sponsors): a senior
+    // player of this club, on a senior player-centred card only.
+    let subjectPlayerId: number | null = null;
+    if (parsed.data.subjectPlayerId != null) {
+      subjectPlayerId = draftSubjectPlayerId(
+        cardInput.kind,
+        parsed.data.subjectPlayerId,
+        cardInput.junior === true,
+      );
+      if (
+        subjectPlayerId === null ||
+        (await nonSeniorPlayerIds(tenantId, [subjectPlayerId])).length > 0
+      ) {
+        res.status(400).json({
+          error: "A card's player must be one of the club's senior players, on a player card.",
+        });
+        return;
+      }
+    }
     // A hidden legacy pack (P9) from a stale page is saved as Club Kit.
     let packId = resolveActivePackId(parsed.data.packId ?? null);
     if ("weekendCarousel" in cardInput) {
@@ -644,6 +664,7 @@ router.post(
         autoReadyAt: null,
         editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
+        subjectPlayerId,
         ...(templated ?? {}),
       })
       .onConflictDoNothing()
