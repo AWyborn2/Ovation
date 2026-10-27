@@ -1,0 +1,988 @@
+{
+  "name": "Sponsor thank-you",
+  "version": 1,
+  "listed": true,
+  "document": {
+    "formatVersion": 2,
+    "palettes": ["club-kit"],
+    "pages": {
+      "card": {
+        "layers": [
+          {
+            "id": "stage",
+            "kind": "shape",
+            "name": "Stage",
+            "style": {
+              "fill": "var(--ck-stage,#16206B)"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:10bcedb0d9vs2c"
+          },
+          {
+            "id": "photo",
+            "kind": "photo",
+            "name": "Player photo",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "opacity": 0.35
+            },
+            "showWhen": {
+              "junior": false
+            },
+            "sig": "photo:0umevd111zd14m"
+          },
+          {
+            "id": "ground",
+            "kind": "image",
+            "name": "Ground photo",
+            "content": "{{groundPhoto}}",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "opacity": 0.14
+            },
+            "showWhen": {
+              "photo": false
+            },
+            "sig": "image:1hkdosp0tb8h0q"
+          },
+          {
+            "id": "tint",
+            "kind": "shape",
+            "name": "Tint",
+            "style": {
+              "fill": {
+                "type": "linear",
+                "angle": 180,
+                "stops": [
+                  {
+                    "color": "var(--ck-stage-55,#16206B8C)",
+                    "at": 0
+                  },
+                  {
+                    "color": "var(--ck-stage,#16206B)",
+                    "at": 85
+                  }
+                ]
+              }
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "sig": "shape:1fxtpvx1lvzt0a"
+          },
+          {
+            "id": "crest",
+            "kind": "image",
+            "name": "Crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 4.63,
+                "w": 8.33,
+                "h": 8.33
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 4.15,
+                "w": 8.89,
+                "h": 7.11
+              },
+              "story": {
+                "x": 5.56,
+                "y": 4.69,
+                "w": 10.19,
+                "h": 5.73
+              },
+              "landscape": {
+                "x": 3.33,
+                "y": 5.08,
+                "w": 5.33,
+                "h": 10.16
+              }
+            },
+            "sig": "image:194ijcq0drv4o1"
+          },
+          {
+            "id": "club",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "align": "left",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "letterSpacing": 0.02,
+              "fontSize": 3.4
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 15.74,
+                "y": 5.37,
+                "w": 51.85,
+                "h": 4.07
+              },
+              "portrait": {
+                "x": 16.3,
+                "y": 4.89,
+                "w": 50,
+                "h": 3.41
+              },
+              "story": {
+                "x": 17.59,
+                "y": 5.42,
+                "w": 48.15,
+                "h": 2.71
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0cxnuj20t8exsn"
+          },
+          {
+            "id": "club-wide",
+            "kind": "text",
+            "name": "Club name",
+            "content": "{{clubName}}",
+            "style": {
+              "align": "left",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "letterSpacing": 0.02,
+              "fontSize": 2.6
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.83,
+                "y": 6.03,
+                "w": 43.33,
+                "h": 5.71
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0ujgvcp07wnk1s"
+          },
+          {
+            "id": "tagline",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "align": "left",
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontWeight": 500,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "opacity": 0.72,
+              "letterSpacing": 0.08,
+              "fontSize": 1.9
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 15.74,
+                "y": 9.63,
+                "w": 51.85,
+                "h": 2.59
+              },
+              "portrait": {
+                "x": 16.3,
+                "y": 8.44,
+                "w": 50,
+                "h": 2.22
+              },
+              "story": {
+                "x": 17.59,
+                "y": 8.23,
+                "w": 48.15,
+                "h": 1.77
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:1h1onk31ox9mgk"
+          },
+          {
+            "id": "tagline-wide",
+            "kind": "text",
+            "name": "Club tagline",
+            "content": "{{clubTagline}}",
+            "style": {
+              "align": "left",
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontWeight": 500,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "opacity": 0.72,
+              "letterSpacing": 0.08,
+              "fontSize": 1.6
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 9.83,
+                "y": 12.06,
+                "w": 43.33,
+                "h": 3.49
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0pyz7ke0z8ebj1"
+          },
+          {
+            "id": "chip",
+            "kind": "shape",
+            "name": "Card label",
+            "style": {
+              "fill": "var(--ck-p,#F5B400)",
+              "radius": 0.6
+            },
+            "geometry": {
+              "square": {
+                "x": 73.15,
+                "y": 5.74,
+                "w": 21.3,
+                "h": 4.26
+              },
+              "portrait": {
+                "x": 72.22,
+                "y": 5.19,
+                "w": 22.22,
+                "h": 3.7
+              },
+              "story": {
+                "x": 70.37,
+                "y": 5.73,
+                "w": 24.07,
+                "h": 2.92
+              },
+              "landscape": {
+                "x": 80,
+                "y": 6.35,
+                "w": 16.67,
+                "h": 6.35
+              }
+            },
+            "sig": "shape:0u62n350izxp5o"
+          },
+          {
+            "id": "chip-text",
+            "kind": "text",
+            "name": "Card label",
+            "content": "THANK YOU",
+            "style": {
+              "align": "center",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-onp,#10151B)",
+              "letterSpacing": 0.1,
+              "lineHeight": 2.4,
+              "fontSize": 1.8
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 73.15,
+                "y": 5.74,
+                "w": 21.3,
+                "h": 4.26
+              },
+              "portrait": {
+                "x": 72.22,
+                "y": 5.19,
+                "w": 22.22,
+                "h": 3.7
+              },
+              "story": {
+                "x": 70.37,
+                "y": 5.73,
+                "w": 24.07,
+                "h": 2.92
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0zi1q7c0b0w5y3"
+          },
+          {
+            "id": "chip-text-wide",
+            "kind": "text",
+            "name": "Card label",
+            "content": "THANK YOU",
+            "style": {
+              "align": "left",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-onp,#10151B)",
+              "letterSpacing": 0.1,
+              "lineHeight": 2.4,
+              "fontSize": 1.5
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 80,
+                "y": 6.35,
+                "w": 16.67,
+                "h": 6.35
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:1oggri50ckxlbe"
+          },
+          {
+            "id": "eyebrow",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{seasonLabel}} SEASON",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-p,#F5B400)",
+              "letterSpacing": 0.14,
+              "align": "center",
+              "fontSize": 2.4
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 18.52,
+                "w": 88.89,
+                "h": 3.7
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 17.04,
+                "w": 88.89,
+                "h": 3.26
+              },
+              "story": {
+                "x": 5.56,
+                "y": 17.19,
+                "w": 88.89,
+                "h": 2.6
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0q9g9070cf5ily"
+          },
+          {
+            "id": "eyebrow-wide",
+            "kind": "text",
+            "name": "Eyebrow",
+            "content": "{{seasonLabel}} SEASON",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-p,#F5B400)",
+              "letterSpacing": 0.14,
+              "align": "left",
+              "fontSize": 1.8
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.33,
+                "y": 20.63,
+                "w": 53.33,
+                "h": 4.76
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:1lyimrs1x21u2t"
+          },
+          {
+            "id": "thanks",
+            "kind": "text",
+            "name": "Thank you",
+            "content": "THANK YOU",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "align": "center",
+              "stretch": 90,
+              "lineHeight": 0.95,
+              "fontSize": 11
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 22.59,
+                "w": 88.89,
+                "h": 12.04
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 20.74,
+                "w": 88.89,
+                "h": 11.11
+              },
+              "story": {
+                "x": 5.56,
+                "y": 20.21,
+                "w": 88.89,
+                "h": 8.85
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0xc65tm0nlj4mf"
+          },
+          {
+            "id": "thanks-wide",
+            "kind": "text",
+            "name": "Thank you",
+            "content": "THANK YOU",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "align": "left",
+              "stretch": 90,
+              "lineHeight": 0.95,
+              "fontSize": 7
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.33,
+                "y": 26.03,
+                "w": 53.33,
+                "h": 17.46
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:14b8jfx0jxmxau"
+          },
+          {
+            "id": "art-panel",
+            "kind": "shape",
+            "name": "Sponsor panel",
+            "geometry": {
+              "square": {
+                "x": 12.96,
+                "y": 37.04,
+                "w": 74.07,
+                "h": 38.89
+              },
+              "portrait": {
+                "x": 11.11,
+                "y": 34.81,
+                "w": 77.78,
+                "h": 35.56
+              },
+              "story": {
+                "x": 9.26,
+                "y": 33.33,
+                "w": 81.48,
+                "h": 32.29
+              },
+              "landscape": {
+                "x": 61.67,
+                "y": 19.05,
+                "w": 35,
+                "h": 60.32
+              }
+            },
+            "style": {
+              "fill": "#FFFFFF",
+              "radius": 2,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0.8,
+                  "blur": 3,
+                  "spread": 0,
+                  "color": "#00000059"
+                }
+              ]
+            },
+            "sig": "shape:14sjvmu0yme32v"
+          },
+          {
+            "id": "art",
+            "kind": "image",
+            "name": "Sponsor logo",
+            "content": "{{sponsorArt}}",
+            "geometry": {
+              "square": {
+                "x": 18.52,
+                "y": 40.74,
+                "w": 62.96,
+                "h": 31.48
+              },
+              "portrait": {
+                "x": 16.67,
+                "y": 38.52,
+                "w": 66.67,
+                "h": 28.15
+              },
+              "story": {
+                "x": 14.81,
+                "y": 36.46,
+                "w": 70.37,
+                "h": 26.04
+              },
+              "landscape": {
+                "x": 64.17,
+                "y": 23.81,
+                "w": 30,
+                "h": 50.79
+              }
+            },
+            "sig": "image:1c1oyha1erx58p"
+          },
+          {
+            "id": "sponsor-name",
+            "kind": "text",
+            "name": "Sponsor name",
+            "content": "{{sponsorName}}",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "align": "center",
+              "fontSize": 5.4
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 77.78,
+                "w": 88.89,
+                "h": 6.48
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 72.59,
+                "w": 88.89,
+                "h": 5.93
+              },
+              "story": {
+                "x": 5.56,
+                "y": 67.71,
+                "w": 88.89,
+                "h": 5.21
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "sig": "text:1opo1tj0tkk4ze"
+          },
+          {
+            "id": "sponsor-name-wide",
+            "kind": "text",
+            "name": "Sponsor name",
+            "content": "{{sponsorName}}",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 900,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "align": "left",
+              "fontSize": 4
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.33,
+                "y": 47.62,
+                "w": 53.33,
+                "h": 9.52
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "sig": "text:1fz7cau1oqrd3n"
+          },
+          {
+            "id": "season",
+            "kind": "text",
+            "name": "Line",
+            "content": "FOR BACKING OUR PLAYERS",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-p,#F5B400)",
+              "align": "center",
+              "letterSpacing": 0.12,
+              "fontSize": 2.2
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 84.63,
+                "w": 88.89,
+                "h": 3.7
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 78.81,
+                "w": 88.89,
+                "h": 3.26
+              },
+              "story": {
+                "x": 5.56,
+                "y": 73.12,
+                "w": 88.89,
+                "h": 2.6
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:13bg28t11karg6"
+          },
+          {
+            "id": "season-wide",
+            "kind": "text",
+            "name": "Line",
+            "content": "FOR BACKING OUR PLAYERS",
+            "style": {
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 800,
+              "uppercase": true,
+              "color": "var(--ck-p,#F5B400)",
+              "align": "left",
+              "letterSpacing": 0.12,
+              "fontSize": 1.7
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.33,
+                "y": 57.78,
+                "w": 53.33,
+                "h": 4.76
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0bazfaj0ck0k90"
+          },
+          {
+            "id": "about",
+            "kind": "text",
+            "name": "About them",
+            "content": "{{tagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontWeight": 500,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "opacity": 0.85,
+              "align": "center",
+              "fontSize": 2.4
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 5.56,
+                "y": 88.89,
+                "w": 88.89,
+                "h": 4.63
+              },
+              "portrait": {
+                "x": 5.56,
+                "y": 82.96,
+                "w": 88.89,
+                "h": 8.89
+              },
+              "story": {
+                "x": 5.56,
+                "y": 76.56,
+                "w": 88.89,
+                "h": 10.42
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "sig": "text:0kqks3b0nmswc4"
+          },
+          {
+            "id": "about-wide",
+            "kind": "text",
+            "name": "About them",
+            "content": "{{tagline}}",
+            "style": {
+              "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
+              "fontWeight": 500,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "opacity": 0.85,
+              "align": "left",
+              "fontSize": 1.9
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 3.33,
+                "y": 64.13,
+                "w": 53.33,
+                "h": 14.29
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            },
+            "sig": "text:1rznthl0dptg3m"
+          },
+          {
+            "id": "hashtag",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "align": "right",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "letterSpacing": 0.06,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.1,
+                  "blur": 0.6,
+                  "color": "#00000099"
+                }
+              ],
+              "fontSize": 1.9
+            },
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 51.85,
+                "y": 95.19,
+                "w": 42.59,
+                "h": 2.78
+              },
+              "portrait": {
+                "x": 51.85,
+                "y": 96.74,
+                "w": 42.59,
+                "h": 2.37
+              },
+              "story": {
+                "x": 51.85,
+                "y": 96.67,
+                "w": 42.59,
+                "h": 1.88
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:15cx3n61g4me67"
+          },
+          {
+            "id": "hashtag-wide",
+            "kind": "text",
+            "name": "Hashtag",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "align": "right",
+              "fontFamily": "'Archivo','Barlow Condensed',system-ui,sans-serif",
+              "fontWeight": 700,
+              "uppercase": true,
+              "color": "var(--ck-chalk,#FFFFFF)",
+              "letterSpacing": 0.06,
+              "textShadow": [
+                {
+                  "x": 0,
+                  "y": 0.1,
+                  "blur": 0.6,
+                  "color": "#00000099"
+                }
+              ],
+              "fontSize": 1.6
+            },
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 60,
+                "y": 94.6,
+                "w": 36.67,
+                "h": 3.81
+              }
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "sig": "text:0s8oo8d0ljnc4w"
+          }
+        ]
+      }
+    }
+  }
+}
