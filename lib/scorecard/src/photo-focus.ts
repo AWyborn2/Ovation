@@ -124,8 +124,11 @@ export function focusTransform(focus: PhotoFocus, frameAspect: number): FocusTra
 /** How well a box suits a frame shape: in full, losing a little, or not at all. */
 export type FocusFit = "good" | "tight" | "none";
 
-/** The share of the box a tight fit may lose on its worse axis. */
-const TIGHT_LOSS = 0.2;
+/**
+ * The share of the box a tight fit keeps, at least, on its worse axis. The
+ * photo picker's SQL ranking (`draft-enrich.ts`) uses the same threshold.
+ */
+export const FOCUS_TIGHT_KEEP = 0.8;
 
 /** How well the box suits a frame of `frameAspect` (no margin counted). */
 export function focusFit(focus: PhotoFocus, frameAspect: number): FocusFit {
@@ -135,7 +138,7 @@ export function focusFit(focus: PhotoFocus, frameAspect: number): FocusFit {
   // The share of the box the frame keeps on its tighter axis at zoom 1.
   const kept = Math.min(1, vx / focus.box.w, vy / focus.box.h);
   if (kept >= 0.999) return "good";
-  return kept >= 1 - TIGHT_LOSS ? "tight" : "none";
+  return kept >= FOCUS_TIGHT_KEEP ? "tight" : "none";
 }
 
 /** A box's fit for a shape: the worst over the shape's representative frames. */
