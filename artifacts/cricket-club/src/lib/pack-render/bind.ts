@@ -5,6 +5,7 @@
 
 import { maxSponsorLogos } from "../share-card/sponsor-limit";
 import type {
+  CardMatch,
   ShareCardInput,
   MatchSummaryInnings,
   TeamListPlayer,
@@ -23,6 +24,7 @@ import {
 } from "@workspace/scorecard/card-names";
 import { summaryResultWord } from "@workspace/scorecard/card-content";
 import {
+  MATCH_CONTEXT_KINDS,
   economyText,
   performanceEntries,
   strikeRateText,
@@ -76,6 +78,11 @@ export function bindInput(
     resolved ? (name ?? "").trim() : resolveCardTeamName(names, name);
   const comp = (label: string | null | undefined) =>
     resolved ? (label ?? "").trim() : resolveCardCompetition(names, label);
+  // A crest the input lacks comes from the club's names map (PlayHQ logos).
+  // Content-built inputs carry their crests final: none means hidden or none.
+  // The club's own crest choice (an image, or the initials badge) wins over the input's.
+  const crest = (name: string, logoUrl?: string | null) =>
+    resolved ? logoUrl || null : resolveCardCrest(names, name, logoUrl);
 
   switch (input.kind) {
     case "matchSummary": {
@@ -85,11 +92,6 @@ export function bindInput(
       const oppName = team(input.opposition.name);
       set(values, "club.name", clubName);
       set(values, "opposition.name", oppName);
-      // A crest the input lacks comes from the club's names map (PlayHQ logos).
-      // Content-built inputs carry their crests final: none means hidden or none.
-      // The club's own crest choice (an image, or the initials badge) wins over the input's.
-      const crest = (name: string, logoUrl: string | null | undefined) =>
-        resolved ? logoUrl || null : resolveCardCrest(names, name, logoUrl);
       const clubLogo = crest(input.club.name, input.club.logoUrl);
       const oppLogo = crest(input.opposition.name, input.opposition.logoUrl);
       if (clubLogo) images["club.logo"] = clubLogo;
@@ -504,6 +506,8 @@ export function bindInput(
         values: {
           grade: f.grade,
           opponent: team(f.opponent),
+          monogram: teamMonogram(team(f.opponent)),
+          crest: crest(f.opponent) ?? "",
           venue: f.venue,
           startTime: f.startTime,
         },
@@ -553,7 +557,7 @@ export function bindInput(
     case "resultsSummary": {
       set(values, "dateLabel", input.dateLabel);
       set(values, "roundLabel", input.roundLabel);
-      rows["results"] = (input.results ?? []).map((r) => resultRow(r, team, comp));
+      rows["results"] = (input.results ?? []).map((r) => resultRow(r, team, comp, crest));
       break;
     }
     case "teamOfWeek": {
@@ -574,7 +578,64 @@ export function bindInput(
 
   bindShirtNumber(input, values);
   bindSetValues(input, values);
+  bindMatchContext(input, packId, names, { values, images, rows });
+  bindOpponent(input, { values, images }, team, crest);
   return { values, images, rows };
+}
+
+/**
+ * A player card's match (full label set): every value, image and list its
+ * result card would bind (both scores, the result, venue and date, the
+ * logos, the innings lists), under the same keys. The card's own values win.
+ */
+function bindMatchContext(
+  input: ShareCardInput,
+  packId: string | null | undefined,
+  names: CardNames | null | undefined,
+  out: BoundInput,
+): void {
+  if (!MATCH_CONTEXT_KINDS.has(input.kind)) return;
+  const match = (input as { match?: CardMatch | null }).match;
+  if (!match) return;
+  const m = bindInput({ ...match, kind: "matchSummary" } as ShareCardInput, packId, names);
+  for (const [k, v] of Object.entries(m.values)) if (!(k in out.values)) out.values[k] = v;
+  for (const [k, v] of Object.entries(m.images))
+    if (!(k in out.images) && k !== "photo") out.images[k] = v;
+  for (const [k, v] of Object.entries(m.rows)) if (!(k in out.rows)) out.rows[k] = v;
+}
+
+/**
+ * The opposition on any card that names one (a feat's opponent, a team
+ * list's): its name, initials and crest from the club's card names, as the
+ * result card has them. A card that carries its match has them already.
+ */
+function bindOpponent(
+  input: ShareCardInput,
+  out: Pick<BoundInput, "values" | "images">,
+  team: (name: string | null | undefined) => string,
+  crest: (name: string, logoUrl?: string | null) => string | null,
+): void {
+  let raw: string | null | undefined;
+  switch (input.kind) {
+    case "debut":
+    case "century":
+    case "fiveFor":
+    case "teamList":
+      raw = input.opponent;
+      break;
+    case "bigMoment":
+      raw = input.oppositionName;
+      break;
+    default:
+      return;
+  }
+  if (!raw?.trim() || "opposition.name" in out.values) return;
+  const name = team(raw);
+  out.values["opposition.name"] = name;
+  out.values["opposition.monogram"] = teamMonogram(name);
+  const logo = crest(raw);
+  if (logo && !("opposition.logo" in out.images)) out.images["opposition.logo"] = logo;
+  out.values["opposition.logoDisplay"] = out.images["opposition.logo"] ? "flex" : "none";
 }
 
 const RESULT_VERB: Record<GradeResult["outcome"], string> = {
@@ -593,6 +654,7 @@ function resultRow(
   r: GradeResult,
   team: (name: string) => string,
   comp: (label: string) => string,
+  crest: (name: string) => string | null,
 ): PackRow {
   const noResult = r.outcome === "noResult";
   const bat = !noResult && !!(r.bat1Name || r.bat2Name);
@@ -606,6 +668,9 @@ function resultRow(
       verb: RESULT_VERB[r.outcome] ?? "",
       oppName: team(r.oppName ?? ""),
       oppScore: noResult ? "" : (r.oppScore ?? ""),
+      clubCrest: r.clubName ? (crest(r.clubName) ?? "") : "",
+      oppCrest: r.oppName ? (crest(r.oppName) ?? "") : "",
+      oppMonogram: teamMonogram(team(r.oppName ?? "")),
       note: noResult ? (r.note?.trim() || "NO RESULT").toUpperCase() : "",
       batLabel: bat ? "BEST BATTERS" : "",
       bowlLabel: bowl ? "BEST BOWLERS" : "",

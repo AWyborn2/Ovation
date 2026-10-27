@@ -149,6 +149,12 @@ export type ShareCardInput =
       headline?: string;
       photoUrl?: string | null;
       /**
+       * The match this happened in, as its result card holds it (central
+       * drafts): every match label (both scores, the result, venue, logos,
+       * the innings lists) then works on this card too.
+       */
+      match?: CardMatch | null;
+      /**
        * The player's season shirt number (season shirt numbers, U8), stamped
        * server-side on auto drafts; absent = no number, and the card shows no
        * badge (never a placeholder or the cap number).
@@ -214,6 +220,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The match this happened in, as its result card holds it (central
+       * drafts): every match label (both scores, the result, venue, logos,
+       * the innings lists) then works on this card too.
+       */
+      match?: CardMatch | null;
     }
   // `newCap` ("New Cap") used to sit here. Retired in favour of `debut` above —
   // the same moment (a player's first-grade debut IS when they receive their
@@ -229,6 +241,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The match this happened in, as its result card holds it (central
+       * drafts): every match label (both scores, the result, venue, logos,
+       * the innings lists) then works on this card too.
+       */
+      match?: CardMatch | null;
       /**
        * The player's season shirt number (season shirt numbers, U8), stamped
        * server-side on auto drafts; absent = no number, and the card shows no
@@ -248,6 +266,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The match this happened in, as its result card holds it (central
+       * drafts): every match label (both scores, the result, venue, logos,
+       * the innings lists) then works on this card too.
+       */
+      match?: CardMatch | null;
       /**
        * The player's season shirt number (season shirt numbers, U8), stamped
        * server-side on auto drafts; absent = no number, and the card shows no
@@ -393,6 +417,12 @@ export type ShareCardInput =
       oversChaseLine?: string | null;
       equation?: string | null;
       photoUrl?: string | null;
+      /**
+       * The match this happened in, as its result card holds it (central
+       * drafts): every match label (both scores, the result, venue, logos,
+       * the innings lists) then works on this card too.
+       */
+      match?: CardMatch | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
     }
@@ -519,6 +549,12 @@ export type ShareCardInput =
     };
 
 /** One grade's result on a results-summary card. */
+/** A player card's match: its result card input, without the kind. */
+export type CardMatch = Omit<Extract<ShareCardInput, { kind: "matchSummary" }>, "kind"> & {
+  /** Names and crests already resolved by the server's content builder. */
+  namesResolved?: boolean;
+};
+
 export type GradeResult = {
   grade: string;
   clubName: string;
