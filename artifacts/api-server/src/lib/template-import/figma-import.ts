@@ -118,20 +118,22 @@ export function setFigmaImportDeps(next: FigmaImportDeps | null): void {
   testDeps = next;
 }
 
-export async function importFromFigma(
-  req: FigmaImportRequest,
-  adminId: number | null,
-  deps: FigmaImportDeps = testDeps ?? {},
-): Promise<FigmaImportOutcome> {
-  if (!kindFields(req.kind)) {
-    throw new TemplateLibraryError(400, {
-      error: `"${req.kind}" isn't a card kind templates support.`,
-    });
-  }
+/** A Figma link mapped to a template document, before anything is saved. */
+export type FigmaMapped = Omit<FigmaImportOutcome, "template"> & { document: unknown };
+
+/**
+ * Steps 1–3 without the save: fetch the link's frames, copy the renders with
+ * `saveAsset`, and map. The platform import saves a console template; a club
+ * import (`club-figma-import.ts`) saves a private club template.
+ */
+export async function mapFigmaLink(
+  req: { fileUrl: string; kind: string },
+  deps: FigmaImportDeps & { client: FigmaClient; saveAsset: (bytes: Buffer, type: "image/png") => Promise<string> },
+): Promise<FigmaMapped> {
+  assertTemplateKind(req.kind);
   const link = parseFigmaUrl(req.fileUrl);
-  const client = deps.client ?? figmaClientFromEnv();
+  const { client, saveAsset } = deps;
   const download = deps.download ?? fetchRender;
-  const saveAsset = deps.saveAsset ?? saveLibraryAsset;
   const fonts = deps.fonts ?? fontCatalogue();
 
   const loaded = await loadFigmaFrames(client, link);
@@ -205,32 +207,57 @@ export async function importFromFigma(
   }
 
   const second = figmaToTemplate({ ...input, assets: { vectors, images } });
-  const report = [...extra, ...second.report];
-  const name = (req.name?.trim() || `Figma: ${loaded.fileName || "import"}`).slice(
-    0,
-    MAX_LIBRARY_NAME,
-  );
+  return {
+    document: second.document,
+    fileName: loaded.fileName,
+    frames: second.frames,
+    report: [...extra, ...second.report],
+    fonts: second.fonts,
+    rendered: { vectors: Object.keys(vectors).length, images: Object.keys(images).length },
+  };
+}
+
+/** Refuses a kind templates don't support (before any Figma call). */
+export function assertTemplateKind(kind: string): void {
+  if (!kindFields(kind)) {
+    throw new TemplateLibraryError(400, {
+      error: `"${kind}" isn't a card kind templates support.`,
+    });
+  }
+}
+
+/** The template's name: the one given, or "Figma: <file name>". */
+export function importName(given: string | undefined, fileName: string, max: number): string {
+  return (given?.trim() || `Figma: ${fileName || "import"}`).slice(0, max);
+}
+
+export async function importFromFigma(
+  req: FigmaImportRequest,
+  adminId: number | null,
+  deps: FigmaImportDeps = testDeps ?? {},
+): Promise<FigmaImportOutcome> {
+  assertTemplateKind(req.kind);
+  const mapped = await mapFigmaLink(req, {
+    ...deps,
+    client: deps.client ?? figmaClientFromEnv(),
+    saveAsset: deps.saveAsset ?? saveLibraryAsset,
+  });
+  const { document, ...rest } = mapped;
+  const name = importName(req.name, mapped.fileName, MAX_LIBRARY_NAME);
   let template: ConsoleTemplateView;
   try {
     template = await createConsoleTemplate(
-      { kind: req.kind, name, lookId: req.lookId ?? null, document: second.document },
+      { kind: req.kind, name, lookId: req.lookId ?? null, document },
       adminId,
     );
   } catch (err) {
     // A document the format refuses: say why, with the report that explains the mapping.
     if (err instanceof TemplateLibraryError && err.status === 400) {
-      throw new TemplateLibraryError(400, { ...err.body, report });
+      throw new TemplateLibraryError(400, { ...err.body, report: mapped.report });
     }
     throw err;
   }
-  return {
-    template,
-    fileName: loaded.fileName,
-    frames: second.frames,
-    report,
-    fonts: second.fonts,
-    rendered: { vectors: Object.keys(vectors).length, images: Object.keys(images).length },
-  };
+  return { template, ...rest };
 }
 
 /** How a Figma failure answers: its plain message, with a status that says whose it is. */
