@@ -288,7 +288,7 @@ describe("the pick", () => {
         junior: false,
         kind: "century",
       }),
-    ).toEqual({ url: urlOf("opener"), source: "auto:library-player" });
+    ).toEqual({ url: urlOf("opener"), source: "auto:library-player", playerId: playerIds[0] });
 
     await db.insert(cardPhotoRulesTable).values({
       tenantId,
