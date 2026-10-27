@@ -297,10 +297,17 @@ const NEW_KEYS = [
 
 function assertNoLeaks(rows: DraftRow[]) {
   const text = JSON.stringify(rows);
-  for (const name of ["P Hidden", "F Fillin", "J Kid", "C Crossover", "O Other"]) {
+  for (const name of ["P Hidden", "F Fillin", "J Kid", "O Other"]) {
     expect(text).not.toContain(name);
   }
   for (const g of GUIDS) expect(text).not.toContain(g);
+  // The crossover gets no card of his own (his junior runs never count). He
+  // batted in the match, so its scorecard on a card's `match` may name him.
+  const own = rows.map(({ cardInput, ...r }) => {
+    const { match: _match, ...input } = cardInput as Record<string, unknown>;
+    return { ...r, cardInput: input };
+  });
+  expect(JSON.stringify(own)).not.toContain("C Crossover");
 }
 
 describe("scheduled sweep: achievements for a central club", () => {
@@ -327,6 +334,10 @@ describe("scheduled sweep: achievements for a central club", () => {
       status: "awaiting_review",
       cardInput: { kind: "century", playerName: "R Star", runs: 104, notOut: true, round: 1 },
     });
+    // Each card carries its match (card labels): the result card's scores and innings.
+    expect(
+      (byKey.get("feat:century:A Grade:2026:1:51")?.cardInput as { match?: unknown }).match,
+    ).toMatchObject({ innings: expect.any(Array), club: expect.any(Object) });
     expect(byKey.get("milestone:51:runs:0")?.cardInput).toMatchObject({
       kind: "milestone",
       tierLabel: "1000 Runs",
