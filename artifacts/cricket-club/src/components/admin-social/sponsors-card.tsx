@@ -16,9 +16,13 @@ import { Trash2, Upload, Loader2 } from "lucide-react";
 import type { CardKind } from "@/lib/share-card";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { TeamSponsorPicker } from "./team-sponsor-picker";
+import { PlayerSponsorPicker, type PickedPlayer } from "./player-sponsor-picker";
 import { EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { ImageCropDialog, SPONSOR_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
+
+const PLAYER_HINT =
+  "Milestone, feat, debut, player and new signing cards for these players carry this sponsor instead of the club strip. A sponsor with players shows on other cards only for the card types picked above.";
 
 const MAJOR_HINT =
   "Shows larger on the match day sponsors page when “Major sponsors larger” is on.";
@@ -48,6 +52,12 @@ function TierSwitch({
   );
 }
 
+/** The server's reason for a failed save, else a plain message. */
+function saveError(e: unknown): string {
+  const data = (e as { data?: { error?: unknown } } | null)?.data;
+  return typeof data?.error === "string" ? data.error : "That change couldn't be saved.";
+}
+
 /** Sponsor library: add a logo (upload and crop) and manage order / kinds / presenting / tier. */
 export function SponsorsCard({
   sponsors,
@@ -57,9 +67,21 @@ export function SponsorsCard({
   onChanged: () => void;
 }) {
   const confirm = useConfirm();
-  const create = useCreateSponsor({ mutation: { onSuccess: onChanged } });
+  const create = useCreateSponsor({
+    mutation: { onSuccess: onChanged, onError: (e) => setError(saveError(e)) },
+  });
   const remove = useDeleteSponsor({ mutation: { onSuccess: onChanged } });
-  const update = useUpdateSponsor({ mutation: { onSuccess: onChanged } });
+  const [rowError, setRowError] = useState<string | null>(null);
+  const update = useUpdateSponsor({
+    mutation: {
+      onSuccess: () => {
+        setRowError(null);
+        onChanged();
+      },
+      // The server says why (only senior players can be tagged).
+      onError: (e) => setRowError(saveError(e)),
+    },
+  });
 
   const [name, setName] = useState("");
   const [link, setLink] = useState("");
@@ -69,6 +91,7 @@ export function SponsorsCard({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
   const [grades, setGrades] = useState<string[]>([]);
+  const [players, setPlayers] = useState<PickedPlayer[]>([]);
   const [tier, setTier] = useState<SponsorTier>("standard");
   const [error, setError] = useState<string | null>(null);
   const [logoDialogOpen, setLogoDialogOpen] = useState(false);
@@ -103,6 +126,7 @@ export function SponsorsCard({
           activeTo: activeTo || null,
           cardKinds,
           grades,
+          playerIds: players.map((p) => p.id),
           tier,
           displayOrder: sponsors.length,
         },
@@ -117,6 +141,7 @@ export function SponsorsCard({
           setPreviewUrl("");
           setCardKinds([]);
           setGrades([]);
+          setPlayers([]);
           setTier("standard");
         },
       },
@@ -179,6 +204,11 @@ export function SponsorsCard({
                 their own sponsor show the presenting sponsor.
               </p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="sp-players">Player sponsor (optional)</Label>
+              <PlayerSponsorPicker id="sp-players" value={players} onChange={setPlayers} />
+              <p className="text-xs text-muted-foreground">{PLAYER_HINT}</p>
+            </div>
             <TierSwitch id="sp-tier" tier={tier} onChange={setTier} />
           </div>
           <div className="space-y-3">
@@ -225,6 +255,11 @@ export function SponsorsCard({
         </div>
 
         <div className="space-y-2">
+          {rowError && (
+            <div role="alert" className="text-sm text-destructive">
+              {rowError}
+            </div>
+          )}
           {sponsors.length === 0 ? (
             <EmptyState
               title="No sponsors yet"
@@ -285,6 +320,21 @@ export function SponsorsCard({
                     <TeamSponsorPicker
                       value={s.grades}
                       onChange={(next) => update.mutate({ id: s.id, data: { grades: next } })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor={`sp-players-${s.id}`}
+                      className="text-xs font-normal text-muted-foreground"
+                    >
+                      Player sponsor for
+                    </Label>
+                    <PlayerSponsorPicker
+                      id={`sp-players-${s.id}`}
+                      value={s.players}
+                      onChange={(next) =>
+                        update.mutate({ id: s.id, data: { playerIds: next.map((p) => p.id) } })
+                      }
                     />
                   </div>
                   <div className="flex items-center gap-2">
