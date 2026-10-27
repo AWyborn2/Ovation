@@ -37,8 +37,7 @@ import {
   buildPackData,
   draftLayerPhotos,
   cardGrade,
-  kindSponsors,
-  presentingSponsorName,
+  cardSponsorData,
   tenantHashtag,
   withGroundPhoto,
 } from "@/lib/pack-card-data";
@@ -73,8 +72,8 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       ...buildPackData({
         brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, input.kind, true, grade),
-        presentingSponsorName: presentingSponsorName(bundle, true),
+        // The club's strip, a team's own sponsor, or the card's player's sponsors.
+        ...cardSponsorData(bundle, { kind: input.kind, grade }, true, draft.subjectPlayerId),
         packColourModes: bundle?.settings.packColourModes,
         names: bundle?.cardNames,
       }),
@@ -92,6 +91,7 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       brand,
       input.kind,
       grade,
+      draft.subjectPlayerId,
       draft.photoUrl,
       draft.photoFocus,
       draft.photoSource,

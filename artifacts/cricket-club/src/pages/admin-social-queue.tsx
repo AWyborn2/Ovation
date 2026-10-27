@@ -539,6 +539,7 @@ export default function AdminSocialQueue() {
             : null
         }
         playerId={playerIdFromAppPath(preview?.appPath)}
+        sponsorPlayerId={preview?.subjectPlayerId ?? null}
         onApprove={
           preview && draftStatus(preview) === "ready"
             ? async () => {

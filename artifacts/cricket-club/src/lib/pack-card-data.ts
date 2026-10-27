@@ -20,7 +20,7 @@
 import type { CardNames } from "@workspace/scorecard/card-names";
 import type { PackCardData, PackColourMode } from "./pack-render";
 import type { CardKind, PhotoPlacement, PhotoTransform } from "./share-card";
-import { sponsorsForCard } from "./share-card/sponsor-limit";
+import { cardSponsors, sponsorsForCard } from "./share-card/sponsor-limit";
 
 /**
  * Structural brand shape accepted by the builder.
@@ -246,6 +246,31 @@ export function kindSponsors(
     name: sp.name,
     logoUrl: sp.logoUrl,
   }));
+}
+
+/**
+ * A card's sponsor strip and "presented by" name, as the server's post render
+ * works them out (`cardSponsors`): a team list's own sponsor, and on a card
+ * about one player that player's sponsors (player sponsors). Empty strip and
+ * no name when the sponsor strip is off.
+ */
+export function cardSponsorData(
+  bundle: PackSettingsSource | null | undefined,
+  input: { kind: string; grade?: unknown },
+  enabled: boolean,
+  /** The one player the card is about (a draft's `subjectPlayerId`). */
+  playerId?: number | null,
+): { sponsors: Array<{ name: string; logoUrl: string }>; presentingSponsorName: string | null } {
+  if (!enabled || !bundle?.activeSponsors) return { sponsors: [], presentingSponsorName: null };
+  const strip = cardSponsors(bundle.activeSponsors, {
+    kind: input.kind,
+    grade: cardGrade(input),
+    playerId,
+  });
+  return {
+    sponsors: strip.sponsors.map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl })),
+    presentingSponsorName: strip.presentingName,
+  };
 }
 
 /** The grade a card is for, when it carries one (team lists). */

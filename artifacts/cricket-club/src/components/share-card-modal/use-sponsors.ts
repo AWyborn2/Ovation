@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { SocialSettingsBundle } from "@workspace/api-client-react";
 import type { CardSponsor, ShareCardInput } from "@/lib/share-card";
-import { maxSponsorLogos, sponsorsForCard } from "@/lib/share-card/sponsor-limit";
+import { cardSponsors, maxSponsorLogos } from "@/lib/share-card/sponsor-limit";
 import { cardGrade } from "@/lib/pack-card-data";
 
 // Resolves the sponsor strip for the current card: only when sponsors are
@@ -13,34 +13,40 @@ export function useSponsors({
   bundle,
   includeSponsors,
   input,
+  playerId,
 }: {
   bundle: SocialSettingsBundle | undefined;
   includeSponsors: boolean;
   input: ShareCardInput | null;
+  /** The one player the card is about (player sponsors). */
+  playerId?: number | null;
 }) {
-  const sponsors: CardSponsor[] = useMemo(() => {
-    if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return [];
-    // A team list carries its team's own sponsor, else the presenting one.
-    return sponsorsForCard(bundle?.activeSponsors ?? [], {
+  const strip = useMemo(() => {
+    if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return null;
+    // A team list carries its team's own sponsor, a player's card the
+    // player's sponsors, else the club strip with the presenting one first.
+    return cardSponsors(bundle?.activeSponsors ?? [], {
       kind: input.kind,
       grade: cardGrade(input),
-    })
-      .slice(0, maxSponsorLogos(input.kind))
-      .map((s) => ({
-        name: s.name,
-        logoUrl: s.logoUrl,
-      }));
-  }, [bundle, includeSponsors, input]);
+      playerId,
+    });
+  }, [bundle, includeSponsors, input, playerId]);
 
-  // The tenant's designated presenting (primary) sponsor NAME → the pack cards'
-  // "presented by <sponsor>" line. NOT kind-filtered (it is the headline sponsor
-  // shown on every card), but gated the same as the sponsor strip so the line
-  // only appears when sponsors are enabled and included. Null → line hidden.
-  const presentingSponsorName = useMemo<string | null>(() => {
-    if (!bundle?.settings.sponsorsEnabled || !includeSponsors) return null;
-    const presenting = (bundle?.activeSponsors ?? []).find((s) => s.isPresenting);
-    return presenting?.name ?? null;
-  }, [bundle, includeSponsors]);
+  const sponsors: CardSponsor[] = useMemo(
+    () =>
+      input && strip
+        ? strip.sponsors.slice(0, maxSponsorLogos(input.kind)).map((s) => ({
+            name: s.name,
+            logoUrl: s.logoUrl,
+          }))
+        : [],
+    [input, strip],
+  );
+
+  // The "presented by <sponsor>" line: the club's presenting sponsor, or on a
+  // player's card that carries their sponsors, the first of them. Gated like
+  // the strip, so the line only appears when sponsors are enabled and included.
+  const presentingSponsorName = strip?.presentingName ?? null;
 
   const sponsorSig = useMemo(
     () =>

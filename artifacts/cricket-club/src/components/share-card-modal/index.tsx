@@ -66,6 +66,7 @@ export function ShareCardModal({
   appPath,
   trackedSlug,
   playerId,
+  sponsorPlayerId,
   matchId,
   photoUrl,
   photoFocus,
@@ -170,6 +171,7 @@ export function ShareCardModal({
     bundle,
     includeSponsors,
     input,
+    playerId: sponsorPlayerId,
   });
 
   // A brand-less tenant gets no clubUrl/hashtag rather than another club's.

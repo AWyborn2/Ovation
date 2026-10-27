@@ -379,6 +379,8 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           photoSource: e.photoSource,
           photoFocus: e.photoFocus,
           layerPhotos,
+          // Whose sponsors the card carries; looked up when it is drawn.
+          subjectPlayerId: e.subjectPlayerId,
           ...(templated ?? {}),
         })
         .returning();
@@ -439,6 +441,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
   const refreshed = {
     cardInput: input.cardInput,
     appPath: input.appPath,
+    subjectPlayerId: e.subjectPlayerId,
     // Juniors joining a combined round set make the draft junior; it never goes back (KTD6).
     ...(input.sourceMatchIsJunior === true ? { sourceMatchIsJunior: true } : {}),
     ...(current.editedAt == null ? { caption: e.caption } : {}),
