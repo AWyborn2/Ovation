@@ -163,9 +163,11 @@ export interface KioskPhotoSlideshowJson {
   secondsPerPhoto: number;
   // Grade and season under each photo (never names).
   captions: boolean;
-  // "fill" crops to the screen (the default); "whole" shows the whole photo
-  // over a blurred fill.
-  frame?: "fill" | "whole" | null;
+  // "auto" (the default, also when null) crops to the screen only when that
+  // keeps the photo's focus box, or loses almost nothing without one, else
+  // shows it whole; "fill" always crops (aiming at the focus box); "whole"
+  // shows the whole photo over a blurred fill.
+  frame?: "auto" | "fill" | "whole" | null;
   // Cross-fade between photos (default on); off cuts.
   crossfade?: boolean | null;
   // Photo interludes (kiosk-photo-rotation P1): also show one photo from this

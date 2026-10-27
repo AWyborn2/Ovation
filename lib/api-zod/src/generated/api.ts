@@ -10487,7 +10487,7 @@ export const GetHonourDisplayResponse = zod.object({
   "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
@@ -10618,7 +10618,14 @@ export const GetHonourDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -10886,7 +10893,7 @@ export const GetKioskDisplayResponse = zod.object({
   "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
@@ -11017,7 +11024,14 @@ export const GetKioskDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -11156,7 +11170,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
@@ -11344,7 +11358,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
   "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
-  "frame": zod.enum(['fill', 'whole']).nullish().describe('fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
   "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
   "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
