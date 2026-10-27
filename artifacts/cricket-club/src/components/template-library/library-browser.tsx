@@ -6,21 +6,28 @@
  * original never changes); "Use as default" and "Save to my templates" make the
  * copy without leaving. Double-clicking a tile, or its Edit button, customises
  * straight away. Release 2: a club's template credits the club and counts the
- * other clubs using it, and the club that published it can unlist it.
+ * other clubs using it, and the club that published it can unlist it. Clubs
+ * sort the library, filter it by style tag, keep favourites and report a
+ * template to Ovation (R2-C).
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Pencil } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createClubTemplate,
+  favouriteLibraryTemplate,
   getListClubTemplatesQueryKey,
   getListLibraryLooksQueryKey,
   listLibraryTemplates,
+  reportLibraryTemplate,
+  unfavouriteLibraryTemplate,
   unlistOwnLibraryTemplate,
   useListLibraryLooks,
   type LibraryTemplate,
   type ListLibraryTemplatesSize,
+  type ListLibraryTemplatesSort,
+  type TemplateStyleTag,
 } from "@workspace/api-client-react";
 import {
   isSetDocument,
@@ -45,6 +52,7 @@ import { kindLabel } from "@/lib/social-studio";
 import type { CardSize } from "@/lib/share-card";
 import { groupFamilies, lookLabel } from "./look-families";
 import { MakeSetDialog } from "./make-set-dialog";
+import { TAG_LABELS } from "./publish-dialog";
 import {
   SetPageThumb,
   templateKindLabel,
@@ -73,7 +81,31 @@ const PAGE_LABELS: Record<string, string> = {
   team: "Team",
 };
 
+const SORT_LABELS: Record<ListLibraryTemplatesSort, string> = {
+  popular: "Most used",
+  new: "Newest",
+  ovation: "Ovation's first",
+  club: "Clubs' first",
+};
+
 export const pageLabel = (page: string) => PAGE_LABELS[page] ?? page;
+
+/** Add a template to the club's favourites, or take it out, then refresh the library. */
+export function useFavourite() {
+  const qc = useQueryClient();
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const toggle = async (template: LibraryTemplate) => {
+    setBusyId(template.id);
+    try {
+      if (template.favourite) await unfavouriteLibraryTemplate(template.id);
+      else await favouriteLibraryTemplate(template.id);
+      await qc.invalidateQueries({ queryKey: ["template-library"] });
+    } finally {
+      setBusyId(null);
+    }
+  };
+  return { toggle, busyId };
+}
 
 /** "Used by 3 clubs", or null when no other club has a copy. */
 export function usedByLabel(t: Pick<LibraryTemplate, "usedBy">): string | null {
@@ -118,12 +150,14 @@ function TemplateTile({
   preview,
   onOpen,
   onCustomise,
+  onFavourite,
   busy,
 }: {
   template: LibraryTemplate;
   preview: Preview;
   onOpen: () => void;
   onCustomise: () => void;
+  onFavourite: () => void;
   busy: boolean;
 }) {
   const input = usePreviewInput(template.kind, preview.clubName);
@@ -169,6 +203,22 @@ function TemplateTile({
       >
         <Pencil className="h-3.5 w-3.5" /> Edit
       </Button>
+      <button
+        type="button"
+        className="absolute left-3 top-3 rounded-full bg-card/90 p-1.5 shadow-sm"
+        aria-label={
+          template.favourite
+            ? `Remove ${template.name} from favourites`
+            : `Add ${template.name} to favourites`
+        }
+        aria-pressed={!!template.favourite}
+        onClick={onFavourite}
+      >
+        <Star
+          className={`h-4 w-4 ${template.favourite ? "fill-amber-400 text-amber-500" : "text-muted-foreground"}`}
+          aria-hidden
+        />
+      </button>
     </li>
   );
 }
@@ -190,6 +240,23 @@ export function TemplateDetailDialog({
   const custom = useCustomiseTemplate();
   const set = template && isSetDocument(template.document) ? template.document : null;
   const [making, setMaking] = useState(false);
+
+  // Tell Ovation what's wrong with someone else's template (one report per club).
+  const [reporting, setReporting] = useState<string | null>(null);
+  const report = async () => {
+    if (!template || !reporting?.trim()) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      await reportLibraryTemplate(template.id, { reason: reporting.trim() });
+      setReporting(null);
+      setStatus("Thanks. Ovation will take a look.");
+    } catch (e) {
+      setStatus(handleAdminMutationError(e) ?? "Couldn't send the report. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // The club that published it takes it out of the library; copies keep working.
   const unlist = async () => {
@@ -236,6 +303,7 @@ export function TemplateDetailDialog({
       onOpenChange={(open) => {
         if (!open) {
           setStatus(null);
+          setReporting(null);
           onClose();
         }
       }}
@@ -327,12 +395,45 @@ export function TemplateDetailDialog({
                   Unlist
                 </Button>
               )}
+              {!template.ownedByClub && reporting === null && (
+                <Button variant="ghost" disabled={busy} onClick={() => setReporting("")}>
+                  Report…
+                </Button>
+              )}
               {(custom.error ?? status) && (
                 <span role="status" className="text-sm text-muted-foreground">
                   {custom.error ?? status}
                 </span>
               )}
             </div>
+            {reporting !== null && (
+              <form
+                className="space-y-2"
+                aria-label="Report this template"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void report();
+                }}
+              >
+                <label className="flex flex-col gap-1 text-sm font-medium">
+                  What&apos;s wrong with it?
+                  <textarea
+                    className="min-h-20 rounded-md border border-input bg-background p-2 text-sm font-normal"
+                    maxLength={500}
+                    value={reporting}
+                    onChange={(e) => setReporting(e.target.value)}
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={busy || !reporting.trim()}>
+                    Send report
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setReporting(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
           </>
         )}
       </DialogContent>
@@ -354,14 +455,21 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
   const [kind, setKind] = useState("");
   const [size, setSize] = useState("");
   const [look, setLook] = useState("");
+  const [sort, setSort] = useState("");
+  const [tag, setTag] = useState("");
+  const [favourites, setFavourites] = useState(false);
   const [open, setOpen] = useState<LibraryTemplate | null>(null);
   const custom = useCustomiseTemplate();
+  const fav = useFavourite();
   const looksQ = useListLibraryLooks({ query: { queryKey: getListLibraryLooksQueryKey() } });
 
   const filters = {
     ...(kind ? { kind } : {}),
     ...(size ? { size: size as ListLibraryTemplatesSize } : {}),
     ...(look ? { look } : {}),
+    ...(sort ? { sort: sort as ListLibraryTemplatesSort } : {}),
+    ...(tag ? { tags: tag } : {}),
+    ...(favourites ? { favourites: true } : {}),
   };
   const listQ = useInfiniteQuery({
     queryKey: ["template-library", filters],
@@ -421,6 +529,22 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
             (l) => [l.slug, lookLabel(l)] as [string, string],
           ),
         ])}
+        {select("library-tag", "Style", tag, setTag, [
+          ["", "Every style"],
+          ...(Object.entries(TAG_LABELS) as Array<[TemplateStyleTag, string]>),
+        ])}
+        {select("library-sort", "Sort", sort, setSort, [
+          ["", "Library order"],
+          ...(Object.entries(SORT_LABELS) as Array<[string, string]>),
+        ])}
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input
+            type="checkbox"
+            checked={favourites}
+            onChange={(e) => setFavourites(e.target.checked)}
+          />
+          Favourites only
+        </label>
       </div>
 
       {listQ.isError ? (
@@ -429,7 +553,9 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
         <LoadingState label="Loading templates…" />
       ) : templates.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          No templates match. Try another card, size or look.
+          {favourites
+            ? "No favourites match. Star a template to keep it here."
+            : "No templates match. Try another card, size, look or style."}
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -440,6 +566,7 @@ export function LibraryBrowser({ preview }: { preview: Preview }) {
               preview={preview}
               onOpen={() => setOpen(t)}
               onCustomise={() => custom.customise(t)}
+              onFavourite={() => void fav.toggle(t)}
               busy={custom.busyId === t.id}
             />
           ))}
