@@ -32,12 +32,14 @@ import {
   FORMAT_VERSION,
   LAYER_KINDS_V2,
   MAX_BLUR_PX,
+  MAX_PHOTO_SOURCE_POSITION,
   MAX_STACK_DEPTH,
   MOTION_EASINGS,
   MOTION_IN_PRESETS,
   MOTION_LOOP_PRESETS,
   OVERLAY_KINDS,
   PAGE_KEYS,
+  PHOTO_SOURCE_PLAYER_PICKS,
   STACK_ALIGNS,
   STACK_DIRECTIONS,
   STACK_JUSTIFIES,
@@ -190,6 +192,7 @@ const V2_LAYER_KEYS = new Set([
   "svg",
   "link",
   "sig",
+  "source",
 ]);
 /** Characters that could close a style attribute or open markup. */
 const UNSAFE = /["<>;{}\\]/;
@@ -798,6 +801,38 @@ function checkMotion(errors: Errors, where: string, v: unknown): void {
   }
 }
 
+/** A photo layer's source (photo layer sources): a team list player or a photo collection. */
+function checkPhotoSource(errors: Errors, at: string, v: unknown): void {
+  if (!isObject(v)) {
+    errors.push(`${at} must be { kind: "player", pick } or { kind: "collection", collectionId }.`);
+    return;
+  }
+  if (v.kind === "player") {
+    knownKeys(errors, at, v, new Set(["kind", "pick", "position"]));
+    oneOf(errors, `${at}.pick`, v.pick, PHOTO_SOURCE_PLAYER_PICKS);
+    if (v.pick === "position") {
+      if (
+        typeof v.position !== "number" ||
+        !Number.isInteger(v.position) ||
+        v.position < 1 ||
+        v.position > MAX_PHOTO_SOURCE_POSITION
+      )
+        errors.push(
+          `${at}.position must be a list position from 1 to ${MAX_PHOTO_SOURCE_POSITION}.`,
+        );
+    } else if (v.position !== undefined)
+      errors.push(`${at}.position is only for the player at a list position.`);
+  } else if (v.kind === "collection") {
+    knownKeys(errors, at, v, new Set(["kind", "collectionId"]));
+    if (
+      typeof v.collectionId !== "number" ||
+      !Number.isSafeInteger(v.collectionId) ||
+      v.collectionId < 1
+    )
+      errors.push(`${at}.collectionId must be a photo collection id.`);
+  } else errors.push(`${at}.kind must be "player" or "collection".`);
+}
+
 function checkLayerV2(
   w: Walk,
   layer: unknown,
@@ -850,6 +885,10 @@ function checkLayerV2(
     }
   }
   if (layer.motion !== undefined) checkMotion(errors, `${where}.motion`, layer.motion);
+  if (layer.source !== undefined) {
+    if (kind !== "photo") errors.push(`${where} isn't a photo, so it can't have a photo source.`);
+    else checkPhotoSource(errors, `${where}.source`, layer.source);
+  }
   if (kind === "vector") {
     const result = sanitiseSvg(layer.svg);
     for (const e of result.errors) errors.push(`${where}.svg: ${e}`);

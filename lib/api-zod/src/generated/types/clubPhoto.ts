@@ -41,4 +41,6 @@ export interface ClubPhoto {
   offShapes?: PhotoFrameShape[];
   /** Where each tagged player is on the photo (tagged players with an area only). */
   playerAreas?: ClubPhotoPlayerArea[];
+  /** The photo collections this photo is in. */
+  collectionIds?: number[];
 }

@@ -34,6 +34,8 @@ export type Props = {
    * while that photo shows and the sliders are untouched.
    */
   photoFocus?: PackCardData["photoFocus"];
+  /** A draft's sourced photo layers' photos, shown while its own photo is. */
+  layerPhotos?: PackCardData["layerPhotos"];
   /**
    * A queued draft's own pack (the one its post pack renders in), ahead of the
    * club's pack for the kind. A layout picked in the modal still wins.

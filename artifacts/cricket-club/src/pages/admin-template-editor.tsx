@@ -62,6 +62,7 @@ import { RowsPanel } from "@/components/studio-editor/rows-panel";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
 import { LayerDesignPanel } from "@/components/studio-editor/layer-design-panel";
+import { useLayerPhotoPreview } from "@/components/studio-editor/use-layer-photo-preview";
 import {
   commit,
   commitFrom,
@@ -633,9 +634,17 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     () => (draftMode ? null : allKindSamples(data, clubName)),
     [draftMode, data, clubName],
   );
-  const shownData = slide
-    ? slide.data
-    : (draftMode?.data ?? (sampleValues ? { ...data, sampleValues } : data));
+  // A club template's sourced photo layers show the photos a draft would pick.
+  const layerPhotos = useLayerPhotoPreview(kind, full, host.club && !draftMode && !slidesMode);
+  const templateData = useMemo(
+    () => ({
+      ...data,
+      ...(sampleValues ? { sampleValues } : {}),
+      ...(layerPhotos ? { layerPhotos } : {}),
+    }),
+    [data, sampleValues, layerPhotos],
+  );
+  const shownData = slide ? slide.data : (draftMode?.data ?? templateData);
   const values = packFieldValues(shownInput, shownData, BLANK_PACK_ID);
 
   // Every edit is to the page on show; the whole document is what history keeps.

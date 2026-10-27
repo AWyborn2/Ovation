@@ -35,6 +35,7 @@ import { pageForInput, pageTokens } from "@workspace/scorecard/kind-templates";
 import { useBrand } from "@/lib/brand-context";
 import {
   buildPackData,
+  draftLayerPhotos,
   cardGrade,
   kindSponsors,
   presentingSponsorName,
@@ -80,8 +81,22 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       photoUrl: draft.photoUrl ?? undefined,
       // The photo's focus box: frames the design hasn't positioned crop to it.
       ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+      // Sourced photo layers' own photos, while the draft's photo is automatic.
+      layerPhotos: draftLayerPhotos({
+        photoSource: draft.photoSource,
+        layerPhotos: draft.layerPhotos,
+      }),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl, draft.photoFocus],
+    [
+      bundle,
+      brand,
+      input.kind,
+      grade,
+      draft.photoUrl,
+      draft.photoFocus,
+      draft.photoSource,
+      draft.layerPhotos,
+    ],
   );
   const palette = [
     bundle?.brand?.primaryColour ?? brand.primaryColour,

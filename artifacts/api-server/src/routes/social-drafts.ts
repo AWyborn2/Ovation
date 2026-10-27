@@ -61,6 +61,7 @@ import {
   publicationsByDraft,
 } from "../lib/publishing/publications";
 import { BLANK_PACK_ID, templatedDesignFor, type TemplatedDesign } from "../lib/kind-templates";
+import { draftLayerPhotos } from "../lib/layer-photos";
 import {
   assembleCarouselDocument,
   designFromRef,
@@ -68,7 +69,7 @@ import {
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
-import { resolveDraftPack } from "../lib/draft-enrich";
+import { isAutoPhoto, resolveDraftPack } from "../lib/draft-enrich";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
@@ -667,6 +668,17 @@ router.post(
       res.status(409).json({ error: "Could not create draft. Please retry." });
       return;
     }
+    // A single card's sourced photo layers pick their photos (a carousel has none).
+    const layerPhotos = carousel ? null : await draftLayerPhotos(row);
+    if (layerPhotos) {
+      const [withPhotos] = await db
+        .update(socialDraftsTable)
+        .set({ layerPhotos })
+        .where(and(eq(socialDraftsTable.id, row.id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      res.status(201).json(presentDraft(withPhotos ?? row));
+      return;
+    }
     res.status(201).json(presentDraft(row));
   },
 );
@@ -839,6 +851,10 @@ router.patch(
       } else {
         patch.editedAt = patch.editedAt ?? new Date();
       }
+      // A design with sourced photo layers picks their photos while the
+      // draft's photo is automatic (photo layer sources).
+      if (isAutoPhoto(patch.photoSource ?? draft.photoSource))
+        patch.layerPhotos = await draftLayerPhotos({ ...draft, adjustments });
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

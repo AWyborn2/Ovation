@@ -21,7 +21,7 @@ import { ensureSettings } from "./social-cards-helpers";
 import { getTenantBrand } from "./tenant-brand";
 import { loadActiveSponsors } from "./active-sponsors";
 import { renderCardStill } from "./card-video-renderer";
-import { resolveDraftPack } from "./draft-enrich";
+import { isAutoPhoto, resolveDraftPack } from "./draft-enrich";
 import { loadCardNames } from "./card-content/names";
 import {
   readQueuedCarousel,
@@ -256,6 +256,12 @@ export async function renderDraftSlides(
     photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,
     // The photo's focus box (photo focus areas): frames crop to it.
     ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+    // Sourced photo layers' own photos (photo layer sources): senior cards
+    // only, and only while the draft's photo is automatic (an admin's pick
+    // shows on every photo layer).
+    ...(!junior && draft.layerPhotos && isAutoPhoto(draft.photoSource)
+      ? { layerPhotos: draft.layerPhotos }
+      : {}),
     photoPlacement: "contained",
     ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
     ...(Object.keys(names).length ? { names } : {}),

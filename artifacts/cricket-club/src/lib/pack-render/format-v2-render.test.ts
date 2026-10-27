@@ -418,3 +418,65 @@ describe("photo focus areas", () => {
     expect(position(own)).toEqual([70, 40]);
   });
 });
+
+describe("photo layer sources", () => {
+  const frame = { square: { x: 0, y: 0, w: 30, h: 80 } };
+  const doc = {
+    formatVersion: 2,
+    pages: {
+      card: {
+        layers: [
+          { id: "hero", kind: "photo", geometry: frame },
+          { id: "side", kind: "photo", geometry: frame, link: "pair" },
+          { id: "plain", kind: "photo", geometry: frame },
+        ],
+      },
+    },
+  } as CardAdjustments;
+  const focus = { box: { x: 0.05, y: 0.2, w: 0.15, h: 0.4 }, width: 3000, height: 2000 };
+  const layerPhotos = {
+    hero: { url: "/api/storage/objects/library/captain.jpg", focus },
+    "link:pair": { url: "/api/storage/objects/library/crowd.jpg", focus: null },
+  };
+  const draw = (ctx: Record<string, unknown>) =>
+    renderFreeLayers(
+      doc,
+      "square",
+      {},
+      {},
+      { kind: "player", photoUrl: "/api/storage/objects/library/card.jpg", ...ctx },
+    );
+  const srcs = (html: string) => [...html.matchAll(/<img src="([^"]+)"/g)].map((m) => m[1]);
+
+  it("draws each sourced layer's own photo, and the card's photo on the rest", () => {
+    const html = draw({ layerPhotos });
+    expect(srcs(html)).toEqual([
+      "/api/storage/objects/library/captain.jpg",
+      "/api/storage/objects/library/crowd.jpg",
+      "/api/storage/objects/library/card.jpg",
+    ]);
+    // The layer's own focus crops it; the card's sliders don't move it.
+    const moved = draw({ layerPhotos, photoTransform: { focalX: 0.9, focalY: 0.5, zoom: 1 } });
+    const positions = [...moved.matchAll(/object-position:([\d.]+)% ([\d.]+)%/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(positions[0]).toBeLessThan(20);
+    expect(positions[2]).toBe(90);
+  });
+
+  it("shows a sourced photo even when the card has none, and none on a junior card", () => {
+    expect(srcs(draw({ layerPhotos, photoUrl: null }))).toHaveLength(2);
+    expect(srcs(draw({ layerPhotos, junior: true }))).toEqual([]);
+  });
+
+  it("never reaches a junior card through the pack renderer", () => {
+    const input = previewSample("teamList", "Sample Cricket Club");
+    const data = { ...DATA, layerPhotos };
+    const tokens = resolveCardTokens({ theme: null, junior: true, data, packId: BLANK_PACK_ID });
+    const html = renderPackCard(input, "square", true, tokens, true, data, BLANK_PACK_ID, doc, {
+      page: "card",
+    });
+    expect(html).not.toContain("captain.jpg");
+    expect(html).not.toContain("crowd.jpg");
+  });
+});

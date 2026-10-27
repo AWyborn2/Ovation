@@ -9571,7 +9571,8 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })).optional(),
   "timeZone": zod.string(),
   "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Team list, results and match summary sets: each slide\'s content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
@@ -9650,7 +9651,8 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 }),zod.null()]).describe('The club\'s chosen background photo, when it is still in the library and safe to show.'),
   "nextHomeGame": zod.union([zod.object({
   "kind": zod.enum(['matchDay']),
@@ -9743,7 +9745,8 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })),
   "coverPhotos": zod.array(zod.object({
   "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
@@ -9775,7 +9778,8 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
   "photoPicks": zod.object({
   "cover": zod.number().nullable().describe('A coverPhotos (or juniorStockPhotos) id.'),
@@ -11641,6 +11645,19 @@ export const ListSocialDraftsResponseItem = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -12714,7 +12731,8 @@ export const ListClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
@@ -12770,7 +12788,8 @@ export const IngestClubPhotosResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 }).optional(),
   "error": zod.string().optional()
 }))
@@ -12860,7 +12879,8 @@ export const TagClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
 
@@ -12922,7 +12942,8 @@ export const SetClubPhotoFocusResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 
 
@@ -12969,7 +12990,8 @@ export const MoveClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const MoveClubPhotosResponse = zod.array(MoveClubPhotosResponseItem)
 
@@ -12986,6 +13008,144 @@ export const DeleteClubPhotosBody = zod.object({
 
 export const DeleteClubPhotosResponse = zod.object({
   "deleted": zod.number()
+})
+
+
+/**
+ * @summary List the club's photo collections (admin)
+ */
+export const ListClubPhotoCollectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+export const ListClubPhotoCollectionsResponse = zod.array(ListClubPhotoCollectionsResponseItem)
+
+
+/**
+ * @summary Create a photo collection (admin)
+ */
+export const createClubPhotoCollectionBodyNameMax = 60;
+
+
+
+export const CreateClubPhotoCollectionBody = zod.object({
+  "name": zod.string().min(1).max(createClubPhotoCollectionBodyNameMax)
+})
+
+
+/**
+ * @summary Rename a photo collection (admin)
+ */
+export const RenameClubPhotoCollectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const renameClubPhotoCollectionBodyNameMax = 60;
+
+
+
+export const RenameClubPhotoCollectionBody = zod.object({
+  "name": zod.string().min(1).max(renameClubPhotoCollectionBodyNameMax)
+})
+
+export const RenameClubPhotoCollectionResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * The photos stay in the library. Photo layers that took a photo from the collection fall back to the card's photo.
+ * @summary Delete a photo collection (admin)
+ */
+export const DeleteClubPhotoCollectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Photos already in the collection are left as they are. Open drafts whose photo layers take a photo from the collection re-pick afterwards.
+ * @summary Add library photos to a collection (admin)
+ */
+export const AddClubPhotoCollectionPhotosParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const addClubPhotoCollectionPhotosBodyPhotoIdsMax = 500;
+
+
+
+export const AddClubPhotoCollectionPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1).max(addClubPhotoCollectionPhotosBodyPhotoIdsMax)
+})
+
+export const AddClubPhotoCollectionPhotosResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * The photos stay in the library.
+ * @summary Take photos out of a collection (admin)
+ */
+export const RemoveClubPhotoCollectionPhotosParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const removeClubPhotoCollectionPhotosBodyPhotoIdsMax = 500;
+
+
+
+export const RemoveClubPhotoCollectionPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1).max(removeClubPhotoCollectionPhotosBodyPhotoIdsMax)
+})
+
+export const RemoveClubPhotoCollectionPhotosResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * For the template editor's preview. Collection sources pick from the collection as a draft would; player sources use the club's latest published senior team list. Layers whose source finds nothing are left out (they show the card's photo). Junior kinds get none.
+ * @summary The photos a template's sourced photo layers would show (admin)
+ */
+export const PreviewLayerPhotosBody = zod.object({
+  "kind": zod.string().describe('The card kind the document is for.'),
+  "document": zod.unknown().describe('The template document whose sourced photo layers to resolve.')
+})
+
+export const PreviewLayerPhotosResponse = zod.object({
+  "layerPhotos": zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),
+  "teamList": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string().nullable()
+}),zod.null()]).describe('The team list that player sources were resolved against (the club\'s latest published senior team list); null when the club has none.')
 })
 
 
@@ -13095,7 +13255,8 @@ export const RemovePhotoBackgroundResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.')
-})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 
 
@@ -13199,6 +13360,19 @@ export const ApproveSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13315,6 +13489,19 @@ export const SaveDraftSetDesignResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13397,6 +13584,19 @@ export const GetSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13492,6 +13692,19 @@ export const UpdateSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13708,6 +13921,19 @@ export const GetSocialCalendarResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13786,6 +14012,19 @@ export const GetSocialCalendarResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13886,6 +14125,19 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13978,6 +14230,19 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14064,6 +14329,19 @@ export const SendBackSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14146,6 +14424,19 @@ export const ReopenSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14250,6 +14541,19 @@ export const RevertSocialDraftResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14332,6 +14636,19 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -14423,6 +14740,19 @@ export const GenerateRecapsResponseItem = zod.object({
   "width": zod.number(),
   "height": zod.number()
 }).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),

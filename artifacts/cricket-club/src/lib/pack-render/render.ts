@@ -281,6 +281,8 @@ export function renderPackCard(
         photoTransform: data?.photoTransform ?? null,
         // The draft photo's focus box: only for the photo it was taken from.
         photoFocus: !withholdPhotos && data?.photoUrl ? (data.photoFocus ?? null) : null,
+        // Sourced photo layers' own photos: senior cards only (photo layer sources).
+        layerPhotos: junior ? null : (data?.layerPhotos ?? null),
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,

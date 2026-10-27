@@ -4,6 +4,7 @@
  *
  * - Stack: a group's direction, gap and alignment, its children's order, and
  *   making or undoing a stack (depth limited to `MAX_STACK_DEPTH`).
+ * - Photo source: where a photo layer's photo comes from (`photo-source-picker.tsx`).
  * - Show when: the field, photo, sponsors and junior conditions.
  * - Text fit: lines, smallest size and ellipsis.
  * - Style: a colour or gradient fill (`gradient-editor.tsx`), a text fill, a
@@ -37,6 +38,7 @@ import {
 import { ClipEditor } from "./clip-editor";
 import { btn, ColourField, field, label, NumberField, Section } from "./design-controls";
 import { GradientEditor } from "./gradient-editor";
+import { PhotoSourcePicker } from "./photo-source-picker";
 import { ShadowListEditor } from "./shadow-editor";
 import { DEFAULT_GRADIENT, isGradient } from "./gradient-ops";
 import { depthOf, type EditorLayer } from "./template-doc";
@@ -255,6 +257,12 @@ export function LayerDesignPanel({
           <button type="button" className={btn} onClick={onUnstack}>
             Undo stack
           </button>
+        </Section>
+      )}
+
+      {layer.kind === "photo" && (
+        <Section title="Photo source">
+          <PhotoSourcePicker source={layer.source} onChange={(source) => onPatch({ source })} />
         </Section>
       )}
 

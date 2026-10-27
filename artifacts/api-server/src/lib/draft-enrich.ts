@@ -351,7 +351,7 @@ export function seededPick<T extends { id: number }>(rows: readonly T[], seed: s
  * A player's tagged library photo — of the card's preferred photo types when
  * there is one, else the newest — then their default headshot.
  */
-async function playerPhoto(
+export async function playerPhoto(
   tenantId: number,
   playerId: number,
   types: readonly PhotoType[],
@@ -1111,11 +1111,17 @@ async function repickAutoDraftPhotos(
     const opts = await draftPickOptions(tenantId, d);
     if (opts.junior || (scope && opts.grade !== scope.grade)) continue;
     const photo = await pickDraftPhoto(tenantId, opts);
-    const next = await photoColumns(tenantId, photo);
+    // The design's sourced photo layers re-pick with the draft's photo.
+    const { draftLayerPhotos } = await import("./layer-photos");
+    const next = {
+      ...(await photoColumns(tenantId, photo)),
+      layerPhotos: await draftLayerPhotos(d),
+    };
     if (
       next.photoUrl === d.photoUrl &&
       next.photoSource === d.photoSource &&
-      JSON.stringify(next.photoFocus) === JSON.stringify(d.photoFocus ?? null)
+      JSON.stringify(next.photoFocus) === JSON.stringify(d.photoFocus ?? null) &&
+      JSON.stringify(next.layerPhotos) === JSON.stringify(d.layerPhotos ?? null)
     )
       continue;
     const updated = await db

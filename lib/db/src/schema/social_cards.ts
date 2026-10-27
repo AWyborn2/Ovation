@@ -271,6 +271,19 @@ export const cardTemplatesTable = pgTable(
 
 export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
 
+/** `social_drafts.layer_photos`: a sourced photo layer's photo (see `LayerPhotos` in scorecard). */
+export type LayerPhotosColumn = Record<
+  string,
+  {
+    url: string;
+    focus?: {
+      box: { x: number; y: number; w: number; h: number };
+      width: number;
+      height: number;
+    } | null;
+  }
+>;
+
 /** `social_drafts.template_ref`: a club copy or a library template, at a version. */
 export type DraftTemplateRefColumn = {
   copyId?: number;
@@ -756,6 +769,11 @@ export const socialDraftsTable = pgTable(
       width: number;
       height: number;
     }>(),
+    // The photos of the design's sourced photo layers (photo layer sources,
+    // migration 0071), keyed by `photoLayerKey`: a team list player's photo or
+    // a collection photo, picked with the draft's photo. A layer with no entry
+    // shows `photoUrl`. Null for a junior draft and a design with no source.
+    layerPhotos: jsonb("layer_photos").$type<LayerPhotosColumn>(),
     adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
     editedAt: timestamp("edited_at", { withTimezone: true }),
     // The admin who made the draft by hand (Studio editor / Create a card); null for a

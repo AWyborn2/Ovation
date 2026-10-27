@@ -57,6 +57,11 @@ export interface DropRuleContext {
    * hidden, as in the render path, where a hidden field's value is blank.
    */
   visible?: ReadonlySet<string> | null;
+  /**
+   * Whether a photo layer has a photo of its own (photo layer sources): it is
+   * then drawn whether or not the card has a photo.
+   */
+  hasLayerPhoto?: (layer: TemplateLayerV2) => boolean;
 }
 
 /** Whether a token is hidden on this card: an optional content field that isn't visible. */
@@ -73,6 +78,7 @@ export function layerDropped(layer: TemplateLayerV2, ctx: DropRuleContext): bool
     const children = Array.isArray(layer.children) ? layer.children : [];
     return children.length > 0 && children.every((child) => layerDropped(child, ctx));
   }
+  if (layer.kind === "photo" && ctx.hasLayerPhoto?.(layer)) return false;
   const tokens = layerTokens(layer);
   if (tokens.length === 0) return false;
   return tokens.every((token) => tokenHidden(token, ctx) || !ctx.has(token));

@@ -7549,6 +7549,170 @@ paths:
         "404":
           description: A photo is not in this club's library
 
+  /club-photo-collections:
+    get:
+      operationId: listClubPhotoCollections
+      tags: [socialCards]
+      summary: List the club's photo collections (admin)
+      responses:
+        "200":
+          description: The collections, by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubPhotoCollection"
+    post:
+      operationId: createClubPhotoCollection
+      tags: [socialCards]
+      summary: Create a photo collection (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPhotoCollectionName"
+      responses:
+        "201":
+          description: The new collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhotoCollection"
+        "400":
+          description: Invalid name
+        "409":
+          description: The club already has a collection with that name
+
+  /club-photo-collections/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    patch:
+      operationId: renameClubPhotoCollection
+      tags: [socialCards]
+      summary: Rename a photo collection (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPhotoCollectionName"
+      responses:
+        "200":
+          description: The renamed collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhotoCollection"
+        "400":
+          description: Invalid name
+        "404":
+          description: Not one of this club's collections
+        "409":
+          description: The club already has a collection with that name
+    delete:
+      operationId: deleteClubPhotoCollection
+      tags: [socialCards]
+      summary: Delete a photo collection (admin)
+      description: >-
+        The photos stay in the library. Photo layers that took a photo from the
+        collection fall back to the card's photo.
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not one of this club's collections
+
+  /club-photo-collections/{id}/photos:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: addClubPhotoCollectionPhotos
+      tags: [socialCards]
+      summary: Add library photos to a collection (admin)
+      description: >-
+        Photos already in the collection are left as they are. Open drafts whose
+        photo layers take a photo from the collection re-pick afterwards.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPhotoCollectionPhotosRequest"
+      responses:
+        "200":
+          description: The collection afterwards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhotoCollection"
+        "400":
+          description: Invalid body
+        "404":
+          description: The collection or a photo is not this club's
+
+  /club-photo-collections/{id}/photos/remove:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      operationId: removeClubPhotoCollectionPhotos
+      tags: [socialCards]
+      summary: Take photos out of a collection (admin)
+      description: The photos stay in the library.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubPhotoCollectionPhotosRequest"
+      responses:
+        "200":
+          description: The collection afterwards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhotoCollection"
+        "400":
+          description: Invalid body
+        "404":
+          description: Not one of this club's collections
+
+  /club-templates/layer-photo-preview:
+    post:
+      operationId: previewLayerPhotos
+      tags: [socialCards]
+      summary: The photos a template's sourced photo layers would show (admin)
+      description: >-
+        For the template editor's preview. Collection sources pick from the
+        collection as a draft would; player sources use the club's latest
+        published senior team list. Layers whose source finds nothing are left
+        out (they show the card's photo). Junior kinds get none.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LayerPhotoPreviewRequest"
+      responses:
+        "200":
+          description: The layer photos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayerPhotoPreview"
+        "400":
+          description: Invalid body
+
   /card-photo-rules:
     get:
       operationId: listCardPhotoRules
@@ -20118,6 +20282,11 @@ components:
           description: Where each tagged player is on the photo (tagged players with an area only).
           items:
             $ref: "#/components/schemas/ClubPhotoPlayerArea"
+        collectionIds:
+          type: array
+          description: The photo collections this photo is in.
+          items:
+            type: integer
 
     PhotoFocusBox:
       type: object
@@ -20150,6 +20319,85 @@ components:
         playerId: { type: integer }
         box:
           $ref: "#/components/schemas/PhotoFocusBox"
+
+    LayerPhoto:
+      type: object
+      description: A sourced photo layer's photo, and the focus it crops to (null = centred).
+      required: [url]
+      properties:
+        url: { type: string }
+        focus:
+          oneOf:
+            - $ref: "#/components/schemas/PhotoFocus"
+            - type: "null"
+
+    LayerPhotos:
+      type: object
+      description: Sourced photo layers' photos, keyed by layer (its link, else its id).
+      additionalProperties:
+        $ref: "#/components/schemas/LayerPhoto"
+
+    ClubPhotoCollection:
+      type: object
+      description: >-
+        A named set of library photos an admin makes (a photo can be in many). A
+        template's photo layer can take a random photo from one.
+      required: [id, name, photoCount, coverUrl, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        photoCount: { type: integer }
+        coverUrl:
+          type: ["string", "null"]
+          description: The newest photo's thumbnail; null when empty.
+        createdAt: { type: string, format: date-time }
+
+    ClubPhotoCollectionName:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+
+    ClubPhotoCollectionPhotosRequest:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: { type: integer }
+
+    LayerPhotoPreviewRequest:
+      type: object
+      required: [kind, document]
+      properties:
+        kind:
+          type: string
+          description: The card kind the document is for.
+        document:
+          description: The template document whose sourced photo layers to resolve.
+
+    LayerPhotoPreview:
+      type: object
+      required: [layerPhotos, teamList]
+      properties:
+        layerPhotos:
+          $ref: "#/components/schemas/LayerPhotos"
+        teamList:
+          description: >-
+            The team list that player sources were resolved against (the club's
+            latest published senior team list); null when the club has none.
+          oneOf:
+            - $ref: "#/components/schemas/LayerPhotoPreviewTeamList"
+            - type: "null"
+
+    LayerPhotoPreviewTeamList:
+      type: object
+      required: [grade, opponent]
+      properties:
+        grade: { type: string }
+        opponent: { type: ["string", "null"] }
 
     SetClubPhotoFocusRequest:
       type: object
@@ -24786,6 +25034,15 @@ components:
             was chosen; frames crop to it unless the photo was moved by hand.
           oneOf:
             - $ref: "#/components/schemas/PhotoFocus"
+            - type: "null"
+        layerPhotos:
+          description: >-
+            The photos of the design's sourced photo layers (a team list player's
+            photo, or a collection photo), keyed by layer. A photo layer without an
+            entry shows `photoUrl`; renderers use these only while the draft's
+            photo is automatic. Null for junior drafts and designs with no source.
+          oneOf:
+            - $ref: "#/components/schemas/LayerPhotos"
             - type: "null"
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
