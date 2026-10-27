@@ -63,7 +63,7 @@
     "drizzle-orm": "catalog:",
     "xlsx": "^0.18.5",
     "pg": "catalog:",
-    "puppeteer-core": "^25.10.0"
+    "puppeteer-core": "^25.16.0"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
