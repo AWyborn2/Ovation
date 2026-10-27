@@ -28,3 +28,5 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - Shared (cross-tenant) data and tenant-private data live in different tables, so tenant isolation is a table boundary, not a filter (ADR-011).
 - Templates, drafts and carousels copy their design; nothing renders a live reference to another tenant's or the library's current version (ADR-002, ADR-011).
 - Sessions never need production access: anything Ovation ships either goes through the repo and a republish, or is made in the running app (ADR-011).
+- Club data reaches the shared library only through the server's `publishableDocument`, the asset policy and the author's rights confirmation; a flag blocks publishing (ADR-012).
+- Per-club third-party tokens (Figma) are sealed with `secret-box` like the Meta tokens and never returned or logged (ADR-012).
