@@ -36,6 +36,7 @@ import playhqSyncStatusRouter from "./playhq-sync-status";
 import socialDraftsRouter from "./social-drafts";
 import socialCalendarRouter from "./social-calendar";
 import libraryElementsRouter from "./library-elements";
+import clubGenerateRouter from "./club-generate";
 import templateLibraryRouter from "./template-library";
 import templateDesignerRouter from "./template-designer";
 import socialConnectionsRouter from "./social-connections";
@@ -116,6 +117,8 @@ router.use(socialCalendarRouter);
 router.use(clubPhotoCollectionsRouter);
 // Before the template library: its `/template-library/:id` would take `/elements`.
 router.use(libraryElementsRouter);
+// Before the library router: its /club-templates/:id would take /club-templates/generations.
+router.use(clubGenerateRouter);
 router.use(templateLibraryRouter);
 router.use(templateDesignerRouter);
 router.use(socialConnectionsRouter);
