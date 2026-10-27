@@ -4,7 +4,9 @@ import {
   useListPlayers,
   getListPlayersQueryKey,
   useSetClubPhotoFocus,
+  useSetJuniorLibraryPhotoFocus,
   type ClubPhoto,
+  type JuniorLibraryPhoto,
 } from "@workspace/api-client-react";
 import {
   FRAME_SHAPES,
@@ -36,8 +38,34 @@ import { cn } from "@/lib/utils";
  * admin's device and are only ever suggestions.
  */
 
-/** Which box the pointer draws: the photo's focus, or one player's area. */
-type Target = "focus" | number;
+/** Which box the pointer draws: the photo's focus, or one person's area (by key). */
+type Target = "focus" | string;
+
+/** The photo as the editor needs it (a senior or a junior library photo). */
+type FocusPhoto = {
+  url: string;
+  width: number;
+  height: number;
+  focusBox: FocusBox | null;
+  offShapes: readonly FrameShape[];
+};
+
+/** Someone who can be marked on the photo, keyed by player or participant id. */
+type Person = { key: string; name: string; area: FocusBox | null };
+
+/** What a save sends: the box, the shapes switched off and the areas that changed. */
+type FocusChange = {
+  focusBox: FocusBox | null;
+  offShapes: FrameShape[];
+  areas: Array<{ key: string; box: FocusBox | null }>;
+};
+
+/** A search to add someone not yet on the photo (senior players). */
+type PeopleSearch = {
+  query: string;
+  setQuery: (q: string) => void;
+  results: Array<{ key: string; name: string }>;
+};
 
 const SHAPE_LABELS: Record<FrameShape, string> = {
   tall: "Tall frames",
@@ -71,7 +99,7 @@ function FramePreview({
   aspect,
   label,
 }: {
-  photo: ClubPhoto;
+  photo: FocusPhoto;
   box: FocusBox | null;
   aspect: number;
   label: string;
@@ -103,72 +131,59 @@ function FramePreview({
   );
 }
 
-export function PhotoFocusDialog({
+/**
+ * The editor itself, for any library photo: the senior and junior dialogs below
+ * give it the people who can be marked and save what changed.
+ */
+function FocusEditorDialog({
   photo,
+  people,
   open,
   onOpenChange,
-  onSaved,
+  onSave,
+  saving,
+  error,
+  search,
+  shapeSwitches = true,
 }: {
-  photo: ClubPhoto | null;
+  photo: FocusPhoto | null;
+  people: readonly Person[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: (photo: ClubPhoto) => void;
+  onSave: (change: FocusChange) => void;
+  saving: boolean;
+  error: string | null;
+  search?: PeopleSearch;
+  /** Whether the automatic picker honours switched-off shapes for this library. */
+  shapeSwitches?: boolean;
 }) {
   const [focusBox, setFocusBox] = useState<FocusBox | null>(null);
   const [offShapes, setOffShapes] = useState<Set<FrameShape>>(new Set());
-  const [areas, setAreas] = useState<Map<number, FocusBox | null>>(new Map());
+  const [areas, setAreas] = useState<Map<string, FocusBox | null>>(new Map());
+  const [added, setAdded] = useState<Map<string, string>>(new Map());
   const [target, setTarget] = useState<Target>("focus");
   const [faces, setFaces] = useState<FocusBox[]>([]);
   const [faceState, setFaceState] = useState<"idle" | "busy" | "none" | "error">("idle");
-  const [search, setSearch] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   // A fresh start each time a photo opens.
   useEffect(() => {
     if (!photo || !open) return;
     setFocusBox(photo.focusBox ?? null);
-    setOffShapes(new Set(photo.offShapes ?? []));
-    const next = new Map<number, FocusBox | null>(photo.playerIds.map((id) => [id, null]));
-    for (const a of photo.playerAreas ?? []) next.set(a.playerId, a.box);
-    setAreas(next);
+    setOffShapes(new Set(photo.offShapes));
+    setAreas(new Map(people.map((p) => [p.key, p.area])));
+    setAdded(new Map());
     setTarget("focus");
     setFaces([]);
     setFaceState("idle");
-    setSearch("");
-    setError(null);
+    // Only when a photo opens: `people` is rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photo, open]);
 
-  // Names for the players on the photo, and a search to add one.
-  const rosterQ = useListPlayers(
-    { sortBy: "name", limit: 500 },
-    { query: { queryKey: getListPlayersQueryKey({ sortBy: "name", limit: 500 }), enabled: open } },
+  const names = useMemo(
+    () => new Map([...people.map((p) => [p.key, p.name] as const), ...added]),
+    [people, added],
   );
-  const names = useMemo(() => {
-    const m = new Map<number, string>();
-    for (const p of rosterQ.data?.players ?? []) m.set(p.id, `${p.givenName} ${p.surname}`);
-    return m;
-  }, [rosterQ.data]);
-  const searchQ = useListPlayers(
-    { search, limit: 6 },
-    {
-      query: {
-        queryKey: getListPlayersQueryKey({ search, limit: 6 }),
-        enabled: open && search.trim().length >= 2,
-      },
-    },
-  );
-  const nameOf = (id: number) => names.get(id) ?? `Player ${id}`;
-
-  const saveM = useSetClubPhotoFocus({
-    mutation: {
-      onSuccess: (saved) => {
-        onSaved(saved as ClubPhoto);
-        onOpenChange(false);
-      },
-      onError: () =>
-        setError("The focus couldn't be saved. Only senior players can be marked on a photo."),
-    },
-  });
+  const nameOf = (key: string) => names.get(key) ?? "Player";
 
   // Drawing: drag on the photo to draw the current box; drag inside it to move it.
   const stage = useRef<HTMLDivElement>(null);
@@ -235,26 +250,23 @@ export function PhotoFocusDialog({
     }
   };
 
-  const addPlayer = (id: number) => {
-    setAreas((prev) => (prev.has(id) ? prev : new Map(prev).set(id, null)));
-    setTarget(id);
-    setSearch("");
+  const addPerson = (key: string, name: string) => {
+    setAdded((prev) => new Map(prev).set(key, name));
+    setAreas((prev) => (prev.has(key) ? prev : new Map(prev).set(key, null)));
+    setTarget(key);
+    search?.setQuery("");
   };
 
   const save = () => {
     if (!photo) return;
-    setError(null);
-    const before = new Map((photo.playerAreas ?? []).map((a) => [a.playerId, a.box]));
+    const before = new Map(people.flatMap((p) => (p.area ? [[p.key, p.area] as const] : [])));
     const same = (a: FocusBox | null | undefined, b: FocusBox | null | undefined) =>
       JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
     // Only areas that changed, so an untouched tag is left as it is.
-    const playerAreas = [...areas]
-      .filter(([id, box]) => !same(box, before.get(id)) && (box || before.has(id)))
-      .map(([playerId, box]) => ({ playerId, box }));
-    saveM.mutate({
-      photoId: photo.id,
-      data: { focusBox, offShapes: FRAME_SHAPES.filter((s) => offShapes.has(s)), playerAreas },
-    });
+    const changed = [...areas]
+      .filter(([key, box]) => !same(box, before.get(key)) && (box || before.has(key)))
+      .map(([key, box]) => ({ key, box }));
+    onSave({ focusBox, offShapes: FRAME_SHAPES.filter((s) => offShapes.has(s)), areas: changed });
   };
 
   if (!photo) return null;
@@ -262,7 +274,7 @@ export function PhotoFocusDialog({
   const boxes: Array<{ key: string; box: FocusBox; label: string; on: boolean }> = [
     ...(focusBox ? [{ key: "focus", box: focusBox, label: "Focus", on: target === "focus" }] : []),
     ...[...areas].flatMap(([id, box]) =>
-      box ? [{ key: `p${id}`, box, label: nameOf(id), on: target === id }] : [],
+      box ? [{ key: `p-${id}`, box, label: nameOf(id), on: target === id }] : [],
     ),
   ];
 
@@ -418,24 +430,28 @@ export function PhotoFocusDialog({
                   </span>
                 </Button>
               ))}
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Add a player…"
-                aria-label="Find a player to mark"
-                className="mt-1 h-8"
-              />
-              {search.trim().length >= 2 &&
-                (searchQ.data?.players ?? []).map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => addPlayer(p.id)}
-                    className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-muted"
-                  >
-                    {p.givenName} {p.surname}
-                  </button>
-                ))}
+              {search && (
+                <>
+                  <Input
+                    value={search.query}
+                    onChange={(e) => search.setQuery(e.target.value)}
+                    placeholder="Add a player…"
+                    aria-label="Find a player to mark"
+                    className="mt-1 h-8"
+                  />
+                  {search.query.trim().length >= 2 &&
+                    search.results.map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => addPerson(p.key, p.name)}
+                        className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-muted"
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                </>
+              )}
             </fieldset>
 
             <fieldset className="space-y-2">
@@ -454,23 +470,27 @@ export function PhotoFocusDialog({
                         {on ? FIT_LABELS[fit] : "Off"}
                       </StatusPill>
                     </span>
-                    <Switch
-                      checked={on}
-                      aria-label={`Use in ${SHAPE_LABELS[shape].toLowerCase()}`}
-                      onCheckedChange={(v) =>
-                        setOffShapes((prev) => {
-                          const next = new Set(prev);
-                          if (v) next.delete(shape);
-                          else next.add(shape);
-                          return next;
-                        })
-                      }
-                    />
+                    {shapeSwitches && (
+                      <Switch
+                        checked={on}
+                        aria-label={`Use in ${SHAPE_LABELS[shape].toLowerCase()}`}
+                        onCheckedChange={(v) =>
+                          setOffShapes((prev) => {
+                            const next = new Set(prev);
+                            if (v) next.delete(shape);
+                            else next.add(shape);
+                            return next;
+                          })
+                        }
+                      />
+                    )}
                   </label>
                 );
               })}
               <p className="text-xs text-muted-foreground">
-                Automatic posts never put this photo in a shape that's off.
+                {shapeSwitches
+                  ? "Automatic posts never put this photo in a shape that's off."
+                  : "How well the focus fits each shape of card frame."}
               </p>
             </fieldset>
           </div>
@@ -485,11 +505,178 @@ export function PhotoFocusDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={save} disabled={saveM.isPending}>
+          <Button type="button" onClick={save} disabled={saving}>
             Save focus
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The senior library's focus editor: players by name, and a search to mark someone new. */
+export function PhotoFocusDialog({
+  photo,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  photo: ClubPhoto | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: (photo: ClubPhoto) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open, photo]);
+  // Names for the players on the photo, and a search to add one.
+  const rosterQ = useListPlayers(
+    { sortBy: "name", limit: 500 },
+    { query: { queryKey: getListPlayersQueryKey({ sortBy: "name", limit: 500 }), enabled: open } },
+  );
+  const searchQ = useListPlayers(
+    { search: query, limit: 6 },
+    {
+      query: {
+        queryKey: getListPlayersQueryKey({ search: query, limit: 6 }),
+        enabled: open && query.trim().length >= 2,
+      },
+    },
+  );
+  const people = useMemo<Person[]>(() => {
+    if (!photo) return [];
+    const names = new Map(
+      (rosterQ.data?.players ?? []).map((p) => [p.id, `${p.givenName} ${p.surname}`]),
+    );
+    const areas = new Map((photo.playerAreas ?? []).map((a) => [a.playerId, a.box]));
+    return photo.playerIds.map((id) => ({
+      key: String(id),
+      name: names.get(id) ?? `Player ${id}`,
+      area: areas.get(id) ?? null,
+    }));
+  }, [photo, rosterQ.data]);
+  const saveM = useSetClubPhotoFocus({
+    mutation: {
+      onSuccess: (saved) => {
+        onSaved(saved as ClubPhoto);
+        onOpenChange(false);
+      },
+      onError: () =>
+        setError("The focus couldn't be saved. Only senior players can be marked on a photo."),
+    },
+  });
+  return (
+    <FocusEditorDialog
+      photo={
+        photo
+          ? { ...photo, focusBox: photo.focusBox ?? null, offShapes: photo.offShapes ?? [] }
+          : null
+      }
+      people={people}
+      open={open}
+      onOpenChange={onOpenChange}
+      saving={saveM.isPending}
+      error={error}
+      search={{
+        query,
+        setQuery,
+        results: (searchQ.data?.players ?? []).map((p) => ({
+          key: String(p.id),
+          name: `${p.givenName} ${p.surname}`,
+        })),
+      }}
+      onSave={(change) => {
+        if (!photo) return;
+        setError(null);
+        saveM.mutate({
+          photoId: photo.id,
+          data: {
+            focusBox: change.focusBox,
+            offShapes: change.offShapes,
+            playerAreas: change.areas.map((a) => ({ playerId: Number(a.key), box: a.box })),
+          },
+        });
+      }}
+    />
+  );
+}
+
+/**
+ * The junior library's focus editor (juniors parity): the children tagged on the
+ * photo, through the junior routes only. Marking someone new means tagging them
+ * first, which stays on the library's tag panel (a consent question).
+ */
+export function JuniorPhotoFocusDialog({
+  photo,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  photo: JuniorLibraryPhoto | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: (photo: JuniorLibraryPhoto) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open) setError(null);
+  }, [open, photo]);
+  const people = useMemo<Person[]>(() => {
+    if (!photo) return [];
+    const areas = new Map(
+      (photo.participantAreas ?? []).map((a) => [a.participantId.toLowerCase(), a.box]),
+    );
+    return photo.participants.map((c) => ({
+      key: c.participantId,
+      name: c.displayName,
+      area: areas.get(c.participantId.toLowerCase()) ?? null,
+    }));
+  }, [photo]);
+  const saveM = useSetJuniorLibraryPhotoFocus({
+    mutation: {
+      onSuccess: (saved) => {
+        onSaved(saved as JuniorLibraryPhoto);
+        onOpenChange(false);
+      },
+      onError: () => setError("The focus couldn't be saved. Please try again."),
+    },
+  });
+  // A junior photo's size is unknown only for very old uploads; without it the
+  // crop can't be worked out, so the editor isn't offered (see the library page).
+  const sized =
+    photo && photo.width && photo.height
+      ? {
+          url: photo.url,
+          width: photo.width,
+          height: photo.height,
+          focusBox: photo.focusBox ?? null,
+          offShapes: photo.offShapes ?? [],
+        }
+      : null;
+  return (
+    <FocusEditorDialog
+      photo={sized}
+      people={people}
+      // Junior cards don't pick photos by frame shape yet, so there's nothing to switch off.
+      shapeSwitches={false}
+      open={open && sized !== null}
+      onOpenChange={onOpenChange}
+      saving={saveM.isPending}
+      error={error}
+      onSave={(change) => {
+        if (!photo) return;
+        setError(null);
+        saveM.mutate({
+          photoId: photo.id,
+          data: {
+            focusBox: change.focusBox,
+            offShapes: change.offShapes,
+            participantAreas: change.areas.map((a) => ({ participantId: a.key, box: a.box })),
+          },
+        });
+      }}
+    />
   );
 }

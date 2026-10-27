@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
 import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
 import { useConfirm } from "@/components/confirm-dialog";
+import { JuniorPhotoFocusDialog } from "@/components/photo-library/photo-focus-dialog";
 import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "@workspace/scorecard";
 import {
@@ -112,6 +113,8 @@ export default function AdminJuniorPhotoLibrary() {
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Photo focus areas: the photo whose focus editor is open.
+  const [focusing, setFocusing] = useState<JuniorLibraryPhoto | null>(null);
   const [season, setSeason] = useState("");
   const [tagFormat, setTagFormat] = useState<TagFormat>("");
   const [uploadFormat, setUploadFormat] = useState<"" | ClubPhotoMatchFormat>("");
@@ -669,8 +672,24 @@ export default function AdminJuniorPhotoLibrary() {
                             {MATCH_FORMAT_LABELS[p.matchFormat]}
                           </span>
                         )}
+                        {p.focusBox && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                            Focus set
+                          </span>
+                        )}
                       </span>
                     </button>
+                    {/* Photo focus areas: only photos whose size is known (all but the oldest). */}
+                    {p.width && p.height ? (
+                      <button
+                        type="button"
+                        aria-label={`Set the focus of photo ${p.id}`}
+                        onClick={() => setFocusing(p)}
+                        className="px-2 text-xs font-medium text-primary-text hover:underline"
+                      >
+                        Focus…
+                      </button>
+                    ) : null}
                   </li>
                 );
               })}
@@ -685,6 +704,12 @@ export default function AdminJuniorPhotoLibrary() {
           message="Upload junior team and match photos into a folder to get started."
         />
       )}
+      <JuniorPhotoFocusDialog
+        photo={focusing}
+        open={focusing !== null}
+        onOpenChange={(o) => !o && setFocusing(null)}
+        onSaved={() => refresh()}
+      />
     </div>
   );
 }
