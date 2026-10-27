@@ -86,6 +86,33 @@ export const sponsorsTable = pgTable(
 
 export type SponsorRow = typeof sponsorsTable.$inferSelect;
 
+// Player sponsors (migration 0074): the senior players a sponsor backs. On a
+// card about one of them, that player's sponsors replace the club strip
+// (`cardSponsors` in @workspace/scorecard). `player_id` has no foreign key, like
+// photo tags: a central-data club's ids are crosswalk ids. `player_name` is the
+// name when the tag was saved, a label for the admin screen only.
+export const sponsorPlayersTable = pgTable(
+  "sponsor_players",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    sponsorId: integer("sponsor_id")
+      .notNull()
+      .references(() => sponsorsTable.id, { onDelete: "cascade" }),
+    playerId: integer("player_id").notNull(),
+    playerName: text("player_name").notNull().default(""),
+  },
+  (t) => ({
+    uniqSponsorPlayer: uniqueIndex("sponsor_players_sponsor_player_unique").on(
+      t.sponsorId,
+      t.playerId,
+    ),
+    idxTenantPlayer: index("sponsor_players_tenant_player_idx").on(t.tenantId, t.playerId),
+  }),
+);
+
+export type SponsorPlayerRow = typeof sponsorPlayersTable.$inferSelect;
+
 // Named, selectable card themes (colors + optional background image + optional logo).
 // Admins pick a theme per social card; one row is flagged isDefault.
 export const cardThemesTable = pgTable(
@@ -782,6 +809,10 @@ export const socialDraftsTable = pgTable(
     // a collection photo, picked with the draft's photo. A layer with no entry
     // shows `photoUrl`. Null for a junior draft and a design with no source.
     layerPhotos: jsonb("layer_photos").$type<LayerPhotosColumn>(),
+    // The one player a player-centred card is about (player sponsors, migration
+    // 0074): its sponsors are looked up when the card is drawn. Null for every
+    // other draft and for junior drafts.
+    subjectPlayerId: integer("subject_player_id"),
     adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
     editedAt: timestamp("edited_at", { withTimezone: true }),
     // The admin who made the draft by hand (Studio editor / Create a card); null for a

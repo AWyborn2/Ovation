@@ -19,6 +19,8 @@ export interface SponsorUpdate {
   cardKinds?: CardKind[];
   /** The grades whose team-list cards show this sponsor as their one logo. */
   grades?: string[];
+  /** The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected. */
+  playerIds?: number[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;

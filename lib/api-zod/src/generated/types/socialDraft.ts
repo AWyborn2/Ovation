@@ -52,6 +52,11 @@ export interface SocialDraft {
   photoSource?: string | null;
   /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
   photoFocus?: PhotoFocus | null;
+  /**
+     * The one player a player-centred card is about (player sponsors): that player's sponsors replace the club strip. Null for every other draft.
+     * @nullable
+     */
+  subjectPlayerId?: number | null;
   /** The photos of the design's sourced photo layers (a team list player's photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft's photo is automatic. Null for junior drafts and designs with no source. */
   layerPhotos?: LayerPhotos | null;
   adjustments?: unknown;

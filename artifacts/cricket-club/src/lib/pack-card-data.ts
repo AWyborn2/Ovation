@@ -19,12 +19,7 @@
 
 import type { CardNames } from "@workspace/scorecard/card-names";
 import type { PackCardData, PackColourMode } from "./pack-render";
-import {
-  sponsorAppliesToKind,
-  type CardKind,
-  type PhotoPlacement,
-  type PhotoTransform,
-} from "./share-card";
+import type { CardKind, PhotoPlacement, PhotoTransform } from "./share-card";
 import { sponsorsForCard } from "./share-card/sponsor-limit";
 
 /**
@@ -221,6 +216,7 @@ export interface PackSettingsSource {
     logoUrl: string;
     cardKinds?: string[] | null;
     grades?: string[] | null;
+    players?: Array<{ id: number }> | null;
     isPresenting?: boolean | null;
   }> | null;
 }
@@ -246,7 +242,7 @@ export function kindSponsors(
 ): Array<{ name: string; logoUrl: string }> {
   if (!enabled || !bundle?.activeSponsors) return [];
   // The presenting (headline) sponsor's logo leads the strip.
-  return sponsorsForCard(bundle.activeSponsors, kind, grade, sponsorAppliesToKind).map((sp) => ({
+  return sponsorsForCard(bundle.activeSponsors, { kind, grade }).map((sp) => ({
     name: sp.name,
     logoUrl: sp.logoUrl,
   }));
