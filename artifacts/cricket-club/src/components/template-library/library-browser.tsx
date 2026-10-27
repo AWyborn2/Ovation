@@ -5,7 +5,8 @@
  * template" makes the club's copy and opens it in the editor (the library
  * original never changes); "Use as default" and "Save to my templates" make the
  * copy without leaving. Double-clicking a tile, or its Edit button, customises
- * straight away.
+ * straight away. Release 2: a club's template credits the club and counts the
+ * other clubs using it, and the club that published it can unlist it.
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -16,6 +17,7 @@ import {
   getListClubTemplatesQueryKey,
   getListLibraryLooksQueryKey,
   listLibraryTemplates,
+  unlistOwnLibraryTemplate,
   useListLibraryLooks,
   type LibraryTemplate,
   type ListLibraryTemplatesSize,
@@ -72,6 +74,12 @@ const PAGE_LABELS: Record<string, string> = {
 };
 
 export const pageLabel = (page: string) => PAGE_LABELS[page] ?? page;
+
+/** "Used by 3 clubs", or null when no other club has a copy. */
+export function usedByLabel(t: Pick<LibraryTemplate, "usedBy">): string | null {
+  const n = t.usedBy ?? 0;
+  return n > 0 ? `Used by ${n} ${n === 1 ? "club" : "clubs"}` : null;
+}
 export const sizeLabel = (size: string) => SIZE_LABELS[size as CardSize] ?? size;
 
 type Preview = LibraryPreview;
@@ -146,6 +154,9 @@ function TemplateTile({
             : kindLabel(template.kind)}
           {template.look ? ` · ${lookLabel(template.look)}` : ""} · {template.authorName}
         </p>
+        {usedByLabel(template) && (
+          <p className="truncate text-xs text-muted-foreground">{usedByLabel(template)}</p>
+        )}
       </button>
       {/* Shown on hover or focus where there is a pointer; always on small screens. */}
       <Button
@@ -179,6 +190,22 @@ export function TemplateDetailDialog({
   const custom = useCustomiseTemplate();
   const set = template && isSetDocument(template.document) ? template.document : null;
   const [making, setMaking] = useState(false);
+
+  // The club that published it takes it out of the library; copies keep working.
+  const unlist = async () => {
+    if (!template) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      await unlistOwnLibraryTemplate(template.id);
+      await qc.invalidateQueries({ queryKey: ["template-library"] });
+      setStatus("Unlisted. Other clubs no longer see it; publish it again to list it.");
+    } catch (e) {
+      setStatus(handleAdminMutationError(e) ?? "Couldn't unlist the template. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const use = async (makeDefault: boolean) => {
     if (!template) return;
@@ -221,7 +248,8 @@ export function TemplateDetailDialog({
               <DialogDescription>
                 {templateKindLabel(template.kind)}
                 {template.look ? ` · ${lookLabel(template.look)} look` : ""} · by{" "}
-                {template.authorName}
+                {template.ownedByClub ? "your club" : template.authorName}
+                {usedByLabel(template) ? ` · ${usedByLabel(template)}` : ""}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -292,6 +320,11 @@ export function TemplateDetailDialog({
               {!set && (
                 <Button variant="ghost" disabled={busy} onClick={() => setMaking(true)}>
                   Make a carousel set
+                </Button>
+              )}
+              {template.ownedByClub && template.listed && (
+                <Button variant="ghost" disabled={busy} onClick={unlist}>
+                  Unlist
                 </Button>
               )}
               {(custom.error ?? status) && (
