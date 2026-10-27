@@ -100,7 +100,10 @@ export type FigmaUser = { id: string; handle: string };
  * Who a token belongs to (`GET /v1/me`). Null when Figma refuses the token
  * (401/403); throws for anything else.
  */
-export async function figmaMe(token: string, auth: "personal" | "oauth"): Promise<FigmaUser | null> {
+export async function figmaMe(
+  token: string,
+  auth: "personal" | "oauth",
+): Promise<FigmaUser | null> {
   const headers: Record<string, string> =
     auth === "oauth" ? { Authorization: `Bearer ${token}` } : { "X-Figma-Token": token };
   const res = await call(`${FIGMA_API}/v1/me`, { headers });
@@ -158,7 +161,11 @@ function clientAuth(): string {
   return `Basic ${Buffer.from(`${id}:${secret}`, "utf8").toString("base64")}`;
 }
 
-export type FigmaTokens = { accessToken: string; refreshToken: string | null; expiresAt: Date | null };
+export type FigmaTokens = {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+};
 
 function tokensFrom(body: unknown, refreshToken: string | null): FigmaTokens | null {
   const b = body as { access_token?: unknown; refresh_token?: unknown; expires_in?: unknown };

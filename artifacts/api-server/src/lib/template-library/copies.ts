@@ -330,7 +330,11 @@ export async function createDocumentCopy(
       ...initialFit(),
     })
     .returning();
-  requestFit({ kind: "copy", tenantId, copyId: row!.id, version: row!.version }, document, body.kind);
+  requestFit(
+    { kind: "copy", tenantId, copyId: row!.id, version: row!.version },
+    document,
+    body.kind,
+  );
   return row!;
 }
 

@@ -129,11 +129,14 @@ export type FigmaMapped = Omit<FigmaImportOutcome, "template"> & { document: unk
 /**
  * Steps 1–3 without the save: fetch the link's frames, copy the renders with
  * `saveAsset`, and map. The platform import saves a console template; a club
- * import (`club-figma-import.ts`) saves a private club template.
+ * import (`routes/figma-connection.ts`) saves a private club template.
  */
 export async function mapFigmaLink(
   req: { fileUrl: string; kind: string },
-  deps: FigmaImportDeps & { client: FigmaClient; saveAsset: (bytes: Buffer, type: "image/png") => Promise<string> },
+  deps: FigmaImportDeps & {
+    client: FigmaClient;
+    saveAsset: (bytes: Buffer, type: "image/png") => Promise<string>;
+  },
 ): Promise<FigmaMapped> {
   assertTemplateKind(req.kind);
   const link = parseFigmaUrl(req.fileUrl);
