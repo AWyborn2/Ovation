@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
 import { PostPackButton } from "@/components/post-pack/post-pack-button";
 import { SchedulePanel } from "./schedule-panel";
+import { PhotoSwapGrid } from "./photo-swap-grid";
 import { SetDraftPreview } from "./set-draft-preview";
 import { draftSetDocument, setDraftLayout } from "@/lib/set-draft";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -359,31 +360,17 @@ export function DraftDrawer({
                 >
                   {picking ? "Close library" : "Swap photo"}
                 </Button>
-                {picking && (
-                  <div className="grid grid-cols-3 gap-2" aria-label="Photo library">
-                    {(photosQ.data ?? []).map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          updateM.mutate({ id: current.id, data: { photoUrl: p.url } });
-                          setPicking(false);
-                        }}
-                        className="overflow-hidden rounded-md border border-border hover:ring-2 hover:ring-primary"
-                      >
-                        <img
-                          src={p.thumbUrl}
-                          alt={`Library item ${p.id}`}
-                          className="aspect-square w-full object-cover"
-                        />
-                      </button>
-                    ))}
-                    {photosQ.data?.length === 0 && (
-                      <p className="col-span-3 text-sm text-muted-foreground">
-                        The photo library is empty.
-                      </p>
-                    )}
-                  </div>
+                {picking && photosQ.data && (
+                  <PhotoSwapGrid
+                    photos={photosQ.data}
+                    onPick={(url, playerId) => {
+                      updateM.mutate({
+                        id: current.id,
+                        data: { photoUrl: url, ...(playerId ? { photoPlayerId: playerId } : {}) },
+                      });
+                      setPicking(false);
+                    }}
+                  />
                 )}
               </>
             )}

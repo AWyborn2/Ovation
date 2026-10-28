@@ -8,7 +8,14 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq, inArray } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, adminsTable, socialDraftsTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  adminsTable,
+  socialDraftsTable,
+  clubPhotosTable,
+  clubPhotoPlayersTable,
+} from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { upsertDraftByKey } from "../lib/draft-upsert";
 import { listDraftRevisions } from "../lib/draft-revisions";
@@ -35,6 +42,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+  await db.delete(clubPhotosTable).where(eq(clubPhotosTable.tenantId, tenantId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId]));
 });
@@ -70,6 +78,47 @@ describe("PATCH /social-drafts/:id", () => {
     expect(res.body.autoReadyAt).toBeNull();
     const revs = await listDraftRevisions(tenantId, draft.id);
     expect(revs[0].reason).toBe("edit");
+  });
+
+  it("picking a player's area tile crops the card to that player's area", async () => {
+    const [photo] = await db
+      .insert(clubPhotosTable)
+      .values({
+        tenantId,
+        objectPath: `/objects/library/edit-area-${STAMP}`,
+        thumbPath: `/objects/library/edit-area-${STAMP}-thumb`,
+        width: 400,
+        height: 300,
+        focusBox: { x: 0, y: 0, w: 1, h: 1 },
+      })
+      .returning();
+    const area = { x: 0.1, y: 0.2, w: 0.2, h: 0.5 };
+    await db.insert(clubPhotoPlayersTable).values([
+      { tenantId, photoId: photo.id, playerId: 41, area },
+      { tenantId, photoId: photo.id, playerId: 42 },
+    ]);
+    const { draft } = await upsertDraftByKey({
+      tenantId,
+      engine: "roundup",
+      family: "roundup",
+      sourceKey: `edit:${STAMP}:area`,
+      cardInput: card(14),
+      appPath: "/records",
+    });
+    const url = `/api/storage${photo.objectPath}`;
+    // The whole photo: its own box.
+    const whole = await patch(draft.id, { photoUrl: url });
+    expect(whole.body.photoFocus).toEqual({
+      box: { x: 0, y: 0, w: 1, h: 1 },
+      width: 400,
+      height: 300,
+    });
+    // The same photo, Kim's tile: re-snapshots to her area.
+    const kim = await patch(draft.id, { photoUrl: url, photoPlayerId: 41 });
+    expect(kim.body.photoFocus).toEqual({ box: area, width: 400, height: 300 });
+    // A tagged player with no area falls back to the photo's box.
+    const noArea = await patch(draft.id, { photoUrl: url, photoPlayerId: 42 });
+    expect(noArea.body.photoFocus?.box).toEqual({ x: 0, y: 0, w: 1, h: 1 });
   });
 
   it("clearing the photo is recorded as a choice, so a later library fill leaves it empty", async () => {

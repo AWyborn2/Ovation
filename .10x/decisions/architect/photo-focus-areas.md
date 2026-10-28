@@ -84,8 +84,8 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
 - Juniors: the junior library gets the editor, the boxes and the participant areas, and junior
   cards crop to the featured child's area. Areas are only for children already tagged:
   tagging stays on the tag panel because it decides consent.
-- Not built: suggesting a box on upload (P2), player areas as their own tiles (P2), and ordering
-  the "Needs focus" filter by use.
+- Not built at the time: suggesting a box on upload (P2) and player areas as their own tiles (P2),
+  both since built (follow-ups below), and ordering the "Needs focus" filter by use (still open).
 
 ## Follow-ups (28 Oct 2026)
 
@@ -102,3 +102,8 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
   `suggested: true`. Cards crop to it straight away; `focus_suggested` (migration 0075) keeps the
   photo in "Needs focus" until an admin saves the focus, which clears it. A suggestion never
   replaces a box an admin set. The junior library does the same through the junior routes.
+- Player areas as their own tiles (Ash, 28 Oct 2026: in a draft's Swap photo): the draft drawer's
+  library grid (`photo-swap-grid.tsx`) shows, after each photo, a tile per marked player,
+  cropped to their area and named. Picking one sends `photoPlayerId` with `photoUrl`, and the
+  draft snapshots that player's area (`draftPhotoFocus` with the player), so a team photo works
+  as that player's photo. Senior drafts only, as the drawer's library is.

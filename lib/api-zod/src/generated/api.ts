@@ -14112,6 +14112,7 @@ export const UpdateSocialDraftParams = zod.object({
 export const UpdateSocialDraftBody = zod.object({
   "caption": zod.string().optional(),
   "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.'),
+  "photoPlayerId": zod.number().nullish().describe('With photoUrl: the tagged player whose area on that library photo the card crops to (a player area tile). Omitted or null = the photo\'s own focus box.'),
   "adjustments": zod.union([zod.object({
   "fields": zod.record(zod.string(), zod.string()).optional(),
   "hidden": zod.array(zod.string()).optional(),

@@ -198,6 +198,53 @@ describe("draft drawer", () => {
   });
 });
 
+describe("player area tiles", () => {
+  it("a group photo shows a tile per marked player; picking one crops the card to them", async () => {
+    const requests = stubApi([
+      {
+        method: "PATCH",
+        match: /\/api\/social-drafts\/7$/,
+        reply: (r) => ({ ...DRAFT, ...(r.body as object), photoSource: "manual" }),
+      },
+      {
+        match: /\/api\/club-photos/,
+        reply: () => [
+          {
+            id: 6,
+            url: "/api/storage/objects/library/6",
+            thumbUrl: "/api/storage/objects/library/6-t",
+            width: 400,
+            height: 300,
+            playerIds: [11, 12],
+            playerAreas: [{ playerId: 11, box: { x: 0.1, y: 0.1, w: 0.2, h: 0.5 } }],
+          },
+        ],
+      },
+      {
+        match: /\/api\/players/,
+        reply: () => ({ players: [{ id: 11, givenName: "Kim", surname: "Shutter" }] }),
+      },
+      ...baseRoutes([DRAFT]),
+    ]);
+    renderAt(<AdminSocialQueue />, "/admin/social/queue");
+    const dialog = await openDraft("Sam Keeper");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Swap photo" }));
+    // The whole photo, and Kim's area as its own tile (Player 12 has no area).
+    expect(await within(dialog).findByRole("button", { name: "Library item 6" })).toBeTruthy();
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Kim Shutter on library item 6" }),
+    );
+    await waitFor(() => {
+      const patch = requests.find((r) => r.method === "PATCH");
+      expect(patch?.body).toEqual({
+        photoUrl: "/api/storage/objects/library/6",
+        photoPlayerId: 11,
+      });
+    });
+    expect(within(dialog).queryByRole("button", { name: /Player 12/ })).toBeNull();
+  });
+});
+
 describe("queue page", () => {
   it("with no drafts, explains that drafts arrive after the next import", async () => {
     stubApi(baseRoutes([]));
