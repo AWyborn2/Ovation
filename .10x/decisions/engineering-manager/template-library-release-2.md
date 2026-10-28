@@ -6,7 +6,8 @@
 - Design: `decisions/architect/template-library-release-2.md` and `.10x/adrs/012-club-published-templates.md`
   (accepted).
 
-**Status:** ADR-012 accepted 27 Oct 2026. R2-A, R2-B, R2-D and R2-E merged (#558, #565, #564, #566); R2-C is the last slice.
+**Status:** Complete. ADR-012 accepted 27 Oct 2026; all five slices merged to `main`: R2-A #558, R2-B #565,
+R2-C #572, R2-D #564, R2-E #566.
 
 ## Delivery model
 
