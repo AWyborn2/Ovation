@@ -235,6 +235,23 @@ export const DeletePlayerParams = zod.object({
 
 
 /**
+ * The sponsors tagged with this senior player whose active dates cover today, in the order their cards show them (the shared card-sponsors rule for a player card). Empty when the player has none. Tenant-scoped; a fill-in id always returns an empty list. Senior players only.
+ * @summary The player's active player sponsors (public profile)
+ */
+export const GetPlayerSponsorsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetPlayerSponsorsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "logoUrl": zod.string(),
+  "link": zod.string().describe('The sponsor\'s website; empty when none is set.')
+}).describe('A player sponsor as the public player profile shows it.')
+export const GetPlayerSponsorsResponse = zod.array(GetPlayerSponsorsResponseItem)
+
+
+/**
  * One row per (grade, season) aggregated from the player_grade_season_stats snapshot. Baseline rows (season = null) represent the pre-scorecard career total imported with the seed. Summing all rows within a grade reproduces that grade's per-grade aggregate shown elsewhere.
  * @summary Season-by-season stat breakdown for a player
  */

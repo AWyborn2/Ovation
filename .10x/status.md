@@ -9,7 +9,7 @@
 
 **In progress:**
 
-- player-sponsors follow-up: player profile page shows their sponsor; Sponsors page shows each sponsor's players if not already done (P1). Session started 28 Oct. Juniors stay out until a consent rule is decided.
+- player-sponsors follow-up (P1, no migration): the player profile shows their sponsor, PR #577 from `wyborn21/player-page-sponsors` (public `GET /players/{id}/sponsors` by the shared `cardSponsors` rule, and a "Proudly sponsored by" strip). The Sponsors page already lists each sponsor's players (#569). Juniors stay out until a consent rule is decided.
 - photo-focus-areas follow-ups: junior shape-aware picking, a focus box suggested on upload, player areas as their own tiles. Session started 28 Oct.
 - Dependabot #541–#545 (actions/cache 6, upload-artifact 7, the minor/patch group, pino 10, lucide-react 1.x): being checked and merged or closed. Replit needs `pnpm install` once the npm ones merge.
 

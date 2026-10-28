@@ -5013,6 +5013,17 @@ export interface Sponsor {
   players: SponsorPlayer[];
 }
 
+/**
+ * A player sponsor as the public player profile shows it.
+ */
+export interface PlayerSponsorBadge {
+  id: number;
+  name: string;
+  logoUrl: string;
+  /** The sponsor's website; empty when none is set. */
+  link: string;
+}
+
 export interface SponsorInput {
   name: string;
   logoUrl: string;

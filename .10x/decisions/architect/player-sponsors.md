@@ -108,3 +108,10 @@ participants can't be tagged. Juniors isolation holds: no junior table is read.
    team list, so it assembles no carousel sets.
 
 Ash runs migration 0074 in Production SQL before the republish that carries slice 2.
+
+6. **Player page (P1)** — public `GET /players/{id}/sponsors` returns `PlayerSponsorBadge[]`
+   (`id, name, logoUrl, link`): `loadActiveSponsors` then `cardSponsors(…, { kind: "player",
+playerId }).playerSponsors`, so the date window, order and fill-in rule are the cards' own.
+   Club-wide sponsors never show; no names of other players are exposed. The senior profile
+   shows a "Proudly sponsored by" strip (logo and name, linked when the sponsor has a web
+   address) and nothing when there are none. Junior pages are untouched. No migration.

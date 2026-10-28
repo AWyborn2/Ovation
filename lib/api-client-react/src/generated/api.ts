@@ -379,6 +379,7 @@ import type {
   PlayerPrivacyList,
   PlayerPrivacyOverride,
   PlayerSeasonStat,
+  PlayerSponsorBadge,
   PlayerUpdate,
   PlayersVsClub,
   PlayhqDuePlansResponse,
@@ -1169,6 +1170,84 @@ export const useDeletePlayer = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeletePlayerMutationOptions(options));
     }
+
+export const getGetPlayerSponsorsUrl = (id: number,) => {
+
+
+
+
+  return `/api/players/${id}/sponsors`
+}
+
+/**
+ * The sponsors tagged with this senior player whose active dates cover today, in the order their cards show them (the shared card-sponsors rule for a player card). Empty when the player has none. Tenant-scoped; a fill-in id always returns an empty list. Senior players only.
+ * @summary The player's active player sponsors (public profile)
+ */
+export const getPlayerSponsors = async (id: number, options?: RequestInit): Promise<PlayerSponsorBadge[]> => {
+
+  return customFetch<PlayerSponsorBadge[]>(getGetPlayerSponsorsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlayerSponsorsQueryKey = (id: number,) => {
+    return [
+    `/api/players/${id}/sponsors`
+    ] as const;
+    }
+
+
+export const getGetPlayerSponsorsQueryOptions = <TData = Awaited<ReturnType<typeof getPlayerSponsors>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerSponsors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlayerSponsorsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayerSponsors>>> = ({ signal }) => getPlayerSponsors(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlayerSponsors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlayerSponsorsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlayerSponsors>>>
+export type GetPlayerSponsorsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The player's active player sponsors (public profile)
+ */
+
+export function useGetPlayerSponsors<TData = Awaited<ReturnType<typeof getPlayerSponsors>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayerSponsors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlayerSponsorsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetPlayerSeasonsUrl = (id: number,) => {
 

@@ -50,6 +50,7 @@ import { DistributionCard } from "./player-detail/distribution";
 import { RanksCard } from "./player-detail/ranks";
 import { OpponentsCard } from "./player-detail/opponents";
 import { NextUpCard } from "./player-detail/next-up";
+import { PlayerSponsors } from "./player-detail/sponsors";
 import {
   GradeCareerTable,
   JuniorCareerSection,
@@ -391,6 +392,8 @@ export default function PlayerDetail() {
             {photoError && <p className="text-xs text-destructive">{photoError}</p>}
           </div>
           <TradingCardModal playerId={playerId} open={cardOpen} onOpenChange={setCardOpen} />
+
+          <PlayerSponsors playerId={player.id} />
 
           {showCappedNoStats && capEntry && (
             <div className="rounded-md border-l-4 border-primary/60 bg-muted/40 p-4 text-sm leading-snug">
