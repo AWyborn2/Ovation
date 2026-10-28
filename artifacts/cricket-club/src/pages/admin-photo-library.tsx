@@ -12,6 +12,7 @@ import {
   useListGrades,
   useGetGoogleDriveConfig,
   getGetGoogleDriveConfigQueryKey,
+  setClubPhotoFocus,
   type ClubPhoto,
   type ClubPhotoMatchFormat,
 } from "@workspace/api-client-react";
@@ -57,6 +58,7 @@ import {
   type GradeFolder,
   type TypeFolder,
 } from "@/lib/photo-folders";
+import { suggestUploadFocus } from "@/lib/face-suggestions";
 import { cn } from "@/lib/utils";
 
 type Upload = { name: string; state: UploadState };
@@ -180,10 +182,9 @@ export default function AdminPhotoLibrary() {
   );
   const shown = useMemo(
     () =>
-      (formatFilter === "all"
-        ? inFolder
-        : inFolder.filter((p) => p.matchFormat === formatFilter)
-      ).filter((p) => !needsFocus || !p.focusBox),
+      (formatFilter === "all" ? inFolder : inFolder.filter((p) => p.matchFormat === formatFilter))
+        // A box suggested on upload still needs an admin to check it.
+        .filter((p) => !needsFocus || !p.focusBox || p.focusSuggested),
     [inFolder, formatFilter, needsFocus],
   );
 
@@ -216,6 +217,14 @@ export default function AdminPhotoLibrary() {
   }, [folder.grade, folder.type, collectionId]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
+  // Photo focus areas: a focus box suggested from the faces on each new photo,
+  // found on this device; it stays a suggestion until an admin saves the focus.
+  const suggestFocus = (photos: Array<{ id: number; url: string }>) =>
+    void suggestUploadFocus(photos, (id, box) =>
+      setClubPhotoFocus(id, { focusBox: box, suggested: true }),
+    ).then((n) => {
+      if (n > 0) refresh();
+    });
   const tagM = useTagClubPhotos({
     mutation: {
       onSuccess: () => {
@@ -280,12 +289,15 @@ export default function AdminPhotoLibrary() {
         state: { phase: "uploading", progress: 0 } as UploadState,
       })),
     ]);
+    const added: Array<{ id: number; url: string }> = [];
     await uploadLibraryPhotos(files, {
       ...uploadTarget(),
+      onIngested: (p) => added.push(p),
       onState: (i, state) =>
         setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
     });
     refresh();
+    suggestFocus(added);
   };
 
   const importFromDrive = async () => {
@@ -300,12 +312,15 @@ export default function AdminPhotoLibrary() {
         ...prev,
         ...pick.files.map((f) => ({ name: f.name, state: { phase: "converting" } as UploadState })),
       ]);
+      const added: Array<{ id: number; url: string }> = [];
       await importDrivePhotos(pick, {
         ...uploadTarget(),
+        onIngested: (p) => added.push(p),
         onState: (i, state) =>
           setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
       });
       refresh();
+      suggestFocus(added);
     } catch (err) {
       setDriveError(err instanceof Error ? err.message : "Google Drive import didn't finish.");
     } finally {
@@ -846,7 +861,7 @@ export default function AdminPhotoLibrary() {
                         )}
                         {p.focusBox && (
                           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
-                            Focus set
+                            {p.focusSuggested ? "Focus suggested" : "Focus set"}
                           </span>
                         )}
                       </span>

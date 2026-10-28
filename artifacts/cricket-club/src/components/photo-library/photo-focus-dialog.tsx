@@ -47,6 +47,8 @@ type FocusPhoto = {
   width: number;
   height: number;
   focusBox: FocusBox | null;
+  /** The box was suggested from faces on upload and no admin has saved it yet. */
+  focusSuggested?: boolean;
   offShapes: readonly FrameShape[];
 };
 
@@ -286,6 +288,9 @@ function FocusEditorDialog({
           <DialogDescription>
             Drag on the photo to mark the part that matters. Every card frame keeps it in view. Mark
             where each player is, and cards about them crop to that.
+            {photo?.focusSuggested && focusBox && (
+              <> The box shown was suggested from the faces found on upload: check it and save.</>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -652,6 +657,7 @@ export function JuniorPhotoFocusDialog({
           width: photo.width,
           height: photo.height,
           focusBox: photo.focusBox ?? null,
+          focusSuggested: photo.focusSuggested ?? false,
           offShapes: photo.offShapes ?? [],
         }
       : null;

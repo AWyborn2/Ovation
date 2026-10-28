@@ -72,6 +72,8 @@ export type PhotoDto = {
   juniorStock: boolean;
   /** Photo focus areas: the box every frame keeps in view; null = centred. */
   focusBox: FocusBox | null;
+  /** The box was suggested from faces on upload; no admin has saved it yet. */
+  focusSuggested: boolean;
   offShapes: FrameShape[];
   playerAreas: Array<{ playerId: number; box: FocusBox }>;
   /** The photo collections the photo is in. */
@@ -132,6 +134,7 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     sourcePhotoId: r.sourcePhotoId ?? null,
     juniorStock: r.juniorStock,
     focusBox: normaliseFocusBox(r.focusBox),
+    focusSuggested: r.focusSuggested,
     offShapes: FRAME_SHAPES.filter((shape) => r.offShapes.includes(shape)),
     playerAreas: (areas.get(r.id) ?? []).sort((a, b) => a.playerId - b.playerId),
     collectionIds: (collections.get(r.id) ?? []).sort((a, b) => a - b),

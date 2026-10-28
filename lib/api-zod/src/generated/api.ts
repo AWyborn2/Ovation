@@ -9576,6 +9576,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -9656,6 +9657,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -9750,6 +9752,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -9783,6 +9786,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13169,6 +13173,7 @@ export const ListClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13226,6 +13231,7 @@ export const IngestClubPhotosResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13317,6 +13323,7 @@ export const TagClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13347,6 +13354,7 @@ export const SetClubPhotoFocusBody = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "suggested": zod.boolean().optional().describe('The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13380,6 +13388,7 @@ export const SetClubPhotoFocusResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13428,6 +13437,7 @@ export const MoveClubPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -13693,6 +13703,7 @@ export const RemovePhotoBackgroundResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
   "playerAreas": zod.array(zod.object({
   "playerId": zod.number(),
@@ -16700,6 +16711,7 @@ export const ListJuniorLibraryPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
@@ -16758,6 +16770,7 @@ export const IngestJuniorLibraryPhotosResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
@@ -16813,6 +16826,7 @@ export const TagJuniorLibraryPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
@@ -16842,6 +16856,7 @@ export const SetJuniorLibraryPhotoFocusBody = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "suggested": zod.boolean().optional().describe('The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
@@ -16878,6 +16893,7 @@ export const SetJuniorLibraryPhotoFocusResponse = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
@@ -16927,6 +16943,7 @@ export const MoveJuniorLibraryPhotosResponseItem = zod.object({
   "w": zod.number(),
   "h": zod.number()
 }).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "focusSuggested": zod.boolean().optional().describe('The focus box was suggested from the faces found on upload and no admin has saved it yet.'),
   "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
   "participantAreas": zod.array(zod.object({
   "participantId": zod.string(),
