@@ -15,7 +15,9 @@ const WASM_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAP
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
 
-type Detector = { detect(image: HTMLImageElement): { detections: RawDetection[] } };
+type Detector = {
+  detect(image: HTMLImageElement | HTMLCanvasElement): { detections: RawDetection[] };
+};
 type RawDetection = {
   boundingBox?: { originX: number; originY: number; width: number; height: number };
   categories: Array<{ score: number }>;
@@ -51,23 +53,103 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** A square part of the photo to scan, in pixels; null size = the whole photo. */
+export type FaceScanTile = { x: number; y: number; size: number | null };
+
+/**
+ * The parts of a photo to scan for faces. The short-range model only finds a
+ * face that fills roughly 15–35% of what it looks at, so a team photo's faces
+ * (a few per cent of the frame) are invisible to a whole-photo scan. Besides
+ * the whole photo, this scans overlapping squares a half and a quarter of the
+ * photo's short side (each overlapping its neighbours by half, so every face
+ * that size range covers sits whole in one of them).
+ */
+export function faceScanTiles(width: number, height: number): FaceScanTile[] {
+  const tiles: FaceScanTile[] = [{ x: 0, y: 0, size: null }];
+  const short = Math.min(width, height);
+  for (const share of [0.5, 0.25]) {
+    const size = Math.round(short * share);
+    if (size < 64) continue;
+    const step = size / 2;
+    const starts = (length: number) => {
+      const out: number[] = [];
+      for (let p = 0; p + size < length; p += step) out.push(Math.round(p));
+      out.push(length - size);
+      return [...new Set(out)];
+    };
+    for (const y of starts(height)) for (const x of starts(width)) tiles.push({ x, y, size });
+  }
+  return tiles;
+}
+
+/** A face found in pixels of the photo, with the detector's confidence. */
+export type FoundFace = { x: number; y: number; w: number; h: number; score: number };
+
+/**
+ * One box per face from overlapping scans: the most confident first, and a box
+ * that mostly overlaps one already kept (the same face seen from two tiles) is
+ * dropped.
+ */
+export function mergeFaces(found: readonly FoundFace[]): FoundFace[] {
+  const kept: FoundFace[] = [];
+  for (const f of [...found].sort((a, b) => b.score - a.score)) {
+    const dup = kept.some((k) => {
+      const ix = Math.max(0, Math.min(k.x + k.w, f.x + f.w) - Math.max(k.x, f.x));
+      const iy = Math.max(0, Math.min(k.y + k.h, f.y + f.h) - Math.max(k.y, f.y));
+      // Shared area over the smaller box: a cut-off view of a face inside a
+      // whole one counts as the same face.
+      return (ix * iy) / Math.min(k.w * k.h, f.w * f.h) > 0.5;
+    });
+    if (!dup) kept.push(f);
+  }
+  return kept;
+}
+
+/** The size the scanned squares are drawn at (the model looks at 128 × 128). */
+const SCAN_PX = 256;
+/**
+ * The confidence a face found in a square needs (the whole-photo scan takes the
+ * detector's 0.5). Zoomed-in squares of a close-up mistake shirts and hands for
+ * faces at around 0.5–0.65; real faces in a team photo score 0.75 and up.
+ */
+const TILE_MIN_SCORE = 0.7;
+
 /** The faces on a photo, as boxes in fractions of it, most confident first. */
 export async function findFaces(src: string): Promise<FocusBox[]> {
   const [faces, img] = await Promise.all([loadDetector(), loadImage(src)]);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   if (!w || !h) return [];
-  return faces
-    .detect(img)
-    .detections.slice()
-    .sort((a, b) => (b.categories[0]?.score ?? 0) - (a.categories[0]?.score ?? 0))
-    .flatMap((d) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = SCAN_PX;
+  const ctx = canvas.getContext("2d");
+  const found: FoundFace[] = [];
+  for (const tile of faceScanTiles(w, h)) {
+    let source: HTMLImageElement | HTMLCanvasElement = img;
+    let scale = 1;
+    if (tile.size !== null) {
+      if (!ctx) break;
+      ctx.drawImage(img, tile.x, tile.y, tile.size, tile.size, 0, 0, SCAN_PX, SCAN_PX);
+      source = canvas;
+      scale = tile.size / SCAN_PX;
+    }
+    for (const d of faces.detect(source).detections) {
       const b = d.boundingBox;
-      const box = b
-        ? normaliseFocusBox({ x: b.originX / w, y: b.originY / h, w: b.width / w, h: b.height / h })
-        : null;
-      return box ? [box] : [];
-    });
+      const score = d.categories[0]?.score ?? 0;
+      if (!b || (tile.size !== null && score < TILE_MIN_SCORE)) continue;
+      found.push({
+        x: tile.x + b.originX * scale,
+        y: tile.y + b.originY * scale,
+        w: b.width * scale,
+        h: b.height * scale,
+        score,
+      });
+    }
+  }
+  return mergeFaces(found).flatMap((f) => {
+    const box = normaliseFocusBox({ x: f.x / w, y: f.y / h, w: f.w / w, h: f.h / h });
+    return box ? [box] : [];
+  });
 }
 
 /**
