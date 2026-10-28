@@ -44,7 +44,8 @@ nothing. Admins fix it by hand or not at all.
 Design: `decisions/architect/player-sponsors.md`.
 
 - **Player-centred kinds:** `milestone`, `century`, `fiveFor`, `debut`, `player` (player cards,
-  player of the week) and `newSigning`. Match results, team lists, records, grade leaders and
+  player of the week), `newSigning` and, from 28 Oct 2026 (Ash, after dev testing), `bigMoment`
+  (hat-trick, five catches). Match results, team lists, records, grade leaders and
   every other kind keep the club strip.
 - **Personal sponsors stay personal:** a sponsor tagged with players and no card types shows only
   on its players' cards. With card types picked it also shows club-wide on those types, but never

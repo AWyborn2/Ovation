@@ -16,8 +16,9 @@ const ONE_SPONSOR_KINDS: ReadonlySet<string> = new Set(["matchSummary", "premier
 
 /**
  * Cards about one player (player sponsors): the player's own sponsors replace
- * the club strip. Results, team lists, records, grade leaders and the rest
- * keep the club strip. An announcement follows a player only when one is
+ * the club strip. Big Moment (a hat-trick, five catches) joined the list on
+ * 28 Oct 2026. Results, team lists, records, grade leaders and the rest keep
+ * the club strip. An announcement follows a player only when one is
  * picked for it by hand ("Meet our sponsored player").
  */
 export const PLAYER_SPONSOR_KINDS: ReadonlySet<string> = new Set([
@@ -27,6 +28,7 @@ export const PLAYER_SPONSOR_KINDS: ReadonlySet<string> = new Set([
   "debut",
   "player",
   "newSigning",
+  "bigMoment",
   "announcement",
 ]);
 
