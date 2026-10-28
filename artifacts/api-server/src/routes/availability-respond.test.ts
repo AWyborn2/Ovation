@@ -745,8 +745,20 @@ describe("availability respond API", () => {
       .send({ stop: "yes" })
       .expect(400);
     const logs: string[] = [];
+    // Since pino 10, child loggers (pino-http's `req.log`) inherit `info` from
+    // the root logger, so this spy also sees the request-completion line, whose
+    // raw `res` holds a circular socket. Drop repeat objects when stringifying.
     const spy = vi.spyOn(logger, "info").mockImplementation(((obj: unknown, msg?: string) => {
-      logs.push(JSON.stringify({ obj, msg }));
+      const seen = new WeakSet<object>();
+      logs.push(
+        JSON.stringify({ obj, msg }, (_key, value: unknown) => {
+          if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) return undefined;
+            seen.add(value);
+          }
+          return value;
+        }),
+      );
     }) as never);
     let stopped: request.Response;
     try {
