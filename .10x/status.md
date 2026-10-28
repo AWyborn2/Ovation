@@ -7,18 +7,20 @@
 
 **Delivered to `main` on 27 Oct 2026:** player-sponsors (#563, #567–#570, #573, #574), photo-focus-areas slices 1–4 (#549–#554), Studio editor items (#533, #537, #551, #555, #556, #560, #561), template library release 2 (R2-A to R2-E: #558, #565, #564, #566, #572), honours kiosk (#532, #546, #548, #559). Test checklist: `docs/testing/2026-10-27-checklist.html` (#575).
 
+**Production (28 Oct):** migrated and republished. A read-only check of 0065–0075 found only 0066 and 0069 missing (both widen `library_elements_category_check`); 0069's constraint, applied as one `ALTER TABLE`, covers both, and the check now passes for all eleven. The draft backfill preview found no rows, so none was needed.
+
 **Dev (Replit "OVATION APP", 28 Oct):** pulled through #585 (`ae26021`) and restarted; the draft backfill set 11 rows on tenant 1; #588 (v4 classic templates) to pull next. Migrations: every one in Git through 0075 (`0075_photo_focus_suggested`) applied; the latest ledger hash matches, none pending (Replit agent, 28 Oct). Old ledger mismatches on 0053 / 0056 / 0057 (schema present), left as is.
 
 **In progress:**
 
+- Player sponsors and Create a card, Ash's Production test (28 Oct): the "Milesy" sample tribute line shows on real milestone cards; player sponsors missing on a linked-player announcement and on queued milestone cards; move "Proudly sponsored by" into the player page hero; prefill Century, Five-for and Big Moment from detected moments like Milestone; Create a card shows the linked player's library photo with a picker and upload, and its button exports straight away.
 - photo-focus-areas follow-ups: junior shape-aware picking, a focus box suggested on upload, player areas as their own tiles. Session started 28 Oct.
 - Dependabot #541–#545 (actions/cache 6, upload-artifact 7, the minor/patch group, pino 10, lucide-react 1.x): being checked and merged or closed. Replit needs `pnpm install` once the npm ones merge.
 
 **Ash's to do:**
 
 - Test 27 Oct work on dev with the checklist.
-- Production: in the Production SQL runner check which of 0065–0075 are missing, run those in order, then republish (republishing does not migrate Production).
-- Production, after that republish: run the UPDATE in `scripts/sql/backfill-draft-subject-player.sql` (preview SELECT first; idempotent) so queued player cards find their player's sponsors. Then re-test player sponsors there (dev has no player tags; Ash's test data is in Production).
+- Re-test player sponsors in Production (dev has no player tags).
 - Before switching on club Generate: run the AI quality query (first-try fit >= 70% over 50 console runs).
 - Register the Figma app (`FIGMA_CLIENT_ID` / `FIGMA_CLIENT_SECRET`) for Sign in with Figma.
 - iPhone/iPad Save to Photos device test (open since 23 Oct).
