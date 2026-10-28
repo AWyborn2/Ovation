@@ -23,6 +23,7 @@ import {
   type TemplateFitStatus,
 } from "@workspace/db";
 import { logger } from "../logger";
+import { followLibraryUpdatesQuietly } from "./follow";
 
 /** What a fit check result is written to. */
 export type FitTarget =
@@ -47,7 +48,11 @@ export async function writeFitResult(target: FitTarget, result: FitResult): Prom
           eq(libraryTemplateVersionsTable.version, target.version),
         ),
       );
-    if (result.status === "pass") await listPassedClubVersion(target.templateId, target.version);
+    if (result.status === "pass") {
+      await listPassedClubVersion(target.templateId, target.version);
+      // Unedited club copies take the version that just passed.
+      await followLibraryUpdatesQuietly([target.templateId]);
+    }
     return;
   }
   // A copy saved again since the check started keeps its newer status.

@@ -40,6 +40,7 @@ import { libraryAssetPolicyErrors } from "./assets";
 import { documentCoverage } from "./coverage";
 import { syncElementBundles } from "./element-bundles";
 import { initialFit, requestFit } from "./fit";
+import { followLibraryUpdates } from "./follow";
 
 export type BundleSyncSummary = {
   looks: number;
@@ -48,6 +49,8 @@ export type BundleSyncSummary = {
   versionsAdded: number;
   /** Templates removed from the bundles since the last sync, now unlisted. */
   retired: number;
+  /** Unedited club copies (and their queued cards) moved to a passed newer version. */
+  copiesUpdated: number;
   skipped: Array<{ slug: string; reason: string }>;
 };
 
@@ -128,9 +131,11 @@ export async function syncBundles(
     templates: 0,
     versionsAdded: 0,
     retired: 0,
+    copiesUpdated: 0,
     skipped: [],
   };
   const seen: string[] = [];
+  const synced: number[] = [];
 
   for (const [order, bundle] of bundles.entries()) {
     const [look] = await db
@@ -205,6 +210,7 @@ export async function syncBundles(
         continue;
       }
       summary.templates += 1;
+      synced.push(template.id);
 
       const fit = initialFit();
       const inserted = await db
@@ -263,6 +269,10 @@ export async function syncBundles(
     )
     .returning({ id: libraryTemplatesTable.id });
   summary.retired = retired.length;
+  // Unedited club copies follow a version that has passed: one that passed at
+  // insert (no fit runner), or earlier while the copies stayed behind. A
+  // version still pending follows when its check passes (writeFitResult).
+  summary.copiesUpdated = (await followLibraryUpdates(synced)).copies;
   return summary;
 }
 
@@ -279,6 +289,7 @@ export async function syncBundlesAtBoot(): Promise<void> {
         templates: summary.templates,
         versionsAdded: summary.versionsAdded,
         retired: summary.retired,
+        copiesUpdated: summary.copiesUpdated,
       },
       "template bundles synced",
     );

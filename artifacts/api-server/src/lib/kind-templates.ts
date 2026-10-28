@@ -305,6 +305,7 @@ export async function applyTemplateToDrafts(
   tx: Tx,
   template: CardTemplateRow,
   expectedDrafts?: number,
+  opts: { onlyFromThisCopy?: boolean } = {},
 ): Promise<{ changed: number; skipped: number; edited: number }> {
   const tenantId = template.tenantId;
   const kind = template.baseKind ?? "";
@@ -321,6 +322,11 @@ export async function applyTemplateToDrafts(
         // A queued carousel (all `kind: matchDay`) is drawn with its own set
         // design, not the kind's card: applying Match Day must not replace it.
         sql`NOT (${socialDraftsTable.cardInput} ? 'weekendCarousel')`,
+        // A library update a copy follows by itself only reaches the drafts
+        // drawn from that copy (followLibraryUpdates).
+        opts.onlyFromThisCopy
+          ? sql`${socialDraftsTable.templateRef}->>'copyId' = ${String(template.id)}`
+          : undefined,
       ),
     )
     .for("update");
