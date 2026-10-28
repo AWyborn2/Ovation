@@ -22,7 +22,7 @@
     "@expo/ngrok": "^4.1.0",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-native/metro-config": "0.88.0",
+    "@react-native/metro-config": "0.86.3",
     "@tanstack/react-query": "catalog:",
     "@types/react": "~19.2.18",
     "@types/react-dom": "~19.2.7",
