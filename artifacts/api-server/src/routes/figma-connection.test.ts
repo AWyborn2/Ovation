@@ -460,6 +460,46 @@ describe("Sign in with Figma", () => {
     expect(url.toString()).not.toContain("client-secret-456");
   });
 
+  it("returns to the club host the admin is on, not the platform host behind the proxy", async () => {
+    enableOAuth();
+    const clubHost = `figma-conn-${STAMP}.ovationcc.app`;
+    const startFrom = (headers: Record<string, string>) => {
+      let req = request(app)
+        .post("/api/figma-connection/oauth/start")
+        .set("Cookie", cookie)
+        .set("x-tenant-id", String(tenantId))
+        .set("Host", "ovation-api.internal");
+      for (const [k, v] of Object.entries(headers)) req = req.set(k, v);
+      return req;
+    };
+    const returnOf = (res: request.Response) => {
+      const state = new URL(res.body.url).searchParams.get("state")!;
+      return JSON.parse(Buffer.from(state.split(".")[0]!, "base64url").toString("utf8")).r;
+    };
+
+    // Replit's edge: the public host arrives in X-Forwarded-Host.
+    const viaEdge = await startFrom({ "X-Forwarded-Host": clubHost });
+    expect(viaEdge.status).toBe(200);
+    expect(returnOf(viaEdge)).toBe(`https://${clubHost}/admin/social/cards#figma`);
+
+    // The tenant-domain Worker: X-Ovation-Host with the shared key.
+    process.env.PROXY_SHARED_SECRET = "figma-test-proxy-secret";
+    try {
+      const viaWorker = await startFrom({
+        "X-Ovation-Host": clubHost,
+        "X-Ovation-Proxy-Key": "figma-test-proxy-secret",
+      });
+      expect(viaWorker.status).toBe(200);
+      expect(returnOf(viaWorker)).toBe(`https://${clubHost}/admin/social/cards#figma`);
+    } finally {
+      delete process.env.PROXY_SHARED_SECRET;
+    }
+
+    // A direct request keeps its own scheme and port.
+    const direct = await club().post("/figma-connection/oauth/start");
+    expect(returnOf(direct)).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/admin\/social\/cards#figma$/);
+  });
+
   it("exchanges the code, stores both tokens sealed, and returns to settings", async () => {
     enableOAuth();
     const { state } = await startSignIn();
