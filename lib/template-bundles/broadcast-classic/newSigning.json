@@ -1,6 +1,6 @@
 {
   "name": "Broadcast new signing",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -290,7 +290,11 @@
                 "h": 2.92
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:12s4mlq0eymojd"
           },
           {
@@ -315,7 +319,9 @@
                 "h": 5.2
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:0teooav03937m4"
           },
           {
@@ -352,7 +358,11 @@
                 "h": 1.69
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:0vlurfz0ivrmjq"
           },
           {
@@ -377,7 +387,9 @@
                 "h": 3
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:16yjek31emcy8k"
           },
           {
@@ -416,7 +428,11 @@
                 "h": 2.59
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:0ikikm01s15r8h"
           },
           {
@@ -443,7 +459,9 @@
                 "h": 4.6
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:1nim0zc0wa3fiv"
           },
           {
@@ -515,7 +533,11 @@
                 "h": 2.47
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:180d9v70t00wh8"
           },
           {
@@ -540,7 +562,9 @@
                 "h": 4.4
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:18ja9yn1cla0ri"
           },
           {
@@ -576,7 +600,11 @@
                 "h": 2.47
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:0bo6rw71qdd3xi"
           },
           {
@@ -600,14 +628,16 @@
                 "h": 4.4
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:1x6o6e515wbhui"
           },
           {
             "id": "eyebrow-1",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "WELCOME TO THE CLUB · {{season}}",
+            "content": "WELCOME TO THE CLUB \u00b7 {{season}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 1.8,
@@ -637,14 +667,18 @@
                 "h": 1.8
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:1clvnlt092k4b2"
           },
           {
             "id": "eyebrow-2",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "WELCOME TO THE CLUB · {{season}}",
+            "content": "WELCOME TO THE CLUB \u00b7 {{season}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 0.94,
@@ -662,7 +696,9 @@
                 "h": 3.2
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:081b9871kdfn8q"
           },
           {
@@ -686,7 +722,9 @@
                 "h": 14.11
               }
             },
-            "sizes": ["square"],
+            "sizes": [
+              "square"
+            ],
             "sig": "text:1or5tgk06rnte5"
           },
           {
@@ -716,7 +754,10 @@
                 "h": 9.92
               }
             },
-            "sizes": ["portrait", "story"],
+            "sizes": [
+              "portrait",
+              "story"
+            ],
             "sig": "text:1r8p41n0gzc3oo"
           },
           {
@@ -740,7 +781,9 @@
                 "h": 17.63
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:1gbhi6b0twqmhq"
           },
           {
@@ -811,7 +854,11 @@
                 "h": 3.71
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:0u151p01orja8h"
           },
           {
@@ -835,7 +882,9 @@
                 "h": 6.6
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:1uv4uzo0405f8v"
           },
           {
@@ -870,7 +919,11 @@
                 "h": 3.37
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:0pskzgo1pk5ls5"
           },
           {
@@ -893,7 +946,9 @@
                 "h": 6
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:0f1sfxl1yedrm6"
           },
           {
@@ -928,7 +983,11 @@
                 "h": 3.37
               }
             },
-            "sizes": ["square", "portrait", "story"],
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
             "sig": "text:1t6p0ad0fjgoke"
           },
           {
@@ -951,7 +1010,9 @@
                 "h": 6
               }
             },
-            "sizes": ["landscape"],
+            "sizes": [
+              "landscape"
+            ],
             "sig": "text:1iw1dfi1j8djjf"
           },
           {
@@ -1010,33 +1071,117 @@
             "geometry": {
               "square": {
                 "x": 73.56,
-                "y": 77.52,
+                "y": 79.29,
                 "w": 18.66,
-                "h": 5.7
+                "h": 4.64
               },
               "portrait": {
                 "x": 72.7,
-                "y": 81.76,
+                "y": 83.24,
                 "w": 19.45,
-                "h": 4.76
+                "h": 3.87
               },
               "story": {
                 "x": 71,
-                "y": 15.41,
+                "y": 16.54,
                 "w": 21,
-                "h": 3.61
+                "h": 2.93
               },
               "landscape": {
                 "x": 81.51,
-                "y": 72.09,
+                "y": 74.63,
                 "w": 14,
-                "h": 8.17
+                "h": 6.65
               }
             },
             "showWhen": {
               "field": "playerSponsorLogo"
             },
             "sig": "image:1xf2upn05rrn76"
+          },
+          {
+            "id": "player-sponsor-label",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 1.25
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "square": {
+                "x": 73.11,
+                "y": 76.67,
+                "w": 19.55,
+                "h": 2.22
+              },
+              "portrait": {
+                "x": 72.24,
+                "y": 81.06,
+                "w": 20.37,
+                "h": 1.85
+              },
+              "story": {
+                "x": 70.5,
+                "y": 14.88,
+                "w": 22,
+                "h": 1.41
+              }
+            },
+            "sizes": [
+              "square",
+              "portrait",
+              "story"
+            ],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0p87by203sqsmv"
+          },
+          {
+            "id": "player-sponsor-label-2",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "landscape": {
+                "x": 81.18,
+                "y": 70.88,
+                "w": 14.67,
+                "h": 3.18
+              }
+            },
+            "sizes": [
+              "landscape"
+            ],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0gbrg9m1s3lefr"
           }
         ]
       }
