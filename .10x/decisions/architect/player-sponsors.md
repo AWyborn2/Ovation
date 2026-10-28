@@ -115,3 +115,9 @@ playerId }).playerSponsors`, so the date window, order and fill-in rule are the 
    Club-wide sponsors never show; no names of other players are exposed. The senior profile
    shows a "Proudly sponsored by" strip (logo and name, linked when the sponsor has a web
    address) and nothing when there are none. Junior pages are untouched. No migration.
+
+7. **Club date and old drafts (28 Oct 2026)** — the sponsor active window (`loadActiveSponsors`,
+   and the kiosk settings preview) uses the club's date, Australia/Perth, not UTC; before, a
+   sponsorship starting today went live at 8 am. Drafts made before slice 3 have no
+   `subject_player_id`: `scripts/sql/backfill-draft-subject-player.sql` sets it on open
+   player-centred drafts from their `/players/<id>` link, as the sweep does (idempotent).

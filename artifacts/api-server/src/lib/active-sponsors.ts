@@ -2,6 +2,7 @@ import type { Logger } from "pino";
 import { and, asc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db, sponsorPlayersTable, sponsorsTable, type SponsorRow } from "@workspace/db";
 import { migrateSponsorLogos } from "./sponsor-logo-migration";
+import { perthDate } from "./availability-grades";
 
 export type SponsorPlayer = { id: number; name: string };
 export type SponsorWithPlayers = SponsorRow & { players: SponsorPlayer[] };
@@ -45,10 +46,10 @@ export async function withSponsorPlayers<R extends { id: number }>(
 }
 
 /**
- * One tenant's sponsors whose active window covers today, ordered by
- * displayOrder. The date-window rule treats a null bound as open-ended (no
- * start / no end). Logos are run through the lazy data-URL → object-storage
- * migration on read. Shared by the social-card bundle and the honour-board
+ * One tenant's sponsors whose active window covers today (the club's date,
+ * Australia/Perth), ordered by displayOrder. The date-window rule treats a
+ * null bound as open-ended (no start / no end). Logos are run through the
+ * lazy data-URL → object-storage migration on read. Shared by the social-card bundle and the honour-board
  * kiosk so both surface the same "live" sponsor set. NOTE: card-kind filtering
  * is a share-card concern and is applied by the caller, never here. Each
  * sponsor carries its players' ids (player sponsors), without names.
@@ -63,8 +64,11 @@ export async function withSponsorPlayers<R extends { id: number }>(
 export async function loadActiveSponsors(
   tenantId: number,
   log: Logger,
+  now: Date = new Date(),
 ): Promise<SponsorWithPlayers[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  // The club's own date (Perth), not UTC: a sponsorship that starts "today"
+  // is live from local midnight, not 8 am.
+  const today = perthDate(now);
   const rows = await db
     .select()
     .from(sponsorsTable)
