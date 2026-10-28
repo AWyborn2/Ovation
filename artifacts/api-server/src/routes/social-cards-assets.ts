@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, or } from "drizzle-orm";
-import { db, sponsorsTable, cardThemesTable, cardAudioTracksTable } from "@workspace/db";
+import {
+  db,
+  sponsorsTable,
+  sponsorPlayersTable,
+  cardThemesTable,
+  cardAudioTracksTable,
+} from "@workspace/db";
 import {
   CreateSponsorBody,
   UpdateSponsorBody,
@@ -15,9 +21,12 @@ import {
   UpdateCardAudioTrackParams,
   DeleteCardAudioTrackParams,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
+import { withSponsorPlayers } from "../lib/active-sponsors";
+import { nonSeniorPlayerIds } from "../lib/club-photo-library";
+import { linkedPlayerNames } from "../lib/squad-link";
 import { getTenantId } from "../middlewares/tenant-context";
 
 import { ensureThemes } from "../lib/social-cards-helpers";
@@ -35,13 +44,55 @@ function cleanGrades(grades: readonly string[] | undefined): string[] {
   return [...new Set((grades ?? []).map((g) => g.trim()).filter(Boolean))];
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type PlayerTags = { ok: true; tags: Array<{ id: number; name: string }> } | { ok: false };
+
+/**
+ * A sponsor's players (player sponsors), checked and named: duplicates
+ * dropped, and anything but this club's senior players rejected (junior
+ * participants and fill-ins are never tagged, as on photos). Each tag keeps
+ * the player's name as a label for the admin screen.
+ */
+async function playerTags(tenantId: number, playerIds: readonly number[]): Promise<PlayerTags> {
+  const ids = [...new Set(playerIds)];
+  if (ids.length === 0) return { ok: true, tags: [] };
+  if ((await nonSeniorPlayerIds(tenantId, ids)).length > 0) return { ok: false };
+  const names = await linkedPlayerNames(tenantId, ids);
+  return { ok: true, tags: ids.map((id) => ({ id, name: names.get(id) ?? `Player #${id}` })) };
+}
+
+/** Replace a sponsor's players with `tags`, inside the sponsor's transaction. */
+async function writePlayerTags(
+  tx: Tx,
+  tenantId: number,
+  sponsorId: number,
+  tags: Array<{ id: number; name: string }>,
+): Promise<void> {
+  await tx
+    .delete(sponsorPlayersTable)
+    .where(
+      and(eq(sponsorPlayersTable.tenantId, tenantId), eq(sponsorPlayersTable.sponsorId, sponsorId)),
+    );
+  if (tags.length === 0) return;
+  await tx
+    .insert(sponsorPlayersTable)
+    .values(tags.map((t) => ({ tenantId, sponsorId, playerId: t.id, playerName: t.name })));
+}
+
+const SENIOR_ONLY = "Only senior players can be tagged on a sponsor.";
+
 router.get("/sponsors", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
   const rows = await db
     .select()
     .from(sponsorsTable)
-    .where(eq(sponsorsTable.tenantId, getTenantId(req)))
+    .where(eq(sponsorsTable.tenantId, tenantId))
     .orderBy(asc(sponsorsTable.displayOrder), asc(sponsorsTable.id));
-  res.json(await migrateSponsorLogos(rows, req.log));
+  // Player names go to the club's admins only; public readers get the ids.
+  const withNames = (await resolveAdmin(req)) !== null;
+  res.json(
+    await withSponsorPlayers(tenantId, await migrateSponsorLogos(rows, req.log), { withNames }),
+  );
 });
 
 router.post(
@@ -56,6 +107,11 @@ router.post(
     }
     const tenantId = getTenantId(req);
     const isPresenting = parsed.data.isPresenting ?? false;
+    const players = await playerTags(tenantId, parsed.data.playerIds ?? []);
+    if (!players.ok) {
+      res.status(400).json({ error: SENIOR_ONLY });
+      return;
+    }
     const row = await db.transaction(async (tx) => {
       // At most one presenting sponsor per tenant: clear any prior one first so the
       // partial unique index never trips (mirrors the card-themes isDefault flow).
@@ -81,9 +137,11 @@ router.post(
           tier: parsed.data.tier ?? "standard",
         })
         .returning();
+      await writePlayerTags(tx, tenantId, created.id, players.tags);
       return created;
     });
-    res.status(201).json(row);
+    const [withPlayers] = await withSponsorPlayers(tenantId, [row], { withNames: true });
+    res.status(201).json(withPlayers);
   },
 );
 
@@ -104,6 +162,12 @@ router.patch(
     }
     const tenantId = getTenantId(req);
     const scoped = and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, tenantId));
+    const { playerIds, ...fields } = body.data;
+    const players = playerIds === undefined ? null : await playerTags(tenantId, playerIds);
+    if (players && !players.ok) {
+      res.status(400).json({ error: SENIOR_ONLY });
+      return;
+    }
     const row = await db.transaction(async (tx) => {
       // Promoting this sponsor to presenting clears any other presenting sponsor
       // for the tenant first, keeping at most one (partial unique index guard).
@@ -113,23 +177,29 @@ router.patch(
           .set({ isPresenting: false })
           .where(eq(sponsorsTable.tenantId, tenantId));
       }
-      const [updated] = await tx
-        .update(sponsorsTable)
-        .set({
-          ...body.data,
-          grades: body.data.grades === undefined ? undefined : cleanGrades(body.data.grades),
-          activeFrom: body.data.activeFrom === undefined ? undefined : body.data.activeFrom,
-          activeTo: body.data.activeTo === undefined ? undefined : body.data.activeTo,
-        })
-        .where(scoped)
-        .returning();
+      // A change to the players alone leaves the sponsor row as it is.
+      const changesRow = Object.values(fields).some((v) => v !== undefined);
+      const [updated] = !changesRow
+        ? await tx.select().from(sponsorsTable).where(scoped)
+        : await tx
+            .update(sponsorsTable)
+            .set({
+              ...fields,
+              grades: fields.grades === undefined ? undefined : cleanGrades(fields.grades),
+              activeFrom: fields.activeFrom === undefined ? undefined : fields.activeFrom,
+              activeTo: fields.activeTo === undefined ? undefined : fields.activeTo,
+            })
+            .where(scoped)
+            .returning();
+      if (updated && players?.ok) await writePlayerTags(tx, tenantId, updated.id, players.tags);
       return updated;
     });
     if (!row) {
       res.status(404).json({ error: "Sponsor not found" });
       return;
     }
-    res.json(row);
+    const [withPlayers] = await withSponsorPlayers(tenantId, [row], { withNames: true });
+    res.json(withPlayers);
   },
 );
 

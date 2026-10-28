@@ -20,6 +20,7 @@ import {
 import { objectUrl } from "../photo-store";
 import { juniorPhotoUrl, loadJuniorPhotoConsent } from "../junior-photos";
 import { seasonLabel } from "./premierships";
+import { normaliseFocusBox, type FocusBox } from "@workspace/scorecard";
 
 /** Most photos a slideshow carries to the TV (it shows `perPass` of them a pass). */
 export const SLIDESHOW_PHOTO_CAP = 60;
@@ -29,6 +30,10 @@ export interface SlideshowPhotoOut {
   width: number;
   height: number;
   caption: string | null;
+  /** The part of the photo that matters; the TV crops to keep it (null = none). */
+  focusBox: FocusBox | null;
+  /** Wide crops switched off for this photo: the TV shows it whole. */
+  noWideCrop: boolean;
 }
 
 export interface ResolvedSlideshowOut {
@@ -124,6 +129,8 @@ async function seniorCandidates(
       objectPath: clubPhotosTable.objectPath,
       width: clubPhotosTable.width,
       height: clubPhotosTable.height,
+      focusBox: clubPhotosTable.focusBox,
+      offShapes: clubPhotosTable.offShapes,
       grade: clubPhotosTable.grade,
       season: clubPhotosTable.season,
       at: sql<Date>`coalesce(${clubPhotosTable.takenAt}, ${clubPhotosTable.createdAt})`,
@@ -147,6 +154,8 @@ async function seniorCandidates(
     width: r.width,
     height: r.height,
     caption: s.captions ? slideshowCaption(r.grade, r.season) : null,
+    focusBox: normaliseFocusBox(r.focusBox),
+    noWideCrop: r.offShapes.includes("wide"),
     at: new Date(r.at).getTime(),
   }));
 }
@@ -164,6 +173,8 @@ async function juniorCandidates(
       id: juniorPhotosTable.id,
       width: juniorPhotosTable.width,
       height: juniorPhotosTable.height,
+      focusBox: juniorPhotosTable.focusBox,
+      offShapes: juniorPhotosTable.offShapes,
       grade: juniorPhotosTable.grade,
       season: juniorPhotosTable.season,
       at: sql<Date>`coalesce(${juniorPhotosTable.takenAt}, ${juniorPhotosTable.createdAt})`,
@@ -185,6 +196,8 @@ async function juniorCandidates(
       width: r.width ?? 0,
       height: r.height ?? 0,
       caption: s.captions ? slideshowCaption(r.grade, r.season) : null,
+      focusBox: normaliseFocusBox(r.focusBox),
+      noWideCrop: r.offShapes.includes("wide"),
       at: new Date(r.at).getTime(),
     }));
 }

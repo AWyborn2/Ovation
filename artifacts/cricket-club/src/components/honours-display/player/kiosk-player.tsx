@@ -512,7 +512,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
               photo={s.photo}
               brand={brand}
               captions={s.item.slideshow.captions}
-              frame={s.item.slideshow.frame ?? "fill"}
+              frame={s.item.slideshow.frame ?? "auto"}
             />
           ) : s.item.kind === "ad" ? (
             <AdSlide ad={s.item.ad} onError={() => skipRef.current?.abort()} />

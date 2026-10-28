@@ -30,6 +30,26 @@ import { tenantsTable } from "./tenants";
  *   template_generations       AI designer usage and cost, one row per job
  */
 
+/**
+ * Style tags a library template can carry (release 2, ADR-012). Mirrors
+ * `TEMPLATE_STYLE_TAGS` in `@workspace/scorecard`; the check constraint keeps
+ * the database to this set.
+ */
+export const TEMPLATE_STYLE_TAGS = [
+  "photo-led",
+  "bold-type",
+  "minimal",
+  "dark",
+  "light",
+  "retro",
+  "broadcast",
+  "textured",
+] as const;
+
+const templateStyleTagsSqlArray = sql.raw(
+  `ARRAY[${TEMPLATE_STYLE_TAGS.map((t) => `'${t}'`).join(", ")}]::text[]`,
+);
+
 /** Where a library look or template comes from. */
 export type TemplateOrigin = "bundle" | "console" | "club";
 
@@ -94,10 +114,14 @@ export const libraryTemplatesTable = pgTable(
     unlistedAt: timestamp("unlisted_at", { withTimezone: true }),
     unlistedBy: text("unlisted_by").$type<"author" | "ovation">(),
     unlistReason: text("unlist_reason"),
+    // Style tags (TEMPLATE_STYLE_TAGS), set on publish and checked against the design.
+    tags: text("tags").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
+    idxTags: index("library_templates_tags_gin").using("gin", t.tags),
+    chkTags: check("library_templates_tags_check", sql`"tags" <@ ${templateStyleTagsSqlArray}`),
     idxKindListed: index("library_templates_kind_listed")
       .on(t.kind)
       .where(sql`listed`),
@@ -129,6 +153,13 @@ export const libraryTemplateVersionsTable = pgTable(
     bundleHash: text("bundle_hash"),
     // The platform admin who made a console version.
     createdByAdminId: integer("created_by_admin_id"),
+    // A club-published version (release 2, ADR-012): the club that published it,
+    // and the club admin who confirmed they have the rights to its artwork.
+    publishedByTenantId: integer("published_by_tenant_id").references(() => tenantsTable.id, {
+      onDelete: "set null",
+    }),
+    rightsConfirmedByAdminId: integer("rights_confirmed_by_admin_id"),
+    rightsConfirmedAt: timestamp("rights_confirmed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -167,6 +198,8 @@ export const templateGenerationsTable = pgTable(
     outcome: text("outcome"),
     // { libraryTemplateId | copyId, version }.
     resultRef: jsonb("result_ref").$type<Record<string, number>>(),
+    // Why the job failed, kept so it survives a restart (release 2).
+    error: text("error"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
@@ -293,3 +326,52 @@ export const libraryElementReportsTable = pgTable(
 );
 
 export type LibraryElementReportRow = typeof libraryElementReportsTable.$inferSelect;
+
+/**
+ * A club's report of a library template (release 2, ADR-012), as for elements:
+ * one per club and template, reporting again replaces the reason, and
+ * `resolved_at` is set when Ovation deals with it.
+ */
+export const libraryTemplateReportsTable = pgTable(
+  "library_template_reports",
+  {
+    id: serial("id").primaryKey(),
+    templateId: integer("template_id")
+      .notNull()
+      .references(() => libraryTemplatesTable.id, { onDelete: "cascade" }),
+    tenantId: integer("tenant_id")
+      .notNull()
+      .references(() => tenantsTable.id, { onDelete: "cascade" }),
+    adminId: integer("admin_id"),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => ({
+    uniqTemplateTenant: uniqueIndex("library_template_reports_template_tenant").on(
+      t.templateId,
+      t.tenantId,
+    ),
+  }),
+);
+
+export type LibraryTemplateReportRow = typeof libraryTemplateReportsTable.$inferSelect;
+
+/** A club's favourite library templates (release 2, P2). */
+export const libraryTemplateFavouritesTable = pgTable(
+  "library_template_favourites",
+  {
+    tenantId: integer("tenant_id")
+      .notNull()
+      .references(() => tenantsTable.id, { onDelete: "cascade" }),
+    templateId: integer("template_id")
+      .notNull()
+      .references(() => libraryTemplatesTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.tenantId, t.templateId] }),
+  }),
+);
+
+export type LibraryTemplateFavouriteRow = typeof libraryTemplateFavouritesTable.$inferSelect;

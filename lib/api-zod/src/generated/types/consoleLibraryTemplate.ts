@@ -11,6 +11,8 @@ import type { LibraryTemplate } from './libraryTemplate';
 export type ConsoleLibraryTemplate = LibraryTemplate & ({
   /** A bundle template; the console duplicates it to edit. */
   readOnly: boolean;
+  /** Clubs' reports Ovation hasn't dealt with yet (release 2). */
+  openReports: number;
   /** @nullable */
   unlistedBy: ConsoleLibraryTemplateUnlistedBy;
   /** @nullable */

@@ -6,6 +6,7 @@ import {
   pageTokens,
   type KindRepeat,
   type PageKey,
+  type TokenGroup,
   type RowsPick,
 } from "@workspace/scorecard/kind-templates";
 import type { FreeLayer } from "@/lib/pack-render";
@@ -22,6 +23,14 @@ import {
 
 const row =
   "flex w-full items-center justify-between gap-2 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-3 py-2 text-left text-sm hover:border-[var(--ed-accent)]";
+
+/** The field groups, in the panel's order; a card's own fields come first. */
+const GROUPS: { group: TokenGroup | undefined; label: string }[] = [
+  { group: undefined, label: "This card" },
+  { group: "opposition", label: "Opposition" },
+  { group: "match", label: "Match" },
+  { group: "club", label: "Club" },
+];
 
 /** The images the panel always offers itself (the card photo, the club crest). */
 const OWN_IMAGES = new Set(["photo", "clubLogo"]);
@@ -120,7 +129,8 @@ export function FieldsPanel({
   const pageCat = page ? pageTokens(kind, page) : null;
   const cat = pageCat ?? kindFields(kind);
   if (!cat) return <p className="text-sm text-[var(--ed-ink2)]">This card has no live fields.</p>;
-  const fields = pageCat?.fields ?? templateFields(kind);
+  const fields: { key: string; label: string; group?: TokenGroup }[] =
+    pageCat?.fields ?? templateFields(kind);
   const images = (pageCat?.images ?? []).filter((i) => !OWN_IMAGES.has(i.key));
   const q = query.trim().toLowerCase();
   const shown = q
@@ -150,31 +160,42 @@ export function FieldsPanel({
             />
           </label>
         )}
-        <ul className="flex flex-col gap-1.5">
-          {shown.length === 0 && (
-            <li className="text-xs text-[var(--ed-ink2)]">No field matches “{query}”.</li>
-          )}
-          {shown.map((f) => (
-            <li key={f.key}>
-              <button
-                type="button"
-                className={row}
-                aria-label={`${textSelected ? "Insert" : "Add"} ${f.label}`}
-                onClick={() =>
-                  textSelected ? onInsert(f.key) : onAdd(fieldTextLayer(f.key, f.label, size))
-                }
-              >
-                <span className="flex shrink-0 items-center gap-2">
-                  <Type className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
-                  <span className="font-semibold">{f.label}</span>
-                </span>
-                <span className="min-w-0 truncate text-xs text-[var(--ed-ink2)]">
-                  {values[f.key] || "—"}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {shown.length === 0 && (
+          <p className="text-xs text-[var(--ed-ink2)]">No field matches “{query}”.</p>
+        )}
+        {GROUPS.map(({ group, label }) => {
+          const inGroup = shown.filter((f) => f.group === group);
+          if (inGroup.length === 0) return null;
+          return (
+            <div key={label} className="mb-3">
+              {inGroup.length < shown.length && (
+                <h4 className="mb-1 text-[11px] font-semibold text-[var(--ed-ink2)]">{label}</h4>
+              )}
+              <ul className="flex flex-col gap-1.5">
+                {inGroup.map((f) => (
+                  <li key={f.key}>
+                    <button
+                      type="button"
+                      className={row}
+                      aria-label={`${textSelected ? "Insert" : "Add"} ${f.label}`}
+                      onClick={() =>
+                        textSelected ? onInsert(f.key) : onAdd(fieldTextLayer(f.key, f.label, size))
+                      }
+                    >
+                      <span className="flex shrink-0 items-center gap-2">
+                        <Type className="h-4 w-4 shrink-0 text-[var(--ed-ink2)]" aria-hidden />
+                        <span className="font-semibold">{f.label}</span>
+                      </span>
+                      <span className="min-w-0 truncate text-xs text-[var(--ed-ink2)]">
+                        {values[f.key] || "—"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
       </section>
       <section>
         <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--ed-ink2)]">

@@ -96,6 +96,21 @@ describe("EditorStarters", () => {
     });
   });
 
+  it("saves the card's player with the draft (player sponsors)", async () => {
+    const requests = stubApi();
+    renderAt(
+      <EditorStarters input={century} packId="broadcast-dark" subjectPlayerId={42} />,
+      "/admin/social/create",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /blank canvas/i }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    expect(posted(requests)[0].body).toEqual({
+      cardInput: century,
+      packId: "blank",
+      subjectPlayerId: 42,
+    });
+  });
+
   it("offers no pack designs as starting points: new posts start from templates (T5.19)", () => {
     mount();
     expect(screen.queryByRole("button", { name: /Start from Club Kit/ })).toBeNull();
@@ -116,5 +131,34 @@ describe("OpenInEditorButton", () => {
     fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
     await waitFor(() => expect(onOpened).toHaveBeenCalledOnce());
     expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "broadcast-dark" });
+  });
+});
+
+describe("OpenInEditorButton: the card's player (player sponsors)", () => {
+  it("keeps the player on a senior player card", async () => {
+    const requests = stubApi();
+    renderAt(
+      <OpenInEditorButton input={century} packId="broadcast-dark" subjectPlayerId={42}>
+        Open in editor
+      </OpenInEditorButton>,
+      "/admin/social/queue",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    expect(posted(requests)[0].body).toMatchObject({ subjectPlayerId: 42 });
+  });
+
+  it("drops it on a card that isn't about one player", async () => {
+    const requests = stubApi();
+    const ladder = { kind: "ladder", rows: [] } as unknown as ShareCardInput;
+    renderAt(
+      <OpenInEditorButton input={ladder} packId="broadcast-dark" subjectPlayerId={42}>
+        Open in editor
+      </OpenInEditorButton>,
+      "/admin/social/queue",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    expect(posted(requests)[0].body).not.toHaveProperty("subjectPlayerId");
   });
 });

@@ -132,9 +132,9 @@ import { useBrand } from "@/lib/brand-context";
 import {
   withGroundPhoto,
   buildPackData,
-  kindSponsors,
+  draftLayerPhotos,
+  cardSponsorData,
   cardGrade,
-  presentingSponsorName,
   tenantHashtag,
 } from "@/lib/pack-card-data";
 import {
@@ -259,16 +259,31 @@ function EditorApp({ draftId }: { draftId: number }) {
       ...buildPackData({
         brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, input.kind, true, grade),
-        presentingSponsorName: presentingSponsorName(bundle, true),
+        // The club's strip, a team's own sponsor, or the card's player's sponsors.
+        ...cardSponsorData(bundle, { kind: input.kind, grade }, true, draft.subjectPlayerId),
         packColourModes: bundle?.settings.packColourModes,
         names: bundle?.cardNames,
       }),
       photoUrl: draft.photoUrl ?? undefined,
       // The photo's focus box: frames the design hasn't positioned crop to it.
       ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+      // Sourced photo layers' own photos, while the draft's photo is automatic.
+      layerPhotos: draftLayerPhotos({
+        photoSource: draft.photoSource,
+        layerPhotos: draft.layerPhotos,
+      }),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl, draft.photoFocus],
+    [
+      bundle,
+      brand,
+      input.kind,
+      grade,
+      draft.subjectPlayerId,
+      draft.photoUrl,
+      draft.photoFocus,
+      draft.photoSource,
+      draft.layerPhotos,
+    ],
   );
 
   const saved = (draft.adjustments ?? {}) as CardAdjustments;
@@ -586,7 +601,7 @@ function EditorApp({ draftId }: { draftId: number }) {
                 onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
               />
             )}
-            {panel === "uploads" && <UploadsPanel />}
+            {panel === "uploads" && <UploadsPanel size={format} onAdd={addFreeLayer} />}
             {panel === "live" && (
               <LiveStatsPanel
                 size={format}

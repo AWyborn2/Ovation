@@ -65,6 +65,8 @@ describe("A7 sponsors.is_presenting — schema + contract round-trip", () => {
       displayOrder: 0,
       // Every row carries its tier (ADR-010 P6, default "standard").
       tier: "standard",
+      // Every row carries its players (player sponsors), [] when none.
+      players: [],
     });
     expect(resp.isPresenting).toBe(true);
     expect(() =>

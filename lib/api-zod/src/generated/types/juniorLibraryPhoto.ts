@@ -8,6 +8,9 @@
 import type { ClubPhotoMatchFormat } from './clubPhotoMatchFormat';
 import type { ClubPhotoType } from './clubPhotoType';
 import type { JuniorLibraryPhotoParticipant } from './juniorLibraryPhotoParticipant';
+import type { JuniorLibraryPhotoParticipantAreasItem } from './juniorLibraryPhotoParticipantAreasItem';
+import type { PhotoFocusBox } from './photoFocusBox';
+import type { PhotoFrameShape } from './photoFrameShape';
 
 /**
  * A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.
@@ -31,4 +34,9 @@ export interface JuniorLibraryPhoto {
   createdAt: Date;
   participants: JuniorLibraryPhotoParticipant[];
   displayable: boolean;
+  /** The part of the photo that matters; null = a centred crop. */
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Where each tagged child is on the photo (children with an area only). */
+  participantAreas?: JuniorLibraryPhotoParticipantAreasItem[];
 }

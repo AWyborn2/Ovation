@@ -61,6 +61,7 @@ import {
   publicationsByDraft,
 } from "../lib/publishing/publications";
 import { BLANK_PACK_ID, templatedDesignFor, type TemplatedDesign } from "../lib/kind-templates";
+import { draftLayerPhotos } from "../lib/layer-photos";
 import {
   assembleCarouselDocument,
   designFromRef,
@@ -68,7 +69,8 @@ import {
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
-import { resolveDraftPack } from "../lib/draft-enrich";
+import { draftSubjectPlayerId, isAutoPhoto, resolveDraftPack } from "../lib/draft-enrich";
+import { nonSeniorPlayerIds } from "../lib/club-photo-library";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
@@ -490,6 +492,25 @@ router.post(
       return;
     }
     const tenantId = getTenantId(req);
+    // The player a hand-made player card is about (player sponsors): a senior
+    // player of this club, on a senior player-centred card only.
+    let subjectPlayerId: number | null = null;
+    if (parsed.data.subjectPlayerId != null) {
+      subjectPlayerId = draftSubjectPlayerId(
+        cardInput.kind,
+        parsed.data.subjectPlayerId,
+        cardInput.junior === true,
+      );
+      if (
+        subjectPlayerId === null ||
+        (await nonSeniorPlayerIds(tenantId, [subjectPlayerId])).length > 0
+      ) {
+        res.status(400).json({
+          error: "A card's player must be one of the club's senior players, on a player card.",
+        });
+        return;
+      }
+    }
     // A hidden legacy pack (P9) from a stale page is saved as Club Kit.
     let packId = resolveActivePackId(parsed.data.packId ?? null);
     if ("weekendCarousel" in cardInput) {
@@ -643,6 +664,7 @@ router.post(
         autoReadyAt: null,
         editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
+        subjectPlayerId,
         ...(templated ?? {}),
       })
       .onConflictDoNothing()
@@ -665,6 +687,17 @@ router.post(
     }
     if (!row) {
       res.status(409).json({ error: "Could not create draft. Please retry." });
+      return;
+    }
+    // A single card's sourced photo layers pick their photos (a carousel has none).
+    const layerPhotos = carousel ? null : await draftLayerPhotos(row);
+    if (layerPhotos) {
+      const [withPhotos] = await db
+        .update(socialDraftsTable)
+        .set({ layerPhotos })
+        .where(and(eq(socialDraftsTable.id, row.id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      res.status(201).json(presentDraft(withPhotos ?? row));
       return;
     }
     res.status(201).json(presentDraft(row));
@@ -839,6 +872,10 @@ router.patch(
       } else {
         patch.editedAt = patch.editedAt ?? new Date();
       }
+      // A design with sourced photo layers picks their photos while the
+      // draft's photo is automatic (photo layer sources).
+      if (isAutoPhoto(patch.photoSource ?? draft.photoSource))
+        patch.layerPhotos = await draftLayerPhotos({ ...draft, adjustments });
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

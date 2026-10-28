@@ -4987,6 +4987,11 @@ export const SponsorTier = {
   standard: 'standard',
 } as const;
 
+export interface SponsorPlayer {
+  id: number;
+  name: string;
+}
+
 export interface Sponsor {
   id: number;
   name: string;
@@ -5004,6 +5009,8 @@ export interface Sponsor {
   isPresenting: boolean;
   displayOrder: number;
   tier: SponsorTier;
+  /** Player sponsors: the senior players this sponsor backs. On a card about one of them, that player's sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only. */
+  players: SponsorPlayer[];
 }
 
 export interface SponsorInput {
@@ -5017,6 +5024,8 @@ export interface SponsorInput {
   cardKinds?: CardKind[];
   /** The grades whose team-list cards show this sponsor as their one logo. */
   grades?: string[];
+  /** The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected. */
+  playerIds?: number[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -5034,6 +5043,8 @@ export interface SponsorUpdate {
   cardKinds?: CardKind[];
   /** The grades whose team-list cards show this sponsor as their one logo. */
   grades?: string[];
+  /** The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected. */
+  playerIds?: number[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -6183,6 +6194,72 @@ export const ClubPhotoMatchFormat = {
   two_day: 'two_day',
 } as const;
 
+export type ClubUploadKind = typeof ClubUploadKind[keyof typeof ClubUploadKind];
+
+
+export const ClubUploadKind = {
+  image: 'image',
+  svg: 'svg',
+} as const;
+
+export interface ClubUpload {
+  id: number;
+  name: string;
+  kind: ClubUploadKind;
+  /**
+     * The image (kind image); null for an SVG.
+     * @nullable
+     */
+  url: string | null;
+  /** @nullable */
+  thumbUrl: string | null;
+  /**
+     * The cleaned markup (kind svg), drawn as a vector layer.
+     * @nullable
+     */
+  svg: string | null;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export type IngestClubUploadsRequestFilesItem = {
+  objectPath: string;
+  /**
+     * The upload's name (the file name without its extension, by default).
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+};
+
+export interface IngestClubUploadsRequest {
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  files: IngestClubUploadsRequestFilesItem[];
+}
+
+export type IngestClubUploadsResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  error?: string;
+  upload?: ClubUpload;
+};
+
+export interface IngestClubUploadsResponse {
+  results: IngestClubUploadsResponseResultsItem[];
+}
+
+export interface RenameClubUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
 /**
  * A box on a photo in fractions (0–1) of its width and height.
  */
@@ -6237,6 +6314,8 @@ export interface ClubPhoto {
   offShapes?: PhotoFrameShape[];
   /** Where each tagged player is on the photo (tagged players with an area only). */
   playerAreas?: ClubPhotoPlayerArea[];
+  /** The photo collections this photo is in. */
+  collectionIds?: number[];
 }
 
 /**
@@ -6246,6 +6325,69 @@ export interface PhotoFocus {
   box: PhotoFocusBox;
   width: number;
   height: number;
+}
+
+/**
+ * A sourced photo layer's photo, and the focus it crops to (null = centred).
+ */
+export interface LayerPhoto {
+  url: string;
+  focus?: PhotoFocus | null;
+}
+
+/**
+ * Sourced photo layers' photos, keyed by layer (its link, else its id).
+ */
+export interface LayerPhotos {[key: string]: LayerPhoto}
+
+/**
+ * A named set of library photos an admin makes (a photo can be in many). A template's photo layer can take a random photo from one.
+ */
+export interface ClubPhotoCollection {
+  id: number;
+  name: string;
+  photoCount: number;
+  /**
+     * The newest photo's thumbnail; null when empty.
+     * @nullable
+     */
+  coverUrl: string | null;
+  createdAt: string;
+}
+
+export interface ClubPhotoCollectionName {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+}
+
+export interface ClubPhotoCollectionPhotosRequest {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  photoIds: number[];
+}
+
+export interface LayerPhotoPreviewRequest {
+  /** The card kind the document is for. */
+  kind: string;
+  /** The template document whose sourced photo layers to resolve. */
+  document: unknown;
+}
+
+export interface LayerPhotoPreviewTeamList {
+  grade: string;
+  /** @nullable */
+  opponent: string | null;
+}
+
+export interface LayerPhotoPreview {
+  layerPhotos: LayerPhotos;
+  /** The team list that player sources were resolved against (the club's latest published senior team list); null when the club has none. */
+  teamList: LayerPhotoPreviewTeamList | null;
 }
 
 export type SetClubPhotoFocusRequestPlayerAreasItem = {
@@ -7992,12 +8134,13 @@ export const KioskPhotoSlideshowOrder = {
 } as const;
 
 /**
- * fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.
+ * auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.
  */
 export type KioskPhotoSlideshowFrame = typeof KioskPhotoSlideshowFrame[keyof typeof KioskPhotoSlideshowFrame] | null;
 
 
 export const KioskPhotoSlideshowFrame = {
+  auto: 'auto',
   fill: 'fill',
   whole: 'whole',
 } as const;
@@ -8060,7 +8203,7 @@ export interface KioskPhotoSlideshow {
   secondsPerPhoto: number;
   /** Grade and season under each photo (never names). */
   captions: boolean;
-  /** fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill. */
+  /** auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops. */
   frame?: KioskPhotoSlideshowFrame;
   /** Cross-fade between photos (default on); off cuts. */
   crossfade?: boolean | null;
@@ -8077,6 +8220,10 @@ export interface KioskSlideshowPhoto {
   width: number;
   height: number;
   caption?: string | null;
+  /** The part of the photo that matters (photo focus areas); null = none marked. */
+  focusBox?: PhotoFocusBox | null;
+  /** The admin switched wide crops off for this photo, so the TV shows it whole. */
+  noWideCrop?: boolean;
 }
 
 export interface KioskSlideshowPhotos {
@@ -9107,6 +9254,11 @@ export interface CreateSocialDraftRequest {
   /** Start from a saved editor template (its pack and adjustments). */
   templateId?: number;
   templateRef?: TemplateRef;
+  /**
+     * The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club's senior players.
+     * @nullable
+     */
+  subjectPlayerId?: number | null;
 }
 
 export interface SaveDraftTemplateRequest {
@@ -9291,6 +9443,23 @@ export const LibraryTemplateOrigin = {
   club: 'club',
 } as const;
 
+/**
+ * A style tag on a library template (`TEMPLATE_STYLE_TAGS`).
+ */
+export type TemplateStyleTag = typeof TemplateStyleTag[keyof typeof TemplateStyleTag];
+
+
+export const TemplateStyleTag = {
+  'photo-led': 'photo-led',
+  'bold-type': 'bold-type',
+  minimal: 'minimal',
+  dark: 'dark',
+  light: 'light',
+  retro: 'retro',
+  broadcast: 'broadcast',
+  textured: 'textured',
+} as const;
+
 export interface LibraryTemplate {
   id: number;
   /** @nullable */
@@ -9308,6 +9477,344 @@ export interface LibraryTemplate {
   fitReport: TemplateFitReport | null;
   listed: boolean;
   document: TemplateDocument;
+  /** Style tags (release 2). */
+  tags?: TemplateStyleTag[];
+  /** How many clubs other than the author hold a copy (release 2). */
+  usedBy?: number;
+  /** Whether this club has it in its favourites (release 2). */
+  favourite?: boolean;
+  /** Whether this club published it, so it can unlist it (release 2). */
+  ownedByClub?: boolean;
+}
+
+export interface CreateBlankClubTemplateRequest {
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export type PublishChangeWhat = typeof PublishChangeWhat[keyof typeof PublishChangeWhat];
+
+
+export const PublishChangeWhat = {
+  clubLogo: 'clubLogo',
+  sponsorLogo: 'sponsorLogo',
+  photo: 'photo',
+  clubColour: 'clubColour',
+  clubName: 'clubName',
+} as const;
+
+/**
+ * Something the publish step swapped for a data slot or token.
+ */
+export interface PublishChange {
+  page: string;
+  layerId: string;
+  what: PublishChangeWhat;
+}
+
+export type PublishFlagKind = typeof PublishFlagKind[keyof typeof PublishFlagKind];
+
+
+export const PublishFlagKind = {
+  clubName: 'clubName',
+  sponsorName: 'sponsorName',
+} as const;
+
+/**
+ * Text that still names the club or a sponsor; publishing waits until it's a field.
+ */
+export interface PublishFlag {
+  page: string;
+  layerId: string;
+  kind: PublishFlagKind;
+  /** The name found. */
+  text: string;
+}
+
+export interface TagCheck {
+  tag: TemplateStyleTag;
+  ok: boolean;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface PublishPreview {
+  document: TemplateDocument;
+  changes: PublishChange[];
+  flags: PublishFlag[];
+  assetErrors: string[];
+  /** Every style tag, and whether this design can carry it. */
+  tagChecks: TagCheck[];
+  /** The library template this template already publishes to, if any. */
+  published: LibraryTemplate | null;
+}
+
+export interface PublishClubTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @maxItems 4 */
+  tags: TemplateStyleTag[];
+  /** The admin confirms the club has the rights to any artwork left in the design. Must be true. */
+  rightsConfirmed: boolean;
+}
+
+export interface PublishClubTemplateResult {
+  libraryTemplateId: number;
+  version: number;
+  fitStatus: TemplateFitStatus;
+  listed: boolean;
+}
+
+export interface PublishBlocked {
+  error: string;
+  flags: PublishFlag[];
+  assetErrors: string[];
+}
+
+export interface ReportLibraryTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface LibraryTemplateReport {
+  id: number;
+  clubName: string;
+  reason: string;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export type ClubTemplateGenerationStatus = typeof ClubTemplateGenerationStatus[keyof typeof ClubTemplateGenerationStatus];
+
+
+export const ClubTemplateGenerationStatus = {
+  queued: 'queued',
+  running: 'running',
+  done: 'done',
+  failed: 'failed',
+} as const;
+
+/**
+ * The private club template the design was saved as.
+ */
+export type ClubTemplateGenerationResult = {
+  copyId: number;
+} | null;
+
+export interface ClubTemplateGeneration {
+  id: number;
+  kind: string;
+  status: ClubTemplateGenerationStatus;
+  /**
+     * pass, warnings, invalid, refused or provider_error; null until it finishes.
+     * @nullable
+     */
+  outcome: string | null;
+  attempts: number;
+  /** The private club template the design was saved as. */
+  result: ClubTemplateGenerationResult;
+  errors: string[];
+  createdAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+export interface ClubGenerationList {
+  /** Whether Generate is offered (configured, above the quality bar and switched on). */
+  available: boolean;
+  limit: number;
+  /** Designs left this month (Perth calendar month). */
+  remaining: number;
+  generations: ClubTemplateGeneration[];
+}
+
+/**
+ * Over the first 50 finished designer-tool designs.
+ */
+export type ClubGenerateSettingsQuality = {
+  counted: number;
+  firstTryFit: number;
+  /** @nullable */
+  meanCostUsd: number | null;
+};
+
+export interface ClubGenerateSettings {
+  /** Ovation's switch. */
+  enabled: boolean;
+  /** Whether the Claude API key is set. */
+  configured: boolean;
+  /** Over the first 50 finished designer-tool designs. */
+  quality: ClubGenerateSettingsQuality;
+  /** 50 designs counted and at least 70% fitted first time. */
+  barMet: boolean;
+  /** What clubs see (configured, bar met and switched on). */
+  available: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type FigmaConnectionMethod = typeof FigmaConnectionMethod[keyof typeof FigmaConnectionMethod] | null;
+
+
+export const FigmaConnectionMethod = {
+  oauth: 'oauth',
+  token: 'token',
+} as const;
+
+/**
+ * @nullable
+ */
+export type FigmaConnectionStatus = typeof FigmaConnectionStatus[keyof typeof FigmaConnectionStatus] | null;
+
+
+export const FigmaConnectionStatus = {
+  connected: 'connected',
+  needs_reconnect: 'needs_reconnect',
+} as const;
+
+export interface FigmaConnection {
+  connected: boolean;
+  /** @nullable */
+  method: FigmaConnectionMethod;
+  /** @nullable */
+  status: FigmaConnectionStatus;
+  /** @nullable */
+  figmaHandle: string | null;
+  /** @nullable */
+  statusReason: string | null;
+  /** @nullable */
+  connectedAt: string | null;
+  /** Whether Sign in with Figma is set up (FIGMA_CLIENT_ID). */
+  oauthAvailable: boolean;
+}
+
+export interface SaveFigmaTokenRequest {
+  /**
+     * @minLength 10
+     * @maxLength 400
+     */
+  token: string;
+}
+
+export interface FigmaOAuthStart {
+  url: string;
+}
+
+export interface ImportFigmaClubTemplateRequest {
+  /**
+     * A Figma design link (with or without node-id), or a bare file key.
+     * @minLength 1
+     * @maxLength 2000
+     */
+  fileUrl: string;
+  kind: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+}
+
+export type FigmaClubImportResultFontsItem = {
+  from: string;
+  to: string;
+};
+
+export interface ClubTemplateOrigin {
+  templateId: number;
+  /** The library version this copy was taken from. */
+  version: number;
+  name: string;
+  authorName: string;
+  look: LibraryLookRef | null;
+}
+
+/**
+ * A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise.
+ */
+export type ClubTemplateSummaryUpdateAvailable = {
+  version: number;
+} | null;
+
+export interface ClubTemplateSummary {
+  id: number;
+  kind: string;
+  name: string;
+  /** The copy's own save counter. */
+  version: number;
+  /** New drafts of this kind copy this template. */
+  isDefault: boolean;
+  basedOn: ClubTemplateOrigin | null;
+  /** The club saved changes to it, so it is its own (no update prompts). */
+  edited: boolean;
+  /** A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise. */
+  updateAvailable: ClubTemplateSummaryUpdateAvailable;
+  fitStatus: TemplateFitStatus;
+  fitReport: TemplateFitReport | null;
+  coverage: TemplateCoverage;
+  /** @nullable */
+  updatedAt: string | null;
+  /** For a default, the unposted drafts of its kind an apply would change; else 0. */
+  waitingDrafts: number;
+}
+
+export type ClubTemplate = ClubTemplateSummary & ({
+  document: TemplateDocument;
+  /** @nullable */
+  updatedByName?: string | null;
+});
+
+export type FigmaFrameMatchBy = typeof FigmaFrameMatchBy[keyof typeof FigmaFrameMatchBy];
+
+
+export const FigmaFrameMatchBy = {
+  name: 'name',
+  dimensions: 'dimensions',
+} as const;
+
+export interface FigmaFrameMatch {
+  nodeId: string;
+  name: string;
+  page: string;
+  size: string;
+  by: FigmaFrameMatchBy;
+}
+
+export type FigmaReportLineLevel = typeof FigmaReportLineLevel[keyof typeof FigmaReportLineLevel];
+
+
+export const FigmaReportLineLevel = {
+  warn: 'warn',
+  info: 'info',
+} as const;
+
+export interface FigmaReportLine {
+  level: FigmaReportLineLevel;
+  page?: string;
+  sizes?: string[];
+  /** The layer's name path in Figma. */
+  layer?: string;
+  message: string;
+}
+
+export interface FigmaClubImportResult {
+  template: ClubTemplate;
+  fileName: string;
+  frames: FigmaFrameMatch[];
+  report: FigmaReportLine[];
+  fonts: FigmaClubImportResultFontsItem[];
 }
 
 export interface LibraryTemplatePage {
@@ -9518,6 +10025,8 @@ export const ConsoleLibraryTemplateUnlistedBy = {
 export type ConsoleLibraryTemplate = LibraryTemplate & ({
   /** A bundle template; the console duplicates it to edit. */
   readOnly: boolean;
+  /** Clubs' reports Ovation hasn't dealt with yet (release 2). */
+  openReports: number;
   /** @nullable */
   unlistedBy: ConsoleLibraryTemplateUnlistedBy;
   /** @nullable */
@@ -9649,39 +10158,6 @@ export interface ImportFigmaTemplateRequest {
   lookId?: number | null;
 }
 
-export type FigmaReportLineLevel = typeof FigmaReportLineLevel[keyof typeof FigmaReportLineLevel];
-
-
-export const FigmaReportLineLevel = {
-  warn: 'warn',
-  info: 'info',
-} as const;
-
-export interface FigmaReportLine {
-  level: FigmaReportLineLevel;
-  page?: string;
-  sizes?: string[];
-  /** The layer's name path in Figma. */
-  layer?: string;
-  message: string;
-}
-
-export type FigmaFrameMatchBy = typeof FigmaFrameMatchBy[keyof typeof FigmaFrameMatchBy];
-
-
-export const FigmaFrameMatchBy = {
-  name: 'name',
-  dimensions: 'dimensions',
-} as const;
-
-export interface FigmaFrameMatch {
-  nodeId: string;
-  name: string;
-  page: string;
-  size: string;
-  by: FigmaFrameMatchBy;
-}
-
 export type FigmaImportResultFontsItem = {
   from: string;
   to: string;
@@ -9735,50 +10211,6 @@ export interface TemplatePreviewInput {
   /** The draft's card input (ShareCardInput JSON); null for `sample`. */
   input: unknown;
 }
-
-export interface ClubTemplateOrigin {
-  templateId: number;
-  /** The library version this copy was taken from. */
-  version: number;
-  name: string;
-  authorName: string;
-  look: LibraryLookRef | null;
-}
-
-/**
- * A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise.
- */
-export type ClubTemplateSummaryUpdateAvailable = {
-  version: number;
-} | null;
-
-export interface ClubTemplateSummary {
-  id: number;
-  kind: string;
-  name: string;
-  /** The copy's own save counter. */
-  version: number;
-  /** New drafts of this kind copy this template. */
-  isDefault: boolean;
-  basedOn: ClubTemplateOrigin | null;
-  /** The club saved changes to it, so it is its own (no update prompts). */
-  edited: boolean;
-  /** A newer version of the library template it came from, for a copy the club hasn't edited; null otherwise. */
-  updateAvailable: ClubTemplateSummaryUpdateAvailable;
-  fitStatus: TemplateFitStatus;
-  fitReport: TemplateFitReport | null;
-  coverage: TemplateCoverage;
-  /** @nullable */
-  updatedAt: string | null;
-  /** For a default, the unposted drafts of its kind an apply would change; else 0. */
-  waitingDrafts: number;
-}
-
-export type ClubTemplate = ClubTemplateSummary & ({
-  document: TemplateDocument;
-  /** @nullable */
-  updatedByName?: string | null;
-});
 
 export interface ClubTemplateList {
   templates: ClubTemplateSummary[];
@@ -9954,6 +10386,13 @@ export interface SocialDraft {
   photoSource?: string | null;
   /** The photo's focus box (or the pictured player's area) and size when it was chosen; frames crop to it unless the photo was moved by hand. */
   photoFocus?: PhotoFocus | null;
+  /**
+     * The one player a player-centred card is about (player sponsors): that player's sponsors replace the club strip. Null for every other draft.
+     * @nullable
+     */
+  subjectPlayerId?: number | null;
+  /** The photos of the design's sourced photo layers (a team list player's photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft's photo is automatic. Null for junior drafts and designs with no source. */
+  layerPhotos?: LayerPhotos | null;
   adjustments?: unknown;
   /** @nullable */
   editedAt?: string | null;
@@ -11872,6 +12311,11 @@ export interface JuniorLibraryPhotoParticipant {
   allowed: boolean;
 }
 
+export type JuniorLibraryPhotoParticipantAreasItem = {
+  participantId: string;
+  box: PhotoFocusBox;
+};
+
 /**
  * A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.
  */
@@ -11894,6 +12338,23 @@ export interface JuniorLibraryPhoto {
   createdAt: string;
   participants: JuniorLibraryPhotoParticipant[];
   displayable: boolean;
+  /** The part of the photo that matters; null = a centred crop. */
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Where each tagged child is on the photo (children with an area only). */
+  participantAreas?: JuniorLibraryPhotoParticipantAreasItem[];
+}
+
+export type SetJuniorPhotoFocusRequestParticipantAreasItem = {
+  participantId: string;
+  box: PhotoFocusBox | null;
+};
+
+export interface SetJuniorPhotoFocusRequest {
+  focusBox?: PhotoFocusBox | null;
+  offShapes?: PhotoFrameShape[];
+  /** Areas to set (box) or clear (null), per tagged child. */
+  participantAreas?: SetJuniorPhotoFocusRequestParticipantAreasItem[];
 }
 
 export interface IngestJuniorLibraryPhotosRequest {
@@ -12755,6 +13216,19 @@ size?: ListLibraryTemplatesSize;
  */
 look?: string;
 /**
+ * Style tags (comma-separated); a template must carry every one (release 2).
+ * @maxLength 200
+ */
+tags?: string;
+/**
+ * popular (most clubs using it), new (newest listed), ovation (Ovation's first) or club (club-made first). Default: the library's own order.
+ */
+sort?: ListLibraryTemplatesSort;
+/**
+ * Only this club's favourites (release 2).
+ */
+favourites?: boolean;
+/**
  * The previous page's `nextCursor`.
  */
 cursor?: number;
@@ -12768,6 +13242,16 @@ export const ListLibraryTemplatesSize = {
   portrait: 'portrait',
   story: 'story',
   landscape: 'landscape',
+} as const;
+
+export type ListLibraryTemplatesSort = typeof ListLibraryTemplatesSort[keyof typeof ListLibraryTemplatesSort];
+
+
+export const ListLibraryTemplatesSort = {
+  popular: 'popular',
+  new: 'new',
+  ovation: 'ovation',
+  club: 'club',
 } as const;
 
 export type GetTemplatePreviewInputParams = {
@@ -12798,6 +13282,20 @@ cursor?: number;
 export type ListClubTemplatesParams = {
 kind?: string;
 includeSets?: boolean;
+};
+
+export type FigmaOAuthCallbackParams = {
+code?: string;
+state: string;
+error?: string;
+};
+
+export type ListClubUploadsParams = {
+/**
+ * Words that must each appear in the upload's name.
+ * @maxLength 80
+ */
+q?: string;
 };
 
 export type ListClubPhotosParams = {
@@ -12976,6 +13474,10 @@ export type ListConsoleLibraryTemplatesParams = {
 kind?: string;
 origin?: ListConsoleLibraryTemplatesOrigin;
 listed?: boolean;
+/**
+ * Only templates with an open report from a club (release 2).
+ */
+reported?: boolean;
 };
 
 export type ListConsoleLibraryTemplatesOrigin = typeof ListConsoleLibraryTemplatesOrigin[keyof typeof ListConsoleLibraryTemplatesOrigin];
@@ -12986,6 +13488,10 @@ export const ListConsoleLibraryTemplatesOrigin = {
   console: 'console',
   club: 'club',
 } as const;
+
+export type SetClubGenerateSettingsBody = {
+  enabled: boolean;
+};
 
 export type ListConsoleLibraryElementsParams = {
 /**

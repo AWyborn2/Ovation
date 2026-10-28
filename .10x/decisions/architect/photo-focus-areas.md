@@ -75,3 +75,15 @@ gets the same through the junior routes only, behind the same consent gate.
 | 4     | Juniors parity on the junior library routes and editor                                                                                  |
 
 Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the editor.
+
+## Delivery notes (27 Oct 2026)
+
+- Slice 1 merged as #549, slice 2a as #550. 2b is #552.
+- A switched-off shape leaves the photo out of the automatic pick for that shape; box fit only
+  reorders.
+- Juniors: the junior library gets the editor, the boxes and the participant areas, and junior
+  cards crop to the featured child's area. Junior picks don't use frame shapes yet, so the junior
+  editor shows fit badges without the switches. Areas are only for children already tagged:
+  tagging stays on the tag panel because it decides consent.
+- Not built: suggesting a box on upload (P2), player areas as their own tiles (P2), and ordering
+  the "Needs focus" filter by use.

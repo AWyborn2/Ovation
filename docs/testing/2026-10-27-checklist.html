@@ -1,0 +1,837 @@
+<title>Ovation Test Day · 27 Oct</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap"
+/>
+<style>
+  /* Layout: a scorebook — sticky tally bar, one column of numbered innings (sections), each test a ruled row with a tick box. */
+  :root {
+    --bg: #f6f7f3;
+    --surface: #ffffff;
+    --fg: #1d2420;
+    --muted: #5c6862;
+    --rule: #dde2dc;
+    --accent: #1f6b4a;
+    --accent-soft: #e3efe8;
+    --done: #66716b;
+    --warn: #9a5b00;
+    --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    --body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614;
+      --surface: #1a201d;
+      --fg: #e6ebe7;
+      --muted: #9aa69f;
+      --rule: #2c3530;
+      --accent: #5cc493;
+      --accent-soft: #1f3329;
+      --done: #939e98;
+      --warn: #e3a54a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121614;
+    --surface: #1a201d;
+    --fg: #e6ebe7;
+    --muted: #9aa69f;
+    --rule: #2c3530;
+    --accent: #5cc493;
+    --accent-soft: #1f3329;
+    --done: #939e98;
+    --warn: #e3a54a;
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.5 var(--body);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--surface);
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  header.top {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  header.top .wrap {
+    padding-block: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: center;
+  }
+  .brand {
+    font: 700 22px/1 var(--display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0;
+    flex: 1 1 auto;
+  }
+  .brand small {
+    display: block;
+    font: 600 12px/1.3 var(--body);
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .tally {
+    font: 500 14px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tally b {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .bar {
+    flex-basis: 100%;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 0.25s;
+  }
+  .tools {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  button.chip {
+    font: 600 13px var(--body);
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--fg);
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  button.chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button:focus-visible,
+  input:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .intro {
+    padding-block: 20px 4px;
+    color: var(--muted);
+  }
+  .intro p {
+    margin: 0 0 8px;
+    max-width: 65ch;
+  }
+  .callout {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 10px 14px;
+    border-radius: 4px;
+    color: var(--fg);
+  }
+
+  section.area {
+    padding-block: 20px 4px;
+  }
+  section.area > h2 {
+    font: 700 26px/1.1 var(--display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    text-wrap: balance;
+  }
+  section.area > h2 .count {
+    font: 500 13px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  section.area > .where {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  details.test {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  details.test summary {
+    list-style: none;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  details.test summary::-webkit-details-marker {
+    display: none;
+  }
+  .tick {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent);
+    margin: 0;
+    cursor: pointer;
+  }
+  .tname {
+    min-width: 0;
+    font-weight: 600;
+  }
+  .tname .ref {
+    font: 500 12px var(--mono);
+    color: var(--muted);
+    margin-left: 6px;
+  }
+  .chev {
+    color: var(--muted);
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+  details[open] .chev {
+    transform: rotate(90deg);
+  }
+  details.test.done .tname {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .body {
+    padding: 0 14px 14px 48px;
+    min-width: 0;
+  }
+  .body ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+  }
+  .body li.expect {
+    list-style: none;
+    margin-left: -20px;
+    padding-left: 20px;
+    position: relative;
+    color: var(--accent);
+  }
+  .body li.expect::before {
+    content: "✓";
+    position: absolute;
+    left: 2px;
+    font-weight: 700;
+  }
+  .body code {
+    font: 500 13px var(--mono);
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  .note {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    font: 14px var(--body);
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 8px;
+    resize: vertical;
+    min-height: 40px;
+  }
+  .note::placeholder {
+    color: var(--muted);
+  }
+  body.hide-done details.test.done {
+    display: none;
+  }
+
+  footer {
+    padding-block: 28px 40px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer h2 {
+    font: 700 20px var(--display);
+    text-transform: uppercase;
+    color: var(--fg);
+    margin: 0 0 6px;
+  }
+  footer p {
+    margin: 0 0 8px;
+    max-width: 65ch;
+  }
+  @media (max-width: 480px) {
+    .body {
+      padding-left: 14px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <h1 class="brand">
+      Ovation test day<small>Everything merged to main · Tue 27 Oct 2026</small>
+    </h1>
+    <span class="tally" id="tally"><b>0</b> / 0 done</span>
+    <div class="tools">
+      <button class="chip" id="hideDone" aria-pressed="false" type="button">Hide done</button>
+      <button class="chip" id="expandAll" type="button">Expand all</button>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <p>
+      Test on the dev app once the Replit agent confirms it has pulled main (up to PR #574) and
+      applied migrations 0070–0074. Social items live under <strong>Admin → Social</strong>.
+    </p>
+    <p class="callout">
+      Ticks and notes are saved in this browser only. They won't show on another device.
+    </p>
+  </div>
+  <div id="areas"></div>
+</main>
+
+<footer class="wrap">
+  <h2>Before republishing to production</h2>
+  <p>
+    In Replit's Production SQL runner, check which of migrations <code>0070</code>–<code>0074</code>
+    are missing and run those files from <code>lib/db/migrations/</code> in order. They are safe to
+    re-run. The kiosk changes need no migration.
+  </p>
+</footer>
+
+<script>
+  const AREAS = [
+    {
+      title: "Player sponsors",
+      where: "Social → Cards (Sponsors), Queue, Create a card, Templates",
+      tests: [
+        {
+          id: "ps-tag",
+          name: "Tag players on a sponsor",
+          ref: "#569",
+          steps: [
+            "Social → Cards, scroll to Sponsors. On a sponsor, use the player sponsor picker: search a senior player, add them, add a second, remove one with ×.",
+            "Save and reload the page.",
+            ["Tags are still there."],
+            "Try to tag a junior player.",
+            ["It's refused and the reason is shown."],
+          ],
+        },
+        {
+          id: "ps-cards",
+          name: "A player's cards show their sponsor",
+          ref: "#568",
+          steps: [
+            "In Queue, open a milestone, century, five-for, debut or player-of-the-week draft for the tagged player.",
+            [
+              "The strip shows only that player's sponsor(s), not the club sponsors.",
+              "The “presented by” line names their first sponsor.",
+            ],
+            "Open the result card and team list for the same match.",
+            ["Both still show the normal club strip."],
+          ],
+        },
+        {
+          id: "ps-personal",
+          name: "A sponsor tied to players stays off other cards",
+          ref: "#567",
+          steps: [
+            "Make a sponsor with one player tagged and no card types picked.",
+            "Look at another player's milestone card and at a result card.",
+            ["The sponsor appears on neither."],
+            "Pick a card type on it, e.g. Results.",
+            ["It shows on result cards.", "It still doesn't show on another player's card."],
+          ],
+        },
+        {
+          id: "ps-midweek",
+          name: "Tagging after a card is queued",
+          ref: "#568",
+          steps: [
+            "Pick a player who already has a card in the Queue, and tag them on a sponsor now.",
+            "Reopen that queued card.",
+            ["The new sponsor is on it."],
+            "Remove the tag, or end the sponsor's dates.",
+            ["It drops off that card."],
+          ],
+        },
+        {
+          id: "ps-create",
+          name: "Create a card with a player",
+          ref: "#570",
+          steps: [
+            "Create a card → a senior player kind, e.g. milestone. Pick the tagged player in the Player field.",
+            ["The preview shows their sponsor."],
+            "Click Open in editor.",
+            ["The sponsor is still there."],
+            "Switch to a team list or result card.",
+            ["There's no Player field."],
+          ],
+        },
+        {
+          id: "ps-fields",
+          name: "Player sponsor fields in templates",
+          ref: "#573",
+          steps: [
+            "In the template editor for a player card kind, add a text layer and type {{ then search “sponsor”.",
+            ["playerSponsorName, playerSponsorLogo and the second pair are listed."],
+            "Preview with a tagged player, then with an untagged one.",
+            [
+              "Tagged: the name and logo fill in.",
+              "Untagged: they're empty, with no broken image.",
+            ],
+          ],
+        },
+        {
+          id: "ps-look",
+          name: "Sponsored Player look",
+          ref: "#574",
+          steps: [
+            "Social → Templates → Looks. Open Sponsored Player.",
+            [
+              "It has milestone, century, five-for, debut, player profile and new signing cards, plus Meet our sponsored player and a sponsor thank-you.",
+            ],
+            "Apply it and preview a card for a tagged player, then an untagged one.",
+            [
+              "Tagged: the “Proudly sponsored by” panel shows their logos.",
+              "Untagged: the panel is hidden.",
+            ],
+            "Make an announcement card and pick a sponsored player by hand.",
+            ["It follows that player."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Photo focus areas",
+      where: "Social → Photo library / Junior photo library",
+      tests: [
+        {
+          id: "pf-editor",
+          name: "Focus editor (senior library)",
+          ref: "#553",
+          steps: [
+            "Photo library → Focus… on a photo. Drag a box round what matters.",
+            ["The 4:5, 9:16, 1:1 and 16:9 previews crop to your box."],
+            "Switch one frame shape off. On a group photo, mark where two players are. Click Suggest areas from faces.",
+            ["Boxes appear on faces for you to assign."],
+            "Save.",
+            ["The tile says Focus set.", "The Needs focus filter lists only photos without a box."],
+          ],
+        },
+        {
+          id: "pf-crop",
+          name: "Cards use the focus box",
+          ref: "#550",
+          steps: [
+            "Open a queued card whose automatic photo has a focus box.",
+            ["The crop centres on your box, not the middle of the photo."],
+            "Open a card about a player you marked on a group photo.",
+            ["The crop is on that player."],
+            "Drag the crop by hand.",
+            ["Your crop wins and stays."],
+          ],
+        },
+        {
+          id: "pf-shape",
+          name: "A switched-off shape is never picked",
+          ref: "#552",
+          steps: [
+            "Switch wide off on a photo and make it the only photo of a player.",
+            "Make a 16:9 card for that player.",
+            ["That photo isn't chosen."],
+          ],
+        },
+        {
+          id: "pf-junior",
+          name: "Junior library focus",
+          ref: "#554",
+          steps: [
+            "Junior photo library → Focus… on a photo.",
+            [
+              "Only the children tagged on the photo are listed.",
+              "Fit badges show, with no frame-shape switches.",
+            ],
+            "Save.",
+            ["The tile says Focus set."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Social Studio editor",
+      where: "Any draft or template in the editor",
+      tests: [
+        {
+          id: "ed-uploads",
+          name: "Uploads library",
+          ref: "#560",
+          steps: [
+            "Uploads panel: upload a transparent PNG.",
+            ["Transparency is kept, with no white box behind it."],
+            "Upload an SVG logo.",
+            ["It lands as a vector layer you can recolour."],
+            "Rename an upload, search for it by name, then delete it.",
+            [
+              "A card already using it keeps showing it.",
+              "Uploads don't appear in the Photo library.",
+            ],
+          ],
+        },
+        {
+          id: "ed-choose",
+          name: "Choose from library",
+          ref: "#561",
+          steps: [
+            "In Create a card, find an image field. Also open a card's slot images in the card dialog. Click Choose from library.",
+            [
+              "Photos and Uploads both show.",
+              "Search by grade, season, type and name works.",
+              "SVGs aren't offered.",
+            ],
+            "Pick a photo.",
+            ["It fills the field."],
+          ],
+        },
+        {
+          id: "ed-sources",
+          name: "Photo collections and photo sources",
+          ref: "#555",
+          steps: [
+            "Photo library: create a collection, add photos, rename it, take one out.",
+            "Editor: select a photo layer. In the Layer panel, set Photo source to that collection.",
+            ["The preview shows a photo from it."],
+            "Change the source to captain, then keeper.",
+            ["It shows that player's tagged photo, or their headshot if they have none."],
+            "Look at a junior card.",
+            ["It never takes a photo from a source."],
+          ],
+        },
+        {
+          id: "ed-search",
+          name: "Search live fields in a text box",
+          ref: "#551",
+          steps: [
+            "Select a text layer and type “team name”.",
+            ["Matching fields are listed."],
+            "Type {{.",
+            ["The full list appears."],
+            "Pick a field with the arrow keys and Enter.",
+            ["Its {{token}} replaces what you typed."],
+            "Press Escape.",
+            ["The list closes."],
+          ],
+        },
+        {
+          id: "ed-labels",
+          name: "Opposition and match labels",
+          ref: "#556",
+          steps: [
+            "Open a century, five-for or debut card.",
+            ["The Fields panel groups are This card / Opposition / Match / Club."],
+            "Add the opposition logo and the match score.",
+            ["Both fill with the real match details."],
+          ],
+        },
+        {
+          id: "ed-elements",
+          name: "Element library and page colour",
+          ref: "#533 #537",
+          steps: [
+            "Elements panel: open Icons, Shapes, Stickers and Hero Patterns and add one item from each.",
+            ["Each adds cleanly."],
+            "Start a new design.",
+            ["The page is white."],
+            "Change it with Page colour in the toolbar.",
+            ["The colour changes."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Template library, release 2",
+      where: "Social → Templates",
+      tests: [
+        {
+          id: "tl-publish",
+          name: "Blank canvas and publishing",
+          ref: "#565",
+          steps: [
+            "Your templates → New design. Add your logo and a sponsor, then click Publish.",
+            [
+              "The preview shows it as another club, with their logo, colours and sponsors.",
+              "Your club's names left in text are flagged; clicking a flag selects that layer.",
+            ],
+            "Add tags, confirm rights, and publish.",
+            [
+              "It passes the fit check and appears in the Library tab.",
+              "The card shows a “used by” count.",
+            ],
+            "Click Unlist.",
+            ["It leaves the library.", "Clubs already using it keep their copy."],
+          ],
+        },
+        {
+          id: "tl-browse",
+          name: "Reports, favourites and sorting",
+          ref: "#572",
+          steps: [
+            "In Library, change the sort (most used, newest, Ovation's first, clubs' first) and try the style filter.",
+            ["The order and filter work."],
+            "Star a template and turn on Favourites only.",
+            ["Only starred templates show."],
+            "Report another club's template, then report it again with a new reason.",
+            ["The second reason replaces the first.", "Your own templates can't be reported."],
+            "As platform admin, open the console's reported filter.",
+            ["The report is listed.", "Dismiss clears it; Unlist resolves it."],
+          ],
+        },
+        {
+          id: "tl-generate",
+          name: "Club Generate",
+          ref: "#564",
+          steps: [
+            "As platform admin, open the AI designer console.",
+            [
+              "The Offer Generate to clubs switch shows the first-try fit rate.",
+              "It only turns on once the designer is set up and fits at least 70% first time over 50 console runs. On dev it may be locked; that's expected.",
+            ],
+            "If it's on: Your templates → Generate a design. Write a brief and run it.",
+            [
+              "The design saves as a private club template.",
+              "The number left this month drops from 20.",
+            ],
+            "If it's off.",
+            ["The button is hidden or explains why, with no error."],
+          ],
+        },
+        {
+          id: "tl-figma",
+          name: "Figma",
+          ref: "#566",
+          steps: [
+            "Social → Cards → Figma card.",
+            [
+              "Sign in with Figma only appears once FIGMA_CLIENT_ID and FIGMA_CLIENT_SECRET are set on the server. Otherwise use Paste a token with a personal access token from Figma.",
+            ],
+            "Connect.",
+            ["The connected account shows."],
+            "Your templates → Import from Figma. Paste a frame link and pick a card kind.",
+            ["You get a private template, an import report and a link to open it."],
+            "Disconnect.",
+            ["The card returns to its signed-out state."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Honours kiosk",
+      where: "Display & Settings → Display & kiosk",
+      tests: [
+        {
+          id: "ki-slides",
+          name: "Slideshow sources, order and interludes",
+          ref: "#546",
+          steps: [
+            "Create a slideshow. Try each Which photos option: hand-picked, folder, Recent photos (last 21 days).",
+            "Set Order to manual and reorder. Set Photo interludes to every 3 boards.",
+            "Check the TV preview.",
+            ["Photos play in your order.", "An interlude photo appears after every third board."],
+            "Hand-pick a junior photo without consent.",
+            ["It's excluded."],
+          ],
+        },
+        {
+          id: "ki-smart",
+          name: "Smart framing",
+          ref: "#559",
+          steps: [
+            "Set Framing to Smart.",
+            "Show a tall photo with no focus box.",
+            ["The whole photo shows over a blurred fill."],
+            "Show a 16:9 photo, or one whose focus box fits 16:9.",
+            ["It fills the screen with nothing important cut."],
+          ],
+        },
+        {
+          id: "ki-bg",
+          name: "Photo behind a board",
+          ref: "#546",
+          steps: [
+            "Open a board in the rotation and set Photo background to a slideshow.",
+            "Try More photo, Balanced and More panel.",
+            [
+              "The text stays readable at all three.",
+              "Each time the board comes round it shows the next photo.",
+            ],
+          ],
+        },
+        {
+          id: "ki-cols",
+          name: "Ten columns",
+          ref: "#548",
+          steps: [
+            "Set Grade columns per screen (season grids) to 10 and check it on the real TV.",
+            [
+              "The compact style starts from 7 columns.",
+              "Long names become initial and surname, and wrap instead of being cut off.",
+            ],
+          ],
+        },
+        {
+          id: "ki-plaques",
+          name: "Premiership plaques fit",
+          ref: "#532",
+          steps: [
+            "Show the premiership plaques board at 1080p.",
+            ["Every team member is visible, scaled to fit, with no names cut off."],
+          ],
+        },
+      ],
+    },
+  ];
+
+  const KEY = "ovation-test-2026-10-27";
+  let state = {};
+  try {
+    state = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+  } catch (e) {
+    state = {};
+  }
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  const esc = (s) =>
+    s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fmt = (s) =>
+    esc(s).replace(/(\{\{[^}]*\}?\}?|FIGMA_[A-Z_]+|playerSponsor\w+)/g, "<code>$1</code>");
+
+  const root = document.getElementById("areas");
+  AREAS.forEach((area) => {
+    const sec = document.createElement("section");
+    sec.className = "area";
+    sec.innerHTML = `<h2>${esc(area.title)} <span class="count" data-count></span></h2><p class="where">${esc(area.where)}</p>`;
+    area.tests.forEach((t) => {
+      const s = state[t.id] || {};
+      const d = document.createElement("details");
+      d.className = "test" + (s.done ? " done" : "");
+      d.dataset.id = t.id;
+      const items = t.steps
+        .map((st) =>
+          Array.isArray(st)
+            ? st.map((e) => `<li class="expect">${fmt(e)}</li>`).join("")
+            : `<li>${fmt(st)}</li>`,
+        )
+        .join("");
+      d.innerHTML = `<summary><input type="checkbox" class="tick" id="tick-${t.id}" aria-label="Done: ${esc(t.name)}" ${s.done ? "checked" : ""}>
+      <span class="tname">${esc(t.name)}<span class="ref">${esc(t.ref)}</span></span><span class="chev" aria-hidden="true">▶</span></summary>
+      <div class="body"><ol>${items}</ol>
+      <textarea class="note" id="note-${t.id}" rows="1" placeholder="Notes, e.g. what broke">${esc(s.note || "")}</textarea></div>`;
+      const box = d.querySelector(".tick");
+      box.addEventListener("click", (ev) => ev.stopPropagation());
+      box.addEventListener("change", () => {
+        state[t.id] = { ...(state[t.id] || {}), done: box.checked };
+        d.classList.toggle("done", box.checked);
+        if (box.checked) d.open = false;
+        save();
+        tally();
+      });
+      d.querySelector(".note").addEventListener("input", (ev) => {
+        state[t.id] = { ...(state[t.id] || {}), note: ev.target.value };
+        save();
+      });
+      sec.appendChild(d);
+    });
+    root.appendChild(sec);
+  });
+
+  function tally() {
+    let all = 0,
+      done = 0;
+    document.querySelectorAll("section.area").forEach((sec) => {
+      const tests = sec.querySelectorAll("details.test");
+      const d = sec.querySelectorAll("details.test.done").length;
+      sec.querySelector("[data-count]").textContent = `${d}/${tests.length}`;
+      all += tests.length;
+      done += d;
+    });
+    document.getElementById("tally").innerHTML = `<b>${done}</b> / ${all} done`;
+    document.getElementById("barFill").style.width = all ? (100 * done) / all + "%" : "0";
+  }
+  tally();
+
+  const hideBtn = document.getElementById("hideDone");
+  function setHide(on) {
+    document.body.classList.toggle("hide-done", on);
+    hideBtn.setAttribute("aria-pressed", String(on));
+  }
+  setHide(!!state.__hide);
+  hideBtn.addEventListener("click", () => {
+    state.__hide = !document.body.classList.contains("hide-done");
+    setHide(state.__hide);
+    save();
+  });
+
+  const expBtn = document.getElementById("expandAll");
+  expBtn.addEventListener("click", () => {
+    const open = expBtn.textContent === "Expand all";
+    document.querySelectorAll("details.test").forEach((d) => {
+      if (!d.classList.contains("done")) d.open = open;
+    });
+    expBtn.textContent = open ? "Collapse all" : "Expand all";
+  });
+</script>

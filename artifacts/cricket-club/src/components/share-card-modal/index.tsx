@@ -66,9 +66,11 @@ export function ShareCardModal({
   appPath,
   trackedSlug,
   playerId,
+  sponsorPlayerId,
   matchId,
   photoUrl,
   photoFocus,
+  layerPhotos,
   packId: packIdProp,
   templateDoc,
   onApprove,
@@ -165,10 +167,11 @@ export function ShareCardModal({
     }
   }, [open, enabledSizes, activeSize]);
 
-  const { sponsors, presentingSponsorName, sponsorSig } = useSponsors({
+  const { sponsors, presentingSponsorName, playerSponsors, sponsorSig } = useSponsors({
     bundle,
     includeSponsors,
     input,
+    playerId: sponsorPlayerId,
   });
 
   // A brand-less tenant gets no clubUrl/hashtag rather than another club's.
@@ -219,10 +222,13 @@ export function ShareCardModal({
       hashtag,
       sponsors,
       presentingSponsorName,
+      playerSponsors,
       photoUrl: effectivePhotoUrl,
       photoTransform: transform,
       // The draft photo's focus box, while that photo is the one shown.
       photoFocus: photoFocus && effectivePhotoUrl === photoUrl ? photoFocus : null,
+      // Sourced photo layers keep their photos while the draft's own is shown.
+      layerPhotos: effectivePhotoUrl === photoUrl ? layerPhotos : null,
       // Reuse the existing placement toggle — the shared builder maps the
       // canvas vocabulary ("feature"/"headshot") onto the pack's own.
       photoPlacement,
@@ -365,6 +371,7 @@ export function ShareCardModal({
               <OpenInEditorButton
                 input={input}
                 packId={isPackCard ? packId : null}
+                subjectPlayerId={sponsorPlayerId}
                 onOpened={() => onOpenChange(false)}
               >
                 <PenSquare className="h-3.5 w-3.5 mr-1" aria-hidden />

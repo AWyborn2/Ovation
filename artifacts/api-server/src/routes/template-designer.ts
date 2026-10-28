@@ -6,6 +6,8 @@
  *   GET  /platform/admin/library/designer                  configured?, quality, recent designs
  *   POST /platform/admin/library/designer/generations      multipart: kind, brief, image?
  *   GET  /platform/admin/library/designer/generations/:id  one design
+ *   GET  /platform/admin/library/designer/club-generate    club Generate switch + quality bar
+ *   PUT  /platform/admin/library/designer/club-generate    switch club Generate on or off
  *
  * Platform admins only. The reference image must be an upload: a request
  * naming a library photo is refused (T7.9).
@@ -13,6 +15,7 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import multer from "multer";
 import type { TemplateGenerationRow } from "@workspace/db";
+import { SetClubGenerateSettingsBody } from "@workspace/api-zod";
 import { TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
 import {
   requirePlatformAdmin,
@@ -24,11 +27,14 @@ import {
   ReferenceImageError,
 } from "../lib/template-ai/images";
 import {
+  clubGenerateStatus,
   generationErrors,
   generationQuality,
   getGeneration,
   listGenerations,
+  setClubGenerateEnabled,
   startGeneration,
+  type ClubGenerateStatus,
 } from "../lib/template-ai/jobs";
 import { MAX_BRIEF } from "../lib/template-ai/prompt";
 import { TEMPLATE_AI_MODEL, templateAiProvider } from "../lib/template-ai/provider";
@@ -41,7 +47,7 @@ const upload = multer({
 });
 
 /** The image field, with multer's limits answered as 413 / 400 rather than 500. */
-function imageUpload(req: Request, res: Response, next: NextFunction): void {
+export function imageUpload(req: Request, res: Response, next: NextFunction): void {
   upload.single("image")(req, res, (err: unknown) => {
     if (!err) return next();
     const code = (err as { code?: string }).code;
@@ -54,7 +60,7 @@ function imageUpload(req: Request, res: Response, next: NextFunction): void {
 }
 
 /** Fields that would pick an image from somewhere other than the admin's upload. */
-const LIBRARY_IMAGE_FIELDS = ["photoId", "libraryPhotoId", "photoUrl", "imageUrl", "image"];
+export const LIBRARY_IMAGE_FIELDS = ["photoId", "libraryPhotoId", "photoUrl", "imageUrl", "image"];
 
 /** A design as the console sees it. */
 export function generationView(row: TemplateGenerationRow) {
@@ -78,7 +84,7 @@ export function generationView(row: TemplateGenerationRow) {
       result?.libraryTemplateId !== undefined && result.version !== undefined
         ? { libraryTemplateId: result.libraryTemplateId, version: result.version }
         : null,
-    errors: generationErrors(row.id),
+    errors: generationErrors(row),
     createdAt: row.createdAt.toISOString(),
     finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,
   };
@@ -173,6 +179,61 @@ router.get(
       return;
     }
     res.json(generationView(row));
+  },
+);
+
+/** The club Generate settings as the console sees them. */
+function clubGenerateView(status: ClubGenerateStatus) {
+  return {
+    enabled: status.enabled,
+    configured: status.configured,
+    quality: {
+      counted: status.quality.counted,
+      firstTryFit: status.quality.firstTryFit,
+      meanCostUsd:
+        status.quality.meanCostMicros === null ? null : status.quality.meanCostMicros / 1e6,
+    },
+    barMet: status.barMet,
+    available: status.available,
+  };
+}
+
+router.get(
+  "/platform/admin/library/designer/club-generate",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    try {
+      res.json(clubGenerateView(await clubGenerateStatus()));
+    } catch (err) {
+      req.log.error({ err }, "club Generate settings failed");
+      res.status(500).json({ error: "Couldn't load the settings." });
+    }
+  },
+);
+
+router.put(
+  "/platform/admin/library/designer/club-generate",
+  requirePlatformAdmin,
+  async (req, res): Promise<void> => {
+    const parsed = SetClubGenerateSettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Send { enabled: true | false }." });
+      return;
+    }
+    try {
+      await setClubGenerateEnabled(parsed.data.enabled);
+      req.log.info(
+        {
+          platformAdmin: (req as RequestWithPlatformAdmin).platformAdmin?.id ?? null,
+          enabled: parsed.data.enabled,
+        },
+        "club Generate switched",
+      );
+      res.json(clubGenerateView(await clubGenerateStatus()));
+    } catch (err) {
+      req.log.error({ err }, "club Generate switch failed");
+      res.status(500).json({ error: "Couldn't save the setting." });
+    }
   },
 );
 

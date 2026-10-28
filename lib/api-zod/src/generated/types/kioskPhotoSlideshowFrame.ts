@@ -7,12 +7,13 @@
  */
 
 /**
- * fill crops each photo to the screen (the default); whole shows the whole photo over a blurred fill.
+ * auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.
  */
 export type KioskPhotoSlideshowFrame = typeof KioskPhotoSlideshowFrame[keyof typeof KioskPhotoSlideshowFrame] | null;
 
 
 export const KioskPhotoSlideshowFrame = {
+  auto: 'auto',
   fill: 'fill',
   whole: 'whole',
 } as const;

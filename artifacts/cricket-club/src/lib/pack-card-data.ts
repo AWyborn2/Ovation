@@ -19,13 +19,8 @@
 
 import type { CardNames } from "@workspace/scorecard/card-names";
 import type { PackCardData, PackColourMode } from "./pack-render";
-import {
-  sponsorAppliesToKind,
-  type CardKind,
-  type PhotoPlacement,
-  type PhotoTransform,
-} from "./share-card";
-import { sponsorsForCard } from "./share-card/sponsor-limit";
+import type { CardKind, PhotoPlacement, PhotoTransform } from "./share-card";
+import { cardSponsors, sponsorsForCard } from "./share-card/sponsor-limit";
 
 /**
  * Structural brand shape accepted by the builder.
@@ -67,12 +62,16 @@ export interface BuildPackDataOptions {
   sponsors?: Array<{ name: string; logoUrl: string }> | null;
   /** Designated presenting sponsor NAME → the "presented by <sponsor>" line. */
   presentingSponsorName?: string | null;
+  /** The card's player's own sponsors → the `{{playerSponsor…}}` fields. Only sent when set. */
+  playerSponsors?: Array<{ name: string; logoUrl: string }> | null;
   /** Uploaded / gallery-selected photo, overriding the input's own photoUrl. */
   photoUrl?: string | null;
   /** Focal point + zoom; only the focal point is applied in the pack path. */
   photoTransform?: PhotoTransform | null;
   /** The photo's focus box and size (a draft's `photoFocus`); frames crop to it. */
   photoFocus?: PackCardData["photoFocus"];
+  /** Sourced photo layers' own photos (a draft's `layerPhotos`); only sent when set. */
+  layerPhotos?: PackCardData["layerPhotos"];
   /**
    * The canvas renderer's placement vocabulary ("feature" | "headshot"), mapped
    * onto the pack's own ("fullBleed" | "contained") below. Absent → contained,
@@ -109,9 +108,11 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     hashtag,
     sponsors,
     presentingSponsorName,
+    playerSponsors,
     photoUrl,
     photoTransform,
     photoFocus,
+    layerPhotos,
     photoPlacement,
     imageOverrides,
     packColourModes,
@@ -144,10 +145,13 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     hashtag,
     sponsors,
     presentingSponsorName,
+    // Only sent when the card's player has sponsors, so other renders are unchanged.
+    ...(playerSponsors && playerSponsors.length ? { playerSponsors } : {}),
     photoUrl,
     photoTransform,
     // Only sent when set, so a render without one is unchanged.
     ...(photoFocus ? { photoFocus } : {}),
+    ...(layerPhotos && Object.keys(layerPhotos).length ? { layerPhotos } : {}),
     // On a pack card, "feature" promotes the photo to a full-bleed action shot;
     // "headshot" (and absent) keeps it contained in the template's framed region.
     photoPlacement: photoPlacement === "feature" ? "fullBleed" : "contained",
@@ -192,6 +196,19 @@ function packModesFrom(
  * Sample content reads as prose ("Mandurah won by 5 wickets"), where the full
  * legal name is noise. Falls back to the input when stripping would empty it.
  */
+/**
+ * A draft's sourced photo layers' photos (photo layer sources) while its photo
+ * is automatic; null once an admin chose or cleared the photo, which then
+ * shows on every photo layer (KTD6).
+ */
+export function draftLayerPhotos(draft: {
+  photoSource?: string | null;
+  layerPhotos?: PackCardData["layerPhotos"];
+}): PackCardData["layerPhotos"] {
+  const auto = draft.photoSource == null || draft.photoSource.startsWith("auto:");
+  return auto ? (draft.layerPhotos ?? null) : null;
+}
+
 export function shortClubName(name: string): string {
   return name.replace(/\s+Cricket Club$/i, "").trim() || name;
 }
@@ -204,6 +221,7 @@ export interface PackSettingsSource {
     logoUrl: string;
     cardKinds?: string[] | null;
     grades?: string[] | null;
+    players?: Array<{ id: number }> | null;
     isPresenting?: boolean | null;
   }> | null;
 }
@@ -229,10 +247,41 @@ export function kindSponsors(
 ): Array<{ name: string; logoUrl: string }> {
   if (!enabled || !bundle?.activeSponsors) return [];
   // The presenting (headline) sponsor's logo leads the strip.
-  return sponsorsForCard(bundle.activeSponsors, kind, grade, sponsorAppliesToKind).map((sp) => ({
+  return sponsorsForCard(bundle.activeSponsors, { kind, grade }).map((sp) => ({
     name: sp.name,
     logoUrl: sp.logoUrl,
   }));
+}
+
+/**
+ * A card's sponsor strip and "presented by" name, as the server's post render
+ * works them out (`cardSponsors`): a team list's own sponsor, and on a card
+ * about one player that player's sponsors (player sponsors). Empty strip and
+ * no name when the sponsor strip is off.
+ */
+export function cardSponsorData(
+  bundle: PackSettingsSource | null | undefined,
+  input: { kind: string; grade?: unknown },
+  enabled: boolean,
+  /** The one player the card is about (a draft's `subjectPlayerId`). */
+  playerId?: number | null,
+): {
+  sponsors: Array<{ name: string; logoUrl: string }>;
+  presentingSponsorName: string | null;
+  playerSponsors: Array<{ name: string; logoUrl: string }>;
+} {
+  if (!enabled || !bundle?.activeSponsors)
+    return { sponsors: [], presentingSponsorName: null, playerSponsors: [] };
+  const strip = cardSponsors(bundle.activeSponsors, {
+    kind: input.kind,
+    grade: cardGrade(input),
+    playerId,
+  });
+  return {
+    sponsors: strip.sponsors.map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl })),
+    presentingSponsorName: strip.presentingName,
+    playerSponsors: strip.playerSponsors.map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl })),
+  };
 }
 
 /** The grade a card is for, when it carries one (team lists). */

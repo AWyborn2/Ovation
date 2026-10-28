@@ -86,6 +86,33 @@ export const sponsorsTable = pgTable(
 
 export type SponsorRow = typeof sponsorsTable.$inferSelect;
 
+// Player sponsors (migration 0074): the senior players a sponsor backs. On a
+// card about one of them, that player's sponsors replace the club strip
+// (`cardSponsors` in @workspace/scorecard). `player_id` has no foreign key, like
+// photo tags: a central-data club's ids are crosswalk ids. `player_name` is the
+// name when the tag was saved, a label for the admin screen only.
+export const sponsorPlayersTable = pgTable(
+  "sponsor_players",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    sponsorId: integer("sponsor_id")
+      .notNull()
+      .references(() => sponsorsTable.id, { onDelete: "cascade" }),
+    playerId: integer("player_id").notNull(),
+    playerName: text("player_name").notNull().default(""),
+  },
+  (t) => ({
+    uniqSponsorPlayer: uniqueIndex("sponsor_players_sponsor_player_unique").on(
+      t.sponsorId,
+      t.playerId,
+    ),
+    idxTenantPlayer: index("sponsor_players_tenant_player_idx").on(t.tenantId, t.playerId),
+  }),
+);
+
+export type SponsorPlayerRow = typeof sponsorPlayersTable.$inferSelect;
+
 // Named, selectable card themes (colors + optional background image + optional logo).
 // Admins pick a theme per social card; one row is flagged isDefault.
 export const cardThemesTable = pgTable(
@@ -255,8 +282,16 @@ export const cardTemplatesTable = pgTable(
     // library read correctly; the app always sets it when it writes.
     fitStatus: text("fit_status").$type<TemplateFitStatus>().notNull().default("pass"),
     fitReport: jsonb("fit_report").$type<TemplateFitReportColumn>(),
+    // The library template this club template publishes to (release 2,
+    // ADR-012): set on first publish, so publishing again adds a version.
+    publishedTemplateId: integer("published_template_id").references(
+      () => libraryTemplatesTable.id,
+      { onDelete: "set null" },
+    ),
   },
   (t) => ({
+    // "Used by N clubs": the clubs holding a copy of a library template.
+    idxOriginTemplate: index("card_templates_origin_template_idx").on(t.originTemplateId),
     uniqPack: uniqueIndex("card_templates_pack_unique")
       .on(t.tenantId, t.source, t.packId, t.packVariant)
       .where(sql`source = 'pack'`),
@@ -270,6 +305,19 @@ export const cardTemplatesTable = pgTable(
 );
 
 export type CardTemplateRow = typeof cardTemplatesTable.$inferSelect;
+
+/** `social_drafts.layer_photos`: a sourced photo layer's photo (see `LayerPhotos` in scorecard). */
+export type LayerPhotosColumn = Record<
+  string,
+  {
+    url: string;
+    focus?: {
+      box: { x: number; y: number; w: number; h: number };
+      width: number;
+      height: number;
+    } | null;
+  }
+>;
 
 /** `social_drafts.template_ref`: a club copy or a library template, at a version. */
 export type DraftTemplateRefColumn = {
@@ -756,6 +804,15 @@ export const socialDraftsTable = pgTable(
       width: number;
       height: number;
     }>(),
+    // The photos of the design's sourced photo layers (photo layer sources,
+    // migration 0071), keyed by `photoLayerKey`: a team list player's photo or
+    // a collection photo, picked with the draft's photo. A layer with no entry
+    // shows `photoUrl`. Null for a junior draft and a design with no source.
+    layerPhotos: jsonb("layer_photos").$type<LayerPhotosColumn>(),
+    // The one player a player-centred card is about (player sponsors, migration
+    // 0074): its sponsors are looked up when the card is drawn. Null for every
+    // other draft and for junior drafts.
+    subjectPlayerId: integer("subject_player_id"),
     adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
     editedAt: timestamp("edited_at", { withTimezone: true }),
     // The admin who made the draft by hand (Studio editor / Create a card); null for a

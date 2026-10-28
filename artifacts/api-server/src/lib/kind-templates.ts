@@ -40,6 +40,8 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import { TEMPLATE_BUNDLES } from "@workspace/template-bundles";
 import { recordDraftRevision } from "./draft-revisions";
+import { isAutoPhoto } from "./draft-enrich";
+import { draftLayerPhotos } from "./layer-photos";
 
 export const KIND_SOURCE = "kind";
 
@@ -334,10 +336,17 @@ export async function applyTemplateToDrafts(
       continue;
     }
     await recordDraftRevision(draft, "template", tx);
+    const adjustments = structuredClone(template.adjustments ?? { layers: [] });
+    // The new design's sourced photo layers pick their photos while the
+    // draft's photo is automatic; an admin's photo keeps them off (KTD6).
+    const layerPhotos = isAutoPhoto(draft.photoSource)
+      ? await draftLayerPhotos({ ...draft, adjustments })
+      : draft.layerPhotos;
     await tx
       .update(socialDraftsTable)
       .set({
-        adjustments: structuredClone(template.adjustments ?? { layers: [] }),
+        adjustments,
+        layerPhotos,
         packId: "blank",
         templateVersion: template.version,
         templateRef: { copyId: template.id, version: template.version },

@@ -20,6 +20,11 @@ export type Props = {
    */
   playerId?: number | null;
   /**
+   * The one player the card is about (a draft's `subjectPlayerId`): that
+   * player's sponsors replace the club strip (player sponsors).
+   */
+  sponsorPlayerId?: number | null;
+  /**
    * The match a result card is about. Gives the card the club library photo the
    * social queue would pick for it, and lets admins swap in another library photo.
    */
@@ -34,6 +39,8 @@ export type Props = {
    * while that photo shows and the sliders are untouched.
    */
   photoFocus?: PackCardData["photoFocus"];
+  /** A draft's sourced photo layers' photos, shown while its own photo is. */
+  layerPhotos?: PackCardData["layerPhotos"];
   /**
    * A queued draft's own pack (the one its post pack renders in), ahead of the
    * club's pack for the kind. A layout picked in the modal still wins.

@@ -82,13 +82,15 @@ beforeAll(async () => {
         season: 2026,
         photoTypes: ["team"],
         takenAt: ago(3),
+        // The batter, so the TV's crop can aim at them.
+        focusBox: { x: 0.3, y: 0.1, w: 0.25, h: 0.7 },
       }),
     )
     .returning();
   const rest = await db
     .insert(clubPhotosTable)
     .values([
-      photo("old", { grade: "B Grade", season: 2019, takenAt: ago(2000) }),
+      photo("old", { grade: "B Grade", season: 2019, takenAt: ago(2000), offShapes: ["wide"] }),
       photo("stock", { juniorStock: true, takenAt: ago(1) }),
       photo("cutout", { sourcePhotoId: team!.id, takenAt: ago(1) }),
       photo("other-club", { tenantId: otherTenantId, takenAt: ago(1) }),
@@ -150,12 +152,16 @@ describe("kiosk photo slideshows", () => {
         width: 1600,
         height: 1067,
         caption: "A Grade · 2026/27",
+        focusBox: { x: 0.3, y: 0.1, w: 0.25, h: 0.7 },
+        noWideCrop: false,
       },
       {
         url: `/api/storage/objects/library/${STAMP}-old`,
         width: 1600,
         height: 1067,
         caption: "B Grade · 2019/20",
+        focusBox: null,
+        noWideCrop: true,
       },
     ]);
     expect(await urls(show(), otherTenantId)).toEqual([

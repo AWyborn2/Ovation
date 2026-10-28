@@ -18,6 +18,7 @@ import type { FreeLayer } from "@/lib/pack-render";
 import type { ReorderMove } from "./document";
 import type { Alignment, MatchDimension, MatchReference } from "./arrange";
 import { ArrangeMenu } from "./arrange-menu";
+import { TokenTextInput, type TokenField } from "./token-text-input";
 import { cn } from "@/lib/utils";
 
 const btn =
@@ -54,6 +55,7 @@ export function EditorToolbar({
   onSaveElement,
   page,
   arrange,
+  fields,
 }: {
   selected: FreeLayer[];
   isGroup: boolean;
@@ -82,6 +84,8 @@ export function EditorToolbar({
     onDistribute: (axis: "horizontal" | "vertical") => void;
     onMatch: (dim: MatchDimension, ref: MatchReference) => void;
   };
+  /** The card's live fields: the text box then also searches them to insert a `{{token}}`. */
+  fields?: TokenField[];
 }) {
   const pasteBtn = onPaste && (
     <button
@@ -120,14 +124,22 @@ export function EditorToolbar({
             </span>
           )}
           {(single.kind === "text" || single.kind === "sticker" || single.kind === "medal") &&
-            !single.bind && (
+            !single.bind &&
+            (fields && fields.length > 0 && single.kind === "text" ? (
+              <TokenTextInput
+                value={single.content ?? ""}
+                fields={fields}
+                onChange={onText}
+                className="h-8 w-56 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm"
+              />
+            ) : (
               <input
                 aria-label="Text"
                 value={single.content ?? ""}
                 onChange={(e) => onText(e.target.value)}
                 className="h-8 w-44 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm"
               />
-            )}
+            ))}
           {(single.kind === "text" || single.kind === "shape") && (
             <>
               <input

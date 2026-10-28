@@ -81,8 +81,10 @@ describe("syncing the committed bundles", () => {
   it("assembles the four set templates for every look (carousel set editor plan)", () => {
     for (const bundle of TEMPLATE_BUNDLES) {
       const sets = bundleSetTemplates(bundle);
-      // A design system's looks (a `family`) design one kind each, so they assemble no sets (M17).
-      if (bundle.look.family) {
+      // A design system's looks (a `family`) design one kind each, so they assemble no sets (M17);
+      // nor does a pack with no match day, result or team list design (Sponsored Player).
+      const setKinds = ["matchDay", "matchSummary", "teamList"];
+      if (bundle.look.family || !bundle.templates.some((t) => setKinds.includes(t.kind))) {
         expect(sets).toEqual([]);
         continue;
       }
