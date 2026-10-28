@@ -23,6 +23,7 @@ import {
   type CardNames,
 } from "@workspace/scorecard/card-names";
 import { summaryResultWord } from "@workspace/scorecard/card-content";
+import { milestoneCardHeading } from "@workspace/scorecard";
 import {
   MATCH_CONTEXT_KINDS,
   economyText,
@@ -268,7 +269,11 @@ export function bindInput(
       break;
     }
     case "milestone": {
-      set(values, "tierLabel", input.tierLabel);
+      set(
+        values,
+        "tierLabel",
+        milestoneCardHeading(input.tierLabel ?? "", input.milestoneLabel ?? ""),
+      );
       set(values, "currentValue", input.currentValue);
       set(values, "milestoneLabel", input.milestoneLabel);
       set(values, "playerName", input.playerName);

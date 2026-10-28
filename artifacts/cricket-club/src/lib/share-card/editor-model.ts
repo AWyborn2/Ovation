@@ -4,7 +4,7 @@
 // a saved layout appends, and applyLayout which merges a saved layout onto the
 // built-ins.
 import type { CardLayoutLayer } from "@workspace/api-client-react";
-import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
+import { DEFAULT_BRAND, milestoneCardHeading, type ClubBrand } from "@workspace/scorecard";
 import { resolveTextField, type TemplateContext } from "../card-template";
 import { seasonLabel } from "../season-label";
 import { getSticker } from "../sticker-library";
@@ -282,7 +282,7 @@ export const buildLayers = (
   // --- Per-kind body --------------------------------------------------------
   if (input.kind === "milestone") {
     const tierIndex = input.tierIndex;
-    const tierLabel = input.tierLabel;
+    const tierLabel = milestoneCardHeading(input.tierLabel, input.milestoneLabel);
     const playerName = input.playerName;
     const currentValue = input.currentValue;
     const milestoneLabel = input.milestoneLabel;
