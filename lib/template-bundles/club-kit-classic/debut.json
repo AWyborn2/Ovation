@@ -1,6 +1,6 @@
 {
   "name": "Club Kit debut",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1513,7 +1513,12 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:073nh9y1b7auex"
+            "sig": "text:0dyrx271gdqr5k",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "player-2",

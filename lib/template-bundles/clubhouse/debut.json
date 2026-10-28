@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse debut",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -699,7 +699,12 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:0jn8zey1x1lga9"
+            "sig": "text:13b9zpv1gb902o",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "player-2",

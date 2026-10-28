@@ -1,6 +1,6 @@
 {
   "name": "Broadcast milestone",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -815,7 +815,12 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:0yb2k6w1n1i7cd"
+            "sig": "text:0f5re0n1tm8tja",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "label-2",
