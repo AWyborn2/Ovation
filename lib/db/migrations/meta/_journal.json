@@ -526,6 +526,13 @@
       "when": 1793078005247,
       "tag": "0074_player_sponsors",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793151427996,
+      "tag": "0075_photo_focus_suggested",
+      "breakpoints": true
     }
   ]
 }

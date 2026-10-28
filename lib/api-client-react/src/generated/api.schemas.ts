@@ -6310,6 +6310,8 @@ export interface ClubPhoto {
   sourcePhotoId?: number | null;
   /** The part of the photo that matters; null = a centred crop. */
   focusBox?: PhotoFocusBox | null;
+  /** The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus. */
+  focusSuggested?: boolean;
   /** Frame shapes the automatic picker never puts this photo in. */
   offShapes?: PhotoFrameShape[];
   /** Where each tagged player is on the photo (tagged players with an area only). */
@@ -6397,6 +6399,8 @@ export type SetClubPhotoFocusRequestPlayerAreasItem = {
 
 export interface SetClubPhotoFocusRequest {
   focusBox?: PhotoFocusBox | null;
+  /** The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked. */
+  suggested?: boolean;
   offShapes?: PhotoFrameShape[];
   /** Areas to set (box) or clear (null), per player. */
   playerAreas?: SetClubPhotoFocusRequestPlayerAreasItem[];
@@ -12340,6 +12344,8 @@ export interface JuniorLibraryPhoto {
   displayable: boolean;
   /** The part of the photo that matters; null = a centred crop. */
   focusBox?: PhotoFocusBox | null;
+  /** The focus box was suggested from the faces found on upload and no admin has saved it yet. */
+  focusSuggested?: boolean;
   offShapes?: PhotoFrameShape[];
   /** Where each tagged child is on the photo (children with an area only). */
   participantAreas?: JuniorLibraryPhotoParticipantAreasItem[];
@@ -12352,6 +12358,8 @@ export type SetJuniorPhotoFocusRequestParticipantAreasItem = {
 
 export interface SetJuniorPhotoFocusRequest {
   focusBox?: PhotoFocusBox | null;
+  /** The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked. */
+  suggested?: boolean;
   offShapes?: PhotoFrameShape[];
   /** Areas to set (box) or clear (null), per tagged child. */
   participantAreas?: SetJuniorPhotoFocusRequestParticipantAreasItem[];

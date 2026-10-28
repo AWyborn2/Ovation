@@ -8,6 +8,7 @@ import {
   useMoveJuniorLibraryPhotos,
   useDeleteJuniorLibraryPhotos,
   ingestJuniorLibraryPhotos,
+  setJuniorLibraryPhotoFocus,
   useListJuniorPlayers,
   getListJuniorPlayersQueryKey,
   type ClubPhotoMatchFormat,
@@ -41,6 +42,7 @@ import {
   type GradeFolder,
   type TypeFolder,
 } from "@/lib/photo-folders";
+import { suggestUploadFocus } from "@/lib/face-suggestions";
 import { cn } from "@/lib/utils";
 
 type Upload = { name: string; state: UploadState };
@@ -172,7 +174,9 @@ export default function AdminJuniorPhotoLibrary() {
       })),
     ]);
     const t = folderTarget(uploadGrade, uploadType);
+    const added: Array<{ id: number; url: string }> = [];
     await uploadLibraryPhotos(files, {
+      onIngested: (p) => added.push(p),
       ...(t.grade ? { grade: t.grade } : {}),
       ...(t.photoType ? { photoType: t.photoType } : {}),
       ...(uploadFormat ? { matchFormat: uploadFormat } : {}),
@@ -182,6 +186,13 @@ export default function AdminJuniorPhotoLibrary() {
         setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
     });
     refresh();
+    // Photo focus areas: a focus box suggested from the faces on each new photo, found on
+    // this device through the junior routes only; it stays a suggestion until saved.
+    void suggestUploadFocus(added, (id, box) =>
+      setJuniorLibraryPhotoFocus(id, { focusBox: box, suggested: true }),
+    ).then((n) => {
+      if (n > 0) refresh();
+    });
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -674,7 +685,7 @@ export default function AdminJuniorPhotoLibrary() {
                         )}
                         {p.focusBox && (
                           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
-                            Focus set
+                            {p.focusSuggested ? "Focus suggested" : "Focus set"}
                           </span>
                         )}
                       </span>

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, arrayContains, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
+import { and, arrayContains, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db, clubPhotosTable, clubPhotoPlayersTable, type ClubPhotoRow } from "@workspace/db";
 import {
   IngestClubPhotosBody,
@@ -397,7 +397,9 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
 /**
  * Photo focus areas: a photo's focus box, the frame shapes switched off for it
  * and where each player is on it. A player given an area who isn't tagged yet
- * is tagged (senior players only, like `tags`). Fields left out are kept.
+ * is tagged (senior players only, like `tags`). Fields left out are kept. A
+ * `suggested` box (from the faces found on upload) never replaces a box an
+ * admin set; any other save of a box marks it as checked.
  */
 router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promise<void> => {
   const params = SetClubPhotoFocusParams.safeParse(req.params);
@@ -408,7 +410,7 @@ router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promis
   }
   const tenantId = getTenantId(req);
   const { photoId } = params.data;
-  const { focusBox, offShapes, playerAreas = [] } = parsed.data;
+  const { focusBox, offShapes, playerAreas = [], suggested = false } = parsed.data;
   const box =
     focusBox === undefined ? undefined : focusBox === null ? null : normaliseFocusBox(focusBox);
   if (box === null && focusBox !== null) {
@@ -440,15 +442,27 @@ router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promis
   }
 
   await db.transaction(async (tx) => {
-    const patch: { focusBox?: typeof box; offShapes?: SQL } = {};
-    if (box !== undefined) patch.focusBox = box;
+    const patch: { focusBox?: typeof box; focusSuggested?: boolean; offShapes?: SQL } = {};
+    if (box !== undefined) {
+      patch.focusBox = box;
+      patch.focusSuggested = suggested && box !== null;
+    }
     if (offShapes !== undefined)
       patch.offShapes = textArray(FRAME_SHAPES.filter((shape) => offShapes.includes(shape)));
     if (Object.keys(patch).length > 0) {
       await tx
         .update(clubPhotosTable)
         .set(patch)
-        .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.id, photoId)));
+        .where(
+          and(
+            eq(clubPhotosTable.tenantId, tenantId),
+            eq(clubPhotosTable.id, photoId),
+            // A suggestion only fills an empty box or replaces another suggestion.
+            patch.focusSuggested
+              ? or(isNull(clubPhotosTable.focusBox), eq(clubPhotosTable.focusSuggested, true))
+              : undefined,
+          ),
+        );
     }
     for (const area of areas) {
       if (area.box) {

@@ -83,6 +83,40 @@ export function personBoxFromFace(face: FocusBox): FocusBox {
   return normaliseFocusBox({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }) ?? face;
 }
 
+/**
+ * The focus box to suggest for a photo from its faces: everyone found, head to
+ * about the waist. Null when no face is found.
+ */
+export async function suggestFocusBox(src: string): Promise<FocusBox | null> {
+  return unionBox((await findFaces(src)).map(personBoxFromFace));
+}
+
+/**
+ * Suggest a focus box for each newly uploaded photo (photo focus areas, upload
+ * suggestion), one at a time on the admin's device, and save it as a
+ * suggestion through `save`. A photo with no face, or one that can't be read,
+ * keeps its centred crop; a failure never stops the others. Resolves to the
+ * number of photos given a suggestion.
+ */
+export async function suggestUploadFocus(
+  photos: ReadonlyArray<{ id: number; url: string }>,
+  save: (photoId: number, box: FocusBox) => Promise<unknown>,
+  suggest: (src: string) => Promise<FocusBox | null> = suggestFocusBox,
+): Promise<number> {
+  let saved = 0;
+  for (const photo of photos) {
+    try {
+      const box = await suggest(photo.url);
+      if (!box) continue;
+      await save(photo.id, box);
+      saved++;
+    } catch {
+      // No suggestion for this one (detector offline, photo unreadable).
+    }
+  }
+  return saved;
+}
+
 /** The smallest box holding every box (a group's focus from its people). */
 export function unionBox(boxes: readonly FocusBox[]): FocusBox | null {
   if (boxes.length === 0) return null;

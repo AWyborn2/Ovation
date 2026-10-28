@@ -33,13 +33,17 @@ export type UploadTarget = {
   season?: number;
   photoType?: ClubPhotoType;
   matchFormat?: ClubPhotoMatchFormat;
+  /** Each photo once it is in the library (for the focus suggestion on upload). */
+  onIngested?: (photo: { id: number; url: string }) => void;
 };
 
-type IngestBody = { objectPaths: string[] } & UploadTarget;
+type IngestBody = { objectPaths: string[] } & Omit<UploadTarget, "onIngested">;
 /** Any library's ingest: the senior one, or the junior library's (same per-object results). */
 type Ingest = (body: IngestBody) => Promise<{
   results: ReadonlyArray<
-    Pick<IngestClubPhotosResponse["results"][number], "objectPath" | "ok" | "error">
+    Pick<IngestClubPhotosResponse["results"][number], "objectPath" | "ok" | "error"> & {
+      photo?: { id: number; url: string };
+    }
   >;
 }>;
 
@@ -153,6 +157,7 @@ async function ingestInBatches(
       for (const r of res.results) {
         const match = chunk.find((c) => c.objectPath === r.objectPath);
         if (!match) continue;
+        if (r.ok && r.photo) opts.onIngested?.({ id: r.photo.id, url: r.photo.url });
         opts.onState(
           match.index,
           r.ok

@@ -96,3 +96,9 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
   picks among the candidates with the best fit. The consent rule runs unchanged after shape
   filtering, so a pick is still only ever an allowed photo. The junior editor now shows the
   frame-shape switches.
+- Suggest a focus box on upload (Ash, 28 Oct 2026: used, but flagged): after an upload or a
+  Drive import, the library page finds faces on each new photo in the browser
+  (`suggestUploadFocus` in `face-suggestions.ts`) and saves the box round everyone with
+  `suggested: true`. Cards crop to it straight away; `focus_suggested` (migration 0075) keeps the
+  photo in "Needs focus" until an admin saves the focus, which clears it. A suggestion never
+  replaces a box an admin set. The junior library does the same through the junior routes.
