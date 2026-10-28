@@ -11,7 +11,7 @@ import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
-import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
+import { juniorPhotoFields, juniorPhotoLoader, pickJuniorCardPhoto } from "../junior-photos";
 import { JUNIOR_WITHHELD_NAME, type JuniorNaming } from "../junior-names";
 import { juniorTeamListKey, juniorTeamPublishMode } from "../junior-publishing";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
@@ -174,8 +174,9 @@ export async function generateJuniorTeamListDrafts(
   const [naming, publishing, photos] = await Promise.all([
     loadJuniorNaming(tenantId, participantIds),
     loadJuniorTeamPublishing(tenantId),
-    // The listed players' own photos, allowed ones only (ADR-007).
-    loadJuniorPhotos(tenantId, participantIds),
+    // The listed players' own photos, allowed ones only (ADR-007), for the frame shape of
+    // the club's Team List template.
+    juniorPhotoLoader(tenantId, participantIds)("teamList"),
   ]);
   const sides = rows.filter(
     ({ fixture, players }) => players.length > 0 && gates.teamListsGrade(fixture.ageGroup, true),

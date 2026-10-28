@@ -8,7 +8,7 @@ import {
 } from "@workspace/db";
 import { draftKeys, findDraftByKey, upsertDraftByKey, withdrawDraft } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
-import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
+import { juniorPhotoFields, juniorPhotoLoader, pickJuniorCardPhoto } from "../junior-photos";
 import { juniorTeamPublishMode } from "../junior-publishing";
 import { loadDraftingGates } from "../posting-plan";
 
@@ -102,12 +102,12 @@ export async function generateJuniorBigMomentDrafts(
     ...batting.map((b) => b.participantId),
     ...bowling.map((b) => b.participantId),
   ];
-  const [naming, publishing, photos] = await Promise.all([
+  const [naming, publishing] = await Promise.all([
     loadJuniorNaming(tenantId, participantIds),
     loadJuniorTeamPublishing(tenantId),
-    // The players' own photos, allowed ones only (ADR-007).
-    loadJuniorPhotos(tenantId, participantIds),
   ]);
+  // The players' own photos, allowed ones only (ADR-007), for each kind's frame shape.
+  const photosFor = juniorPhotoLoader(tenantId, participantIds);
 
   type Line = { matchId: number; participantId: string | null; playerName: string | null };
   const draftFor = async (
@@ -145,7 +145,7 @@ export async function generateJuniorBigMomentDrafts(
     const mode = juniorTeamPublishMode(publishing, m.ageGroup, m.teamName);
     // The player's own photo, when the family allows one (ADR-007); never any other.
     const photo = juniorPhotoFields(
-      pickJuniorCardPhoto(photos, [], sourceKey, [line.participantId]),
+      pickJuniorCardPhoto(await photosFor(kind), [], sourceKey, [line.participantId]),
     );
     const { action } = await upsertDraftByKey({
       tenantId,
