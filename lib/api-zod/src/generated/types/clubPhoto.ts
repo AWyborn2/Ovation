@@ -37,6 +37,8 @@ export interface ClubPhoto {
   sourcePhotoId?: number | null;
   /** The part of the photo that matters; null = a centred crop. */
   focusBox?: PhotoFocusBox | null;
+  /** The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus. */
+  focusSuggested?: boolean;
   /** Frame shapes the automatic picker never puts this photo in. */
   offShapes?: PhotoFrameShape[];
   /** Where each tagged player is on the photo (tagged players with an area only). */

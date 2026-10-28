@@ -385,6 +385,23 @@ describe("photo focus areas", () => {
     expect(other.status).toBe(404);
   });
 
+  it("a box suggested on upload is flagged and never replaces an admin's box", async () => {
+    const id = await ingest("suggest", { participantIds: [AVA] });
+    const put = (body: Record<string, unknown>) =>
+      asAdmin(request(app).put(`/api/juniors/photo-library/${id}/focus`)).send(body);
+    const faces = { x: 0.2, y: 0.1, w: 0.4, h: 0.5 };
+    expect((await put({ focusBox: faces, suggested: true })).body).toMatchObject({
+      focusBox: faces,
+      focusSuggested: true,
+    });
+    const admin = { x: 0.1, y: 0.1, w: 0.6, h: 0.6 };
+    expect((await put({ focusBox: admin })).body.focusSuggested).toBe(false);
+    expect((await put({ focusBox: faces, suggested: true })).body).toMatchObject({
+      focusBox: admin,
+      focusSuggested: false,
+    });
+  });
+
   it("a card's pick leaves out switched-off shapes and prefers photos that fit its frame", async () => {
     // Three 4:3 photos of Dev, oldest first: no box; a tall strip of a box; and the
     // newest, switched off for tall and wide frames.

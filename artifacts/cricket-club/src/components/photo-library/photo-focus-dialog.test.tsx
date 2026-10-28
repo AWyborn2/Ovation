@@ -58,6 +58,16 @@ describe("PhotoFocusDialog", () => {
     expect(screen.getAllByText("Fits").length).toBeGreaterThan(0);
   });
 
+  it("says when the box was suggested on upload; saving sends it as checked", () => {
+    open({ ...photo, focusSuggested: true });
+    expect(screen.getByText(/suggested from the faces found on upload/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save focus" }));
+    expect(save.mock.calls[0]![0].data).not.toHaveProperty("suggested");
+    cleanup();
+    open();
+    expect(screen.queryByText(/suggested from the faces found on upload/)).toBeNull();
+  });
+
   it("saves the box, a switched-off shape and only the areas that changed", async () => {
     open();
     fireEvent.click(screen.getByRole("switch", { name: "Use in tall frames" }));

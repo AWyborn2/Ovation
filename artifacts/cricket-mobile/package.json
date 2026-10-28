@@ -29,7 +29,7 @@
     "@workspace/api-client-react": "workspace:*",
     "@workspace/scorecard": "workspace:*",
     "babel-plugin-react-compiler": "^1.0.0",
-    "create-launch": "0.3.6",
+    "create-launch": "0.4.1",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",
     "expo-font": "~57.0.4",

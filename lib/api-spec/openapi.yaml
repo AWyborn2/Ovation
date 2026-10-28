@@ -20904,6 +20904,9 @@ components:
           oneOf:
             - $ref: "#/components/schemas/PhotoFocusBox"
             - type: "null"
+        focusSuggested:
+          type: boolean
+          description: The focus box was suggested from the faces found on upload and no admin has saved it yet. Cards crop to it; the photo still needs focus.
         offShapes:
           type: array
           description: Frame shapes the automatic picker never puts this photo in.
@@ -21038,6 +21041,9 @@ components:
           oneOf:
             - $ref: "#/components/schemas/PhotoFocusBox"
             - type: "null"
+        suggested:
+          type: boolean
+          description: The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked.
         offShapes:
           type: array
           items:
@@ -28442,6 +28448,9 @@ components:
           oneOf:
             - $ref: "#/components/schemas/PhotoFocusBox"
             - type: "null"
+        focusSuggested:
+          type: boolean
+          description: The focus box was suggested from the faces found on upload and no admin has saved it yet.
         offShapes:
           type: array
           items:
@@ -28464,6 +28473,9 @@ components:
           oneOf:
             - $ref: "#/components/schemas/PhotoFocusBox"
             - type: "null"
+        suggested:
+          type: boolean
+          description: The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked.
         offShapes:
           type: array
           items:

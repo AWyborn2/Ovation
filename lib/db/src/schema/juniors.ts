@@ -272,6 +272,7 @@ export const juniorPhotosTable = pgTable(
     takenAt: timestamp("taken_at", { withTimezone: true }),
     // Photo focus areas, as on `club_photos` (migration 0070).
     focusBox: jsonb("focus_box").$type<PhotoFocusBoxJson>(),
+    focusSuggested: boolean("focus_suggested").notNull().default(false),
     offShapes: text("off_shapes").array().notNull().default([]),
     createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
