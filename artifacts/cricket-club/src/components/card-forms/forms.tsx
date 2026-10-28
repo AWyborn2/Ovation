@@ -16,6 +16,7 @@ import type { CardKind, MatchSummaryTeam, MatchSummaryInnings } from "@/lib/shar
 import type { CardFormState } from "./logic";
 import { DESCRIPTORS } from "./descriptors";
 import { GenericCardForm, selectClass } from "./fields";
+import type { SelectedPlayer } from "@/components/player-typeahead";
 
 type SetState = (patch: CardFormState) => void;
 
@@ -23,16 +24,25 @@ export function CardFormRouter({
   kind,
   state,
   setState,
+  onPlayer,
 }: {
   kind: CardKind;
   state: CardFormState;
   setState: SetState;
+  /** The player linked with "Link a player", so the card carries their sponsors. */
+  onPlayer?: (p: SelectedPlayer | null) => void;
 }) {
   if (kind === "matchSummary") {
     return <MatchSummaryForm state={state} setState={setState} />;
   }
   return (
-    <GenericCardForm kind={kind} descriptor={DESCRIPTORS[kind]} state={state} setState={setState} />
+    <GenericCardForm
+      kind={kind}
+      descriptor={DESCRIPTORS[kind]}
+      state={state}
+      setState={setState}
+      onPlayer={onPlayer}
+    />
   );
 }
 
