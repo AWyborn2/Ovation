@@ -101,6 +101,17 @@ const PLAYER = {
   ],
 };
 
+/** A grade distribution with nobody in it (the ranks card renders empty). */
+const EMPTY_DISTRIBUTION = {
+  grade: "A Grade",
+  fromSeason: null,
+  toSeason: null,
+  minInnings: 10,
+  minOvers: 100,
+  players: [],
+  best: {},
+};
+
 function renderDetail(overrides: Record<string, unknown>) {
   installApiMock({
     "/api/players/42/matches": [],
@@ -120,6 +131,7 @@ function renderDetail(overrides: Record<string, unknown>) {
 describe("Player detail (Broadcast U8)", () => {
   it("shows the player's own sponsors, linked to their website (player sponsors P1)", async () => {
     renderDetail({
+      "/distribution": EMPTY_DISTRIBUTION,
       "/api/players/42/sponsors": [
         {
           id: 7,
@@ -137,7 +149,7 @@ describe("Player detail (Broadcast U8)", () => {
     );
   });
   it("shows no sponsor strip when the player has none", async () => {
-    renderDetail({ "/api/players/42": PLAYER });
+    renderDetail({ "/distribution": EMPTY_DISTRIBUTION, "/api/players/42": PLAYER });
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
     expect(screen.queryByTestId("player-sponsors")).toBeNull();
   });

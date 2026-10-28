@@ -49,7 +49,7 @@ export function PlayerSponsorStrip({ sponsors }: { sponsors: readonly PlayerSpon
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 hover:text-primary"
+                  className="inline-flex items-center gap-3 hover:text-primary-text"
                 >
                   {body}
                 </a>
