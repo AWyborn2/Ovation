@@ -5,7 +5,7 @@ import { db, figmaConnectionPendingTable } from "@workspace/db";
 import { ImportFigmaClubTemplateBody, SaveFigmaTokenBody } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
-import { getTenantId } from "../middlewares/tenant-context";
+import { getTenantId, publicOrigin } from "../middlewares/tenant-context";
 import { secretBoxConfigured } from "../lib/secret-box";
 import { signToken } from "../lib/publishing/signed-token";
 import {
@@ -55,13 +55,9 @@ export type FigmaOAuthState = { t: number; a: number; r: string; n: string };
 
 const writes = [requireAdmin, requireEntitlement("socialStudio")] as const;
 
-/** The settings page the sign-in returns to, on the host this request came in on. */
+/** The settings page the sign-in returns to, on the club host the admin is on. */
 function returnUrl(req: Request): string {
-  return `${req.protocol}://${req.get("host")}/admin/social/cards#figma`;
-}
-
-function requestOrigin(req: Request): string {
-  return `${req.protocol}://${req.get("host")}`;
+  return `${publicOrigin(req)}/admin/social/cards#figma`;
 }
 
 function noKey(res: Response): boolean {
@@ -137,7 +133,7 @@ router.post("/figma-connection/oauth/start", ...writes, async (req, res): Promis
     { t: tenantId, a: admin.id, r: returnUrl(req), n: nonce } satisfies FigmaOAuthState,
     FIGMA_STATE_TTL_MS,
   );
-  res.json({ url: figmaAuthorizeUrl(state, nonce, figmaCallbackUrl(requestOrigin(req))) });
+  res.json({ url: figmaAuthorizeUrl(state, nonce, figmaCallbackUrl(publicOrigin(req))) });
 });
 
 router.delete("/figma-connection", requireAdmin, async (req, res): Promise<void> => {

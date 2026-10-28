@@ -10,7 +10,7 @@ import {
 import { CompleteMetaConnectBody, StartMetaConnectBody } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
-import { getTenantId } from "../middlewares/tenant-context";
+import { getTenantId, publicOrigin } from "../middlewares/tenant-context";
 import {
   PROVIDER,
   cancelOpenPublications,
@@ -47,9 +47,9 @@ export type CompletionClaims = { p: number; t: number; a: number };
 
 const guard = [requireAdmin, requireEntitlement("socialPublishing")];
 
-/** The admin page the connect flow returns to, on the host this request came in on. */
+/** The admin page the connect flow returns to, on the club host the admin is on. */
 function returnUrl(req: Request): string {
-  return `${req.protocol}://${req.get("host")}/admin/social/cards`;
+  return `${publicOrigin(req)}/admin/social/cards`;
 }
 
 router.get("/social-connections/meta", requireAdmin, async (req, res): Promise<void> => {

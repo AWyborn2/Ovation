@@ -168,6 +168,19 @@ export function hostOf(req: Request): string {
   return raw.split(":")[0]?.toLowerCase().trim() ?? "";
 }
 
+/**
+ * The public origin the browser is on (`https://hallshead.ovationcc.app`), for
+ * links that must bring the admin back to the same club: `hostOf`'s public
+ * host, since behind the proxy `Host` is the platform's own. A direct request
+ * (localhost, a preview) keeps its scheme and port.
+ */
+export function publicOrigin(req: Request): string {
+  const host = hostOf(req);
+  const raw = req.get("host") ?? "";
+  if (raw.split(":")[0]?.toLowerCase() === host) return `${req.protocol}://${raw}`;
+  return `https://${host}`;
+}
+
 /** Constant-time comparison of a presented secret against the configured one. */
 function secretsMatch(presented: string, expected: string): boolean {
   const a = Buffer.from(presented);

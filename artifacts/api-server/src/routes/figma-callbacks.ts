@@ -4,6 +4,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { db, figmaConnectionPendingTable } from "@workspace/db";
 import { getAdminById } from "../lib/auth";
 import { isTenantSuspended } from "../lib/tenant";
+import { publicOrigin } from "../middlewares/tenant-context";
 import { verifyToken } from "../lib/publishing/signed-token";
 import {
   exchangeCode,
@@ -73,7 +74,7 @@ router.get("/oauth/callback", figmaLimiter, async (req, res): Promise<void> => {
   }
 
   try {
-    const callbackUrl = figmaCallbackUrl(`${req.protocol}://${req.get("host")}`);
+    const callbackUrl = figmaCallbackUrl(publicOrigin(req));
     const tokens = await exchangeCode(req.query.code, state.n, callbackUrl);
     const user = tokens ? await figmaMe(tokens.accessToken, "oauth") : null;
     if (!tokens || !user) {
