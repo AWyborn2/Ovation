@@ -20,6 +20,7 @@ import {
 import { placeholderDocument } from "@workspace/scorecard/kind-templates";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { syncBundles } from "../lib/template-library/bundles";
+import { registerFitRunner } from "../lib/template-library/fit";
 import { fixtureBundle, fixtureTemplate } from "../lib/template-library/bundles.test-helpers";
 
 const STAMP = Date.now();
@@ -38,6 +39,19 @@ const sync = (v: number) =>
   syncBundles([
     fixtureBundle(LOOK, [fixtureTemplate("milestone", { version: v, document: docV(v) })]),
   ]);
+/**
+ * A newer version whose fit check hasn't come back: an unedited copy is
+ * offered it ("Update available") rather than taking it by itself, which it
+ * does once the version passes (follow.test.ts).
+ */
+const syncPending = async (v: number) => {
+  registerFitRunner(() => {});
+  try {
+    return await sync(v);
+  } finally {
+    registerFitRunner(null);
+  }
+};
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-template-updates";
@@ -122,7 +136,7 @@ describe("update available", () => {
   });
 
   it("offers a newer version to an unedited copy, listed or not, and takes it", async () => {
-    await sync(2);
+    await syncPending(2);
     // Unlisting the origin doesn't hide the update from copies.
     await db
       .update(libraryTemplatesTable)
@@ -157,7 +171,7 @@ describe("update available", () => {
   });
 
   it("another club can't take it", async () => {
-    await sync(3);
+    await syncPending(3);
     expect((await as(1).post(`/club-templates/${copyId}/update`, { baseVersion: 1 })).status).toBe(
       404,
     );
