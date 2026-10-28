@@ -279,6 +279,32 @@ paths:
         "404":
           description: Not found
 
+  /players/{id}/sponsors:
+    get:
+      operationId: getPlayerSponsors
+      tags: [players]
+      summary: The player's active player sponsors (public profile)
+      description: >-
+        The sponsors tagged with this senior player whose active dates cover
+        today, in the order their cards show them (the shared card-sponsors
+        rule for a player card). Empty when the player has none. Tenant-scoped;
+        a fill-in id always returns an empty list. Senior players only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The player's active sponsors, in card order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerSponsorBadge"
+
   /players/{id}/seasons:
     get:
       operationId: getPlayerSeasons
@@ -19721,6 +19747,21 @@ components:
             saved with the tag, a label only.
           items:
             $ref: "#/components/schemas/SponsorPlayer"
+
+    PlayerSponsorBadge:
+      type: object
+      description: A player sponsor as the public player profile shows it.
+      required: [id, name, logoUrl, link]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        logoUrl:
+          type: string
+        link:
+          type: string
+          description: The sponsor's website; empty when none is set.
 
     SponsorPlayer:
       type: object

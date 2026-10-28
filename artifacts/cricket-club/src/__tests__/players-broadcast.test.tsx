@@ -104,6 +104,7 @@ const PLAYER = {
 function renderDetail(overrides: Record<string, unknown>) {
   installApiMock({
     "/api/players/42/matches": [],
+    "/api/players/42/sponsors": [],
     "/api/players/42/seasons": [
       { grade: "A Grade", season: 2022, games: 10, runs: 300, highScore: "74" },
       { grade: "A Grade", season: 2023, games: 10, runs: 340, highScore: "112*" },
@@ -117,6 +118,29 @@ function renderDetail(overrides: Record<string, unknown>) {
 }
 
 describe("Player detail (Broadcast U8)", () => {
+  it("shows the player's own sponsors, linked to their website (player sponsors P1)", async () => {
+    renderDetail({
+      "/api/players/42/sponsors": [
+        {
+          id: 7,
+          name: "Joe's Plumbing",
+          logoUrl: "/api/storage/objects/joe.png",
+          link: "joes.com.au",
+        },
+      ],
+      "/api/players/42": PLAYER,
+    });
+    const strip = await screen.findByTestId("player-sponsors");
+    expect(within(strip).getByText("Proudly sponsored by")).toBeTruthy();
+    expect(within(strip).getByRole("link", { name: "Joe's Plumbing" }).getAttribute("href")).toBe(
+      "https://joes.com.au",
+    );
+  });
+  it("shows no sponsor strip when the player has none", async () => {
+    renderDetail({ "/api/players/42": PLAYER });
+    expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
+    expect(screen.queryByTestId("player-sponsors")).toBeNull();
+  });
   it("shows name, cap pill, meta line with debut, career strip and breadcrumbs", async () => {
     renderDetail({ "/api/players/42": PLAYER });
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();

@@ -745,6 +745,7 @@ export * from './playerRecord';
 export * from './playerResolution';
 export * from './playerResolutionAction';
 export * from './playerSeasonStat';
+export * from './playerSponsorBadge';
 export * from './playersVsClub';
 export * from './playerUpdate';
 export * from './playhqDuePlansResponse';

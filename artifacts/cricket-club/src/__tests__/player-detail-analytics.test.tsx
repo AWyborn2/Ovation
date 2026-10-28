@@ -145,6 +145,7 @@ function renderProfile(path: string, overrides: Record<string, unknown> = {}) {
   const api = installApiMock({
     "/api/players/42/matches": battingMatches(),
     "/api/players/42/seasons": SEASONS,
+    "/api/players/42/sponsors": [],
     "/api/grades/A%20Grade/distribution": distribution(),
     "/api/grades/A Grade/distribution": distribution(),
     "/api/juniors/players/by-senior": [],
@@ -212,7 +213,7 @@ describe("Player profile analytics (U6)", () => {
       vi.fn(async (input: RequestInfo | URL) => {
         const url = typeof input === "string" ? input : input.toString();
         if (url.includes("/matches") || url.includes("/seasons")) return pending;
-        const body = url.includes("/api/players/42") ? PLAYER : [];
+        const body = url.includes("/api/players/42") && !url.includes("/sponsors") ? PLAYER : [];
         return new Response(JSON.stringify(body), {
           headers: { "content-type": "application/json" },
         });

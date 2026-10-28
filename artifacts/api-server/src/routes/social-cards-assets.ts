@@ -12,6 +12,7 @@ import {
   UpdateSponsorBody,
   UpdateSponsorParams,
   DeleteSponsorParams,
+  GetPlayerSponsorsParams,
   CreateCardThemeBody,
   UpdateCardThemeBody,
   UpdateCardThemeParams,
@@ -24,7 +25,8 @@ import {
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { migrateSponsorLogos } from "../lib/sponsor-logo-migration";
-import { withSponsorPlayers } from "../lib/active-sponsors";
+import { loadActiveSponsors, withSponsorPlayers } from "../lib/active-sponsors";
+import { cardSponsors } from "@workspace/scorecard/card-sponsors";
 import { nonSeniorPlayerIds } from "../lib/club-photo-library";
 import { linkedPlayerNames } from "../lib/squad-link";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -92,6 +94,25 @@ router.get("/sponsors", async (req, res): Promise<void> => {
   const withNames = (await resolveAdmin(req)) !== null;
   res.json(
     await withSponsorPlayers(tenantId, await migrateSponsorLogos(rows, req.log), { withNames }),
+  );
+});
+
+/**
+ * A senior player's own sponsors for their public profile: the active sponsors
+ * a player card about them would carry (the shared card-sponsors rule, so the
+ * date window and order match the cards). Club-wide sponsors never show here;
+ * no tags, a fill-in or another club's player gives an empty list.
+ */
+router.get("/players/:id/sponsors", async (req, res): Promise<void> => {
+  const params = GetPlayerSponsorsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const active = await loadActiveSponsors(getTenantId(req), req.log);
+  const { playerSponsors } = cardSponsors(active, { kind: "player", playerId: params.data.id });
+  res.json(
+    playerSponsors.map((sp) => ({ id: sp.id, name: sp.name, logoUrl: sp.logoUrl, link: sp.link })),
   );
 });
 

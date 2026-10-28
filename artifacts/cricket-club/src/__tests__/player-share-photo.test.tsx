@@ -40,6 +40,7 @@ function open(player: Record<string, unknown>) {
   installApiMock({
     "/api/players/42/matches": [],
     "/api/players/42/seasons": [],
+    "/api/players/42/sponsors": [],
     "/api/social-settings": { settings: {} },
     "/api/juniors/players/by-senior": [],
     "/api/caps": [],
