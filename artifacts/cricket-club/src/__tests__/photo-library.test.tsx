@@ -259,6 +259,24 @@ describe("uploading into a folder", () => {
     });
   });
 
+  it("hands each photo added to the library to onIngested, for the focus suggestion", async () => {
+    const added: Array<{ id: number; url: string }> = [];
+    await uploadLibraryPhotos([new File(["x"], "a.jpg"), new File(["y"], "b.jpg")], {
+      onIngested: (p) => added.push(p),
+      onState: () => {},
+      sign: async (f) => ({ uploadURL: "https://up", objectPath: `/objects/uploads/${f.name}` }),
+      put: async () => {},
+      ingest: async ({ objectPaths }) => ({
+        results: objectPaths.map((p) =>
+          p.endsWith("a.jpg")
+            ? { objectPath: p, ok: true, photo: { id: 5, url: "/lib/5" } }
+            : { objectPath: p, ok: false, error: "bad" },
+        ),
+      }),
+    });
+    expect(added).toEqual([{ id: 5, url: "/lib/5" }]);
+  });
+
   it("tags new uploads with the chosen match format", async () => {
     const requests = stubLibrary();
     renderWithHistory(
@@ -409,6 +427,25 @@ describe("selection inside a folder", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Set the focus of photo 2" }));
     expect(await screen.findByRole("dialog", { name: "Photo focus" })).toBeTruthy();
+  });
+
+  it("a box suggested on upload still needs focus until an admin saves it", async () => {
+    stubLibrary([
+      { ...photo(1, "A Grade", ["team"]), focusBox: { x: 0.1, y: 0.1, w: 0.5, h: 0.5 } },
+      {
+        ...photo(2, "A Grade", ["team"]),
+        focusBox: { x: 0.2, y: 0.1, w: 0.5, h: 0.5 },
+        focusSuggested: true,
+      },
+    ]);
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?grade=A%20Grade&type=team");
+    const grid = await screen.findByRole("list", { name: "Library photos" });
+    expect(within(grid).getByRole("button", { name: "Photo 2" }).textContent).toContain(
+      "Focus suggested",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Needs focus" }));
+    expect(within(grid).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(grid).getByRole("button", { name: "Photo 2" })).toBeTruthy();
   });
 
   it("carries no raw hex colours", () => {

@@ -454,6 +454,36 @@ describe("focus areas", () => {
     expect(none.body.focusBox).toBeNull();
   });
 
+  it("a box suggested on upload is used and flagged, and never replaces an admin's box", async () => {
+    const path = await upload("focus-suggest.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({ objectPaths: [path] });
+    const photoId = ingest.body.results[0].photo.id as number;
+    expect(ingest.body.results[0].photo.focusSuggested).toBe(false);
+    const put = (body: Record<string, unknown>) =>
+      api("put", `/club-photos/${photoId}/focus`).send(body);
+
+    const faces = { x: 0.2, y: 0.1, w: 0.4, h: 0.5 };
+    const suggested = await put({ focusBox: faces, suggested: true });
+    expect(suggested.body).toMatchObject({ focusBox: faces, focusSuggested: true });
+    // Cards crop to it straight away.
+    expect((await draftPhotoFocus(tenantId, ingest.body.results[0].photo.url))?.box).toEqual(faces);
+    // A later suggestion may replace a suggestion.
+    const again = { x: 0.3, y: 0.1, w: 0.3, h: 0.5 };
+    expect((await put({ focusBox: again, suggested: true })).body.focusBox).toEqual(again);
+
+    // An admin's save marks the box as checked...
+    const admin = { x: 0.1, y: 0.1, w: 0.6, h: 0.6 };
+    expect((await put({ focusBox: admin })).body).toMatchObject({
+      focusBox: admin,
+      focusSuggested: false,
+    });
+    // ... and a suggestion never overwrites it.
+    expect((await put({ focusBox: faces, suggested: true })).body).toMatchObject({
+      focusBox: admin,
+      focusSuggested: false,
+    });
+  });
+
   it("rejects bad boxes, non-senior players and another club's photo", async () => {
     const path = await upload("focus-bad.jpg", await jpeg());
     const ingest = await api("post", "/club-photos/ingest").send({ objectPaths: [path] });

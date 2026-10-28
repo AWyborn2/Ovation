@@ -100,6 +100,9 @@ export const clubPhotosTable = pgTable(
     // The part of the photo that matters (photo focus areas): every frame crops
     // to keep it in view. Null = a centred crop, as before.
     focusBox: jsonb("focus_box").$type<PhotoFocusBoxJson>(),
+    // The focus box was suggested from the faces found on upload, not set by an
+    // admin: cards crop to it, but the photo still counts as needing focus.
+    focusSuggested: boolean("focus_suggested").notNull().default(false),
     // Frame shapes (PHOTO_FRAME_SHAPES) the admin switched off for this photo;
     // the automatic picker never puts it in a frame of those shapes.
     offShapes: text("off_shapes").array().notNull().default([]),

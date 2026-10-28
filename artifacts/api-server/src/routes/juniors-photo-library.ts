@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import {
   db,
   juniorParticipantsTable,
@@ -108,6 +108,7 @@ async function present(tenantId: number, rows: JuniorPhotoRow[]) {
     displayable: consent.get(r.id) === true,
     // Photo focus areas.
     focusBox: normaliseFocusBox(r.focusBox),
+    focusSuggested: r.focusSuggested,
     offShapes: FRAME_SHAPES.filter((shape) => r.offShapes.includes(shape)),
     participantAreas: tags
       .filter((t) => t.photoId === r.id)
@@ -331,7 +332,7 @@ router.put(
     }
     const tenantId = getTenantId(req);
     const { photoId } = params.data;
-    const { focusBox, offShapes, participantAreas = [] } = parsed.data;
+    const { focusBox, offShapes, participantAreas = [], suggested = false } = parsed.data;
     const box =
       focusBox === undefined ? undefined : focusBox === null ? null : normaliseFocusBox(focusBox);
     if (box === null && focusBox !== null) {
@@ -370,15 +371,27 @@ router.put(
       return;
     }
     await db.transaction(async (tx) => {
-      const patch: { focusBox?: FocusBox | null; offShapes?: SQL } = {};
-      if (box !== undefined) patch.focusBox = box;
+      const patch: { focusBox?: FocusBox | null; focusSuggested?: boolean; offShapes?: SQL } = {};
+      if (box !== undefined) {
+        patch.focusBox = box;
+        patch.focusSuggested = suggested && box !== null;
+      }
       if (offShapes !== undefined)
         patch.offShapes = textArray(FRAME_SHAPES.filter((shape) => offShapes.includes(shape)));
       if (Object.keys(patch).length > 0)
         await tx
           .update(juniorPhotosTable)
           .set(patch)
-          .where(and(eq(juniorPhotosTable.tenantId, tenantId), eq(juniorPhotosTable.id, photoId)));
+          .where(
+            and(
+              eq(juniorPhotosTable.tenantId, tenantId),
+              eq(juniorPhotosTable.id, photoId),
+              // A suggestion (faces found on upload) never replaces a box an admin set.
+              patch.focusSuggested
+                ? or(isNull(juniorPhotosTable.focusBox), eq(juniorPhotosTable.focusSuggested, true))
+                : undefined,
+            ),
+          );
       for (const area of areas)
         await tx
           .update(juniorPhotoParticipantsTable)
