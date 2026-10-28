@@ -184,9 +184,17 @@ export async function suggestUploadFocus(
   photos: ReadonlyArray<{ id: number; url: string }>,
   save: (photoId: number, box: FocusBox) => Promise<unknown>,
   suggest: (src: string) => Promise<FocusBox | null> = suggestFocusBox,
+  opts: {
+    /** After each photo: how many are done, and how many were given a suggestion. */
+    onProgress?: (done: number, saved: number) => void;
+    /** Stops before the next photo (a long run over the whole library). */
+    signal?: AbortSignal;
+  } = {},
 ): Promise<number> {
   let saved = 0;
+  let done = 0;
   for (const photo of photos) {
+    if (opts.signal?.aborted) break;
     try {
       const box = await suggest(photo.url);
       if (!box) continue;
@@ -194,6 +202,8 @@ export async function suggestUploadFocus(
       saved++;
     } catch {
       // No suggestion for this one (detector offline, photo unreadable).
+    } finally {
+      opts.onProgress?.(++done, saved);
     }
   }
   return saved;

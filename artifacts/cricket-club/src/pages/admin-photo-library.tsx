@@ -37,6 +37,7 @@ import {
   useCollections,
 } from "@/components/social-queue/photo-collections";
 import { PhotoFocusDialog } from "@/components/photo-library/photo-focus-dialog";
+import { SuggestFocusAll } from "@/components/photo-library/suggest-focus-all";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS, isJuniorGradeLabel } from "@workspace/scorecard";
 import {
@@ -554,6 +555,12 @@ export default function AdminPhotoLibrary() {
           ))}
         </ul>
       )}
+
+      <SuggestFocusAll
+        photos={photos}
+        save={(id, box) => setClubPhotoFocus(id, { focusBox: box, suggested: true })}
+        onSaved={refresh}
+      />
 
       {selected.size > 0 && (
         <SettingsCard

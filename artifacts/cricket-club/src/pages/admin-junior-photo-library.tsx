@@ -21,6 +21,7 @@ import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
 import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
 import { useConfirm } from "@/components/confirm-dialog";
 import { JuniorPhotoFocusDialog } from "@/components/photo-library/photo-focus-dialog";
+import { SuggestFocusAll } from "@/components/photo-library/suggest-focus-all";
 import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
 import { MATCH_FORMATS, MATCH_FORMAT_LABELS } from "@workspace/scorecard";
 import {
@@ -370,6 +371,12 @@ export default function AdminJuniorPhotoLibrary() {
           ))}
         </ul>
       )}
+
+      <SuggestFocusAll
+        photos={photos}
+        save={(id, box) => setJuniorLibraryPhotoFocus(id, { focusBox: box, suggested: true })}
+        onSaved={refresh}
+      />
 
       {selected.size > 0 && (
         <SettingsCard

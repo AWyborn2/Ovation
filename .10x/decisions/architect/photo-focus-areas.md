@@ -113,3 +113,8 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
   the photo's short side (`faceScanTiles`), keeps faces from squares at a confidence of 0.7 or more
   (zoomed-in squares of a close-up mistake shirts for faces at 0.5–0.65), and merges the overlaps
   (`mergeFaces`). About 1.5 s a photo; the editor's face suggestions get the same scan.
+- Suggest focus for the photos already in the library (Ash, 28 Oct 2026): both libraries show
+  "Suggest focus from faces" while any photo has no box (`suggest-focus-all.tsx`). It runs the
+  upload suggestion over those photos one at a time in the admin's browser (about 1.5 s each),
+  shows progress, refreshes the grid as it goes and can be stopped; photos with a box, set or
+  suggested, are never touched.
