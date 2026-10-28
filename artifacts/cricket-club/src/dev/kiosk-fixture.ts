@@ -84,7 +84,8 @@ const premierships: DisplayBoard = {
         captain: name(i * 11 + captain),
         grade: ["A Grade", "B Grade", "C Grade", "Colts"][i % 4],
       },
-      squad: Array.from({ length: 11 }, (_, k) => ({
+      // A full XI plus 12th man: the plaque must show every name at five across.
+      squad: Array.from({ length: 12 }, (_, k) => ({
         name: name(i * 11 + k),
         isCaptain: k === captain,
       })),
@@ -119,6 +120,51 @@ const champions: DisplayBoard = {
   subtitle: "Awarded to the season's outstanding all-round contributor",
   entries: [],
   grid: { rowHeading: "Season", columnHeadings: GRADES, rows: championRows },
+  display: display(),
+};
+
+// Ten grades on one screen (the dense style): long real-style names and
+// full grade headings, to check readability at 1920×1080.
+const TEN_GRADES = [
+  "First Grade",
+  "Second Grade",
+  "Third Grade",
+  "Fourth Grade",
+  "Fifth Grade",
+  "Sixth Grade",
+  "Women's First Grade",
+  "Women's Second Grade",
+  "Under 17",
+  "Over 40s",
+];
+const LONG_NAMES = [
+  "Jonathan Prendergast",
+  "Bartholomew Fairweather",
+  "Ashley Hollingsworth",
+  "Christopher Vandenberg",
+  "Mackenzie O'Donoghue",
+  "Sam Lee",
+  "Alexandra Whittington",
+  "Benjamin Castellanos",
+  "Tom Ng",
+  "Maximilian Featherstone",
+];
+const tenGrades: DisplayBoard = {
+  id: "ten-grades",
+  category: "awards",
+  layout: "grid",
+  title: "Best and Fairest",
+  entries: [],
+  grid: {
+    rowHeading: "Season",
+    columnHeadings: TEN_GRADES,
+    rows: Array.from({ length: 12 }, (_, i) => ({
+      heading: season(2025 - i),
+      cells: TEN_GRADES.map((_, g) => ({
+        entries: [{ text: LONG_NAMES[(i + g) % LONG_NAMES.length]! }],
+      })),
+    })),
+  },
   display: display(),
 };
 
@@ -298,6 +344,7 @@ const partnershipRecords: DisplayBoard = {
 export const KIOSK_FIXTURE: HonourDisplayBundle = {
   boards: [
     premierships,
+    tenGrades,
     champions,
     captains,
     officeBearers,
@@ -323,6 +370,7 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskSequence: [
       "premierships",
       "photos:fixture",
+      "ten-grades",
       "club-champions",
       "captains",
       "office-bearers",
@@ -356,8 +404,9 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
     kioskLook: { pageSecs: 3, hold: 1, trans: "fade", dur: "M" },
     // One board per movement, with a spread of transitions.
     boardConfigs: {
-      premierships: { move: "pages", trans: "flip" },
+      premierships: { move: "pages", trans: "flip", columnsPerScreen: 5 },
       "club-champions": { move: "credits", trans: "wipe", speed: 120 },
+      "ten-grades": { move: "pages", trans: "fade", columnsPerScreen: 10 },
       captains: { move: "pages", trans: "up" },
       "office-bearers": { move: "pages", trans: "rows", perPage: 8 },
       "batting-records": { move: "fit", trans: "pop" },
@@ -365,7 +414,12 @@ export const KIOSK_FIXTURE: HonourDisplayBundle = {
       centuries: { move: "credits", trans: "fade", speed: 160 },
       grade_records: { move: "pages", trans: "flip", columnsPerScreen: 4 },
       "partnerships_grade:First Grade": { move: "fit", trans: "wipe" },
-      "life-members": { move: "pages", trans: "left", columnsPerScreen: 1 },
+      "life-members": {
+        move: "pages",
+        trans: "left",
+        columnsPerScreen: 1,
+        photoBackground: { slideshowId: "photos:fixture", dim: "light" },
+      },
     },
     composites: [],
   },

@@ -82,7 +82,8 @@ describe("juniorPhotoFields", () => {
         featuredParticipantId: "P",
         juniorPhotoAllowed: true,
       },
-      photo: { url: "/api/juniors/photos/5", source: "auto:junior-photo" },
+      // The featured child, so the draft crops to their area.
+      photo: { url: "/api/juniors/photos/5", source: "auto:junior-photo", participantId: "P" },
     });
   });
 

@@ -43,6 +43,7 @@ export {
   type RoundTeam,
   type JuniorHighlight,
   type GradeResult,
+  type CardMatch,
   type TeamOfWeekPlayer,
   type SetDensity,
   type SetSlideFields,

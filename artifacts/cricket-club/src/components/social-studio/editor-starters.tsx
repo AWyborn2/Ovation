@@ -38,6 +38,8 @@ type Props = {
    * the draft from that template rather than the pack.
    */
   templateRef?: TemplateRef | null;
+  /** The player the card is about (player sponsors); saved on the draft. */
+  subjectPlayerId?: number | null;
 };
 
 /**
@@ -49,7 +51,12 @@ type Props = {
  * (awaiting review, never auto-posted) and opens it; the editor's Elements
  * panel then offers every Club Kit element for the design.
  */
-export function EditorStarters({ input, packId, templateRef = null }: Props) {
+export function EditorStarters({
+  input,
+  packId,
+  templateRef = null,
+  subjectPlayerId = null,
+}: Props) {
   const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
   const create = useCreateSocialDraft();
@@ -57,7 +64,8 @@ export function EditorStarters({ input, packId, templateRef = null }: Props) {
   const start = (body: Parameters<typeof create.mutate>[0]["data"]) => {
     setError(null);
     create.mutate(
-      { data: body },
+      // The card's player carries over, so the draft shows their sponsors.
+      { data: subjectPlayerId != null ? { ...body, subjectPlayerId } : body },
       {
         onSuccess: (draft) => navigate(`/admin/social/editor/${draft.id}`),
         onError: (e) => setError(handleAdminMutationError(e)),

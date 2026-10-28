@@ -115,7 +115,7 @@ describe("match results show someone who played", () => {
       kind: "matchSummary",
       candidatePlayerIds: [d, b, a],
     });
-    expect(pick).toEqual({ url: urlOf("b1"), source: "auto:library-player" });
+    expect(pick).toEqual({ url: urlOf("b1"), source: "auto:library-player", playerId: b });
   });
 
   it("falls back to a headshot, then to no photo at all", async () => {

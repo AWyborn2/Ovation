@@ -156,7 +156,7 @@ describe("the element library", () => {
   });
 
   it("rejects an unknown category", async () => {
-    expect((await me().get("/template-library/elements?category=stickers")).status).toBe(400);
+    expect((await me().get("/template-library/elements?category=holograms")).status).toBe(400);
   });
 
   it("saves a club's layers publicly, credited to the club", async () => {

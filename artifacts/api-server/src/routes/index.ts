@@ -36,11 +36,15 @@ import playhqSyncStatusRouter from "./playhq-sync-status";
 import socialDraftsRouter from "./social-drafts";
 import socialCalendarRouter from "./social-calendar";
 import libraryElementsRouter from "./library-elements";
+import clubGenerateRouter from "./club-generate";
 import templateLibraryRouter from "./template-library";
+import figmaConnectionRouter from "./figma-connection";
 import templateDesignerRouter from "./template-designer";
 import socialConnectionsRouter from "./social-connections";
 import socialPublicationsRouter from "./social-publications";
 import clubPhotosRouter from "./club-photos";
+import clubUploadsRouter from "./club-uploads";
+import clubPhotoCollectionsRouter from "./club-photo-collections";
 import cardPhotoRulesRouter from "./card-photo-rules";
 import studioToolsRouter from "./studio-tools";
 import notificationsRouter from "./notifications";
@@ -110,13 +114,20 @@ router.use(playhqSyncStatusRouter);
 router.use(fixturesResultsRouter);
 router.use(socialDraftsRouter);
 router.use(socialCalendarRouter);
+// Before the template library, which owns the other `/club-templates/*` routes.
+router.use(clubPhotoCollectionsRouter);
 // Before the template library: its `/template-library/:id` would take `/elements`.
 router.use(libraryElementsRouter);
+// Before the template library: `/club-templates/import/figma` is a club Figma import.
+router.use(figmaConnectionRouter);
+// Before the library router: its /club-templates/:id would take /club-templates/generations.
+router.use(clubGenerateRouter);
 router.use(templateLibraryRouter);
 router.use(templateDesignerRouter);
 router.use(socialConnectionsRouter);
 router.use(socialPublicationsRouter);
 router.use(clubPhotosRouter);
+router.use(clubUploadsRouter);
 router.use(cardPhotoRulesRouter);
 router.use(studioToolsRouter);
 router.use(notificationsRouter);

@@ -71,10 +71,20 @@ describe("honour display settings: kiosk look (integration)", () => {
   });
 
   it("rejects values outside the allowed set", async () => {
-    for (const kioskLook of [{ move: "sideways" }, { columnsPerScreen: 9 }, { pageSecs: 0 }]) {
+    for (const kioskLook of [{ move: "sideways" }, { columnsPerScreen: 11 }, { pageSecs: 0 }]) {
       await patch({ kioskLook }).expect(400);
     }
     await patch({ boardConfigs: { most_games: { top: 37 } } }).expect(400);
+  });
+
+  it("allows up to 10 columns per screen", async () => {
+    const res = await patch({
+      kioskLook: { columnsPerScreen: 10 },
+      boardConfigs: { champions: { columnsPerScreen: 10 } },
+    }).expect(200);
+    expect(res.body.kioskLook.columnsPerScreen).toBe(10);
+    expect(res.body.boardConfigs.champions.columnsPerScreen).toBe(10);
+    await patch({ boardConfigs: { champions: { columnsPerScreen: 11 } } }).expect(400);
   });
 
   it("round-trips photo slideshows and resolves them in the admin bundle (D1)", async () => {
@@ -93,6 +103,28 @@ describe("honour display settings: kiosk look (integration)", () => {
     expect(res.body.kioskPhotoSlideshows).toEqual([slideshow]);
     await patch({ kioskPhotoSlideshows: [{ ...slideshow, perPass: 0 }] }).expect(400);
     await patch({ kioskPhotoSlideshows: [{ ...slideshow, library: "everyone" }] }).expect(400);
+    // P0/P1 options: hand-picked photos in a manual order, folders, framing,
+    // cross-fade and interludes.
+    const picked = {
+      ...slideshow,
+      source: "picked",
+      order: "manual",
+      picked: [
+        { library: "junior", id: 7 },
+        { library: "senior", id: 3 },
+      ],
+      folders: [{ grade: "club-wide", type: null }],
+      frame: "whole",
+      crossfade: false,
+      interludeEvery: 3,
+    };
+    const res2 = await patch({ kioskPhotoSlideshows: [picked] }).expect(200);
+    expect(res2.body.kioskPhotoSlideshows).toEqual([picked]);
+    await patch({
+      kioskPhotoSlideshows: [{ ...picked, picked: [{ library: "staff", id: 1 }] }],
+    }).expect(400);
+    await patch({ kioskPhotoSlideshows: [{ ...picked, interludeEvery: 0 }] }).expect(400);
+    await patch({ kioskPhotoSlideshows: [slideshow] }).expect(200);
 
     const bundle = await request(app)
       .get("/api/honour-display")

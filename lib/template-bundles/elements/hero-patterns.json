@@ -1,0 +1,4094 @@
+{
+  "look": "hero-patterns",
+  "elements": [
+    {
+      "slug": "hero-patterns/textures/anchors-away",
+      "name": "Anchors away pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "anchors", "away"],
+      "signature": "e1f417f363c515a7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Anchors away",
+            "content": "/library-assets/hero-patterns/anchors-away.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/architect",
+      "name": "Architect pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "architect"],
+      "signature": "8a5b84092095357b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Architect",
+            "content": "/library-assets/hero-patterns/architect.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/autumn",
+      "name": "Autumn pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "autumn"],
+      "signature": "08462c3702fb249e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Autumn",
+            "content": "/library-assets/hero-patterns/autumn.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/aztec",
+      "name": "Aztec pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "aztec"],
+      "signature": "0131ae3ef1986929",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Aztec",
+            "content": "/library-assets/hero-patterns/aztec.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/bamboo",
+      "name": "Bamboo pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "bamboo"],
+      "signature": "12dbb9b12a5a02a7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Bamboo",
+            "content": "/library-assets/hero-patterns/bamboo.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/bank-note",
+      "name": "Bank note pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "bank", "note"],
+      "signature": "6ea31ce6e22f6620",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Bank note",
+            "content": "/library-assets/hero-patterns/bank-note.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/bathroom-floor",
+      "name": "Bathroom floor pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "bathroom", "floor"],
+      "signature": "4456e74b5843ea8e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Bathroom floor",
+            "content": "/library-assets/hero-patterns/bathroom-floor.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/bevel-circle",
+      "name": "Bevel circle pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "bevel", "circle"],
+      "signature": "3aa6b5d774a0513f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Bevel circle",
+            "content": "/library-assets/hero-patterns/bevel-circle.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/boxes",
+      "name": "Boxes pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "boxes"],
+      "signature": "cb56a47ec7f48862",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Boxes",
+            "content": "/library-assets/hero-patterns/boxes.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/brick-wall",
+      "name": "Brick wall pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "brick", "wall"],
+      "signature": "96f487a3c43907bb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Brick wall",
+            "content": "/library-assets/hero-patterns/brick-wall.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/bubbles",
+      "name": "Bubbles pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "bubbles"],
+      "signature": "cc3e4c9291c8168a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Bubbles",
+            "content": "/library-assets/hero-patterns/bubbles.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/cage",
+      "name": "Cage pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "cage"],
+      "signature": "14aac479434c537c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cage",
+            "content": "/library-assets/hero-patterns/cage.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/charlie-brown",
+      "name": "Charlie brown pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "charlie", "brown"],
+      "signature": "f0222cb746b07c64",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Charlie brown",
+            "content": "/library-assets/hero-patterns/charlie-brown.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/church-on-sunday",
+      "name": "Church on sunday pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "church", "on", "sunday"],
+      "signature": "45373a6aaa9b29df",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Church on sunday",
+            "content": "/library-assets/hero-patterns/church-on-sunday.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/circles-and-squares",
+      "name": "Circles and squares pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "circles", "and", "squares"],
+      "signature": "2275ef5acf70ca54",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Circles and squares",
+            "content": "/library-assets/hero-patterns/circles-and-squares.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/circuit-board",
+      "name": "Circuit board pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "circuit", "board"],
+      "signature": "c7c7f67577f875fe",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Circuit board",
+            "content": "/library-assets/hero-patterns/circuit-board.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/connections",
+      "name": "Connections pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "connections"],
+      "signature": "c2ab87cf611c7e97",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Connections",
+            "content": "/library-assets/hero-patterns/connections.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/cork-screw",
+      "name": "Cork screw pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "cork", "screw"],
+      "signature": "837678970a73380a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cork screw",
+            "content": "/library-assets/hero-patterns/cork-screw.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/current",
+      "name": "Current pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "current"],
+      "signature": "796977fe3d71fe99",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Current",
+            "content": "/library-assets/hero-patterns/current.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/curtain",
+      "name": "Curtain pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "curtain"],
+      "signature": "9d31cfad123baa94",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Curtain",
+            "content": "/library-assets/hero-patterns/curtain.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/cutout",
+      "name": "Cutout pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "cutout"],
+      "signature": "c01d6cfc1b8aafdb",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Cutout",
+            "content": "/library-assets/hero-patterns/cutout.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/death-star",
+      "name": "Death star pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "death", "star"],
+      "signature": "6404ceabc0b251ba",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Death star",
+            "content": "/library-assets/hero-patterns/death-star.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/diagonal-lines",
+      "name": "Diagonal lines pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "diagonal", "lines"],
+      "signature": "b5bf2607a325e98a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Diagonal lines",
+            "content": "/library-assets/hero-patterns/diagonal-lines.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/diagonal-stripes",
+      "name": "Diagonal stripes pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "diagonal", "stripes"],
+      "signature": "84cbc7a02fca2af1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Diagonal stripes",
+            "content": "/library-assets/hero-patterns/diagonal-stripes.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/dominos",
+      "name": "Dominos pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "dominos"],
+      "signature": "df417dda9fb3f50b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Dominos",
+            "content": "/library-assets/hero-patterns/dominos.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/endless-clouds",
+      "name": "Endless clouds pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "endless", "clouds"],
+      "signature": "f5c1a75a14da91a5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Endless clouds",
+            "content": "/library-assets/hero-patterns/endless-clouds.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/eyes",
+      "name": "Eyes pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "eyes"],
+      "signature": "86b34c921f5b8739",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Eyes",
+            "content": "/library-assets/hero-patterns/eyes.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/falling-triangles",
+      "name": "Falling triangles pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "falling", "triangles"],
+      "signature": "7e121ef79df65663",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Falling triangles",
+            "content": "/library-assets/hero-patterns/falling-triangles.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/fancy-rectangles",
+      "name": "Fancy rectangles pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "fancy", "rectangles"],
+      "signature": "07999a2c94ba77c1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Fancy rectangles",
+            "content": "/library-assets/hero-patterns/fancy-rectangles.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/flipped-diamonds",
+      "name": "Flipped diamonds pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "flipped", "diamonds"],
+      "signature": "16f6707ca939e27c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Flipped diamonds",
+            "content": "/library-assets/hero-patterns/flipped-diamonds.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/floating-cogs",
+      "name": "Floating cogs pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "floating", "cogs"],
+      "signature": "88aa07d2eb8b5f4d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Floating cogs",
+            "content": "/library-assets/hero-patterns/floating-cogs.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/floor-tile",
+      "name": "Floor tile pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "floor", "tile"],
+      "signature": "fe88134b8da9e8af",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Floor tile",
+            "content": "/library-assets/hero-patterns/floor-tile.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/formal-invitation",
+      "name": "Formal invitation pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "formal", "invitation"],
+      "signature": "821e4e91c670c5b8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Formal invitation",
+            "content": "/library-assets/hero-patterns/formal-invitation.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/four-point-stars",
+      "name": "Four point stars pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "four", "point", "stars"],
+      "signature": "58eb2e455436bbb4",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Four point stars",
+            "content": "/library-assets/hero-patterns/four-point-stars.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/glamorous",
+      "name": "Glamorous pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "glamorous"],
+      "signature": "ec6bc9117b9d9a07",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Glamorous",
+            "content": "/library-assets/hero-patterns/glamorous.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/graph-paper",
+      "name": "Graph paper pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "graph", "paper"],
+      "signature": "988e8578b2c4d8ec",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Graph paper",
+            "content": "/library-assets/hero-patterns/graph-paper.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/groovy",
+      "name": "Groovy pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "groovy"],
+      "signature": "6baabe7ee198934b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Groovy",
+            "content": "/library-assets/hero-patterns/groovy.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/happy-intersection",
+      "name": "Happy intersection pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "happy", "intersection"],
+      "signature": "2725b466082c483e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Happy intersection",
+            "content": "/library-assets/hero-patterns/happy-intersection.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/heavy-rain",
+      "name": "Heavy rain pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "heavy", "rain"],
+      "signature": "1f9d29ffb12e0757",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Heavy rain",
+            "content": "/library-assets/hero-patterns/heavy-rain.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/hexagons",
+      "name": "Hexagons pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "hexagons"],
+      "signature": "513612c89cf401ee",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Hexagons",
+            "content": "/library-assets/hero-patterns/hexagons.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/hideout",
+      "name": "Hideout pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "hideout"],
+      "signature": "73670a3199f8d994",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Hideout",
+            "content": "/library-assets/hero-patterns/hideout.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/houndstooth",
+      "name": "Houndstooth pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "houndstooth"],
+      "signature": "815dc04b0c049798",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Houndstooth",
+            "content": "/library-assets/hero-patterns/houndstooth.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/i-like-food",
+      "name": "I like food pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "i", "like", "food"],
+      "signature": "831c371df09472c1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "I like food",
+            "content": "/library-assets/hero-patterns/i-like-food.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/intersecting-circles",
+      "name": "Intersecting circles pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "intersecting", "circles"],
+      "signature": "dd6c554527e92644",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Intersecting circles",
+            "content": "/library-assets/hero-patterns/intersecting-circles.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/jigsaw",
+      "name": "Jigsaw pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "jigsaw"],
+      "signature": "72970c96258dd4c0",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Jigsaw",
+            "content": "/library-assets/hero-patterns/jigsaw.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/jupiter",
+      "name": "Jupiter pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "jupiter"],
+      "signature": "99e0b5fe28ba02db",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Jupiter",
+            "content": "/library-assets/hero-patterns/jupiter.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/kiwi",
+      "name": "Kiwi pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "kiwi"],
+      "signature": "8f404afc5f983701",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Kiwi",
+            "content": "/library-assets/hero-patterns/kiwi.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/leaf",
+      "name": "Leaf pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "leaf"],
+      "signature": "bc0cb6cbe4166df5",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Leaf",
+            "content": "/library-assets/hero-patterns/leaf.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/lines-in-motion",
+      "name": "Lines in motion pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "lines", "in", "motion"],
+      "signature": "25154d02d4eafb75",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Lines in motion",
+            "content": "/library-assets/hero-patterns/lines-in-motion.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/lips",
+      "name": "Lips pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "lips"],
+      "signature": "33ecfc43884b2b40",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Lips",
+            "content": "/library-assets/hero-patterns/lips.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/lisbon",
+      "name": "Lisbon pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "lisbon"],
+      "signature": "bc40e1747ed9520b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Lisbon",
+            "content": "/library-assets/hero-patterns/lisbon.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/melt",
+      "name": "Melt pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "melt"],
+      "signature": "76b49fb6869b0805",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Melt",
+            "content": "/library-assets/hero-patterns/melt.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/moroccan",
+      "name": "Moroccan pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "moroccan"],
+      "signature": "07963e0e700fd067",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Moroccan",
+            "content": "/library-assets/hero-patterns/moroccan.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/morphing-diamonds",
+      "name": "Morphing diamonds pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "morphing", "diamonds"],
+      "signature": "6fd7c04473e20935",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Morphing diamonds",
+            "content": "/library-assets/hero-patterns/morphing-diamonds.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/overcast",
+      "name": "Overcast pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "overcast"],
+      "signature": "1a7c7bf49198e89a",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Overcast",
+            "content": "/library-assets/hero-patterns/overcast.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/overlapping-circles",
+      "name": "Overlapping circles pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "overlapping", "circles"],
+      "signature": "f253ab2c9c504afa",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Overlapping circles",
+            "content": "/library-assets/hero-patterns/overlapping-circles.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/overlapping-diamonds",
+      "name": "Overlapping diamonds pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "overlapping", "diamonds"],
+      "signature": "730acd6b8b13b34d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Overlapping diamonds",
+            "content": "/library-assets/hero-patterns/overlapping-diamonds.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/overlapping-hexagons",
+      "name": "Overlapping hexagons pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "overlapping", "hexagons"],
+      "signature": "04845151f6b9e888",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Overlapping hexagons",
+            "content": "/library-assets/hero-patterns/overlapping-hexagons.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/parkay-floor",
+      "name": "Parkay floor pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "parkay", "floor"],
+      "signature": "745a9874bfe035f1",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Parkay floor",
+            "content": "/library-assets/hero-patterns/parkay-floor.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/piano-man",
+      "name": "Piano man pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "piano", "man"],
+      "signature": "5c99b3c524e3b276",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Piano man",
+            "content": "/library-assets/hero-patterns/piano-man.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/pie-factory",
+      "name": "Pie factory pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "pie", "factory"],
+      "signature": "86c0adf16f801574",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Pie factory",
+            "content": "/library-assets/hero-patterns/pie-factory.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/pixel-dots",
+      "name": "Pixel dots pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "pixel", "dots"],
+      "signature": "e76689f16f5b1ecc",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Pixel dots",
+            "content": "/library-assets/hero-patterns/pixel-dots.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/plus",
+      "name": "Plus pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "plus"],
+      "signature": "3fcda9e7d2f76450",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Plus",
+            "content": "/library-assets/hero-patterns/plus.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/polka-dots",
+      "name": "Polka dots pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "polka", "dots"],
+      "signature": "8a4f1f83c165a134",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Polka dots",
+            "content": "/library-assets/hero-patterns/polka-dots.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/rails",
+      "name": "Rails pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "rails"],
+      "signature": "ee79b0e57934661c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Rails",
+            "content": "/library-assets/hero-patterns/rails.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/rain",
+      "name": "Rain pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "rain"],
+      "signature": "e793a7e22f1c2f1c",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Rain",
+            "content": "/library-assets/hero-patterns/rain.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/random-shapes",
+      "name": "Random shapes pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "random", "shapes"],
+      "signature": "c9cb55bd03b5d80b",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Random shapes",
+            "content": "/library-assets/hero-patterns/random-shapes.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/rounded-plus-connected",
+      "name": "Rounded plus connected pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "rounded", "plus", "connected"],
+      "signature": "bc954c9e52736b51",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Rounded plus connected",
+            "content": "/library-assets/hero-patterns/rounded-plus-connected.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/signal",
+      "name": "Signal pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "signal"],
+      "signature": "f898f639309016fa",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Signal",
+            "content": "/library-assets/hero-patterns/signal.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/skulls",
+      "name": "Skulls pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "skulls"],
+      "signature": "6b621364f1e7f253",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Skulls",
+            "content": "/library-assets/hero-patterns/skulls.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/slanted-stars",
+      "name": "Slanted stars pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "slanted", "stars"],
+      "signature": "3ee5ff4b8ca933c7",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Slanted stars",
+            "content": "/library-assets/hero-patterns/slanted-stars.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/squares",
+      "name": "Squares pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "squares"],
+      "signature": "3fa70c3bdeef5667",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Squares",
+            "content": "/library-assets/hero-patterns/squares.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/squares-in-squares",
+      "name": "Squares in squares pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "squares", "in", "squares"],
+      "signature": "d81050bdf931b71d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Squares in squares",
+            "content": "/library-assets/hero-patterns/squares-in-squares.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/stamp-collection",
+      "name": "Stamp collection pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "stamp", "collection"],
+      "signature": "741be33bf886b496",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Stamp collection",
+            "content": "/library-assets/hero-patterns/stamp-collection.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/steel-beams",
+      "name": "Steel beams pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "steel", "beams"],
+      "signature": "ef7b98e7a6c73910",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Steel beams",
+            "content": "/library-assets/hero-patterns/steel-beams.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/stripes",
+      "name": "Stripes pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "stripes"],
+      "signature": "26e65c96fca1effd",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Stripes",
+            "content": "/library-assets/hero-patterns/stripes.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/temple",
+      "name": "Temple pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "temple"],
+      "signature": "cf0769623fe2592e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Temple",
+            "content": "/library-assets/hero-patterns/temple.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/texture",
+      "name": "Texture pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "texture"],
+      "signature": "373ae36e658e0b7f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Texture",
+            "content": "/library-assets/hero-patterns/texture.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/tic-tac-toe",
+      "name": "Tic tac toe pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "tic", "tac", "toe"],
+      "signature": "d5935236ec3e3a4d",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Tic tac toe",
+            "content": "/library-assets/hero-patterns/tic-tac-toe.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/tiny-checkers",
+      "name": "Tiny checkers pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "tiny", "checkers"],
+      "signature": "8328716c5e963bd3",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Tiny checkers",
+            "content": "/library-assets/hero-patterns/tiny-checkers.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/topography",
+      "name": "Topography pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "topography"],
+      "signature": "de282b8c1ca54fbc",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Topography",
+            "content": "/library-assets/hero-patterns/topography.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/volcano-lamp",
+      "name": "Volcano lamp pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "volcano", "lamp"],
+      "signature": "3385de033603452e",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Volcano lamp",
+            "content": "/library-assets/hero-patterns/volcano-lamp.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/wallpaper",
+      "name": "Wallpaper pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "wallpaper"],
+      "signature": "e0037805217db86f",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Wallpaper",
+            "content": "/library-assets/hero-patterns/wallpaper.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/wiggle",
+      "name": "Wiggle pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "wiggle"],
+      "signature": "59f288a6101d5cb8",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Wiggle",
+            "content": "/library-assets/hero-patterns/wiggle.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/x-equals",
+      "name": "X equals pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "x", "equals"],
+      "signature": "02727fae1496f5a9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "X equals",
+            "content": "/library-assets/hero-patterns/x-equals.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/yyy",
+      "name": "Yyy pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "yyy"],
+      "signature": "c5c6b1beda365312",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Yyy",
+            "content": "/library-assets/hero-patterns/yyy.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hero-patterns/textures/zig-zag",
+      "name": "Zig zag pattern",
+      "category": "textures",
+      "tags": ["pattern", "hero patterns", "background", "zig", "zag"],
+      "signature": "d2d563ba3632e6b9",
+      "document": {
+        "formatVersion": 2,
+        "layers": [
+          {
+            "id": "e1",
+            "kind": "image",
+            "name": "Zig zag",
+            "content": "/library-assets/hero-patterns/zig-zag.png",
+            "style": {
+              "blend": "multiply"
+            },
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

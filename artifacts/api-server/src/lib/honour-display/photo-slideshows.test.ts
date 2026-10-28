@@ -29,6 +29,7 @@ const BEN = randomUUID().toLowerCase();
 let tenantId: number;
 let otherTenantId: number;
 const junior: Record<string, number> = {};
+const senior: Record<string, number> = {};
 
 const show = (over: Partial<KioskPhotoSlideshowJson> = {}): KioskPhotoSlideshowJson => ({
   id: "s1",
@@ -81,17 +82,23 @@ beforeAll(async () => {
         season: 2026,
         photoTypes: ["team"],
         takenAt: ago(3),
+        // The batter, so the TV's crop can aim at them.
+        focusBox: { x: 0.3, y: 0.1, w: 0.25, h: 0.7 },
       }),
     )
     .returning();
-  await db
+  const rest = await db
     .insert(clubPhotosTable)
     .values([
-      photo("old", { grade: "B Grade", season: 2019, takenAt: ago(2000) }),
+      photo("old", { grade: "B Grade", season: 2019, takenAt: ago(2000), offShapes: ["wide"] }),
       photo("stock", { juniorStock: true, takenAt: ago(1) }),
       photo("cutout", { sourcePhotoId: team!.id, takenAt: ago(1) }),
       photo("other-club", { tenantId: otherTenantId, takenAt: ago(1) }),
-    ]);
+    ])
+    .returning();
+  senior.team = team!.id;
+  senior.old = rest[0]!.id;
+  senior.otherClub = rest[3]!.id;
 
   await db.insert(juniorParticipantsTable).values([
     { tenantId, participantId: AVA, displayName: "Ava Smith" },
@@ -145,12 +152,16 @@ describe("kiosk photo slideshows", () => {
         width: 1600,
         height: 1067,
         caption: "A Grade · 2026/27",
+        focusBox: { x: 0.3, y: 0.1, w: 0.25, h: 0.7 },
+        noWideCrop: false,
       },
       {
         url: `/api/storage/objects/library/${STAMP}-old`,
         width: 1600,
         height: 1067,
         caption: "B Grade · 2019/20",
+        focusBox: null,
+        noWideCrop: true,
       },
     ]);
     expect(await urls(show(), otherTenantId)).toEqual([
@@ -186,5 +197,53 @@ describe("kiosk photo slideshows", () => {
     expect(await urls(show({ library: "junior", source: "grades", grades: ["Under 9"] }))).toEqual(
       [],
     );
+  });
+
+  it("reads library folders: a grade, Club-wide, or one type inside a grade", async () => {
+    const lib = (name: string) => `/api/storage/objects/library/${STAMP}-${name}`;
+    expect(await urls(show({ source: "folders", folders: [{ grade: "B Grade" }] }))).toEqual([
+      lib("old"),
+    ]);
+    expect(
+      await urls(show({ source: "folders", folders: [{ grade: "A Grade", type: "team" }] })),
+    ).toEqual([lib("team")]);
+    expect(
+      await urls(show({ source: "folders", folders: [{ grade: "A Grade", type: "unsorted" }] })),
+    ).toEqual([]);
+    // B Grade's photo has no type, so it is in B Grade / Unsorted.
+    expect(
+      await urls(
+        show({
+          source: "folders",
+          folders: [{ grade: "B Grade", type: "unsorted" }, { grade: "club-wide" }],
+        }),
+      ),
+    ).toEqual([lib("old")]);
+    expect(await urls(show({ source: "folders", folders: [] }))).toEqual([]);
+  });
+
+  it("shows hand-picked photos from both libraries in the picked order", async () => {
+    const picked = [
+      { library: "senior" as const, id: senior.old! },
+      { library: "junior" as const, id: junior.shown! },
+      // Withheld, another club's, and a cut-out: never shown, even when picked.
+      { library: "junior" as const, id: junior.withheld! },
+      { library: "senior" as const, id: senior.otherClub! },
+      { library: "senior" as const, id: senior.team! },
+    ];
+    expect(await urls(show({ source: "picked", picked, order: "manual" }))).toEqual([
+      `/api/storage/objects/library/${STAMP}-old`,
+      `/api/juniors/photos/${junior.shown}`,
+      `/api/storage/objects/library/${STAMP}-team`,
+    ]);
+    // Newest order sorts the same picks by date; `library` doesn't limit picks.
+    expect(
+      await urls(show({ source: "picked", picked, order: "newest", library: "senior" })),
+    ).toEqual([
+      `/api/juniors/photos/${junior.shown}`,
+      `/api/storage/objects/library/${STAMP}-team`,
+      `/api/storage/objects/library/${STAMP}-old`,
+    ]);
+    expect(await urls(show({ source: "picked", picked: [] }))).toEqual([]);
   });
 });

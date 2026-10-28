@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { KIOSK_MAX_COLUMNS } from "@workspace/scorecard/kiosk-display";
 import type { BoardDisplayConfig, DisplayBoard } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import type { HonoursDisplayForm } from "../use-honours-display-settings";
@@ -83,7 +84,7 @@ export function RotationItemPanel({
 function BoardTvSettings({ form, board }: { form: HonoursDisplayForm; board: DisplayBoard }) {
   const cfg = form.boardConfigs[board.id] ?? {};
   const resolve = (value: typeof cfg) => form.resolveBoard(board, value);
-  const maxColumns = resolve({ columnsPerScreen: 5 }).columnsPerScreen;
+  const maxColumns = resolve({ columnsPerScreen: KIOSK_MAX_COLUMNS }).columnsPerScreen;
   const leaderboard = board.layout === "leaderboard";
   const overridden =
     MOTION_KEYS.some((k) => cfg[k] !== undefined) || (leaderboard && cfg.top !== undefined);
@@ -115,6 +116,7 @@ function BoardTvSettings({ form, board }: { form: HonoursDisplayForm; board: Dis
           </select>
         </label>
       )}
+      <PhotoBackgroundFields form={form} board={board} />
       <TvMotionFields
         value={cfg}
         defaults={motionDefaults(cfg, resolve)}
@@ -140,6 +142,70 @@ function BoardTvSettings({ form, board }: { form: HonoursDisplayForm; board: Dis
         </Button>
       </div>
     </Panel>
+  );
+}
+
+/**
+ * A board's photo background (kiosk-photo-rotation P2): a photo from one of
+ * the club's slideshows behind the board, with the board's panel over it. The
+ * lightest strength still keeps 72% of the panel, so the text stays readable.
+ */
+function PhotoBackgroundFields({ form, board }: { form: HonoursDisplayForm; board: DisplayBoard }) {
+  const bg = form.boardConfigs[board.id]?.photoBackground ?? null;
+  const id = `board-tv-${board.id}-photobg`;
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <label className="block space-y-1">
+        <span className="block text-xs font-medium text-muted-foreground">Photo background</span>
+        <select
+          className="w-full rounded border bg-card px-2 py-1.5 text-sm"
+          value={bg?.slideshowId ?? ""}
+          onChange={(e) =>
+            form.setConfig(board.id, {
+              photoBackground: e.target.value
+                ? { slideshowId: e.target.value, dim: bg?.dim ?? "medium" }
+                : null,
+            })
+          }
+          data-testid={id}
+        >
+          <option value="">None</option>
+          {form.slideshows.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name || "Untitled slideshow"}
+            </option>
+          ))}
+        </select>
+      </label>
+      {bg ? (
+        <label className="block space-y-1">
+          <span className="block text-xs font-medium text-muted-foreground">Board panel</span>
+          <select
+            className="w-full rounded border bg-card px-2 py-1.5 text-sm"
+            value={bg.dim ?? "medium"}
+            onChange={(e) =>
+              form.setConfig(board.id, {
+                photoBackground: {
+                  ...bg,
+                  dim: e.target.value as "light" | "medium" | "strong",
+                },
+              })
+            }
+            data-testid={`${id}-dim`}
+          >
+            <option value="light">More photo</option>
+            <option value="medium">Balanced</option>
+            <option value="strong">More panel</option>
+          </select>
+        </label>
+      ) : (
+        <p className="self-end pb-1.5 text-[11px] text-muted-foreground">
+          {form.slideshows.length
+            ? "Shows a photo from a slideshow behind this board."
+            : "Add a photo slideshow to use one here."}
+        </p>
+      )}
+    </div>
   );
 }
 

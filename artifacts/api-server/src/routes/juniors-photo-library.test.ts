@@ -23,6 +23,7 @@ import {
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
+import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 import {
   juniorLibraryPhotoAllowed,
@@ -333,5 +334,52 @@ describe("juniors isolation", () => {
       .from(juniorPhotoParticipantsTable)
       .where(eq(juniorPhotoParticipantsTable.photoId, id));
     expect(tags).toEqual([]);
+  });
+});
+
+describe("photo focus areas", () => {
+  it("sets a box, shapes and a tagged child's area; the draft snapshot uses that area", async () => {
+    const id = await ingest("focus", { participantIds: [AVA, BEN] });
+    const put = (body: Record<string, unknown>) =>
+      asAdmin(request(app).put(`/api/juniors/photo-library/${id}/focus`)).send(body);
+    const res = await put({
+      focusBox: { x: 0.1, y: 0.1, w: 0.6, h: 0.6 },
+      offShapes: ["wide"],
+      participantAreas: [
+        { participantId: AVA.toUpperCase(), box: { x: 0.5, y: 0.2, w: 0.2, h: 0.5 } },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.focusBox).toEqual({ x: 0.1, y: 0.1, w: 0.6, h: 0.6 });
+    expect(res.body.offShapes).toEqual(["wide"]);
+    expect(res.body.participantAreas).toEqual([
+      { participantId: AVA, box: { x: 0.5, y: 0.2, w: 0.2, h: 0.5 } },
+    ]);
+
+    // The snapshot a junior card stores: the featured child's area, else the box.
+    const url = `/api/juniors/photos/${id}`;
+    expect((await draftPhotoFocus(tenantId, url, null, AVA))?.box).toEqual({
+      x: 0.5,
+      y: 0.2,
+      w: 0.2,
+      h: 0.5,
+    });
+    expect((await draftPhotoFocus(tenantId, url, null, BEN))?.box).toEqual({
+      x: 0.1,
+      y: 0.1,
+      w: 0.6,
+      h: 0.6,
+    });
+    expect(await draftPhotoFocus(otherTenantId, url, null, AVA)).toBeNull();
+
+    // An area needs the child tagged first; another club can't edit it.
+    const untagged = await put({
+      participantAreas: [{ participantId: randomUUID(), box: { x: 0, y: 0, w: 0.5, h: 0.5 } }],
+    });
+    expect(untagged.status).toBe(400);
+    const other = await asOther(request(app).put(`/api/juniors/photo-library/${id}/focus`)).send({
+      focusBox: null,
+    });
+    expect(other.status).toBe(404);
   });
 });

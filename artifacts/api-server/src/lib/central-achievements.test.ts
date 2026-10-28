@@ -74,6 +74,16 @@ vi.mock("@workspace/db/central-queries", () => ({
 vi.mock("./roundup-central", () => ({
   loadCentralIdentity: async () => h.identity,
 }));
+// Each card's match, as its result card holds it (card labels).
+vi.mock("./achievement-match", () => ({
+  loadMatchContexts: async (_t: number, _c: number, ids: number[]) =>
+    new Map(
+      ids.map((id) => [
+        id,
+        { kind: "matchSummary", result: "Won by 8 runs", photoUrl: "/r.jpg", venue: "Oval" },
+      ]),
+    ),
+}));
 vi.mock("./roundup", () => ({
   playerPath: (id: number | null) => (id == null ? "/players" : `/players/${id}`),
 }));
@@ -157,6 +167,7 @@ describe("buildAchievementDrafts", () => {
         playerId: 41,
         grade: "A Grade",
         season: 2024,
+        matchId: 501,
         cardInput: {
           kind: "century",
           playerName: "R Star",
@@ -174,6 +185,7 @@ describe("buildAchievementDrafts", () => {
         playerId: null,
         grade: "A Grade",
         season: 2024,
+        matchId: 501,
         cardInput: {
           kind: "fiveFor",
           playerName: "U Bowler",
@@ -192,6 +204,7 @@ describe("buildAchievementDrafts", () => {
         playerId: 42,
         grade: "A Grade",
         season: 2024,
+        matchId: 501,
         cardInput: {
           kind: "debut",
           playerName: "D Debut",
@@ -208,6 +221,7 @@ describe("buildAchievementDrafts", () => {
         playerId: 41,
         grade: "A Grade",
         season: 2024,
+        matchId: 501,
         cardInput: {
           kind: "milestone",
           playerName: "R Star",
@@ -313,6 +327,14 @@ describe("draftCentralAchievements", () => {
     expect(h.upsertDraftByKey).toHaveBeenCalledWith(
       expect.objectContaining({ appPath: "/players", playerId: null }),
     );
+  });
+
+  it("gives each card its match, without the result card's own kind and photo", async () => {
+    h.centralMatchAchievements.mockResolvedValue([century("g-star", "R Star")]);
+    await draftCentralAchievements(9, 77, [501], new Date());
+    const input = h.upsertDraftByKey.mock.calls[0]![0].cardInput;
+    expect(input.kind).toBe("century");
+    expect(input.match).toEqual({ result: "Won by 8 runs", venue: "Oval" });
   });
 
   it("never re-drafts a card the club dismissed", async () => {

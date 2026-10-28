@@ -375,10 +375,61 @@ export type ShapeLayerV2 = LayerCommon & { kind: "shape" };
 /** An image: a `{{token}}` (club logo, ground photo, a crest) or an https / library URL. */
 export type ImageLayerV2 = LayerCommon & { kind: "image"; content?: string };
 
+/**
+ * Which selected player a photo layer's `player` source features: one chosen
+ * per draft (`random`), a team list role, or the player at `position` in the
+ * list (1 = first).
+ */
+export const PHOTO_SOURCE_PLAYER_PICKS = [
+  "random",
+  "captain",
+  "viceCaptain",
+  "keeper",
+  "position",
+] as const;
+export type PhotoSourcePlayerPick = (typeof PHOTO_SOURCE_PLAYER_PICKS)[number];
+
+/** The furthest team list position a `player` source can name. */
+export const MAX_PHOTO_SOURCE_POSITION = 12;
+
+/**
+ * Where a photo layer's photo comes from (photo layer sources). Without one,
+ * the layer shows the card's photo (the club's card photo rules, then the
+ * automatic order), as every photo layer did before.
+ *
+ * - `player`: a selected player from the card's team list — their tagged
+ *   library photo, cropped to their area, then their headshot.
+ * - `collection`: a photo from one of the club's photo collections, chosen
+ *   per draft.
+ *
+ * When the source finds nothing (no team list, no such role, an empty or
+ * deleted collection), the layer falls back to the card's photo. Junior
+ * cards never get a photo from a source.
+ */
+export type PhotoLayerSource =
+  | { kind: "player"; pick: PhotoSourcePlayerPick; position?: number }
+  | { kind: "collection"; collectionId: number };
+
+/**
+ * A sourced photo layer's photo on one draft (`social_drafts.layer_photos`,
+ * keyed by `photoLayerKey`): its URL and, for a library photo, the focus box
+ * (or the pictured player's area) it crops to.
+ */
+export type LayerPhoto = {
+  url: string;
+  focus?: {
+    box: { x: number; y: number; w: number; h: number };
+    width: number;
+    height: number;
+  } | null;
+};
+export type LayerPhotos = Record<string, LayerPhoto>;
+
 /** The card's photo; never drawn on a junior card without the server's marker. */
 export type PhotoLayerV2 = LayerCommon & {
   kind: "photo";
   photo?: Partial<Record<TemplateSize, TemplatePhotoAdjust>>;
+  source?: PhotoLayerSource;
 };
 
 /** One styled row per data row of a repeat (`rows`, `players`, `dayRows`, `sponsors`…). */
@@ -439,7 +490,12 @@ export const LAYER_KINDS_V2: readonly TemplateLayerKindV2[] = [
 // ── Documents ───────────────────────────────────────────────────────────────
 
 /** One page: its layers, back to front. */
-export type TemplatePage = { layers: TemplateLayerV2[] };
+/**
+ * One page of a template: its layers, and the colour behind them (a hex, or a
+ * card colour token such as `var(--gold)`). Without one the page sits on the
+ * club's stage colour, as every page did before page colours.
+ */
+export type TemplatePage = { layers: TemplateLayerV2[]; background?: string };
 
 /** A template document, format v2. */
 export type TemplateDocumentV2 = {

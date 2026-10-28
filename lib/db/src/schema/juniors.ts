@@ -16,7 +16,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { clubsTable } from "./clubs";
 import { tenantIdColumn } from "./_tenant";
-import { CLUB_PHOTO_MATCH_FORMATS, clubPhotoTypesSqlArray } from "./club_photos";
+import {
+  CLUB_PHOTO_MATCH_FORMATS,
+  clubPhotoTypesSqlArray,
+  photoFrameShapesSqlArray,
+  type PhotoFocusBoxJson,
+} from "./club_photos";
 import type { TeamListRole } from "./fixtures";
 
 /**
@@ -265,6 +270,9 @@ export const juniorPhotosTable = pgTable(
     photoTypes: text("photo_types").array().notNull().default([]),
     matchFormat: text("match_format"),
     takenAt: timestamp("taken_at", { withTimezone: true }),
+    // Photo focus areas, as on `club_photos` (migration 0070).
+    focusBox: jsonb("focus_box").$type<PhotoFocusBoxJson>(),
+    offShapes: text("off_shapes").array().notNull().default([]),
     createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -278,6 +286,10 @@ export const juniorPhotosTable = pgTable(
     chkMatchFormat: check(
       "junior_photos_match_format_check",
       sql`"match_format" IS NULL OR "match_format" = ANY (${juniorPhotoMatchFormatsSqlArray})`,
+    ),
+    chkOffShapes: check(
+      "junior_photos_off_shapes_check",
+      sql`"off_shapes" <@ ${photoFrameShapesSqlArray}`,
     ),
   }),
 );
@@ -299,6 +311,8 @@ export const juniorPhotoParticipantsTable = pgTable(
       .notNull()
       .references(() => juniorPhotosTable.id, { onDelete: "cascade" }),
     participantId: text("participant_id").notNull(),
+    // Where this child is on the photo (photo focus areas, migration 0070).
+    area: jsonb("area").$type<PhotoFocusBoxJson>(),
   },
   (t) => ({
     uniqPhotoParticipant: uniqueIndex("junior_photo_participants_photo_participant_unique").on(

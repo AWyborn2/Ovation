@@ -4,6 +4,7 @@ import {
   serial,
   boolean,
   integer,
+  jsonb,
   text,
   timestamp,
   index,
@@ -39,6 +40,21 @@ export const clubPhotoTypesSqlArray = sql.raw(
  * none). Mirrors `MATCH_FORMATS` in `@workspace/scorecard`.
  */
 export const CLUB_PHOTO_MATCH_FORMATS = ["one_day", "t20", "two_day"] as const;
+
+/**
+ * A box on a photo in fractions (0–1) of its width and height: the photo's
+ * focus box, or a tagged player's area (photo focus areas, migration 0070).
+ * Mirrors `FocusBox` in `@workspace/scorecard`.
+ */
+export type PhotoFocusBoxJson = { x: number; y: number; w: number; h: number };
+
+/** The frame shapes an admin can switch off for a photo (`FRAME_SHAPES` in scorecard). */
+export const PHOTO_FRAME_SHAPES = ["tall", "square", "wide"] as const;
+
+/** `ARRAY['tall', …]::text[]` for the check constraints. */
+export const photoFrameShapesSqlArray = sql.raw(
+  `ARRAY[${PHOTO_FRAME_SHAPES.map((t) => `'${t}'`).join(", ")}]::text[]`,
+);
 
 const clubPhotoMatchFormatsSqlArray = sql.raw(
   `ARRAY[${CLUB_PHOTO_MATCH_FORMATS.map((t) => `'${t}'`).join(", ")}]::text[]`,
@@ -81,6 +97,12 @@ export const clubPhotosTable = pgTable(
     // The match format (CLUB_PHOTO_MATCH_FORMATS): a separate tag from the
     // photo type; a card from a format prefers photos of that format.
     matchFormat: text("match_format"),
+    // The part of the photo that matters (photo focus areas): every frame crops
+    // to keep it in view. Null = a centred crop, as before.
+    focusBox: jsonb("focus_box").$type<PhotoFocusBoxJson>(),
+    // Frame shapes (PHOTO_FRAME_SHAPES) the admin switched off for this photo;
+    // the automatic picker never puts it in a frame of those shapes.
+    offShapes: text("off_shapes").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -92,6 +114,10 @@ export const clubPhotosTable = pgTable(
     chkMatchFormat: check(
       "club_photos_match_format_check",
       sql`"match_format" IS NULL OR "match_format" = ANY (${clubPhotoMatchFormatsSqlArray})`,
+    ),
+    chkOffShapes: check(
+      "club_photos_off_shapes_check",
+      sql`"off_shapes" <@ ${photoFrameShapesSqlArray}`,
     ),
   }),
 );
@@ -112,6 +138,9 @@ export const clubPhotoPlayersTable = pgTable(
       .notNull()
       .references(() => clubPhotosTable.id, { onDelete: "cascade" }),
     playerId: integer("player_id").notNull(),
+    // Where this player is on the photo; a card about them crops to it
+    // instead of the photo's focus box. Null = no area marked.
+    area: jsonb("area").$type<PhotoFocusBoxJson>(),
   },
   (t) => ({
     uniqPhotoPlayer: uniqueIndex("club_photo_players_photo_player_unique").on(

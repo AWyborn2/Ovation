@@ -1,4 +1,4 @@
-import { pgTable, integer, text } from "drizzle-orm/pg-core";
+import { pgTable, boolean, integer, text } from "drizzle-orm/pg-core";
 
 /**
  * Singleton table (id=1) holding the platform brand for Ovation itself.
@@ -19,6 +19,9 @@ export const platformSettingsTable = pgTable("platform_settings", {
   logoUrl: text("logo_url"),
   accentColour: text("accent_colour"),
   faviconUrl: text("favicon_url"),
+  // Club-facing AI Generate (template library release 2, ADR-012): Ovation's
+  // switch, on top of the designer tool's quality bar. Off until turned on.
+  clubGenerateEnabled: boolean("club_generate_enabled").notNull().default(false),
 });
 
 export type PlatformSettingsRow = typeof platformSettingsTable.$inferSelect;

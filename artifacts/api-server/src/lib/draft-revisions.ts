@@ -6,6 +6,8 @@ import {
   type SocialDraftRow,
   type SocialDraftRevisionRow,
 } from "@workspace/db";
+import { draftPhotoFocus } from "./photo-focus-snapshot";
+import { draftLayerPhotos } from "./layer-photos";
 
 /** Revisions kept per draft; the oldest are dropped beyond this (KTD2). */
 export const MAX_DRAFT_REVISIONS = 20;
@@ -125,7 +127,19 @@ export async function revertDraftToRevision(
         caption: rev.caption,
         photoUrl: rev.photoUrl,
         photoSource: rev.photoSource,
+        // Revisions don't keep the focus snapshot: the same photo keeps the
+        // draft's, another one takes its library box (photo focus areas).
+        photoFocus:
+          rev.photoUrl === draft.photoUrl
+            ? draft.photoFocus
+            : await draftPhotoFocus(draft.tenantId, rev.photoUrl),
         adjustments: rev.adjustments,
+        // Nor the layer photos: the restored design's sourced photo layers pick again.
+        layerPhotos: await draftLayerPhotos({
+          ...draft,
+          adjustments: rev.adjustments,
+          cardInput: rev.cardInput,
+        }),
         ...designBase,
         editedAt: new Date(),
         // A manual action: stop any pending auto-promotion (KTD4).

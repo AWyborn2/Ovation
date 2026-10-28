@@ -298,6 +298,46 @@ export async function createCopy(
   });
 }
 
+/**
+ * A new private club template from a document made outside the library (a
+ * Figma import): validated like a club save, no origin, never the default,
+ * and sent to the fit check.
+ */
+export async function createDocumentCopy(
+  tenantId: number,
+  body: { kind: string; name: string; document: unknown },
+  adminId: number | null,
+): Promise<CardTemplateRow> {
+  if (!isTemplateKind(body.kind)) {
+    throw new TemplateLibraryError(400, { error: "That card kind isn't supported." });
+  }
+  const document = validateCopyDocument(body.document, body.kind);
+  const [row] = await db
+    .insert(cardTemplatesTable)
+    .values({
+      tenantId,
+      name: body.name.slice(0, MAX_TEMPLATE_NAME),
+      source: KIND_SOURCE,
+      baseKind: body.kind,
+      cardKinds: [body.kind],
+      adjustments: document,
+      version: 1,
+      updatedAt: new Date(),
+      updatedByAdminId: adminId,
+      isKindDefault: false,
+      originTemplateId: null,
+      originVersion: null,
+      ...initialFit(),
+    })
+    .returning();
+  requestFit(
+    { kind: "copy", tenantId, copyId: row!.id, version: row!.version },
+    document,
+    body.kind,
+  );
+  return row!;
+}
+
 /** Duplicate one of the club's templates. The duplicate keeps the credit and edit state; it is never the default. */
 export async function duplicateCopy(
   tenantId: number,

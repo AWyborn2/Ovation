@@ -5,10 +5,15 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PhotoFocusBox } from './photoFocusBox';
 
 export interface KioskSlideshowPhoto {
   url: string;
   width: number;
   height: number;
   caption?: string | null;
+  /** The part of the photo that matters (photo focus areas); null = none marked. */
+  focusBox?: PhotoFocusBox | null;
+  /** The admin switched wide crops off for this photo, so the TV shows it whole. */
+  noWideCrop?: boolean;
 }

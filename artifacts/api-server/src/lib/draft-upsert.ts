@@ -17,6 +17,7 @@ import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto, type PhotoSource } from "./draft-enrich";
 import { autoReadyAtFor } from "./effective-draft-state";
 import { templatedDesignFor } from "./kind-templates";
+import { resolveLayerPhotos } from "./layer-photos";
 import { placeDraft } from "./posting-writer";
 import { cancelDraftPublications } from "./publishing/publications";
 
@@ -77,7 +78,7 @@ export type DraftUpsert = {
    * (ADR-007). Used as is on insert and on every refresh (it counts as an
    * automatic pick, so an admin's chosen photo still wins); `null` = none.
    */
-  photo?: { url: string; source: PhotoSource } | null;
+  photo?: { url: string; source: PhotoSource; participantId?: string } | null;
   /**
    * Finds a pre-key draft for the same event (drafts created before source keys
    * existed). The match returned gets the key backfilled.
@@ -339,6 +340,16 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
     // With card kind templates on, the draft copies its kind's template
     // instead of using a pack (ADR-002).
     const templated = await templatedDesignFor(input.tenantId, input.cardInput.kind, e.packId);
+    // The design's sourced photo layers pick their photos with the draft's.
+    const layerPhotos = templated
+      ? await resolveLayerPhotos({
+          tenantId: input.tenantId,
+          adjustments: templated.adjustments,
+          cardInput: input.cardInput,
+          junior: input.sourceMatchIsJunior === true,
+          seed: input.sourceKey,
+        })
+      : null;
     try {
       const [row] = await db
         .insert(socialDraftsTable)
@@ -366,6 +377,10 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           caption: e.caption,
           photoUrl: e.photoUrl,
           photoSource: e.photoSource,
+          photoFocus: e.photoFocus,
+          layerPhotos,
+          // Whose sponsors the card carries; looked up when it is drawn.
+          subjectPlayerId: e.subjectPlayerId,
           ...(templated ?? {}),
         })
         .returning();
@@ -413,14 +428,25 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
   // one has edited the draft, and re-picks the photo only if the current one
   // was picked automatically (KTD6).
   const e = await enrichment();
+  const autoPhoto = isAutoPhoto(current.photoSource);
+  const layerPhotos = autoPhoto
+    ? await resolveLayerPhotos({
+        tenantId: input.tenantId,
+        adjustments: current.adjustments,
+        cardInput: input.cardInput,
+        junior: input.sourceMatchIsJunior === true || current.sourceMatchIsJunior,
+        seed: input.sourceKey,
+      })
+    : null;
   const refreshed = {
     cardInput: input.cardInput,
     appPath: input.appPath,
+    subjectPlayerId: e.subjectPlayerId,
     // Juniors joining a combined round set make the draft junior; it never goes back (KTD6).
     ...(input.sourceMatchIsJunior === true ? { sourceMatchIsJunior: true } : {}),
     ...(current.editedAt == null ? { caption: e.caption } : {}),
-    ...(isAutoPhoto(current.photoSource)
-      ? { photoUrl: e.photoUrl, photoSource: e.photoSource }
+    ...(autoPhoto
+      ? { photoUrl: e.photoUrl, photoSource: e.photoSource, photoFocus: e.photoFocus, layerPhotos }
       : {}),
     // New data can change how a templated card lays out: it owes a fresh
     // layout check before automation can touch it again (KTD10).

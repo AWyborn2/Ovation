@@ -292,3 +292,191 @@ describe("a v2 list's row styles", () => {
     expect(text).not.toContain("#d3175a");
   });
 });
+
+describe("page colours (editor issue 1, 26 Oct 2026)", () => {
+  const signing = previewSample("newSigning");
+  const page = primaryPage("newSigning");
+  const text = {
+    id: "t",
+    kind: "text",
+    content: "Hello",
+    geometry: { square: { x: 10, y: 10, w: 80, h: 10 } },
+  } as unknown as TemplateLayerV2;
+  const docWith = (background?: string) =>
+    ({
+      formatVersion: 2,
+      pages: { [page]: { layers: [text], ...(background ? { background } : {}) } },
+    }) as unknown as CardAdjustments;
+  const rootStyle = (html: string) => /class="pack-card-root" style="([^"]*)"/.exec(html)![1]!;
+
+  it("draws a page's own colour behind its layers, with dark text on a light page", () => {
+    const style = rootStyle(render(signing, docWith("#FFFFFF")));
+    expect(style).toMatch(/;background:#FFFFFF;color:#16181C$/);
+  });
+
+  it("gives a dark page and the club panel light text, and the club colour its own ink", () => {
+    expect(rootStyle(render(signing, docWith("#0B1F3A")))).toMatch(/color:#FFFFFF$/);
+    expect(rootStyle(render(signing, docWith("var(--panel)")))).toMatch(
+      /background:var\(--panel\);color:#FFFFFF$/,
+    );
+    expect(rootStyle(render(signing, docWith("var(--gold)")))).toMatch(
+      /color:var\(--accent-ink, #111111\)$/,
+    );
+  });
+
+  it("keeps the club's stage colour without one, and ignores a colour it can't draw", () => {
+    const plain = rootStyle(render(signing, docWith()));
+    expect(plain.match(/background:/g)).toHaveLength(1);
+    expect(rootStyle(render(signing, docWith('red;" onload="x')))).toBe(plain);
+  });
+});
+
+describe("the template editor's sample text", () => {
+  it("fills a field the card has no value for, and never one it has", () => {
+    const signing = previewSample("newSigning");
+    const doc = {
+      formatVersion: 2,
+      pages: {
+        [primaryPage("newSigning")]: {
+          layers: [
+            {
+              id: "t",
+              kind: "text",
+              content: "{{innings1.overs}} · {{clubName}}",
+              geometry: { square: { x: 10, y: 10, w: 80, h: 10 } },
+            },
+          ],
+        },
+      },
+    } as unknown as CardAdjustments;
+    const tokens = resolveCardTokens({
+      theme: null,
+      junior: false,
+      data: DATA,
+      packId: BLANK_PACK_ID,
+    });
+    const html = renderPackCard(
+      signing,
+      "square",
+      true,
+      tokens,
+      false,
+      { ...DATA, sampleValues: { "innings1.overs": "20 ov", clubName: "Not Me" } },
+      BLANK_PACK_ID,
+      doc,
+    );
+    expect(html).toContain("20 ov");
+    expect(html).toContain("20 ov · Sample<");
+    expect(html).not.toContain("Not Me");
+  });
+});
+
+describe("photo focus areas", () => {
+  // A tall frame (30% x 80% of a square card) over a wide photo with the
+  // subject at its left: the frame crops to the box, not the centre.
+  const tall = { square: { x: 0, y: 0, w: 30, h: 80 } };
+  const photoLayer = (photo?: unknown) =>
+    ({
+      formatVersion: 2,
+      pages: {
+        card: {
+          layers: [{ id: "pic", kind: "photo", geometry: tall, ...(photo ? { photo } : {}) }],
+        },
+      },
+    }) as CardAdjustments;
+  const focus = { box: { x: 0.05, y: 0.2, w: 0.15, h: 0.4 }, width: 3000, height: 2000 };
+  const draw = (doc: CardAdjustments, ctx: Record<string, unknown> = {}) =>
+    renderFreeLayers(
+      doc,
+      "square",
+      {},
+      {},
+      {
+        kind: "player",
+        photoUrl: "/api/storage/objects/library/a.jpg",
+        ...ctx,
+      },
+    );
+  const position = (html: string) =>
+    /object-position:([\d.]+)% ([\d.]+)%/.exec(html)?.slice(1).map(Number);
+
+  it("crops an unpositioned frame to the focus box", () => {
+    expect(position(draw(photoLayer()))).toEqual([50, 50]);
+    const [fx] = position(draw(photoLayer(), { photoFocus: focus }))!;
+    expect(fx).toBeLessThan(20);
+  });
+
+  it("lets the sliders and a hand-set position win", () => {
+    const moved = draw(photoLayer(), {
+      photoFocus: focus,
+      photoTransform: { focalX: 0.9, focalY: 0.5, zoom: 1 },
+    });
+    expect(position(moved)).toEqual([90, 50]);
+    const own = draw(photoLayer({ square: { focalX: 70, focalY: 40, zoom: 1 } }), {
+      photoFocus: focus,
+    });
+    expect(position(own)).toEqual([70, 40]);
+  });
+});
+
+describe("photo layer sources", () => {
+  const frame = { square: { x: 0, y: 0, w: 30, h: 80 } };
+  const doc = {
+    formatVersion: 2,
+    pages: {
+      card: {
+        layers: [
+          { id: "hero", kind: "photo", geometry: frame },
+          { id: "side", kind: "photo", geometry: frame, link: "pair" },
+          { id: "plain", kind: "photo", geometry: frame },
+        ],
+      },
+    },
+  } as CardAdjustments;
+  const focus = { box: { x: 0.05, y: 0.2, w: 0.15, h: 0.4 }, width: 3000, height: 2000 };
+  const layerPhotos = {
+    hero: { url: "/api/storage/objects/library/captain.jpg", focus },
+    "link:pair": { url: "/api/storage/objects/library/crowd.jpg", focus: null },
+  };
+  const draw = (ctx: Record<string, unknown>) =>
+    renderFreeLayers(
+      doc,
+      "square",
+      {},
+      {},
+      { kind: "player", photoUrl: "/api/storage/objects/library/card.jpg", ...ctx },
+    );
+  const srcs = (html: string) => [...html.matchAll(/<img src="([^"]+)"/g)].map((m) => m[1]);
+
+  it("draws each sourced layer's own photo, and the card's photo on the rest", () => {
+    const html = draw({ layerPhotos });
+    expect(srcs(html)).toEqual([
+      "/api/storage/objects/library/captain.jpg",
+      "/api/storage/objects/library/crowd.jpg",
+      "/api/storage/objects/library/card.jpg",
+    ]);
+    // The layer's own focus crops it; the card's sliders don't move it.
+    const moved = draw({ layerPhotos, photoTransform: { focalX: 0.9, focalY: 0.5, zoom: 1 } });
+    const positions = [...moved.matchAll(/object-position:([\d.]+)% ([\d.]+)%/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(positions[0]).toBeLessThan(20);
+    expect(positions[2]).toBe(90);
+  });
+
+  it("shows a sourced photo even when the card has none, and none on a junior card", () => {
+    expect(srcs(draw({ layerPhotos, photoUrl: null }))).toHaveLength(2);
+    expect(srcs(draw({ layerPhotos, junior: true }))).toEqual([]);
+  });
+
+  it("never reaches a junior card through the pack renderer", () => {
+    const input = previewSample("teamList", "Sample Cricket Club");
+    const data = { ...DATA, layerPhotos };
+    const tokens = resolveCardTokens({ theme: null, junior: true, data, packId: BLANK_PACK_ID });
+    const html = renderPackCard(input, "square", true, tokens, true, data, BLANK_PACK_ID, doc, {
+      page: "card",
+    });
+    expect(html).not.toContain("captain.jpg");
+    expect(html).not.toContain("crowd.jpg");
+  });
+});

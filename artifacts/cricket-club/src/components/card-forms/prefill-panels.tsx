@@ -74,6 +74,13 @@ function defaultSeasonYear(): number {
 
 type Apply = (patch: CardFormState) => void;
 
+/** A player named "Given Surname" in the shape the player picker shows. */
+function splitPlayerName(id: number, name: string) {
+  const parts = name.trim().split(/\s+/);
+  const surname = parts.length > 1 ? (parts.pop() ?? "") : name.trim();
+  return { id, givenName: parts.join(" "), surname };
+}
+
 /**
  * A card from the server's content builders (ADR-010 P7) as form state. A key
  * the starting card has and the server's card lacks (a sample headline) is
@@ -96,13 +103,23 @@ function builderCard(
 }
 
 /** Dispatch to the right prefill panel for a kind, or nothing when form-only. */
-export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
+export function PrefillPanel({
+  kind,
+  onApply,
+  onPlayer,
+}: {
+  kind: CardKind;
+  onApply: Apply;
+  /** The player a prefill is about (a career milestone), for their sponsors. */
+  onPlayer?: (player: { id: number; givenName: string; surname: string }) => void;
+}) {
   const source = DESCRIPTORS[kind].prefill;
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
   if (source === "round") return <RoundPrefillPanel onApply={onApply} />;
   if (source === "teamlists") return <RoundTeamListsPrefillPanel onApply={onApply} />;
-  if (source === "milestone") return <MilestonePrefillPanel onApply={onApply} />;
+  if (source === "milestone")
+    return <MilestonePrefillPanel onApply={onApply} onPlayer={onPlayer} />;
   if (source === "premiership") return <PremiershipPrefillPanel onApply={onApply} />;
   if (source === "stats") {
     if (kind === "ladder") return <LadderPrefillPanel onApply={onApply} />;
@@ -583,7 +600,13 @@ function RoundResultsPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: 
 /* ------------------------------------------- From milestones / premierships */
 
 /** Career-tier crossings from the club's milestone feed (central-backed where the club is). */
-function MilestonePrefillPanel({ onApply }: { onApply: Apply }) {
+function MilestonePrefillPanel({
+  onApply,
+  onPlayer,
+}: {
+  onApply: Apply;
+  onPlayer?: (player: { id: number; givenName: string; surname: string }) => void;
+}) {
   const q = useGetMilestonesBoard();
   const items = useMemo(
     () => ((q.data?.items ?? []) as MilestoneItem[]).filter((i) => i.kind === "career"),
@@ -615,7 +638,12 @@ function MilestonePrefillPanel({ onApply }: { onApply: Apply }) {
         ))}
       </SelectField>
       <ApplyButton
-        onClick={() => selected && onApply(milestoneItemToState(selected))}
+        onClick={() => {
+          if (!selected) return;
+          onApply(milestoneItemToState(selected));
+          // The milestone's player becomes the card's player (their sponsors).
+          onPlayer?.(splitPlayerName(selected.playerId, selected.playerName));
+        }}
         disabled={!selected}
       />
     </PrefillCard>

@@ -513,3 +513,249 @@ describe("Photo slideshows (kiosk redesign D2)", () => {
     expect(screen.getByTestId("seq-row-0").textContent).toContain("Club Champions");
   });
 });
+
+describe("Photo slideshow sources (kiosk-photo-rotation P0/P1)", () => {
+  const champions = {
+    id: "champions",
+    category: "awards",
+    layout: "grid" as const,
+    title: "Club Champions",
+    entries: [],
+    grid: { rowHeading: "Season", columnHeadings: ["First"], rows: [] },
+    display: { columns: 1, transition: "scroll" as const, fit: false },
+  };
+  const libraryPhoto = (id: number, grade: string | null) => ({
+    id,
+    url: `/p/${id}.jpg`,
+    thumbUrl: `/p/${id}-t.jpg`,
+    width: 4,
+    height: 3,
+    grade,
+    season: 2025,
+    photoTypes: [],
+    juniorStock: false,
+    sourcePhotoId: null,
+    createdAt: "2025-10-01T00:00:00Z",
+  });
+  const mock = () =>
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: { ...BUNDLE.settings, kioskSequence: ["champions"] },
+      },
+      "/club-photos": [libraryPhoto(11, "A Grade"), libraryPhoto(12, null)],
+      "/juniors/photo-library": [
+        { ...libraryPhoto(21, "Under 13"), participants: [], displayable: true },
+        { ...libraryPhoto(22, "Under 13"), participants: [], displayable: false },
+      ],
+    });
+  const save = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const sent = () =>
+      vi.mocked(fetch).mock.calls.find(([, init]) => init?.method && init.method !== "GET");
+    await waitFor(() => expect(sent()).toBeTruthy());
+    return JSON.parse(String(sent()![1]!.body)) as {
+      kioskPhotoSlideshows: Array<Record<string, unknown>>;
+    };
+  };
+  const newId = () =>
+    (screen.getByTestId(/^slideshow-photos:.*-name$/) as HTMLInputElement).id.replace(
+      /^slideshow-|-name$/g,
+      "",
+    );
+
+  it("hand-picks photos from both libraries, reorders them and keeps the picked order", async () => {
+    mock();
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("add-photos-to-seq"));
+    const id = newId();
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-source`), {
+      target: { value: "picked" },
+    });
+    // Library and "As picked" order show for picked photos.
+    expect(screen.queryByTestId(`slideshow-${id}-library`)).toBeNull();
+    fireEvent.click(await screen.findByTestId(`slideshow-${id}-pick-photo-senior:11`));
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-pick-tab-junior`));
+    // A junior photo that may not be shown is never offered.
+    expect(screen.queryByTestId(`slideshow-${id}-pick-photo-junior:22`)).toBeNull();
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-pick-photo-junior:21`));
+    fireEvent.click(screen.getByRole("button", { name: "Move photo 2 earlier" }));
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-order`), {
+      target: { value: "manual" },
+    });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-frame`), {
+      target: { value: "whole" },
+    });
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-crossfade`));
+
+    const body = await save();
+    expect(body.kioskPhotoSlideshows).toEqual([
+      expect.objectContaining({
+        id,
+        source: "picked",
+        order: "manual",
+        frame: "whole",
+        crossfade: false,
+        picked: [
+          { library: "junior", id: 21 },
+          { library: "senior", id: 11 },
+        ],
+      }),
+    ]);
+  });
+
+  it("adds Recent moments in one click, with folders and an interlude", async () => {
+    mock();
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("add-recent-moments-to-seq"));
+    const id = newId();
+    expect((screen.getByTestId(`slideshow-${id}-name`) as HTMLInputElement).value).toBe(
+      "Recent moments",
+    );
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-interlude`), {
+      target: { value: "3" },
+    });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-source`), {
+      target: { value: "folders" },
+    });
+    await screen.findByRole("option", { name: "A Grade" });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-folders-folder-grade`), {
+      target: { value: "A Grade" },
+    });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-folders-folder-type`), {
+      target: { value: "team" },
+    });
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-folders-folder-add`));
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-folders-folder-grade`), {
+      target: { value: "club-wide" },
+    });
+    fireEvent.change(screen.getByTestId(`slideshow-${id}-folders-folder-type`), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByTestId(`slideshow-${id}-folders-folder-add`));
+    expect(screen.getByText("A Grade / Team")).toBeTruthy();
+
+    const body = await save();
+    expect(body.kioskPhotoSlideshows).toEqual([
+      expect.objectContaining({
+        id,
+        name: "Recent moments",
+        library: "both",
+        recentDays: 21,
+        order: "random",
+        interludeEvery: 3,
+        source: "folders",
+        folders: [
+          { grade: "A Grade", type: "team" },
+          { grade: "club-wide", type: null },
+        ],
+      }),
+    ]);
+  });
+
+  it("gives a board a photo background with a panel strength", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["champions", "photos:s"],
+          kioskPhotoSlideshows: [
+            {
+              id: "photos:s",
+              name: "Club photos",
+              library: "senior",
+              source: "all",
+              order: "random",
+              perPass: 10,
+              secondsPerPhoto: 6,
+              captions: true,
+            },
+          ],
+        },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    fireEvent.change(screen.getByTestId("board-tv-champions-photobg"), {
+      target: { value: "photos:s" },
+    });
+    fireEvent.change(screen.getByTestId("board-tv-champions-photobg-dim"), {
+      target: { value: "strong" },
+    });
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, unknown> }).boardConfigs.champions,
+    ).toEqual({ photoBackground: { slideshowId: "photos:s", dim: "strong" } });
+  });
+
+  it("clears a board's photo background when its slideshow is deleted", async () => {
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [champions],
+        settings: {
+          ...BUNDLE.settings,
+          kioskSequence: ["photos:s", "champions"],
+          boardConfigs: { champions: { photoBackground: { slideshowId: "photos:s" } } },
+          kioskPhotoSlideshows: [
+            {
+              id: "photos:s",
+              name: "Club photos",
+              library: "senior",
+              source: "all",
+              order: "random",
+              perPass: 10,
+              secondsPerPhoto: 6,
+              captions: true,
+            },
+          ],
+        },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    fireEvent.click(screen.getByTestId("slideshow-photos:s-delete"));
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, unknown> }).boardConfigs.champions,
+    ).toEqual({ photoBackground: null });
+  });
+
+  it("offers up to 10 columns for a season grid, with the compact-style hint from 7", async () => {
+    const tenCols = {
+      ...champions,
+      grid: {
+        rowHeading: "Season",
+        columnHeadings: Array.from({ length: 12 }, (_, i) => `G${i}`),
+        rows: [],
+      },
+    };
+    installApiMock({
+      "/honour-display": {
+        ...BUNDLE,
+        boards: [tenCols],
+        settings: { ...BUNDLE.settings, kioskSequence: ["champions"] },
+      },
+    });
+    renderAt(<AdminHonoursDisplay />, "/admin/honours-display");
+    fireEvent.click(await screen.findByTestId("seq-select-0"));
+    const columns = screen.getByTestId("board-tv-champions-columns") as HTMLSelectElement;
+    expect(
+      [...columns.options]
+        .map((o) => o.value)
+        .filter(Boolean)
+        .at(-1),
+    ).toBe("10");
+    expect(screen.queryByTestId("board-tv-champions-dense-hint")).toBeNull();
+    fireEvent.change(columns, { target: { value: "10" } });
+    expect(screen.getByTestId("board-tv-champions-dense-hint")).toBeTruthy();
+    const body = await save();
+    expect(
+      (body as unknown as { boardConfigs: Record<string, { columnsPerScreen?: number }> })
+        .boardConfigs.champions!.columnsPerScreen,
+    ).toBe(10);
+  });
+});

@@ -17,6 +17,7 @@ import { useUpload } from "@workspace/object-storage-web";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import type { CardKind } from "@/lib/share-card";
 import { ROW_CAPS, type CardFormState } from "./logic";
+import { LibraryImagePicker } from "./library-image-picker";
 import type { KindDescriptor, RepeatColumn, ScalarField } from "./descriptors";
 
 export const selectClass =
@@ -188,7 +189,7 @@ export function ImageControl({
           if (f) void handleFile(f);
         }}
       />
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -199,6 +200,7 @@ export function ImageControl({
           <Upload className="h-3.5 w-3.5 mr-1" />
           {isUploading ? "Uploading…" : value ? "Replace image" : "Upload image"}
         </Button>
+        <LibraryImagePicker label={label} onPick={onChange} />
         <span className="text-xs text-muted-foreground">or paste a URL</span>
       </div>
       <Input value={value} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />

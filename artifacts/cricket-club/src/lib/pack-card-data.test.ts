@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildPackData,
+  cardSponsorData,
   tenantHashtag,
   kindSponsors,
   presentingSponsorName,
@@ -201,5 +202,41 @@ describe("the club's ground photo", () => {
     const merged = withGroundPhoto({ name: "Seaview" }, brand);
     expect(merged?.heroImages?.cards).toBe("/api/storage/objects/ground.jpg");
     expect(withGroundPhoto({ name: "Seaview" }, null)).toEqual({ name: "Seaview" });
+  });
+});
+
+describe("cardSponsorData (player sponsors)", () => {
+  const bundle = {
+    activeSponsors: [
+      { name: "Club Major", logoUrl: "/major.png", cardKinds: [], isPresenting: true },
+      { name: "Joe's Plumbing", logoUrl: "/joe.png", cardKinds: [], players: [{ id: 42 }] },
+    ],
+  };
+
+  it("a player's card carries their sponsors and names the first", () => {
+    expect(cardSponsorData(bundle, { kind: "milestone" }, true, 42)).toEqual({
+      sponsors: [{ name: "Joe's Plumbing", logoUrl: "/joe.png" }],
+      presentingSponsorName: "Joe's Plumbing",
+      playerSponsors: [{ name: "Joe's Plumbing", logoUrl: "/joe.png" }],
+    });
+  });
+
+  it("anyone else's card gets the club strip without the personal sponsor", () => {
+    expect(cardSponsorData(bundle, { kind: "milestone" }, true, 7)).toEqual({
+      sponsors: [{ name: "Club Major", logoUrl: "/major.png" }],
+      presentingSponsorName: "Club Major",
+      playerSponsors: [],
+    });
+    expect(cardSponsorData(bundle, { kind: "ladder" }, true, null).sponsors).toEqual([
+      { name: "Club Major", logoUrl: "/major.png" },
+    ]);
+  });
+
+  it("nothing when the sponsor strip is off", () => {
+    expect(cardSponsorData(bundle, { kind: "milestone" }, false, 42)).toEqual({
+      sponsors: [],
+      presentingSponsorName: null,
+      playerSponsors: [],
+    });
   });
 });

@@ -3,14 +3,18 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
+  getGetClubGenerateSettingsQueryKey,
   getGetTemplateDesignerQueryKey,
+  useGetClubGenerateSettings,
   useGetTemplateDesigner,
+  useSetClubGenerateSettings,
   useStartTemplateGeneration,
   type TemplateGeneration,
 } from "@workspace/api-client-react";
 import { TEMPLATE_CARD_KINDS } from "@workspace/scorecard/kind-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { StatusPill, type StatusPillTone } from "@/components/ui/stat-badge";
 import { kindLabel } from "@/lib/social-studio";
 import { editHref } from "./library";
@@ -49,6 +53,90 @@ const errorOf = (err: unknown, fallback: string): string => {
 };
 
 const busy = (g: TemplateGeneration) => g.status === "queued" || g.status === "running";
+
+/**
+ * Club Generate (ADR-012 R2-D): Ovation's switch, with the quality bar it
+ * depends on. Clubs see Generate only when both are met and the key is set.
+ */
+function ClubGenerateCard() {
+  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const q = useGetClubGenerateSettings({
+    query: { queryKey: getGetClubGenerateSettingsQueryKey() },
+  });
+  const save = useSetClubGenerateSettings({
+    mutation: {
+      onSuccess: (data) => {
+        setError(null);
+        qc.setQueryData(getGetClubGenerateSettingsQueryKey(), data);
+      },
+      onError: (err) => setError(errorOf(err, "Couldn't save the setting.")),
+    },
+  });
+  const s = q.data;
+  const pct =
+    s && s.quality.counted > 0
+      ? Math.round((s.quality.firstTryFit / s.quality.counted) * 100)
+      : null;
+  return (
+    <Card data-testid="club-generate">
+      <CardHeader>
+        <CardTitle>Generate for clubs</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-sm">
+        {q.isLoading ? (
+          <p className="text-muted-foreground">Loading…</p>
+        ) : q.isError || !s ? (
+          <p className="text-destructive">Couldn&rsquo;t load the setting.</p>
+        ) : (
+          <>
+            <label className="flex items-center gap-3 font-medium">
+              <Switch
+                checked={s.enabled}
+                disabled={save.isPending}
+                onCheckedChange={(enabled) => save.mutate({ data: { enabled } })}
+                aria-label="Offer Generate to clubs"
+              />
+              Offer Generate to clubs
+            </label>
+            <dl className="grid gap-1 sm:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Quality bar</dt>
+                <dd>
+                  {pct === null ? "No designs counted yet" : `${pct}% first-try fit`} (
+                  {s.quality.counted} of 50 counted, target {Math.round(QUALITY_TARGET * 100)}%){" "}
+                  {s.barMet ? "· met" : "· not met"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Cost per design</dt>
+                <dd>{dollars(s.quality.meanCostUsd)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Clubs see Generate</dt>
+                <dd data-testid="club-generate-available">{s.available ? "Yes" : "No"}</dd>
+              </div>
+            </dl>
+            {!s.available ? (
+              <p className="text-xs text-muted-foreground">
+                {!s.configured
+                  ? "Needs ANTHROPIC_API_KEY on this server."
+                  : !s.barMet
+                    ? "Clubs see it once 50 designs are counted and at least 70% fitted first time."
+                    : "Switched off."}
+              </p>
+            ) : null}
+            {error ? (
+              <p role="alert" className="text-destructive">
+                {error}
+              </p>
+            ) : null}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 /**
  * Console → AI designer (ADR-011 L7-B, T7.11, T7.13): a brief, a reference
@@ -130,6 +218,7 @@ export default function AiDesignerPage() {
       ) : null}
 
       <div className="grid gap-6">
+        <ClubGenerateCard />
         <Card>
           <CardHeader>
             <CardTitle>New design</CardTitle>

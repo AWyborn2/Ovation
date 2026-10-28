@@ -21,6 +21,8 @@ import {
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
+import { draftPhotoFocus } from "../lib/photo-focus-snapshot";
+import { pickCandidatePhoto, pickDraftPhoto } from "../lib/draft-enrich";
 
 const STAMP = Date.now();
 const objects = new Map<string, Buffer>();
@@ -118,9 +120,14 @@ afterAll(async () => {
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId, otherTenantId]));
 });
 
-const api = (method: "get" | "post", path: string, as: "own" | "other" = "own") => {
+const api = (method: "get" | "post" | "put", path: string, as: "own" | "other" = "own") => {
   const agent = request(app);
-  const req = method === "get" ? agent.get(`/api${path}`) : agent.post(`/api${path}`);
+  const req =
+    method === "get"
+      ? agent.get(`/api${path}`)
+      : method === "put"
+        ? agent.put(`/api${path}`)
+        : agent.post(`/api${path}`);
   return req
     .set("Cookie", as === "own" ? cookie : otherCookie)
     .set("x-tenant-id", String(as === "own" ? tenantId : otherTenantId));
@@ -389,5 +396,116 @@ describe("profile photo from the library", () => {
     expect(await taggedPlayerPhotoUrl(otherTenantId, playerIds[0])).toBeNull();
     // A player with no tagged photos gets none.
     expect(await taggedPlayerPhotoUrl(tenantId, 987654)).toBeNull();
+  });
+});
+
+describe("focus areas", () => {
+  it("sets a focus box, switched-off shapes and player areas, tagging new players", async () => {
+    const path = await upload("focus.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({
+      objectPaths: [path],
+      playerIds: [playerIds[0]],
+    });
+    const photoId = ingest.body.results[0].photo.id as number;
+    expect(ingest.body.results[0].photo.focusBox).toBeNull();
+    expect(ingest.body.results[0].photo.offShapes).toEqual([]);
+
+    const res = await api("put", `/club-photos/${photoId}/focus`).send({
+      focusBox: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 },
+      offShapes: ["wide", "tall", "wide"],
+      playerAreas: [
+        { playerId: playerIds[0], box: { x: 0.1, y: 0.2, w: 0.2, h: 0.5 } },
+        { playerId: playerIds[1], box: { x: 0.4, y: 0.2, w: 0.2, h: 0.5 } },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.focusBox).toEqual({ x: 0.1, y: 0.2, w: 0.5, h: 0.6 });
+    expect(res.body.offShapes).toEqual(["tall", "wide"]);
+    expect(res.body.playerIds).toEqual([...playerIds].sort((a, b) => a - b));
+    expect(res.body.playerAreas).toHaveLength(2);
+
+    // Fields left out are kept; a null area clears it but keeps the tag.
+    const cleared = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: playerIds[1], box: null }],
+    });
+    expect(cleared.body.focusBox).toEqual({ x: 0.1, y: 0.2, w: 0.5, h: 0.6 });
+    expect(cleared.body.playerAreas.map((a: { playerId: number }) => a.playerId)).toEqual([
+      playerIds[0],
+    ]);
+    expect(cleared.body.playerIds).toHaveLength(2);
+
+    // What a draft snapshots: the pictured player's area, else the photo's box.
+    const url = res.body.url as string;
+    expect(await draftPhotoFocus(tenantId, url, playerIds[0])).toEqual({
+      box: { x: 0.1, y: 0.2, w: 0.2, h: 0.5 },
+      width: 300,
+      height: 200,
+    });
+    expect((await draftPhotoFocus(tenantId, url, playerIds[1]))?.box).toEqual({
+      x: 0.1,
+      y: 0.2,
+      w: 0.5,
+      h: 0.6,
+    });
+    expect(await draftPhotoFocus(otherTenantId, url)).toBeNull();
+    expect(await draftPhotoFocus(tenantId, "https://example.org/headshot.jpg")).toBeNull();
+
+    const none = await api("put", `/club-photos/${photoId}/focus`).send({ focusBox: null });
+    expect(none.body.focusBox).toBeNull();
+  });
+
+  it("rejects bad boxes, non-senior players and another club's photo", async () => {
+    const path = await upload("focus-bad.jpg", await jpeg());
+    const ingest = await api("post", "/club-photos/ingest").send({ objectPaths: [path] });
+    const photoId = ingest.body.results[0].photo.id as number;
+    const tiny = await api("put", `/club-photos/${photoId}/focus`).send({
+      focusBox: { x: 0.5, y: 0.5, w: 0.001, h: 0.2 },
+    });
+    expect(tiny.status).toBe(400);
+    const fillIn = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: 90001, box: { x: 0, y: 0, w: 0.5, h: 0.5 } }],
+    });
+    expect(fillIn.status).toBe(422);
+    const other = await api("put", `/club-photos/${photoId}/focus`, "other").send({
+      focusBox: { x: 0, y: 0, w: 0.5, h: 0.5 },
+    });
+    expect(other.status).toBe(404);
+  });
+});
+
+describe("shape-aware picking", () => {
+  it("never puts a photo in a frame shape switched off for it", async () => {
+    const path = await upload("no-tall.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({
+      objectPaths: [path],
+      playerIds: [playerIds[1]],
+    });
+    const photo = ingest.body.results[0].photo as { id: number; url: string };
+    await api("put", `/club-photos/${photo.id}/focus`).send({ offShapes: ["tall"] });
+    const pick = (frameAspect: number | null) =>
+      pickCandidatePhoto(tenantId, [playerIds[1]], {
+        order: "ranked",
+        seed: null,
+        types: [],
+        format: null,
+        frameAspect,
+      });
+    // Newest first when the frame doesn't matter, or is wide.
+    expect((await pick(null))?.url).toBe(photo.url);
+    expect((await pick(16 / 9))?.url).toBe(photo.url);
+    // A tall frame takes the player's other photo.
+    const tall = await pick(4 / 5);
+    expect(tall?.url).toBeTruthy();
+    expect(tall?.url).not.toBe(photo.url);
+    // Even as a grade's only photo: no photo beats a shape switched off.
+    const grade = `Shape ${STAMP}`;
+    const only = await upload("only.jpg", await jpeg(300, 200));
+    const solo = await api("post", "/club-photos/ingest").send({ objectPaths: [only], grade });
+    const soloPhoto = solo.body.results[0].photo as { id: number; url: string };
+    await api("put", `/club-photos/${soloPhoto.id}/focus`).send({ offShapes: ["tall"] });
+    const gradePick = (frameAspect: number) =>
+      pickDraftPhoto(tenantId, { playerId: null, grade, junior: false, frameAspect });
+    expect(await gradePick(4 / 5)).toBeNull();
+    expect((await gradePick(16 / 9))?.url).toBe(soloPhoto.url);
   });
 });
