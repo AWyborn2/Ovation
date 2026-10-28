@@ -120,7 +120,13 @@ playerId }).playerSponsors`, so the date window, order and fill-in rule are the 
    sponsor form's empty card-type chip reads "Only their players' cards" once players are tagged
    (no card types was always allowed; the "All cards" label made it look required).
 
-8. **Player-sponsor logo on the classic looks (28 Oct 2026, Ash)** — the Club Kit Classic,
+8. **Club date and old drafts (28 Oct 2026)** — the sponsor active window (`loadActiveSponsors`,
+   and the kiosk settings preview) uses the club's date, Australia/Perth, not UTC; before, a
+   sponsorship starting today went live at 8 am. Drafts made before slice 3 have no
+   `subject_player_id`: `scripts/sql/backfill-draft-subject-player.sql` sets it on open
+   player-centred drafts from their `/players/<id>` link, as the sweep does (idempotent).
+
+9. **Player-sponsor logo on the classic looks (28 Oct 2026, Ash)** — the Club Kit Classic,
    Broadcast Classic and Clubhouse player cards (milestone, century, fiveFor, debut, player,
    newSigning, bigMoment) had only the "presented by" name, so a player's sponsor showed as text.
    Each now has a white logo tile (`player-sponsor-panel` + `player-sponsor-logo`,

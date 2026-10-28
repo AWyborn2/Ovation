@@ -230,8 +230,11 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const sponsors = sponsorsQ.data ?? [];
   // Mirror the kiosk's server-side active-window filter (active-sponsors.ts) so
   // the preview shows exactly what the TV will: a null bound is open-ended, and
-  // dates compare lexically as YYYY-MM-DD. Ordered by displayOrder like the feed.
-  const today = new Date().toISOString().slice(0, 10);
+  // dates compare lexically as YYYY-MM-DD, on the club's date (Australia/Perth).
+  // Ordered by displayOrder like the feed.
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(
+    new Date(),
+  );
   const activeSponsors = sponsors
     .filter((s) => (!s.activeFrom || s.activeFrom <= today) && (!s.activeTo || s.activeTo >= today))
     .sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
