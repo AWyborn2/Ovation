@@ -131,6 +131,8 @@ const as = (c: string, tenant: number) => ({
     request(app).post(`/api${p}`).set("Cookie", c).set("x-tenant-id", String(tenant)).send(body),
   put: (p: string, body: object) =>
     request(app).put(`/api${p}`).set("Cookie", c).set("x-tenant-id", String(tenant)).send(body),
+  delete: (p: string) =>
+    request(app).delete(`/api${p}`).set("Cookie", c).set("x-tenant-id", String(tenant)),
 });
 const author = () => as(authorCookie, authorId);
 const other = () => as(otherCookie, otherId);
@@ -404,6 +406,24 @@ describe("publishing", () => {
       .from(libraryTemplatesTable)
       .where(eq(libraryTemplatesTable.id, res.body.libraryTemplateId));
     expect(t!.listed).toBe(false);
+  });
+
+  it("won't delete a template while it is listed; unlisting it first lets it go", async () => {
+    verdict = null;
+    const id = await blankWith(clubDesign({ text: "Big day" }), `Listed ${STAMP}`);
+    const res = await publish(id, { name: `Listed ${STAMP}` });
+    expect(res.status).toBe(202);
+    const listedId = res.body.libraryTemplateId as number;
+    await writeFitResult(
+      { kind: "libraryVersion", templateId: listedId, version: 1 },
+      { status: "pass", report: { kind: "test" } },
+    );
+    const refused = await author().delete(`/club-templates/${id}`);
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatch(/unlist/i);
+
+    expect((await author().post(`/template-library/${listedId}/unlist`)).status).toBe(200);
+    expect((await author().delete(`/club-templates/${id}`)).status).toBe(204);
   });
 });
 
