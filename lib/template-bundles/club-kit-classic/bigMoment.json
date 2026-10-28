@@ -187,10 +187,7 @@
             "id": "photo-frame-side",
             "name": "Photo frame",
             "kind": "group",
-            "sizes": [
-              "square",
-              "landscape"
-            ],
+            "sizes": ["square", "landscape"],
             "geometry": {
               "square": {
                 "x": 50.2,
@@ -212,30 +209,15 @@
                   "fill": "var(--panel)",
                   "clip": {
                     "polygon": [
-                      [
-                        29.8,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [29.8, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l1",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 50.2,
@@ -258,30 +240,15 @@
                   "fill": "var(--ck-chalk)",
                   "clip": {
                     "polygon": [
-                      [
-                        28.36,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [28.36, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l2",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 51.2,
@@ -304,30 +271,15 @@
                   "fill": "var(--gold)",
                   "clip": {
                     "polygon": [
-                      [
-                        27.17,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [27.17, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l3",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 52,
@@ -361,30 +313,15 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        24,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l4",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 54,
@@ -406,30 +343,15 @@
                 "style": {
                   "clip": {
                     "polygon": [
-                      [
-                        24,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l5",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 54,
@@ -465,30 +387,15 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        24,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        100
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [24, 0],
+                      [100, 0],
+                      [100, 100],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-side-l6",
-                "sizes": [
-                  "square",
-                  "landscape"
-                ],
+                "sizes": ["square", "landscape"],
                 "geometry": {
                   "square": {
                     "x": 54,
@@ -512,10 +419,7 @@
             "id": "photo-frame-top",
             "name": "Photo frame",
             "kind": "group",
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "geometry": {
               "portrait": {
                 "x": 0,
@@ -537,30 +441,16 @@
                   "fill": "var(--panel)",
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        79.82
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.82],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l1",
                 "link": "photo-frame-top-l1",
-                "sizes": [
-                  "portrait"
-                ],
+                "sizes": ["portrait"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -577,30 +467,16 @@
                   "fill": "var(--panel)",
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        79.83
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.83],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l2",
                 "link": "photo-frame-top-l1",
-                "sizes": [
-                  "story"
-                ],
+                "sizes": ["story"],
                 "geometry": {
                   "story": {
                     "x": 0,
@@ -617,30 +493,15 @@
                   "fill": "var(--ck-chalk)",
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        79.37
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 79.37],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l3",
-                "sizes": [
-                  "portrait",
-                  "story"
-                ],
+                "sizes": ["portrait", "story"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -663,30 +524,15 @@
                   "fill": "var(--gold)",
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        79
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 79],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l4",
-                "sizes": [
-                  "portrait",
-                  "story"
-                ],
+                "sizes": ["portrait", "story"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -720,30 +566,15 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l5",
-                "sizes": [
-                  "portrait",
-                  "story"
-                ],
+                "sizes": ["portrait", "story"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -765,30 +596,16 @@
                 "style": {
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78.01
-                      ],
-                      [
-                        0,
-                        100.01
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l6",
                 "link": "photo-frame-top-l6",
-                "sizes": [
-                  "portrait"
-                ],
+                "sizes": ["portrait"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -804,30 +621,16 @@
                 "style": {
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l7",
                 "link": "photo-frame-top-l6",
-                "sizes": [
-                  "story"
-                ],
+                "sizes": ["story"],
                 "geometry": {
                   "story": {
                     "x": 0,
@@ -856,30 +659,16 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78.01
-                      ],
-                      [
-                        0,
-                        100.01
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l8",
                 "link": "photo-frame-top-l8",
-                "sizes": [
-                  "portrait"
-                ],
+                "sizes": ["portrait"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -908,30 +697,16 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l9",
                 "link": "photo-frame-top-l8",
-                "sizes": [
-                  "story"
-                ],
+                "sizes": ["story"],
                 "geometry": {
                   "story": {
                     "x": 0,
@@ -961,30 +736,16 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78.01
-                      ],
-                      [
-                        0,
-                        100.01
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78.01],
+                      [0, 100.01]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l10",
                 "link": "photo-frame-top-l10",
-                "sizes": [
-                  "portrait"
-                ],
+                "sizes": ["portrait"],
                 "geometry": {
                   "portrait": {
                     "x": 0,
@@ -1014,30 +775,16 @@
                   },
                   "clip": {
                     "polygon": [
-                      [
-                        0,
-                        0
-                      ],
-                      [
-                        100,
-                        0
-                      ],
-                      [
-                        100,
-                        78
-                      ],
-                      [
-                        0,
-                        100
-                      ]
+                      [0, 0],
+                      [100, 0],
+                      [100, 78],
+                      [0, 100]
                     ]
                   }
                 },
                 "id": "photo-frame-top-l11",
                 "link": "photo-frame-top-l10",
-                "sizes": [
-                  "story"
-                ],
+                "sizes": ["story"],
                 "geometry": {
                   "story": {
                     "x": 0,
@@ -1118,11 +865,7 @@
                 "h": 2.92
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:1pcu1a10z4w0pi"
           },
           {
@@ -1147,9 +890,7 @@
                 "h": 5.2
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:16vudi41j2qian"
           },
           {
@@ -1186,11 +927,7 @@
                 "h": 1.69
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:1epyzr11vh5ig2"
           },
           {
@@ -1215,9 +952,7 @@
                 "h": 3
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:0drrfzt1fvafns"
           },
           {
@@ -1334,11 +1069,7 @@
                 },
                 "id": "chip-l3",
                 "link": "chip-l3",
-                "sizes": [
-                  "square",
-                  "portrait",
-                  "story"
-                ],
+                "sizes": ["square", "portrait", "story"],
                 "geometry": {
                   "square": {
                     "x": 86.55,
@@ -1376,9 +1107,7 @@
                 },
                 "id": "chip-l4",
                 "link": "chip-l3",
-                "sizes": [
-                  "landscape"
-                ],
+                "sizes": ["landscape"],
                 "geometry": {
                   "landscape": {
                     "x": 92.94,
@@ -1560,11 +1289,7 @@
                 "h": 2.47
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0jysi4m0o0072t"
           },
           {
@@ -1587,9 +1312,7 @@
                 "h": 4.4
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:09q17641tq5uxx"
           },
           {
@@ -1625,11 +1348,7 @@
                 "h": 2.47
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:15yqpxf1q6y2gg"
           },
           {
@@ -1653,9 +1372,7 @@
                 "h": 4.4
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1svbwf31dk77be"
           },
           {
@@ -1692,11 +1409,7 @@
                 "h": 1.8
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:1myy9hv0qz4aui"
           },
           {
@@ -1721,9 +1434,7 @@
                 "h": 3.2
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:0r91m91120dgxi"
           },
           {
@@ -1747,9 +1458,7 @@
                 "h": 19.08
               }
             },
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "sig": "text:0hw5pgh0sit7ak"
           },
           {
@@ -1779,10 +1488,7 @@
                 "h": 16.69
               }
             },
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "sig": "text:02brh1r0fzu0k4"
           },
           {
@@ -1806,9 +1512,7 @@
                 "h": 21.2
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:042z1ic0udvk0b"
           },
           {
@@ -1844,11 +1548,7 @@
                 "h": 6.68
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:07j66ly0gs72t3"
           },
           {
@@ -1872,9 +1572,7 @@
                 "h": 11.87
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1qd5bxi1kaz0xx"
           },
           {
@@ -1909,11 +1607,7 @@
                 "h": 3.37
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0837qc40trramj"
           },
           {
@@ -1936,9 +1630,7 @@
                 "h": 6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:03ock910day7u0"
           },
           {
@@ -2044,11 +1736,7 @@
                 "h": 3.15
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0f9tahu0gh34jd"
           },
           {
@@ -2072,9 +1760,7 @@
                 "h": 5.6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:04fjjqr1hfjsze"
           },
           {
@@ -2110,11 +1796,7 @@
                 "h": 2.02
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0csnfdx1xxlu4o"
           },
           {
@@ -2138,9 +1820,7 @@
                 "h": 3.6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1nfo6xr0r4prmg"
           },
           {
@@ -2177,11 +1857,7 @@
                 "h": 3.04
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:17as4471dn1cqw"
           },
           {
@@ -2206,9 +1882,7 @@
                 "h": 5.4
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:0mwx5z10dyfc88"
           },
           {
@@ -2334,11 +2008,7 @@
                 "h": 1.41
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "showWhen": {
               "field": "playerSponsorLogo"
             },
@@ -2371,9 +2041,7 @@
                 "h": 3.18
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "showWhen": {
               "field": "playerSponsorLogo"
             },
@@ -2382,8 +2050,6 @@
         ]
       }
     },
-    "palettes": [
-      "club-kit"
-    ]
+    "palettes": ["club-kit"]
   }
 }

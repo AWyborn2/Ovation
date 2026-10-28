@@ -290,11 +290,7 @@
                 "h": 2.92
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:12s4mlq0eymojd"
           },
           {
@@ -319,9 +315,7 @@
                 "h": 5.2
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:0teooav03937m4"
           },
           {
@@ -358,11 +352,7 @@
                 "h": 1.69
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0vlurfz0ivrmjq"
           },
           {
@@ -387,9 +377,7 @@
                 "h": 3
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:16yjek31emcy8k"
           },
           {
@@ -428,11 +416,7 @@
                 "h": 2.59
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:022tkjt1ht81es"
           },
           {
@@ -459,9 +443,7 @@
                 "h": 4.6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1d7p3f31hedcws"
           },
           {
@@ -533,11 +515,7 @@
                 "h": 2.47
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:180d9v70t00wh8"
           },
           {
@@ -562,9 +540,7 @@
                 "h": 4.4
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:18ja9yn1cla0ri"
           },
           {
@@ -600,11 +576,7 @@
                 "h": 2.47
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0bo6rw71qdd3xi"
           },
           {
@@ -628,9 +600,7 @@
                 "h": 4.4
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1x6o6e515wbhui"
           },
           {
@@ -667,11 +637,7 @@
                 "h": 1.8
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:18w8s4l1pgh1n4"
           },
           {
@@ -696,9 +662,7 @@
                 "h": 3.2
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1rf02ln19i0y1c"
           },
           {
@@ -723,9 +687,7 @@
                 "h": 22.02
               }
             },
-            "sizes": [
-              "square"
-            ],
+            "sizes": ["square"],
             "sig": "text:0471y0x0nzr4va"
           },
           {
@@ -756,10 +718,7 @@
                 "h": 16.16
               }
             },
-            "sizes": [
-              "portrait",
-              "story"
-            ],
+            "sizes": ["portrait", "story"],
             "sig": "text:1tkiurv0p248qm"
           },
           {
@@ -784,9 +743,7 @@
                 "h": 22.02
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:0qiuqpz0rri9ei"
           },
           {
@@ -857,11 +814,7 @@
                 "h": 3.71
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0f5re0n1tm8tja",
             "fit": {
               "minScale": 0.6,
@@ -890,9 +843,7 @@
                 "h": 6.6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1mfwudr0987k94"
           },
           {
@@ -928,11 +879,7 @@
                 "h": 8.93
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:0pfyt061nexuwb"
           },
           {
@@ -956,9 +903,7 @@
                 "h": 15.87
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1g63m2d0607n9g"
           },
           {
@@ -993,11 +938,7 @@
                 "h": 3.37
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "sig": "text:1t6p0ad0fjgoke"
           },
           {
@@ -1020,9 +961,7 @@
                 "h": 6
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "sig": "text:1iw1dfi1j8djjf"
           },
           {
@@ -1148,11 +1087,7 @@
                 "h": 1.41
               }
             },
-            "sizes": [
-              "square",
-              "portrait",
-              "story"
-            ],
+            "sizes": ["square", "portrait", "story"],
             "showWhen": {
               "field": "playerSponsorLogo"
             },
@@ -1185,9 +1120,7 @@
                 "h": 3.18
               }
             },
-            "sizes": [
-              "landscape"
-            ],
+            "sizes": ["landscape"],
             "showWhen": {
               "field": "playerSponsorLogo"
             },
