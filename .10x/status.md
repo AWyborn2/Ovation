@@ -3,13 +3,14 @@
 **Project:** Ovation (white-label cricket club platform)
 **Updated:** 28 Oct 2026 (header rewritten; the old header lines are kept under "Header before 28 Oct 2026" at the end).
 
+**Delivered to `main` on 28 Oct 2026 (player sponsors, after Ash's dev test; no migrations):** player page shows their sponsor (#577); Big Moment cards carry the player's sponsors, and the sponsor form's empty card-type chip reads "Only their players' cards" once players are tagged (#583); the sponsor active window uses the Perth date, not UTC, plus `scripts/sql/backfill-draft-subject-player.sql` for queued drafts made before #568 (#584); a player-sponsor logo tile on the Club Kit Classic, Broadcast Classic and Clubhouse player cards, the look a `club-kit-v1` club's cards use (#585, bundles v3); the 9 of those that failed the fit check since before #585 (long names) now fit and are off the known-failures list (#588, v4). The Sponsors page already lists each sponsor's players (#569). Juniors stay out until a consent rule is decided.
+
 **Delivered to `main` on 27 Oct 2026:** player-sponsors (#563, #567–#570, #573, #574), photo-focus-areas slices 1–4 (#549–#554), Studio editor items (#533, #537, #551, #555, #556, #560, #561), template library release 2 (R2-A to R2-E: #558, #565, #564, #566, #572), honours kiosk (#532, #546, #548, #559). Test checklist: `docs/testing/2026-10-27-checklist.html` (#575).
 
-**Dev (Replit "OVATION APP", 28 Oct):** on `main` through #575; every migration through 0074 applied; web and API running. Old ledger mismatches on 0053 / 0056 / 0057 (schema present), left as is.
+**Dev (Replit "OVATION APP", 28 Oct):** pulled through #585 (`ae26021`) and restarted; the draft backfill set 11 rows on tenant 1; #588 (v4 classic templates) to pull next. Migrations through 0074 confirmed applied. Old ledger mismatches on 0053 / 0056 / 0057 (schema present), left as is.
 
 **In progress:**
 
-- player-sponsors follow-up (P1, no migration): the player profile shows their sponsor, PR #577 from `wyborn21/player-page-sponsors` (public `GET /players/{id}/sponsors` by the shared `cardSponsors` rule, and a "Proudly sponsored by" strip). The Sponsors page already lists each sponsor's players (#569). Juniors stay out until a consent rule is decided.
 - photo-focus-areas follow-ups: junior shape-aware picking, a focus box suggested on upload, player areas as their own tiles. Session started 28 Oct.
 - Dependabot #541–#545 (actions/cache 6, upload-artifact 7, the minor/patch group, pino 10, lucide-react 1.x): being checked and merged or closed. Replit needs `pnpm install` once the npm ones merge.
 
@@ -17,6 +18,7 @@
 
 - Test 27 Oct work on dev with the checklist.
 - Production: in the Production SQL runner check which of 0065–0074 are missing, run those in order, then republish.
+- Production, after that republish: run the UPDATE in `scripts/sql/backfill-draft-subject-player.sql` (preview SELECT first; idempotent) so queued player cards find their player's sponsors. Then re-test player sponsors there (dev has no player tags; Ash's test data is in Production).
 - Before switching on club Generate: run the AI quality query (first-try fit >= 70% over 50 console runs).
 - Register the Figma app (`FIGMA_CLIENT_ID` / `FIGMA_CLIENT_SECRET`) for Sign in with Figma.
 - iPhone/iPad Save to Photos device test (open since 23 Oct).
