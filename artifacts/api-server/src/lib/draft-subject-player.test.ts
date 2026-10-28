@@ -4,7 +4,15 @@ import { draftSubjectPlayerId } from "./draft-enrich";
 /** Player sponsors: which drafts follow a player's sponsors. */
 describe("draftSubjectPlayerId", () => {
   it("keeps the player on player-centred senior cards", () => {
-    for (const kind of ["milestone", "century", "fiveFor", "debut", "player", "newSigning"]) {
+    for (const kind of [
+      "milestone",
+      "century",
+      "fiveFor",
+      "debut",
+      "player",
+      "newSigning",
+      "bigMoment",
+    ]) {
       expect(draftSubjectPlayerId(kind, 42, false)).toBe(42);
     }
   });

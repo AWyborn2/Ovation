@@ -110,3 +110,37 @@ describe("SponsorsCard player sponsors", () => {
     expect(writes[0].body).toEqual({ playerIds: [42, 55] });
   });
 });
+
+describe("SponsorsCard card types for a player sponsor", () => {
+  it("no card types on a player sponsor reads as only their players' cards", async () => {
+    setup([
+      sponsor({ players: [{ id: 42, name: "Sam Keeper" }] }),
+      sponsor({ id: 8, name: "Club Co" }),
+    ]);
+    expect(await screen.findByRole("button", { name: "Only their players' cards" })).toBeTruthy();
+    // The club sponsor row and the empty add form still read "All cards".
+    expect(screen.getAllByRole("button", { name: "All cards" })).toHaveLength(2);
+  });
+
+  it("picking the empty chip on a player sponsor saves no card types", async () => {
+    const writes = setup([
+      sponsor({ cardKinds: ["milestone"], players: [{ id: 42, name: "Sam Keeper" }] }),
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: "Only their players' cards" }));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0].body).toEqual({ cardKinds: [] });
+  });
+
+  it("the add form's hint follows whether players are tagged", async () => {
+    setup([]);
+    expect(
+      await screen.findByText("No specific types selected = logo shows on all card types."),
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Player sponsor (optional)"), {
+      target: { value: "Ki" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "+ Kim Lee" }));
+    expect(await screen.findByText(/shows only on its players' cards/)).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Only their players' cards" })).toHaveLength(1);
+  });
+});

@@ -68,6 +68,14 @@ describe("sponsorsForCard: player sponsors", () => {
     expect(names(PLAYER, { kind: "milestone", playerId: 7 })).toEqual(["Bakery"]);
   });
 
+  it("a Big Moment card follows its player too", () => {
+    expect(names(PLAYER, { kind: "bigMoment", playerId: 42 })).toEqual([
+      "Joe's Plumbing",
+      "Bakery",
+    ]);
+    expect(names(PLAYER, { kind: "bigMoment", playerId: 3 })).not.toContain("Bakery");
+  });
+
   it("ignores the sponsor's card types on its players' cards", () => {
     expect(names(PLAYER, { kind: "debut", playerId: 9 })).toEqual(["Club and Sam"]);
   });

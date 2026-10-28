@@ -45,8 +45,8 @@ and `maxSponsorLogos`, and gains the player rule:
 cardSponsors(sponsors, { kind, grade, playerId }) → { sponsors, presentingName }
 ```
 
-1. `PLAYER_SPONSOR_KINDS` = milestone, century, fiveFor, debut, player, newSigning (the scope's
-   list), plus announcement when a player is picked for it by hand ("Meet our sponsored player",
+1. `PLAYER_SPONSOR_KINDS` = milestone, century, fiveFor, debut, player, newSigning and bigMoment
+   (added 28 Oct 2026; the sweep's hat-trick and five-catch drafts already carry their player), plus announcement when a player is picked for it by hand ("Meet our sponsored player",
    templates slice). Results, team lists, records, grade leaders and the rest keep the club strip.
 2. **Player card with a player:** the sponsors tagged with that player, in the given order
    (card types ignored: the tag is the choice). If any: they are the strip and `presentingName`
@@ -115,3 +115,7 @@ playerId }).playerSponsors`, so the date window, order and fill-in rule are the 
    Club-wide sponsors never show; no names of other players are exposed. The senior profile
    shows a "Proudly sponsored by" strip (logo and name, linked when the sponsor has a web
    address) and nothing when there are none. Junior pages are untouched. No migration.
+
+7. **Dev-test follow-ups (28 Oct 2026)** — Big Moment joins the player-centred kinds (Ash). The
+   sponsor form's empty card-type chip reads "Only their players' cards" once players are tagged
+   (no card types was always allowed; the "All cards" label made it look required).
