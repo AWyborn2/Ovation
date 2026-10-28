@@ -24793,6 +24793,9 @@ components:
         photoUrl:
           type: ["string", "null"]
           description: "A library or uploaded image URL; null removes the photo."
+        photoPlayerId:
+          type: ["integer", "null"]
+          description: "With photoUrl: the tagged player whose area on that library photo the card crops to (a player area tile). Omitted or null = the photo's own focus box."
         adjustments:
           description: "Editor overlay (see CardAdjustments); null clears every edit."
           anyOf:

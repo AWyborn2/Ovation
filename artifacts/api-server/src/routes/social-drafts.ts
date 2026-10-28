@@ -834,7 +834,7 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl } = parsed.data;
+    const { caption, photoUrl, photoPlayerId } = parsed.data;
     // The design is stored exactly as sent. The generated schema lists only the
     // first editor's keys, and parsing drops every other one, which wiped a
     // templated draft's pages (format v2) on save. Validation above still
@@ -855,10 +855,11 @@ router.patch(
       // The admin's choice is never replaced by an automatic pick (KTD6).
       // Clearing is a choice too ("none"), so the missing-photo fill leaves it.
       patch.photoSource = photoUrl === null ? "none" : "manual";
-      // A library photo the admin picked brings its focus box (not a player's
-      // area: nothing says who the card is about); keeping the same photo
-      // keeps the draft's snapshot.
-      if (photoUrl !== draft.photoUrl) patch.photoFocus = await draftPhotoFocus(tenantId, photoUrl);
+      // A library photo the admin picked brings its focus box, or a tagged
+      // player's area when the admin picked that player's tile (photo focus
+      // areas); keeping the same photo with no tile choice keeps the snapshot.
+      if (photoUrl !== draft.photoUrl || photoPlayerId !== undefined)
+        patch.photoFocus = await draftPhotoFocus(tenantId, photoUrl, photoPlayerId ?? null);
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
     }
     if (adjustments !== undefined) {

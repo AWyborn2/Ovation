@@ -9219,6 +9219,11 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoUrl?: string | null;
+  /**
+     * With photoUrl: the tagged player whose area on that library photo the card crops to (a player area tile). Omitted or null = the photo's own focus box.
+     * @nullable
+     */
+  photoPlayerId?: number | null;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
 }

@@ -96,3 +96,8 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
   picks among the candidates with the best fit. The consent rule runs unchanged after shape
   filtering, so a pick is still only ever an allowed photo. The junior editor now shows the
   frame-shape switches.
+- Player areas as their own tiles (Ash, 28 Oct 2026: in a draft's Swap photo): the draft drawer's
+  library grid (`photo-swap-grid.tsx`) shows, after each photo, a tile per marked player,
+  cropped to their area and named. Picking one sends `photoPlayerId` with `photoUrl`, and the
+  draft snapshots that player's area (`draftPhotoFocus` with the player), so a team photo works
+  as that player's photo. Senior drafts only, as the drawer's library is.
