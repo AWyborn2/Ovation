@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Pencil, Search, Trash2, Upload } from "lucide-react";
 import {
+  deleteClubUpload,
   ingestClubUploads,
   useListClubUploads,
   getListClubUploadsQueryKey,
@@ -21,7 +22,7 @@ import { newId } from "./document";
  * in Canva. They stay here, apart from the photo library, with a name to
  * search by; a PNG keeps its transparency and an SVG goes on the card as a
  * vector. Deleting takes an upload out of this list; cards already using it
- * keep it.
+ * keep it. Select picks several to delete at once.
  */
 
 const searchBox =
@@ -64,6 +65,11 @@ export function UploadsPanel({
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
+  // Select mode: the tiles tick instead of adding, for deleting several at once.
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
   // Search after a short pause in typing.
   useEffect(() => {
     const t = setTimeout(() => setQuery(q.trim()), 250);
@@ -75,6 +81,44 @@ export function UploadsPanel({
   });
   const uploads = uploadsQ.data ?? [];
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubUploadsQueryKey() });
+  // Only uploads still listed count as picked (a search or a delete can hide some).
+  const shownPicked = uploads.filter((u) => picked.has(u.id));
+  const allPicked = uploads.length > 0 && shownPicked.length === uploads.length;
+  const toggle = (id: number) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const stopSelecting = () => {
+    setSelecting(false);
+    setPicked(new Set());
+  };
+  const deletePicked = async () => {
+    const targets = shownPicked;
+    if (targets.length === 0) return;
+    const one = targets.length === 1;
+    const ok = await confirm({
+      title: one ? `Delete ${targets[0]!.name}?` : `Delete ${targets.length} uploads?`,
+      description: `${one ? "It leaves" : "They leave"} Uploads. Cards already using ${one ? "it keep it" : "them keep them"}.`,
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
+    setDeleting(true);
+    const results = await Promise.allSettled(targets.map((u) => deleteClubUpload(u.id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    await refresh();
+    setDeleting(false);
+    setPicked(new Set());
+    if (failed) {
+      setStatus(`${failed} of ${targets.length} couldn't be deleted. Please try again.`);
+    } else {
+      setStatus(`Deleted ${one ? targets[0]!.name : `${targets.length} uploads`}.`);
+      setSelecting(false);
+    }
+  };
 
   const onFiles = async (list: FileList | null) => {
     const files = Array.from(list ?? []);
@@ -141,19 +185,58 @@ export function UploadsPanel({
           {status}
         </p>
       )}
-      <label className="relative block">
-        <span className="sr-only">Search uploads</span>
-        <Search
-          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ed-ink2)]"
-          aria-hidden
-        />
-        <input
-          className={searchBox}
-          placeholder="Search uploads"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </label>
+      <div className="flex items-center gap-2">
+        <label className="relative block min-w-0 flex-1">
+          <span className="sr-only">Search uploads</span>
+          <Search
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ed-ink2)]"
+            aria-hidden
+          />
+          <input
+            className={searchBox}
+            placeholder="Search uploads"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+        {uploads.length > 0 && (
+          <button
+            type="button"
+            className="h-9 shrink-0 rounded-lg border border-[var(--ed-line)] px-3 text-sm font-semibold hover:bg-[var(--ed-card)]"
+            aria-pressed={selecting}
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+          >
+            {selecting ? "Done" : "Select"}
+          </button>
+        )}
+      </div>
+      {selecting && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-[var(--ed-card)] p-2 text-sm">
+          <span className="font-semibold" aria-live="polite">
+            {shownPicked.length} selected
+          </span>
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-[var(--ed-ink2)] hover:underline"
+            onClick={() => setPicked(allPicked ? new Set() : new Set(uploads.map((u) => u.id)))}
+          >
+            {allPicked ? "Clear" : "Select all"}
+          </button>
+          <button
+            type="button"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-destructive px-2.5 py-1 font-semibold text-destructive-foreground disabled:opacity-50"
+            disabled={shownPicked.length === 0 || deleting}
+            onClick={() => void deletePicked()}
+          >
+            {deleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            )}
+            Delete{shownPicked.length > 0 ? ` ${shownPicked.length}` : ""}
+          </button>
+        </div>
+      )}
       {uploadsQ.isLoading ? (
         <p className="text-sm text-[var(--ed-ink2)]">Loading your uploads…</p>
       ) : uploads.length === 0 ? (
@@ -168,6 +251,9 @@ export function UploadsPanel({
               upload={u}
               onAdd={() => onAdd(uploadLayer(u, size))}
               onChanged={refresh}
+              selecting={selecting}
+              selected={picked.has(u.id)}
+              onToggle={() => toggle(u.id)}
             />
           ))}
         </ul>
@@ -180,10 +266,16 @@ function UploadTile({
   upload,
   onAdd,
   onChanged,
+  selecting,
+  selected,
+  onToggle,
 }: {
   upload: ClubUpload;
   onAdd: () => void;
   onChanged: () => void;
+  selecting: boolean;
+  selected: boolean;
+  onToggle: () => void;
 }) {
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
@@ -203,15 +295,33 @@ function UploadTile({
     rename.mutate({ id: upload.id, data: { name: next } });
   };
   return (
-    <li className="overflow-hidden rounded-lg bg-[var(--ed-card)]">
-      <button
-        type="button"
-        className="block w-full bg-[repeating-conic-gradient(var(--ed-line)_0_25%,transparent_0_50%)] bg-[length:14px_14px] p-2"
-        aria-label={`Add ${upload.name} to the card`}
-        onClick={onAdd}
-      >
-        <img src={src} alt="" className="mx-auto aspect-[4/3] w-full object-contain" />
-      </button>
+    <li
+      className={cn(
+        "relative overflow-hidden rounded-lg bg-[var(--ed-card)]",
+        selected && "ring-2 ring-[var(--ed-accent)]",
+      )}
+    >
+      {selecting ? (
+        <label className="block w-full cursor-pointer bg-[repeating-conic-gradient(var(--ed-line)_0_25%,transparent_0_50%)] bg-[length:14px_14px] p-2">
+          <input
+            type="checkbox"
+            className="absolute left-2 top-2 h-4 w-4 accent-[var(--ed-accent)]"
+            checked={selected}
+            onChange={onToggle}
+            aria-label={`Select ${upload.name}`}
+          />
+          <img src={src} alt="" className="mx-auto aspect-[4/3] w-full object-contain" />
+        </label>
+      ) : (
+        <button
+          type="button"
+          className="block w-full bg-[repeating-conic-gradient(var(--ed-line)_0_25%,transparent_0_50%)] bg-[length:14px_14px] p-2"
+          aria-label={`Add ${upload.name} to the card`}
+          onClick={onAdd}
+        >
+          <img src={src} alt="" className="mx-auto aspect-[4/3] w-full object-contain" />
+        </button>
+      )}
       <div className="flex items-center gap-1 p-1.5">
         {editing ? (
           <>
