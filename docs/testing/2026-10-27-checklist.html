@@ -323,7 +323,16 @@
     <div class="tools">
       <button class="chip" id="hideDone" aria-pressed="false" type="button">Hide done</button>
       <button class="chip" id="expandAll" type="button">Expand all</button>
+      <button class="chip" id="copyNotes" type="button">Copy my notes</button>
     </div>
+    <textarea
+      id="notesOut"
+      class="note"
+      rows="8"
+      readonly
+      hidden
+      aria-label="Your notes as text"
+    ></textarea>
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
   </div>
 </header>
@@ -833,5 +842,37 @@
       if (!d.classList.contains("done")) d.open = open;
     });
     expBtn.textContent = open ? "Collapse all" : "Expand all";
+  });
+
+  const copyBtn = document.getElementById("copyNotes");
+  const notesOut = document.getElementById("notesOut");
+  copyBtn.addEventListener("click", () => {
+    const lines = [];
+    AREAS.forEach((area) => {
+      area.tests.forEach((t) => {
+        const s = state[t.id] || {};
+        const note = (s.note || "").trim();
+        if (!s.done && !note) return;
+        lines.push(
+          `${area.title} / ${t.name} (${t.ref}): ${s.done ? "done" : "not done"}${note ? " | " + note : ""}`,
+        );
+      });
+    });
+    const text = lines.length ? lines.join("\n") : "No ticks or notes yet.";
+    notesOut.value = text;
+    const showText = () => {
+      notesOut.hidden = false;
+      notesOut.focus();
+      notesOut.select();
+      copyBtn.textContent = "Select and copy below";
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "Copied";
+        setTimeout(() => (copyBtn.textContent = "Copy my notes"), 2000);
+      }, showText);
+    } else {
+      showText();
+    }
   });
 </script>
