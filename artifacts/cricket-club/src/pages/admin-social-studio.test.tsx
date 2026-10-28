@@ -202,6 +202,42 @@ describe("Studio home", () => {
     );
   });
 
+  it("dismisses a draft and deletes a carousel set from their tiles, after confirming", async () => {
+    const { writes } = open();
+    const section = screen.getByRole("heading", { name: "Continue designing" }).closest("section")!;
+
+    fireEvent.click(await within(section).findByRole("button", { name: "Dismiss Milestone" }));
+    const dismissDialog = await screen.findByRole("alertdialog");
+    expect(within(dismissDialog).getByText(/reopen it from the queue/i)).toBeInTheDocument();
+    fireEvent.click(within(dismissDialog).getByRole("button", { name: "Dismiss" }));
+    await waitFor(() =>
+      expect(
+        writes.some((w) => w.method === "POST" && w.url.endsWith("/social-drafts/41/dismiss")),
+      ).toBe(true),
+    );
+
+    fireEvent.click(within(section).getByRole("button", { name: "Delete Round 5 results" }));
+    const deleteDialog = await screen.findByRole("alertdialog");
+    expect(within(deleteDialog).getByText(/can't be undone/i)).toBeInTheDocument();
+    fireEvent.click(within(deleteDialog).getByRole("button", { name: "Delete" }));
+    await waitFor(() =>
+      expect(writes.some((w) => w.method === "DELETE" && w.url.endsWith("/card-sets/7"))).toBe(
+        true,
+      ),
+    );
+  });
+
+  it("cancelling the confirmation leaves the design alone", async () => {
+    const { writes } = open();
+    const section = screen.getByRole("heading", { name: "Continue designing" }).closest("section")!;
+    fireEvent.click(await within(section).findByRole("button", { name: "Delete Round 5 results" }));
+    fireEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Cancel" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(writes).toEqual([]);
+  });
+
   it("Create → Carousel set picks the set, a look and a size, then opens the editor", async () => {
     const { writes, url } = open();
     const create = screen.getByRole("heading", { name: "Create" }).closest("section")!;

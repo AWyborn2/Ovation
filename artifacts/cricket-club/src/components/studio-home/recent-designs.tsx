@@ -1,12 +1,17 @@
 /**
  * Studio home → Continue designing, and the full "Your designs" page: the
  * club's drafts, own templates and carousel sets, newest first, each opening
- * where it is edited.
+ * where it is edited. Each tile can be dismissed (a draft, which can be
+ * reopened from the queue) or deleted (a template or carousel set).
  */
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { Layers } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Layers, Trash2 } from "lucide-react";
 import {
+  deleteCardSet,
+  deleteClubTemplate,
+  dismissSocialDraft,
   getGetClubTemplateQueryKey,
   getListCardSetsQueryKey,
   getListClubTemplatesQueryKey,
@@ -19,6 +24,8 @@ import {
   type SocialDraft,
 } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
+import { useConfirm } from "@/components/confirm-dialog";
+import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 import {
   SetPageThumb,
@@ -162,8 +169,75 @@ function ClubTemplateThumb({
   );
 }
 
-function DesignTile({ design, preview }: { design: RecentDesign; preview: LibraryPreview }) {
+/** What removing a tile does, in the words its button and confirmation use. */
+function removal(design: RecentDesign, title: string) {
+  if (design.type === "draft")
+    return {
+      verb: "Dismiss",
+      title: "Dismiss draft",
+      description: `Dismiss this ${title} draft? It leaves the queue and won't be posted. You can reopen it from the queue's dismissed cards.`,
+      done: `Dismissed the ${title} draft.`,
+    };
+  if (design.type === "template")
+    return {
+      verb: "Delete",
+      title: "Delete template",
+      description: `Delete "${title}"? This can't be undone. Cards already made with it keep their design.`,
+      done: `Deleted "${title}".`,
+    };
+  return {
+    verb: "Delete",
+    title: "Delete carousel set",
+    description: `Delete the "${title}" carousel set? This can't be undone. Carousels already made from it keep their slides.`,
+    done: `Deleted "${title}".`,
+  };
+}
+
+function DesignTile({
+  design,
+  preview,
+  onStatus,
+}: {
+  design: RecentDesign;
+  preview: LibraryPreview;
+  onStatus: (message: string) => void;
+}) {
+  const qc = useQueryClient();
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState(false);
   const title = design.type === "draft" ? kindLabel(design.kind) : design.name;
+  // A kind's default template can't go: another must be picked first.
+  const removable = !(design.type === "template" && design.template.isDefault);
+  const remove = async () => {
+    const r = removal(design, title);
+    if (
+      !(await confirm({
+        title: r.title,
+        description: r.description,
+        confirmText: r.verb,
+        destructive: true,
+      }))
+    )
+      return;
+    setBusy(true);
+    try {
+      if (design.type === "draft") {
+        await dismissSocialDraft(design.id);
+        await qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+      } else if (design.type === "template") {
+        await deleteClubTemplate(design.id);
+        await qc.invalidateQueries({ queryKey: getListClubTemplatesQueryKey() });
+      } else {
+        await deleteCardSet(design.id);
+        await qc.invalidateQueries({ queryKey: getListCardSetsQueryKey() });
+      }
+      onStatus(r.done);
+    } catch (e) {
+      onStatus(handleAdminMutationError(e) ?? "That didn't work. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
   const meta = [
     typeLabel(design),
     design.type === "set" ? `${design.slides} slides` : templateKindLabel(design.kind),
@@ -171,8 +245,9 @@ function DesignTile({ design, preview }: { design: RecentDesign; preview: Librar
   ]
     .filter(Boolean)
     .join(" · ");
+  const verb = design.type === "draft" ? "Dismiss" : "Delete";
   return (
-    <li>
+    <li className="relative">
       <Link
         href={design.href}
         aria-label={`Open ${title}`}
@@ -192,6 +267,18 @@ function DesignTile({ design, preview }: { design: RecentDesign; preview: Librar
         <p className="truncate text-xs text-muted-foreground">{meta}</p>
         <p className="truncate text-xs text-muted-foreground">{editedAgo(design.editedAt)}</p>
       </Link>
+      {removable && (
+        <button
+          type="button"
+          onClick={remove}
+          disabled={busy}
+          aria-label={`${verb} ${title}`}
+          title={verb}
+          className="absolute right-3 top-3 rounded-full border border-border bg-background/90 p-1.5 text-muted-foreground shadow-sm transition hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      )}
     </li>
   );
 }
@@ -203,12 +290,20 @@ export function DesignGrid({
   designs: RecentDesign[];
   preview: LibraryPreview;
 }) {
+  const [status, setStatus] = useState<string | null>(null);
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      {designs.map((d) => (
-        <DesignTile key={`${d.type}-${d.id}`} design={d} preview={preview} />
-      ))}
-    </ul>
+    <div className="space-y-2">
+      {status && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {status}
+        </p>
+      )}
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {designs.map((d) => (
+          <DesignTile key={`${d.type}-${d.id}`} design={d} preview={preview} onStatus={setStatus} />
+        ))}
+      </ul>
+    </div>
   );
 }
 

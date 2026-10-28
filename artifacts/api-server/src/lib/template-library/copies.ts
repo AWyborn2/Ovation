@@ -455,6 +455,19 @@ export async function deleteCopy(tenantId: number, id: number): Promise<void> {
       error: "This is the default for its card kind. Choose another default before deleting it.",
     });
   }
+  // A template other clubs can still pick keeps its link here, so its author
+  // can unlist or update it: unlist it first.
+  if (row.publishedTemplateId !== null) {
+    const [published] = await db
+      .select({ listed: libraryTemplatesTable.listed })
+      .from(libraryTemplatesTable)
+      .where(eq(libraryTemplatesTable.id, row.publishedTemplateId));
+    if (published?.listed) {
+      throw new TemplateLibraryError(400, {
+        error: "This template is published to the library. Unlist it there before deleting it.",
+      });
+    }
+  }
   await db
     .delete(cardTemplatesTable)
     .where(
