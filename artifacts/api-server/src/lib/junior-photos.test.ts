@@ -12,10 +12,12 @@ vi.mock("@workspace/db", () => ({
   socialDraftsTable: {},
 }));
 vi.mock("./draft-upsert", () => ({ withdrawDraft: vi.fn() }));
+vi.mock("./photo-frame-aspect", () => ({ draftFrameAspect: vi.fn() }));
 
 import {
   juniorPhotoAllowed,
   juniorPhotoFields,
+  juniorPhotoFit,
   juniorPhotoUrl,
   pickJuniorCardPhoto,
   type JuniorPhoto,
@@ -68,9 +70,41 @@ describe("pickJuniorCardPhoto", () => {
     expect(pickJuniorCardPhoto(photos, ["C", "B", "A"], "teamlist:7")).toEqual(first);
   });
 
+  it("picks among the candidates whose photo best fits the frame", () => {
+    const fitted = new Map<string, JuniorPhoto>([
+      ["a", { ...photo(1, "A"), fit: "tight" }],
+      ["b", { ...photo(2, "B"), fit: "good" }],
+      ["c", { ...photo(3, "C"), fit: "none" }],
+    ]);
+    for (const seed of ["s1", "s2", "s3", "s4", "s5"])
+      expect(pickJuniorCardPhoto(fitted, ["A", "B", "C"], seed)?.participantId).toBe("B");
+    // A poor fit is still picked when it is all there is: the card never goes empty.
+    expect(pickJuniorCardPhoto(fitted, ["C"], "s1")?.participantId).toBe("C");
+    // The card's own subject keeps their photo, whatever its fit.
+    expect(pickJuniorCardPhoto(fitted, ["A", "B"], "s1", ["C"])?.participantId).toBe("C");
+  });
+
   it("returns null when no candidate has an allowed photo", () => {
     expect(pickJuniorCardPhoto(photos, ["B", null, undefined], "k")).toBeNull();
     expect(pickJuniorCardPhoto(new Map(), ["A"], "k")).toBeNull();
+  });
+});
+
+describe("juniorPhotoFit", () => {
+  // A tall 3:4 photo whose box is a full-height strip: a wide frame can't keep it.
+  const base = { width: 300, height: 400, focusBox: { x: 0.4, y: 0, w: 0.2, h: 1 }, area: null };
+
+  it("reads the child's area first, then the photo's box", () => {
+    expect(juniorPhotoFit(base, 16 / 9)).toBe("none");
+    // The child's area (a small face) fits a wide frame even though the box doesn't.
+    expect(juniorPhotoFit({ ...base, area: { x: 0.4, y: 0.4, w: 0.2, h: 0.1 } }, 16 / 9)).toBe(
+      "good",
+    );
+  });
+
+  it("is a good fit with no box or no known size (a centred crop, as before)", () => {
+    expect(juniorPhotoFit({ ...base, focusBox: null }, 16 / 9)).toBe("good");
+    expect(juniorPhotoFit({ ...base, width: null }, 16 / 9)).toBe("good");
   });
 });
 

@@ -33,7 +33,7 @@ import {
   type LadderCardInput,
 } from "@workspace/scorecard/ladder-input";
 import { upsertDraftByKey } from "../draft-upsert";
-import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
+import { juniorPhotoFields, juniorPhotoLoader, pickJuniorCardPhoto } from "../junior-photos";
 import { loadClubIdentity } from "../club-overlay";
 import { getTenantCentralClubId, getTenantPlayhqOrgId, tenantIsCentral } from "../tenant";
 import {
@@ -594,7 +594,7 @@ export async function generateWeekendWrapDrafts(
             teams: juniorSet.teams,
             photo: juniorPhotoFields(
               pickJuniorCardPhoto(
-                await loadJuniorPhotos(tenantId, juniorSet.candidates),
+                await juniorPhotoLoader(tenantId, juniorSet.candidates)("weekendWrap"),
                 juniorSet.candidates,
                 `weekendwrap-round:${season}:${round}:junior`,
                 juniorSet.preferred,

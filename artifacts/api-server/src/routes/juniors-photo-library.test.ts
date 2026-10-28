@@ -57,6 +57,7 @@ let otherCookie: string;
 const AVA = randomUUID().toLowerCase();
 const BEN = randomUUID().toLowerCase();
 const CAL = randomUUID().toLowerCase();
+const DEV = randomUUID().toLowerCase();
 
 const jpeg = () =>
   sharp({ create: { width: 64, height: 48, channels: 3, background: "#00305c" } })
@@ -124,6 +125,7 @@ beforeAll(async () => {
     { tenantId, participantId: AVA, displayName: "Ava Smith" },
     { tenantId, participantId: BEN, displayName: "Ben Jones" },
     { tenantId, participantId: CAL, displayName: "Cal Private", isPrivate: true },
+    { tenantId, participantId: DEV, displayName: "Dev Shapes" },
     // The same child at another club is a different row; it must never count here.
     { tenantId: otherTenantId, participantId: AVA, displayName: "Ava Elsewhere" },
   ]);
@@ -398,5 +400,26 @@ describe("photo focus areas", () => {
       focusBox: admin,
       focusSuggested: false,
     });
+  });
+
+  it("a card's pick leaves out switched-off shapes and prefers photos that fit its frame", async () => {
+    // Three 4:3 photos of Dev, oldest first: no box; a tall strip of a box; and the
+    // newest, switched off for tall and wide frames.
+    const plain = await ingest("shape-plain", { participantIds: [DEV] });
+    const strip = await ingest("shape-strip", { participantIds: [DEV] });
+    const notTall = await ingest("shape-off", { participantIds: [DEV] });
+    const focus = (id: number, body: Record<string, unknown>) =>
+      asAdmin(request(app).put(`/api/juniors/photo-library/${id}/focus`)).send(body);
+    expect((await focus(strip, { focusBox: { x: 0.45, y: 0, w: 0.1, h: 1 } })).status).toBe(200);
+    expect((await focus(notTall, { offShapes: ["tall", "wide"] })).status).toBe(200);
+
+    const pick = async (frameAspect?: number) =>
+      (await loadJuniorPhotos(tenantId, [DEV], { frameAspect })).get(DEV);
+    // No frame shape: the newest, as before.
+    expect((await pick())?.photoId).toBe(notTall);
+    // Tall: the switched-off photo is out; the strip fits, and is newer than the plain one.
+    expect(await pick(4 / 5)).toMatchObject({ photoId: strip, fit: "good" });
+    // Wide: the strip can't fit a wide frame, so the older plain photo wins.
+    expect(await pick(16 / 9)).toMatchObject({ photoId: plain, fit: "good" });
   });
 });
