@@ -141,7 +141,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     playerField: { key: "playerName" },
     fields: [
       { key: "playerName", label: "Player name", type: "text" },
-      { key: "tierLabel", label: "Tier label", type: "text", placeholder: "Centurion" },
+      { key: "tierLabel", label: "Tier label", type: "text", placeholder: "Club Milestone" },
       { key: "tierIndex", label: "Tier index (0–6)", type: "number" },
       { key: "milestoneLabel", label: "Milestone label", type: "text", placeholder: "Career Runs" },
       { key: "currentValue", label: "Current value", type: "number" },

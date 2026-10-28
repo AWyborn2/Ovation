@@ -138,7 +138,7 @@ describe("loadCentralRecapMilestones", () => {
       {
         playerId: 101,
         playerName: "A Smith",
-        tierLabel: "Centurion",
+        tierLabel: "100 Games",
         tierIndex: 1,
         milestoneLabel: "Games",
         value: 103,

@@ -11,7 +11,7 @@ export const TIER_THRESHOLDS: Record<BoardKey, number[]> = {
 };
 
 export const TIER_LABELS: Record<BoardKey, string[]> = {
-  games: ["50 Games", "Centurion", "150 Games", "200 Games", "250 Games", "300 Games"],
+  games: ["50 Games", "100 Games", "150 Games", "200 Games", "250 Games", "300 Games"],
   runs: ["1000 Runs", "2500 Runs", "5000 Runs", "7500 Runs", "10K Runs", "15K Runs"],
   wickets: [
     "50 Wickets",
