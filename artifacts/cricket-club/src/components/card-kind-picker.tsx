@@ -36,13 +36,17 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
 ];
 
 // Chip picker for the card types a sponsor or template applies to.
-// An empty selection means "all card types".
+// An empty selection means "all card types", unless the caller names what it
+// means instead (`emptyLabel`): a player sponsor with none picked shows only
+// on its players' cards.
 export function CardKindPicker({
   value,
   onChange,
+  emptyLabel = "All cards",
 }: {
   value: string[] | null | undefined;
   onChange: (next: CardKind[]) => void;
+  emptyLabel?: string;
 }) {
   const selected = value ?? [];
   const isAll = selected.length === 0;
@@ -59,7 +63,7 @@ export function CardKindPicker({
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <button type="button" className={chip(isAll)} onClick={() => onChange([])}>
-        All cards
+        {emptyLabel}
       </button>
       {CARD_KIND_OPTIONS.map((o) => (
         <button

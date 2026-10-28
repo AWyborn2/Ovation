@@ -22,7 +22,22 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { ImageCropDialog, SPONSOR_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
 
 const PLAYER_HINT =
-  "Milestone, feat, debut, player and new signing cards for these players carry this sponsor instead of the club strip. A sponsor with players shows on other cards only for the card types picked above.";
+  "Milestone, feat, Big Moment, debut, player and new signing cards for these players carry this sponsor instead of the club strip. A sponsor with players shows on other cards only for the card types picked above.";
+
+/**
+ * What no card types means: every card for a club sponsor, and only its
+ * players' cards for a player sponsor (the shared card-sponsors rule).
+ */
+export function cardTypesEmptyLabel(playerCount: number): string {
+  return playerCount > 0 ? "Only their players' cards" : "All cards";
+}
+
+/** The card-type hint under the add form, by whether players are tagged. */
+export function cardTypesHint(playerCount: number): string {
+  return playerCount > 0
+    ? "No card types picked = shows only on its players' cards. Pick types to also show it club-wide on those cards."
+    : "No specific types selected = logo shows on all card types.";
+}
 
 const MAJOR_HINT =
   "Shows larger on the match day sponsors page when “Major sponsors larger” is on.";
@@ -191,10 +206,12 @@ export function SponsorsCard({
             </div>
             <div className="space-y-2">
               <Label>Show on card types</Label>
-              <CardKindPicker value={cardKinds} onChange={setCardKinds} />
-              <p className="text-xs text-muted-foreground">
-                No specific types selected = logo shows on all card types.
-              </p>
+              <CardKindPicker
+                value={cardKinds}
+                onChange={setCardKinds}
+                emptyLabel={cardTypesEmptyLabel(players.length)}
+              />
+              <p className="text-xs text-muted-foreground">{cardTypesHint(players.length)}</p>
             </div>
             <div className="space-y-2">
               <Label>Team sponsor (optional)</Label>
@@ -314,6 +331,7 @@ export function SponsorsCard({
                   <CardKindPicker
                     value={s.cardKinds}
                     onChange={(next) => update.mutate({ id: s.id, data: { cardKinds: next } })}
+                    emptyLabel={cardTypesEmptyLabel(s.players?.length ?? 0)}
                   />
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Team sponsor for</div>
