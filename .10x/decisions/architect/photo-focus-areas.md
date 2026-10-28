@@ -107,3 +107,9 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
   cropped to their area and named. Picking one sends `photoPlayerId` with `photoUrl`, and the
   draft snapshots that player's area (`draftPhotoFocus` with the player), so a team photo works
   as that player's photo. Senior drafts only, as the drawer's library is.
+- Small faces (28 Oct 2026): the short-range model only finds a face that fills about 15–35% of
+  what it scans, so a whole-photo scan of a team photo found no faces at all (checked in Chromium
+  against the real model). `findFaces` now also scans overlapping squares a half and a quarter of
+  the photo's short side (`faceScanTiles`), keeps faces from squares at a confidence of 0.7 or more
+  (zoomed-in squares of a close-up mistake shirts for faces at 0.5–0.65), and merges the overlaps
+  (`mergeFaces`). About 1.5 s a photo; the editor's face suggestions get the same scan.
