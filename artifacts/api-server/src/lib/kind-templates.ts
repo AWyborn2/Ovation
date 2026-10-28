@@ -305,7 +305,7 @@ export async function applyTemplateToDrafts(
   tx: Tx,
   template: CardTemplateRow,
   expectedDrafts?: number,
-  opts: { onlyFromThisCopy?: boolean } = {},
+  opts: { onlyFromThisCopy?: boolean; withUnlinked?: boolean } = {},
 ): Promise<{ changed: number; skipped: number; edited: number }> {
   const tenantId = template.tenantId;
   const kind = template.baseKind ?? "";
@@ -323,9 +323,13 @@ export async function applyTemplateToDrafts(
         // design, not the kind's card: applying Match Day must not replace it.
         sql`NOT (${socialDraftsTable.cardInput} ? 'weekendCarousel')`,
         // A library update a copy follows by itself only reaches the drafts
-        // drawn from that copy (followLibraryUpdates).
+        // drawn from that copy (followLibraryUpdates), and, for the kind's
+        // default, the automatic drafts made before drafts recorded their
+        // template (no ref, never edited: not a design an admin supplied).
         opts.onlyFromThisCopy
-          ? sql`${socialDraftsTable.templateRef}->>'copyId' = ${String(template.id)}`
+          ? opts.withUnlinked
+            ? sql`(${socialDraftsTable.templateRef}->>'copyId' = ${String(template.id)} OR (${socialDraftsTable.templateRef} IS NULL AND ${socialDraftsTable.editedAt} IS NULL))`
+            : sql`${socialDraftsTable.templateRef}->>'copyId' = ${String(template.id)}`
           : undefined,
       ),
     )

@@ -3,7 +3,8 @@
  * has changed is still Ovation's design, so when the library template it came
  * from gets a newer version that has passed its fit check, the copy takes it
  * by itself, as "Take update" would. So do the club's queued cards drawn from
- * that copy, unless their design was edited by hand. A copy with the club's
+ * that copy (and, for the kind's default, its automatic cards from before
+ * cards recorded their template), unless their design was edited by hand. A copy with the club's
  * own changes (`edited_at`) never changes here. Only Ovation's own templates
  * (`origin = 'bundle'`) are followed: a template another club published still
  * offers "Update available", so its author's changes never reach a club's
@@ -97,6 +98,7 @@ export async function followLibraryUpdates(
         if (!saved) return null;
         const { changed } = await applyTemplateToDrafts(tx, saved, undefined, {
           onlyFromThisCopy: true,
+          withUnlinked: saved.isKindDefault,
         });
         return changed;
       });

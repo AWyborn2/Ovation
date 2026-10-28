@@ -234,4 +234,24 @@ describe("unedited copies follow a passed library version", () => {
     expect(kept.originVersion).toBe(1);
     expect(kept.adjustments).toEqual(V1);
   });
+
+  it("as the club's default, also redraws its older automatic cards that name no template", async () => {
+    const club = await tenant(4);
+    const def = await copy(club);
+    await db
+      .update(cardTemplatesTable)
+      .set({ isKindDefault: true, originVersion: 1 })
+      .where(eq(cardTemplatesTable.id, def.id));
+    const unlinked = await draft(club, null);
+    const supplied = await draft(club, null, { editedAt: new Date() });
+    const handEdited = await draft(club, null, { designEditedAt: new Date() });
+
+    expect(await followLibraryUpdates([templateId])).toMatchObject({ copies: 1, drafts: 1 });
+    const moved = await readDraft(unlinked.id);
+    expect(moved.adjustments).toEqual(V2);
+    expect(moved.templateRef).toEqual({ copyId: def.id, version: 4 });
+    // A design an admin supplied or edited stays.
+    expect((await readDraft(supplied.id)).adjustments).toEqual(V1);
+    expect((await readDraft(handEdited.id)).adjustments).toEqual(V1);
+  });
 });
