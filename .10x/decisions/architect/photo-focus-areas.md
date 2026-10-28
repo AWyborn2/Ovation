@@ -82,8 +82,23 @@ Slice 1 changes nothing anyone sees: no box is set until slice 3 ships the edito
 - A switched-off shape leaves the photo out of the automatic pick for that shape; box fit only
   reorders.
 - Juniors: the junior library gets the editor, the boxes and the participant areas, and junior
-  cards crop to the featured child's area. Junior picks don't use frame shapes yet, so the junior
-  editor shows fit badges without the switches. Areas are only for children already tagged:
+  cards crop to the featured child's area. Areas are only for children already tagged:
   tagging stays on the tag panel because it decides consent.
 - Not built: suggesting a box on upload (P2), player areas as their own tiles (P2), and ordering
   the "Needs focus" filter by use.
+
+## Follow-ups (28 Oct 2026)
+
+- Junior shape-aware picking: junior engines load photos for the frame shape of the club's
+  template for the card kind (`juniorPhotoLoader` in `junior-photos.ts`, using
+  `draftFrameAspect`). A shape switched off for a photo leaves it out; the child's area (else
+  the photo's box) ranks by fit before the player's default photo and the newest; a team list
+  picks among the candidates with the best fit. The consent rule runs unchanged after shape
+  filtering, so a pick is still only ever an allowed photo. The junior editor now shows the
+  frame-shape switches.
+- Suggest a focus box on upload (Ash, 28 Oct 2026: used, but flagged): after an upload or a
+  Drive import, the library page finds faces on each new photo in the browser
+  (`suggestUploadFocus` in `face-suggestions.ts`) and saves the box round everyone with
+  `suggested: true`. Cards crop to it straight away; `focus_suggested` (migration 0075) keeps the
+  photo in "Needs focus" until an admin saves the focus, which clears it. A suggestion never
+  replaces a box an admin set. The junior library does the same through the junior routes.

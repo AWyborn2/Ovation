@@ -36,6 +36,8 @@ export interface JuniorLibraryPhoto {
   displayable: boolean;
   /** The part of the photo that matters; null = a centred crop. */
   focusBox?: PhotoFocusBox | null;
+  /** The focus box was suggested from the faces found on upload and no admin has saved it yet. */
+  focusSuggested?: boolean;
   offShapes?: PhotoFrameShape[];
   /** Where each tagged child is on the photo (children with an area only). */
   participantAreas?: JuniorLibraryPhotoParticipantAreasItem[];

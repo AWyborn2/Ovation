@@ -11,6 +11,8 @@ import type { SetClubPhotoFocusRequestPlayerAreasItem } from './setClubPhotoFocu
 
 export interface SetClubPhotoFocusRequest {
   focusBox?: PhotoFocusBox | null;
+  /** The focus box is a suggestion from the faces found on upload. A suggestion never replaces a box an admin set; a save without it marks the box as checked. */
+  suggested?: boolean;
   offShapes?: PhotoFrameShape[];
   /** Areas to set (box) or clear (null), per player. */
   playerAreas?: SetClubPhotoFocusRequestPlayerAreasItem[];

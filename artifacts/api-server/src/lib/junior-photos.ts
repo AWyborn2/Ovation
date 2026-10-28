@@ -15,6 +15,10 @@
  * The junior photo library (kiosk-photo-rotation A) tags a photo with any number of
  * children (`junior_photo_participants`); `juniorLibraryPhotoAllowed` is the one consent
  * rule for cards, serving and the kiosk: every tagged child allowed, and at least one tag.
+ *
+ * Photo focus areas: given the card's frame shape, a pick leaves out photos switched off
+ * for that shape and prefers the photos whose box (the child's area, else the photo's
+ * focus box) fits it, as senior picks do.
  */
 import { and, eq, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import {
@@ -26,8 +30,10 @@ import {
 } from "@workspace/db";
 import { isJuniorWithheld } from "./junior-names";
 import { juniorParticipantJoin } from "./junior-participant-scope";
+import { focusFit, frameShapeOf, normaliseFocusBox, type FocusFit } from "@workspace/scorecard";
 import { seededPick, type PhotoSource } from "./draft-enrich";
 import { withdrawDraft } from "./draft-upsert";
+import { draftFrameAspect } from "./photo-frame-aspect";
 
 export const JUNIOR_PHOTO_SOURCE: PhotoSource = "auto:junior-photo";
 
@@ -36,7 +42,25 @@ export type JuniorPhoto = {
   participantId: string;
   url: string;
   thumbUrl: string | null;
+  /** How well the photo suits the card's frame shape (when the pick knew it). */
+  fit?: FocusFit;
 };
+
+const FIT_ORDER: readonly FocusFit[] = ["good", "tight", "none"];
+const fitRank = (fit: FocusFit | undefined) => (fit ? FIT_ORDER.indexOf(fit) : 0);
+
+/**
+ * How well one tagged photo suits a frame of `frameAspect`: the child's area, else the
+ * photo's focus box; "good" with no box or no known size (a centred crop, as before).
+ */
+export function juniorPhotoFit(
+  photo: { width: number | null; height: number | null; focusBox: unknown; area: unknown },
+  frameAspect: number,
+): FocusFit {
+  const box = normaliseFocusBox(photo.area) ?? normaliseFocusBox(photo.focusBox);
+  if (!box || !photo.width || !photo.height) return "good";
+  return focusFit({ box, width: photo.width, height: photo.height }, frameAspect);
+}
 
 /** The URL cards and profiles use for a junior photo (gated by the serving route). */
 export function juniorPhotoUrl(photoId: number): string {
@@ -135,6 +159,12 @@ export async function loadJuniorPhotos(
      * serve a photo that fails it publicly.
      */
     includeDisallowed?: boolean;
+    /**
+     * The shape (width / height) of the card's photo frame (photo focus areas): photos
+     * switched off for its shape are left out, and photos that fit come first. Null or
+     * omitted = shape doesn't matter.
+     */
+    frameAspect?: number | null;
   } = {},
 ): Promise<Map<string, JuniorPhoto>> {
   const ids = participantIds
@@ -149,6 +179,11 @@ export async function loadJuniorPhotos(
       isDefault: juniorPhotosTable.isDefault,
       thumbPath: juniorPhotosTable.thumbPath,
       createdAt: juniorPhotosTable.createdAt,
+      width: juniorPhotosTable.width,
+      height: juniorPhotosTable.height,
+      focusBox: juniorPhotosTable.focusBox,
+      offShapes: juniorPhotosTable.offShapes,
+      area: juniorPhotoParticipantsTable.area,
     })
     .from(juniorPhotoParticipantsTable)
     .innerJoin(
@@ -170,15 +205,24 @@ export async function loadJuniorPhotos(
         tenantId,
         rows.map((r) => r.photoId),
       );
-  // The player's own default first, then the newest.
-  const rank = (r: (typeof rows)[number]) =>
+  const aspect = opts.frameAspect && opts.frameAspect > 0 ? opts.frameAspect : null;
+  const shape = aspect ? frameShapeOf(aspect) : null;
+  const ranked = rows
+    // A shape the admin switched off for the photo is never auto-picked for it.
+    .filter((r) => !shape || !r.offShapes.includes(shape))
+    .map((r) => ({ ...r, fit: aspect ? juniorPhotoFit(r, aspect) : undefined }));
+  // The best fit for the frame first, then the player's own default, then the newest.
+  const own = (r: (typeof ranked)[number]) =>
     r.isDefault && r.ownerId?.toLowerCase() === r.participantId.toLowerCase() ? 1 : 0;
-  rows.sort(
+  ranked.sort(
     (a, b) =>
-      rank(b) - rank(a) || b.createdAt.getTime() - a.createdAt.getTime() || b.photoId - a.photoId,
+      fitRank(a.fit) - fitRank(b.fit) ||
+      own(b) - own(a) ||
+      b.createdAt.getTime() - a.createdAt.getTime() ||
+      b.photoId - a.photoId,
   );
   const out = new Map<string, JuniorPhoto>();
-  for (const r of rows) {
+  for (const r of ranked) {
     const key = r.participantId.toLowerCase();
     if (out.has(key)) continue;
     if (consent && consent.get(r.photoId) !== true) continue;
@@ -187,16 +231,40 @@ export async function loadJuniorPhotos(
       participantId: r.participantId,
       url: juniorPhotoUrl(r.photoId),
       thumbUrl: r.thumbPath ? juniorPhotoThumbUrl(r.photoId) : null,
+      ...(r.fit ? { fit: r.fit } : {}),
     });
   }
   return out;
 }
 
 /**
+ * `loadJuniorPhotos` for a batch whose cards may be of several kinds: one load per frame
+ * shape, from the club's template for each kind (`draftFrameAspect`). A kind whose shape
+ * can't be read picks without one, as before.
+ */
+export function juniorPhotoLoader(
+  tenantId: number,
+  participantIds?: readonly (string | null | undefined)[],
+): (kind: string) => Promise<Map<string, JuniorPhoto>> {
+  const byAspect = new Map<number | null, Promise<Map<string, JuniorPhoto>>>();
+  return async (kind) => {
+    const aspect = await draftFrameAspect(tenantId, kind).catch(() => null);
+    let photos = byAspect.get(aspect);
+    if (!photos) {
+      photos = loadJuniorPhotos(tenantId, participantIds, { frameAspect: aspect });
+      byAspect.set(aspect, photos);
+    }
+    return photos;
+  };
+}
+
+/**
  * The photo a junior card features: the first of `preferred` with a photo (a Big Moment's
  * player, a result's top performer), else one of `candidates` with a photo, picked by the
- * draft's seed the way senior team lists pick theirs (stable across re-renders). Null when
- * no candidate is allowed and has a photo.
+ * draft's seed the way senior team lists pick theirs (stable across re-renders). Among the
+ * candidates, those whose photo best fits the frame (`fit`) are the pool; a tight or poor
+ * fit is still picked when it is all there is. Null when no candidate is allowed and has a
+ * photo.
  */
 export function pickJuniorCardPhoto(
   photos: ReadonlyMap<string, JuniorPhoto>,
@@ -219,7 +287,11 @@ export function pickJuniorCardPhoto(
     if (photo) pool.push({ id: photo.photoId, photo });
   }
   if (pool.length === 0) return null;
-  return seededPick(pool, seed).photo;
+  const best = Math.min(...pool.map((p) => fitRank(p.photo.fit)));
+  return seededPick(
+    pool.filter((p) => fitRank(p.photo.fit) === best),
+    seed,
+  ).photo;
 }
 
 /**

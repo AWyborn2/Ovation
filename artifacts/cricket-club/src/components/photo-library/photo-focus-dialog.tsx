@@ -47,6 +47,8 @@ type FocusPhoto = {
   width: number;
   height: number;
   focusBox: FocusBox | null;
+  /** The box was suggested from faces on upload and no admin has saved it yet. */
+  focusSuggested?: boolean;
   offShapes: readonly FrameShape[];
 };
 
@@ -144,7 +146,6 @@ function FocusEditorDialog({
   saving,
   error,
   search,
-  shapeSwitches = true,
 }: {
   photo: FocusPhoto | null;
   people: readonly Person[];
@@ -154,8 +155,6 @@ function FocusEditorDialog({
   saving: boolean;
   error: string | null;
   search?: PeopleSearch;
-  /** Whether the automatic picker honours switched-off shapes for this library. */
-  shapeSwitches?: boolean;
 }) {
   const [focusBox, setFocusBox] = useState<FocusBox | null>(null);
   const [offShapes, setOffShapes] = useState<Set<FrameShape>>(new Set());
@@ -286,6 +285,9 @@ function FocusEditorDialog({
           <DialogDescription>
             Drag on the photo to mark the part that matters. Every card frame keeps it in view. Mark
             where each player is, and cards about them crop to that.
+            {photo?.focusSuggested && focusBox && (
+              <> The box shown was suggested from the faces found on upload: check it and save.</>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -470,27 +472,23 @@ function FocusEditorDialog({
                         {on ? FIT_LABELS[fit] : "Off"}
                       </StatusPill>
                     </span>
-                    {shapeSwitches && (
-                      <Switch
-                        checked={on}
-                        aria-label={`Use in ${SHAPE_LABELS[shape].toLowerCase()}`}
-                        onCheckedChange={(v) =>
-                          setOffShapes((prev) => {
-                            const next = new Set(prev);
-                            if (v) next.delete(shape);
-                            else next.add(shape);
-                            return next;
-                          })
-                        }
-                      />
-                    )}
+                    <Switch
+                      checked={on}
+                      aria-label={`Use in ${SHAPE_LABELS[shape].toLowerCase()}`}
+                      onCheckedChange={(v) =>
+                        setOffShapes((prev) => {
+                          const next = new Set(prev);
+                          if (v) next.delete(shape);
+                          else next.add(shape);
+                          return next;
+                        })
+                      }
+                    />
                   </label>
                 );
               })}
               <p className="text-xs text-muted-foreground">
-                {shapeSwitches
-                  ? "Automatic posts never put this photo in a shape that's off."
-                  : "How well the focus fits each shape of card frame."}
+                Automatic posts never put this photo in a shape that&apos;s off.
               </p>
             </fieldset>
           </div>
@@ -652,6 +650,7 @@ export function JuniorPhotoFocusDialog({
           width: photo.width,
           height: photo.height,
           focusBox: photo.focusBox ?? null,
+          focusSuggested: photo.focusSuggested ?? false,
           offShapes: photo.offShapes ?? [],
         }
       : null;
@@ -659,8 +658,6 @@ export function JuniorPhotoFocusDialog({
     <FocusEditorDialog
       photo={sized}
       people={people}
-      // Junior cards don't pick photos by frame shape yet, so there's nothing to switch off.
-      shapeSwitches={false}
       open={open && sized !== null}
       onOpenChange={onOpenChange}
       saving={saveM.isPending}

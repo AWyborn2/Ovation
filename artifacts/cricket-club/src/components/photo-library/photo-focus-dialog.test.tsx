@@ -58,6 +58,16 @@ describe("PhotoFocusDialog", () => {
     expect(screen.getAllByText("Fits").length).toBeGreaterThan(0);
   });
 
+  it("says when the box was suggested on upload; saving sends it as checked", () => {
+    open({ ...photo, focusSuggested: true });
+    expect(screen.getByText(/suggested from the faces found on upload/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save focus" }));
+    expect(save.mock.calls[0]![0].data).not.toHaveProperty("suggested");
+    cleanup();
+    open();
+    expect(screen.queryByText(/suggested from the faces found on upload/)).toBeNull();
+  });
+
   it("saves the box, a switched-off shape and only the areas that changed", async () => {
     open();
     fireEvent.click(screen.getByRole("switch", { name: "Use in tall frames" }));
@@ -113,8 +123,8 @@ describe("JuniorPhotoFocusDialog", () => {
       <JuniorPhotoFocusDialog photo={junior} open onOpenChange={() => {}} onSaved={() => {}} />,
     );
     expect(screen.queryByLabelText("Find a player to mark")).toBeNull();
-    // Junior picks don't use frame shapes yet: fit badges only, no switches.
-    expect(screen.queryByRole("switch")).toBeNull();
+    // Junior picks honour switched-off shapes, as senior picks do.
+    fireEvent.click(screen.getByRole("switch", { name: "Use in wide frames" }));
     fireEvent.click(screen.getByRole("button", { name: /Ava Junior/ }));
     fireEvent.click(screen.getByRole("button", { name: "Suggest areas from faces" }));
     fireEvent.click(await screen.findByRole("button", { name: "Use suggested area 1" }));
@@ -123,7 +133,7 @@ describe("JuniorPhotoFocusDialog", () => {
       photoId: 11,
       data: {
         focusBox: null,
-        offShapes: [],
+        offShapes: ["wide"],
         participantAreas: [{ participantId: "p-ava", box: { x: 0.4, y: 0.2, w: 0.1, h: 0.15 } }],
       },
     });
