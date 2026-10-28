@@ -38,7 +38,7 @@ import {
   resolveUnlinkedJuniorOpponent,
   type JuniorNaming,
 } from "./junior-helpers";
-import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "./junior-photos";
+import { juniorPhotoFields, juniorPhotoLoader, pickJuniorCardPhoto } from "./junior-photos";
 import type { PhotoSource } from "./draft-enrich";
 import { juniorResultAutoReady, juniorTeamPublishMode } from "./junior-publishing";
 import {
@@ -552,7 +552,8 @@ export async function generateJuniorMatchSummaryDrafts(
   const [naming, publishing, photos, juniorNames, visible] = await Promise.all([
     loadJuniorNaming(tenantId),
     loadJuniorTeamPublishing(tenantId),
-    loadJuniorPhotos(tenantId),
+    // Picked for the frame shape of the club's Match result template.
+    juniorPhotoLoader(tenantId)("matchSummary"),
     contentJuniorNames(tenantId),
     contentVisibleFields(tenantId, "matchSummary"),
   ]);
