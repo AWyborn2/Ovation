@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse big moment",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1010,6 +1010,90 @@
             },
             "sizes": ["landscape"],
             "sig": "text:1ih5nki18hbrsv"
+          },
+          {
+            "id": "player-sponsor-panel",
+            "kind": "shape",
+            "name": "Player's sponsor panel",
+            "style": {
+              "fill": "#FFFFFF",
+              "radius": 1.2,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 0.4,
+                  "blur": 1.6,
+                  "spread": 0,
+                  "color": "#00000040"
+                }
+              ]
+            },
+            "geometry": {
+              "square": {
+                "x": 78.07,
+                "y": 82.56,
+                "w": 15.93,
+                "h": 6.64
+              },
+              "portrait": {
+                "x": 70.85,
+                "y": 83.64,
+                "w": 23.15,
+                "h": 7.72
+              },
+              "story": {
+                "x": 69,
+                "y": 88.07,
+                "w": 25,
+                "h": 5.86
+              },
+              "landscape": {
+                "x": 83,
+                "y": 16.4,
+                "w": 14,
+                "h": 6.2
+              }
+            },
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "shape:1rog6671y1md1m"
+          },
+          {
+            "id": "player-sponsor-logo",
+            "kind": "image",
+            "name": "Player's sponsor logo",
+            "content": "{{playerSponsorLogo}}",
+            "geometry": {
+              "square": {
+                "x": 79.34,
+                "y": 83.83,
+                "w": 13.38,
+                "h": 4.09
+              },
+              "portrait": {
+                "x": 72.7,
+                "y": 85.12,
+                "w": 19.45,
+                "h": 4.76
+              },
+              "story": {
+                "x": 71,
+                "y": 89.19,
+                "w": 21,
+                "h": 3.61
+              },
+              "landscape": {
+                "x": 83.84,
+                "y": 18.01,
+                "w": 12.32,
+                "h": 2.99
+              }
+            },
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "image:1xf2upn05rrn76"
           }
         ]
       }

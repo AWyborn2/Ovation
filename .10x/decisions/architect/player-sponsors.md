@@ -125,3 +125,12 @@ playerId }).playerSponsors`, so the date window, order and fill-in rule are the 
    sponsorship starting today went live at 8 am. Drafts made before slice 3 have no
    `subject_player_id`: `scripts/sql/backfill-draft-subject-player.sql` sets it on open
    player-centred drafts from their `/players/<id>` link, as the sweep does (idempotent).
+
+9. **Player-sponsor logo on the classic looks (28 Oct 2026, Ash)** — the Club Kit Classic,
+   Broadcast Classic and Clubhouse player cards (milestone, century, fiveFor, debut, player,
+   newSigning, bigMoment) had only the "presented by" name, so a player's sponsor showed as text.
+   Each now has a white logo tile (`player-sponsor-panel` + `player-sponsor-logo`,
+   `showWhen: { field: "playerSponsorLogo" }`): under the header chip on Club Kit Classic, above
+   the footer on the right for the other two, and a slimmer tile under the header where Big
+   Moment text runs full width. Absent when the card's player has no sponsor. Bundles at
+   version 3, so the fit check reruns on sync.
