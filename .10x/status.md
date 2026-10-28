@@ -7,7 +7,7 @@
 
 **Delivered to `main` on 27 Oct 2026:** player-sponsors (#563, #567–#570, #573, #574), photo-focus-areas slices 1–4 (#549–#554), Studio editor items (#533, #537, #551, #555, #556, #560, #561), template library release 2 (R2-A to R2-E: #558, #565, #564, #566, #572), honours kiosk (#532, #546, #548, #559). Test checklist: `docs/testing/2026-10-27-checklist.html` (#575).
 
-**Dev (Replit "OVATION APP", 28 Oct):** pulled through #585 (`ae26021`) and restarted; the draft backfill set 11 rows on tenant 1; #588 (v4 classic templates) to pull next. Migrations through 0074 confirmed applied. Old ledger mismatches on 0053 / 0056 / 0057 (schema present), left as is.
+**Dev (Replit "OVATION APP", 28 Oct):** pulled through #585 (`ae26021`) and restarted; the draft backfill set 11 rows on tenant 1; #588 (v4 classic templates) to pull next. Migrations: every one in Git through 0075 (`0075_photo_focus_suggested`) applied; the latest ledger hash matches, none pending (Replit agent, 28 Oct). Old ledger mismatches on 0053 / 0056 / 0057 (schema present), left as is.
 
 **In progress:**
 
