@@ -30,6 +30,7 @@ const V2 = v2Document(KIND);
 const tenants: number[] = [];
 let lookId = 0;
 let templateId = 0;
+const extraTemplates: number[] = [];
 
 async function tenant(n: number): Promise<number> {
   const [t] = await db
@@ -45,7 +46,7 @@ async function tenant(n: number): Promise<number> {
   return t!.id;
 }
 
-async function copy(tenantId: number, edited = false) {
+async function copy(tenantId: number, edited = false, originTemplateId = templateId) {
   const [row] = await db
     .insert(cardTemplatesTable)
     .values({
@@ -56,7 +57,7 @@ async function copy(tenantId: number, edited = false) {
       cardKinds: [KIND],
       adjustments: V1,
       version: 3,
-      originTemplateId: templateId,
+      originTemplateId,
       originVersion: 1,
       editedAt: edited ? new Date() : null,
     })
@@ -130,10 +131,11 @@ beforeAll(async () => {
 afterAll(async () => {
   await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenants));
   await db.delete(cardTemplatesTable).where(inArray(cardTemplatesTable.tenantId, tenants));
+  const libraryIds = [templateId, ...extraTemplates];
   await db
     .delete(libraryTemplateVersionsTable)
-    .where(eq(libraryTemplateVersionsTable.templateId, templateId));
-  await db.delete(libraryTemplatesTable).where(eq(libraryTemplatesTable.id, templateId));
+    .where(inArray(libraryTemplateVersionsTable.templateId, libraryIds));
+  await db.delete(libraryTemplatesTable).where(inArray(libraryTemplatesTable.id, libraryIds));
   await db.delete(templateLooksTable).where(eq(templateLooksTable.id, lookId));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, tenants));
 });
@@ -193,5 +195,43 @@ describe("unedited copies follow a passed library version", () => {
 
     // Already current: running again changes nothing.
     expect(await followLibraryUpdates([templateId])).toEqual({ copies: 0, drafts: 0 });
+  });
+
+  it("leaves copies of a template another club published on 'Update available'", async () => {
+    const club = await tenant(3);
+    const [t] = await db
+      .insert(libraryTemplatesTable)
+      .values({
+        slug: `follow-club-${STAMP}/${KIND}`,
+        lookId,
+        kind: KIND,
+        name: "Club-published milestone",
+        origin: "club",
+        currentVersion: 2,
+        listed: true,
+      })
+      .returning();
+    extraTemplates.push(t!.id);
+    await db.insert(libraryTemplateVersionsTable).values([
+      {
+        templateId: t!.id,
+        version: 1,
+        document: V1,
+        coverage: documentCoverage(V1, KIND),
+        fitStatus: "pass",
+      },
+      {
+        templateId: t!.id,
+        version: 2,
+        document: V2,
+        coverage: documentCoverage(V2, KIND),
+        fitStatus: "pass",
+      },
+    ]);
+    const theirs = await copy(club, false, t!.id);
+    expect(await followLibraryUpdates([t!.id])).toEqual({ copies: 0, drafts: 0 });
+    const kept = await readCopy(theirs.id);
+    expect(kept.originVersion).toBe(1);
+    expect(kept.adjustments).toEqual(V1);
   });
 });

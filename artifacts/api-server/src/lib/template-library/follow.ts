@@ -4,7 +4,10 @@
  * from gets a newer version that has passed its fit check, the copy takes it
  * by itself, as "Take update" would. So do the club's queued cards drawn from
  * that copy, unless their design was edited by hand. A copy with the club's
- * own changes (`edited_at`) never changes here.
+ * own changes (`edited_at`) never changes here. Only Ovation's own templates
+ * (`origin = 'bundle'`) are followed: a template another club published still
+ * offers "Update available", so its author's changes never reach a club's
+ * cards unasked.
  */
 import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import {
@@ -47,6 +50,7 @@ export async function followLibraryUpdates(
     )
     .where(
       and(
+        eq(libraryTemplatesTable.origin, "bundle"),
         eq(libraryTemplateVersionsTable.fitStatus, "pass"),
         templateIds ? inArray(libraryTemplatesTable.id, [...templateIds]) : undefined,
       ),
