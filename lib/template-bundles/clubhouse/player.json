@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse player",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -699,7 +699,12 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:17qeevt1qmgdfs"
+            "sig": "text:0ddf4mm0v7og5f",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "player-2",

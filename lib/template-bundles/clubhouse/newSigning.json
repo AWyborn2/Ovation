@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse new signing",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -717,7 +717,12 @@
               }
             },
             "sizes": ["portrait", "story"],
-            "sig": "text:0avby241nizgd3"
+            "sig": "text:17bqnq90jw3vnu",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "name-3",

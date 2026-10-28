@@ -1,6 +1,6 @@
 {
   "name": "Club Kit milestone",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1688,7 +1688,12 @@
               }
             },
             "sizes": ["square", "portrait", "story"],
-            "sig": "text:1h14hg41gaxak1"
+            "sig": "text:0oyvp1v0hxufvm",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "label-2",

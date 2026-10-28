@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse milestone",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -765,7 +765,12 @@
               }
             },
             "sizes": ["square"],
-            "sig": "text:1cica4q0jhggp5"
+            "sig": "text:0k8so8n0cvw1gc",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "label-2",
@@ -795,7 +800,12 @@
               }
             },
             "sizes": ["portrait", "story"],
-            "sig": "text:0xaylbt1tsxy7y"
+            "sig": "text:1fy1uqc085vogz",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "label-3",
@@ -843,7 +853,12 @@
               }
             },
             "sizes": ["square"],
-            "sig": "text:1dns1zh0tzh2gq"
+            "sig": "text:18xhfg01fysqqf",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "player-2",
@@ -873,7 +888,12 @@
               }
             },
             "sizes": ["portrait", "story"],
-            "sig": "text:1jvzwke1ir2mk9"
+            "sig": "text:0uhfirr1u3beo0",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "id": "player-3",
