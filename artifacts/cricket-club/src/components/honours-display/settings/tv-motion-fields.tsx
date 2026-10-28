@@ -6,6 +6,7 @@ import type {
   KioskTransition,
   ResolvedKioskLook,
 } from "@workspace/scorecard/kiosk-display";
+import { KIOSK_DENSE_COLUMNS } from "@workspace/scorecard/kiosk-display";
 import { Input } from "@/components/ui/input";
 
 /**
@@ -134,6 +135,15 @@ export function TvMotionFields({
           testId={`${idPrefix}-columns`}
         />
       )}
+      {maxColumns > 1 &&
+        Math.min(value.columnsPerScreen ?? defaults.columnsPerScreen, maxColumns) >=
+          KIOSK_DENSE_COLUMNS && (
+          <p className="text-[11px] text-muted-foreground" data-testid={`${idPrefix}-dense-hint`}>
+            {KIOSK_DENSE_COLUMNS} or more columns use the compact style: tighter spacing, initial
+            and surname for long names, and shorter grade headings. Check it reads from across the
+            clubroom.
+          </p>
+        )}
       {move === "pages" && (
         <ChoiceField
           label="Rows per page"

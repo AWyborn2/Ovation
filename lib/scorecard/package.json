@@ -16,7 +16,9 @@
     "./card-names": "./src/card-names.ts",
     "./card-content": "./src/card-content/index.ts",
     "./pack-capture": "./src/pack-capture.ts",
-    "./kiosk-display": "./src/kiosk-display.ts"
+    "./kiosk-display": "./src/kiosk-display.ts",
+    "./photo-focus": "./src/photo-focus.ts",
+    "./card-sponsors": "./src/card-sponsors.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

@@ -261,10 +261,15 @@ export async function buildMatchDayPhotos(
 }
 
 /** The library photo ids a draft shows: a carousel's slide photos, or its own photo. */
-function draftPhotoRefs(draft: Pick<SocialDraftRow, "cardInput" | "photoUrl">) {
+/** What a draft's photo usage reads: its photo, carousel slides and sourced layer photos. */
+type DraftPhotos = Pick<SocialDraftRow, "cardInput" | "photoUrl"> &
+  Partial<Pick<SocialDraftRow, "layerPhotos">>;
+
+function draftPhotoRefs(draft: DraftPhotos) {
   const ids = new Set<number>();
   const urls = new Set<string>();
   if (draft.photoUrl) urls.add(draft.photoUrl);
+  for (const p of Object.values(draft.layerPhotos ?? {})) if (p?.url) urls.add(p.url);
   const carousel = readQueuedCarousel(draft.cardInput);
   for (const s of carousel?.slides ?? []) {
     const id = s.photoId ?? s.input.juniorStockPhotoId;
@@ -283,7 +288,7 @@ const STORAGE_PREFIX = "/api/storage";
  * the same draft again records nothing new.
  */
 export async function recordPhotoUsage(
-  draft: Pick<SocialDraftRow, "id" | "tenantId" | "cardInput" | "photoUrl">,
+  draft: Pick<SocialDraftRow, "id" | "tenantId"> & DraftPhotos,
 ): Promise<number> {
   const { ids, urls } = draftPhotoRefs(draft);
   const paths = urls.flatMap((u) =>
@@ -317,7 +322,7 @@ export async function recordPhotoUsage(
  * is merely less fresh).
  */
 export async function notePhotoUsage(
-  draft: Pick<SocialDraftRow, "id" | "tenantId" | "cardInput" | "photoUrl">,
+  draft: Pick<SocialDraftRow, "id" | "tenantId"> & DraftPhotos,
 ): Promise<void> {
   try {
     await recordPhotoUsage(draft);

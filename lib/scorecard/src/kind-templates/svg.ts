@@ -109,6 +109,14 @@ export function isColourTokenName(name: string): boolean {
   );
 }
 
+/** Whether a page background is one a card can draw: a hex colour, or a colour token. */
+export function isPageBackground(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value)) return true;
+  const token = /^var\(\s*(--[\w-]+)\s*\)$/.exec(value)?.[1];
+  return !!token && isColourTokenName(token);
+}
+
 function checkValue(errors: string[], element: string, name: string, value: string): void {
   const at = `<${element}> ${name}`;
   if (!SAFE_VALUE.test(value)) {

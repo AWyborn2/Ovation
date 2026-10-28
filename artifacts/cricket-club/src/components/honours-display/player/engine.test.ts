@@ -5,11 +5,20 @@ import type { DisplayBoard } from "../types";
 import {
   boardColumnHeadings,
   columnGroupLabel,
+  compactBoard,
+  compactHeading,
+  compactName,
   sliceBoardColumns,
   splitColumnGroups,
 } from "./column-groups";
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
-import { creditsDurationMs, findFitScale, FIT_MIN_SCALE } from "./movement";
+import {
+  creditsDurationMs,
+  findFitScale,
+  fitToBody,
+  overflowsBody,
+  FIT_MIN_SCALE,
+} from "./movement";
 import { pickTransition, RANDOM_TRANSITIONS, transitionSpec } from "./transitions";
 import { buildRotation, slideshowPass } from "./rotation";
 
@@ -125,6 +134,40 @@ describe("pages", () => {
     expect(rowsThatFit(plaques, 600)).toBe(1);
     // A row taller than the screen still gets a page of its own.
     expect(rowsThatFit([{ top: 0, bottom: 900 }], 600)).toBe(1);
+  });
+
+  it("scales a page down when one row of plaques is taller than the body", () => {
+    // Five plaques across, each 900px tall at full size, in a 600px body:
+    // one row per page, and that page is fitted rather than clipped.
+    const plaques = [0, 0.4, 0, 0.2, 0].map((top) => ({ top, bottom: top + 900 }));
+    expect(rowsThatFit(plaques, 600)).toBe(1);
+    let scale = 1;
+    const body = {
+      clientHeight: 600,
+      get scrollHeight() {
+        return 900 * scale;
+      },
+    };
+    const inner = { style: { setProperty: (_: string, v: string) => void (scale = Number(v)) } };
+    expect(overflowsBody(body)).toBe(true);
+    const fit = fitToBody({ body, inner }, 1);
+    expect(fit.scale).toBeLessThanOrEqual(600 / 900);
+    expect(fit.scale).toBeGreaterThan(600 / 900 - 0.05); // the largest that fits
+    expect(scale).toBe(fit.scale); // left applied to the page
+    expect(overflowsBody(body)).toBe(false);
+  });
+
+  it("leaves a page that already fits at its size", () => {
+    const set: string[] = [];
+    const fit = fitToBody(
+      {
+        body: { clientHeight: 600, scrollHeight: 580 },
+        inner: { style: { setProperty: (_, v) => void set.push(v) } },
+      },
+      1.18,
+    );
+    expect(fit).toEqual({ scale: 1.18, readable: true });
+    expect(set.at(-1)).toBe("1.18");
   });
 });
 
@@ -281,14 +324,112 @@ describe("photo slideshow passes", () => {
 
   it("works down the newest photos pass by pass, wrapping round", () => {
     expect(urls(slideshowPass(item("newest", 2), 0))).toEqual(["a", "b"]);
-    expect(urls(slideshowPass(item("newest", 2), 1))).toEqual(["c", "d"]);
-    expect(urls(slideshowPass(item("newest", 2), 2))).toEqual(["e", "a"]);
+    expect(urls(slideshowPass(item("newest", 2), 2))).toEqual(["c", "d"]);
+    expect(urls(slideshowPass(item("newest", 2), 4))).toEqual(["e", "a"]);
+    // An interlude shows one photo, carrying on from where the slideshow got to.
+    expect(urls(slideshowPass({ ...item("newest", 2), interlude: true }, 3))).toEqual(["d"]);
     expect(urls(slideshowPass(item("newest", 9), 0))).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("places an interlude after every N boards from a slideshow that has photos", () => {
+    const look = resolveClubLook({});
+    const slideshow = (id: string, interludeEvery: number | null) => ({
+      ...item("random", 5).slideshow,
+      id,
+      interludeEvery,
+    });
+    const items = buildRotation({
+      boards: ["a", "b", "c", "d", "e"].map((id) => ({ ...list(1), id, title: id })),
+      settings: {
+        kioskSequence: [],
+        boardConfigs: {},
+        kioskSponsorSlideEvery: 3,
+        kioskSponsorSlideStyle: "grid",
+      },
+      look,
+      sponsors: [],
+      ads: [],
+      slideshows: [
+        slideshow("photos:x", 2),
+        slideshow("photos:empty", 1),
+        slideshow("photos:off", null),
+      ],
+      slideshowPhotos: { "photos:x": photos, "photos:off": photos },
+      sponsorSlides: false,
+    });
+    expect(
+      items.map((i) =>
+        i.kind === "board" ? i.board.id : i.kind === "photos" && i.interlude ? "+" : "?",
+      ),
+    ).toEqual(["a", "b", "+", "c", "d", "+", "e"]);
   });
 
   it("picks a random set without repeats", () => {
     const pick = urls(slideshowPass(item("random", 3), 0, () => 0));
     expect(pick).toHaveLength(3);
     expect(new Set(pick).size).toBe(3);
+  });
+});
+
+describe("dense screens (up to 10 columns)", () => {
+  it("shortens long names to initial and surname, keeping short ones and non-names", () => {
+    expect(compactName("Jonathan Prendergast")).toBe("J. Prendergast");
+    expect(compactName("Johan van der Merwe")).toBe("J. van der Merwe");
+    expect(compactName("Sam Lee")).toBe("Sam Lee");
+    expect(compactName("Featherstonehaugh")).toBe("Featherstonehaugh");
+    expect(compactName("—")).toBe("—");
+  });
+
+  it("writes ordinal grade headings as numerals", () => {
+    expect(compactHeading("First Grade")).toBe("1st Grade");
+    expect(compactHeading("Women's Second Grade")).toBe("Women's 2nd Grade");
+    expect(compactHeading("Under 17")).toBe("Under 17");
+  });
+
+  it("compacts a grid's headings and names, and a composite's columns after Season", () => {
+    const g = compactBoard({
+      ...grid(["First Grade"], 1),
+      grid: {
+        rowHeading: "Season",
+        columnHeadings: ["First Grade"],
+        rows: [{ heading: "2024/25", cells: [{ entries: [{ text: "Jonathan Prendergast" }] }] }],
+      },
+    });
+    expect(g.grid!.columnHeadings).toEqual(["1st Grade"]);
+    expect(g.grid!.rows[0]!.cells[0]!.entries[0]!.text).toBe("J. Prendergast");
+    expect(g.grid!.rows[0]!.heading).toBe("2024/25");
+
+    const c = compactBoard({
+      ...list(0, "columns"),
+      columns: [
+        { heading: "Season", entries: [{ primaryText: "2024/25 Season Long", season: "" }] },
+        {
+          heading: "Third Grade",
+          entries: [{ primaryText: "Christopher Vandenberg", season: "" }],
+        },
+      ],
+    });
+    expect(c.columns!.map((col) => col.heading)).toEqual(["Season", "3rd Grade"]);
+    expect(c.columns![0]!.entries[0]!.primaryText).toBe("2024/25 Season Long");
+    expect(c.columns![1]!.entries[0]!.primaryText).toBe("C. Vandenberg");
+  });
+
+  it("puts ten grades on one screen when the board asks for 10", () => {
+    const look = resolveClubLook({});
+    const items = buildRotation({
+      boards: [grid(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], 2)],
+      settings: {
+        kioskSequence: [],
+        boardConfigs: { champions: { columnsPerScreen: 10 } },
+        kioskSponsorSlideEvery: 3,
+        kioskSponsorSlideStyle: "grid",
+      },
+      look,
+      sponsors: [],
+      ads: [],
+      sponsorSlides: false,
+    });
+    const item = items[0]!;
+    expect(item.kind === "board" && item.groups).toEqual([{ start: 0, count: 10 }]);
   });
 });

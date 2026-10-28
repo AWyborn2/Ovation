@@ -17,9 +17,19 @@
 import { contentFields, KIND_FIELDS, type KindField, type KindFieldCatalogue } from "./fields";
 import type { PageKey } from "./format";
 import { kindHasPage, primaryPage, templateKindFor } from "./pages";
+import { PLAYER_SPONSOR_KINDS } from "../card-sponsors";
 
 /** A token a page can bind, with the ADR-010 content field that shows it, if any. */
-export type PageToken = { key: string; label: string; content?: string };
+export type PageToken = {
+  key: string;
+  label: string;
+  content?: string;
+  /** The group the editor lists it under (the card's own fields have none). */
+  group?: TokenGroup;
+};
+
+/** Groups of shared labels, beside a card's own fields. */
+export type TokenGroup = "club" | "match" | "opposition";
 export type PageImageToken = PageToken & { type: "photo" | "logo" };
 export type PageRepeat = {
   key: string;
@@ -65,12 +75,19 @@ export const PHOTO_TOKEN = "photo";
 
 /** The club's identity on every page: its name, tagline, initials and hashtag. */
 const CLUB_IDENTITY: PageToken[] = [
-  { key: "clubName", label: "Club name" },
-  { key: "clubTagline", label: "Club tagline" },
-  { key: "clubMonogram", label: "Club monogram (no crest)" },
-  { key: "clubHashtag", label: "Club hashtag" },
-  { key: "hashtags", label: "Hashtag footer" },
+  { key: "clubName", label: "Club name", group: "club" },
+  { key: "clubTagline", label: "Club tagline", group: "club" },
+  { key: "clubMonogram", label: "Club monogram (no crest)", group: "club" },
+  { key: "clubHashtag", label: "Club hashtag", group: "club" },
+  { key: "hashtags", label: "Hashtag footer", group: "club" },
 ];
+
+/** Club-wide labels every card fills (the overlay), whichever kind it is. */
+const CLUB_KEYS = new Set([
+  ...CLUB_IDENTITY.map((f) => f.key),
+  "sponsorPresentedBy",
+  "hashtagsExtra",
+]);
 
 const CLUB_LOGO: PageImageToken = { key: "clubLogo", label: "Club logo", type: "logo" };
 
@@ -255,7 +272,23 @@ const PERFORMANCE_LISTS: PageRepeat[] = [
 ];
 
 /** Tokens `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
+/**
+ * Player sponsors: on a card about one player, that player's first and second
+ * sponsor, empty when they have none (`cardSponsors` in card-sponsors.ts).
+ */
+const PLAYER_SPONSOR_FIELD_TOKENS: PageToken[] = [
+  { key: "playerSponsorName", label: "Player's sponsor" },
+  { key: "playerSponsor2Name", label: "Player's second sponsor" },
+];
+const PLAYER_SPONSOR_IMAGE_TOKENS: PageImageToken[] = [
+  { key: "playerSponsorLogo", label: "Player's sponsor logo", type: "logo" },
+  { key: "playerSponsor2Logo", label: "Player's second sponsor logo", type: "logo" },
+];
+const playerSponsorExtras = <T>(tokens: T[]): Record<string, T[]> =>
+  Object.fromEntries([...PLAYER_SPONSOR_KINDS].map((k) => [k, tokens]));
+
 const SINGLE_PAGE_EXTRA_FIELDS: Record<string, PageToken[]> = {
+  ...playerSponsorExtras(PLAYER_SPONSOR_FIELD_TOKENS),
   matchDay: [{ key: "opposition.monogram", label: "Opposition monogram (no crest)" }],
   matchSummary: [
     { key: "club.monogram", label: "Club side monogram (no crest)" },
@@ -273,6 +306,7 @@ const SINGLE_PAGE_EXTRA_FIELDS: Record<string, PageToken[]> = {
 
 /** Images `bindInput` produces on a single-card page that `KIND_FIELDS` doesn't list. */
 const SINGLE_PAGE_EXTRA_IMAGES: Record<string, PageImageToken[]> = {
+  ...playerSponsorExtras(PLAYER_SPONSOR_IMAGE_TOKENS),
   matchSummary: [
     { key: "innings1.logo", label: "Innings 1 team logo", type: "logo", content: "result.scores" },
     { key: "innings2.logo", label: "Innings 2 team logo", type: "logo", content: "result.scores" },
@@ -312,6 +346,78 @@ const SINGLE_PAGE_EXTRA_REPEATS: Record<string, PageRepeat[]> = {
   matchSummary: [...INNINGS_REPEATS(1), ...INNINGS_REPEATS(2), ...PERFORMANCE_LISTS],
 };
 
+/**
+ * The opposition on a card that names one (a feat's opponent, a team list's):
+ * its short name, initials and crest, from the club's card names.
+ */
+const OPPOSITION_FIELDS: PageToken[] = [
+  { key: "opposition.name", label: "Opposition name", group: "opposition" },
+  { key: "opposition.monogram", label: "Opposition monogram (no crest)", group: "opposition" },
+];
+const OPPOSITION_LOGO: PageImageToken = {
+  key: "opposition.logo",
+  label: "Opposition logo",
+  type: "logo",
+  group: "opposition",
+};
+
+/** Kinds that name an opponent: their cards get the opposition's labels. */
+const OPPONENT_KINDS = new Set(["debut", "century", "fiveFor", "bigMoment", "teamList"]);
+
+/**
+ * Kinds whose card carries its match (`match`, central drafts): their cards
+ * get every match label a result card has, under the same keys.
+ */
+export const MATCH_CONTEXT_KINDS = new Set([
+  "milestone",
+  "debut",
+  "century",
+  "fiveFor",
+  "bigMoment",
+]);
+
+const strip = <T extends PageToken>({ content: _c, ...t }: T): Omit<T, "content"> => t;
+
+/** A match label's group: the opposition's own, else the match's. */
+const matchGroup = (key: string): TokenGroup =>
+  key.startsWith("opposition.") ? "opposition" : "match";
+
+/** The result card's match labels, without its content fields (they are its own). */
+function matchContext(): Omit<PageTokenCatalogue, "kind" | "page"> {
+  const result = KIND_FIELDS.matchSummary;
+  const fields = [...result.fields, ...SINGLE_PAGE_EXTRA_FIELDS.matchSummary!]
+    .filter((f) => !CLUB_KEYS.has(f.key) && !f.key.endsWith("Display"))
+    .map((f) => ({ ...strip(f), group: matchGroup(f.key) }));
+  const images = [...result.images, ...SINGLE_PAGE_EXTRA_IMAGES.matchSummary!]
+    .filter((i) => i.key !== "clubLogo" && i.key !== "photo")
+    .map((i) => ({ ...strip(i as PageImageToken), group: matchGroup(i.key) }));
+  const repeats = SINGLE_PAGE_EXTRA_REPEATS.matchSummary!.map(({ content: _c, ...r }) => ({
+    ...r,
+    fields: r.fields.map((f) => strip(f)),
+  }));
+  return { fields: dedupe(fields), images: dedupe(images), repeats };
+}
+
+const dedupe = <T extends { key: string }>(list: T[]): T[] =>
+  list.filter((x, i) => list.findIndex((y) => y.key === x.key) === i);
+
+/** Fields a list row gets beyond what the packs print: each row's crests and initials. */
+const EXTRA_ROW_FIELDS: Record<string, Record<string, PageToken[]>> = {
+  roundFixtures: {
+    fixtures: [
+      { key: "monogram", label: "Opposition monogram" },
+      { key: "crest", label: "Opposition crest" },
+    ],
+  },
+  resultsSummary: {
+    results: [
+      { key: "clubCrest", label: "Club crest" },
+      { key: "oppCrest", label: "Opposition crest" },
+      { key: "oppMonogram", label: "Opposition monogram" },
+    ],
+  },
+};
+
 /** Content fields of each team-list row field. */
 const PLAYER_ROW_CONTENT: Record<string, string> = {
   number: "team.players",
@@ -328,14 +434,30 @@ const withContent = (fields: KindField[], map: Record<string, string> | undefine
 /** A single-card page: the kind's `KIND_FIELDS`, with content fields on the content kinds. */
 function singlePage(kind: string, page: PageKey, cat: KindFieldCatalogue): PageTokenCatalogue {
   const map = SINGLE_PAGE_CONTENT[kind];
-  const fields = withContent(cat.fields, map);
-  for (const extra of SINGLE_PAGE_EXTRA_FIELDS[kind] ?? []) {
+  const fields: PageToken[] = withContent(cat.fields, map).map((f) =>
+    CLUB_KEYS.has(f.key) ? { ...f, group: "club" } : f,
+  );
+  const match = MATCH_CONTEXT_KINDS.has(kind) ? matchContext() : null;
+  const extraFields = [
+    ...(SINGLE_PAGE_EXTRA_FIELDS[kind] ?? []),
+    ...(OPPONENT_KINDS.has(kind) ? OPPOSITION_FIELDS : []),
+    ...(match?.fields ?? []),
+  ];
+  for (const extra of extraFields) {
     if (!fields.some((f) => f.key === extra.key))
       fields.push(map?.[extra.key] ? { ...extra, content: map[extra.key] } : { ...extra });
   }
-  const images = cat.images.map((i) => (map?.[i.key] ? { ...i, content: map[i.key] } : { ...i }));
-  for (const extra of SINGLE_PAGE_EXTRA_IMAGES[kind] ?? [])
+  const images: PageImageToken[] = cat.images.map((i) =>
+    map?.[i.key] ? { ...i, content: map[i.key] } : { ...i },
+  );
+  const extraImages = [
+    ...(SINGLE_PAGE_EXTRA_IMAGES[kind] ?? []),
+    ...(OPPONENT_KINDS.has(kind) ? [OPPOSITION_LOGO] : []),
+    ...(match?.images ?? []),
+  ];
+  for (const extra of extraImages)
     if (!images.some((i) => i.key === extra.key)) images.push({ ...extra });
+  const extraRows = EXTRA_ROW_FIELDS[kind] ?? {};
   return {
     kind,
     page,
@@ -349,10 +471,13 @@ function singlePage(kind: string, page: PageKey, cat: KindFieldCatalogue): PageT
         fields:
           kind === "teamList" && r.key === "players"
             ? withContent(r.fields, PLAYER_ROW_CONTENT)
-            : r.fields.map((f) => ({ ...f })),
+            : [...r.fields, ...(extraRows[r.key] ?? [])].map((f) => ({ ...f })),
         ...(kind === "teamList" && r.key === "players" ? { content: "team.players" } : {}),
       })),
       ...(SINGLE_PAGE_EXTRA_REPEATS[kind] ?? []).map((r) => structuredClone(r)),
+      ...(match?.repeats ?? [])
+        .filter((r) => !cat.repeats.some((c) => c.key === r.key))
+        .map((r) => structuredClone(r)),
     ],
   };
 }

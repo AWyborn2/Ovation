@@ -4,6 +4,7 @@ import {
   KIOSK_LOOK_DEFAULTS,
   resolveClubLook,
   resolveKioskDisplay,
+  KIOSK_MAX_COLUMNS,
   type KioskBoardShape,
 } from "./kiosk-display";
 
@@ -60,7 +61,7 @@ describe("resolveClubLook", () => {
       perPage: -3,
       pageSecs: 999,
       hold: Number.NaN,
-      columnsPerScreen: 9,
+      columnsPerScreen: 14,
     } as unknown as KioskLook;
     expect(resolveClubLook({ ...LEGACY_CLUB, kioskLook })).toMatchObject({
       move: KIOSK_LOOK_DEFAULTS.move,
@@ -69,7 +70,7 @@ describe("resolveClubLook", () => {
       perPage: 0,
       pageSecs: 60,
       hold: 3, // NaN look value → legacy end hold
-      columnsPerScreen: 5,
+      columnsPerScreen: 10,
     });
   });
 });
@@ -173,6 +174,28 @@ describe("resolveKioskDisplay: new settings", () => {
     expect(resolveKioskDisplay(grid(2), {}, look).columnsPerScreen).toBe(2);
     expect(resolveKioskDisplay(grid(2), { columnsPerScreen: 5 }, look).columnsPerScreen).toBe(2);
     expect(resolveKioskDisplay(grid(8), { columnsPerScreen: 5 }, look).columnsPerScreen).toBe(5);
+  });
+
+  it("lets season grids and composite columns show up to 10 on one screen", () => {
+    expect(KIOSK_MAX_COLUMNS).toBe(10);
+    expect(resolveKioskDisplay(grid(12), { columnsPerScreen: 10 }, look).columnsPerScreen).toBe(10);
+    // Stored values past the range clamp to it.
+    expect(resolveKioskDisplay(grid(12), { columnsPerScreen: 14 }, look).columnsPerScreen).toBe(10);
+    const composite: KioskBoardShape = { layout: "columns", columns: Array(9).fill({}) };
+    expect(resolveKioskDisplay(composite, { columnsPerScreen: 9 }, look).columnsPerScreen).toBe(9);
+    // The club default can be 10 too, for every season grid.
+    const wide = resolveClubLook({ ...LEGACY_CLUB, kioskLook: { columnsPerScreen: 10 } });
+    expect(resolveKioskDisplay(grid(10), {}, wide).columnsPerScreen).toBe(10);
+    // Layouts whose cells hold several lines keep their own caps.
+    expect(
+      resolveKioskDisplay({ layout: "premiership" }, { columnsPerScreen: 10 }, look)
+        .columnsPerScreen,
+    ).toBe(5);
+    expect(
+      resolveKioskDisplay({ layout: "recordPanels" }, { columnsPerScreen: 10 }, look)
+        .columnsPerScreen,
+    ).toBe(5);
+    expect(resolveKioskDisplay(list, { columnsPerScreen: 10 }, look).columnsPerScreen).toBe(3);
   });
 
   it("uses composite column boards' column count the same way", () => {

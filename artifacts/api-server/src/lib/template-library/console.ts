@@ -9,10 +9,15 @@
  * rules and the library asset policy) and sent to the fit job. A template is
  * listed only when its current version passed a real fit check, which draws
  * every page, size and preset; one recorded while no fit job ran doesn't count.
+ *
+ * Release 2 (ADR-012, R2-C): clubs report club templates. The console lists
+ * a template's open reports, and Ovation unlists it (which resolves them),
+ * lists it again, or keeps it and dismisses them, as for elements.
  */
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import {
   db,
+  libraryTemplateReportsTable,
   libraryTemplatesTable,
   libraryTemplateVersionsTable,
   templateLooksTable,
@@ -38,7 +43,16 @@ export type ConsoleTemplateView = LibraryTemplateView & {
   unlistedBy: "author" | "ovation" | null;
   unlistReason: string | null;
   updatedAt: string;
+  /** Clubs' reports Ovation hasn't dealt with yet. */
+  openReports: number;
 };
+
+/** Open reports per template, as a correlated count. */
+const openReports = sql<number>`(
+  select count(*)::int from ${libraryTemplateReportsTable}
+  where ${libraryTemplateReportsTable.templateId} = ${libraryTemplatesTable.id}
+    and ${libraryTemplateReportsTable.resolvedAt} is null
+)`;
 
 const columns = {
   id: libraryTemplatesTable.id,
@@ -59,6 +73,7 @@ const columns = {
   fitStatus: libraryTemplateVersionsTable.fitStatus,
   fitReport: libraryTemplateVersionsTable.fitReport,
   document: libraryTemplateVersionsTable.document,
+  openReports,
 };
 
 function consoleQuery() {
@@ -100,10 +115,17 @@ function present(row: Row): ConsoleTemplateView {
     unlistedBy: row.unlistedBy,
     unlistReason: row.unlistReason,
     updatedAt: row.updatedAt.toISOString(),
+    openReports: Number(row.openReports),
   };
 }
 
-export type ConsoleListQuery = { kind?: string; origin?: TemplateOrigin; listed?: boolean };
+export type ConsoleListQuery = {
+  kind?: string;
+  origin?: TemplateOrigin;
+  listed?: boolean;
+  /** Only templates with an open report. */
+  reported?: boolean;
+};
 
 /** Every library template (listed or not), by kind then id. */
 export async function listConsoleTemplates(q: ConsoleListQuery): Promise<ConsoleTemplateView[]> {
@@ -111,6 +133,7 @@ export async function listConsoleTemplates(q: ConsoleListQuery): Promise<Console
   if (q.kind) where.push(eq(libraryTemplatesTable.kind, q.kind));
   if (q.origin) where.push(eq(libraryTemplatesTable.origin, q.origin));
   if (q.listed !== undefined) where.push(eq(libraryTemplatesTable.listed, q.listed));
+  if (q.reported) where.push(sql`${openReports} > 0`);
   const rows = await consoleQuery()
     .where(where.length ? and(...where) : undefined)
     .orderBy(asc(libraryTemplatesTable.kind), asc(libraryTemplatesTable.id))
@@ -307,6 +330,12 @@ export async function listTemplate(id: number): Promise<ConsoleTemplateView> {
         : "This version failed the layout check. Fix it and save a new version first.",
     });
   }
+  // A club took its own template out; only it lists it again (by publishing).
+  if (t.origin === "club" && t.unlistedBy === "author") {
+    throw new TemplateLibraryError(409, {
+      error: "Its club unlisted this template. The club lists it again by publishing it.",
+    });
+  }
   // Boot sync lists a bundle template from its file; the console can only undo its own unlisting.
   if (t.readOnly && (t.unlistedBy !== "ovation" || bundleFileUnlists(t.slug))) {
     throw new TemplateLibraryError(409, {
@@ -331,7 +360,8 @@ export async function listTemplate(id: number): Promise<ConsoleTemplateView> {
 
 /**
  * Take a template out of the library. Clubs' copies keep their documents and
- * still see updates. An Ovation unlisting of a bundle template survives boot sync.
+ * still see updates. An Ovation unlisting of a bundle template survives boot
+ * sync. Its open reports are dealt with.
  */
 export async function unlistTemplate(
   id: number,
@@ -352,7 +382,60 @@ export async function unlistTemplate(
       updatedAt: new Date(),
     })
     .where(eq(libraryTemplatesTable.id, id));
+  await resolveOpenReports(id);
   return getConsoleTemplate(id);
+}
+
+const resolveOpenReports = (id: number) =>
+  db
+    .update(libraryTemplateReportsTable)
+    .set({ resolvedAt: new Date() })
+    .where(
+      and(
+        eq(libraryTemplateReportsTable.templateId, id),
+        isNull(libraryTemplateReportsTable.resolvedAt),
+      ),
+    );
+
+export type LibraryTemplateReportView = {
+  id: number;
+  clubName: string;
+  reason: string;
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
+/** A template's reports, open first, newest first, with the club that sent each. */
+export async function listTemplateReports(id: number): Promise<LibraryTemplateReportView[]> {
+  await getConsoleTemplate(id);
+  const rows = await db
+    .select({
+      id: libraryTemplateReportsTable.id,
+      clubName: tenantsTable.name,
+      reason: libraryTemplateReportsTable.reason,
+      createdAt: libraryTemplateReportsTable.createdAt,
+      resolvedAt: libraryTemplateReportsTable.resolvedAt,
+    })
+    .from(libraryTemplateReportsTable)
+    .innerJoin(tenantsTable, eq(tenantsTable.id, libraryTemplateReportsTable.tenantId))
+    .where(eq(libraryTemplateReportsTable.templateId, id))
+    .orderBy(
+      sql`${libraryTemplateReportsTable.resolvedAt} is not null`,
+      desc(libraryTemplateReportsTable.createdAt),
+    );
+  return rows.map((r) => ({
+    id: r.id,
+    clubName: r.clubName,
+    reason: r.reason,
+    createdAt: r.createdAt.toISOString(),
+    resolvedAt: r.resolvedAt?.toISOString() ?? null,
+  }));
+}
+
+/** The reports were looked at and the template stays. */
+export async function dismissTemplateReports(id: number): Promise<void> {
+  await getConsoleTemplate(id);
+  await resolveOpenReports(id);
 }
 
 export type ConsoleLookView = {

@@ -19,9 +19,10 @@ import {
 import { env } from "../config";
 import { ensureSettings } from "./social-cards-helpers";
 import { getTenantBrand } from "./tenant-brand";
+import { cardSponsors } from "@workspace/scorecard/card-sponsors";
 import { loadActiveSponsors } from "./active-sponsors";
 import { renderCardStill } from "./card-video-renderer";
-import { resolveDraftPack } from "./draft-enrich";
+import { isAutoPhoto, resolveDraftPack } from "./draft-enrich";
 import { loadCardNames } from "./card-content/names";
 import {
   readQueuedCarousel,
@@ -101,9 +102,6 @@ export const serialisedRender = serialised;
 export function serialisedFitCheck<T>(job: () => Promise<T>): Promise<T> {
   return enqueue(fitLane, job);
 }
-
-const sponsorApplies = (cardKinds: string[] | null | undefined, kind: string) =>
-  !cardKinds || cardKinds.length === 0 || cardKinds.includes(kind);
 
 export type RenderedSlide = {
   size: CardSize;
@@ -228,6 +226,13 @@ export async function renderDraftSlides(
   );
 
   const sponsorsOn = settings.sponsorsEnabled;
+  // The same rule the Studio preview uses: a team list's own sponsor, and on a
+  // card about one player that player's sponsors (player sponsors).
+  const strip = cardSponsors(sponsors, {
+    kind,
+    grade: typeof input.grade === "string" ? input.grade : null,
+    playerId: junior ? null : draft.subjectPlayerId,
+  });
   const shortName = brand.shortName;
   // The same tenant payload the Studio preview passes (lib/pack-card-data.ts):
   // without it the pack's sample literals would render instead of the club.
@@ -243,17 +248,25 @@ export async function renderDraftSlides(
       juniorsColour: brand.juniorsColour ?? null,
     },
     hashtag: settings.clubHashtag || (shortName ? `#${shortName.replace(/\s+/g, "")}` : ""),
-    sponsors: sponsorsOn
-      ? sponsors
-          .filter((s) => sponsorApplies(s.cardKinds, kind))
-          // The presenting (headline) sponsor's logo leads the strip.
-          .sort((a, b) => Number(!!b.isPresenting) - Number(!!a.isPresenting))
-          .map((s) => ({ name: s.name, logoUrl: s.logoUrl }))
-      : [],
-    presentingSponsorName: sponsorsOn ? (sponsors.find((s) => s.isPresenting)?.name ?? null) : null,
+    sponsors: sponsorsOn ? strip.sponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })) : [],
+    presentingSponsorName: sponsorsOn ? strip.presentingName : null,
+    // The player's own sponsors → the `{{playerSponsor…}}` template fields.
+    ...(sponsorsOn && strip.playerSponsors.length
+      ? {
+          playerSponsors: strip.playerSponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
+        }
+      : {}),
     // A junior card shows a photo only behind the engines' positive marker: a junior
     // player's own photo the family allows (ADR-007). Nothing else reaches it.
     photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,
+    // The photo's focus box (photo focus areas): frames crop to it.
+    ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+    // Sourced photo layers' own photos (photo layer sources): senior cards
+    // only, and only while the draft's photo is automatic (an admin's pick
+    // shows on every photo layer).
+    ...(!junior && draft.layerPhotos && isAutoPhoto(draft.photoSource)
+      ? { layerPhotos: draft.layerPhotos }
+      : {}),
     photoPlacement: "contained",
     ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
     ...(Object.keys(names).length ? { names } : {}),

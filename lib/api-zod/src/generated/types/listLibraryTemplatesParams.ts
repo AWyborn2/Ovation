@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListLibraryTemplatesSize } from './listLibraryTemplatesSize';
+import type { ListLibraryTemplatesSort } from './listLibraryTemplatesSort';
 
 export type ListLibraryTemplatesParams = {
 /**
@@ -19,6 +20,19 @@ size?: ListLibraryTemplatesSize;
  * A look's slug.
  */
 look?: string;
+/**
+ * Style tags (comma-separated); a template must carry every one (release 2).
+ * @maxLength 200
+ */
+tags?: string;
+/**
+ * popular (most clubs using it), new (newest listed), ovation (Ovation's first) or club (club-made first). Default: the library's own order.
+ */
+sort?: ListLibraryTemplatesSort;
+/**
+ * Only this club's favourites (release 2).
+ */
+favourites?: boolean;
 /**
  * The previous page's `nextCursor`.
  */

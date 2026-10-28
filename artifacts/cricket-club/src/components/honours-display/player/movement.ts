@@ -21,6 +21,32 @@ export function findFitScale(
   return { scale, readable: scale >= FIT_READABLE_SCALE };
 }
 
+/** The parts of the board body and its inner element that fitting touches. */
+export interface FitTarget {
+  body: { scrollHeight: number; clientHeight: number };
+  inner: { style: { setProperty(name: string, value: string): void } };
+}
+
+/**
+ * Scale the body's inner element (`--hb-kp-scale`) down from `start` until it
+ * no longer overflows the body. Used by "fit to screen", and by pages when a
+ * single row (a row of plaques) is taller than the screen, so it shrinks
+ * rather than being clipped.
+ */
+export function fitToBody({ body, inner }: FitTarget, start: number) {
+  const result = findFitScale((sc) => {
+    inner.style.setProperty("--hb-kp-scale", String(sc));
+    return !overflowsBody(body);
+  }, start);
+  inner.style.setProperty("--hb-kp-scale", String(result.scale));
+  return result;
+}
+
+/** Whether the body's content is taller than the body (it would be clipped). */
+export function overflowsBody(body: FitTarget["body"]): boolean {
+  return body.scrollHeight > body.clientHeight + 1;
+}
+
 /**
  * Credits roll length for `distancePx` of overflow at `speedPxPerSec`. Speed is
  * set for a 1280px-wide screen and scales with the screen, so a roll takes the

@@ -6,8 +6,11 @@
 
 import {
   isDocumentV2,
+  isPageBackground,
   kindFields,
+  normaliseDocument,
   pageForInput,
+  primaryPage,
   type PageKey,
 } from "@workspace/scorecard/kind-templates";
 import { isSetKind, planCardSet } from "../card-sets/plan";
@@ -276,13 +279,18 @@ export function renderPackCard(
               : null)),
         // The photo placement sliders (the share dialog, a queued draft's photo).
         photoTransform: data?.photoTransform ?? null,
+        // The draft photo's focus box: only for the photo it was taken from.
+        photoFocus: !withholdPhotos && data?.photoUrl ? (data.photoFocus ?? null) : null,
+        // Sourced photo layers' own photos: senior cards only (photo layer sources).
+        layerPhotos: junior ? null : (data?.layerPhotos ?? null),
         images: layerImages(withData.images, input.kind, withholdPhotos),
         kind: input.kind,
         page,
         match: cardMatchColours(input, tokens, data?.brand),
       },
     );
-    return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
+    const background = pageBackgroundStyle(adj, input.kind, page);
+    return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}${background}">${layers}</div>`;
   }
   const template = resolveTemplate(input, packId);
   if (!template) return "";
@@ -428,7 +436,38 @@ export function packFieldValues(
   if (data) applyPackData(bound, data, input.kind);
   // A kind the reference pack has no design for (a Club Kit-only kind) still
   // binds its own data on the blank base — with no sample defaults to fill in.
-  return template ? { ...fieldDefaults(template), ...bound.values } : bound.values;
+  const values = template ? { ...fieldDefaults(template), ...bound.values } : bound.values;
+  // The template editor's sample text for fields this card kind has no value
+  // for (a match data block on a team list design), so it can be seen.
+  if (data?.sampleValues)
+    for (const [key, value] of Object.entries(data.sampleValues))
+      if (!values[key]) values[key] = value;
+  return values;
+}
+
+/**
+ * The page's own background colour, as extra root styles (`;background:…;color:…`),
+ * or "" for a page on the club's stage colour. Text with no colour of its own
+ * reads dark on a light page and light on a dark one.
+ */
+export function pageBackgroundStyle(adj: unknown, kind: string, page?: PageKey): string {
+  if (!isDocumentV2(adj)) return "";
+  const background = normaliseDocument(adj, kind).pages[page ?? primaryPage(kind)]?.background;
+  if (!isPageBackground(background)) return "";
+  return `;background:${background};color:${pageInk(background)}`;
+}
+
+/** The text colour that reads on a page background: dark on light, light on dark. */
+export function pageInk(background: string): string {
+  if (background.startsWith("var(")) {
+    // The club colour has its own contrasting ink; the panels and stage are dark.
+    return background.includes("--gold") ? "var(--accent-ink, #111111)" : "#FFFFFF";
+  }
+  let hex = background.slice(1);
+  if (hex.length === 3) hex = hex.replace(/./g, (c) => c + c);
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const lum = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  return lum > 0.6 ? "#16181C" : "#FFFFFF";
 }
 
 /** Wrap a rendered square card in a 1200×630 frame, scaled and centred. */

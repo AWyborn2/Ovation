@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { db, capRegisterTable, socialDraftsTable } from "@workspace/db";
 import type { CentralAchievement } from "@workspace/db/central-queries";
+import { loadMatchContexts } from "./achievement-match";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
 import { draftKeys, findDraftByKey, upsertDraftByKey, type PlayerKeyRef } from "./draft-upsert";
 import {
@@ -54,6 +55,8 @@ export type AchievementDraft = {
   grade: string;
   /** The match's season (start year), for the player's shirt number (KTD11). */
   season: number;
+  /** The central match it happened in (its result card is the card's `match`). */
+  matchId: number;
   cardInput: Record<string, unknown>;
 };
 
@@ -89,6 +92,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "century",
             playerName,
@@ -108,6 +112,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "fiveFor",
             playerName,
@@ -128,6 +133,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "debut",
             playerName,
@@ -147,6 +153,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "bigMoment",
             momentLabel: "HAT-TRICK",
@@ -166,6 +173,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "bigMoment",
             momentLabel: `${a.catches} CATCHES`,
@@ -184,6 +192,7 @@ export function buildAchievementDrafts(
           playerId,
           grade: a.grade,
           season: a.season,
+          matchId: a.matchId,
           cardInput: {
             kind: "milestone",
             playerName,
@@ -243,6 +252,12 @@ export async function draftCentralAchievements(
     },
   );
 
+  // Each card carries its match as the result card holds it, so a template
+  // can print both scores, the result, the venue and both crests (card labels).
+  const matches = await loadMatchContexts(tenantId, clubId, [
+    ...new Set(drafts.map((d) => d.matchId)),
+  ]);
+
   for (const d of drafts) {
     // Fire-once: a card the club dismissed is never drafted again.
     if (!(await findDraftByKey(tenantId, d.sourceKey)) && (await wasDismissed(tenantId, d))) {
@@ -254,7 +269,7 @@ export async function draftCentralAchievements(
       engine: "milestone",
       family: "achievements",
       sourceKey: d.sourceKey,
-      cardInput: d.cardInput,
+      cardInput: withMatch(d.cardInput, matches.get(d.matchId)),
       appPath: playerPath(d.playerId),
       playerId: d.playerId,
       season: d.season,
@@ -298,4 +313,21 @@ async function loadCaps(tenantId: number): Promise<Map<string, number>> {
       ),
     );
   return new Map(rows.map((r) => [`${r.category}|${r.playerId}`, r.capNumber]));
+}
+
+/** The keys of a result card's input that belong to that card, not its match. */
+const NOT_MATCH = new Set(["kind", "photoUrl", "headline", "junior", "carouselDetail"]);
+
+/**
+ * An achievement card's input with its match: the match's result card input,
+ * without the result card's own photo, headline and kind. No match leaves the
+ * card as it was.
+ */
+export function withMatch(
+  cardInput: Record<string, unknown>,
+  resultInput: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!resultInput) return cardInput;
+  const match = Object.fromEntries(Object.entries(resultInput).filter(([k]) => !NOT_MATCH.has(k)));
+  return { ...cardInput, match };
 }

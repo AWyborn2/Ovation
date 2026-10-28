@@ -1026,6 +1026,12 @@
   --hb12-rule: rgba(216, 178, 94, 0.35);
   --hb-bg: #1a0f07;
   --hb-board-bg: #301d10;
+  /* The timber plate, shared with the kiosk photo-background panel. */
+  --hb12-board-bg:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 23px),
+    linear-gradient(180deg, var(--hb12-timber-2), var(--hb12-timber-1) 60%, var(--hb12-timber-3));
+  --hb-kp-panel-bg: var(--hb12-board-bg);
   --hb-board-border: var(--hb12-gold-lo);
   --hb-shadow: none;
   --hb-radius: 4px;
@@ -1047,10 +1053,7 @@
 }
 .skin-p12 .hb-board {
   border: 0;
-  background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 23px),
-    linear-gradient(180deg, var(--hb12-timber-2), var(--hb12-timber-1) 60%, var(--hb12-timber-3));
+  background: var(--hb12-board-bg);
   box-shadow:
     inset 0 0 0 0.6cqw #1a0f07,
     inset 0 0 0 0.75cqw var(--hb12-gold-lo),
@@ -1423,6 +1426,56 @@
   background: transparent !important;
   box-shadow: none !important;
 }
+/* Kiosk photo background (kiosk-photo-rotation P2). The photo fills the screen
+   behind the board, blurred; the board's own panel is redrawn over it at the
+   dim strength (never under 72%), so the text keeps the contrast its skin was
+   designed for. During a page turn the incoming layer drops both, like its
+   board background above. */
+.hb-kp-photobg {
+  position: relative;
+}
+.hb-kp-photobg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(4px) saturate(0.9);
+  transform: scale(1.04);
+  z-index: 0;
+}
+.hb-kp-photobg > :not(.hb-kp-photobg-img) {
+  position: relative;
+  z-index: 1;
+}
+.hb-kp-photobg {
+  --hb-kp-dim: 0.82;
+}
+.hb-kp-photobg[data-dim="light"] {
+  --hb-kp-dim: 0.72;
+}
+.hb-kp-photobg[data-dim="strong"] {
+  --hb-kp-dim: 0.9;
+}
+.hb-kiosk .hb-kp-photobg .hb-board {
+  background: transparent !important;
+  position: relative;
+  isolation: isolate;
+}
+.hb-kiosk .hb-kp-photobg .hb-board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--hb-kp-panel-bg, var(--hb-board-bg));
+  opacity: var(--hb-kp-dim);
+  pointer-events: none;
+}
+.hb-kp-paging .hb-kp-photobg-img,
+.hb-kp-paging .hb-kp-photobg .hb-board::before {
+  display: none;
+}
 /* Wipe transition: the gold rule that sweeps across. */
 .hb-kp-wipe {
   position: absolute;
@@ -1460,6 +1513,50 @@
 .hb-kiosk .hb-grid-note {
   display: block;
   margin-left: 0;
+}
+/* Dense screens: seven to ten columns across (season grids and composite
+   columns). Tighter cells, a narrower season column and smaller, less
+   spaced type; headings may wrap to two lines rather than clip. The player
+   also shortens long names to initial and surname, and ordinal grade
+   headings to numerals. */
+.hb-kiosk .hb-kp-board[data-dense] {
+  --hb-season-w: max(5.6cqw, 72px);
+}
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-table th,
+.hb-kiosk .hb-kp-board[data-dense] .hb-col-head {
+  padding: 0.5cqw 0.45cqw;
+  font-size: max(0.85cqw, 11px);
+  letter-spacing: 0.04em;
+  white-space: normal;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-table td,
+.hb-kiosk .hb-kp-board[data-dense] .hb-cell {
+  padding: 0.45cqw;
+  font-size: max(1.15cqw, 13px);
+}
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-grid-table th,
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-col-head,
+.hb-kiosk.skin-p12 .hb-kp-board[data-dense] .hb-grid-table th {
+  font-size: 0.85cqw;
+  letter-spacing: 0.06em;
+}
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-grid-table td,
+.hb-kiosk .skin-p12 .hb-kp-board[data-dense] .hb-cell,
+.hb-kiosk.skin-p12 .hb-kp-board[data-dense] .hb-grid-table td {
+  font-size: 1.22cqw;
+}
+/* An honour board never clips a name: on a dense screen a long name wraps
+   (at its spaces, hyphenating only a single over-long word) instead of
+   ending in an ellipsis. */
+.hb-kiosk .hb-kp-board[data-dense] .hb-grid-name,
+.hb-kiosk .hb-kp-board[data-dense] .hb-cell .hb-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  hyphens: auto;
+  line-height: 1.12;
 }
 /* A season-aligned composite board: a narrow Season column like the grid's
    (the template sets equal columns inline, hence the !important). */
@@ -1555,14 +1652,31 @@
   background: var(--hb-board-bg);
 }
 
-/* Kiosk premiership layout tweak (clubroom TV): stack each premiership squad
-   as a single column (one player per line) instead of wrapping into two. The
-   number of plaques across is the board's columns-per-screen setting. */
+/* Premiership plaques on the clubroom TV: the squad runs down two columns, so
+   a full XI (plus 12th man) fits a 1080p screen at five plaques across. The
+   number of plaques across is the board's columns-per-screen setting; plaques
+   in a row share the row's height. A name too long for its column wraps
+   rather than being cut off. */
 .hb-kiosk .hb-squad {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 4px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--hb-squad-rows, 6), auto);
+  gap: 0.25cqw 0.6cqw;
+  align-items: start;
+  align-content: start;
+}
+.hb-kiosk .hb-squad-name {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+/* The engraved names are sized for one column; in two they are set a touch
+   smaller and tighter so a long surname still sits on one line at five
+   plaques across. */
+.hb-kiosk .skin-p12 .hb-squad-name,
+.hb-kiosk.skin-p12 .hb-squad-name {
+  font-size: 0.88cqw;
+  letter-spacing: 0.02em;
 }
 
 .hb-kexit {
@@ -1766,6 +1880,9 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+.hb-photo-slide[data-frame="fill"] .hb-photo-slide-img {
+  object-fit: cover;
 }
 .hb-photo-slide-crest {
   position: absolute;

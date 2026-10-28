@@ -228,7 +228,7 @@ export function pickJuniorCardPhoto(
  */
 export function juniorPhotoFields(pick: JuniorPhoto | null): {
   cardInput: Record<string, unknown>;
-  photo: { url: string; source: PhotoSource } | null;
+  photo: { url: string; source: PhotoSource; participantId?: string } | null;
 } {
   if (!pick) return { cardInput: { photoUrl: null }, photo: null };
   return {
@@ -237,7 +237,8 @@ export function juniorPhotoFields(pick: JuniorPhoto | null): {
       featuredParticipantId: pick.participantId,
       juniorPhotoAllowed: true,
     },
-    photo: { url: pick.url, source: JUNIOR_PHOTO_SOURCE },
+    // The featured child, so the draft crops to their area (photo focus areas).
+    photo: { url: pick.url, source: JUNIOR_PHOTO_SOURCE, participantId: pick.participantId },
   };
 }
 

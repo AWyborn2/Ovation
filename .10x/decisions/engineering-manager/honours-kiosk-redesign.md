@@ -62,18 +62,40 @@ harness and a dev deploy; test on the real clubroom TV browser (performance risk
 | D2   | Photo slideshow rotation item + settings + player screen (preload, skip on error, captions, crest)                                                                                 | M    |
 | D3   | Junior source: kiosk-token path on the gated junior image route, fail-closed consent filter (depends on the junior library stream)                                                 | M    |
 
-**As built (26 Oct 2026):**
+**As built (26–27 Oct 2026):**
 
-- Sources are all photos, recent (last N days), this season, photo types (the library's type
-  folders) and grades; order is random (a fresh pick each pass) or newest (working down the list
-  pass by pass). Hand-picked photos and a "manual" order are not built yet.
-- The server sends at most 60 photos per slideshow, newest first. Senior: the club's own library,
-  without junior stock artwork or background-removed cut-outs. Junior: only photos with at least
-  one tagged child where every tagged child may be shown (`loadJuniorPhotoConsent`, fail closed).
+- Sources: all photos, recent (last N days), this season, photo types, grades, library folders
+  (the library's grade / type view, including Club-wide and Unsorted) and hand-picked photos
+  from either library. Order: random (a fresh pick each pass), newest, or "as picked" (manual)
+  for hand-picked photos. Framing: fill the screen (cropped, the default) or the whole photo
+  over a blurred fill. Cross-fade on or off. One-click "Recent moments" (last 21 days, both
+  libraries, random).
+- Photo interludes (P1): a slideshow can also show one photo after every N boards, whether or
+  not the slideshow itself is in the rotation.
+- Board photo backgrounds (P2): a board can take its background from a slideshow. The photo
+  fills the screen behind the board, blurred, and the board's own panel is redrawn over it at
+  72%, 82% or 90% (no lighter option: the contrast guard). The board takes the slideshow's next
+  photo each time it comes round. Stored in `board_configs.photoBackground`.
+- The server sends at most 60 photos per slideshow. Senior: the club's own library, without
+  junior stock artwork or background-removed cut-outs. Junior: only photos with at least one
+  tagged child where every tagged child may be shown (`loadJuniorPhotoConsent`, fail closed),
+  hand-picked ones included.
 - D3 needed no kiosk-token path: `/juniors/photos/:id` already serves anyone while the photo
   passes the consent rule (and 404s, `no-store`, the moment it doesn't), so the TV loads junior
   images without an admin session and a withdrawal takes effect at the next image load.
-- Migration `0068_kiosk_photo_slideshows.sql`.
+- Migration `0068_kiosk_photo_slideshows.sql` (later options live in the same jsonb).
+
+**Smart photo framing (27 Oct 2026, Ash: photos were cut off):** the slideshow default is now
+"Smart". It crops a photo to fill the screen only when nothing important is cut: its focus box
+(photo focus areas) fits a 16:9 crop, or, with no box, the photo is within 8% of the screen's
+shape. Otherwise it shows the whole photo over a blurred fill. "Always fill" aims its crop at the
+focus box; a photo with wide crops switched off always shows whole.
+
+**Up to 10 columns (27 Oct 2026, Ash):** season grids and composite column boards can show up to
+10 columns on one screen (club default or per board); plaques and record panels stay at 5, life
+members and lists at 3. From 7 columns a screen uses a dense style: tighter cells, smaller type,
+long names as initial and surname (wrapping rather than clipping), and ordinal grade headings as
+numerals ("1st Grade"). The settings screen warns from 7 to check readability on the TV.
 
 ## Parallel stream: junior photo library (est. 5–8 days, own branch → `main`)
 
@@ -82,6 +104,38 @@ PRs to `main` on green (it is an admin juniors feature, not on the TV). Per
 `decisions/architect/kiosk-photo-rotation.md`: senior-parity columns on `junior_photos`,
 `junior_photo_participants` join + backfill, `juniorLibraryPhotoAllowed`, Juniors admin library
 UI reusing the senior components. D3 waits for it.
+
+## Status (27 Oct 2026): everything built and on `main`
+
+Checked against the code on `main` after #546 merged. Each item is present and covered by tests.
+
+| Item                       | Where it lives                                                                          | PR(s)                 |
+| -------------------------- | --------------------------------------------------------------------------------------- | --------------------- |
+| A0 harness                 | `src/dev/kiosk-fixture.ts`, route `/__kiosk-fixture`                                    | Milestone A PRs       |
+| A1 settings model          | `kiosk_look`, `KioskMotionJson`, `resolveKioskDisplay` + legacy mapping                 | Milestone A PRs       |
+| A2 player engine           | `components/honours-display/player/*` (movement, transitions, groups, rotation)         | Milestone A PRs       |
+| A3 Classic timber          | built-in skin `p12`                                                                     | Milestone A PRs, #532 |
+| A4 season grid             | grid layout on the new engine, column groups                                            | Milestone A PRs       |
+| B1–B4 settings screen      | tabs Rotation · Look · Sponsors & ads · TV link; builder; per-board panel; preview      | Milestone B PRs, #531 |
+| C1 leaderboards            | `honour-display/records.ts` `LEADERBOARDS`                                              | #534                  |
+| C2 achievements            | centuries, five-fors, hat-tricks (`hat_tricks`, migration 0067)                         | #535                  |
+| C3 record panels           | grade records per grade                                                                 | #536                  |
+| C4 partnerships            | `central/partnerships.ts`, records tables                                               | #538                  |
+| C5 plaques                 | grand-final link + picker; plaque fit fix                                               | #539, #532            |
+| C6 office bearers          | Office Bearers season grid                                                              | #539                  |
+| D1–D3 photo slideshows     | slideshows (migration 0068), TV screen, junior consent                                  | #540                  |
+| Photo plan P0 rest, P1, P2 | hand-picked, folders, manual order, Recent moments, interludes, board photo backgrounds | #546                  |
+| Up to 10 columns           | dense season grids                                                                      | #548                  |
+
+**Still for Ash (needs a person and the real TV):** the milestone checks. Test on the clubroom TV's
+browser (transition and credits performance, readability at 10 columns from across the room) and
+spot-check figures against Halls Head's records. The production migrations below must be run by
+hand before the republish.
+
+**Production SQL, in order** (each idempotent; run in Replit's Production SQL runner before
+republishing): `0065_kiosk_look`, `0066_library_element_textures` (textures stream),
+`0067_hat_tricks`, `0068_kiosk_photo_slideshows`, `0069_library_element_icons` (icons stream).
+Verified 27 Oct 2026: all apply on a fresh database and each re-runs without error.
 
 ## Risks
 

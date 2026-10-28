@@ -1,4 +1,5 @@
 import type { LayerDocument } from "@workspace/scorecard/kind-templates";
+import type { PackCardData } from "@/lib/pack-render";
 import type { MotionPreset, ShareCardInput } from "@/lib/share-card";
 import type { Platform } from "@/lib/captions";
 
@@ -19,6 +20,11 @@ export type Props = {
    */
   playerId?: number | null;
   /**
+   * The one player the card is about (a draft's `subjectPlayerId`): that
+   * player's sponsors replace the club strip (player sponsors).
+   */
+  sponsorPlayerId?: number | null;
+  /**
    * The match a result card is about. Gives the card the club library photo the
    * social queue would pick for it, and lets admins swap in another library photo.
    */
@@ -28,6 +34,13 @@ export type Props = {
    * player's profile photo), so the preview matches the draft's post pack.
    */
   photoUrl?: string | null;
+  /**
+   * The draft photo's focus box and size (photo focus areas). Frames crop to it
+   * while that photo shows and the sliders are untouched.
+   */
+  photoFocus?: PackCardData["photoFocus"];
+  /** A draft's sourced photo layers' photos, shown while its own photo is. */
+  layerPhotos?: PackCardData["layerPhotos"];
   /**
    * A queued draft's own pack (the one its post pack renders in), ahead of the
    * club's pack for the kind. A layout picked in the modal still wins.

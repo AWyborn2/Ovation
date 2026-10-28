@@ -38,10 +38,11 @@ import {
   withGroundPhoto,
   buildPackData,
   tenantHashtag,
-  kindSponsors,
-  presentingSponsorName,
+  cardSponsorData,
   shortClubName,
 } from "@/lib/pack-card-data";
+import { PLAYER_SPONSOR_KINDS } from "@/lib/share-card/sponsor-limit";
+import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
 import type { CardKind, CardSize, MatchSummaryTeam } from "@/lib/share-card";
 
@@ -88,6 +89,9 @@ export default function AdminSocialCreate() {
   // The template this one card is drawn with (ADR-011): the kind's default,
   // preselected, or any of the club's or the library's. The default stays.
   const [picked, setPicked] = useState<PickedTemplate | null>(null);
+  // The player a player card is about (player sponsors): their sponsors
+  // replace the club strip in the preview and on the draft it makes.
+  const [player, setPlayer] = useState<SelectedPlayer | null>(null);
 
   const juniorCapable = JUNIOR_CAPABLE.has(kind);
 
@@ -120,6 +124,9 @@ export default function AdminSocialCreate() {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
 
   const isJunior = junior && juniorCapable;
+  // Only a senior player card follows a player's sponsors.
+  const playerCard = PLAYER_SPONSOR_KINDS.has(kind) && !isJunior;
+  const sponsorPlayerId = playerCard ? (player?.id ?? null) : null;
 
   // Preview through whichever pack the tenant has made default for this kind,
   // so the composer shows the design the export will actually produce.
@@ -148,12 +155,12 @@ export default function AdminSocialCreate() {
       buildPackData({
         brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, kind, sponsorsOn),
-        presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
+        // The club strip, a team's own sponsor, or the card's player's sponsors.
+        ...cardSponsorData(bundle, input, sponsorsOn, sponsorPlayerId),
         packColourModes: bundle?.settings.packColourModes,
         names: bundle?.cardNames,
       }),
-    [bundle, brand, kind, sponsorsOn],
+    [bundle, brand, input, sponsorsOn, sponsorPlayerId],
   );
 
   return (
@@ -187,6 +194,15 @@ export default function AdminSocialCreate() {
               <Label className="text-sm">Junior (brown palette)</Label>
             </div>
           )}
+          {playerCard && (
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Player (optional)</Label>
+              <PlayerTypeahead value={player} onChange={setPlayer} placeholder="Search players" />
+              <p className="text-xs text-muted-foreground">
+                The card carries this player&rsquo;s sponsors instead of the club strip.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -208,7 +224,7 @@ export default function AdminSocialCreate() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Editor + prefill */}
         <div className="space-y-6">
-          <PrefillPanel kind={kind} onApply={patchState} />
+          <PrefillPanel kind={kind} onApply={patchState} onPlayer={setPlayer} />
           <Card>
             <CardHeader>
               <CardTitle>Card details</CardTitle>
@@ -293,7 +309,12 @@ export default function AdminSocialCreate() {
               </Button>
             </CardContent>
           </Card>
-          <EditorStarters input={input} packId={previewPackId} templateRef={picked?.ref ?? null} />
+          <EditorStarters
+            input={input}
+            packId={previewPackId}
+            templateRef={picked?.ref ?? null}
+            subjectPlayerId={sponsorPlayerId}
+          />
         </div>
       </div>
 
@@ -303,6 +324,7 @@ export default function AdminSocialCreate() {
         input={input}
         engine="ondemand"
         playerId={null}
+        sponsorPlayerId={sponsorPlayerId}
       />
     </div>
   );

@@ -204,6 +204,16 @@ export const env = {
    */
   FIGMA_ACCESS_TOKEN: () => optional("FIGMA_ACCESS_TOKEN"),
 
+  // ── Template library: Figma for clubs (ADR-012, R2-E) ────────────────────
+  /**
+   * Ovation's Figma OAuth app (scopes `current_user:read` and
+   * `file_content:read`). Unset = Sign in with Figma is hidden and clubs paste
+   * a personal access token instead. The callback Figma must know is
+   * `<SOCIAL_PUBLIC_ORIGIN>/api/figma/oauth/callback`.
+   */
+  FIGMA_CLIENT_ID: () => optional("FIGMA_CLIENT_ID"),
+  FIGMA_CLIENT_SECRET: () => optional("FIGMA_CLIENT_SECRET"),
+
   // ── Template library: AI designer (ADR-011 §8) ───────────────────────────
   /**
    * Claude API key for the platform console's AI designer tool. Unset = the
@@ -255,6 +265,8 @@ const BootSchema = z
       .url()
       .refine((v) => v.startsWith("https://"), "must be an https:// origin")
       .optional(),
+    FIGMA_CLIENT_ID: z.string().optional(),
+    FIGMA_CLIENT_SECRET: z.string().optional(),
   })
   .superRefine((cfg, ctx) => {
     if (cfg.NODE_ENV === "production" && !cfg.SESSION_SECRET) {
@@ -263,6 +275,18 @@ const BootSchema = z
         path: ["SESSION_SECRET"],
         message: "is required in production",
       });
+    }
+    // Sign in with Figma needs the secret to swap codes and a key to seal tokens.
+    if (cfg.FIGMA_CLIENT_ID) {
+      for (const key of ["FIGMA_CLIENT_SECRET", "SOCIAL_TOKEN_KEY"] as const) {
+        if (!cfg[key]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: "is required when FIGMA_CLIENT_ID is set",
+          });
+        }
+      }
     }
     // Meta publishing fails closed (KTD2): switched on means every piece it
     // needs is present, or the server refuses to start.

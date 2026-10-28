@@ -484,6 +484,48 @@
       "when": 1792997319341,
       "tag": "0068_kiosk_photo_slideshows",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793000252098,
+      "tag": "0069_library_element_icons",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1793056408832,
+      "tag": "0070_photo_focus_areas",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793061736068,
+      "tag": "0071_photo_collections",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793067004790,
+      "tag": "0072_template_library_release_2",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793069374574,
+      "tag": "0073_club_uploads",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793078005247,
+      "tag": "0074_player_sponsors",
+      "breakpoints": true
     }
   ]
 }

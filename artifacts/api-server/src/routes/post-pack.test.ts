@@ -17,6 +17,8 @@ import {
   socialSettingsTable,
   captionTemplatesTable,
   cardTemplatesTable,
+  sponsorsTable,
+  sponsorPlayersTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
@@ -89,6 +91,7 @@ afterAll(async () => {
   await db
     .delete(socialDraftsTable)
     .where(inArray(socialDraftsTable.tenantId, [tenantId, otherTenantId]));
+  await db.delete(sponsorsTable).where(eq(sponsorsTable.tenantId, tenantId));
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
@@ -342,5 +345,67 @@ describe("POST /social-drafts/:id/post-pack", () => {
   it("another tenant's draft is 404", async () => {
     const foreign = await draft({}, otherTenantId);
     expect((await post(foreign.id)).status).toBe(404);
+  });
+});
+
+describe("post pack sponsors (player sponsors, sponsor per team)", () => {
+  const sponsorNames = (o: Record<string, unknown>) =>
+    ((o.data as { sponsors: Array<{ name: string }> }).sponsors ?? []).map((s) => s.name);
+  const presented = (o: Record<string, unknown>) =>
+    (o.data as { presentingSponsorName: string | null }).presentingSponsorName;
+
+  beforeAll(async () => {
+    const rows = await db
+      .insert(sponsorsTable)
+      .values([
+        { tenantId, name: "Club Major", logoUrl: "/major.png", isPresenting: true },
+        { tenantId, name: "A Grade Co", logoUrl: "/a.png", grades: ["A Grade"] },
+        { tenantId, name: "Joe's Plumbing", logoUrl: "/joe.png" },
+      ])
+      .returning({ id: sponsorsTable.id });
+    await db
+      .insert(sponsorPlayersTable)
+      .values({ tenantId, sponsorId: rows[2].id, playerId: 42, playerName: "Sam Keeper" });
+  });
+
+  it("a player's card carries their sponsor and names it on the presented-by line", async () => {
+    const d = await draft({ subjectPlayerId: 42 });
+    renders.length = 0;
+    await post(d.id).expect(200);
+    expect(renders.length).toBeGreaterThan(0);
+    for (const r of renders) {
+      expect(sponsorNames(r.options)).toEqual(["Joe's Plumbing"]);
+      expect(presented(r.options)).toBe("Joe's Plumbing");
+      // The {{playerSponsor…}} fields' data.
+      expect((r.options.data as { playerSponsors?: unknown }).playerSponsors).toEqual([
+        { name: "Joe's Plumbing", logoUrl: "/joe.png" },
+      ]);
+    }
+  });
+
+  it("another player's card gets the club strip without the personal sponsor", async () => {
+    const d = await draft({ subjectPlayerId: 7 });
+    renders.length = 0;
+    await post(d.id).expect(200);
+    const names = sponsorNames(renders[0].options);
+    expect(names[0]).toBe("Club Major");
+    expect(names).not.toContain("Joe's Plumbing");
+    expect(presented(renders[0].options)).toBe("Club Major");
+    expect(renders[0].options.data).not.toHaveProperty("playerSponsors");
+  });
+
+  it("a team list carries its team's own sponsor, as the preview does", async () => {
+    const d = await draft({
+      engine: "teamlist",
+      cardInput: {
+        kind: "teamList",
+        grade: "A Grade",
+        players: [{ order: 1, surname: "KEEPER", role: "C/WK" }],
+      },
+      appPath: "",
+    });
+    renders.length = 0;
+    await post(d.id).expect(200);
+    expect(sponsorNames(renders[0].options)).toEqual(["A Grade Co"]);
   });
 });

@@ -117,6 +117,7 @@ import {
 } from "@/lib/pack-render";
 import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/lib/card-sets/plan";
 import {
+  isDocumentV2,
   isSetDocument,
   planTemplateSlides,
   type LayerDocument,
@@ -131,9 +132,9 @@ import { useBrand } from "@/lib/brand-context";
 import {
   withGroundPhoto,
   buildPackData,
-  kindSponsors,
+  draftLayerPhotos,
+  cardSponsorData,
   cardGrade,
-  presentingSponsorName,
   tenantHashtag,
 } from "@/lib/pack-card-data";
 import {
@@ -213,10 +214,12 @@ export default function AdminStudioEditor() {
   // editor (full draft editor plan, stage 1). Carousel sets have their own editor,
   // and drafts on the older packs keep this one.
   // A card made into pages (stage 2) edits in the set editor.
-  if (draft.templateVersion != null && setDraftLayout(draft) === "pages") {
+  // So does a blank design started as a page (a white page, Studio home).
+  const fullEditor = draft.templateVersion != null || isDocumentV2(draft.adjustments);
+  if (fullEditor && setDraftLayout(draft) === "pages") {
     return <Redirect to={`/admin/social/set/${draft.id}`} />;
   }
-  if (draft.templateVersion != null && !isSetDocument(draft.adjustments)) {
+  if (fullEditor && !isSetDocument(draft.adjustments)) {
     return (
       <DraftDesignEditor
         key={draft.id}
@@ -256,14 +259,31 @@ function EditorApp({ draftId }: { draftId: number }) {
       ...buildPackData({
         brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, input.kind, true, grade),
-        presentingSponsorName: presentingSponsorName(bundle, true),
+        // The club's strip, a team's own sponsor, or the card's player's sponsors.
+        ...cardSponsorData(bundle, { kind: input.kind, grade }, true, draft.subjectPlayerId),
         packColourModes: bundle?.settings.packColourModes,
         names: bundle?.cardNames,
       }),
       photoUrl: draft.photoUrl ?? undefined,
+      // The photo's focus box: frames the design hasn't positioned crop to it.
+      ...(draft.photoFocus ? { photoFocus: draft.photoFocus } : {}),
+      // Sourced photo layers' own photos, while the draft's photo is automatic.
+      layerPhotos: draftLayerPhotos({
+        photoSource: draft.photoSource,
+        layerPhotos: draft.layerPhotos,
+      }),
     }),
-    [bundle, brand, input.kind, grade, draft.photoUrl],
+    [
+      bundle,
+      brand,
+      input.kind,
+      grade,
+      draft.subjectPlayerId,
+      draft.photoUrl,
+      draft.photoFocus,
+      draft.photoSource,
+      draft.layerPhotos,
+    ],
   );
 
   const saved = (draft.adjustments ?? {}) as CardAdjustments;
@@ -581,7 +601,7 @@ function EditorApp({ draftId }: { draftId: number }) {
                 onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
               />
             )}
-            {panel === "uploads" && <UploadsPanel />}
+            {panel === "uploads" && <UploadsPanel size={format} onAdd={addFreeLayer} />}
             {panel === "live" && (
               <LiveStatsPanel
                 size={format}

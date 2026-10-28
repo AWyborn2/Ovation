@@ -19,8 +19,17 @@ import {
 import { syncElementBundles } from "./element-bundles";
 import { elementSaveErrors } from "./elements";
 
-/** Element files that aren't a look's: the image kits (CC BY 4.0, `public/library-assets/CREDITS.md`). */
-const IMAGE_KITS = new Set(["textures-kit", "seamless-patterns"]);
+/** Element files that aren't a look's: the free kits (`public/library-assets/CREDITS.md`), with their sizes. */
+const KITS: Record<string, number> = {
+  "textures-kit": 40,
+  "seamless-patterns": 40,
+  "hero-patterns": 87,
+  "tabler-icons": 52,
+  "phosphor-icons": 23,
+  "game-icons": 14,
+  coolshapes: 92,
+  "fluent-emoji": 20,
+};
 const WEB_PUBLIC = path.resolve(__dirname, "../../../../cricket-club/public");
 
 const STAMP = Date.now();
@@ -62,7 +71,7 @@ describe("the committed element files", () => {
     expect(ELEMENT_BUNDLES.length).toBeGreaterThanOrEqual(10);
     const slugs = new Set<string>();
     for (const b of ELEMENT_BUNDLES) {
-      expect(looks.has(b.look) || IMAGE_KITS.has(b.look)).toBe(true);
+      expect(looks.has(b.look) || b.look in KITS).toBe(true);
       expect(b.file.look).toBe(b.look);
       for (const e of b.file.elements) {
         expect(e.slug.startsWith(`${b.look}/${e.category}/`)).toBe(true);
@@ -79,12 +88,13 @@ describe("the committed element files", () => {
     expect(slugs.size).toBeGreaterThan(50);
   });
 
-  it("ship every texture and pattern they draw with the web app", () => {
-    const kits = ELEMENT_BUNDLES.filter((b) => IMAGE_KITS.has(b.look));
-    expect(kits.map((b) => b.file.elements.length)).toEqual([40, 40]);
+  it("hold every kit's elements, and ship every image they draw with the web app", () => {
+    const kits = ELEMENT_BUNDLES.filter((b) => b.look in KITS);
+    expect(Object.fromEntries(kits.map((b) => [b.look, b.file.elements.length]))).toEqual(KITS);
     for (const b of kits) {
       for (const e of b.file.elements) {
-        const layers = (e.document as { layers: Array<{ content?: string }> }).layers;
+        const layers = (e.document as { layers: Array<{ kind: string; content?: string }> }).layers;
+        if (layers[0]!.kind !== "image") continue;
         const src = layers[0]!.content!;
         expect(src.startsWith("/library-assets/")).toBe(true);
         expect({ src, exists: existsSync(path.join(WEB_PUBLIC, src)) }).toEqual({
@@ -150,7 +160,7 @@ describe("syncElementBundles", () => {
     const summary = await syncElementBundles(
       bundle([
         element("Gold rule", { tags: ["rule", "gold"] }),
-        element("Bad rule", { category: "stickers" }),
+        element("Bad rule", { category: "holograms" }),
         element("Remote rule", {
           document: {
             formatVersion: 2,

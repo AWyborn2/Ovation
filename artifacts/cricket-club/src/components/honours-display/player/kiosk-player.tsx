@@ -1,13 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { isListLikeLayout, type ResolvedKioskLook } from "@workspace/scorecard/kiosk-display";
+import {
+  isListLikeLayout,
+  KIOSK_DENSE_COLUMNS,
+  type ResolvedKioskLook,
+} from "@workspace/scorecard/kiosk-display";
 import type { KioskSlideshowPhoto, Sponsor } from "@workspace/api-client-react";
 import { BoardRenderer } from "../board-renderer";
 import { KioskChromeContext, type KioskChrome } from "../kiosk-chrome";
 import { AdSlide, SponsorSlide, SponsorSlideSingle } from "../sponsor-ads";
 import type { BoardDisplayConfig, DisplayBoard, HonourBrand, HonourSkin } from "../types";
-import { boardColumnHeadings, columnGroupLabel, sliceBoardColumns } from "./column-groups";
+import {
+  boardColumnHeadings,
+  columnGroupLabel,
+  compactBoard,
+  sliceBoardColumns,
+} from "./column-groups";
 import { boardRowCount, pageRanges, rowsThatFit, sliceBoardRows } from "./pages";
-import { creditsDurationMs, findFitScale } from "./movement";
+import { creditsDurationMs, fitToBody, overflowsBody } from "./movement";
 import {
   pickTransition,
   runTransition,
@@ -47,13 +56,24 @@ interface Screen {
   paging?: boolean;
   /** The photo a slideshow screen shows. */
   photo?: KioskSlideshowPhoto;
+  /** A board's photo background (P2) and its panel strength. */
+  backdrop?: { url: string; dim: string };
+  /** Seven or more columns on this screen: the dense grid style. */
+  dense?: boolean;
 }
 
 /** How long a slideshow waits for a photo before skipping it. */
 const PHOTO_LOAD_TIMEOUT_MS = 15_000;
 
+/** How long a board waits for its background photo before going without. */
+const BACKDROP_LOAD_TIMEOUT_MS = 4_000;
+
 /** Load an image ahead of showing it; false when it fails or takes too long. */
-function preloadImage(url: string, signal: AbortSignal): Promise<boolean> {
+function preloadImage(
+  url: string,
+  signal: AbortSignal,
+  timeoutMs = PHOTO_LOAD_TIMEOUT_MS,
+): Promise<boolean> {
   return new Promise((resolve) => {
     if (signal.aborted || typeof Image === "undefined") return resolve(false);
     const img = new Image();
@@ -64,7 +84,7 @@ function preloadImage(url: string, signal: AbortSignal): Promise<boolean> {
       resolve(ok);
     };
     const abort = () => finish(false);
-    const timer = setTimeout(abort, PHOTO_LOAD_TIMEOUT_MS);
+    const timer = setTimeout(abort, timeoutMs);
     signal.addEventListener("abort", abort, { once: true });
     img.onload = () => finish(true);
     img.onerror = () => finish(false);
@@ -160,8 +180,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
   const mounted = useRef(new Map<number, () => void>());
   // Aborted to cut the current item short (a video ad that fails to load).
   const skipRef = useRef<AbortController | null>(null);
-  // Passes each slideshow has played, so "newest" works down its photos.
-  const passes = useRef(new Map<string, number>());
+  // Photos each slideshow has shown, so "newest" and "manual" work down the list.
+  const shownCount = useRef(new Map<string, number>());
 
   useLayoutEffect(() => {
     for (const s of layers) {
@@ -220,13 +240,19 @@ export function KioskPlayer(props: KioskPlayerProps) {
       return els && els.length ? els[els.length - 1]! : null;
     };
 
-    /** Turn to the next page: only the board body moves. */
-    const turnPage = async (s: Omit<Screen, "id">, signal: AbortSignal) => {
+    /** Turn to the next page: only the board body moves. `ready` runs on the
+     * incoming page before it moves (to fit it). */
+    const turnPage = async (
+      s: Omit<Screen, "id">,
+      signal: AbortSignal,
+      ready?: (screen: Screen) => void,
+    ) => {
       const prevEl = layers0();
       // Its header and footer sit under the incoming page's identical ones; hide
       // them so the old page dots don't show through while the page turns.
       prevEl?.classList.add("hb-kp-under");
       const screen = await commit({ ...s, paging: true });
+      ready?.(screen);
       const el = layerEl(screen.id);
       const body = el?.querySelector<HTMLElement>(".hb-body") ?? null;
       await runTransition({
@@ -244,6 +270,13 @@ export function KioskPlayer(props: KioskPlayerProps) {
     const bodyOf = (s: Screen) => layerEl(s.id)?.querySelector<HTMLElement>(".hb-body") ?? null;
     const innerOf = (s: Screen) =>
       layerEl(s.id)?.querySelector<HTMLElement>(".hb-body-inner") ?? null;
+    /** A page still taller than the body (one row of plaques taller than the
+     * screen) is scaled down to fit rather than clipped. */
+    const fitPage = (s: Screen, start: number) => {
+      const body = bodyOf(s);
+      const inner = innerOf(s);
+      if (body && inner && overflowsBody(body)) fitToBody({ body, inner }, start);
+    };
 
     async function playBoard(
       item: BoardItem,
@@ -254,9 +287,23 @@ export function KioskPlayer(props: KioskPlayerProps) {
       const cfgs = latest.current.boardConfigs;
       const headings = boardColumnHeadings(item.board);
       const move = d.move === "credits" && reduced() ? "pages" : d.move;
+      // The board's photo background: the slideshow's next photo, kept for all
+      // of this board's screens. One that doesn't load in time is left off.
+      let backdrop: Screen["backdrop"];
+      if (item.backdrop) {
+        const { slideshowId, photos, dim } = item.backdrop;
+        const cursor = shownCount.current.get(slideshowId) ?? 0;
+        shownCount.current.set(slideshowId, cursor + 1);
+        const url = photos[cursor % photos.length]!.url;
+        if (await preloadImage(url, signal, BACKDROP_LOAD_TIMEOUT_MS)) backdrop = { url, dim };
+        if (signal.aborted) return;
+      }
       for (const group of item.groups) {
         if (signal.aborted) return;
-        const grouped = headings.length ? sliceBoardColumns(item.board, group) : item.board;
+        const sliced = headings.length ? sliceBoardColumns(item.board, group) : item.board;
+        // Seven or more columns on one screen use the dense style.
+        const dense = headings.length > 0 && group.count >= KIOSK_DENSE_COLUMNS;
+        const grouped = dense ? compactBoard(sliced) : sliced;
         const label = item.groups.length > 1 ? columnGroupLabel(headings, group) : "";
         const listCols = isListLikeLayout(grouped.layout)
           ? d.columnsPerScreen
@@ -270,6 +317,8 @@ export function KioskPlayer(props: KioskPlayerProps) {
           cfg: screenCfg(item, cfgs?.[item.board.id], label),
           scale: d.textScale,
           position,
+          backdrop,
+          dense,
         };
         const screen = await enter({ ...base, board }, signal);
         if (signal.aborted) return;
@@ -278,11 +327,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
           const body = bodyOf(screen);
           const inner = innerOf(screen);
           if (body && inner) {
-            const { scale, readable } = findFitScale((sc) => {
-              inner.style.setProperty("--hb-kp-scale", String(sc));
-              return body.scrollHeight <= body.clientHeight + 1;
-            }, d.textScale);
-            inner.style.setProperty("--hb-kp-scale", String(scale));
+            const { scale, readable } = fitToBody({ body, inner }, d.textScale);
             latest.current.onFit?.(item.board.id, scale, readable);
           }
           await sleep((d.pageSecs + d.hold) * 1000, signal);
@@ -328,12 +373,15 @@ export function KioskPlayer(props: KioskPlayerProps) {
         if (ranges.length > 1) {
           // Swap the full board for page 1 without a transition: it shows the
           // same top rows, minus the part-row the page leaves off.
-          await commit({
+          const first = await commit({
             ...base,
             board: sliceBoardRows(board, 0, ranges[0]![1], d.columnsPerScreen),
             page: { index: 0, count: ranges.length },
           });
           setLayers((prev) => prev.slice(-1));
+          fitPage(first, d.textScale);
+        } else {
+          fitPage(screen, d.textScale);
         }
         for (let p = 0; p < ranges.length; p++) {
           if (p > 0) {
@@ -345,6 +393,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
                 page: { index: p, count: ranges.length },
               },
               signal,
+              (s) => fitPage(s, d.textScale),
             );
           }
           await sleep(d.pageSecs * 1000, signal);
@@ -356,10 +405,11 @@ export function KioskPlayer(props: KioskPlayerProps) {
 
     /** One pass of a slideshow: each photo cross-fades in once it has loaded. */
     async function playPhotos(item: PhotosItem, signal: AbortSignal) {
-      const pass = passes.current.get(item.slideshow.id) ?? 0;
-      passes.current.set(item.slideshow.id, pass + 1);
+      const cursor = shownCount.current.get(item.slideshow.id) ?? 0;
+      const photos = slideshowPass(item, cursor);
+      shownCount.current.set(item.slideshow.id, cursor + photos.length);
       const secs = Math.max(2, item.slideshow.secondsPerPhoto);
-      const photos = slideshowPass(item, pass);
+      const fade = item.slideshow.crossfade !== false && !reduced();
       let next = preloadImage(photos[0]!.url, signal);
       let shown = 0;
       for (let k = 0; k < photos.length; k++) {
@@ -368,7 +418,7 @@ export function KioskPlayer(props: KioskPlayerProps) {
         // Start loading the next photo while this one shows.
         if (k + 1 < photos.length) next = preloadImage(photos[k + 1]!.url, signal);
         if (!ok) continue;
-        await enter({ item, photo: photos[k], scale: 1 }, signal, reduced() ? "cut" : "fade");
+        await enter({ item, photo: photos[k], scale: 1 }, signal, fade ? "fade" : "cut");
         await sleep(secs * 1000, signal);
         shown++;
       }
@@ -427,8 +477,10 @@ export function KioskPlayer(props: KioskPlayerProps) {
         >
           {s.item.kind === "board" && s.board ? (
             <div
-              className="hb-kp-board"
+              className={`hb-kp-board${s.backdrop ? " hb-kp-photobg" : ""}`}
               data-move={s.item.display.move}
+              data-dim={s.backdrop?.dim}
+              data-dense={s.dense ? "" : undefined}
               style={
                 {
                   "--hb-kp-scale": s.scale,
@@ -436,6 +488,15 @@ export function KioskPlayer(props: KioskPlayerProps) {
                 } as CSSProperties
               }
             >
+              {s.backdrop ? (
+                <img
+                  className="hb-kp-photobg-img"
+                  src={s.backdrop.url}
+                  alt=""
+                  aria-hidden="true"
+                  data-testid="kiosk-board-photobg"
+                />
+              ) : null}
               <KioskChromeContext.Provider value={{ page: s.page, position: s.position }}>
                 <BoardRenderer board={s.board} brand={brand} kiosk cfg={s.cfg} skins={skins} />
               </KioskChromeContext.Provider>
@@ -447,7 +508,12 @@ export function KioskPlayer(props: KioskPlayerProps) {
               <SponsorSlide sponsors={sponsors} brand={brand} />
             )
           ) : s.item.kind === "photos" && s.photo ? (
-            <PhotoSlide photo={s.photo} brand={brand} captions={s.item.slideshow.captions} />
+            <PhotoSlide
+              photo={s.photo}
+              brand={brand}
+              captions={s.item.slideshow.captions}
+              frame={s.item.slideshow.frame ?? "auto"}
+            />
           ) : s.item.kind === "ad" ? (
             <AdSlide ad={s.item.ad} onError={() => skipRef.current?.abort()} />
           ) : null}

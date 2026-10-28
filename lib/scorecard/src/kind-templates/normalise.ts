@@ -12,10 +12,15 @@
  * rule, conditions, stacks) apply to v2 documents.
  */
 import {
+  flattenLayers,
   FORMAT_VERSION,
   isDocumentV2,
+  MAX_PHOTO_SOURCE_POSITION,
   MOTION_IN_PRESETS,
   PAGE_KEYS,
+  PHOTO_SOURCE_PLAYER_PICKS,
+  type PhotoLayerSource,
+  type PhotoSourcePlayerPick,
   type LayerMotion,
   type PageKey,
   type TemplateDocumentV2,
@@ -23,6 +28,7 @@ import {
   type TemplatePage,
 } from "./format";
 import { primaryPage } from "./pages";
+import { isPageBackground } from "./svg";
 
 /** A document read as v2, and the format it was stored in. */
 export type NormalisedDocument = TemplateDocumentV2 & { sourceFormat: 1 | 2 };
@@ -80,7 +86,11 @@ export function normaliseDocument(doc: unknown, kind: string): NormalisedDocumen
     const pages: Partial<Record<PageKey, TemplatePage>> = {};
     for (const key of PAGE_KEYS) {
       const page = (doc.pages as Record<string, unknown>)[key];
-      if (isObject(page)) pages[key] = { layers: readLayers(page.layers) };
+      if (isObject(page))
+        pages[key] = {
+          layers: readLayers(page.layers),
+          ...(isPageBackground(page.background) ? { background: page.background } : {}),
+        };
     }
     return {
       formatVersion: FORMAT_VERSION,
@@ -108,4 +118,57 @@ export function documentPageLayers(doc: TemplateDocumentV2, page: PageKey): Temp
 /** The pages a document has, in standard order. */
 export function documentPages(doc: TemplateDocumentV2): PageKey[] {
   return PAGE_KEYS.filter((key) => doc.pages[key] !== undefined);
+}
+
+const PLAYER_PICKS = new Set<string>(PHOTO_SOURCE_PLAYER_PICKS);
+
+/**
+ * A photo layer's source (photo layer sources), read leniently: a source the
+ * validator would reject reads as none, so the layer shows the card's photo.
+ */
+export function readPhotoSource(layer: unknown): PhotoLayerSource | null {
+  if (!isObject(layer) || layer.kind !== "photo" || !isObject(layer.source)) return null;
+  const s = layer.source;
+  if (s.kind === "collection") {
+    const id = s.collectionId;
+    return typeof id === "number" && Number.isSafeInteger(id) && id > 0
+      ? { kind: "collection", collectionId: id }
+      : null;
+  }
+  if (s.kind !== "player" || typeof s.pick !== "string" || !PLAYER_PICKS.has(s.pick)) return null;
+  if (s.pick !== "position") return { kind: "player", pick: s.pick as PhotoSourcePlayerPick };
+  const n = s.position;
+  return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= MAX_PHOTO_SOURCE_POSITION
+    ? { kind: "player", pick: "position", position: n }
+    : null;
+}
+
+/** A photo layer that has a source, with the key its resolved photo is stored under. */
+export type SourcedPhotoLayer = { key: string; source: PhotoLayerSource };
+
+/**
+ * The photo layers of a stored document (any page, groups included) that have
+ * a source, once per key. A layer's key is its id; the per-size copies of one
+ * element (`link`) share their link, so they show the same photo.
+ */
+export function sourcedPhotoLayers(doc: unknown, kind: string): SourcedPhotoLayer[] {
+  const normalised = normaliseDocument(doc, kind);
+  const out: SourcedPhotoLayer[] = [];
+  const seen = new Set<string>();
+  for (const key of PAGE_KEYS) {
+    for (const layer of flattenLayers(normalised.pages[key]?.layers ?? [])) {
+      const source = readPhotoSource(layer);
+      if (!source) continue;
+      const k = photoLayerKey(layer);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push({ key: k, source });
+    }
+  }
+  return out;
+}
+
+/** The key a photo layer's resolved photo is stored under: its link, else its id. */
+export function photoLayerKey(layer: { id: string; link?: string }): string {
+  return layer.link ? `link:${layer.link}` : layer.id;
 }

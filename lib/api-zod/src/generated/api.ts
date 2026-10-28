@@ -7016,7 +7016,11 @@ export const ListSponsorsResponseItem = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
 
@@ -7032,6 +7036,7 @@ export const CreateSponsorBody = zod.object({
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
+  "playerIds": zod.array(zod.number()).optional().describe('The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional(),
   "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
@@ -7053,6 +7058,7 @@ export const UpdateSponsorBody = zod.object({
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
+  "playerIds": zod.array(zod.number()).optional().describe('The senior players this sponsor backs (player sponsors); replaces the set. Junior participants and fill-ins are rejected.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional(),
   "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
@@ -7069,7 +7075,11 @@ export const UpdateSponsorResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })
 
 
@@ -8568,7 +8578,11 @@ export const GetSocialSettingsResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })),
   "brand": zod.union([zod.object({
   "name": zod.string(),
@@ -9555,7 +9569,24 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })).optional(),
   "timeZone": zod.string(),
   "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Team list, results and match summary sets: each slide\'s content (ADR-010 P7, built by the same builders as the sweep and Create a Card), keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
@@ -9618,7 +9649,24 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 }),zod.null()]).describe('The club\'s chosen background photo, when it is still in the library and safe to show.'),
   "nextHomeGame": zod.union([zod.object({
   "kind": zod.enum(['matchDay']),
@@ -9695,7 +9743,24 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })),
   "coverPhotos": zod.array(zod.object({
   "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
@@ -9711,7 +9776,24 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
   "photoPicks": zod.object({
   "cover": zod.number().nullable().describe('A coverPhotos (or juniorStockPhotos) id.'),
@@ -10175,10 +10257,20 @@ export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 8
 
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const getHonourDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10191,7 +10283,7 @@ export const getHonourDisplayResponseSettingsKioskLookSpeedMax = 200;
 export const getHonourDisplayResponseSettingsKioskLookHoldMin = 0;
 export const getHonourDisplayResponseSettingsKioskLookHoldMax = 60;
 
-export const getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+export const getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax = 10;
 
 export const getHonourDisplayResponseSettingsBoardConfigsPerPageMin = 0;
 export const getHonourDisplayResponseSettingsBoardConfigsPerPageMax = 20;
@@ -10204,7 +10296,9 @@ export const getHonourDisplayResponseSettingsBoardConfigsSpeedMax = 200;
 export const getHonourDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getHonourDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
-export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+export const getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 10;
+
+export const getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const getHonourDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10391,14 +10485,25 @@ export const GetHonourDisplayResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -10410,7 +10515,7 @@ export const GetHonourDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getHonourDisplayResponseSettingsKioskLookSpeedMin).max(getHonourDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getHonourDisplayResponseSettingsKioskLookHoldMin).max(getHonourDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10421,8 +10526,12 @@ export const GetHonourDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsSpeedMin).max(getHonourDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getHonourDisplayResponseSettingsBoardConfigsHoldMin).max(getHonourDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getHonourDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getHonourDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10507,7 +10616,11 @@ export const GetHonourDisplayResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -10523,7 +10636,14 @@ export const GetHonourDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -10547,10 +10667,20 @@ export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax = 80
 
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const getKioskDisplayResponseSettingsKioskLookPerPageMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookPerPageMax = 20;
@@ -10563,7 +10693,7 @@ export const getKioskDisplayResponseSettingsKioskLookSpeedMax = 200;
 export const getKioskDisplayResponseSettingsKioskLookHoldMin = 0;
 export const getKioskDisplayResponseSettingsKioskLookHoldMax = 60;
 
-export const getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax = 5;
+export const getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax = 10;
 
 export const getKioskDisplayResponseSettingsBoardConfigsPerPageMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsPerPageMax = 20;
@@ -10576,7 +10706,9 @@ export const getKioskDisplayResponseSettingsBoardConfigsSpeedMax = 200;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMin = 0;
 export const getKioskDisplayResponseSettingsBoardConfigsHoldMax = 60;
 
-export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 5;
+export const getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax = 10;
+
+export const getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const getKioskDisplayResponseSettingsBoardConfigsColumnsMax = 3;
 
@@ -10763,14 +10895,25 @@ export const GetKioskDisplayResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -10782,7 +10925,7 @@ export const GetKioskDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getKioskDisplayResponseSettingsKioskLookSpeedMin).max(getKioskDisplayResponseSettingsKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getKioskDisplayResponseSettingsKioskLookHoldMin).max(getKioskDisplayResponseSettingsKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -10793,8 +10936,12 @@ export const GetKioskDisplayResponse = zod.object({
   "pageSecs": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsSpeedMin).max(getKioskDisplayResponseSettingsBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(getKioskDisplayResponseSettingsBoardConfigsHoldMin).max(getKioskDisplayResponseSettingsBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(getKioskDisplayResponseSettingsBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(getKioskDisplayResponseSettingsBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -10879,7 +11026,11 @@ export const GetKioskDisplayResponse = zod.object({
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number(),
-  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.'),
+  "players": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Player sponsors: the senior players this sponsor backs. On a card about one of them, that player\'s sponsors replace the club strip. A sponsor with players shows on other cards only where its card types are set. Each name is the one saved with the tag, a label only.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -10895,7 +11046,14 @@ export const GetKioskDisplayResponse = zod.object({
   "url": zod.string(),
   "width": zod.number(),
   "height": zod.number(),
-  "caption": zod.string().nullish()
+  "caption": zod.string().nullish(),
+  "focusBox": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.').nullish().describe('The part of the photo that matters (photo focus areas); null = none marked.'),
+  "noWideCrop": zod.boolean().optional().describe('The admin switched wide crops off for this photo, so the TV shows it whole.')
 }))
 })).optional().describe('Each photo slideshow\'s photos, resolved on the server (tenant-scoped; junior photos only when every tagged child may be shown).')
 })
@@ -10937,17 +11095,27 @@ export const updateHonourDisplaySettingsBodyKioskLookSpeedMax = 200;
 export const updateHonourDisplaySettingsBodyKioskLookHoldMin = 0;
 export const updateHonourDisplaySettingsBodyKioskLookHoldMax = 60;
 
-export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax = 10;
 
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax = 80;
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax = 20;
 
@@ -10962,7 +11130,9 @@ export const updateHonourDisplaySettingsBodyBoardConfigsSpeedMax = 200;
 export const updateHonourDisplaySettingsBodyBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsBodyBoardConfigsHoldMax = 60;
 
-export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax = 10;
+
+export const updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const updateHonourDisplaySettingsBodyBoardConfigsColumnsMax = 3;
 
@@ -10984,7 +11154,7 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsBodyKioskLookSpeedMin).max(updateHonourDisplaySettingsBodyKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsBodyKioskLookHoldMin).max(updateHonourDisplaySettingsBodyKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).optional().describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "defaultTemplate": zod.string().optional(),
   "kioskSequence": zod.array(zod.string()).optional(),
@@ -11006,14 +11176,25 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).max(updateHonourDisplaySettingsBodyKioskPhotoSlideshowsMax).optional(),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -11024,8 +11205,12 @@ export const UpdateHonourDisplaySettingsBody = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsSpeedMin).max(updateHonourDisplaySettingsBodyBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsBodyBoardConfigsHoldMin).max(updateHonourDisplaySettingsBodyBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsBodyBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsBodyBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -11105,10 +11290,20 @@ export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax 
 
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax = 365;
 
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemGradeMax = 80;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemTypeMax = 40;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersMax = 50;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPickedMax = 60;
+
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax = 30;
 
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin = 2;
 export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax = 30;
+
+export const updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax = 20;
 
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookPerPageMax = 20;
@@ -11121,7 +11316,7 @@ export const updateHonourDisplaySettingsResponseKioskLookSpeedMax = 200;
 export const updateHonourDisplaySettingsResponseKioskLookHoldMin = 0;
 export const updateHonourDisplaySettingsResponseKioskLookHoldMax = 60;
 
-export const updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax = 10;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMin = 0;
 export const updateHonourDisplaySettingsResponseBoardConfigsPerPageMax = 20;
@@ -11134,7 +11329,9 @@ export const updateHonourDisplaySettingsResponseBoardConfigsSpeedMax = 200;
 export const updateHonourDisplaySettingsResponseBoardConfigsHoldMin = 0;
 export const updateHonourDisplaySettingsResponseBoardConfigsHoldMax = 60;
 
-export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 5;
+export const updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax = 10;
+
+export const updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax = 80;
 
 export const updateHonourDisplaySettingsResponseBoardConfigsColumnsMax = 3;
 
@@ -11167,14 +11364,25 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "id": zod.string().describe('\"photos:<uuid>\"; the rotation places it by this id.'),
   "name": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemNameMax),
   "library": zod.enum(['senior', 'junior', 'both']).describe('Senior club photos, the junior library (only photos every tagged child may be shown in), or both.'),
-  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades']).describe('The whole library, the last recentDays, this season, or photos with any of types \/ grades.'),
+  "source": zod.enum(['all', 'recent', 'season', 'types', 'grades', 'folders', 'picked']).describe('The whole library, the last recentDays, this season, photos with any of types \/ grades, photos in any of folders, or the picked photos (each names its library).'),
   "recentDays": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemRecentDaysMax).nullish(),
   "types": zod.array(zod.string()).nullish(),
   "grades": zod.array(zod.string()).nullish(),
-  "order": zod.enum(['random', 'newest']),
+  "folders": zod.array(zod.object({
+  "grade": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemGradeMax),
+  "type": zod.string().max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersItemTypeMax).nullish()
+}).describe('A photo library folder: grade is a grade name or \"club-wide\" (no grade); type is a photo type, \"unsorted\" (no type) or null for the whole grade folder.')).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemFoldersMax).nullish(),
+  "picked": zod.array(zod.object({
+  "library": zod.enum(['senior', 'junior']),
+  "id": zod.number()
+})).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPickedMax).nullish(),
+  "order": zod.enum(['random', 'newest', 'manual']).describe('Random picks afresh each pass; newest works down the newest photos; manual keeps the picked order.'),
   "perPass": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemPerPassMax).describe('Photos shown each time the slideshow comes round.'),
   "secondsPerPhoto": zod.number().min(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMin).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemSecondsPerPhotoMax),
-  "captions": zod.boolean().describe('Grade and season under each photo (never names).')
+  "captions": zod.boolean().describe('Grade and season under each photo (never names).'),
+  "frame": zod.enum(['auto', 'fill', 'whole']).nullish().describe('auto (the default, also when null) crops a photo to fill the screen only when that keeps its focus box (or, without one, loses almost nothing), and otherwise shows the whole photo over a blurred fill; fill always crops, aiming at the focus box; whole never crops.'),
+  "crossfade": zod.boolean().nullish().describe('Cross-fade between photos (default on); off cuts.'),
+  "interludeEvery": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskPhotoSlideshowsItemInterludeEveryMax).nullish().describe('Photo interludes: also show one photo from this slideshow after every N boards. Null = off.')
 })).describe('Photo slideshows placed in the rotation as \"photos:<id>\". The bundle\'s photoSlideshows carries each one\'s resolved photos.'),
   "kioskToken": zod.string().nullish().describe('Long-lived read-only kiosk access token (admin bundle only; null when no link has been issued). Omitted from the public kiosk feed.'),
   "kioskLook": zod.object({
@@ -11186,7 +11394,7 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsResponseKioskLookSpeedMin).max(updateHonourDisplaySettingsResponseKioskLookSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsResponseKioskLookHoldMin).max(updateHonourDisplaySettingsResponseKioskLookHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.')
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseKioskLookColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.')
 }).describe('Club-wide kiosk motion and size defaults (the Look tab). Every field is optional; unset derives from the legacy kiosk timing settings, then the built-in default. Each board\'s BoardDisplayConfig overrides them.'),
   "boardConfigs": zod.record(zod.string(), zod.object({
   "move": zod.enum(['pages', 'credits', 'fit']).optional().describe('How a long board shows all its rows: turn pages, a continuous credits roll, or shrink to fit one screen.'),
@@ -11197,8 +11405,12 @@ export const UpdateHonourDisplaySettingsResponse = zod.object({
   "pageSecs": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsPageSecsMax).optional().describe('Seconds per page, or the pause before a credits roll starts.'),
   "speed": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsSpeedMin).max(updateHonourDisplaySettingsResponseBoardConfigsSpeedMax).optional().describe('Credits-roll speed in px\/sec.'),
   "hold": zod.number().min(updateHonourDisplaySettingsResponseBoardConfigsHoldMin).max(updateHonourDisplaySettingsResponseBoardConfigsHoldMax).optional().describe('Seconds held at the end of a board before the next item.'),
-  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups.'),
+  "columnsPerScreen": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsPerScreenMax).optional().describe('Columns shown at once (grade or role columns, plaques across, list columns). A season grid with more columns splits into column groups. Season grids and composite columns take up to 10; plaques and record panels up to 5, life members and lists up to 3.'),
   "top": zod.union([zod.literal(10),zod.literal(20),zod.literal(50)]).optional().describe('Leaderboards only - how many players to show.'),
+  "photoBackground": zod.object({
+  "slideshowId": zod.string().max(updateHonourDisplaySettingsResponseBoardConfigsPhotoBackgroundOneSlideshowIdMax),
+  "dim": zod.enum(['light', 'medium', 'strong']).nullish()
+}).describe('Kiosk photo background (kiosk-photo-rotation P2): a photo from one of the club\'s slideshows behind the board. The board\'s own panel sits over it at dim strength (light 72%, medium 82%, strong 90%), so the text keeps the contrast its skin was designed for.').nullish(),
   "columns": zod.number().min(1).max(updateHonourDisplaySettingsResponseBoardConfigsColumnsMax).optional(),
   "transition": zod.enum(['scroll', 'slide', 'wrap']).optional(),
   "fit": zod.boolean().optional(),
@@ -11459,6 +11671,30 @@ export const ListSocialDraftsResponseItem = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -11527,7 +11763,8 @@ export const CreateSocialDraftBody = zod.object({
   "copyId": zod.number().optional(),
   "libraryTemplateId": zod.number().optional(),
   "version": zod.number()
-}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.')
+}).optional().describe('A template a draft or carousel is drawn with (ADR-011): one of the club\'s templates (`copyId`) or a library template (`libraryTemplateId`), at a version. Exactly one of the two ids.'),
+  "subjectPlayerId": zod.number().nullish().describe('The player a hand-made player card is about (player sponsors): their sponsors replace the club strip. Only on milestone, century, five-for, debut, player and new signing cards, never a junior card; must be one of the club\'s senior players.')
 })
 
 
@@ -11575,6 +11812,8 @@ export const DeleteEditorTemplateParams = zod.object({
  */
 export const listLibraryTemplatesQueryQMax = 60;
 
+export const listLibraryTemplatesQueryTagsMax = 200;
+
 
 
 export const ListLibraryTemplatesQueryParams = zod.object({
@@ -11582,6 +11821,9 @@ export const ListLibraryTemplatesQueryParams = zod.object({
   "kind": zod.coerce.string().optional(),
   "size": zod.enum(['square', 'portrait', 'story', 'landscape']).optional(),
   "look": zod.coerce.string().optional().describe('A look\'s slug.'),
+  "tags": zod.coerce.string().max(listLibraryTemplatesQueryTagsMax).optional().describe('Style tags (comma-separated); a template must carry every one (release 2).'),
+  "sort": zod.enum(['popular', 'new', 'ovation', 'club']).optional().describe('popular (most clubs using it), new (newest listed), ovation (Ovation\'s first) or club (club-made first). Default: the library\'s own order.'),
+  "favourites": zod.coerce.boolean().optional().describe('Only this club\'s favourites (release 2).'),
   "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
 })
 
@@ -11607,7 +11849,11 @@ export const ListLibraryTemplatesResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 })),
   "nextCursor": zod.number().nullable().describe('Pass as `cursor` for the next page; null on the last page.')
 })
@@ -11738,7 +11984,81 @@ export const GetLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+})
+
+
+/**
+ * Other clubs stop seeing it. Copies clubs already made keep working. Publishing the club's template again lists it again.
+ * @summary Take a template this club published out of the library (release 2)
+ */
+export const UnlistOwnLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnlistOwnLibraryTemplateResponse = zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+})
+
+
+/**
+ * One report per club and template; reporting again replaces the reason. A club cannot report its own template (it can unlist it instead).
+ * @summary Report a library template to Ovation (release 2)
+ */
+export const ReportLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reportLibraryTemplateBodyReasonMax = 500;
+
+
+
+export const ReportLibraryTemplateBody = zod.object({
+  "reason": zod.string().min(1).max(reportLibraryTemplateBodyReasonMax)
+})
+
+
+/**
+ * @summary Add a library template to this club's favourites (release 2)
+ */
+export const FavouriteLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Remove a library template from this club's favourites
+ */
+export const UnfavouriteLibraryTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -11752,7 +12072,7 @@ export const listLibraryElementsQueryQMax = 60;
 
 export const ListLibraryElementsQueryParams = zod.object({
   "q": zod.coerce.string().max(listLibraryElementsQueryQMax).optional().describe('Words that must each appear in the element\'s name or tags.'),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).optional(),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).optional(),
   "look": zod.coerce.string().optional().describe('A look\'s slug.'),
   "mine": zod.coerce.boolean().optional().describe('Only the elements this club saved, listed or not.'),
   "cursor": zod.coerce.number().optional().describe('The previous page\'s `nextCursor`.')
@@ -11763,7 +12083,7 @@ export const ListLibraryElementsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -11797,7 +12117,7 @@ export const saveLibraryElementBodyTagsMax = 12;
 
 export const SaveLibraryElementBody = zod.object({
   "name": zod.string().min(1).max(saveLibraryElementBodyNameMax),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string().min(1).max(saveLibraryElementBodyTagsItemMax)).max(saveLibraryElementBodyTagsMax).optional(),
   "document": zod.record(zod.string(), zod.unknown()).describe('A fragment of format v2 layers, `{ formatVersion: 2, layers, palettes? }`, each layer keeping its geometry per size. The validator owns the detailed shape; the server checks it on save.')
 })
@@ -11815,7 +12135,7 @@ export const GetLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -11845,7 +12165,7 @@ export const UnlistLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -11931,6 +12251,232 @@ export const CreateClubTemplateBody = zod.object({
   "libraryTemplateId": zod.number(),
   "version": zod.number().optional().describe('A library version; the current one when absent.'),
   "makeDefault": zod.boolean().optional().describe('Also make the copy its kind\'s default (Use as default).')
+})
+
+
+/**
+ * A new private template for the kind, with the kind's pages and no layers. It is not the kind's default and never came from the library.
+ * @summary Start a club template from a blank canvas (release 2)
+ */
+export const createBlankClubTemplateBodyNameMax = 80;
+
+
+
+export const CreateBlankClubTemplateBody = zod.object({
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(createBlankClubTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * The template with this club's logo, photos, sponsors, colours and name swapped for data slots and tokens, what was swapped, and the text that still names the club or a sponsor (which blocks publishing until it is replaced with a field).
+ * @summary What other clubs would see if this template were published (release 2)
+ */
+export const GetClubTemplatePublishPreviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplatePublishPreviewResponse = zod.object({
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "changes": zod.array(zod.object({
+  "page": zod.string(),
+  "layerId": zod.string(),
+  "what": zod.enum(['clubLogo', 'sponsorLogo', 'photo', 'clubColour', 'clubName'])
+}).describe('Something the publish step swapped for a data slot or token.')),
+  "flags": zod.array(zod.object({
+  "page": zod.string(),
+  "layerId": zod.string(),
+  "kind": zod.enum(['clubName', 'sponsorName']),
+  "text": zod.string().describe('The name found.')
+}).describe('Text that still names the club or a sponsor; publishing waits until it\'s a field.')),
+  "assetErrors": zod.array(zod.string()),
+  "tagChecks": zod.array(zod.object({
+  "tag": zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).'),
+  "ok": zod.boolean(),
+  "reason": zod.string().nullish()
+})).describe('Every style tag, and whether this design can carry it.'),
+  "published": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string().nullable(),
+  "kind": zod.string(),
+  "name": zod.string(),
+  "origin": zod.enum(['bundle', 'console', 'club']),
+  "authorName": zod.string().describe('Ovation, or the club that published it.'),
+  "look": zod.union([zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string(),
+  "family": zod.string().optional().describe('The design system the look belongs to (a bundle look\'s `family`), when it has one.')
+}),zod.null()]),
+  "version": zod.number().describe('The template\'s current version.'),
+  "coverage": zod.object({
+  "pages": zod.array(zod.string()),
+  "sizes": zod.array(zod.string())
+}),
+  "fitStatus": zod.enum(['pending', 'pass', 'fail']),
+  "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
+  "listed": zod.boolean(),
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
+}),zod.null()]).describe('The library template this template already publishes to, if any.')
+})
+
+
+/**
+ * Saves the publishable document as a new version of the club's library template (creating it the first time), records the rights confirmation and starts the fit check. It is listed for every club once the check passes at every page, size and preset; no one approves it. Copies other clubs made are offered the new version as an update.
+ * @summary Publish this club's template to every club (release 2)
+ */
+export const PublishClubTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const publishClubTemplateBodyNameMax = 80;
+
+export const publishClubTemplateBodyTagsMax = 4;
+
+
+
+export const PublishClubTemplateBody = zod.object({
+  "name": zod.string().min(1).max(publishClubTemplateBodyNameMax),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).max(publishClubTemplateBodyTagsMax),
+  "rightsConfirmed": zod.boolean().describe('The admin confirms the club has the rights to any artwork left in the design. Must be true.')
+})
+
+
+/**
+ * @summary This club's AI designs, and how many it has left this month (release 2)
+ */
+export const ListClubTemplateGenerationsResponse = zod.object({
+  "available": zod.boolean().describe('Whether Generate is offered (configured, above the quality bar and switched on).'),
+  "limit": zod.number(),
+  "remaining": zod.number().describe('Designs left this month (Perth calendar month).'),
+  "generations": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "result": zod.union([zod.object({
+  "copyId": zod.number()
+}),zod.null()]).describe('The private club template the design was saved as.'),
+  "errors": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Runs in the background; poll until done or failed. The result is a private club template, never listed. Sample data only reaches the model, and the image must be an upload (PNG or JPEG, at most 5 MB); a library photo can never be sent. Each club has 20 a month (Perth calendar month); designs that fail at the provider or are refused don't count.
+ * @summary Design a private club template with AI from a brief and an optional reference image
+ */
+export const startClubTemplateGenerationBodyBriefMax = 2000;
+
+
+
+export const StartClubTemplateGenerationBody = zod.object({
+  "kind": zod.string().describe('The card kind to design.'),
+  "brief": zod.string().max(startClubTemplateGenerationBodyBriefMax).optional(),
+  "image": zod.instanceof(File).optional().describe('A reference image (PNG or JPEG, at most 5 MB).')
+})
+
+
+/**
+ * @summary One of this club's AI designs
+ */
+export const GetClubTemplateGenerationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetClubTemplateGenerationResponse = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "status": zod.enum(['queued', 'running', 'done', 'failed']),
+  "outcome": zod.string().nullable().describe('pass, warnings, invalid, refused or provider_error; null until it finishes.'),
+  "attempts": zod.number(),
+  "result": zod.union([zod.object({
+  "copyId": zod.number()
+}),zod.null()]).describe('The private club template the design was saved as.'),
+  "errors": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * Reads the link with this club's own Figma connection and maps it to the template format, as the platform import does. Images go to the club's own storage. The result is a private club template with the import report.
+ * @summary Import a Figma frame into a private club template (release 2)
+ */
+export const importFigmaClubTemplateBodyFileUrlMax = 2000;
+
+export const importFigmaClubTemplateBodyNameMax = 80;
+
+
+
+export const ImportFigmaClubTemplateBody = zod.object({
+  "fileUrl": zod.string().min(1).max(importFigmaClubTemplateBodyFileUrlMax).describe('A Figma design link (with or without node-id), or a bare file key.'),
+  "kind": zod.string(),
+  "name": zod.string().min(1).max(importFigmaClubTemplateBodyNameMax).optional()
+})
+
+
+/**
+ * @summary This club's Figma connection, without its token (release 2)
+ */
+export const GetFigmaConnectionResponse = zod.object({
+  "connected": zod.boolean(),
+  "method": zod.union([zod.literal('oauth'),zod.literal('token'),zod.literal(null)]).nullable(),
+  "status": zod.union([zod.literal('connected'),zod.literal('needs_reconnect'),zod.literal(null)]).nullable(),
+  "figmaHandle": zod.string().nullable(),
+  "statusReason": zod.string().nullable(),
+  "connectedAt": zod.coerce.date().nullable(),
+  "oauthAvailable": zod.boolean().describe('Whether Sign in with Figma is set up (FIGMA_CLIENT_ID).')
+})
+
+
+/**
+ * The token is checked with Figma first and stored only if it works, encrypted. It is never shown again.
+ * @summary Connect Figma with a pasted personal access token
+ */
+export const saveFigmaTokenBodyTokenMin = 10;
+export const saveFigmaTokenBodyTokenMax = 400;
+
+
+
+export const SaveFigmaTokenBody = zod.object({
+  "token": zod.string().min(saveFigmaTokenBodyTokenMin).max(saveFigmaTokenBodyTokenMax)
+})
+
+export const SaveFigmaTokenResponse = zod.object({
+  "connected": zod.boolean(),
+  "method": zod.union([zod.literal('oauth'),zod.literal('token'),zod.literal(null)]).nullable(),
+  "status": zod.union([zod.literal('connected'),zod.literal('needs_reconnect'),zod.literal(null)]).nullable(),
+  "figmaHandle": zod.string().nullable(),
+  "statusReason": zod.string().nullable(),
+  "connectedAt": zod.coerce.date().nullable(),
+  "oauthAvailable": zod.boolean().describe('Whether Sign in with Figma is set up (FIGMA_CLIENT_ID).')
+})
+
+
+/**
+ * Returns Figma's sign-in address for the admin's browser. Figma sends the admin back to `/api/figma/oauth/callback`.
+ * @summary Start signing in with Figma
+ */
+export const StartFigmaOAuthResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary Figma's sign-in callback (public; the signed state carries the club)
+ */
+export const FigmaOAuthCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string(),
+  "error": zod.coerce.string().optional()
 })
 
 
@@ -12491,6 +13037,106 @@ export const GetTenantPlayhqSyncStatusResponse = zod.object({
 
 
 /**
+ * Kept apart from the photo library. Deleted uploads are left out.
+ * @summary The club's Uploads (logos, artwork and SVG shapes), newest first (admin)
+ */
+export const listClubUploadsQueryQMax = 80;
+
+
+
+export const ListClubUploadsQueryParams = zod.object({
+  "q": zod.coerce.string().max(listClubUploadsQueryQMax).optional().describe('Words that must each appear in the upload\'s name.')
+})
+
+export const ListClubUploadsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+export const ListClubUploadsResponse = zod.array(ListClubUploadsResponseItem)
+
+
+/**
+ * Each object (uploaded through the signed-URL flow) becomes an upload. PNG, JPEG and WebP keep their own format (PNG keeps its transparency) with metadata stripped; HEIC becomes JPEG. An SVG is cleaned to what vector layers allow and kept as markup, so it can be recoloured. Results are per file; one bad file doesn't stop the rest.
+ * @summary Turn uploaded files into Uploads (admin)
+ */
+export const ingestClubUploadsBodyFilesItemNameMax = 80;
+
+export const ingestClubUploadsBodyFilesMax = 50;
+
+
+
+export const IngestClubUploadsBody = zod.object({
+  "files": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "name": zod.string().min(1).max(ingestClubUploadsBodyFilesItemNameMax).describe('The upload\'s name (the file name without its extension, by default).')
+})).min(1).max(ingestClubUploadsBodyFilesMax)
+})
+
+export const IngestClubUploadsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "error": zod.string().optional(),
+  "upload": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+}).optional()
+}))
+})
+
+
+/**
+ * @summary Rename an upload (admin)
+ */
+export const RenameClubUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const renameClubUploadBodyNameMax = 80;
+
+
+
+export const RenameClubUploadBody = zod.object({
+  "name": zod.string().min(1).max(renameClubUploadBodyNameMax)
+})
+
+export const RenameClubUploadResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "kind": zod.enum(['image', 'svg']),
+  "url": zod.string().nullable().describe('The image (kind image); null for an SVG.'),
+  "thumbUrl": zod.string().nullable(),
+  "svg": zod.string().nullable().describe('The cleaned markup (kind svg), drawn as a vector layer.'),
+  "width": zod.number(),
+  "height": zod.number(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * It leaves Uploads at once. The file is kept, so cards and templates that already use it still draw.
+ * @summary Delete an upload from Uploads (admin)
+ */
+export const DeleteClubUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List the club's photo library, newest first (admin)
  */
 export const ListClubPhotosQueryParams = zod.object({
@@ -12516,7 +13162,24 @@ export const ListClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
@@ -12556,7 +13219,24 @@ export const IngestClubPhotosResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 }).optional(),
   "error": zod.string().optional()
 }))
@@ -12630,9 +13310,88 @@ export const TagClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
+
+
+/**
+ * Photo focus areas. Every frame a card draws the photo in crops to keep the focus box in view; a card about a player crops to that player's area. A player given an area who isn't tagged yet is tagged (senior players only). Fields left out are kept.
+ * @summary Set a library photo's focus box, switched-off frame shapes and player areas (admin)
+ */
+export const SetClubPhotoFocusParams = zod.object({
+  "photoId": zod.coerce.number()
+})
+
+export const SetClubPhotoFocusBody = zod.object({
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()])
+})).optional().describe('Areas to set (box) or clear (null), per player.')
+})
+
+export const SetClubPhotoFocusResponse = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
+})
 
 
 /**
@@ -12662,7 +13421,24 @@ export const MoveClubPhotosResponseItem = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 export const MoveClubPhotosResponse = zod.array(MoveClubPhotosResponseItem)
 
@@ -12679,6 +13455,144 @@ export const DeleteClubPhotosBody = zod.object({
 
 export const DeleteClubPhotosResponse = zod.object({
   "deleted": zod.number()
+})
+
+
+/**
+ * @summary List the club's photo collections (admin)
+ */
+export const ListClubPhotoCollectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+export const ListClubPhotoCollectionsResponse = zod.array(ListClubPhotoCollectionsResponseItem)
+
+
+/**
+ * @summary Create a photo collection (admin)
+ */
+export const createClubPhotoCollectionBodyNameMax = 60;
+
+
+
+export const CreateClubPhotoCollectionBody = zod.object({
+  "name": zod.string().min(1).max(createClubPhotoCollectionBodyNameMax)
+})
+
+
+/**
+ * @summary Rename a photo collection (admin)
+ */
+export const RenameClubPhotoCollectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const renameClubPhotoCollectionBodyNameMax = 60;
+
+
+
+export const RenameClubPhotoCollectionBody = zod.object({
+  "name": zod.string().min(1).max(renameClubPhotoCollectionBodyNameMax)
+})
+
+export const RenameClubPhotoCollectionResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * The photos stay in the library. Photo layers that took a photo from the collection fall back to the card's photo.
+ * @summary Delete a photo collection (admin)
+ */
+export const DeleteClubPhotoCollectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Photos already in the collection are left as they are. Open drafts whose photo layers take a photo from the collection re-pick afterwards.
+ * @summary Add library photos to a collection (admin)
+ */
+export const AddClubPhotoCollectionPhotosParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const addClubPhotoCollectionPhotosBodyPhotoIdsMax = 500;
+
+
+
+export const AddClubPhotoCollectionPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1).max(addClubPhotoCollectionPhotosBodyPhotoIdsMax)
+})
+
+export const AddClubPhotoCollectionPhotosResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * The photos stay in the library.
+ * @summary Take photos out of a collection (admin)
+ */
+export const RemoveClubPhotoCollectionPhotosParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const removeClubPhotoCollectionPhotosBodyPhotoIdsMax = 500;
+
+
+
+export const RemoveClubPhotoCollectionPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1).max(removeClubPhotoCollectionPhotosBodyPhotoIdsMax)
+})
+
+export const RemoveClubPhotoCollectionPhotosResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "photoCount": zod.number(),
+  "coverUrl": zod.string().nullable().describe('The newest photo\'s thumbnail; null when empty.'),
+  "createdAt": zod.coerce.date()
+}).describe('A named set of library photos an admin makes (a photo can be in many). A template\'s photo layer can take a random photo from one.')
+
+
+/**
+ * For the template editor's preview. Collection sources pick from the collection as a draft would; player sources use the club's latest published senior team list. Layers whose source finds nothing are left out (they show the card's photo). Junior kinds get none.
+ * @summary The photos a template's sourced photo layers would show (admin)
+ */
+export const PreviewLayerPhotosBody = zod.object({
+  "kind": zod.string().describe('The card kind the document is for.'),
+  "document": zod.unknown().describe('The template document whose sourced photo layers to resolve.')
+})
+
+export const PreviewLayerPhotosResponse = zod.object({
+  "layerPhotos": zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),
+  "teamList": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string().nullable()
+}),zod.null()]).describe('The team list that player sources were resolved against (the club\'s latest published senior team list); null when the club has none.')
 })
 
 
@@ -12772,7 +13686,24 @@ export const RemovePhotoBackgroundResponse = zod.object({
   "playerIds": zod.array(zod.number()),
   "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
   "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
-  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.'),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional().describe('Frame shapes the automatic picker never puts this photo in.'),
+  "playerAreas": zod.array(zod.object({
+  "playerId": zod.number(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged player is on the photo (tagged players with an area only).'),
+  "collectionIds": zod.array(zod.number()).optional().describe('The photo collections this photo is in.')
 })
 
 
@@ -12866,6 +13797,30 @@ export const ApproveSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -12972,6 +13927,30 @@ export const SaveDraftSetDesignResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13044,6 +14023,30 @@ export const GetSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13129,6 +14132,30 @@ export const UpdateSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13335,6 +14362,30 @@ export const GetSocialCalendarResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13403,6 +14454,30 @@ export const GetSocialCalendarResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13493,6 +14568,30 @@ export const SetSocialDraftPlannedTimeResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13575,6 +14674,30 @@ export const UnscheduleSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13651,6 +14774,30 @@ export const SendBackSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13723,6 +14870,30 @@ export const ReopenSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13817,6 +14988,30 @@ export const RevertSocialDraftResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13889,6 +15084,30 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -13970,6 +15189,30 @@ export const GenerateRecapsResponseItem = zod.object({
   "caption": zod.string().nullish(),
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
+  "photoFocus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional().describe('The photo\'s focus box (or the pictured player\'s area) and size when it was chosen; frames crop to it unless the photo was moved by hand.'),
+  "subjectPlayerId": zod.number().nullish().describe('The one player a player-centred card is about (player sponsors): that player\'s sponsors replace the club strip. Null for every other draft.'),
+  "layerPhotos": zod.union([zod.record(zod.string(), zod.object({
+  "url": zod.string(),
+  "focus": zod.union([zod.object({
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),
+  "width": zod.number(),
+  "height": zod.number()
+}).describe('A photo\'s focus box (or a pictured player\'s area) with the photo\'s size.'),zod.null()]).optional()
+}).describe('A sourced photo layer\'s photo, and the focus it crops to (null = centred).')).describe('Sourced photo layers\' photos, keyed by layer (its link, else its id).'),zod.null()]).optional().describe('The photos of the design\'s sourced photo layers (a team list player\'s photo, or a collection photo), keyed by layer. A photo layer without an entry shows `photoUrl`; renderers use these only while the draft\'s photo is automatic. Null for junior drafts and designs with no source.'),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
   "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
@@ -15450,7 +16693,23 @@ export const ListJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const ListJuniorLibraryPhotosResponse = zod.array(ListJuniorLibraryPhotosResponseItem)
 
@@ -15492,7 +16751,23 @@ export const IngestJuniorLibraryPhotosResponse = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).optional().describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.'),
   "error": zod.string().optional()
 }))
@@ -15531,9 +16806,89 @@ export const TagJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const TagJuniorLibraryPhotosResponse = zod.array(TagJuniorLibraryPhotosResponseItem)
+
+
+/**
+ * Photo focus areas on the junior library, as on the senior one. Areas are only for children already tagged on the photo; tagging stays on the tags route. Fields left out are kept.
+ * @summary Set a junior library photo's focus box, switched-off frame shapes and participant areas (admin)
+ */
+export const SetJuniorLibraryPhotoFocusParams = zod.object({
+  "photoId": zod.coerce.number()
+})
+
+export const SetJuniorLibraryPhotoFocusBody = zod.object({
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional(),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()])
+})).optional().describe('Areas to set (box) or clear (null), per tagged child.')
+})
+
+export const SetJuniorLibraryPhotoFocusResponse = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number().nullable(),
+  "height": zod.number().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "participants": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
+  "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
+})),
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
+}).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 
 
 /**
@@ -15565,7 +16920,23 @@ export const MoveJuniorLibraryPhotosResponseItem = zod.object({
   "displayName": zod.string().describe('The child\'s name (admin view; private names included).'),
   "allowed": zod.boolean().describe('Neither photo-withheld nor private. Any one false hides the photo.')
 })),
-  "displayable": zod.boolean()
+  "displayable": zod.boolean(),
+  "focusBox": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.'),zod.null()]).optional().describe('The part of the photo that matters; null = a centred crop.'),
+  "offShapes": zod.array(zod.enum(['tall', 'square', 'wide'])).optional(),
+  "participantAreas": zod.array(zod.object({
+  "participantId": zod.string(),
+  "box": zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "w": zod.number(),
+  "h": zod.number()
+}).describe('A box on a photo in fractions (0–1) of its width and height.')
+})).optional().describe('Where each tagged child is on the photo (children with an area only).')
 }).describe('A photo in the junior library. `url` and `thumbUrl` are gated: outside admin they serve the image only while `displayable`.')
 export const MoveJuniorLibraryPhotosResponse = zod.array(MoveJuniorLibraryPhotosResponseItem)
 
@@ -17126,7 +18497,8 @@ export const DeleteProvisioningExclusionParams = zod.object({
 export const ListConsoleLibraryTemplatesQueryParams = zod.object({
   "kind": zod.coerce.string().optional(),
   "origin": zod.enum(['bundle', 'console', 'club']).optional(),
-  "listed": zod.coerce.boolean().optional()
+  "listed": zod.coerce.boolean().optional(),
+  "reported": zod.coerce.boolean().optional().describe('Only templates with an open report from a club (release 2).')
 })
 
 export const ListConsoleLibraryTemplatesResponse = zod.object({
@@ -17151,9 +18523,14 @@ export const ListConsoleLibraryTemplatesResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -17204,9 +18581,14 @@ export const GetConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -17253,9 +18635,14 @@ export const SaveConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -17307,9 +18694,14 @@ export const ListConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
@@ -17352,13 +18744,80 @@ export const UnlistConsoleLibraryTemplateResponse = zod.object({
   "fitStatus": zod.enum(['pending', 'pass', 'fail']),
   "fitReport": zod.record(zod.string(), zod.unknown()).nullable().describe('The fit check\'s warnings per page, size and preset; null until a check has run.'),
   "listed": zod.boolean(),
-  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.')
+  "document": zod.record(zod.string(), zod.unknown()).describe('A template layer document, format v1 (`{ layers }`) or v2 (`{ formatVersion: 2, pages }`), ADR-011. The renderer and validator own the detailed shape; the server checks it on save.'),
+  "tags": zod.array(zod.enum(['photo-led', 'bold-type', 'minimal', 'dark', 'light', 'retro', 'broadcast', 'textured']).describe('A style tag on a library template (`TEMPLATE_STYLE_TAGS`).')).optional().describe('Style tags (release 2).'),
+  "usedBy": zod.number().optional().describe('How many clubs other than the author hold a copy (release 2).'),
+  "favourite": zod.boolean().optional().describe('Whether this club has it in its favourites (release 2).'),
+  "ownedByClub": zod.boolean().optional().describe('Whether this club published it, so it can unlist it (release 2).')
 }).and(zod.object({
   "readOnly": zod.boolean().describe('A bundle template; the console duplicates it to edit.'),
+  "openReports": zod.number().describe('Clubs\' reports Ovation hasn\'t dealt with yet (release 2).'),
   "unlistedBy": zod.union([zod.literal('author'),zod.literal('ovation'),zod.literal(null)]).nullable(),
   "unlistReason": zod.string().nullable(),
   "updatedAt": zod.coerce.date()
 }))
+
+
+/**
+ * @summary Clubs' reports of a library template (release 2)
+ */
+export const ListLibraryTemplateReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListLibraryTemplateReportsResponseItem = zod.object({
+  "id": zod.number(),
+  "clubName": zod.string(),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+export const ListLibraryTemplateReportsResponse = zod.array(ListLibraryTemplateReportsResponseItem)
+
+
+/**
+ * @summary Close a template's open reports without unlisting it
+ */
+export const DismissLibraryTemplateReportsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Whether club Generate is on, and the quality bar it depends on (release 2)
+ */
+export const GetClubGenerateSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Ovation\'s switch.'),
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designer-tool designs.'),
+  "barMet": zod.boolean().describe('50 designs counted and at least 70% fitted first time.'),
+  "available": zod.boolean().describe('What clubs see (configured, bar met and switched on).')
+})
+
+
+/**
+ * Clubs see Generate only when this is on AND the designer's first 50 finished designs reached 70% first-try fits.
+ * @summary Switch club Generate on or off
+ */
+export const SetClubGenerateSettingsBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const SetClubGenerateSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Ovation\'s switch.'),
+  "configured": zod.boolean().describe('Whether the Claude API key is set.'),
+  "quality": zod.object({
+  "counted": zod.number(),
+  "firstTryFit": zod.number(),
+  "meanCostUsd": zod.number().nullable()
+}).describe('Over the first 50 finished designer-tool designs.'),
+  "barMet": zod.boolean().describe('50 designs counted and at least 70% fitted first time.'),
+  "available": zod.boolean().describe('What clubs see (configured, bar met and switched on).')
+})
 
 
 /**
@@ -17383,7 +18842,7 @@ export const ListConsoleLibraryElementsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -17446,7 +18905,7 @@ export const UnlistConsoleLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -17479,7 +18938,7 @@ export const ListConsoleLibraryElementResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),
@@ -17511,7 +18970,7 @@ export const DismissConsoleLibraryElementReportsResponse = zod.object({
   "id": zod.number(),
   "slug": zod.string().nullable(),
   "name": zod.string(),
-  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
+  "category": zod.enum(['frames', 'bands', 'badges', 'rules', 'glows', 'crest-frames', 'sponsor-strips', 'data-blocks', 'textures', 'icons', 'shapes', 'stickers']).describe('The Elements panel\'s categories (`ELEMENT_CATEGORIES`).'),
   "tags": zod.array(zod.string()),
   "origin": zod.enum(['bundle', 'console', 'club']),
   "authorName": zod.string().describe('Ovation, or the club that saved it.'),

@@ -85,6 +85,8 @@ export interface WorstCaseData {
   hashtag: string;
   presentingSponsorName: string | null;
   sponsors: Array<{ name: string; logoUrl: string }>;
+  /** The card's player's own sponsors (player sponsors), at most two. */
+  playerSponsors: Array<{ name: string; logoUrl: string }>;
   photoUrl: string | null;
 }
 
@@ -655,6 +657,13 @@ export function worstCaseCard(
     presentingSponsorName: sponsorsOn ? WORST.sponsor : null,
     sponsors: sponsorsOn
       ? [1, 2, 3].map((n) => ({ name: `${WORST.sponsor} ${n}`, logoUrl: image(`sponsor${n}`) }))
+      : [],
+    // Both of a player's sponsors, long names, wherever the strip is on.
+    playerSponsors: sponsorsOn
+      ? [
+          { name: `${WORST.sponsor} 1`, logoUrl: image("playerSponsorLogo") },
+          { name: `${WORST.sponsor} 2`, logoUrl: image("playerSponsor2Logo") },
+        ]
       : [],
     photoUrl: photo && !variant.junior ? image("photo") : null,
   };

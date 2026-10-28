@@ -43,6 +43,7 @@ const template = (over: Record<string, unknown> = {}) => ({
   unlistedBy: null,
   unlistReason: null,
   updatedAt: "2026-10-22T00:00:00.000Z",
+  openReports: 0,
   ...over,
 });
 
@@ -109,7 +110,7 @@ function stubApi(routes: Record<string, (req: Req) => unknown> = {}) {
       } else if (/social-settings/.test(path)) {
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };
       }
-      return new Response(JSON.stringify(payload), {
+      return new Response(status === 204 ? null : JSON.stringify(payload), {
         status,
         headers: { "content-type": "application/json" },
       });
@@ -154,6 +155,79 @@ describe("console library page", () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it("shows a club template's reports and dismisses them (release 2)", async () => {
+    const club = template({
+      id: 7,
+      slug: null,
+      name: "Club milestone",
+      origin: "club",
+      authorName: "Halls Head",
+      readOnly: false,
+      look: null,
+      openReports: 2,
+    });
+    const requests = stubApi({
+      "GET /platform/admin/library/templates": () => ({ templates: [club] }),
+      "GET /platform/admin/library/templates/7/reports": () => [
+        {
+          id: 1,
+          clubName: "Mandurah",
+          reason: "Uses our crest",
+          createdAt: "2026-10-26T00:00:00.000Z",
+          resolvedAt: null,
+        },
+      ],
+      "POST /platform/admin/library/templates/7/reports/dismiss": () => ({
+        status: 204,
+        body: null,
+      }),
+    });
+    renderAt(<LibraryPage />, "/platform-admin/library");
+    const list = await screen.findByTestId("library-templates");
+    const row = within(list).getAllByRole("listitem")[0]!;
+    expect(row.textContent).toMatch(/2 open reports/);
+    expect(row.textContent).toMatch(/Club \(Halls Head\)/);
+    fireEvent.click(within(row).getByRole("button", { name: "Reports" }));
+    const reports = await within(row).findByRole("list", { name: "Reports" });
+    expect(reports.textContent).toMatch(/Mandurah.*Uses our crest/);
+    fireEvent.click(within(row).getByRole("button", { name: "Keep it, dismiss reports" }));
+    await waitFor(() =>
+      expect(
+        requests.some((r) => r.method === "POST" && /templates\/7\/reports\/dismiss$/.test(r.url)),
+      ).toBe(true),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent("Reports dismissed");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Reports" }), {
+      target: { value: "true" },
+    });
+    await waitFor(() =>
+      expect(requests.some((r) => /library\/templates\?.*reported=true/.test(r.url))).toBe(true),
+    );
+  });
+
+  it("leaves a template its club unlisted without a List button", async () => {
+    stubApi({
+      "GET /platform/admin/library/templates": () => ({
+        templates: [
+          template({
+            id: 8,
+            slug: null,
+            name: "Withdrawn",
+            origin: "club",
+            readOnly: false,
+            listed: false,
+            unlistedBy: "author",
+          }),
+        ],
+      }),
+    });
+    renderAt(<LibraryPage />, "/platform-admin/library");
+    const row = within(await screen.findByTestId("library-templates")).getAllByRole("listitem")[0]!;
+    expect(row.textContent).toMatch(/Unlisted by its club/);
+    expect(within(row).queryByRole("button", { name: "List" })).toBeNull();
   });
 
   it("duplicates a bundle template and opens the copy", async () => {

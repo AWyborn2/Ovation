@@ -10,6 +10,7 @@ import {
   pageRepeat,
   pickStat,
   rowsCapacity,
+  rowsColumns,
   type PageKey,
   type RowsPick,
   type TemplateTextStyle,
@@ -321,6 +322,75 @@ export function RowsPanel({
         <span className="text-xs text-[var(--ed-ink2)]">
           {capacity} {capacity === 1 ? "row fits" : "rows fit"} on this size
         </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3" role="group" aria-label="Layout">
+        <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+          Columns
+          <select
+            aria-label="Columns"
+            value={rowsColumns(spec)}
+            onChange={(e) => {
+              const columns = Number(e.target.value);
+              onEdit(
+                setRows(doc, layer.id, {
+                  columns: columns > 1 ? columns : undefined,
+                  ...(columns > 1 ? {} : { columnGap: undefined, flow: undefined }),
+                }),
+              );
+            }}
+            className={cn(input, "w-16")}
+          >
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        {rowsColumns(spec) > 1 && (
+          <>
+            <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
+              Column gap
+              <input
+                type="number"
+                aria-label="Column gap"
+                min={0}
+                max={30}
+                step={0.5}
+                value={spec.columnGap ?? 0}
+                onChange={(e) =>
+                  onEdit(setRows(doc, layer.id, { columnGap: Math.max(0, num(e.target.value, 0)) }))
+                }
+                className={cn(input, "w-16")}
+              />
+            </label>
+            <div className="flex items-center gap-1 text-xs" role="group" aria-label="Fill">
+              <span className="text-[var(--ed-ink2)]">Fill</span>
+              {(
+                [
+                  ["down", "Down each column"],
+                  ["across", "Across each line"],
+                ] as const
+              ).map(([flow, text]) => (
+                <button
+                  key={flow}
+                  type="button"
+                  aria-pressed={(spec.flow ?? "down") === flow}
+                  onClick={() => onEdit(setRows(doc, layer.id, { flow }))}
+                  className={cn(
+                    "rounded-lg border border-[var(--ed-line)] px-2 py-1 font-semibold",
+                    (spec.flow ?? "down") === flow
+                      ? "bg-[var(--ed-accent)] text-[var(--ed-on-accent)]"
+                      : "text-[var(--ed-ink)]",
+                  )}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <PickControls

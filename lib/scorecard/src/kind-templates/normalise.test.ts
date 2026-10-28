@@ -193,3 +193,16 @@ describe("v2 documents", () => {
     });
   });
 });
+
+describe("page colours", () => {
+  it("keeps a page's colour it can draw, and drops one it can't", () => {
+    const read = (background: unknown) =>
+      normaliseDocument(
+        { formatVersion: 2, pages: { card: { layers: [], background } } },
+        "newSigning",
+      ).pages.card;
+    expect(read("#FFFFFF")).toEqual({ layers: [], background: "#FFFFFF" });
+    expect(read("var(--panel)")).toEqual({ layers: [], background: "var(--panel)" });
+    expect(read("tomato")).toEqual({ layers: [] });
+  });
+});
