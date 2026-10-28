@@ -17,7 +17,7 @@
 **Ash's to do:**
 
 - Test 27 Oct work on dev with the checklist.
-- Production: in the Production SQL runner check which of 0065–0074 are missing, run those in order, then republish.
+- Production: in the Production SQL runner check which of 0065–0075 are missing, run those in order, then republish (republishing does not migrate Production).
 - Production, after that republish: run the UPDATE in `scripts/sql/backfill-draft-subject-player.sql` (preview SELECT first; idempotent) so queued player cards find their player's sponsors. Then re-test player sponsors there (dev has no player tags; Ash's test data is in Production).
 - Before switching on club Generate: run the AI quality query (first-try fit >= 70% over 50 console runs).
 - Register the Figma app (`FIGMA_CLIENT_ID` / `FIGMA_CLIENT_SECRET`) for Sign in with Figma.
