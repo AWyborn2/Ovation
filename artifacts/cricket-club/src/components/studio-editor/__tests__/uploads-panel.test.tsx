@@ -5,6 +5,7 @@ import type { ClubUpload } from "@workspace/api-client-react";
 
 const rename = vi.fn();
 const remove = vi.fn();
+const removeOne = vi.fn(async (_id: number) => {});
 const ingest = vi.fn(async (_body: unknown) => ({
   results: [{ objectPath: "/objects/uploads/a", ok: true }],
 }));
@@ -43,6 +44,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useRenameClubUpload: () => ({ mutate: rename, isPending: false }),
   useDeleteClubUpload: () => ({ mutate: remove, isPending: false }),
   ingestClubUploads: (body: unknown) => ingest(body),
+  deleteClubUpload: (id: number) => removeOne(id),
 }));
 vi.mock("@/components/social-queue/library-upload", () => ({
   requestUploadUrl: async () => ({ uploadURL: "https://up/a", objectPath: "/objects/uploads/a" }),
@@ -93,6 +95,36 @@ describe("UploadsPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Delete Speech bubble" }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith({ id: 1 }));
+  });
+
+  it("selects several uploads and deletes them together", async () => {
+    const onAdd = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    // In select mode a tile ticks instead of going on the card.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select Speech bubble" }));
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete 2" }));
+    await waitFor(() => expect(removeOne).toHaveBeenCalledTimes(2));
+    expect(removeOne.mock.calls.map((c) => c[0]).sort()).toEqual([1, 2]);
+    expect(await screen.findByText("Deleted 2 uploads.")).toBeInTheDocument();
+    // Done with selecting: tiles add to the card again.
+    expect(screen.getByRole("button", { name: "Add Club logo to the card" })).toBeInTheDocument();
+  });
+
+  it("says how many failed when some can't be deleted, and stays in select mode", async () => {
+    setup();
+    removeOne.mockImplementationOnce(async () => {
+      throw new Error("nope");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete 2" }));
+    expect(await screen.findByText(/1 of 2 couldn't be deleted/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
   });
 
   it("uploads files into Uploads, not the photo library", async () => {
