@@ -840,6 +840,9 @@ export const KIND_PHOTO_SLOT: Readonly<Record<string, string>> = {
   tradingCard: "cardPhoto",
 };
 
+/** Kinds whose pack designs carry a sample headline that must never reach a real card. */
+const HEADLINE_SAMPLE_KINDS: ReadonlySet<string> = new Set(["milestone", "player", "newSigning"]);
+
 /**
  * Overlay per-render tenant data (logo, name, hashtags, sponsors, uploaded
  * photo) onto an already-bound input. Applied uniformly across every card kind
@@ -912,6 +915,12 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
     values["note.title"] ??= "";
     values["note.body"] ??= "";
   }
+
+  // S5: the tribute or headline line on a player's card is the card's own
+  // words or nothing. The pack samples ("…thanks for every one, Milesy.",
+  // "…Let's go, Sam!") printed on real cards whose input has no headline, a
+  // sweep's career milestone among them.
+  if (HEADLINE_SAMPLE_KINDS.has(kind)) values["headline"] ??= "";
 
   // A4 — uploaded / selected photo overrides the input's own photoUrl.
   //
