@@ -230,7 +230,12 @@ export default function AdminSocialCreate() {
               <CardTitle>Card details</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardFormRouter kind={kind} state={state} setState={patchState} />
+              <CardFormRouter
+                kind={kind}
+                state={state}
+                setState={patchState}
+                onPlayer={setPlayer}
+              />
             </CardContent>
           </Card>
         </div>

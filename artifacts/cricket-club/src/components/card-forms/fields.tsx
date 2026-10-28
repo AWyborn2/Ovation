@@ -209,18 +209,25 @@ export function ImageControl({
   );
 }
 
-/** A player typeahead that writes the selected name into the descriptor's field(s). */
+/**
+ * A player typeahead that writes the selected name into the descriptor's
+ * field(s), and tells the page which player the card is about (`onPlayer`),
+ * so the card carries that player's sponsors.
+ */
 function PlayerPickRow({
   descriptor,
   setState,
+  onPlayer,
 }: {
   descriptor: KindDescriptor;
   setState: SetState;
+  onPlayer?: (p: SelectedPlayer | null) => void;
 }) {
   const pf = descriptor.playerField;
   if (!pf) return null;
   const onPick = (p: SelectedPlayer | null) => {
     if (!p) return;
+    onPlayer?.(p);
     if ("firstKey" in pf) {
       setState({ [pf.firstKey]: p.givenName, [pf.lastKey]: p.surname });
     } else {
@@ -364,15 +371,20 @@ export function GenericCardForm({
   descriptor,
   state,
   setState,
+  onPlayer,
 }: {
   kind: CardKind;
   descriptor: KindDescriptor;
   state: CardFormState;
   setState: SetState;
+  /** The player linked with "Link a player" (player sponsors). */
+  onPlayer?: (p: SelectedPlayer | null) => void;
 }) {
   return (
     <div className="space-y-5">
-      {descriptor.playerField && <PlayerPickRow descriptor={descriptor} setState={setState} />}
+      {descriptor.playerField && (
+        <PlayerPickRow descriptor={descriptor} setState={setState} onPlayer={onPlayer} />
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {descriptor.fields.map((field) => (
           <div key={field.key} className={field.full ? "sm:col-span-2" : undefined}>
