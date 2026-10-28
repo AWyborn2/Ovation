@@ -10,6 +10,7 @@ import request from "supertest";
 import { inArray } from "drizzle-orm";
 import app from "../app";
 import { db, sponsorPlayersTable, sponsorsTable, tenantsTable } from "@workspace/db";
+import { perthDate } from "../lib/availability-grades";
 
 const STAMP = Date.now();
 const tenantIds: number[] = [];
@@ -17,8 +18,9 @@ const PLAYER = 4301;
 const UNTAGGED = 4302;
 const FILL_IN = 90001;
 
-const day = (offset: number) =>
-  new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+// The club's date (Perth), as the sponsor window uses: a UTC date is a day
+// behind from 4 pm to midnight UTC.
+const day = (offset: number) => perthDate(new Date(Date.now() + offset * 86_400_000));
 const get = (i: number, url: string) =>
   request(app).get(url).set("x-tenant-id", String(tenantIds[i]));
 
