@@ -1,6 +1,6 @@
 {
   "name": "Club Kit debut",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1421,7 +1421,7 @@
             "id": "debut-1",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
+            "content": "FIRST GRADE DEBUT \u00b7 {{grade}} \u00b7 {{season}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 1.8,
@@ -1458,7 +1458,7 @@
             "id": "debut-2",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "FIRST GRADE DEBUT · {{grade}} · {{season}}",
+            "content": "FIRST GRADE DEBUT \u00b7 {{grade}} \u00b7 {{season}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 0.94,
@@ -1548,7 +1548,7 @@
             "id": "tribute-1",
             "kind": "text",
             "name": "Supporting line",
-            "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
+            "content": "Round {{round}} \u00b7 vs {{opponent}} \u2014 {{tributeLine}}",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 2.2,
@@ -1583,7 +1583,7 @@
             "id": "tribute-2",
             "kind": "text",
             "name": "Supporting line",
-            "content": "Round {{round}} · vs {{opponent}} — {{tributeLine}}",
+            "content": "Round {{round}} \u00b7 vs {{opponent}} \u2014 {{tributeLine}}",
             "style": {
               "fontFamily": "'IBM Plex Sans',system-ui,sans-serif",
               "fontSize": 1.15,
@@ -1753,33 +1753,111 @@
             "geometry": {
               "square": {
                 "x": 73.56,
-                "y": 20.18,
+                "y": 21.95,
                 "w": 18.66,
-                "h": 5.7
+                "h": 4.64
               },
               "portrait": {
                 "x": 72.7,
-                "y": 16.2,
+                "y": 17.68,
                 "w": 19.45,
-                "h": 4.76
+                "h": 3.87
               },
               "story": {
                 "x": 71,
-                "y": 11.46,
+                "y": 12.59,
                 "w": 21,
-                "h": 3.61
+                "h": 2.93
               },
               "landscape": {
                 "x": 81.51,
-                "y": 23.14,
+                "y": 25.68,
                 "w": 14,
-                "h": 8.17
+                "h": 6.65
               }
             },
             "showWhen": {
               "field": "playerSponsorLogo"
             },
             "sig": "image:1xf2upn05rrn76"
+          },
+          {
+            "id": "player-sponsor-label",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 1.25
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "square": {
+                "x": 73.11,
+                "y": 19.33,
+                "w": 19.55,
+                "h": 2.22
+              },
+              "portrait": {
+                "x": 72.24,
+                "y": 15.5,
+                "w": 20.37,
+                "h": 1.85
+              },
+              "story": {
+                "x": 70.5,
+                "y": 10.93,
+                "w": 22,
+                "h": 1.41
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0p87by203sqsmv"
+          },
+          {
+            "id": "player-sponsor-label-2",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "landscape": {
+                "x": 81.18,
+                "y": 21.93,
+                "w": 14.67,
+                "h": 3.18
+              }
+            },
+            "sizes": ["landscape"],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0gbrg9m1s3lefr"
           }
         ]
       }

@@ -1,6 +1,6 @@
 {
   "name": "Broadcast milestone",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1020,33 +1020,111 @@
             "geometry": {
               "square": {
                 "x": 73.56,
-                "y": 77.52,
+                "y": 79.29,
                 "w": 18.66,
-                "h": 5.7
+                "h": 4.64
               },
               "portrait": {
                 "x": 72.7,
-                "y": 81.76,
+                "y": 83.24,
                 "w": 19.45,
-                "h": 4.76
+                "h": 3.87
               },
               "story": {
                 "x": 71,
-                "y": 15.41,
+                "y": 16.54,
                 "w": 21,
-                "h": 3.61
+                "h": 2.93
               },
               "landscape": {
                 "x": 81.51,
-                "y": 72.09,
+                "y": 74.63,
                 "w": 14,
-                "h": 8.17
+                "h": 6.65
               }
             },
             "showWhen": {
               "field": "playerSponsorLogo"
             },
             "sig": "image:1xf2upn05rrn76"
+          },
+          {
+            "id": "player-sponsor-label",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 1.25
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "square": {
+                "x": 73.11,
+                "y": 76.67,
+                "w": 19.55,
+                "h": 2.22
+              },
+              "portrait": {
+                "x": 72.24,
+                "y": 81.06,
+                "w": 20.37,
+                "h": 1.85
+              },
+              "story": {
+                "x": 70.5,
+                "y": 14.88,
+                "w": 22,
+                "h": 1.41
+              }
+            },
+            "sizes": ["square", "portrait", "story"],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0p87by203sqsmv"
+          },
+          {
+            "id": "player-sponsor-label-2",
+            "kind": "text",
+            "name": "Player's sponsor label",
+            "content": "Proudly sponsored by",
+            "style": {
+              "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
+              "fontWeight": 600,
+              "letterSpacing": 0.12,
+              "uppercase": true,
+              "color": "#4A4F57",
+              "align": "center",
+              "fontSize": 0.75
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "geometry": {
+              "landscape": {
+                "x": 81.18,
+                "y": 70.88,
+                "w": 14.67,
+                "h": 3.18
+              }
+            },
+            "sizes": ["landscape"],
+            "showWhen": {
+              "field": "playerSponsorLogo"
+            },
+            "sig": "text:0gbrg9m1s3lefr"
           }
         ]
       }
