@@ -6,6 +6,8 @@ import type { PackCardData } from "@/lib/pack-render";
 import { draftLayerPhotos } from "@/lib/pack-card-data";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { Link, useLocation, useSearch } from "wouter";
+import { useEntitlements, useNewStudio } from "@/lib/entitlements";
+import { useSearchParamState } from "@/lib/use-search-param";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
@@ -122,6 +124,13 @@ export default function AdminSocialQueue() {
   const [status, setStatus] = useState<DraftStatus>(batchIds ? "ready" : "awaiting_review");
   const [family, setFamily] = useState<Family | "all">("all");
   const [grade, setGrade] = useState<string>("all");
+  // New Studio (preview): Seniors or Juniors (`?team=`); a draft with no junior
+  // marker (a sponsor card, an announcement) counts as senior.
+  const newStudio = useNewStudio();
+  const juniorsOn = useEntitlements().juniors;
+  const teamFilter = newStudio && juniorsOn;
+  const [teamParam, setTeam] = useSearchParamState("team", "all");
+  const team = teamFilter && (teamParam === "senior" || teamParam === "junior") ? teamParam : "all";
   // Card kind templates (KTD10): drafts whose layout needs a look.
   const [needsLook, setNeedsLook] = useState(false);
   const [open, setOpen] = useState<SocialDraft | null>(null);
@@ -197,9 +206,10 @@ export default function AdminSocialQueue() {
           draftStatus(d) === status &&
           (family === "all" || d.family === family) &&
           (grade === "all" || draftGrade(d) === grade) &&
+          (team === "all" || isJuniorDraft(d) === (team === "junior")) &&
           (!needsLook || layoutState(d) === "needs-look"),
       ),
-    [drafts, status, family, grade, batchIds, needsLook],
+    [drafts, status, family, grade, team, batchIds, needsLook],
   );
 
   const lastImport = (importsQ.data ?? [])
@@ -428,6 +438,23 @@ export default function AdminSocialQueue() {
                 </option>
               ))}
             </select>
+            {teamFilter && (
+              <>
+                <Label htmlFor="team-filter" className="text-sm">
+                  Teams
+                </Label>
+                <select
+                  id="team-filter"
+                  value={team}
+                  onChange={(e) => setTeam(e.target.value)}
+                  className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+                >
+                  <option value="all">All teams</option>
+                  <option value="senior">Seniors</option>
+                  <option value="junior">Juniors</option>
+                </select>
+              </>
+            )}
             {(lookCount > 0 || needsLook) && (
               <button
                 type="button"
