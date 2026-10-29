@@ -69,7 +69,14 @@ import {
 } from "../lib/template-library/draw";
 import { TemplateLibraryError } from "../lib/template-library/errors";
 import { loadDraftSetDesign, saveDraftSetDesign } from "../lib/template-library/set-design";
-import { draftSubjectPlayerId, isAutoPhoto, resolveDraftPack } from "../lib/draft-enrich";
+import {
+  draftSubjectPlayerId,
+  isAutoPhoto,
+  photoColumns,
+  resolveDraftPack,
+  type PhotoPick,
+} from "../lib/draft-enrich";
+import { juniorAdhocCard } from "../lib/junior-adhoc";
 import { nonSeniorPlayerIds } from "../lib/club-photo-library";
 import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 import { enqueueAssetReady, kickOutbox } from "../lib/email-outbox";
@@ -486,18 +493,30 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { cardInput, templateId, templateRef } = parsed.data;
-    if (typeof cardInput.kind !== "string" || !cardInput.kind) {
+    const { templateId, templateRef } = parsed.data;
+    let { cardInput } = parsed.data;
+    const kind = cardInput.kind;
+    if (typeof kind !== "string" || !kind) {
       res.status(400).json({ error: "cardInput.kind is required" });
       return;
     }
     const tenantId = getTenantId(req);
+    // A junior card (New Studio's Create, Create a card's junior switch) is marked junior,
+    // so the queue and the fail-closed publishing gate treat it as one, and its photo is
+    // the server's to pick: the request's consent markers never survive (juniors isolation).
+    const junior = cardInput.junior === true;
+    let juniorPhoto: PhotoPick | null = null;
+    if (junior) {
+      const made = await juniorAdhocCard(tenantId, cardInput);
+      cardInput = { ...made.cardInput, kind };
+      juniorPhoto = made.photo;
+    }
     // The player a hand-made player card is about (player sponsors): a senior
     // player of this club, on a senior player-centred card only.
     let subjectPlayerId: number | null = null;
     if (parsed.data.subjectPlayerId != null) {
       subjectPlayerId = draftSubjectPlayerId(
-        cardInput.kind,
+        kind,
         parsed.data.subjectPlayerId,
         cardInput.junior === true,
       );
@@ -612,7 +631,7 @@ router.post(
     let templated: TemplatedDesign | null = null;
     try {
       if (templateRef !== undefined) {
-        templated = await designFromRef(tenantId, cardInput.kind, templateRef);
+        templated = await designFromRef(tenantId, kind, templateRef);
       } else if (carousel?.version === 3) {
         const assembled = await assembleCarouselDocument(tenantId, carousel, {
           templateRef: carousel.templateRef,
@@ -665,6 +684,9 @@ router.post(
         editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
         subjectPlayerId,
+        ...(junior
+          ? { sourceMatchIsJunior: true, ...(await photoColumns(tenantId, juniorPhoto)) }
+          : {}),
         ...(templated ?? {}),
       })
       .onConflictDoNothing()
@@ -689,8 +711,9 @@ router.post(
       res.status(409).json({ error: "Could not create draft. Please retry." });
       return;
     }
-    // A single card's sourced photo layers pick their photos (a carousel has none).
-    const layerPhotos = carousel ? null : await draftLayerPhotos(row);
+    // A single card's sourced photo layers pick their photos (a carousel has none). A
+    // junior card's layers stay empty: only the junior pick above may show a child.
+    const layerPhotos = carousel || junior ? null : await draftLayerPhotos(row);
     if (layerPhotos) {
       const [withPhotos] = await db
         .update(socialDraftsTable)

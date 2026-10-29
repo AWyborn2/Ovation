@@ -12,6 +12,7 @@ import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import {
   GetJuniorFixtureParams,
   GetJuniorFixtureTeamListParams,
+  GetJuniorTeamListPrefillParams,
   ListJuniorFixturesQueryParams,
   PutJuniorFixtureTeamListBody,
   PutJuniorFixtureTeamListParams,
@@ -20,6 +21,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { isJuniorSyncOn } from "../lib/junior-sync";
+import { juniorTeamListPrefill } from "../lib/junior-adhoc";
 import { getJuniorNameStyle } from "../lib/junior-helpers";
 import { makeJuniorNaming, type JuniorNameFacts } from "../lib/junior-names";
 import { juniorCanonicalizer, loadJuniorIdentity } from "../lib/junior-shirt-numbers";
@@ -262,6 +264,28 @@ router.get("/juniors/fixtures/:id/team-list", requireAdmin, async (req, res): Pr
   }
   res.json(await adminView(tenantId, fixture));
 });
+
+// New Studio's Create (studio-create-consolidation S3): one junior team's Team List card,
+// from the junior tables only. No photo: the draft's photo is picked when it is made.
+router.get(
+  "/juniors/fixtures/:id/social-prefill",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const params = GetJuniorTeamListPrefillParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const fixture = await findFixture(tenantId, params.data.id);
+    if (!fixture) {
+      res.status(404).json({ error: NOT_FOUND });
+      return;
+    }
+    res.json(await juniorTeamListPrefill(tenantId, fixture));
+  },
+);
 
 router.put(
   "/juniors/fixtures/:id/team-list",

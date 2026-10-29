@@ -6084,6 +6084,32 @@ export interface SocialPrefillMoment {
   input: SocialPrefillMomentInput;
 }
 
+export type JuniorTeamListPrefillInput = { [key: string]: unknown };
+
+/**
+ * Who wrote the saved list: the Selection Hub, an admin, PlayHQ, or none (no list yet).
+ */
+export type JuniorTeamListPrefillSource = typeof JuniorTeamListPrefillSource[keyof typeof JuniorTeamListPrefillSource];
+
+
+export const JuniorTeamListPrefillSource = {
+  selection: 'selection',
+  admin: 'admin',
+  playhq: 'playhq',
+  none: 'none',
+} as const;
+
+/**
+ * A junior fixture's Team List card input, and where its names came from.
+ */
+export interface JuniorTeamListPrefill {
+  input: JuniorTeamListPrefillInput;
+  warnings: string[];
+  /** Who wrote the saved list: the Selection Hub, an admin, PlayHQ, or none (no list yet). */
+  source: JuniorTeamListPrefillSource;
+  isPublished: boolean;
+}
+
 export type SocialCardPrefillInput = { [key: string]: unknown };
 
 /**

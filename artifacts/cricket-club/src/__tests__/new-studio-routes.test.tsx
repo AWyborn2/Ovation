@@ -77,6 +77,19 @@ describe("New Studio switch", () => {
     expect(url()).toBe("/admin/social/sets?open=3");
   });
 
+  it("opens the new Create flow when on, and today's Create a card when off", async () => {
+    installApiMock(plan(true));
+    renderWithHistory(<AdminSocialGroup />, "/admin/social/create");
+    expect(
+      await screen.findByRole("heading", { name: "What are you making?" }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    cleanup();
+    installApiMock(plan(false));
+    renderWithHistory(<AdminSocialGroup />, "/admin/social/create");
+    await screen.findByRole("heading", { name: "Social Media Studio" });
+    expect(screen.queryByRole("heading", { name: "What are you making?" })).toBeNull();
+  });
+
   it("does not redirect with the switch off", async () => {
     installApiMock(plan(false));
     const { url } = renderWithHistory(<AdminSocialGroup />, "/admin/social/library");

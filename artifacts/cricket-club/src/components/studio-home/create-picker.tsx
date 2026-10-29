@@ -122,20 +122,24 @@ function ClubTemplateOption({
   );
 }
 
-function TemplateStep({
+export function TemplateStep({
   kind,
   size,
   preview,
   start,
   busy,
+  input: filled,
 }: {
   kind: string;
   size: CardSize;
   preview: LibraryPreview;
   start: (body: CreateSocialDraftRequest) => void;
   busy: boolean;
+  /** The card already filled in (New Studio's Create); the kind's sample otherwise. */
+  input?: ShareCardInput;
 }) {
-  const input = usePreviewInput(kind, preview.clubName);
+  const sample = usePreviewInput(kind, preview.clubName);
+  const input = filled ?? sample;
   const clubParams = { kind };
   const clubQ = useListClubTemplates(clubParams, {
     query: { queryKey: getListClubTemplatesQueryKey(clubParams) },

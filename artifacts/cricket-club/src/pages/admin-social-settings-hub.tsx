@@ -11,7 +11,6 @@ export const SETTINGS_LINKS = [
   { href: "/admin/social/cards", label: "Cards" },
   { href: "/admin/social/email-lists", label: "Email lists" },
   { href: "/admin/social/fixtures", label: "Fixtures" },
-  { href: "/admin/social/juniors", label: "Junior cards" },
 ];
 
 /** New Studio → Settings: links to the moved pages, then today's Settings page. */
