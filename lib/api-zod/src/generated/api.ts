@@ -19620,6 +19620,24 @@ export const GetSocialRoundResultsPrefillResponse = zod.object({
 
 
 /**
+ * Each is the card the engine drafted for that performance (whatever its queue status), so a card made here carries the same figures and match. Senior only; the last 120 days, at most 60.
+ * @summary Recent centuries and five-wicket hauls the achievements engine found, for Create a Card's prefill (newest first). Admin + socialStudio entitlement.
+ */
+export const ListSocialPrefillMomentsResponseItem = zod.object({
+  "id": zod.number().describe('The engine\'s draft id.'),
+  "kind": zod.enum(['century', 'fiveFor']),
+  "playerId": zod.number().nullable().describe('The player\'s id, when the club has them on its books.'),
+  "playerName": zod.string(),
+  "grade": zod.string().nullable(),
+  "round": zod.number().nullable(),
+  "opponent": zod.string().nullable(),
+  "seenAt": zod.coerce.date(),
+  "input": zod.record(zod.string(), zod.unknown()).describe('The card input the engine drafted (figures and match).')
+}).describe('A century or five-wicket haul the achievements engine drafted, as Create a Card\'s prefill.')
+export const ListSocialPrefillMomentsResponse = zod.array(ListSocialPrefillMomentsResponseItem)
+
+
+/**
  * Built by the same content builder as the auto-queued card and the results and match summary carousels, with the club's content choices, so a card made here matches the one the sweep queues. The match id is the one the match list gives (central's for a central-data club).
  * @summary Match result card prefill (ADR-010 P7): the card the results sweep drafts for this match. Admin + socialStudio entitlement.
  */
