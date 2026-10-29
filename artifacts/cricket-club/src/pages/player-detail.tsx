@@ -355,6 +355,7 @@ export default function PlayerDetail() {
             stats={heroStats(totals, view.d)}
             discipline={view.d}
             overlay={adminPhotoControls}
+            sponsors={<PlayerSponsors playerId={player.id} variant="hero" />}
           />
 
           <div className="flex flex-wrap items-center gap-2">
@@ -392,8 +393,6 @@ export default function PlayerDetail() {
             {photoError && <p className="text-xs text-destructive">{photoError}</p>}
           </div>
           <TradingCardModal playerId={playerId} open={cardOpen} onOpenChange={setCardOpen} />
-
-          <PlayerSponsors playerId={player.id} />
 
           {showCappedNoStats && capEntry && (
             <div className="rounded-md border-l-4 border-primary/60 bg-muted/40 p-4 text-sm leading-snug">

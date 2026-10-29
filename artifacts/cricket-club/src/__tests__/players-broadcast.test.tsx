@@ -143,6 +143,13 @@ describe("Player detail (Broadcast U8)", () => {
       "/api/players/42": PLAYER,
     });
     const strip = await screen.findByTestId("player-sponsors");
+    // In the hero, top-left, ahead of the cap pill (Ash, 28 Oct 2026).
+    const hero = screen.getByTestId("profile-hero");
+    expect(hero.contains(strip)).toBe(true);
+    expect(
+      strip.compareDocumentPosition(within(hero).getByText("Cap 242")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(within(strip).getByText("Proudly sponsored by")).toBeTruthy();
     expect(within(strip).getByRole("link", { name: "Joe's Plumbing" }).getAttribute("href")).toBe(
       "https://joes.com.au",
