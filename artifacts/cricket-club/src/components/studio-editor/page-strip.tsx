@@ -9,6 +9,8 @@ import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Copy, GripVertical, Plus, Repeat2, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useNewStudio } from "@/lib/entitlements";
+import { PageOverview } from "./page-grid";
 
 export type StripItem = {
   id: string;
@@ -60,6 +62,8 @@ export function PageStrip({
   const [adding, setAdding] = useState(false);
   const h = Math.round(thumbWidth / aspect);
   const canDelete = !!onDelete && items.length > 1;
+  // New Studio (preview): an "N / M" counter and a grid of every page.
+  const overview = useNewStudio();
 
   const drop = (to: number) => {
     if (dragging && onMove) {
@@ -263,6 +267,18 @@ export function PageStrip({
             ))}
           </PopoverContent>
         </Popover>
+      )}
+      {overview && items.length > 1 && (
+        <PageOverview
+          items={items}
+          current={current}
+          onSelect={onSelect}
+          thumb={thumb}
+          aspect={aspect}
+          onMove={onMove}
+          onDelete={onDelete}
+          label={label}
+        />
       )}
     </nav>
   );
