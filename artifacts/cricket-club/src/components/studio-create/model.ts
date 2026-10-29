@@ -31,6 +31,16 @@ export const SENIOR_KINDS: CardKind[] = CARD_KIND_OPTIONS.map((o) => o.value).fi
   (k) => !NOT_SINGLE.has(k),
 );
 
+/**
+ * Kinds Create offers juniors, each from a junior builder over the junior tables only
+ * (juniors isolation): one team's list, a junior match, a junior milestone.
+ */
+export const JUNIOR_KINDS: CardKind[] = ["teamList", "matchSummary", "milestone"];
+
+/** The kinds a team (Seniors or Juniors) can make. */
+export const kindsFor = (team: CreateTeam): CardKind[] =>
+  team === "junior" ? JUNIOR_KINDS : SENIOR_KINDS;
+
 /** The kinds a carousel can be made of (S4); single cards for every other kind. */
 export const CAROUSEL_KINDS = new Set<CardKind>([
   "teamList",
@@ -45,12 +55,13 @@ export function offersCarousel(_kind: CreateState["kind"]): boolean {
 }
 
 /** Read the wizard's state from the query string, dropping anything unknown. */
-export function parseCreateState(search: string, kinds: readonly CardKind[]): CreateState {
+export function parseCreateState(search: string, juniorsOn = true): CreateState {
   const q = new URLSearchParams(search);
-  const team: CreateTeam = q.get("team") === "junior" ? "junior" : "senior";
+  const team: CreateTeam = q.get("team") === "junior" && juniorsOn ? "junior" : "senior";
+  const kinds = kindsFor(team);
   const rawKind = q.get("kind");
   const kind =
-    rawKind === "blank"
+    rawKind === "blank" && team === "senior"
       ? "blank"
       : rawKind && kinds.includes(rawKind as CardKind)
         ? (rawKind as CardKind)

@@ -599,7 +599,7 @@ export const ROTATION_WINDOW_DAYS = 28;
  * A picked photo. `playerId` is the player it was picked for (a tagged library
  * photo of them), so the draft crops to their area on a group photo.
  */
-type PhotoPick = {
+export type PhotoPick = {
   url: string;
   source: PhotoSource;
   playerId?: number;
@@ -608,7 +608,7 @@ type PhotoPick = {
 };
 
 /** The draft columns for a picked photo (or none), focus snapshot included. */
-async function photoColumns(
+export async function photoColumns(
   tenantId: number,
   photo: PhotoPick | null,
 ): Promise<{

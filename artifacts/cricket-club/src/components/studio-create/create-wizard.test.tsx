@@ -53,6 +53,23 @@ type Call = { url: string; method: string; body: unknown };
 function stubApi() {
   const calls: Call[] = [];
   const routes: Array<[string, unknown]> = [
+    [
+      "/juniors/fixtures/31/team-list",
+      { teamList: { players: [{ name: "x" }], isPublished: true, source: "selection" } },
+    ],
+    [
+      "/juniors/fixtures/31/social-prefill",
+      {
+        input: { kind: "teamList", junior: true, juniorFixtureId: 31, players: [] },
+        warnings: [],
+        source: "selection",
+        isPublished: true,
+      },
+    ],
+    [
+      "/juniors/fixtures",
+      [{ id: 31, ageGroup: "Year 6", teamName: "Hawks", opponentName: "Eagles", startAt: null }],
+    ],
     ["/fixtures/11/team-list", list(11, "selection", true)],
     ["/fixtures/12/team-list", list(12, "playhq", true)],
     ["/fixtures/13/team-list", null],
@@ -141,5 +158,29 @@ describe("Create wizard", () => {
       packId: expect.any(String),
       adjustments: expect.any(Object),
     });
+  });
+
+  it("makes a junior team's list from the junior tables only", async () => {
+    const calls = stubApi();
+    const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create");
+    fireEvent.click(await screen.findByRole("button", { name: "Juniors" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Junior Team List" }));
+    await waitFor(() =>
+      expect(url()).toBe("/admin/social/create?team=junior&kind=teamList&step=3"),
+    );
+    const team = await screen.findByRole("button", { name: /Year 6 Hawks vs Eagles/ });
+    await waitFor(() => expect(team).toHaveTextContent("Selection Hub"));
+    fireEvent.click(team);
+    await waitFor(() =>
+      expect(url()).toBe("/admin/social/create?team=junior&kind=teamList&step=4"),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Use Club Kit Team List" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/editor/501?format=square"));
+    const post = calls.find((c) => c.method === "POST" && c.url.includes("/social-drafts"))!;
+    expect(post.body).toMatchObject({
+      cardInput: { kind: "teamList", junior: true, juniorFixtureId: 31 },
+    });
+    // Senior team lists and fixtures were never read.
+    expect(calls.some((c) => /\/api\/fixtures|social-prefill\/team-list/.test(c.url))).toBe(false);
   });
 });

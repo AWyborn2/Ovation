@@ -9691,6 +9691,33 @@ paths:
         "404":
           description: Not found
 
+  /juniors/fixtures/{id}/social-prefill:
+    get:
+      operationId: getJuniorTeamListPrefill
+      tags: [juniors]
+      summary: A junior fixture's Team List card for New Studio's Create (admin only)
+      description: >-
+        The card the junior team-list sweep would draft for this fixture, from its saved
+        team list (published or not): names in the club's public junior naming style,
+        withheld players as "Private Player", no photo. The photo is picked server-side
+        when the draft is made (fail-closed consent). Reads junior tables only. 404 when
+        the fixture is another club's.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The card input and where the team's names came from
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorTeamListPrefill"
+        "404":
+          description: Not found
+
   /juniors/fixtures/{id}/team-list:
     get:
       operationId: getJuniorFixtureTeamList
@@ -20939,6 +20966,26 @@ components:
           type: object
           additionalProperties: true
           description: The card input the engine drafted (figures and match).
+
+    JuniorTeamListPrefill:
+      type: object
+      description: A junior fixture's Team List card input, and where its names came from.
+      required: [input, warnings, source, isPublished]
+      properties:
+        input:
+          type: object
+          additionalProperties: true
+        warnings:
+          type: array
+          items: { type: string }
+        source:
+          type: string
+          enum: [selection, admin, playhq, none]
+          description: >-
+            Who wrote the saved list: the Selection Hub, an admin, PlayHQ, or none (no list
+            yet).
+        isPublished:
+          type: boolean
 
     SocialCardPrefill:
       type: object

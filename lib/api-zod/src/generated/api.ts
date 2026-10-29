@@ -16118,6 +16118,22 @@ export const GetJuniorFixtureResponse = zod.object({
 
 
 /**
+ * The card the junior team-list sweep would draft for this fixture, from its saved team list (published or not): names in the club's public junior naming style, withheld players as "Private Player", no photo. The photo is picked server-side when the draft is made (fail-closed consent). Reads junior tables only. 404 when the fixture is another club's.
+ * @summary A junior fixture's Team List card for New Studio's Create (admin only)
+ */
+export const GetJuniorTeamListPrefillParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorTeamListPrefillResponse = zod.object({
+  "input": zod.record(zod.string(), zod.unknown()),
+  "warnings": zod.array(zod.string()),
+  "source": zod.enum(['selection', 'admin', 'playhq', 'none']).describe('Who wrote the saved list: the Selection Hub, an admin, PlayHQ, or none (no list yet).'),
+  "isPublished": zod.boolean()
+}).describe('A junior fixture\'s Team List card input, and where its names came from.')
+
+
+/**
  * Full names, each player's junior shirt number for the fixture's season, and the club's junior players to pick from.
  * @summary A junior fixture's team list for the admin editor (admin only)
  */
