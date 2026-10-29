@@ -13,6 +13,7 @@ const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
 const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
 const AdminSocialPlan = lazy(() => import("@/pages/admin-social-plan"));
+const AdminSocialCreateV2 = lazy(() => import("@/pages/admin-social-create-v2"));
 const AdminSocialDesigns = lazy(() => import("@/pages/admin-social-designs"));
 const AdminSocialPhotos = lazy(() => import("@/pages/admin-social-photos"));
 const AdminSocialSettingsHub = lazy(() => import("@/pages/admin-social-settings-hub"));
@@ -135,7 +136,7 @@ export function AdminSocialGroup() {
         "template-library": <AdminTemplateLibrary />,
         plan: <AdminSocialPlan />,
         cards: <AdminSocial />,
-        create: <AdminSocialCreate />,
+        create: newStudio ? <AdminSocialCreateV2 /> : <AdminSocialCreate />,
         sets: <AdminSocialSets />,
         fixtures: <AdminFixtures />,
         juniors: <AdminJuniorSocial />,
