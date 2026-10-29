@@ -272,6 +272,8 @@ export type StackSpec = {
  *
  * - `field`: a page token (`roundLabel`, `opposition.logo`) is visible and has
  *   a value: the club's content choices show it and the card has it.
+ * - `noField`: the opposite: the token is hidden or empty (a sponsors grid
+ *   that takes the room the next home game would have used).
  * - `photo`: the card has (true) or lacks (false) its photo; `photo: false`
  *   is the "or no photo" alternative (Duotone's logo art).
  * - `sponsors`: the card has (true) or lacks (false) sponsor logos.
@@ -280,7 +282,13 @@ export type StackSpec = {
  * Conditions are read after the render path's junior and private-player
  * rules, so a condition never reveals what the render path withholds.
  */
-export type ShowWhen = { field?: string; photo?: boolean; sponsors?: boolean; junior?: boolean };
+export type ShowWhen = {
+  field?: string;
+  noField?: string;
+  photo?: boolean;
+  sponsors?: boolean;
+  junior?: boolean;
+};
 
 /**
  * How live text fits its box: shrink to `minScale` of its designed size

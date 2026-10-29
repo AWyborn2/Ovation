@@ -16,6 +16,7 @@ export * from "./placeholder";
 export * from "./rows-pick";
 export * from "./signature";
 export * from "./svg";
+export * from "./tile-grid";
 export * from "./warnings";
 export * from "./validate";
 export * from "./worst-case";
