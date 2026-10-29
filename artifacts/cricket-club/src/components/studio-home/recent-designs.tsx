@@ -336,11 +336,24 @@ export function ContinueDesigning({ preview }: { preview: LibraryPreview }) {
 }
 
 type TypeFilter = "" | RecentDesign["type"];
+const TYPE_FILTERS: TypeFilter[] = ["", "draft", "template", "set"];
 
 /** "Your designs": everything Continue designing draws from, with filters. */
-export function YourDesigns({ preview }: { preview: LibraryPreview }) {
+export function YourDesigns({
+  preview,
+  initialType = "",
+  showBack = true,
+}: {
+  preview: LibraryPreview;
+  /** Start filtered to one type (New Studio's `?type=`, e.g. from the old Carousel sets URL). */
+  initialType?: string;
+  /** "Back to Home" (old Studio, where Your designs sits under Home). */
+  showBack?: boolean;
+}) {
   const recent = useRecentDesigns();
-  const [type, setType] = useState<TypeFilter>("");
+  const [type, setType] = useState<TypeFilter>(() =>
+    TYPE_FILTERS.includes(initialType as TypeFilter) ? (initialType as TypeFilter) : "",
+  );
   const [kind, setKind] = useState("");
   const kinds = [...new Set(recent.items.flatMap((d) => (d.type === "set" ? [] : [d.kind])))].sort(
     (a, b) => kindLabel(a).localeCompare(kindLabel(b)),
@@ -352,9 +365,11 @@ export function YourDesigns({ preview }: { preview: LibraryPreview }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-serif text-[26px] font-bold uppercase leading-none">Your designs</h2>
-        <Link href="/admin/social" className="text-sm text-primary-text hover:underline">
-          Back to Home
-        </Link>
+        {showBack && (
+          <Link href="/admin/social" className="text-sm text-primary-text hover:underline">
+            Back to Home
+          </Link>
+        )}
       </div>
       <div className="flex flex-wrap gap-3">
         <label

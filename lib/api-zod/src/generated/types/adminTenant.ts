@@ -76,6 +76,8 @@ export interface AdminTenant {
      * @nullable
      */
   playhqJuniorOrgId?: string | null;
+  /** Whether the club's "New Studio (preview)" switch is on (platform admin only). */
+  newStudioEnabled?: boolean;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }

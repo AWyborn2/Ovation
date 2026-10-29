@@ -533,6 +533,13 @@
       "when": 1793151427996,
       "tag": "0075_photo_focus_suggested",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793248239571,
+      "tag": "0076_new_studio_preview",
+      "breakpoints": true
     }
   ]
 }

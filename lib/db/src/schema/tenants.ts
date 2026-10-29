@@ -116,6 +116,11 @@ export const tenantsTable = pgTable(
     // The club's junior PlayHQ organisation GUID when its juniors run under a separate
     // organisation. Null = juniors live under `playhqOrgId`. Unique when set.
     playhqJuniorOrgId: text("playhq_junior_org_id"),
+    // The "New Studio (preview)" switch (studio-create-consolidation, migration 0076). A
+    // platform-admin switch, default off: while off the club sees today's Social Studio
+    // unchanged; on, it gets the new menu, Create flow and editor panels. Presentational
+    // only: the server routes are the same either way.
+    newStudioEnabled: boolean("new_studio_enabled").notNull().default(false),
     // An admin's "Fetch latest from PlayHQ" (Selection Hub): the next sync run collects the
     // club's matches and named sides at once, as the `ondemand` plan. Pending while
     // `requested_at` is later than `completed_at`; the ingest of that plan stamps `completed_at`.

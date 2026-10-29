@@ -20,7 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
-import { useEntitlements } from "@/lib/entitlements";
+import { useEntitlements, useNewStudio } from "@/lib/entitlements";
 import { useBrand } from "@/lib/brand-context";
 import { useThemeMode } from "@/lib/theme-context";
 import {
@@ -81,7 +81,8 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
     [poolShown, slotNode],
   );
   const entitlements = useEntitlements();
-  const nav = visibleNav(entitlements);
+  const newStudio = useNewStudio();
+  const nav = visibleNav(entitlements, { newStudio });
   const pendingQ = useGetPendingSocialDraftCount({
     query: {
       queryKey: getGetPendingSocialDraftCountQueryKey(),
@@ -96,7 +97,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
     .map((i) => i.importedAt)
     .sort()
     .at(-1);
-  const crumbs = adminBreadcrumb(location);
+  const crumbs = adminBreadcrumb(location, { newStudio });
   const canCreate = entitlements.socialStudio;
 
   const sidebar = (tour: boolean, onNavigate?: () => void) => (

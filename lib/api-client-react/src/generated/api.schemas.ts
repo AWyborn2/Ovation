@@ -1955,6 +1955,8 @@ export const TenantPlanPlan = {
 export interface TenantPlan {
   plan: TenantPlanPlan;
   entitlements: Entitlements;
+  /** Whether the club's "New Studio (preview)" switch is on (set by a platform admin). Off: today's Social Studio, unchanged. On: the new menu, Create flow and editor panels. */
+  newStudio: boolean;
 }
 
 /**
@@ -2144,6 +2146,8 @@ export interface AdminTenant {
      * @nullable
      */
   playhqJuniorOrgId?: string | null;
+  /** Whether the club's "New Studio (preview)" switch is on (platform admin only). */
+  newStudioEnabled?: boolean;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
@@ -2484,7 +2488,7 @@ export const UpdateTenantBodyPlan = {
 } as const;
 
 /**
- * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch, junior sync settings and/or New Studio preview switch. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -2499,6 +2503,8 @@ export interface UpdateTenantBody {
      * @nullable
      */
   playhqJuniorOrgId?: string | null;
+  /** The club's "New Studio (preview)" switch. Off: today's Social Studio, unchanged. On: the new menu, Create flow and editor panels. */
+  newStudioEnabled?: boolean;
 }
 
 export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];

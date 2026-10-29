@@ -17930,7 +17930,8 @@ export const GetTenantPlanResponse = zod.object({
   "clubroomTv": zod.boolean(),
   "curation": zod.boolean(),
   "juniors": zod.boolean().describe('Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control.')
-}).describe('Per-feature flags resolved from the tenant\'s plan.')
+}).describe('Per-feature flags resolved from the tenant\'s plan.'),
+  "newStudio": zod.boolean().describe('Whether the club\'s \"New Studio (preview)\" switch is on (set by a platform admin). Off: today\'s Social Studio, unchanged. On: the new menu, Create flow and editor panels.')
 })
 
 
@@ -18072,6 +18073,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
@@ -18155,6 +18157,7 @@ export const GetAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -18177,8 +18180,9 @@ export const UpdateAdminTenantBody = zod.object({
   "customDomain": zod.string().nullish(),
   "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest.'),
-  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.')
-}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch and\/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.'),
+  "newStudioEnabled": zod.boolean().optional().describe('The club\'s \"New Studio (preview)\" switch. Off: today\'s Social Studio, unchanged. On: the new menu, Create flow and editor panels.')
+}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch, junior sync settings and\/or New Studio preview switch. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
 
 export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
 
@@ -18233,6 +18237,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -18343,6 +18348,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -18413,6 +18419,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -18477,6 +18484,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 

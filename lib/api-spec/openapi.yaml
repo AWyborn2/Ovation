@@ -5770,11 +5770,40 @@ paths:
       tags: [social]
       summary: Tenant-scoped weekend fixtures and eligible action photos for on-demand export
       parameters:
-        - { name: setType, in: query, schema: { type: string, enum: [matchDay, teamList, results, matchSummary], default: matchDay } }
-        - { name: audience, in: query, schema: { type: string, enum: [all, senior, junior], default: all }, description: "Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards." }
-        - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
-        - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
-        - { name: fields, in: query, schema: { type: string }, description: "Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide." }
+        - {
+            name: setType,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [matchDay, teamList, results, matchSummary],
+                default: matchDay,
+              },
+          }
+        - {
+            name: audience,
+            in: query,
+            schema: { type: string, enum: [all, senior, junior], default: all },
+            description: "Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.",
+          }
+        - {
+            name: from,
+            in: query,
+            required: true,
+            schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' },
+          }
+        - {
+            name: to,
+            in: query,
+            required: true,
+            schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' },
+          }
+        - {
+            name: fields,
+            in: query,
+            schema: { type: string },
+            description: "Match Day sets: the optional data fields to load, comma-separated (fixture.ladder, fixture.lastMeeting, fixture.milestoneWatch) — the visible ones (ADR-010 P5). Unknown keys are ignored; absent loads none. A field whose data is missing or fails to load is left off its slide.",
+          }
       responses:
         "200":
           description: Sources, with cancelled fixtures and ineligible photos excluded
@@ -13399,7 +13428,20 @@ components:
 
     VsClubBatter:
       type: object
-      required: [playerId, givenName, surname, matches, innings, notOuts, outs, runs, average, highScore, highScoreNotOut]
+      required:
+        [
+          playerId,
+          givenName,
+          surname,
+          matches,
+          innings,
+          notOuts,
+          outs,
+          runs,
+          average,
+          highScore,
+          highScoreNotOut,
+        ]
       properties:
         playerId:
           type: integer
@@ -13427,7 +13469,19 @@ components:
 
     VsClubBowler:
       type: object
-      required: [playerId, givenName, surname, matches, wickets, runsConceded, balls, average, bestWickets, bestRuns]
+      required:
+        [
+          playerId,
+          givenName,
+          surname,
+          matches,
+          wickets,
+          runsConceded,
+          balls,
+          average,
+          bestWickets,
+          bestRuns,
+        ]
       properties:
         playerId:
           type: integer
@@ -13803,7 +13857,17 @@ components:
 
     Dashboard:
       type: object
-      required: [totalPlayers, totalGames, totalRuns, totalWickets, gradesCount, topRunScorer, topWicketTaker, topFielder]
+      required:
+        [
+          totalPlayers,
+          totalGames,
+          totalRuns,
+          totalWickets,
+          gradesCount,
+          topRunScorer,
+          topWicketTaker,
+          topFielder,
+        ]
       properties:
         totalPlayers:
           type: integer
@@ -13902,7 +13966,15 @@ components:
     SeniorOverview:
       type: object
       required:
-        [latestSeason, latestSeasonLabel, availableSeasons, totals, recentMatches, topRunScorers, topWicketTakers]
+        [
+          latestSeason,
+          latestSeasonLabel,
+          availableSeasons,
+          totals,
+          recentMatches,
+          topRunScorers,
+          topWicketTakers,
+        ]
       properties:
         availableSeasons:
           type: array
@@ -14247,7 +14319,22 @@ components:
 
     ImportPreview:
       type: object
-      required: [importId, filename, season, rowsParsed, matchedPlayers, newPlayers, suggestedPlayers, debuts, gradeTotals, unmappedGrades, players, capCategory, cappedPlayerIds]
+      required:
+        [
+          importId,
+          filename,
+          season,
+          rowsParsed,
+          matchedPlayers,
+          newPlayers,
+          suggestedPlayers,
+          debuts,
+          gradeTotals,
+          unmappedGrades,
+          players,
+          capCategory,
+          cappedPlayerIds,
+        ]
       properties:
         importId:
           type: integer
@@ -14430,15 +14517,23 @@ components:
       description: |
         One candidate match in a batch upload — the parsed scorecard header plus
         the per-file status that decides whether it will be committed.
-      required:
-        [filename, status, committable, abandoned, matchExists, playerCount, warnings]
+      required: [filename, status, committable, abandoned, matchExists, playerCount, warnings]
       properties:
         filename:
           type: string
         status:
           type: string
           enum:
-            [ready, abandoned, duplicate, duplicateInBatch, missingRound, needsResolution, unmappableGrade, parseError]
+            [
+              ready,
+              abandoned,
+              duplicate,
+              duplicateInBatch,
+              missingRound,
+              needsResolution,
+              unmappableGrade,
+              parseError,
+            ]
           description: |
             ready/abandoned/duplicate are committable; duplicate replaces a stored
             match. needsResolution (a file with neither a numeric round nor a
@@ -14688,7 +14783,17 @@ components:
         grade; `career*` is the player's current career total. The UI computes the
         peel/add net effect from these. Present only on matched/linked players.
       required:
-        [seasonGames, seasonRuns, seasonWickets, baselineGames, baselineRuns, baselineWickets, careerGames, careerRuns, careerWickets]
+        [
+          seasonGames,
+          seasonRuns,
+          seasonWickets,
+          baselineGames,
+          baselineRuns,
+          baselineWickets,
+          careerGames,
+          careerRuns,
+          careerWickets,
+        ]
       properties:
         seasonGames:
           type: integer
@@ -15316,13 +15421,18 @@ components:
 
     TenantPlan:
       type: object
-      required: [plan, entitlements]
+      required: [plan, entitlements, newStudio]
       properties:
         plan:
           type: string
           enum: [free, club, pro]
         entitlements:
           $ref: "#/components/schemas/Entitlements"
+        newStudio:
+          type: boolean
+          description: >-
+            Whether the club's "New Studio (preview)" switch is on (set by a platform admin).
+            Off: today's Social Studio, unchanged. On: the new menu, Create flow and editor panels.
 
     AvailableClub:
       type: object
@@ -15469,7 +15579,8 @@ components:
     AdminTenant:
       type: object
       description: A tenant as listed in the platform-admin console.
-      required: [id, slug, name, plan, centralClubId, readsFromCentral, adminCount, brandingComplete]
+      required:
+        [id, slug, name, plan, centralClubId, readsFromCentral, adminCount, brandingComplete]
       properties:
         id:
           type: integer
@@ -15551,6 +15662,9 @@ components:
           description: >-
             The tenant's junior PlayHQ organisation GUID, or null when its juniors run
             under playhqOrgId.
+        newStudioEnabled:
+          type: boolean
+          description: Whether the club's "New Studio (preview)" switch is on (platform admin only).
         brandingComplete:
           type: boolean
           description: >-
@@ -16062,8 +16176,8 @@ components:
     UpdateTenantBody:
       type: object
       description: >-
-        Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior
-        sync settings. Platform admin only; the club-admin brand update and signup schemas
+        Partial update of a tenant's plan, custom domain, PlayHQ sync switch, junior
+        sync settings and/or New Studio preview switch. Platform admin only; the club-admin brand update and signup schemas
         carry none of these.
       properties:
         plan:
@@ -16087,6 +16201,11 @@ components:
             The tenant's junior PlayHQ organisation GUID when its juniors run under a
             separate organisation. Null or blank clears it (juniors then use playhqOrgId).
             Unique across tenants.
+        newStudioEnabled:
+          type: boolean
+          description: >-
+            The club's "New Studio (preview)" switch. Off: today's Social Studio, unchanged.
+            On: the new menu, Create flow and editor panels.
 
     ProvisionTenantBody:
       type: object
@@ -16743,7 +16862,17 @@ components:
 
     ClubRecords:
       type: object
-      required: [mostGames, mostRuns, mostWickets, highestScore, bestBowling, mostCatches, mostFifties, mostHundreds]
+      required:
+        [
+          mostGames,
+          mostRuns,
+          mostWickets,
+          highestScore,
+          bestBowling,
+          mostCatches,
+          mostFifties,
+          mostHundreds,
+        ]
       properties:
         mostGames:
           $ref: "#/components/schemas/PlayerRecord"
@@ -17262,7 +17391,17 @@ components:
     SquadImportResult:
       type: object
       required:
-        [season, created, updated, deactivated, adopted, linked, contactsKept, skipped, skippedByReason]
+        [
+          season,
+          created,
+          updated,
+          deactivated,
+          adopted,
+          linked,
+          contactsKept,
+          skipped,
+          skippedByReason,
+        ]
       properties:
         season:
           type: ["string", "null"]
@@ -17550,7 +17689,8 @@ components:
     SelectionMember:
       type: object
       description: A squad member as the Hub shows them — never a contact value.
-      required: [id, displayName, status, note, lastGrade, junior, section, isPrivate, repliedAt, late]
+      required:
+        [id, displayName, status, note, lastGrade, junior, section, isPrivate, repliedAt, late]
       properties:
         id:
           type: integer
@@ -18101,7 +18241,17 @@ components:
 
     TeamSheetPreview:
       type: object
-      required: [selectionId, section, grade, format, competition, overs, bowlingRulesSource, missingBirthDates]
+      required:
+        [
+          selectionId,
+          section,
+          grade,
+          format,
+          competition,
+          overs,
+          bowlingRulesSource,
+          missingBirthDates,
+        ]
       properties:
         selectionId:
           type: integer
@@ -18301,7 +18451,18 @@ components:
     EmailSend:
       type: object
       required:
-        [id, listId, listName, kind, subjectType, subjectId, status, attempts, recipientCount, queuedAt]
+        [
+          id,
+          listId,
+          listName,
+          kind,
+          subjectType,
+          subjectId,
+          status,
+          attempts,
+          recipientCount,
+          queuedAt,
+        ]
       properties:
         id:
           type: integer
@@ -18597,8 +18758,7 @@ components:
 
     AwardVotingConfig:
       type: object
-      required:
-        [id, awardId, season, votingEnabled, votingOpen, grades, tallyVisible, createdAt]
+      required: [id, awardId, season, votingEnabled, votingOpen, grades, tallyVisible, createdAt]
       properties:
         id:
           type: integer
@@ -18661,7 +18821,17 @@ components:
     Ballot:
       type: object
       required:
-        [id, configId, captainId, grade, round, pick1PlayerId, pick2PlayerId, pick3PlayerId, updatedAt]
+        [
+          id,
+          configId,
+          captainId,
+          grade,
+          round,
+          pick1PlayerId,
+          pick2PlayerId,
+          pick3PlayerId,
+          updatedAt,
+        ]
       properties:
         id:
           type: integer
@@ -18684,8 +18854,7 @@ components:
 
     BallotInput:
       type: object
-      required:
-        [configId, grade, round, pick1PlayerId, pick2PlayerId, pick3PlayerId]
+      required: [configId, grade, round, pick1PlayerId, pick2PlayerId, pick3PlayerId]
       properties:
         configId:
           type: integer
@@ -18793,7 +18962,19 @@ components:
     AwardTally:
       type: object
       required:
-        [configId, awardId, awardKey, awardTitle, season, visible, votingOpen, finalised, roundsPlayed, entries, winnerPlayerIds]
+        [
+          configId,
+          awardId,
+          awardKey,
+          awardTitle,
+          season,
+          visible,
+          votingOpen,
+          finalised,
+          roundsPlayed,
+          entries,
+          winnerPlayerIds,
+        ]
       properties:
         configId:
           type: integer
@@ -18825,7 +19006,20 @@ components:
     BallotReview:
       type: object
       required:
-        [id, captainId, captainName, grade, round, pick1Name, pick2Name, pick3Name, pick1PlayerId, pick2PlayerId, pick3PlayerId, updatedAt]
+        [
+          id,
+          captainId,
+          captainName,
+          grade,
+          round,
+          pick1Name,
+          pick2Name,
+          pick3Name,
+          pick1PlayerId,
+          pick2PlayerId,
+          pick3PlayerId,
+          updatedAt,
+        ]
       properties:
         id:
           type: integer
@@ -19172,8 +19366,7 @@ components:
 
     AwardPointsConfig:
       type: object
-      required:
-        [id, awardId, season, includeFinals, leaderboardVisible, categories, createdAt]
+      required: [id, awardId, season, includeFinals, leaderboardVisible, categories, createdAt]
       properties:
         id:
           type: integer
@@ -19203,8 +19396,7 @@ components:
 
     PointsCategories:
       type: object
-      required:
-        [runs, wickets, catches, stumpings, runOuts, games, fifties, hundreds, fiveWickets]
+      required: [runs, wickets, catches, stumpings, runOuts, games, fifties, hundreds, fiveWickets]
       properties:
         runs:
           $ref: "#/components/schemas/PointsCategory"
@@ -19251,7 +19443,20 @@ components:
     PointsLeaderboardEntry:
       type: object
       required:
-        [playerId, name, points, runs, wickets, catches, stumpings, runOuts, games, fifties, hundreds, fiveWickets]
+        [
+          playerId,
+          name,
+          points,
+          runs,
+          wickets,
+          catches,
+          stumpings,
+          runOuts,
+          games,
+          fifties,
+          hundreds,
+          fiveWickets,
+        ]
       properties:
         playerId:
           type: integer
@@ -19281,7 +19486,18 @@ components:
     PointsLeaderboard:
       type: object
       required:
-        [configId, awardId, awardKey, awardTitle, season, grade, visible, finalised, entries, winnerPlayerIds]
+        [
+          configId,
+          awardId,
+          awardKey,
+          awardTitle,
+          season,
+          grade,
+          visible,
+          finalised,
+          entries,
+          winnerPlayerIds,
+        ]
       properties:
         configId:
           type: integer
@@ -19311,7 +19527,17 @@ components:
     TeamOfDecadeMember:
       type: object
       required:
-        [id, boardId, name, battingOrder, role, isCaptain, isViceCaptain, isWicketkeeper, displayOrder]
+        [
+          id,
+          boardId,
+          name,
+          battingOrder,
+          role,
+          isCaptain,
+          isViceCaptain,
+          isWicketkeeper,
+          displayOrder,
+        ]
       properties:
         id:
           type: integer
@@ -19336,8 +19562,7 @@ components:
 
     TeamOfDecadeBoard:
       type: object
-      required:
-        [id, key, title, teamLabel, periodLabel, subtitle, published, displayOrder, members]
+      required: [id, key, title, teamLabel, periodLabel, subtitle, published, displayOrder, members]
       properties:
         id:
           type: integer
@@ -19713,7 +19938,34 @@ components:
       # highlights). announcement / sponsor / resultsSummary / teamOfWeek came
       # with the Clubhouse look (club news, a sponsor thank-you, every grade's
       # result with its best players, the round's standout performers).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound, announcement, sponsor, resultsSummary, teamOfWeek]
+      enum:
+        [
+          milestone,
+          player,
+          record,
+          gradeLeader,
+          premiership,
+          debut,
+          century,
+          fiveFor,
+          matchSummary,
+          matchDay,
+          teamList,
+          weekendWrap,
+          ladder,
+          bigMoment,
+          newSigning,
+          countdown,
+          clubLeaderboard,
+          roundFixtures,
+          tradingCard,
+          juniorHighlights,
+          teamListRound,
+          announcement,
+          sponsor,
+          resultsSummary,
+          teamOfWeek,
+        ]
 
     SponsorTier:
       type: string
@@ -20044,7 +20296,20 @@ components:
     CardTemplate:
       type: object
       required:
-        [id, name, cardKinds, source, layers, bgWidth, bgHeight, slots, isActive, isDefault, defaultForKinds, displayOrder]
+        [
+          id,
+          name,
+          cardKinds,
+          source,
+          layers,
+          bgWidth,
+          bgHeight,
+          slots,
+          isActive,
+          isDefault,
+          defaultForKinds,
+          displayOrder,
+        ]
       properties:
         id:
           type: integer
@@ -20691,7 +20956,11 @@ components:
       type: object
       required: [name, rawName, crestUrl, monogram]
       properties:
-        name: { type: string, description: "The club's short name, else the automatic one, else the raw name." }
+        name:
+          {
+            type: string,
+            description: "The club's short name, else the automatic one, else the raw name.",
+          }
         rawName: { type: string }
         crestUrl: { type: ["string", "null"] }
         monogram: { type: string }
@@ -20709,7 +20978,24 @@ components:
     MatchDayFixtureContent:
       type: object
       description: "One fixture's Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep."
-      required: [kind, page, fixtureId, junior, juniorTeamName, grade, roundLabel, opposition, homeAway, venue, startAt, day, date, startTime, source]
+      required:
+        [
+          kind,
+          page,
+          fixtureId,
+          junior,
+          juniorTeamName,
+          grade,
+          roundLabel,
+          opposition,
+          homeAway,
+          venue,
+          startAt,
+          day,
+          date,
+          startTime,
+          source,
+        ]
       properties:
         kind: { type: string, enum: [matchDay] }
         page: { type: string, enum: [fixture] }
@@ -20789,7 +21075,8 @@ components:
           type: ["string", "null"]
         rows:
           type: object
-          required: [results, bigMoments, milestones, debuts, gameDay, teamLists, clubLeaderboards, ladders]
+          required:
+            [results, bigMoments, milestones, debuts, gameDay, teamLists, clubLeaderboards, ladders]
           properties:
             results:
               $ref: "#/components/schemas/PostingPlanRow"
@@ -21648,7 +21935,8 @@ components:
 
     PlayerPrivacyPlayer:
       type: object
-      required: [participantId, displayName, isPrivate, currentClubId, lastSeason, matches, override]
+      required:
+        [participantId, displayName, isPrivate, currentClubId, lastSeason, matches, override]
       properties:
         participantId:
           type: string
@@ -21780,7 +22068,21 @@ components:
     TemplateGeneration:
       type: object
       required:
-        [id, kind, model, status, outcome, attempts, firstTryFit, tokens, costUsd, result, errors, createdAt, finishedAt]
+        [
+          id,
+          kind,
+          model,
+          status,
+          outcome,
+          attempts,
+          firstTryFit,
+          tokens,
+          costUsd,
+          result,
+          errors,
+          createdAt,
+          finishedAt,
+        ]
       properties:
         id: { type: integer }
         kind: { type: string }
@@ -25109,7 +25411,21 @@ components:
     LibraryTemplate:
       type: object
       required:
-        [id, slug, kind, name, origin, authorName, look, version, coverage, fitStatus, fitReport, listed, document]
+        [
+          id,
+          slug,
+          kind,
+          name,
+          origin,
+          authorName,
+          look,
+          version,
+          coverage,
+          fitStatus,
+          fitReport,
+          listed,
+          document,
+        ]
       properties:
         id: { type: integer }
         slug: { type: ["string", "null"] }
@@ -25455,7 +25771,21 @@ components:
     LibraryElement:
       type: object
       required:
-        [id, slug, name, category, tags, origin, authorName, mine, look, listed, document, thumbnailUrl, createdAt]
+        [
+          id,
+          slug,
+          name,
+          category,
+          tags,
+          origin,
+          authorName,
+          mine,
+          look,
+          listed,
+          document,
+          thumbnailUrl,
+          createdAt,
+        ]
       properties:
         id: { type: integer }
         slug: { type: ["string", "null"] }
@@ -25521,7 +25851,24 @@ components:
     ConsoleLibraryElement:
       type: object
       required:
-        [id, slug, name, category, tags, origin, authorName, authorTenantId, look, listed, unlistedBy, unlistReason, unlistedAt, openReports, document, createdAt]
+        [
+          id,
+          slug,
+          name,
+          category,
+          tags,
+          origin,
+          authorName,
+          authorTenantId,
+          look,
+          listed,
+          unlistedBy,
+          unlistReason,
+          unlistedAt,
+          openReports,
+          document,
+          createdAt,
+        ]
       properties:
         id: { type: integer }
         slug: { type: ["string", "null"] }
@@ -26191,7 +26538,19 @@ components:
     SocialCalendar:
       type: object
       required:
-        [enabled, from, to, timeZone, dailyCap, minGapMinutes, days, cards, unscheduled, placeholders, openCards]
+        [
+          enabled,
+          from,
+          to,
+          timeZone,
+          dailyCap,
+          minGapMinutes,
+          days,
+          cards,
+          unscheduled,
+          placeholders,
+          openCards,
+        ]
       properties:
         enabled: { type: boolean, description: Whether the club's posting calendar is on }
         from: { type: string }
@@ -26241,7 +26600,12 @@ components:
       required: [day, time]
       properties:
         day: { type: integer, minimum: 0, maximum: 6, description: "0 = Sunday, club time" }
-        time: { type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$", description: "HH:mm, 15-minute steps" }
+        time:
+          {
+            type: string,
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            description: "HH:mm, 15-minute steps",
+          }
 
     PostingKind:
       type: object
@@ -26260,7 +26624,18 @@ components:
 
     PostingKinds:
       type: object
-      required: [results, roundResults, teamLists, gameDay, milestones, debuts, achievements, roundUp, other]
+      required:
+        [
+          results,
+          roundResults,
+          teamLists,
+          gameDay,
+          milestones,
+          debuts,
+          achievements,
+          roundUp,
+          other,
+        ]
       properties:
         results: { $ref: "#/components/schemas/PostingKind" }
         roundResults: { $ref: "#/components/schemas/PostingKind" }
@@ -26316,10 +26691,12 @@ components:
       type: object
       required: [placed, pinned, unscheduled, restored]
       properties:
-        placed: { type: integer, description: Open cards given a time when the calendar was turned on }
+        placed:
+          { type: integer, description: Open cards given a time when the calendar was turned on }
         pinned: { type: integer, description: Cards already scheduled to Meta, kept at that time }
         unscheduled: { type: integer, description: Cards with no free slot, now in the tray }
-        restored: { type: integer, description: Cards handed back to auto-post when it was turned off }
+        restored:
+          { type: integer, description: Cards handed back to auto-post when it was turned off }
 
     PostingSlotsRunResponse:
       type: object
@@ -26605,14 +26982,30 @@ components:
       properties:
         playhqMatchId: { type: string }
         gradeId: { type: string, description: PlayHQ grade GUID (one grade in one season) }
-        grade: { type: string, description: App grade label (e.g. "A Grade"), or the raw PlayHQ grade name when unmapped }
+        grade:
+          {
+            type: string,
+            description: App grade label (e.g. "A Grade"),
+            or the raw PlayHQ grade name when unmapped,
+          }
         gradeName: { type: string, description: The grade name as PlayHQ publishes it }
-        season: { type: ["string", "null"], description: Season name as PlayHQ publishes it, e.g. "Summer 2026/27" }
+        season:
+          {
+            type: ["string", "null"],
+            description: Season name as PlayHQ publishes it,
+            e.g. "Summer 2026/27",
+          }
         round: { type: ["string", "null"] }
         matchType: { type: ["string", "null"], description: One Day / Two Day / T20 … }
-        status: { type: string, description: PlayHQ status — UPCOMING, PENDING, COMPLETED, ABANDONED … }
+        status:
+          { type: string, description: PlayHQ status — UPCOMING, PENDING, COMPLETED, ABANDONED … }
         startAt: { type: ["string", "null"], format: date-time }
-        endAt: { type: ["string", "null"], format: date-time, description: Last scheduled day for multi-day matches }
+        endAt:
+          {
+            type: ["string", "null"],
+            format: date-time,
+            description: Last scheduled day for multi-day matches,
+          }
         venue: { type: ["string", "null"] }
         surface: { type: ["string", "null"], description: Playing surface / oval name }
         isHome: { type: boolean }
@@ -26638,9 +27031,20 @@ components:
         linked:
           type: boolean
           description: False when the tenant has no PlayHQ organisation linked; every list is then empty
-        seasons: { type: array, items: { type: string }, description: Season names the club has PlayHQ data for, newest first }
+        seasons:
+          {
+            type: array,
+            items: { type: string },
+            description: Season names the club has PlayHQ data for,
+            newest first,
+          }
         latestSeason: { type: ["string", "null"] }
-        grades: { type: array, items: { type: string }, description: App grade labels present in the selected season }
+        grades:
+          {
+            type: array,
+            items: { type: string },
+            description: App grade labels present in the selected season,
+          }
         matches:
           type: array
           items: { $ref: "#/components/schemas/PlayhqFixture" }
@@ -26677,7 +27081,12 @@ components:
       type: object
       required: [name, teams]
       properties:
-        name: { type: string, description: Ladder name as published (a grade can publish more than one, e.g. "One Day" and "Two Day") }
+        name:
+          {
+            type: string,
+            description: Ladder name as published (a grade can publish more than one,
+            e.g. "One Day" and "Two Day"),
+          }
         teams:
           type: array
           items: { $ref: "#/components/schemas/PlayhqLadderTeam" }
@@ -27099,7 +27508,20 @@ components:
     ShirtNumberPreviewRow:
       type: object
       required:
-        [rowIndex, name, participantId, number, status, playerId, candidates, existingEntryId, existingNumber, numberChange, duplicate, errors]
+        [
+          rowIndex,
+          name,
+          participantId,
+          number,
+          status,
+          playerId,
+          candidates,
+          existingEntryId,
+          existingNumber,
+          numberChange,
+          duplicate,
+          errors,
+        ]
       properties:
         rowIndex:
           type: integer
@@ -27301,7 +27723,20 @@ components:
     JuniorShirtNumberEntry:
       type: object
       required:
-        [id, season, participantId, name, number, source, duplicate, linkStatus, playerName, crossRegister, createdAt, updatedAt]
+        [
+          id,
+          season,
+          participantId,
+          name,
+          number,
+          source,
+          duplicate,
+          linkStatus,
+          playerName,
+          crossRegister,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id:
           type: integer
@@ -28312,7 +28747,22 @@ components:
           type: ["string", "null"]
     JuniorNameReview:
       type: object
-      required: [participantId, currentName, suggestedName, status, evidence, revision, firstSeason, lastSeason, teams, nameStyle, withheld, publicName, history]
+      required:
+        [
+          participantId,
+          currentName,
+          suggestedName,
+          status,
+          evidence,
+          revision,
+          firstSeason,
+          lastSeason,
+          teams,
+          nameStyle,
+          withheld,
+          publicName,
+          history,
+        ]
       properties:
         participantId:
           type: string
@@ -28970,7 +29420,20 @@ components:
         leaderboard table, filterable by age group + season. Aggregated from
         Halls Head batting/bowling lines only; opposition and private
         participants are excluded.
-      required: [participantId, displayName, matches, innings, notOuts, runs, hundreds, fifties, wickets, runsConceded, fiveWickets]
+      required:
+        [
+          participantId,
+          displayName,
+          matches,
+          innings,
+          notOuts,
+          runs,
+          hundreds,
+          fifties,
+          wickets,
+          runsConceded,
+          fiveWickets,
+        ]
       properties:
         participantId:
           type: string
