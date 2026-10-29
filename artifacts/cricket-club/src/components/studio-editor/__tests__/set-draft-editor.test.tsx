@@ -65,7 +65,7 @@ const DRAFT = {
 
 type Req = { method: string; url: string; body: unknown };
 
-function open() {
+function open({ newStudio = false }: { newStudio?: boolean } = {}) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   const requests: Req[] = [];
   vi.stubGlobal(
@@ -90,6 +90,8 @@ function open() {
                 stored: true,
               };
       else if (/social-drafts\/42$/.test(url)) payload = DRAFT;
+      else if (/tenant-plan/.test(url))
+        payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
       else if (/social-settings/.test(url))
         payload = { settings: {}, captionTemplates: [], activeSponsors: [] };
       return new Response(JSON.stringify(payload), {
@@ -141,5 +143,42 @@ describe("editing a Round Team Lists set draft", () => {
       order: ["page:cover", "detail:senior:B Grade", "detail:senior:A Grade"],
       removed: ["page:sponsors"],
     });
+  });
+});
+
+describe("a slide's own layout (studio-create S9, New Studio)", () => {
+  it("isn't offered with the New Studio switch off", async () => {
+    open();
+    await screen.findByRole("navigation", { name: "Slides" });
+    expect(screen.queryByRole("button", { name: "Layout" })).toBeNull();
+  });
+
+  it("gives one team slide a layout of its own and saves it in the arrangement", async () => {
+    const requests = open({ newStudio: true });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
+    expect(screen.getByText(/shares its layout with 1 other slide/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "New layout for this slide" }));
+    // The canvas now edits this slide's own layout.
+    fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
+    expect(screen.getByText(/has its own layout/)).toBeTruthy();
+    // The team still shows; it no longer marks itself as repeating.
+    expect(
+      within(strip)
+        .getByRole("button", { name: /^3\. B Grade/ })
+        .getAttribute("aria-label"),
+    ).toBe("3. B Grade");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const saved = (
+      requests.find((r) => r.method === "PUT")!.body as {
+        document: { pages: Array<{ id: string; slot: string }>; arrangement: { pageFor: unknown } };
+      }
+    ).document;
+    const own = saved.pages.find((p) => p.slot === "page")!;
+    expect(saved.arrangement.pageFor).toEqual({ "detail:senior:B Grade": own.id });
+    expect(saved.pages.map((p) => p.slot)).toEqual(["cover", "team", "sponsors", "page"]);
   });
 });

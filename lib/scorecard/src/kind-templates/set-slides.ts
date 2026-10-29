@@ -22,8 +22,10 @@ import type { TemplateDocumentV2 } from "./format";
 import { templateKindFor } from "./pages";
 import {
   isRepeatSlot,
+  layoutPageIds,
   setPageRenderDocument,
   setPageLabel,
+  slideLayoutPage,
   SET_TYPE_LABELS,
   type SetDocument,
   type SetPage,
@@ -186,8 +188,11 @@ export function expandSetSlides(
   for (const item of items) bySlot.set(item.slot, [...(bySlot.get(item.slot) ?? []), item]);
   const repeatInputs = items.filter((i) => isRepeatSlot(i.slot)).map((i) => i.input);
   const coverItem = bySlot.get("cover")?.[0] ?? items[0];
+  const layouts = layoutPageIds(doc);
   const out: SetSlide[] = [];
   for (const page of doc.pages) {
+    // A slide's own layout draws only the slides mapped to it (S9).
+    if (layouts.has(page.id)) continue;
     if (page.role === "repeat") {
       (bySlot.get(page.slot) ?? []).forEach((item, i) =>
         out.push({
@@ -211,8 +216,12 @@ export function expandSetSlides(
       label: setPageLabel(page),
     });
   }
+  // A slide with its own layout keeps its input, drawn by that page (S9).
+  const laid = out.map((s) => ({ ...s, page: slideLayoutPage(doc, s.key, s.page) }));
   // A junior set is junior on every slide (KTD6, C4): no slide draws senior.
-  const slides = ctx.junior ? out.map((s) => ({ ...s, input: { ...s.input, junior: true } })) : out;
+  const slides = ctx.junior
+    ? laid.map((s) => ({ ...s, input: { ...s.input, junior: true } }))
+    : laid;
   return numberSlides(arrangeSlides(slides, doc.arrangement));
 }
 
@@ -294,7 +303,8 @@ export function mapCarouselSlides(
     const source = page.slot === "page" && slot === "page" && cover ? cover.input : s.input;
     out.push({
       key: s.id,
-      page,
+      // Its own layout, if it has one (S9): the same kind page, so the input fits.
+      page: slideLayoutPage(doc, s.id, page),
       input: slideInputFor(page, source, { items, sponsors: ctx.sponsors }),
       label: s.label ?? setPageLabel(page),
       ...(page.role === "repeat" ? { item: n } : {}),

@@ -47,6 +47,8 @@ import { setDraftSlides } from "@/lib/set-draft";
 import { useNewStudio } from "@/lib/entitlements";
 import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
+import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
+import { storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
@@ -55,6 +57,7 @@ import {
   type EditorHost,
   type EditorTemplate,
 } from "./admin-template-editor";
+import type { EditorTemplateDoc } from "@/components/studio-editor/set-doc";
 
 const QUEUE = "/admin/social/queue";
 
@@ -153,6 +156,13 @@ function SetDraftEditor({
     }),
     [draft, design, label, round],
   );
+  // The page a slide draws with on its own slot, without a layout of its own (S9).
+  const naturalPage = (doc: EditorTemplateDoc, key: string) => {
+    const set = storedSetDocument(doc);
+    const { pageFor: _own, ...arrangement } = set.arrangement ?? { order: [], removed: [] };
+    const shared = { ...set, arrangement: { ...arrangement, pageFor: {} } };
+    return setDraftSlides(current, shared, brand).find((x) => x.key === key)?.page.id;
+  };
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     void qc.invalidateQueries({ queryKey: getGetSocialDraftQueryKey(draft.id) });
@@ -187,9 +197,16 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
-        actions={({ set, dirty }) =>
+        actions={({ set, setDesign, dirty }) =>
           newStudio ? (
             <>
+              {set && setDesign && (
+                <SlideLayoutPanel
+                  set={set}
+                  design={setDesign}
+                  naturalPageId={(key) => naturalPage(setDesign.doc, key)}
+                />
+              )}
               {set && <SharePanel set={set} name={template.name} />}
               <SendToReview draftId={draft.id} dirty={dirty} />
             </>
@@ -225,8 +242,10 @@ function SetDraftEditor({
         onClose={() => setLookOpen(false)}
         design={design}
         onPicked={async (document, templateRef) => {
-          // Keep the set's slide order and deletions on the new look.
-          const arrangement = saved.current.arrangement;
+          // Keep the set's slide order and deletions on the new look; a slide's
+          // own layout (S9) was a page of the old look, so it goes.
+          const kept = saved.current.arrangement;
+          const arrangement = kept ? { order: kept.order, removed: kept.removed } : undefined;
           const next: SetDocument = arrangement ? { ...document, arrangement } : document;
           await saveDraftSetDesign(draft.id, {
             document: next,

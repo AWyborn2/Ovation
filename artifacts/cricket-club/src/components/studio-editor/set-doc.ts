@@ -294,3 +294,91 @@ export type EditorSlide = {
   /** A design page (no data): deleting the slide deletes its page. */
   design: boolean;
 };
+
+// ── A slide's own layout (studio-create S9) ─────────────────────────────────
+
+type PageBody = { layers: FreeLayer[]; background?: string };
+
+/** The pages that are one slide's own layout (`arrangement.pageFor`). */
+export const layoutPages = (doc: EditorTemplateDoc): Set<string> =>
+  new Set(Object.values(doc.setDesign?.arrangement?.pageFor ?? {}));
+
+/**
+ * The set with `pageFor` replaced, and every layout page no slide maps to any
+ * more deleted: a layout page is only ever made as one, so it never turns
+ * into a design page (a slide of its own) when it is let go.
+ */
+function withPageFor(doc: EditorTemplateDoc, pageFor: Record<string, string>): EditorTemplateDoc {
+  const before = layoutPages(doc);
+  const used = new Set(Object.values(pageFor));
+  let next = doc;
+  for (const id of before) if (!used.has(id)) next = deleteSetPage(next, id);
+  const arr = next.setDesign!.arrangement ?? { order: [], removed: [] };
+  const { pageFor: _old, ...rest } = arr;
+  return withArrangement(next, Object.keys(pageFor).length ? { ...rest, pageFor } : rest);
+}
+
+/** Draw slide `key` with `pageId` (a layout page), or with its slot's page again (`null`). */
+export function withSlideLayout(
+  doc: EditorTemplateDoc,
+  key: string,
+  pageId: string | null,
+): EditorTemplateDoc {
+  const pageFor = { ...(doc.setDesign?.arrangement?.pageFor ?? {}) };
+  if (pageId) pageFor[key] = pageId;
+  else delete pageFor[key];
+  return withPageFor(doc, pageFor);
+}
+
+/**
+ * A new layout for slide `key` alone: a copy of the page it draws with now
+ * (`fromId`), as a design page of the same kind page, mapped to the slide.
+ */
+export function newSlideLayout(
+  doc: EditorTemplateDoc,
+  key: string,
+  fromId: string,
+  name: string,
+): { doc: EditorTemplateDoc; id: string } {
+  const from = doc.setDesign!.pages.find((p) => p.id === fromId)!;
+  const body = (doc.pages as Record<string, PageBody | undefined>)[fromId];
+  const r = addSetPage(
+    doc,
+    { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: name.slice(0, 60) },
+    body?.layers ?? [],
+  );
+  const pages = { ...(r.doc.pages as Record<string, PageBody | undefined>) };
+  if (body?.background) pages[r.id] = { ...pages[r.id]!, background: body.background };
+  const added = { ...r.doc, pages: pages as TemplateDoc["pages"] };
+  return { doc: withSlideLayout(added, key, r.id), id: r.id };
+}
+
+/**
+ * Every slide drawn like slide `key`'s page `pageId`: its layers become those
+ * of the slot's page (`naturalId`), and every layout of that kind page goes,
+ * so each slide on it draws with the one design again.
+ */
+export function applyLayoutToAll(
+  doc: EditorTemplateDoc,
+  pageId: string,
+  naturalId: string,
+): EditorTemplateDoc {
+  const natural = doc.setDesign!.pages.find((p) => p.id === naturalId);
+  if (!natural) return doc;
+  const bodies = doc.pages as Record<string, PageBody | undefined>;
+  let next = doc;
+  if (pageId !== naturalId && bodies[pageId]) {
+    const { layers, background } = bodies[pageId]!;
+    const body: PageBody = { layers: copyLayers(layers), ...(background ? { background } : {}) };
+    next = { ...doc, pages: { ...bodies, [naturalId]: body } as TemplateDoc["pages"] };
+  }
+  const layouts = next.setDesign!.pages;
+  const same = (id: string) => {
+    const p = layouts.find((x) => x.id === id);
+    return !!p && p.kind === natural.kind && p.page === natural.page;
+  };
+  const pageFor = Object.fromEntries(
+    Object.entries(next.setDesign!.arrangement?.pageFor ?? {}).filter(([, id]) => !same(id)),
+  );
+  return withPageFor(next, pageFor);
+}
