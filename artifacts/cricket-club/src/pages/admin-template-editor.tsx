@@ -524,6 +524,15 @@ export type EditorActionsContext = {
   selectLayer: (page: string, layerId: string) => void;
   /** A set draft's slides as they draw now (read only), for Share → Download. */
   set?: SetShareContext;
+  /**
+   * A set draft's design as it stands, and an edit to it that goes through
+   * history like any other (a slide's own layout, studio-create S9). `show`
+   * puts that slide on the canvas.
+   */
+  setDesign?: {
+    doc: EditorTemplateDoc;
+    edit: (fn: (doc: EditorTemplateDoc) => EditorTemplateDoc, show?: string) => void;
+  };
 };
 
 export function TemplateEditorV2<T extends EditorTemplate>({
@@ -1068,6 +1077,17 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                           current: slide?.key ?? null,
                           size: format,
                           documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page),
+                        },
+                        setDesign: {
+                          doc: full,
+                          edit: (
+                            fn: (doc: EditorTemplateDoc) => EditorTemplateDoc,
+                            show?: string,
+                          ) => {
+                            setHistory((h) => commit(h, fn(h.present)));
+                            if (show !== undefined) setSlideKey(show);
+                            enterScope(null);
+                          },
                         },
                       }
                     : {}),

@@ -15,6 +15,7 @@ import {
   arrangeSlides,
   expandSetSlides,
   isSetDocument,
+  layoutPageIds,
   mapCarouselSlides,
   setPageRenderDocument,
   slideInputFor,
@@ -94,6 +95,8 @@ export function setDraftSlides(
       ...(s.role !== "cover" && typeof grade === "string" && grade ? { label: grade } : {}),
     };
   });
+  // A slide drawn by its own layout (S9) is still a data slide, not a design page.
+  const layouts = layoutPageIds(doc);
   return expandSetSlides(doc, items, { sponsors: sponsorRows(brand), junior }).map((s) => {
     const slideJunior = junior || s.input.junior === true;
     return {
@@ -107,7 +110,7 @@ export function setDraftSlides(
       junior: slideJunior,
       sponsorsOn: true,
       ...(s.item ? { item: s.item } : {}),
-      design: s.page.slot === "page",
+      design: s.page.slot === "page" && !layouts.has(s.page.id),
     };
   });
 }
@@ -137,9 +140,11 @@ function carouselSlides(
       design: stored.pageId !== undefined && stored.content === undefined,
     };
   });
-  // A design page just added: a slide drawn with the set's brand.
+  // A design page just added: a slide drawn with the set's brand. A slide's
+  // own layout (S9) draws only the slides mapped to it.
+  const layouts = layoutPageIds(doc);
   for (const page of doc.pages) {
-    if (page.slot !== "page" || drawn.has(page.id)) continue;
+    if (page.slot !== "page" || drawn.has(page.id) || layouts.has(page.id)) continue;
     const coverData = cover ? carouselSlideData(carousel, { ...cover, pageId: "x", data: {} }) : {};
     out.push({
       key: `page:${page.id}`,

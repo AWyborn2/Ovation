@@ -195,6 +195,17 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
 5. **Share / Download for a single card** is the editor's existing Download menu (PNG, JPG, PDF and clips). The
    new Share panel (All / This page / Custom, numbered zip) is for carousel sets.
 6. **Old export-only carousel sets** (Ash, 29 Oct): not started from Create; they still open from Your designs.
+7. **Per-slide layout (S9), the arrangement field.** Ash said go without a separate review, so the field is the
+   smallest additive one: `arrangement.pageFor`, an optional map of slide → page in a set draft's own design.
+   - A slide's own layout is a copy of its page (same card type and page), so only how it is drawn changes,
+     never what it shows. A page named in the map draws only the slides mapped to it, so it never posts as an
+     extra slide.
+   - A set without the map draws exactly as before, and the editor, the queue preview and the server's post all
+     read it the same way. A map entry naming a page the set doesn't hold is ignored.
+   - "Apply to every slide" copies the slide's layout onto the shared page and clears the map for that slot.
+     "Change look" drops the map (the layouts belonged to the old look). Undo covers both.
+   - Set templates in the library never hold it, and the template format is unchanged.
+   - Built before S8, because "Edit this slide" (S8) saves into the same field.
 
 ### Not in this release
 
