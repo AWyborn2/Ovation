@@ -1,6 +1,6 @@
 {
   "name": "Neon Night matchSummary",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1549,7 +1549,7 @@
             "kind": "text",
             "content": "{{club.score}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Anton',sans-serif",
               "fontSize": 11.22,
               "fontWeight": 400,
@@ -1593,7 +1593,7 @@
             "kind": "text",
             "content": "{{club.score}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Anton',sans-serif",
               "fontSize": 14.96,
               "fontWeight": 400,
@@ -1643,7 +1643,7 @@
             "kind": "text",
             "content": "{{club.score}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Anton',sans-serif",
               "fontSize": 5.89,
               "fontWeight": 400,

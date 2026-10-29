@@ -1,6 +1,6 @@
 {
   "name": "Bold Type fiveFor",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1581,9 +1581,44 @@
               "ellipsis": true
             },
             "showWhen": {
-              "sponsors": false
+              "sponsors": false,
+              "photo": false
             },
-            "id": "card-l46",
+            "id": "card-l46-photo-accent",
+            "link": "card-l45",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 90.72,
+                "w": 21.96,
+                "h": 3.49
+              }
+            },
+            "sig": "text:1u51zgz1455690"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": false,
+              "photo": true
+            },
+            "id": "card-l46-photo-dark",
             "link": "card-l45",
             "sizes": ["landscape"],
             "geometry": {
@@ -1988,7 +2023,7 @@
             },
             "id": "card-l61",
             "link": "card-l61",
-            "sizes": ["square", "portrait", "story"],
+            "sizes": ["square", "portrait"],
             "geometry": {
               "square": {
                 "x": 56.32,
@@ -2001,7 +2036,69 @@
                 "y": 92.1,
                 "w": 38.88,
                 "h": 2.67
-              },
+              }
+            },
+            "sig": "text:146oucs0eejcqf"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": true,
+              "photo": false
+            },
+            "id": "card-l61-photo-accent",
+            "link": "card-l61",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 73.04,
+                "y": 94.44,
+                "w": 22.16,
+                "h": 1.88
+              }
+            },
+            "sig": "text:146oucs0eejcqf"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": true,
+              "photo": true
+            },
+            "id": "card-l61-photo-dark",
+            "link": "card-l61",
+            "sizes": ["story"],
+            "geometry": {
               "story": {
                 "x": 73.04,
                 "y": 94.44,
@@ -2029,9 +2126,44 @@
               "ellipsis": true
             },
             "showWhen": {
-              "sponsors": true
+              "sponsors": true,
+              "photo": false
             },
-            "id": "card-l62",
+            "id": "card-l62-photo-accent",
+            "link": "card-l61",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 89.92,
+                "w": 21.96,
+                "h": 3.49
+              }
+            },
+            "sig": "text:0p3uzrq0ev2tpz"
+          },
+          {
+            "kind": "text",
+            "content": "{{clubHashtag}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "showWhen": {
+              "sponsors": true,
+              "photo": true
+            },
+            "id": "card-l62-photo-dark",
             "link": "card-l61",
             "sizes": ["landscape"],
             "geometry": {
