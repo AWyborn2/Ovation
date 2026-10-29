@@ -1,6 +1,6 @@
 {
   "name": "Club Kit milestone",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1405,7 +1405,7 @@
                 "x": 6,
                 "y": 56.04,
                 "w": 46.66,
-                "h": 35.04
+                "h": 26.84
               },
               "portrait": {
                 "x": 6,
@@ -1469,7 +1469,7 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 91.52,
+                "y": 83.48,
                 "w": 23.41,
                 "h": 2.87
               },

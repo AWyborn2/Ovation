@@ -24,6 +24,7 @@ import { Loader2, Save } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ContentFieldPicker } from "./content-field-picker";
 import { SponsorsBackgroundPicker } from "./sponsors-background-picker";
+import { SponsorsPerSlideSetting } from "./sponsors-per-slide";
 
 /** A preset change starts its field choices afresh; a toggle back to the preset's own value clears it. */
 export function choose(
@@ -231,6 +232,10 @@ export function CardContentSection() {
               </Button>
             </div>
             <SponsorsBackgroundPicker selectedId={saved?.sponsorsBackgroundPhotoId ?? null} />
+            <SponsorsPerSlideSetting
+              saved={saved?.sponsorsPerSlide}
+              sponsorCount={settingsQ.data?.activeSponsors?.length ?? 0}
+            />
           </CardContent>
         </Card>
       )}

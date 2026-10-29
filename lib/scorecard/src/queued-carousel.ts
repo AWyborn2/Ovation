@@ -12,6 +12,7 @@
  * the set was built from, and the assembled document (one document, its pages
  * the set's slides need) sits in the draft's `adjustments`. Its slides render
  * on the blank base (`carouselPackId` answers "blank"). */
+import { MAX_SPONSORS_PER_SLIDE, MIN_SPONSORS_PER_SLIDE } from "./kind-templates/tile-grid";
 import { contentInput } from "./card-content/render-input";
 import { readCardContent } from "./card-content/validate";
 import { readContentOverride, type ContentOverride } from "./card-content/settings";
@@ -99,6 +100,11 @@ export interface QueuedCarousel {
   size: CarouselSize;
   /** Version 2: this carousel's change to the club's content choices. */
   contentOverride?: ContentOverride;
+  /**
+   * This set's own sponsors per slide (Oct 2026), when the admin changed it
+   * from the club's default while making it; the slides were split with it.
+   */
+  sponsorsPerSlide?: number;
   slides: QueuedCarouselSlide[];
 }
 const object = (v: unknown): v is Record<string, unknown> =>
@@ -206,6 +212,13 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
     const { contentOverride: _dropped, ...rest } = c;
     c = { ...rest, ...(override ? { contentOverride: override } : {}), slides };
   }
+  if (
+    c.sponsorsPerSlide !== undefined &&
+    (!Number.isInteger(c.sponsorsPerSlide) ||
+      (c.sponsorsPerSlide as number) < MIN_SPONSORS_PER_SLIDE ||
+      (c.sponsorsPerSlide as number) > MAX_SPONSORS_PER_SLIDE)
+  )
+    return null;
   if (c.packId !== undefined && !isCarouselPackId(c.packId)) return null;
   if (c.setType !== undefined && !Object.hasOwn(CAROUSEL_LABELS, String(c.setType))) return null;
   const kind =

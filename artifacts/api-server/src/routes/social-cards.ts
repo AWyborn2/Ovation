@@ -233,6 +233,12 @@ router.patch(
       }
       parsed.data.livestreamUrl = url || null;
     }
+    // Sponsors per slide: a whole number in range (the spec checks the range).
+    const perSlide = parsed.data.sponsorsPerSlide;
+    if (perSlide !== undefined && !Number.isInteger(perSlide)) {
+      res.status(400).json({ error: "Sponsors per slide must be a whole number." });
+      return;
+    }
     // The sponsors page background (ADR-010 P6): one of this club's own
     // club-wide library photos. Another club's photo id reads as not found.
     const background = parsed.data.sponsorsBackgroundPhotoId;

@@ -410,6 +410,8 @@ export function buildWeekendSlides(
    * shows (the club's choices); `visible` stays Match Day's, for the bookends.
    */
   kindVisible?: ReadonlySet<string>,
+  /** This carousel's sponsors per slide; absent, the club's default. */
+  sponsorsPerSlide?: number,
 ): WeekendSlide[] {
   if (!teams.length || !validRange(from, to)) return [];
   const show = (field: string) => visible.has(field);
@@ -473,7 +475,7 @@ export function buildWeekendSlides(
       }) as unknown as ShareCardInput,
     };
   };
-  // The sponsors page, on as many slides as its sponsors need (12 a slide).
+  // The sponsors page, on as many slides as its sponsors need, shared evenly.
   const sponsorsPages = splitSponsorsContent(
     matchDaySponsorsContent({
       ...bookendOpts,
@@ -487,6 +489,7 @@ export function buildWeekendSlides(
       socials: sponsorsPage?.socials ?? [],
     }),
     visible,
+    sponsorsPerSlide ?? bundle.settings.sponsorsPerSlide,
   );
   const bookend = (page: "title" | "sponsors", index = 0): WeekendSlide =>
     contentSlide({

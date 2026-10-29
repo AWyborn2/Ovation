@@ -109,6 +109,8 @@ interface TenantConfig {
   suspended: boolean;
   /** PlayHQ organisation GUID (`tenants.playhq_org_id`), null when not linked. */
   playhqOrgId: string | null;
+  /** The "New Studio (preview)" switch (`tenants.new_studio_enabled`). */
+  newStudio: boolean;
 }
 
 const cache = new Map<number, { cfg: TenantConfig; at: number }>();
@@ -145,6 +147,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
       plan: tenantsTable.plan,
       suspendedAt: tenantsTable.suspendedAt,
       playhqOrgId: tenantsTable.playhqOrgId,
+      newStudioEnabled: tenantsTable.newStudioEnabled,
     })
     .from(tenantsTable)
     .where(eq(tenantsTable.id, tenantId));
@@ -157,6 +160,7 @@ async function getTenantConfig(tenantId: number): Promise<TenantConfig> {
     plan: planFromString(row.plan),
     suspended: row.suspendedAt != null,
     playhqOrgId: row.playhqOrgId ?? null,
+    newStudio: row.newStudioEnabled ?? false,
   };
   // Only cache when no invalidation happened while this read was in flight --
   // otherwise a slow read racing a concurrent write would overwrite the
@@ -186,6 +190,14 @@ export async function getRequestEntitlements(
 ): Promise<{ plan: Plan; entitlements: Entitlements }> {
   const plan = (await getTenantConfig(getTenantId(req))).plan;
   return { plan, entitlements: entitlementsFor(plan) };
+}
+
+/** `GET /tenant-plan`: the plan and entitlements plus the New Studio preview switch. */
+export async function getRequestTenantPlan(
+  req: Request,
+): Promise<{ plan: Plan; entitlements: Entitlements; newStudio: boolean }> {
+  const cfg = await getTenantConfig(getTenantId(req));
+  return { plan: cfg.plan, entitlements: entitlementsFor(cfg.plan), newStudio: cfg.newStudio };
 }
 
 /**

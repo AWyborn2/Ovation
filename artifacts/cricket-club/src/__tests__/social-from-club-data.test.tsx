@@ -237,8 +237,9 @@ describe("create a card: prefills", () => {
     stubApi(queueRoutes());
     renderAt(<PrefillPanel kind="century" onApply={() => {}} />, "/admin/social/create");
     await waitFor(() => {
+      // The recent-moment picker comes first; the match picker's grade is next.
       const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
-      expect([...selects[0].options].map((o) => o.value)).toEqual(["1st Grade", "2nd Grade"]);
+      expect([...selects[1].options].map((o) => o.value)).toEqual(["1st Grade", "2nd Grade"]);
     });
     expect(screen.queryByRole("option", { name: "A Grade" })).toBeNull();
   });

@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchSummary",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1721,7 +1721,7 @@
                 "x": 6,
                 "y": 80.41,
                 "w": 45.85,
-                "h": 10.69
+                "h": 5.94
               },
               "portrait": {
                 "x": 6,
@@ -1737,7 +1737,12 @@
               }
             },
             "sig": "text:1mxlw880m57gyl",
-            "link": "result-l54"
+            "link": "result-l54",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

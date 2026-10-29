@@ -12,14 +12,16 @@ import {
   fixturesTable,
   playerIdMapTable,
   playerImagesTable,
+  socialDraftsTable,
   teamListsTable,
 } from "@workspace/db";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import {
   GetSocialMatchSummaryPrefillParams,
   GetSocialMatchSummaryPrefillResponse,
   GetSocialTeamListPrefillParams,
   GetSocialTeamListPrefillResponse,
+  ListSocialPrefillMomentsResponse,
   type MatchDetail,
 } from "@workspace/api-zod";
 import { resultDraftInput, teamListDraftInput } from "@workspace/scorecard/card-content";
@@ -143,6 +145,75 @@ router.get(
         photoUrl: photos.get(participantId) ?? null,
       })),
     });
+  },
+);
+
+/** How far back, and how many, Create a Card's moment prefill lists. */
+export const MOMENT_PREFILL_DAYS = 120;
+export const MOMENT_PREFILL_MAX = 60;
+
+const asText = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
+const asInt = (v: unknown): number | null => (Number.isInteger(v) ? (v as number) : null);
+
+/**
+ * Create a Card's century / five-for prefill (Ash, 28 Oct 2026): the recent
+ * performances the achievements engine found, each as the card it drafted
+ * (queued, posted or dismissed alike), so a card made by hand carries the
+ * engine's figures and match. Senior only (juniors isolation), this club's
+ * drafts only, newest first.
+ */
+router.get(
+  "/social-prefill/moments",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const tenantId = getTenantId(req);
+    const since = new Date(Date.now() - MOMENT_PREFILL_DAYS * 86_400_000);
+    const rows = await db
+      .select({
+        id: socialDraftsTable.id,
+        cardInput: socialDraftsTable.cardInput,
+        subjectPlayerId: socialDraftsTable.subjectPlayerId,
+        appPath: socialDraftsTable.appPath,
+        createdAt: socialDraftsTable.createdAt,
+        sourceImportedAt: socialDraftsTable.sourceImportedAt,
+      })
+      .from(socialDraftsTable)
+      .where(
+        and(
+          eq(socialDraftsTable.tenantId, tenantId),
+          eq(socialDraftsTable.engine, "milestone"),
+          sql`${socialDraftsTable.cardInput}->>'kind' IN ('century', 'fiveFor')`,
+          eq(socialDraftsTable.sourceMatchIsJunior, false),
+          sql`coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true'`,
+          gte(socialDraftsTable.createdAt, since),
+        ),
+      )
+      .orderBy(desc(socialDraftsTable.createdAt), desc(socialDraftsTable.id))
+      .limit(MOMENT_PREFILL_MAX);
+    const moments = rows.flatMap((r) => {
+      const input = (r.cardInput ?? {}) as Record<string, unknown>;
+      const kind = input.kind;
+      if (kind !== "century" && kind !== "fiveFor") return [];
+      const fromPath = /^\/players\/(\d+)(?:[/?#]|$)/.exec(r.appPath ?? "")?.[1];
+      const pathId = fromPath ? Number(fromPath) : null;
+      // A fill-in is never the card's player (fill-in exclusion).
+      const playerId = r.subjectPlayerId ?? (pathId !== null && pathId < 90000 ? pathId : null);
+      return [
+        {
+          id: r.id,
+          kind,
+          playerId,
+          playerName: asText(input.playerName) ?? "Unknown player",
+          grade: asText(input.grade),
+          round: asInt(input.round),
+          opponent: asText(input.opponent),
+          seenAt: (r.sourceImportedAt ?? r.createdAt).toISOString(),
+          input,
+        },
+      ];
+    });
+    res.json(ListSocialPrefillMomentsResponse.parse(moments));
   },
 );
 

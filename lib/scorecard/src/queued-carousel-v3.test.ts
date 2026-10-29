@@ -177,3 +177,35 @@ describe("a design page's card data", () => {
     expect(carouselSlideData({ slides }, slides[0]!)).toBe(data);
   });
 });
+
+describe("queued carousel v3: sponsors over two slides, and the set's sponsors per slide", () => {
+  const sponsors = (n: number, from = 0) =>
+    Array.from({ length: n }, (_, i) => ({ name: `S${from + i}`, logoUrl: `https://s/${i}.png` }));
+  const twoPages = {
+    slides: [
+      slide("title", matchDayTitleContent(bookendOpts)),
+      slide("fixture-7", fixture),
+      slide("sponsors", matchDaySponsorsContent({ ...bookendOpts, sponsors: sponsors(7) })),
+      slide("sponsors-2", matchDaySponsorsContent({ ...bookendOpts, sponsors: sponsors(6, 7) })),
+    ],
+  };
+
+  it("reads a set whose sponsors page runs over two slides, each drawing the sponsors page", () => {
+    const c = readQueuedCarousel(v3({ ...twoPages, sponsorsPerSlide: 7 }))!;
+    expect(c).not.toBeNull();
+    expect(c.sponsorsPerSlide).toBe(7);
+    expect(c.slides.map((s) => pageForInput(s.input as { kind: string }))).toEqual([
+      "title",
+      "fixture",
+      "sponsors",
+      "sponsors",
+    ]);
+  });
+
+  it("refuses a sponsors per slide out of range or not whole", () => {
+    for (const bad of [2, 17, 7.5, "8"])
+      expect(readQueuedCarousel(v3({ ...twoPages, sponsorsPerSlide: bad }))).toBeNull();
+    // Absent: the club's default was used.
+    expect(readQueuedCarousel(v3(twoPages))!.sponsorsPerSlide).toBeUndefined();
+  });
+});

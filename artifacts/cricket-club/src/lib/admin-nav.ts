@@ -25,6 +25,15 @@ export type AdminNavTab = {
   path: string;
   /** Paid feature; hidden when the tenant's plan lacks it. */
   feature?: Feature;
+  /**
+   * Routable but left out of the tab bar, sidebar and jump-to (New Studio keeps
+   * the old pages reachable by URL and from its Settings page).
+   */
+  hidden?: boolean;
+  /** Send this tab's path on to another page instead of mounting one. */
+  redirect?: string;
+  /** Skip the redirect when the URL carries this query parameter. */
+  redirectUnless?: string;
 };
 
 export type AdminNavGroup = {
@@ -37,7 +46,52 @@ export type AdminNavGroup = {
   feature?: Feature;
   badge?: "social-queue";
   tabs: AdminNavTab[];
+  /**
+   * The group's tabs when the club's "New Studio (preview)" switch is on
+   * (studio-create-consolidation). Absent: the same tabs either way.
+   */
+  previewTabs?: AdminNavTab[];
 };
+
+/** Per-tenant switches that change the menu. */
+export type NavOptions = { newStudio?: boolean };
+
+const studioTab = (value: string, label: string, path: string, extra: Partial<AdminNavTab> = {}) =>
+  ({ value, label, path, feature: "socialStudio", ...extra }) satisfies AdminNavTab;
+
+/**
+ * New Studio's menu (studio-create-consolidation): Home, Create, Queue, Your
+ * designs, Templates, Photos, Settings. The pages that leave the menu stay
+ * routable (hidden); Settings links to them. Old URLs whose page moved redirect.
+ */
+export const NEW_STUDIO_TABS: AdminNavTab[] = [
+  studioTab("studio", "Home", "/admin/social"),
+  studioTab("create", "Create", "/admin/social/create"),
+  studioTab("queue", "Queue", "/admin/social/queue"),
+  studioTab("designs", "Your designs", "/admin/social/designs"),
+  studioTab("template-library", "Templates", "/admin/social/template-library"),
+  studioTab("photos", "Photos", "/admin/social/photos"),
+  studioTab("settings", "Settings", "/admin/social/settings"),
+  studioTab("plan", "Posting Plan", "/admin/social/plan", { hidden: true }),
+  studioTab("cards", "Cards", "/admin/social/cards", { hidden: true }),
+  studioTab("fixtures", "Fixtures", "/admin/social/fixtures", { hidden: true }),
+  studioTab("email-lists", "Email lists", "/admin/social/email-lists", { hidden: true }),
+  studioTab("juniors", "Junior cards", "/admin/social/juniors", { hidden: true }),
+  // Old export-only carousel sets open from Your designs (`?open=<id>`); the list moved there.
+  studioTab("sets", "Carousel sets", "/admin/social/sets", {
+    hidden: true,
+    redirect: "/admin/social/designs?type=set",
+    redirectUnless: "open",
+  }),
+  studioTab("library", "Photo library", "/admin/social/library", {
+    hidden: true,
+    redirect: "/admin/social/photos",
+  }),
+  studioTab("junior-library", "Junior photo library", "/admin/social/junior-library", {
+    hidden: true,
+    redirect: "/admin/social/photos?tab=junior",
+  }),
+];
 
 export const ADMIN_NAV: AdminNavGroup[] = [
   { key: "hub", label: "Hub", href: "/admin", icon: LayoutGrid, tabs: [] },
@@ -142,6 +196,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         feature: "socialStudio",
       },
     ],
+    previewTabs: NEW_STUDIO_TABS,
   },
   {
     key: "settings",
@@ -296,18 +351,26 @@ export function activeTab(location: string, group: AdminNavGroup): AdminNavTab |
   return nested ?? (group.tabs.length ? group.tabs[0] : undefined);
 }
 
-/** Groups and tabs the tenant's plan includes. */
-export function visibleNav(entitlements: Partial<Record<Feature, boolean>>): AdminNavGroup[] {
+/** A group's tabs for this tenant (hidden ones included): New Studio's when its switch is on. */
+export function groupTabs(group: AdminNavGroup, opts: NavOptions = {}): AdminNavTab[] {
+  return opts.newStudio && group.previewTabs ? group.previewTabs : group.tabs;
+}
+
+/** Groups and tabs the tenant's plan includes, as the menu shows them (no hidden tabs). */
+export function visibleNav(
+  entitlements: Partial<Record<Feature, boolean>>,
+  opts: NavOptions = {},
+): AdminNavGroup[] {
   return ADMIN_NAV.filter((g) => !g.feature || entitlements[g.feature]).map((g) => ({
     ...g,
-    tabs: g.tabs.filter((t) => !t.feature || entitlements[t.feature]),
+    tabs: groupTabs(g, opts).filter((t) => !t.hidden && (!t.feature || entitlements[t.feature])),
   }));
 }
 
 /** Breadcrumb parts for a location: Admin / Group / Tab. */
-export function adminBreadcrumb(location: string): string[] {
+export function adminBreadcrumb(location: string, opts: NavOptions = {}): string[] {
   const group = ADMIN_NAV.find((g) => groupIsActive(location, g));
   if (!group) return ["Admin"];
-  const tab = activeTab(location, group);
+  const tab = activeTab(location, { ...group, tabs: groupTabs(group, opts) });
   return tab ? ["Admin", group.label, tab.label] : ["Admin", group.label];
 }

@@ -60,6 +60,8 @@ export type PrefillSource =
   | "teamlists"
   | "stats"
   | "milestone"
+  /** A recent century / five-for the achievements engine found, or a match by hand. */
+  | "moment"
   | "premiership"
   /** A round's results from the club's matches (results summary, team of the week). */
   | "results"
@@ -227,7 +229,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   },
 
   century: {
-    prefill: "match",
+    prefill: "moment",
     playerField: { key: "playerName" },
     fields: [
       { key: "playerName", label: "Player name", type: "text" },
@@ -243,7 +245,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   },
 
   fiveFor: {
-    prefill: "match",
+    prefill: "moment",
     playerField: { key: "playerName" },
     fields: [
       { key: "playerName", label: "Player name", type: "text" },
@@ -354,7 +356,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   },
 
   bigMoment: {
-    prefill: "match",
+    prefill: "moment",
     playerField: { key: "playerName" },
     fields: [
       { key: "momentLabel", label: "Moment label", type: "text", placeholder: "CENTURY ALERT" },

@@ -8346,6 +8346,9 @@ export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItem
 export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsMax = 14;
 
+export const getSocialSettingsResponseSettingsSponsorsPerSlideMin = 3;
+export const getSocialSettingsResponseSettingsSponsorsPerSlideMax = 16;
+
 
 
 export const GetSocialSettingsResponse = zod.object({
@@ -8577,7 +8580,8 @@ export const GetSocialSettingsResponse = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
+  "sponsorsPerSlide": zod.number().min(getSocialSettingsResponseSettingsSponsorsPerSlideMin).max(getSocialSettingsResponseSettingsSponsorsPerSlideMax).optional().describe('The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -8707,6 +8711,9 @@ export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemTimeRegEx
 export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsMax = 14;
 
 export const updateSocialSettingsBodyLivestreamUrlMax = 500;
+
+export const updateSocialSettingsBodySponsorsPerSlideMin = 3;
+export const updateSocialSettingsBodySponsorsPerSlideMax = 16;
 
 
 
@@ -8929,7 +8936,8 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
   "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.'),
+  "sponsorsPerSlide": zod.number().min(updateSocialSettingsBodySponsorsPerSlideMin).max(updateSocialSettingsBodySponsorsPerSlideMax).optional().describe('The club\'s sponsors per slide, 3 to 16.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -9010,6 +9018,9 @@ export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMa
 
 export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsMax = 14;
+
+export const updateSocialSettingsResponseSponsorsPerSlideMin = 3;
+export const updateSocialSettingsResponseSponsorsPerSlideMax = 16;
 
 
 
@@ -9241,7 +9252,8 @@ export const UpdateSocialSettingsResponse = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
+  "sponsorsPerSlide": zod.number().min(updateSocialSettingsResponseSponsorsPerSlideMin).max(updateSocialSettingsResponseSponsorsPerSlideMax).optional().describe('The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12.')
 })
 
 
@@ -17930,7 +17942,8 @@ export const GetTenantPlanResponse = zod.object({
   "clubroomTv": zod.boolean(),
   "curation": zod.boolean(),
   "juniors": zod.boolean().describe('Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control.')
-}).describe('Per-feature flags resolved from the tenant\'s plan.')
+}).describe('Per-feature flags resolved from the tenant\'s plan.'),
+  "newStudio": zod.boolean().describe('Whether the club\'s \"New Studio (preview)\" switch is on (set by a platform admin). Off: today\'s Social Studio, unchanged. On: the new menu, Create flow and editor panels.')
 })
 
 
@@ -18072,6 +18085,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
@@ -18155,6 +18169,7 @@ export const GetAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -18177,8 +18192,9 @@ export const UpdateAdminTenantBody = zod.object({
   "customDomain": zod.string().nullish(),
   "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest.'),
-  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.')
-}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch and\/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.'),
+  "newStudioEnabled": zod.boolean().optional().describe('The club\'s \"New Studio (preview)\" switch. Off: today\'s Social Studio, unchanged. On: the new menu, Create flow and editor panels.')
+}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch, junior sync settings and\/or New Studio preview switch. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
 
 export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
 
@@ -18233,6 +18249,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -18343,6 +18360,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -18413,6 +18431,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -18477,6 +18496,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
   "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
+  "newStudioEnabled": zod.boolean().optional().describe('Whether the club\'s \"New Studio (preview)\" switch is on (platform admin only).'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -19617,6 +19637,24 @@ export const GetSocialRoundResultsPrefillResponse = zod.object({
   "photoUrl": zod.string().nullable().describe('The player\'s library photo, else headshot; null when the club has neither.')
 }))
 }).describe('Results summary and team of the week prefill: a round\'s senior results per grade with the best players, and its standout performers.')
+
+
+/**
+ * Each is the card the engine drafted for that performance (whatever its queue status), so a card made here carries the same figures and match. Senior only; the last 120 days, at most 60.
+ * @summary Recent centuries and five-wicket hauls the achievements engine found, for Create a Card's prefill (newest first). Admin + socialStudio entitlement.
+ */
+export const ListSocialPrefillMomentsResponseItem = zod.object({
+  "id": zod.number().describe('The engine\'s draft id.'),
+  "kind": zod.enum(['century', 'fiveFor']),
+  "playerId": zod.number().nullable().describe('The player\'s id, when the club has them on its books.'),
+  "playerName": zod.string(),
+  "grade": zod.string().nullable(),
+  "round": zod.number().nullable(),
+  "opponent": zod.string().nullable(),
+  "seenAt": zod.coerce.date(),
+  "input": zod.record(zod.string(), zod.unknown()).describe('The card input the engine drafted (figures and match).')
+}).describe('A century or five-wicket haul the achievements engine drafted, as Create a Card\'s prefill.')
+export const ListSocialPrefillMomentsResponse = zod.array(ListSocialPrefillMomentsResponseItem)
 
 
 /**

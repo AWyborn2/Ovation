@@ -154,3 +154,22 @@ describe("livestreamUrl", () => {
     expect(res.body.livestreamUrl).toBeNull();
   });
 });
+
+describe("sponsorsPerSlide", () => {
+  it("defaults to 12", async () => {
+    const res = await get(0).expect(200);
+    expect(res.body.settings.sponsorsPerSlide).toBe(12);
+  });
+
+  it("saves a value in range, and another club keeps its own", async () => {
+    const res = await patch(0, { sponsorsPerSlide: 8 }).expect(200);
+    expect(res.body.sponsorsPerSlide).toBe(8);
+    expect((await get(0).expect(200)).body.settings.sponsorsPerSlide).toBe(8);
+    expect((await get(1).expect(200)).body.settings.sponsorsPerSlide).toBe(12);
+  });
+
+  it("refuses a value out of range or not whole, and keeps the saved one", async () => {
+    for (const bad of [2, 17, 7.5, -1]) await patch(0, { sponsorsPerSlide: bad }).expect(400);
+    expect((await get(0).expect(200)).body.settings.sponsorsPerSlide).toBe(8);
+  });
+});

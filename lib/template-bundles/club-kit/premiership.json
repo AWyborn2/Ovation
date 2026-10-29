@@ -1,6 +1,6 @@
 {
   "name": "Club Kit premiership",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1328,7 +1328,7 @@
                 "x": 9.8,
                 "y": 67.09,
                 "w": 39.66,
-                "h": 17.41
+                "h": 15.06
               },
               "portrait": {
                 "x": 9.8,
@@ -1387,13 +1387,18 @@
             "geometry": {
               "square": {
                 "x": 9.8,
-                "y": 85.06,
+                "y": 82.75,
                 "w": 39.66,
-                "h": 5.29
+                "h": 3.6
               }
             },
             "sig": "text:07w0rg716mwpgg",
-            "link": "card-l42"
+            "link": "card-l42",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

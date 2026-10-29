@@ -6,7 +6,7 @@
  * always editable (R14).
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -372,6 +372,7 @@ export function GenericCardForm({
   state,
   setState,
   onPlayer,
+  photoExtra,
 }: {
   kind: CardKind;
   descriptor: KindDescriptor;
@@ -379,6 +380,8 @@ export function GenericCardForm({
   setState: SetState;
   /** The player linked with "Link a player" (player sponsors). */
   onPlayer?: (p: SelectedPlayer | null) => void;
+  /** Shown under the Photo field: the card's player's tagged photos. */
+  photoExtra?: ReactNode;
 }) {
   return (
     <div className="space-y-5">
@@ -389,6 +392,7 @@ export function GenericCardForm({
         {descriptor.fields.map((field) => (
           <div key={field.key} className={field.full ? "sm:col-span-2" : undefined}>
             <ScalarControl field={field} state={state} setState={setState} />
+            {field.key === "photoUrl" && photoExtra && <div className="mt-2">{photoExtra}</div>}
           </div>
         ))}
       </div>

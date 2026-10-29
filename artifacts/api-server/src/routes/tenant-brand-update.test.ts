@@ -226,6 +226,17 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
     expect(row.playhqJuniorOrgId).toBeNull();
   });
 
+  it("ignores a smuggled New Studio switch, which stays platform-admin only", async () => {
+    await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ shortName: "Iso A", newStudioEnabled: true })
+      .expect(200);
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
+    expect(row.newStudioEnabled).toBe(false);
+  });
+
   it("cannot update a different tenant's branding (cross-tenant isolation)", async () => {
     const res = await request(app)
       .patch("/api/tenant-brand")

@@ -1175,6 +1175,35 @@ describe("sponsors over more than one slide (Oct 2026)", () => {
     expect(slides.map((s) => [s.id, s.label, count(s)])).toEqual([["sponsors", "Sponsors", 12]]);
   });
 
+  it("follows the club's sponsors per slide, and this carousel's own over it", () => {
+    const at = (n: number, club: number, own?: number) =>
+      buildWeekendSlides(
+        selected(),
+        [],
+        {
+          ...withSponsors(n),
+          settings: { ...withSponsors(n).settings, sponsorsPerSlide: club },
+        } as unknown as SocialSettingsBundle,
+        "Teams",
+        "2026-10-09",
+        "2026-10-11",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        own,
+      )
+        .filter((s) => s.id.startsWith("sponsors"))
+        .map(count);
+    // Ash's example: 12 at 8 a slide is 6 + 6, not 8 + 4.
+    expect(at(12, 8)).toEqual([6, 6]);
+    expect(at(12, 12, 8)).toEqual([6, 6]);
+    expect(at(12, 8, 12)).toEqual([12]);
+    expect(at(13, 12)).toEqual([7, 6]);
+  });
+
   it("shares twenty sponsors evenly over two closing slides", () => {
     const slides = sponsorSlides(20);
     expect(slides.map((s) => [s.id, s.label, count(s)])).toEqual([

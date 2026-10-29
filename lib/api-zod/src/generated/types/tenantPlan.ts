@@ -11,4 +11,6 @@ import type { TenantPlanPlan } from './tenantPlanPlan';
 export interface TenantPlan {
   plan: TenantPlanPlan;
   entitlements: Entitlements;
+  /** Whether the club's "New Studio (preview)" switch is on (set by a platform admin). Off: today's Social Studio, unchanged. On: the new menu, Create flow and editor panels. */
+  newStudio: boolean;
 }

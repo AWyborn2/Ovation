@@ -1,6 +1,6 @@
 {
   "name": "Duotone teamList",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -559,7 +559,7 @@
             "kind": "text",
             "content": "{{gradeHeading}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 5.98,
               "fontWeight": 900,
@@ -604,7 +604,7 @@
             "kind": "text",
             "content": "{{gradeHeading}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 5.9,
               "fontWeight": 900,
@@ -643,7 +643,7 @@
             "kind": "text",
             "content": "{{gradeHeading}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.42,
               "fontWeight": 900,

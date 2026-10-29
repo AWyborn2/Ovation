@@ -1,9 +1,9 @@
-import { useLocation } from "wouter";
+import { Redirect, useLocation, useSearch } from "wouter";
 import { lazy, Suspense, type ReactNode } from "react";
 import { LoadingState } from "@/components/data-states";
 import { UnderlineTabs } from "@/components/broadcast";
-import { useEntitlements } from "@/lib/entitlements";
-import { ADMIN_NAV, activeTab } from "@/lib/admin-nav";
+import { useEntitlements, useNewStudio } from "@/lib/entitlements";
+import { ADMIN_NAV, activeTab, groupTabs } from "@/lib/admin-nav";
 const AdminSocial = lazy(() => import("@/pages/admin-social"));
 const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
 const AdminSocialSettings = lazy(() => import("@/pages/admin-social-settings"));
@@ -13,6 +13,9 @@ const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
 const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
 const AdminSocialPlan = lazy(() => import("@/pages/admin-social-plan"));
+const AdminSocialDesigns = lazy(() => import("@/pages/admin-social-designs"));
+const AdminSocialPhotos = lazy(() => import("@/pages/admin-social-photos"));
+const AdminSocialSettingsHub = lazy(() => import("@/pages/admin-social-settings-hub"));
 const AdminPhotoLibrary = lazy(() => import("@/pages/admin-photo-library"));
 const AdminJuniorPhotoLibrary = lazy(() => import("@/pages/admin-junior-photo-library"));
 const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
@@ -71,12 +74,25 @@ function AdminTabGroup({
   pages: Record<string, ReactNode>;
 }) {
   const [location, navigate] = useLocation();
+  const search = useSearch();
   const entitlements = useEntitlements();
+  const newStudio = useNewStudio();
   const group = ADMIN_NAV.find((g) => g.key === groupKey)!;
   // Drop tabs the tenant's plan doesn't include, so a deep-link to a locked
-  // tab falls back to the first visible one.
-  const visibleTabs = group.tabs.filter((t) => !t.feature || entitlements[t.feature]);
-  const tab = activeTab(location, { ...group, tabs: visibleTabs });
+  // tab falls back to the first visible one. Hidden tabs still route (New
+  // Studio keeps the old pages reachable) but stay off the tab bar.
+  const routableTabs = groupTabs(group, { newStudio }).filter(
+    (t) => !t.feature || entitlements[t.feature],
+  );
+  const visibleTabs = routableTabs.filter((t) => !t.hidden);
+  const tab = activeTab(location, { ...group, tabs: routableTabs });
+
+  if (
+    tab?.redirect &&
+    !(tab.redirectUnless && new URLSearchParams(search).has(tab.redirectUnless))
+  ) {
+    return <Redirect to={tab.redirect} replace />;
+  }
 
   return (
     <div className="space-y-6">
@@ -93,7 +109,7 @@ function AdminTabGroup({
           <UnderlineTabs
             label={group.label}
             tabs={visibleTabs.map((t) => ({ value: t.value, label: t.label }))}
-            value={tab.value}
+            value={tab.hidden ? "" : tab.value}
             onChange={(v) => {
               const next = visibleTabs.find((x) => x.value === v);
               if (next) navigate(next.path);
@@ -110,6 +126,7 @@ function AdminTabGroup({
 }
 
 export function AdminSocialGroup() {
+  const newStudio = useNewStudio();
   return (
     <AdminTabGroup
       groupKey="social"
@@ -127,7 +144,10 @@ export function AdminSocialGroup() {
         "email-lists": <AdminEmailLists />,
         library: <AdminPhotoLibrary />,
         "junior-library": <AdminJuniorPhotoLibrary />,
-        settings: <AdminSocialSettings />,
+        settings: newStudio ? <AdminSocialSettingsHub /> : <AdminSocialSettings />,
+        // New Studio's own tabs (studio-create-consolidation); unreachable with the switch off.
+        designs: <AdminSocialDesigns />,
+        photos: <AdminSocialPhotos />,
       }}
     />
   );

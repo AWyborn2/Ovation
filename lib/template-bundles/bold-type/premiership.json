@@ -1,6 +1,6 @@
 {
   "name": "Bold Type premiership",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1345,7 +1345,7 @@
             },
             "id": "card-l38",
             "link": "card-l38",
-            "sizes": ["square", "portrait", "story"],
+            "sizes": ["square", "portrait"],
             "geometry": {
               "square": {
                 "x": 54.08,
@@ -1358,7 +1358,31 @@
                 "y": 92.74,
                 "w": 41.12,
                 "h": 2.67
-              },
+              }
+            },
+            "sig": "text:1g7ly4r10utowm"
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l38-photo-accent",
+            "link": "card-l38",
+            "sizes": ["story"],
+            "geometry": {
               "story": {
                 "x": 54.08,
                 "y": 94.89,
@@ -1366,7 +1390,43 @@
                 "h": 1.88
               }
             },
-            "sig": "text:1g7ly4r10utowm"
+            "sig": "text:1g7ly4r10utowm",
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.8,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l38-photo-dark",
+            "link": "card-l38",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 54.08,
+                "y": 94.89,
+                "w": 41.12,
+                "h": 1.88
+              }
+            },
+            "sig": "text:1g7ly4r10utowm",
+            "showWhen": {
+              "photo": true
+            }
           },
           {
             "kind": "text",
@@ -1385,7 +1445,7 @@
               "maxLines": 1,
               "ellipsis": true
             },
-            "id": "card-l39",
+            "id": "card-l39-photo-accent",
             "link": "card-l38",
             "sizes": ["landscape"],
             "geometry": {
@@ -1396,7 +1456,43 @@
                 "h": 3.49
               }
             },
-            "sig": "text:1u51zgz1455690"
+            "sig": "text:1u51zgz1455690",
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{hashtags}}",
+            "style": {
+              "color": "#FFFFFF",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.47,
+              "fontWeight": 800,
+              "letterSpacing": 0.04,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "card-l39-photo-dark",
+            "link": "card-l38",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 75.89,
+                "y": 90.72,
+                "w": 21.96,
+                "h": 3.49
+              }
+            },
+            "sig": "text:1u51zgz1455690",
+            "showWhen": {
+              "photo": true
+            }
           }
         ]
       }

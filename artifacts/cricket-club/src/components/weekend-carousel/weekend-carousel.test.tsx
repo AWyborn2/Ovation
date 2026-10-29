@@ -133,6 +133,8 @@ const refetch = vi.fn(async (): Promise<{ data: Record<string, unknown>; isError
   },
   isError: false,
 }));
+const NO_SETTINGS = { settings: {}, activeSponsors: [] };
+let settingsData: Record<string, unknown> = NO_SETTINGS;
 const settingsRefetch = vi.fn(async () => ({
   data: { settings: {}, activeSponsors: [] },
   isError: false,
@@ -166,7 +168,7 @@ vi.mock("@workspace/api-client-react", () => ({
   },
   getGetWeekendCarouselSourcesQueryKey: (p: unknown) => ["sources", p],
   useGetSocialSettings: () => ({
-    data: { settings: {}, activeSponsors: [] },
+    data: settingsData,
     isLoading: false,
     isError: false,
     refetch: settingsRefetch,
@@ -240,6 +242,7 @@ afterEach(() => {
   photoPicks = undefined;
   activeType = "matchDay";
   many = false;
+  settingsData = NO_SETTINGS;
 });
 
 describe("WeekendCarousel automatic photos (ADR-010 P4)", () => {
@@ -672,5 +675,64 @@ describe("WeekendCarousel", () => {
     await waitFor(() => expect(screen.getByTestId("status-weekend-queued")).toBeTruthy());
     const second = mutateAsync.mock.calls[1][0] as ReturnType<typeof queuedRequest>;
     expect(second.data.cardInput.weekendCarousel.submissionId).toBe(firstId);
+  });
+});
+
+describe("WeekendCarousel sponsors per slide (Oct 2026)", () => {
+  const sponsors = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      name: `Sponsor ${i + 1}`,
+      logoUrl: `/s${i + 1}.png`,
+      cardKinds: ["matchDay"],
+    }));
+
+  it("previews the club's split, changes it for this carousel only, and saves it with the set", async () => {
+    settingsData = {
+      settings: { sponsorsEnabled: true, sponsorsPerSlide: 12 },
+      activeSponsors: sponsors(13),
+    };
+    mount();
+    await generatePreview();
+    const section = screen.getByTestId("weekend-sponsor-slides");
+    expect(section.textContent).toContain("13 sponsors → 7 + 6 (2 slides)");
+    expect(section.textContent).toContain("Your club’s default.");
+    const input = screen.getByLabelText("Sponsors per slide");
+    fireEvent.change(input, { target: { value: "5" } });
+    fireEvent.blur(input);
+    expect(screen.getByTestId("weekend-sponsor-slides").textContent).toContain(
+      "13 sponsors → 5 + 4 + 4 (3 slides)",
+    );
+    expect(screen.getByTestId("weekend-sponsor-slides").textContent).toContain(
+      "For this carousel only; your club’s default is 12.",
+    );
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    const saved = queuedRequest().data.cardInput.weekendCarousel as unknown as {
+      sponsorsPerSlide?: number;
+      slides: Array<{ id: string }>;
+    };
+    expect(saved.sponsorsPerSlide).toBe(5);
+    expect(saved.slides.filter((sl) => sl.id.startsWith("sponsors")).map((sl) => sl.id)).toEqual([
+      "sponsors",
+      "sponsors-2",
+      "sponsors-3",
+    ]);
+  });
+
+  it("Use the default goes back to the club's value, and saves no override", async () => {
+    settingsData = {
+      settings: { sponsorsEnabled: true, sponsorsPerSlide: 12 },
+      activeSponsors: sponsors(13),
+    };
+    mount();
+    await generatePreview();
+    fireEvent.click(screen.getByLabelText("Fewer sponsors per slide"));
+    fireEvent.click(screen.getByRole("button", { name: "Use the default" }));
+    expect(screen.getByTestId("weekend-sponsor-slides").textContent).toContain(
+      "13 sponsors → 7 + 6 (2 slides)",
+    );
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(queuedRequest().data.cardInput.weekendCarousel).not.toHaveProperty("sponsorsPerSlide");
   });
 });

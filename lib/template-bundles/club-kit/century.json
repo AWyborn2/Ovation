@@ -1,6 +1,6 @@
 {
   "name": "Club Kit century",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1498,7 +1498,7 @@
                 "x": 6,
                 "y": 82.81,
                 "w": 45.85,
-                "h": 9.33
+                "h": 3.54
               },
               "portrait": {
                 "x": 6,
@@ -1514,7 +1514,12 @@
               }
             },
             "sig": "text:090yu44028ball",
-            "link": "card-l46"
+            "link": "card-l46",
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 2,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

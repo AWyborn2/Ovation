@@ -663,6 +663,11 @@ export const socialSettingsTable = pgTable(
       () => clubPhotosTable.id,
       { onDelete: "set null" },
     ),
+    // The most sponsors one match day sponsors slide holds (Oct 2026); past it
+    // the Weekend Carousel shares them evenly over more slides. A design can
+    // change it for itself (the set's `sponsorsPerSlide`) without touching
+    // this. The API keeps it within MIN/MAX_SPONSORS_PER_SLIDE.
+    sponsorsPerSlide: integer("sponsors_per_slide").notNull().default(12),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

@@ -33,3 +33,13 @@ export function useEntitlements(): Entitlements {
 export function useEntitlement(feature: Feature): boolean {
   return useEntitlements()[feature];
 }
+
+/**
+ * Whether the club's "New Studio (preview)" switch is on (studio-create-consolidation),
+ * set by a platform admin. False until `/tenant-plan` resolves, so a club on today's
+ * Studio never sees the new one flash first.
+ */
+export function useNewStudio(): boolean {
+  const q = useGetTenantPlan({ query: { queryKey: getGetTenantPlanQueryKey() } });
+  return q.data?.newStudio ?? false;
+}
