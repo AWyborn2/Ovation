@@ -26,6 +26,8 @@ const ENTITLEMENTS = {
 };
 const plan = (newStudio: boolean) => ({
   "/api/auth/me": ADMIN,
+  // Today's Create a card reads the settings bundle (sponsors, theme) when it mounts.
+  "/api/social-settings": { settings: {}, activeSponsors: [], captionTemplates: [] },
   "/api/tenant-plan": { plan: "club", entitlements: ENTITLEMENTS, newStudio },
 });
 
