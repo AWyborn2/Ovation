@@ -202,7 +202,7 @@ export function WeekendCarouselBody({
   );
 }
 
-function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
+export function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
   const lock = s.busy;
   return (
     <section className="space-y-3">
