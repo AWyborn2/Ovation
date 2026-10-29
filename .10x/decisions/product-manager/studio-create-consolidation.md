@@ -1,8 +1,8 @@
 # Studio create consolidation
 
-**Status:** Scoping with Ash, 29 Oct 2026. Two prototypes are awaiting his pick.
+**Status:** Scoping with Ash, 29 Oct 2026. Ash leans to Option A; the full Option A screens are awaiting his review.
 **Prototypes:** https://claude.ai/artifact/Y6FvEh49DAB7bDa5ny62YN (Option A: One Create flow; Option B: Studio
-rebuild). **Next:** Ash picks an option or a mix of them, then it goes to the Principal Architect.
+rebuild). **Next:** Ash reviews the full Option A screens, then it goes to the Principal Architect.
 
 ## Problem
 
@@ -56,6 +56,18 @@ PlayHQ's), but not a junior team's list, and it can't make a carousel.
 - A single team's list, senior or junior, takes at most four steps from Create to the editor.
 - No admin goes to Carousel sets or Junior cards to make something; the pages are retired or redirect.
 - Pilot clubs report it as simpler.
+
+## Ash's direction (29 Oct 2026)
+
+- **Option A.** Option B felt too thin next to A. Ash asked to see every Option A screen: Home, Create, Queue,
+  Your designs, Templates, Photos and Settings. They are now in the prototype, linked to each other.
+- **New requirement: edit a carousel set as a set.** Pick a carousel set, then in the editor:
+  - reorder, add and remove slides;
+  - change one slide's layout, or apply it to every slide;
+  - reformat the whole set to Square, Portrait, Story or Landscape, keeping text and photo edits;
+  - open any slide in the full card editor.
+
+  The prototype's "Carousel set editor" screen shows this.
 
 ## Not decided yet
 
