@@ -17,6 +17,7 @@ import {
   isSetDocument,
   layoutPageIds,
   mapCarouselSlides,
+  primaryPage,
   setPageRenderDocument,
   slideInputFor,
   type SetDocument,
@@ -170,3 +171,19 @@ export const slideDocument = (doc: SetDocument, slide: Pick<SetDraftSlide, "page
 /** A draft's set design, if it holds one. */
 export const draftSetDocument = (adjustments: unknown): SetDocument | null =>
   isSetDocument(adjustments) ? adjustments : null;
+
+/**
+ * Whether the card editor can open a slide on its own (studio-create S8): a
+ * data slide drawn by its kind's own card page (a team, fixture or result).
+ * A cover, sponsors or day page is edited in the set editor.
+ */
+export function canEditSlideAlone(slide: {
+  design: boolean;
+  page: Pick<SetPage, "kind" | "page">;
+}): boolean {
+  return !slide.design && slide.page.page === primaryPage(slide.page.kind);
+}
+
+/** Where "Edit this slide" opens slide `key` of set draft `id`. */
+export const slideEditorHref = (id: number, key: string) =>
+  `/admin/social/set/${id}/slide?key=${encodeURIComponent(key)}`;
