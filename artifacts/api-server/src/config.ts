@@ -33,6 +33,9 @@ export const env = {
   NODE_ENV: () => optional("NODE_ENV"),
   LOG_LEVEL: () => optional("LOG_LEVEL"),
   isProduction: () => process.env.NODE_ENV === "production",
+  /** Never enable development auth on a published deployment, even if misconfigured. */
+  devPlatformAdminOnly: () =>
+    process.env.NODE_ENV === "development" && !process.env.REPLIT_DEPLOYMENT,
 
   // ── Sessions / seeding ───────────────────────────────────────────────────
   SESSION_SECRET: () => optional("SESSION_SECRET"),

@@ -4,6 +4,9 @@ import { SESSION_COOKIE, decodeSession, getAdminById, sessionIsCurrent } from ".
 import { getTenantId } from "./tenant-context";
 import { touchTenantActivity } from "../lib/tenant-activity";
 import { isTenantSuspended } from "../lib/tenant";
+import { env } from "../config";
+import { resolvePlatformAdmin } from "./require-platform-admin";
+import { devPlatformClubActor } from "../lib/dev-platform-admin";
 
 export type RequestWithAdmin = Request & { admin?: AdminRow };
 
@@ -17,6 +20,11 @@ export type RequestWithAdmin = Request & { admin?: AdminRow };
  * mismatch, or a suspended tenant.
  */
 export async function resolveAdmin(req: Request): Promise<AdminRow | null> {
+  if (env.devPlatformAdminOnly()) {
+    const platformAdmin = await resolvePlatformAdmin(req);
+    if (!platformAdmin || await isTenantSuspended(getTenantId(req))) return null;
+    return devPlatformClubActor(platformAdmin, getTenantId(req));
+  }
   const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
   const token = cookies?.[SESSION_COOKIE];
   const payload = decodeSession(token);

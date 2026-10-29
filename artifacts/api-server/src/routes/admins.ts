@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, ne, count, sql } from "drizzle-orm";
-import { db, adminsTable } from "@workspace/db";
+import { db, adminsTable, platformAdminsTable } from "@workspace/db";
 import {
   CreateAdminBody,
   UpdateAdminBody,
@@ -9,8 +9,10 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { hashPassword, SESSION_COOKIE } from "../lib/auth";
+import { hashPassword, SESSION_COOKIE, PLATFORM_SESSION_COOKIE } from "../lib/auth";
 import { serializeAdmin } from "../lib/serialize-principals";
+import { env } from "../config";
+import { resolvePlatformAdmin } from "../middlewares/require-platform-admin";
 
 const router: IRouter = Router();
 
@@ -116,6 +118,20 @@ router.patch("/admins/:id", requireAdmin, async (req, res): Promise<void> => {
  * browser's cookie too.
  */
 router.post("/auth/logout-all", requireAdmin, async (req, res): Promise<void> => {
+  if (env.devPlatformAdminOnly()) {
+    const platformAdmin = await resolvePlatformAdmin(req);
+    if (!platformAdmin) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    await db.update(platformAdminsTable).set({
+      sessionEpoch: sql`${platformAdminsTable.sessionEpoch} + 1`,
+    }).where(eq(platformAdminsTable.id, platformAdmin.id));
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+    res.clearCookie(PLATFORM_SESSION_COOKIE, { path: "/" });
+    res.sendStatus(204);
+    return;
+  }
   const admin = (req as RequestWithAdmin).admin!;
   await db
     .update(adminsTable)

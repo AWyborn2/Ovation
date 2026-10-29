@@ -89,3 +89,4 @@
 - [SQL Console transaction safety](sql-console-transactions.md) — console batches own transactions; never remove preview rollback protection just to make a script run.
 - [Confirmed junior names](confirmed-junior-name-boundaries.md) — admin knowledge can resolve evidence conflicts; identity confirmation is not consent, and production application must remain owner-controlled.
 - [Email history retention](email-history-retention.md) — preserve non-identifying delivery history; distinguish deleted lists from intentional listless batches.
+- [Development admin access](development-admin-policy.md) — user chose platform-admin-only access across development clubs; production stays separate.

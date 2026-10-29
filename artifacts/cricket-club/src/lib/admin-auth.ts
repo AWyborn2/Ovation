@@ -1,4 +1,4 @@
-import { useGetCurrentAdmin, getGetCurrentAdminQueryKey } from "@workspace/api-client-react";
+import { useGetCurrentAdmin, getGetCurrentAdminQueryKey, getGetPlatformAdminMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useCurrentAdmin() {
@@ -15,7 +15,12 @@ export function useCurrentAdmin() {
 
 export function useInvalidateAdmin() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() });
+  return () => Promise.all([
+    qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() }),
+    ...(import.meta.env.DEV
+      ? [qc.invalidateQueries({ queryKey: getGetPlatformAdminMeQueryKey() })]
+      : []),
+  ]);
 }
 
 export function handleAdminMutationError(e: unknown, onAuthFailed?: () => void): string | null {

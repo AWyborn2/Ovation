@@ -16,7 +16,9 @@ import {
   verifyPassword,
   hashResetToken,
   hashPassword,
+  PLATFORM_SESSION_COOKIE,
 } from "../lib/auth";
+import { env } from "../config";
 import { resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loginRateLimiter } from "../middlewares/rate-limit";
@@ -26,6 +28,10 @@ import { serializeAdmin } from "../lib/serialize-principals";
 const router: IRouter = Router();
 
 router.post("/auth/login", loginRateLimiter, async (req, res): Promise<void> => {
+  if (env.devPlatformAdminOnly()) {
+    res.status(403).json({ error: "Development requires platform-admin sign-in." });
+    return;
+  }
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -57,6 +63,9 @@ router.post("/auth/login", loginRateLimiter, async (req, res): Promise<void> => 
 
 router.post("/auth/logout", (_req, res): void => {
   res.clearCookie(SESSION_COOKIE, { path: "/" });
+  if (env.devPlatformAdminOnly()) {
+    res.clearCookie(PLATFORM_SESSION_COOKIE, { path: "/" });
+  }
   res.sendStatus(204);
 });
 
@@ -116,6 +125,10 @@ router.get("/auth/password-reset/:token", async (req, res): Promise<void> => {
 });
 
 router.post("/auth/password-reset/:token", loginRateLimiter, async (req, res): Promise<void> => {
+  if (env.devPlatformAdminOnly()) {
+    res.status(403).json({ error: "Development requires platform-admin sign-in." });
+    return;
+  }
   const parsed = SubmitPasswordResetBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

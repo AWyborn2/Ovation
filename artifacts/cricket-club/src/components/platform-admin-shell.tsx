@@ -48,7 +48,7 @@ export function PlatformAdminShell({
   return <PlatformAdminLayout admin={me.data}>{children}</PlatformAdminLayout>;
 }
 
-function PlatformLoginGate() {
+export function PlatformLoginGate() {
   const [error, setError] = useState<string | null>(null);
   const invalidate = useInvalidatePlatformAdmin();
   const login = usePlatformAdminLogin({
@@ -67,7 +67,7 @@ function PlatformLoginGate() {
   return (
     <div className="min-h-screen bg-background px-[var(--pad)] text-foreground">
       <SignInCard
-        eyebrow="Ovation / Platform"
+        eyebrow={import.meta.env.DEV ? "Development / Platform admin only" : "Ovation / Platform"}
         title="Platform sign-in"
         idPrefix="pa-"
         userField="email"

@@ -234,6 +234,28 @@ export async function getPlatformAdminByEmail(email: string): Promise<PlatformAd
 }
 
 export async function ensureSeedPlatformAdmin(): Promise<void> {
+  // Development deliberately uses the configured platform credentials as the
+  // single admin entry point. Production remains seed-once: never reset a live
+  // account's password from an environment setting.
+  if (env.devPlatformAdminOnly()) {
+    const email = env.PLATFORM_ADMIN_EMAIL()?.trim().toLowerCase();
+    const password = env.PLATFORM_ADMIN_PASSWORD();
+    if (!email || !password) return;
+    const admin = await getPlatformAdminByEmail(email);
+    if (admin && await verifyPassword(password, admin.passwordHash)) return;
+    const passwordHash = await hashPassword(password);
+    if (admin) {
+      await db.update(platformAdminsTable).set({
+        passwordHash,
+        sessionEpoch: admin.sessionEpoch + 1,
+      }).where(eq(platformAdminsTable.id, admin.id));
+    } else {
+      await db.insert(platformAdminsTable).values({
+        email, displayName: "Platform Admin", passwordHash,
+      }).onConflictDoNothing();
+    }
+    return;
+  }
   const existing = await db
     .select({ id: platformAdminsTable.id })
     .from(platformAdminsTable)

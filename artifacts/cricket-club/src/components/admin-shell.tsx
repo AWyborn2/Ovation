@@ -3,6 +3,7 @@ import { useLogin } from "@workspace/api-client-react";
 import { useCurrentAdmin, useInvalidateAdmin } from "@/lib/admin-auth";
 import { AdminLayout } from "@/components/admin-layout";
 import { SignInCard } from "@/components/sign-in-card";
+import { PlatformLoginGate } from "@/components/platform-admin-shell";
 
 /**
  * Signs the admin in, then renders the admin layout around `children`, or
@@ -14,6 +15,7 @@ export function AdminShell({ children, bare = false }: { children: ReactNode; ba
     return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
   }
   if (!me.data) {
+    if (import.meta.env.DEV) return <PlatformLoginGate />;
     // No site chrome around the admin: centre the sign-in card on its own.
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
