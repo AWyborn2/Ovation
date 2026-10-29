@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchSummary",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -483,9 +483,9 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 48.11,
+                "x": 68.84,
                 "y": 5,
-                "w": 49.27,
+                "w": 28.54,
                 "h": 90
               }
             },
@@ -1948,9 +1948,9 @@
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 38.78,
+                "x": 46.46,
                 "y": 88.34,
-                "w": 54.62,
+                "w": 46.94,
                 "h": 2.5
               }
             },
@@ -1977,9 +1977,9 @@
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
-                "x": 35.3,
+                "x": 45.23,
                 "y": 90.28,
-                "w": 57.94,
+                "w": 48.01,
                 "h": 2.15
               }
             },
@@ -2006,9 +2006,9 @@
             "sizes": ["story"],
             "geometry": {
               "story": {
-                "x": 30.82,
+                "x": 43.7,
                 "y": 76.79,
-                "w": 62.2,
+                "w": 49.32,
                 "h": 1.61
               }
             },
@@ -2035,9 +2035,9 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 58.33,
+                "x": 79.06,
                 "y": 84.92,
-                "w": 37.26,
+                "w": 16.53,
                 "h": 3.33
               }
             },

@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark milestone",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -100,21 +100,21 @@
             "id": "card-l3",
             "geometry": {
               "square": {
-                "x": 38,
+                "x": 65.6,
                 "y": 0,
-                "w": 62,
+                "w": 34.4,
                 "h": 100
               },
               "portrait": {
-                "x": 38,
+                "x": 65.6,
                 "y": 0,
-                "w": 62,
+                "w": 34.4,
                 "h": 100
               },
               "story": {
-                "x": 38,
+                "x": 65.6,
                 "y": 0,
-                "w": 62,
+                "w": 34.4,
                 "h": 100
               },
               "landscape": {
@@ -1773,21 +1773,21 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 54.08,
+                "x": 81.68,
                 "y": 90.12,
-                "w": 41.12,
+                "w": 13.52,
                 "h": 3.33
               },
               "portrait": {
-                "x": 54.08,
+                "x": 81.68,
                 "y": 92.1,
-                "w": 41.12,
+                "w": 13.52,
                 "h": 2.67
               },
               "story": {
-                "x": 54.08,
+                "x": 81.68,
                 "y": 94.44,
-                "w": 41.12,
+                "w": 13.52,
                 "h": 1.88
               }
             },
