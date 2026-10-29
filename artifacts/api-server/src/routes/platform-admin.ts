@@ -285,7 +285,12 @@ router.patch(
     const updates: Partial<
       Pick<
         TenantRow,
-        "plan" | "customDomain" | "playhqSyncEnabled" | "juniorSyncEnabled" | "playhqJuniorOrgId"
+        | "plan"
+        | "customDomain"
+        | "playhqSyncEnabled"
+        | "juniorSyncEnabled"
+        | "playhqJuniorOrgId"
+        | "newStudioEnabled"
       >
     > = {};
     if (parsed.data.plan !== undefined) updates.plan = parsed.data.plan;
@@ -298,6 +303,10 @@ router.patch(
     // can be set ahead of a plan change.
     if (parsed.data.juniorSyncEnabled !== undefined)
       updates.juniorSyncEnabled = parsed.data.juniorSyncEnabled;
+    // The "New Studio (preview)" switch (studio-create-consolidation S1). Platform admin
+    // only, like the sync switches: a club cannot turn its own preview on.
+    if (parsed.data.newStudioEnabled !== undefined)
+      updates.newStudioEnabled = parsed.data.newStudioEnabled;
     if (parsed.data.playhqJuniorOrgId !== undefined) {
       const org = parsed.data.playhqJuniorOrgId?.trim().toLowerCase() || null;
       if (org) {

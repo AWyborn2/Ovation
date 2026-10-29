@@ -8,7 +8,7 @@ import {
   getPlatformBrandFields,
 } from "../lib/tenant-brand";
 import { invalidateClubBrandOverlayCache } from "../lib/club-brand";
-import { getRequestEntitlements } from "../lib/tenant";
+import { getRequestTenantPlan } from "../lib/tenant";
 import { getTenantId, isPlatformRequest } from "../middlewares/tenant-context";
 import { requireAdmin } from "../middlewares/require-admin";
 
@@ -106,10 +106,11 @@ router.patch("/tenant-brand", requireAdmin, async (req, res): Promise<void> => {
   res.json(brand);
 });
 
-// The tenant's plan + resolved feature entitlements (dormant ⇒ everything on).
-// The web reads this to hide/lock paid UI without locking anything during the pilot.
+// The tenant's plan + resolved feature entitlements (dormant ⇒ everything on), and
+// the New Studio preview switch. The web reads this to hide/lock paid UI without
+// locking anything during the pilot, and to pick which Social Studio to show.
 router.get("/tenant-plan", async (req, res): Promise<void> => {
-  res.json(await getRequestEntitlements(req));
+  res.json(await getRequestTenantPlan(req));
 });
 
 export default router;
