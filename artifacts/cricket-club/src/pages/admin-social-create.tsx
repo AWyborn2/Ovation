@@ -15,6 +15,8 @@ import { TemplatePicker, type PickedTemplate } from "@/components/template-libra
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import {
   CardFormRouter,
+  DESCRIPTORS,
+  PlayerPhotoStrip,
   PrefillPanel,
   buildCardInput,
   initialCardState,
@@ -135,6 +137,12 @@ export default function AdminSocialCreate() {
   // Only a senior player card follows a player's sponsors.
   const playerCard = PLAYER_SPONSOR_KINDS.has(kind) && !isJunior;
   const sponsorPlayerId = playerCard ? (player?.id ?? null) : null;
+  // The card's player's library photo goes into a card with a Photo field
+  // (senior cards only: a junior card never shows a senior's library photos).
+  const photoPlayer =
+    player && !isJunior && DESCRIPTORS[kind]?.fields.some((f) => f.key === "photoUrl")
+      ? player
+      : null;
 
   // Preview through whichever pack the tenant has made default for this kind,
   // so the composer shows the design the export will actually produce.
@@ -277,6 +285,18 @@ export default function AdminSocialCreate() {
                 state={state}
                 setState={patchState}
                 onPlayer={setPlayer}
+                photoExtra={
+                  photoPlayer && (
+                    <PlayerPhotoStrip
+                      // A new card type starts empty: take the photo again.
+                      key={kind}
+                      playerId={photoPlayer.id}
+                      playerName={`${photoPlayer.givenName} ${photoPlayer.surname}`.trim()}
+                      value={typeof state.photoUrl === "string" ? state.photoUrl : ""}
+                      onPick={(url) => patchState({ photoUrl: url })}
+                    />
+                  )
+                }
               />
             </CardContent>
           </Card>
