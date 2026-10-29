@@ -20906,6 +20906,11 @@ components:
         sponsorsBackgroundPhotoId:
           type: ["integer", "null"]
           description: "The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none."
+        sponsorsPerSlide:
+          type: integer
+          minimum: 3
+          maximum: 16
+          description: "The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12."
 
     CardContentKindSettings:
       type: object
@@ -22534,6 +22539,11 @@ components:
         sponsorsBackgroundPhotoId:
           type: ["integer", "null"]
           description: "One of the club's own club-wide library photos, or null to clear it."
+        sponsorsPerSlide:
+          type: integer
+          minimum: 3
+          maximum: 16
+          description: "The club's sponsors per slide, 3 to 16."
 
     RoundSchedule:
       type: object

@@ -62,6 +62,59 @@ function bundleDocuments(): Array<{ name: string; kind: string; document: unknow
   return out;
 }
 
+const STRIP_LABEL = /^[^{}]*\bBY\s*$/i;
+
+/** Two layers' conditions can both hold (a game shown vs. no game shown can't). */
+const together = (a: TemplateLayerV2, b: TemplateLayerV2) => {
+  const x = a.showWhen ?? {};
+  const y = b.showWhen ?? {};
+  if (x.field && x.field === y.noField) return false;
+  if (y.field && y.field === x.noField) return false;
+  return x.sponsors !== false && y.sponsors !== false;
+};
+
+/** "look/kind page size: text × strip" for card text running into the footer's sponsor strip. */
+function stripCollisions(name: string, document: unknown, kind: string): string[] {
+  const doc = normaliseDocument(document, kind);
+  const out: string[] = [];
+  for (const [page, p] of Object.entries(doc.pages ?? {})) {
+    if (!p) continue;
+    const layers = flattenLayers(p.layers).filter((l) => !l.hidden);
+    const strip = layers.filter(
+      (l) =>
+        (l.kind === "image" && SPONSOR_IMAGE.test(content(l))) ||
+        (l.kind === "text" && STRIP_LABEL.test(content(l))),
+    );
+    const texts = layers.filter(
+      (l) =>
+        l.kind === "text" &&
+        content(l).includes("{{") &&
+        !HASHTAG_TEXT.test(content(l)) &&
+        !strip.includes(l),
+    );
+    for (const t of texts)
+      for (const s of strip) {
+        if (!together(t, s)) continue;
+        for (const size of Object.keys(t.geometry) as TemplateSize[]) {
+          if ((t.sizes && !t.sizes.includes(size)) || (s.sizes && !s.sizes.includes(size)))
+            continue;
+          const a = t.geometry[size];
+          const b = s.geometry[size];
+          if (a && b && overlap(a, b))
+            out.push(`${name} ${page} ${size}: ${content(t)} × ${content(s)}`);
+        }
+      }
+  }
+  return out;
+}
+
+describe("card text clear of the footer's sponsor strip", () => {
+  it("no committed bundle runs live text into the strip (Club Kit's landscape player card)", () => {
+    const docs = bundleDocuments();
+    expect(docs.flatMap((d) => stripCollisions(d.name, d.document, d.kind))).toEqual([]);
+  });
+});
+
 describe("footer hashtags clear of sponsor logos", () => {
   it("no committed bundle draws a sponsor logo over a hashtag, on any page or size", () => {
     const docs = bundleDocuments();

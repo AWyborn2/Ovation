@@ -78,4 +78,10 @@ export interface SocialSettings {
      * @nullable
      */
   sponsorsBackgroundPhotoId?: number | null;
+  /**
+     * The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12.
+     * @minimum 3
+     * @maximum 16
+     */
+  sponsorsPerSlide?: number;
 }

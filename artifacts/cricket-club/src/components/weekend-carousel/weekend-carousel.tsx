@@ -28,6 +28,7 @@ import {
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { ContentFieldPicker } from "@/components/social-studio/content-field-picker";
+import { SponsorsPerSlideControl } from "@/components/social-studio/sponsors-per-slide";
 import {
   CONTENT_PRESET_LABELS,
   resolveVisibleFields,
@@ -413,7 +414,9 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
       (sl.sponsorsOn && (sl.data.sponsors?.length ?? 0) > 0) ||
       (sl.input.kind === "matchDay" && (sl.input.carouselPage?.sponsors.length ?? 0) > 0),
   );
-  const closingSlide = s.slides.find((sl) => sl.id === "sponsors");
+  const sponsorSlides = s.slides.filter(
+    (sl) => sl.id === "sponsors" || sl.id.startsWith("sponsors-"),
+  );
 
   return (
     <section className="space-y-5">
@@ -482,15 +485,46 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
         </div>
       )}
 
-      {closingSlide && (
-        <section className="space-y-3 rounded-md border p-3">
-          <h3 className="text-base">Sponsors · final slide</h3>
-          <SlidePreview
-            slide={closingSlide}
-            size={s.size}
-            packId={s.packId}
-            document={s.document}
+      {sponsorSlides.length > 0 && (
+        <section className="space-y-3 rounded-md border p-3" data-testid="weekend-sponsor-slides">
+          <h3 className="text-base">
+            Sponsors ·{" "}
+            {sponsorSlides.length === 1 ? "final slide" : `final ${sponsorSlides.length} slides`}
+          </h3>
+          <SponsorsPerSlideControl
+            id="wk-sponsors-per-slide"
+            value={s.sponsorsPerSlide}
+            sponsorCount={s.pageSponsorCount}
+            disabled={lock}
+            onChange={(n) => s.setSponsorsPerSlide(n)}
+            hint={
+              s.sponsorsPerSlideChanged ? (
+                <>
+                  For this carousel only; your club&rsquo;s default is {s.clubSponsorsPerSlide}.{" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    disabled={lock}
+                    onClick={() => s.setSponsorsPerSlide(null)}
+                  >
+                    Use the default
+                  </button>
+                </>
+              ) : (
+                <>Your club&rsquo;s default. Changing it here changes this carousel only.</>
+              )
+            }
           />
+          <div className="flex flex-wrap gap-3">
+            {sponsorSlides.map((slide) => (
+              <div key={slide.id} className="space-y-1">
+                {sponsorSlides.length > 1 && (
+                  <p className="text-xs text-muted-foreground">{slide.label}</p>
+                )}
+                <SlidePreview slide={slide} size={s.size} packId={s.packId} document={s.document} />
+              </div>
+            ))}
+          </div>
         </section>
       )}
 

@@ -12,8 +12,35 @@
 export const TILE_ASPECT = 2;
 /** Major tiles are this much larger than standard ones. */
 export const MAJOR_TILE_SCALE = 1.6;
-/** The most tiles one sponsors page holds; the carousel puts more on another slide. */
-export const SPONSOR_TILES_PER_PAGE = 12;
+/**
+ * Sponsors per slide (Halls Head, Oct 2026): the club's default, and the range
+ * a club or a single design may choose. Past it the carousel puts the rest on
+ * another slide, shared evenly. Up to 16 the tightest look's tiles stay about
+ * a tenth of the card wide; past that logos stop reading on a phone.
+ */
+export const DEFAULT_SPONSORS_PER_SLIDE = 12;
+export const MIN_SPONSORS_PER_SLIDE = 3;
+export const MAX_SPONSORS_PER_SLIDE = 16;
+
+/** A sponsors-per-slide value made whole and kept in range; anything else is the default. */
+export function clampSponsorsPerSlide(n: unknown): number {
+  if (typeof n !== "number" || !Number.isFinite(n)) return DEFAULT_SPONSORS_PER_SLIDE;
+  return Math.max(MIN_SPONSORS_PER_SLIDE, Math.min(MAX_SPONSORS_PER_SLIDE, Math.round(n)));
+}
+
+/**
+ * How `count` sponsors share slides of at most `perSlide`: as few slides as
+ * hold them, shared evenly, the larger shares first (13 at 12 is 7 + 6, 12 at
+ * 8 is 6 + 6). Empty for no sponsors.
+ */
+export function sponsorsSplit(count: number, perSlide: number): number[] {
+  const n = Math.max(0, Math.floor(count));
+  if (n === 0) return [];
+  const per = clampSponsorsPerSlide(perSlide);
+  const slides = Math.ceil(n / per);
+  const base = Math.floor(n / slides);
+  return Array.from({ length: slides }, (_, i) => base + (i < n % slides ? 1 : 0));
+}
 /** The most tiles a line holds, however wide the box. */
 const MAX_COLS = 6;
 
