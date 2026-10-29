@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Image as ImageIcon } from "lucide-react";
+import { Download, Image as ImageIcon, Loader2 } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { PackCard } from "@/components/pack-card";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
@@ -30,6 +30,7 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
+  useCreateCardRenderStill,
   type SocialSettingsBundle,
   type CardTheme as ApiCardTheme,
   type CardTemplate,
@@ -46,7 +47,14 @@ import {
 import { PLAYER_SPONSOR_KINDS } from "@/lib/share-card/sponsor-limit";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
-import type { CardKind, CardSize, MatchSummaryTeam } from "@/lib/share-card";
+import {
+  SIZES,
+  cardBaseFilename,
+  type CardKind,
+  type CardSize,
+  type MatchSummaryTeam,
+} from "@/lib/share-card";
+import { saveFile } from "@/lib/save-files";
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -170,6 +178,40 @@ export default function AdminSocialCreate() {
       }),
     [bundle, brand, input, sponsorsOn, sponsorPlayerId],
   );
+
+  // "Download image" (Ash, 28 Oct 2026): the card exactly as previewed, as a
+  // PNG at the chosen size, straight away. The export window stays for card
+  // sets, other sizes, captions and adding to the queue.
+  const cardSet = !picked && slidesForSize(input, size).length > 1;
+  const still = useCreateCardRenderStill();
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const downloadNow = async () => {
+    setDownloadError(null);
+    setDownloading(true);
+    try {
+      const blob = (await still.mutateAsync({
+        data: {
+          input,
+          options: {
+            size,
+            sponsorsOn,
+            junior: isJunior,
+            theme: previewTheme,
+            data: packData,
+            ...(picked
+              ? { packId: BLANK_PACK_ID, adjustments: picked.document as CardAdjustments }
+              : { packId: previewPackId }),
+          },
+        },
+      })) as Blob;
+      await saveFile(blob, `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}.png`);
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : "The image couldn't be made. Try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -328,10 +370,32 @@ export default function AdminSocialCreate() {
                 </div>
               )}
 
-              <Button className="w-full" onClick={() => setModalOpen(true)}>
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Preview &amp; export card
-              </Button>
+              {cardSet ? (
+                // A card set exports as several slides: the export window saves them.
+                <Button className="w-full" onClick={() => setModalOpen(true)}>
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Export card set
+                </Button>
+              ) : (
+                <Button className="w-full" onClick={downloadNow} disabled={downloading}>
+                  {downloading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  {downloading ? "Preparing image…" : "Download image"}
+                </Button>
+              )}
+              {downloadError && (
+                <p className="text-xs text-destructive" role="alert">
+                  {downloadError}
+                </p>
+              )}
+              {!cardSet && (
+                <Button variant="ghost" className="w-full" onClick={() => setModalOpen(true)}>
+                  More export options (sizes, captions, add to queue)
+                </Button>
+              )}
             </CardContent>
           </Card>
           <EditorStarters
