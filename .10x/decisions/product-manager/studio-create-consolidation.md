@@ -1,8 +1,8 @@
 # Studio create consolidation
 
-**Status:** Scoping with Ash, 29 Oct 2026. Ash leans to Option A; the full Option A screens are awaiting his review.
+**Status:** Approved by Ash, 29 Oct 2026 (Option A, behind a per-club preview switch).
 **Prototypes:** https://claude.ai/artifact/Y6FvEh49DAB7bDa5ny62YN (Option A: One Create flow; Option B: Studio
-rebuild). **Next:** Ash reviews the full Option A screens, then it goes to the Principal Architect.
+rebuild). **Next:** Principal Architect.
 
 ## Problem
 
@@ -69,6 +69,70 @@ PlayHQ's), but not a junior team's list, and it can't make a carousel.
 
   The prototype's "Carousel set editor" screen shows this.
 
-## Not decided yet
+## Approved scope (Ash, 29 Oct 2026)
 
-The option, MVP scope (P0/P1) and the release split wait for Ash's review of the prototypes.
+### Hard constraints
+
+- **The editor is unchanged.** The Canva-style card editor, the template editor and the carousel set editor
+  (`admin-set-draft-editor`) keep their behaviour. Their documents, and the template library and looks, are
+  untouched. Option A changes the screens around the editor, and every route into it opens the same editor.
+- **No data migration** of drafts, club templates or carousel sets. Old URLs redirect to their new place.
+- **Juniors isolation and the photo consent rule** hold, as above.
+
+### Rollout
+
+- A per-club **"New Studio (preview)" switch**, set from the platform admin console. While it is off, a club
+  sees today's Studio exactly as it is. Old and new run side by side, so turning it off is an instant way back.
+- Review order:
+  1. dev (Replit);
+  2. a test tenant on the live site;
+  3. Halls Head;
+  4. other clubs, as Ash decides.
+
+### P0
+
+1. The per-club preview switch (platform admin console), with the new navigation shown only when it is on.
+2. **Create:** one four-step flow for every card kind and carousel set, senior and junior, ending in the existing
+   editor:
+   1. what to make;
+   2. one card or many;
+   3. what to fill it from;
+   4. look and size.
+
+   Junior kinds read only junior data. A single team's Team List, senior or junior, is prefilled from the
+   Selection Hub list or PlayHQ's, with the source shown on each team.
+
+3. **Carousel sets reachable from Create and Your designs,** opening the existing set editor (reorder, add and
+   delete slides; switch look; change size).
+4. **Home, Queue and Your designs** as in the prototype, over the existing data:
+   - Queue gets a Seniors/Juniors filter;
+   - Your designs keeps the Dismiss/Delete buttons from #595.
+5. **Menu:** Home, Create, Queue, Your designs, Templates, Photos, Settings. Create a card, Carousel sets and
+   Junior cards' create step fold into Create.
+
+### P1
+
+- In the set editor:
+  - change one slide's layout, or apply a layout to every slide (if the editor can't already);
+  - open one slide in the full card editor.
+- **Settings regrouped into cards:**
+  - posting plan;
+  - auto-post;
+  - sponsors;
+  - what cards show;
+  - Facebook/Instagram;
+  - Figma;
+  - captions;
+  - email lists;
+  - juniors.
+
+  The existing pages move under these cards; they are not rewritten.
+
+- **Photos** combines senior photos, junior photos, Uploads and Collections as tabs. Junior photos keep their
+  own routes and consent rule.
+
+### Not in this release
+
+- Option B's "This week" board.
+- Any change to the editor's tools, the template format or the library.
+- Removing the old screens: they stay until every club is on the new Studio.
