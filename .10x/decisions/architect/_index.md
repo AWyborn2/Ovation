@@ -9,6 +9,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - [card-kind-templates](card-kind-templates.md)
 - [selection-hub-decoupling](selection-hub-decoupling.md) — on-demand rounds/drafts, carry-over, admin status, participant crosswalk, public-name flag (design proposed 19 Oct 2026; ADR-008)
 - [player-sponsors](player-sponsors.md) — `sponsor_players` join table (name snapshot), `social_drafts.subject_player_id`; one `cardSponsors` rule in `@workspace/scorecard` for preview and post; sponsors resolved at draw time (proposed 27 Oct 2026)
+- [studio-create-consolidation](studio-create-consolidation.md) — `tenants.new_studio_enabled` (0076) read via `TenantPlan.newStudio`; `previewTabs` + hidden tabs in admin-nav; Create wizard ends in `createSocialDraft` and the existing editors; junior prefill `GET /juniors/fixtures/{id}/social-prefill`; editor panels mounted around, not in, the editors (design complete 29 Oct 2026)
 
 ## Feature ADRs
 

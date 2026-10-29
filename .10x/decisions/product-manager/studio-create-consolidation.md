@@ -1,8 +1,9 @@
 # Studio create consolidation
 
-**Status:** Approved by Ash, 29 Oct 2026 (Option A, behind a per-club preview switch).
+**Status:** Approved by Ash, 29 Oct 2026 (Option A, behind a per-club preview switch). Two P0 additions the same
+day (below). Designed and planned 29 Oct 2026.
 **Prototypes:** https://claude.ai/artifact/Y6FvEh49DAB7bDa5ny62YN (Option A: One Create flow; Option B: Studio
-rebuild). **Next:** Principal Architect.
+rebuild). **Next:** build (`decisions/engineering-manager/studio-create-consolidation.md`).
 
 ## Problem
 
@@ -130,6 +131,53 @@ PlayHQ's), but not a junior team's list, and it can't make a carousel.
 
 - **Photos** combines senior photos, junior photos, Uploads and Collections as tabs. Junior photos keep their
   own routes and consent rule.
+
+### P0 additions (Ash, 29 Oct 2026)
+
+**Every new design opens straight in the editor, as in Canva.**
+
+- Once the admin picks the kind and the match, team or set, the filled-in design opens directly in the existing
+  editor. No form-plus-preview page sits in between.
+- **Carousel sets** open in the set editor with its slide strip: reorder, add and remove slides, and edit any
+  slide. The format applies to the whole set.
+- **Existing tools stay, as editor controls:**
+  - photo placement and swap (horizontal, vertical, zoom);
+  - "What these cards show" (Minimal / Standard / Full);
+  - the sponsors toggle;
+  - the size;
+  - Send to review / Send to queue.
+- **The editor keeps working as it does today.** Add entry points and panels; don't rework its internals.
+- **Sponsors per slide:** when the sponsor session's component lands on `main`, it goes in the editor's set or
+  format panel.
+- **Dev testing:** use the existing dev tenant switcher (`/dev-tenants.html` on the `.replit.dev` preview). The
+  preview switch must work for a dev tenant. No impersonation work is needed.
+
+**The set editor shows every slide and can download, as in Canva.**
+
+- **Page strip:** numbered thumbnails under the canvas, an "N / M" counter, and a grid view toggle showing every
+  slide, with reordering there too. It uses the existing reorder, add and delete.
+- **Share → Download** in the editor header:
+  - Pages: All, This page, or Custom.
+  - The size for the set's format (for example 1080×1350).
+  - PNG by default, and JPG if it costs little.
+  - One page downloads one image. Several pages download a zip named after the set, with files numbered in
+    slide order (for example `match-day-r5-01.png`).
+  - Send to review / Send to queue sits beside it.
+  - Downloading never publishes and never bypasses review.
+  - Single cards get the same panel with one page.
+  - It reuses the existing export code.
+- **Rules that still apply on export:**
+  - the junior photo consent rule: never put a photo in a download if the card would not show it;
+  - fill-in exclusion.
+
+All of this ships behind the same per-club switch.
+
+### Design decision (Ash, 29 Oct 2026)
+
+- **Create's carousel path makes queue-ready set drafts only.** They are filled from real data, or are a blank
+  set of the club's own pages ("Pick by hand").
+- **The old export-only carousel sets are not started new.** Existing ones still open and export from Your
+  designs.
 
 ### Not in this release
 
