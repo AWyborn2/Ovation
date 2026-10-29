@@ -1,5 +1,10 @@
 {
   "permissions": {
-    "allow": ["mcp__github__pull_request_read"]
+    "allow": [
+      "mcp__Replit__update_app_using_prompt",
+      "mcp__Replit__ask_question",
+      "mcp__Replit__read_app_file",
+      "mcp__Replit__list_app_files"
+    ]
   }
 }
