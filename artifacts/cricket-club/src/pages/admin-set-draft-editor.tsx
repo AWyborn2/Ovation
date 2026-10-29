@@ -44,6 +44,8 @@ import { draftHeading } from "@/components/social-queue/draft-meta";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { setDraftSlides } from "@/lib/set-draft";
+import { useNewStudio } from "@/lib/entitlements";
+import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import type { CardSize } from "@/lib/share-card";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
@@ -133,6 +135,8 @@ function SetDraftEditor({
   const [size, setSize] = useState<CardSize>((design.size ?? "square") as CardSize);
   const [current, setCurrent] = useState(draft);
   const [lookOpen, setLookOpen] = useState(false);
+  // New Studio (preview): Share → Download beside the editor's own controls.
+  const newStudio = useNewStudio();
   // The design as last saved here: a look switch keeps its slide order.
   const saved = useRef(design.document as unknown as SetDocument);
   const label = SET_TYPE_LABELS[design.setType];
@@ -182,6 +186,9 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
+        actions={({ set }) =>
+          newStudio && set ? <SharePanel set={set} name={template.name} /> : null
+        }
         draftMode={
           pages
             ? {
