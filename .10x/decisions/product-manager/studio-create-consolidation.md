@@ -221,6 +221,11 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
    unchanged (`?card=`). Juniors links to Junior matches (which teams auto-post) and Junior photos; it shows only
    for clubs with juniors. The old pages keep their URLs.
 
+10. **Photos tabs (S11).** Photos gains Uploads (the club's logos and artwork, the editor's own Uploads panel:
+    upload, search, rename, delete) and Collections (the senior library's hand-picked sets). Opening a collection
+    opens it in Senior photos, where its photos are added and removed, rather than a second copy of that screen.
+    Junior photos are unchanged and keep their consent rule; collections are senior photos only.
+
 ### Not in this release
 
 - Option B's "This week" board.
