@@ -51,16 +51,41 @@ type PlayerTags = { ok: true; tags: Array<{ id: number; name: string }> } | { ok
 
 /**
  * A sponsor's players (player sponsors), checked and named: duplicates
- * dropped, and anything but this club's senior players rejected (junior
- * participants and fill-ins are never tagged, as on photos). Each tag keeps
- * the player's name as a label for the admin screen.
+ * dropped, and a newly added player who isn't one of this club's senior
+ * players rejected (junior participants and fill-ins are never tagged, as on
+ * photos). Players already tagged (`kept`, id to saved name) are never
+ * re-checked, so a wrong or stale tag can always be removed, even when it or
+ * another tag left on the sponsor no longer passes the senior check. Each tag
+ * keeps the player's name as a label for the admin screen.
  */
-async function playerTags(tenantId: number, playerIds: readonly number[]): Promise<PlayerTags> {
+async function playerTags(
+  tenantId: number,
+  playerIds: readonly number[],
+  kept: ReadonlyMap<number, string> = new Map(),
+): Promise<PlayerTags> {
   const ids = [...new Set(playerIds)];
   if (ids.length === 0) return { ok: true, tags: [] };
-  if ((await nonSeniorPlayerIds(tenantId, ids)).length > 0) return { ok: false };
+  const added = ids.filter((id) => !kept.has(id));
+  if ((await nonSeniorPlayerIds(tenantId, added)).length > 0) return { ok: false };
   const names = await linkedPlayerNames(tenantId, ids);
-  return { ok: true, tags: ids.map((id) => ({ id, name: names.get(id) ?? `Player #${id}` })) };
+  return {
+    ok: true,
+    tags: ids.map((id) => ({ id, name: names.get(id) ?? kept.get(id) ?? `Player #${id}` })),
+  };
+}
+
+/** A sponsor's tagged players now, id to saved name (empty for another club's sponsor). */
+async function currentPlayerTags(
+  tenantId: number,
+  sponsorId: number,
+): Promise<Map<number, string>> {
+  const rows = await db
+    .select({ id: sponsorPlayersTable.playerId, name: sponsorPlayersTable.playerName })
+    .from(sponsorPlayersTable)
+    .where(
+      and(eq(sponsorPlayersTable.tenantId, tenantId), eq(sponsorPlayersTable.sponsorId, sponsorId)),
+    );
+  return new Map(rows.map((r) => [r.id, r.name]));
 }
 
 /** Replace a sponsor's players with `tags`, inside the sponsor's transaction. */
@@ -184,7 +209,11 @@ router.patch(
     const tenantId = getTenantId(req);
     const scoped = and(eq(sponsorsTable.id, params.data.id), eq(sponsorsTable.tenantId, tenantId));
     const { playerIds, ...fields } = body.data;
-    const players = playerIds === undefined ? null : await playerTags(tenantId, playerIds);
+    // Only players newly added are checked: removing a tag always works.
+    const players =
+      playerIds === undefined
+        ? null
+        : await playerTags(tenantId, playerIds, await currentPlayerTags(tenantId, params.data.id));
     if (players && !players.ok) {
       res.status(400).json({ error: SENIOR_ONLY });
       return;

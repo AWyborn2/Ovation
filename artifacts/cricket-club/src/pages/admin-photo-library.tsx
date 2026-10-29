@@ -16,7 +16,7 @@ import {
   type ClubPhoto,
   type ClubPhotoMatchFormat,
 } from "@workspace/api-client-react";
-import { Check, ChevronRight, Folder, HardDrive, Upload } from "lucide-react";
+import { Check, ChevronRight, Folder, HardDrive, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
@@ -239,6 +239,18 @@ export default function AdminPhotoLibrary() {
         setTagError("Those tags couldn't be saved. Only senior players can be tagged."),
     },
   });
+  // Removing a player from the selected photos keeps the selection, so several
+  // wrong tags can be taken off in turn. Removing is never checked: any tag,
+  // even one that no longer passes the senior check, can come off.
+  const untagM = useTagClubPhotos({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+        setTagError(null);
+      },
+      onError: () => setTagError("That tag couldn't be removed. Please try again."),
+    },
+  });
   const moveM = useMoveClubPhotos({
     mutation: {
       onSuccess: () => {
@@ -258,6 +270,24 @@ export default function AdminPhotoLibrary() {
       },
     },
   });
+  // Names for the players already tagged on the selected photos.
+  const rosterQ = useListPlayers(
+    { sortBy: "name", limit: 500 },
+    {
+      query: {
+        queryKey: getListPlayersQueryKey({ sortBy: "name", limit: 500 }),
+        enabled: selected.size > 0,
+      },
+    },
+  );
+  const taggedOnSelected = useMemo(() => {
+    const names = new Map(
+      (rosterQ.data?.players ?? []).map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]),
+    );
+    const ids = new Set<number>();
+    for (const p of photos) if (selected.has(p.id)) for (const id of p.playerIds) ids.add(id);
+    return [...ids].map((id) => ({ id, name: names.get(id) || `Player #${id}` }));
+  }, [photos, selected, rosterQ.data]);
   const playersQ = useListPlayers(
     { search: playerSearch, limit: 8 },
     {
@@ -567,6 +597,34 @@ export default function AdminPhotoLibrary() {
           title={`${selected.size} selected`}
           description="Tag the players, season and match format, move them to another folder, or add them to a collection."
         >
+          {taggedOnSelected.length > 0 && (
+            <SettingsRow label="Tagged" helper="Remove a player with their ×">
+              <div className="flex w-64 flex-wrap gap-1.5" role="list" aria-label="Tagged players">
+                {taggedOnSelected.map((p) => (
+                  <span
+                    key={p.id}
+                    role="listitem"
+                    className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs"
+                  >
+                    {p.name}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${p.name} from the selected photos`}
+                      className="text-muted-foreground hover:text-foreground"
+                      disabled={untagM.isPending}
+                      onClick={() =>
+                        untagM.mutate({
+                          data: { photoIds: Array.from(selected), removePlayerIds: [p.id] },
+                        })
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </SettingsRow>
+          )}
           <SettingsRow label="Players" helper="Senior players only" htmlFor="tag-players">
             <div className="w-64 space-y-2">
               <Input

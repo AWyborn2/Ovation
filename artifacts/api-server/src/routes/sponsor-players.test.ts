@@ -136,6 +136,42 @@ describe("player sponsors: tags on a sponsor", () => {
     expect(tags.map((t) => t.playerId).sort()).toEqual([SENIOR, SENIOR_2]);
   });
 
+  it("a wrong or stale tag can always be removed; only added players are checked", async () => {
+    const res = await as(0)
+      .post("/api/sponsors", sponsor({ name: "Stale tags", playerIds: [SENIOR, SENIOR_2] }))
+      .expect(201);
+    const id = res.body.id as number;
+    // A tag that no longer passes the senior check (a fill-in, or a player
+    // whose crosswalk link has gone) sits beside the good ones.
+    const STALE = 90002;
+    await db
+      .insert(sponsorPlayersTable)
+      .values({ tenantId: tenantIds[0], sponsorId: id, playerId: STALE, playerName: "Old Tag" });
+
+    // Removing a good tag keeps the stale one (and its saved name) without a refusal.
+    const kept = await as(0)
+      .patch(`/api/sponsors/${id}`, { playerIds: [SENIOR, STALE] })
+      .expect(200);
+    expect(kept.body.players).toEqual([
+      { id: SENIOR, name: expect.any(String) },
+      { id: STALE, name: "Old Tag" },
+    ]);
+    // Adding a non-senior player beside the stale tag is still refused.
+    await as(0)
+      .patch(`/api/sponsors/${id}`, { playerIds: [SENIOR, STALE, 90003] })
+      .expect(400);
+    // Removing the stale tag itself works.
+    const removed = await as(0)
+      .patch(`/api/sponsors/${id}`, { playerIds: [SENIOR] })
+      .expect(200);
+    expect(removed.body.players.map((p: { id: number }) => p.id)).toEqual([SENIOR]);
+    // Once removed, it can't be put back.
+    await as(0)
+      .patch(`/api/sponsors/${id}`, { playerIds: [SENIOR, STALE] })
+      .expect(400);
+    await as(0).delete(`/api/sponsors/${id}`).expect(204);
+  });
+
   it("a PATCH with players alone replaces the set and leaves the sponsor as it was", async () => {
     const res = await as(0)
       .patch(`/api/sponsors/${sponsorId}`, { playerIds: [SENIOR_2] })
