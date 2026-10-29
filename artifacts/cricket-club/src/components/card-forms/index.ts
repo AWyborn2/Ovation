@@ -9,3 +9,4 @@ export { CardFormRouter } from "./forms";
 export { ImageControl } from "./fields";
 export { PrefillPanel } from "./prefill-panels";
 export { DESCRIPTORS } from "./descriptors";
+export { PlayerPhotoStrip, rankPlayerPhotos } from "./player-photos";
