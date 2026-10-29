@@ -1,7 +1,7 @@
 # Project Status
 
 **Project:** Ovation (white-label cricket club platform)
-**Updated:** 28 Oct 2026 (header rewritten; the old header lines are kept under "Header before 28 Oct 2026" at the end).
+**Updated:** 29 Oct 2026 (studio-create-consolidation designed and planned; header rewritten; the old header lines are kept under "Header before 28 Oct 2026" at the end).
 
 **Delivered to `main` on 28 Oct 2026 (player sponsors, after Ash's dev test; no migrations):** player page shows their sponsor (#577); Big Moment cards carry the player's sponsors, and the sponsor form's empty card-type chip reads "Only their players' cards" once players are tagged (#583); the sponsor active window uses the Perth date, not UTC, plus `scripts/sql/backfill-draft-subject-player.sql` for queued drafts made before #568 (#584); a player-sponsor logo tile on the Club Kit Classic, Broadcast Classic and Clubhouse player cards, the look a `club-kit-v1` club's cards use (#585, bundles v3); the 9 of those that failed the fit check since before #585 (long names) now fit and are off the known-failures list (#588, v4). The Sponsors page already lists each sponsor's players (#569). Juniors stay out until a consent rule is decided.
 
@@ -26,7 +26,7 @@
 - iPhone/iPad Save to Photos device test (open since 23 Oct).
 - Decide #290 (lift the data-licensing hold; draft since 5 Oct) and #265 (Halls Head pre-cut-over fixes; draft since 1 Oct, likely stale).
 
-**Approved (29 Oct 2026), next the architect:** studio-create-consolidation. Option A gives one Create flow for every card and carousel set, senior and junior. The editor is unchanged. It ships behind a per-club "New Studio (preview)" switch and is reviewed on dev, then a test tenant, then Halls Head (decisions/product-manager/studio-create-consolidation.md).
+**In build (29 Oct 2026): studio-create-consolidation.** Designed and planned the same day (decisions/architect/ and decisions/engineering-manager/studio-create-consolidation.md): P0 slices S1–S7 to `main` in order, S1 adds migration 0076 (`tenants.new_studio_enabled`). Ash added two P0 items: every new design opens straight in the editor, and the set editor gets a page strip, grid and Share / Download. Option A gives one Create flow for every card and carousel set, senior and junior. The editor is unchanged. It ships behind a per-club "New Studio (preview)" switch and is reviewed on dev, then a test tenant, then Halls Head (decisions/product-manager/studio-create-consolidation.md).
 
 **Not started (follow-ups):** Figma file for the century-card spec (R2-E); browser check of the junior photo library admin page; review of the crosswalk seed in `central-projector.sql` (21 Oct note).
 

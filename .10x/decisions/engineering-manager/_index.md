@@ -12,6 +12,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 - [selection-hub-redesign](selection-hub-redesign.md) — 2 sequential PRs (layout T1.1–T1.7, interaction T2.1–T2.7), client only, no migration (Planning complete 21 Oct 2026)
 - [social-template-library](social-template-library.md) — slices L1–L9 in four streams (at most four sessions), all PRs into `wyborn21/social-template-library-pm`; structured-output spike now; all seven looks gate the single merge; Ash tests at milestones M1–M5; migration 0058 (0057 went to #412) by hand right before the republish; ~150 hd, critical path ~45 hd (Planning complete 21 Oct 2026)
 - [honours-kiosk-redesign](honours-kiosk-redesign.md) — kiosk redesign + photo slideshows on integration branch `wyborn21/kiosk-redesign` (milestones A–D, single merge); junior photo library as a parallel stream to main (planned 23 Oct 2026)
+- [studio-create-consolidation](studio-create-consolidation.md) — P0 slices S1–S7 sequential to main (S1 switch + menu, migration 0076; S2–S4 Create; S5–S6 editor panels; S7 Home/Queue/Designs), then dev review; P1 S8–S12 (planned 29 Oct 2026)
 
 ## Cross-cutting principles
 
