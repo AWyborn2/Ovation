@@ -69,6 +69,7 @@ export function ProfileHero({
   stats,
   discipline,
   overlay,
+  sponsors,
 }: {
   fullName: string;
   photo: string | null;
@@ -85,6 +86,8 @@ export function ProfileHero({
   discipline: Discipline;
   /** Admin photo controls, pinned bottom-right over the photo. */
   overlay?: ReactNode;
+  /** The player's sponsors, top-left of the hero (renders nothing without one). */
+  sponsors?: ReactNode;
 }) {
   const image = photo ?? clubPhoto;
   const [first, ...rest] = fullName.split(" ");
@@ -113,6 +116,7 @@ export function ProfileHero({
             {initialsOf(fullName)}
           </div>
         )}
+        {sponsors}
         <div className="flex flex-wrap items-center gap-2.5">
           {capNumber != null && <GlassPill>Cap {capNumber}</GlassPill>}
           {meta && (
