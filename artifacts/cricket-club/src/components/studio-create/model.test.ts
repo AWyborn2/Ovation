@@ -4,6 +4,7 @@ import {
   createSearch,
   nextStep,
   parseCreateState,
+  blankCarouselDocument,
   prevStep,
   teamSourceOf,
 } from "./model";
@@ -23,13 +24,24 @@ describe("Create wizard model", () => {
     });
   });
 
-  it("skips One or many while no carousel is offered, and Fill from for a blank design", () => {
+  it("asks One or many only for kinds with a carousel, and skips Fill from for a blank design", () => {
     const team = parseCreateState("kind=teamList");
-    expect(nextStep(team)).toBe(3);
-    expect(prevStep({ ...team, step: 3 })).toBe(1);
+    expect(nextStep(team)).toBe(2);
+    const milestone = parseCreateState("kind=milestone");
+    expect(nextStep(milestone)).toBe(3);
+    expect(prevStep({ ...milestone, step: 3 })).toBe(1);
     const blank = parseCreateState("kind=blank");
     expect(nextStep(blank)).toBe(4);
     expect(parseCreateState("kind=blank&step=3").step).toBe(4);
+    // A carousel only where the kind has one.
+    expect(parseCreateState("kind=teamList&mode=many&step=3").mode).toBe("many");
+    expect(parseCreateState("kind=milestone&mode=many&step=3").mode).toBe("one");
+  });
+
+  it("makes Junior Match Day only as a carousel, skipping One or many", () => {
+    const s = parseCreateState("team=junior&kind=matchDay&step=2");
+    expect(s).toMatchObject({ mode: "many", step: 3 });
+    expect(prevStep(s)).toBe(1);
   });
 
   it("leaves Round Team Lists and Junior Highlights out of the senior single cards", () => {
@@ -56,5 +68,15 @@ describe("Create wizard model", () => {
     expect(teamSourceOf({ isPublished: false, source: "admin" })).toBe("draft");
     expect(teamSourceOf({ isPublished: true, source: "selection" })).toBe("selection");
     expect(teamSourceOf({ isPublished: true, source: "admin" })).toBe("selection");
+  });
+
+  it("starts a hand-picked carousel as three blank pages with no data", () => {
+    const doc = blankCarouselDocument("announcement");
+    expect(doc).toMatchObject({ formatVersion: 2, set: "free" });
+    expect(doc.pages.map((p) => [p.id, p.slot, p.layers.length])).toEqual([
+      ["page-1", "page", 0],
+      ["page-2", "page", 0],
+      ["page-3", "page", 0],
+    ]);
   });
 });
