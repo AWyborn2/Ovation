@@ -9,7 +9,7 @@
  * dependencies.
  */
 
-import { SPONSOR_TILES_PER_PAGE } from "./tile-grid";
+import { MAX_SPONSORS_PER_SLIDE } from "./tile-grid";
 
 /** Card sizes in pixels, matching the web renderer's `SIZES`. */
 export const TEMPLATE_SIZES = {
@@ -108,7 +108,8 @@ export type RowsSpec = {
    * that fill the layer's box (`tile-grid.ts`): `major` rows larger, in their
    * own lines above, every line centred. `rowHeight` is then the tallest a
    * standard tile may be, `gap` the space between tiles; `columns`, `flow`
-   * and `columnGap` don't apply. It holds `SPONSOR_TILES_PER_PAGE` rows.
+   * and `columnGap` don't apply. It holds up to `MAX_SPONSORS_PER_SLIDE` rows
+   * (the most a club may put on a slide; the fit check draws that many).
    */
   layout?: "tiles";
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
@@ -238,7 +239,7 @@ export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): numb
   const rows = layer.rows;
   const box = layer.geometry[size];
   if (!rows || !box || !layerOnSize(layer, size) || rows.rowHeight <= 0) return 0;
-  if (rows.layout === "tiles") return SPONSOR_TILES_PER_PAGE;
+  if (rows.layout === "tiles") return MAX_SPONSORS_PER_SLIDE;
   const dims = TEMPLATE_SIZES[size];
   const boxPx = (box.h / 100) * dims.h;
   const rowPx = (rows.rowHeight / 100) * dims.w;

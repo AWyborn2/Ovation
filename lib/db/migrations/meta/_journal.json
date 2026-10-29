@@ -533,6 +533,13 @@
       "when": 1793151427996,
       "tag": "0075_photo_focus_suggested",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793249827289,
+      "tag": "0076_sponsors_per_slide",
+      "breakpoints": true
     }
   ]
 }

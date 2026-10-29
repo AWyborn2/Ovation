@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { clampSponsorsPerSlide } from "@workspace/scorecard/kind-templates";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetWeekendCarouselSources,
@@ -114,11 +115,19 @@ export function useWeekendCarousel(
   // What the slides show: the club's content choices, then this carousel's override.
   const clubContent = readCardContentSettings(bundle?.settings.cardContent).matchDay;
   const [contentOverride, setContentOverride] = useState<ContentOverride>({});
+  // This carousel's own sponsors per slide; null follows the club's default.
+  const [perSlideOverride, setPerSlideOverride] = useState<number | null>(null);
   const visibleFields = useMemo(
     () => resolveVisibleFields("matchDay", clubContent, contentOverride),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(clubContent), contentOverride],
   );
+  const clubSponsorsPerSlide = clampSponsorsPerSlide(bundle?.settings.sponsorsPerSlide);
+  const sponsorsPerSlide = perSlideOverride ?? clubSponsorsPerSlide;
+  // The sponsors the sponsors page shows (team sponsors only while their field is on).
+  const pageSponsorCount = (bundle?.settings.sponsorsEnabled ? bundle.activeSponsors : []).filter(
+    (sp) => visibleFields.has("sponsors.teamSponsors") || !(sp.grades ?? []).some((g) => g.trim()),
+  ).length;
   // Results, match summary and team list slides (P7) show their own kind's fields.
   const setKind = setType === "matchDay" ? null : setType;
   const kindContent = setKind
@@ -351,6 +360,7 @@ export function useWeekendCarousel(
       sources?.sponsorsPage,
       grouping,
       kindVisible,
+      sponsorsPerSlide,
     );
   }, [
     generated,
@@ -364,6 +374,7 @@ export function useWeekendCarousel(
     sources,
     grouping,
     kindVisible,
+    sponsorsPerSlide,
   ]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
@@ -371,7 +382,7 @@ export function useWeekendCarousel(
     captionEdit ??
     carouselCaption(setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag);
   const assembly = useCarouselAssembly(setType, slides, picked);
-  const queueKey = JSON.stringify([slides, size, caption, picked?.ref ?? null]);
+  const queueKey = JSON.stringify([slides, size, caption, picked?.ref ?? null, perSlideOverride]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
   const togglePick = (id: number) =>
@@ -474,6 +485,7 @@ export function useWeekendCarousel(
           fresh.data.sponsorsPage,
           grouping,
           kindVisible,
+          sponsorsPerSlide,
         );
       }
       // Swapped photos ride in the content override (ADR-010 P4).
@@ -503,6 +515,8 @@ export function useWeekendCarousel(
               submissionId: submission.current.id,
               size,
               ...(override ? { contentOverride: override } : {}),
+              // Stored only when this set changed it from the club's default.
+              ...(perSlideOverride !== null ? { sponsorsPerSlide } : {}),
               slides: queuedSlides.map(queuedSlide),
             },
           },
@@ -529,6 +543,13 @@ export function useWeekendCarousel(
   };
 
   return {
+    // Sponsors per slide: this carousel's (an override of the club's default).
+    sponsorsPerSlide,
+    clubSponsorsPerSlide,
+    sponsorsPerSlideChanged: perSlideOverride !== null,
+    setSponsorsPerSlide: (n: number | null) =>
+      !busy && setPerSlideOverride(n === null || n === clubSponsorsPerSlide ? null : n),
+    pageSponsorCount,
     setType,
     audience,
     setAudience: (value: CarouselAudience) => !busy && setAudience(value),
