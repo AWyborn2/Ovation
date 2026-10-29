@@ -73,4 +73,10 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   sponsorsBackgroundPhotoId?: number | null;
+  /**
+     * The club's sponsors per slide, 3 to 16.
+     * @minimum 3
+     * @maximum 16
+     */
+  sponsorsPerSlide?: number;
 }

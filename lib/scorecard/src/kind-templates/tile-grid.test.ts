@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { MAJOR_TILE_SCALE, TILE_ASPECT, tileGrid, type TileRect } from "./tile-grid";
+import {
+  DEFAULT_SPONSORS_PER_SLIDE,
+  MAJOR_TILE_SCALE,
+  MAX_SPONSORS_PER_SLIDE,
+  MIN_SPONSORS_PER_SLIDE,
+  TILE_ASPECT,
+  clampSponsorsPerSlide,
+  sponsorsSplit,
+  tileGrid,
+  type TileRect,
+} from "./tile-grid";
 
 const box = { width: 950, height: 540, gap: 12, maxTileHeight: 150 };
 const inside = (t: TileRect) =>
@@ -72,5 +82,27 @@ describe("tileGrid (sponsors page tiles)", () => {
     const perLine = new Map<number, number>();
     for (const t of tiles) perLine.set(t.y, (perLine.get(t.y) ?? 0) + 1);
     expect(new Set(perLine.values()).size).toBe(1);
+  });
+});
+
+describe("sponsors per slide", () => {
+  it("keeps a value whole and in range, else the default", () => {
+    expect(clampSponsorsPerSlide(8)).toBe(8);
+    expect(clampSponsorsPerSlide(1)).toBe(MIN_SPONSORS_PER_SLIDE);
+    expect(clampSponsorsPerSlide(40)).toBe(MAX_SPONSORS_PER_SLIDE);
+    expect(clampSponsorsPerSlide(7.6)).toBe(8);
+    expect(clampSponsorsPerSlide(undefined)).toBe(DEFAULT_SPONSORS_PER_SLIDE);
+    expect(clampSponsorsPerSlide(Number.NaN)).toBe(DEFAULT_SPONSORS_PER_SLIDE);
+  });
+
+  it("shares sponsors evenly over as few slides as hold them", () => {
+    expect(sponsorsSplit(0, 12)).toEqual([]);
+    expect(sponsorsSplit(12, 12)).toEqual([12]);
+    expect(sponsorsSplit(13, 12)).toEqual([7, 6]);
+    expect(sponsorsSplit(12, 8)).toEqual([6, 6]);
+    expect(sponsorsSplit(20, 12)).toEqual([10, 10]);
+    expect(sponsorsSplit(17, 8)).toEqual([6, 6, 5]);
+    // Out of range is kept in range: 20 at "40" is 20 at 16.
+    expect(sponsorsSplit(20, 40)).toEqual([10, 10]);
   });
 });
