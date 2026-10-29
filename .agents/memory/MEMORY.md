@@ -90,3 +90,4 @@
 - [Confirmed junior names](confirmed-junior-name-boundaries.md) — admin knowledge can resolve evidence conflicts; identity confirmation is not consent, and production application must remain owner-controlled.
 - [Email history retention](email-history-retention.md) — preserve non-identifying delivery history; distinguish deleted lists from intentional listless batches.
 - [Development admin access](development-admin-policy.md) — user chose platform-admin-only access across development clubs; production stays separate.
+- [New Studio preview scope](new-studio-preview-scope.md) — Halls Head preview activation is development-only; never enable it in production.
