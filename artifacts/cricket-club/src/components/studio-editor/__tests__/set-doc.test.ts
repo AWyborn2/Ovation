@@ -7,6 +7,7 @@ import {
   layoutPages,
   newSlideLayout,
   withArrangement,
+  withSlideDesign,
   withSlideLayout,
   addRepeatPage,
   addSetPage,
@@ -193,5 +194,43 @@ describe("a slide's own layout (studio-create S9)", () => {
       order: ["page:cover"],
       removed: ["page:sponsors"],
     });
+  });
+});
+
+describe("a slide's design from the card editor (studio-create S8)", () => {
+  const KEY = "detail:fixture:2";
+  const body = { layers: [text("n1", "NEW")] };
+
+  it("goes onto a new layout for that slide when it shares its page", () => {
+    const set = withSlideDesign(SET, KEY, "fixture", body, "Mine")!;
+    const id = set.arrangement!.pageFor![KEY]!;
+    expect(set.pages.find((p) => p.id === id)!.layers).toEqual(body.layers);
+    expect(set.pages.find((p) => p.id === "fixture")!.layers).toEqual(SET.pages[1]!.layers);
+  });
+
+  it("updates the slide's own layout in place", () => {
+    const first = withSlideDesign(SET, KEY, "fixture", body, "Mine")!;
+    const id = first.arrangement!.pageFor![KEY]!;
+    const again = withSlideDesign(first, KEY, id, { layers: [text("n2", "AGAIN")] }, "Mine")!;
+    expect(again.pages).toHaveLength(first.pages.length);
+    expect(again.pages.find((p) => p.id === id)!.layers[0]).toMatchObject({ content: "AGAIN" });
+  });
+
+  it("refuses when the set already holds the most pages it can", () => {
+    const full: SetDocument = {
+      ...SET,
+      pages: [
+        ...SET.pages,
+        ...Array.from({ length: 17 }, (_, i) => ({
+          id: `p${i}`,
+          role: "fixed" as const,
+          slot: "page" as const,
+          kind: "matchDay",
+          page: "fixture" as const,
+          layers: [],
+        })),
+      ],
+    };
+    expect(withSlideDesign(full, KEY, "fixture", body, "Mine")).toBeNull();
   });
 });

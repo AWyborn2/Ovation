@@ -48,6 +48,7 @@ import { useNewStudio } from "@/lib/entitlements";
 import { SharePanel } from "@/components/studio-editor/export/share-panel";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { SlideLayoutPanel } from "@/components/studio-editor/slide-layout";
+import { EditSlideButton } from "@/components/studio-editor/edit-slide-button";
 import { storedSetDocument } from "@/components/studio-editor/set-doc";
 import type { CardSize } from "@/lib/share-card";
 import {
@@ -207,6 +208,7 @@ function SetDraftEditor({
                   naturalPageId={(key) => naturalPage(setDesign.doc, key)}
                 />
               )}
+              {set && <EditSlideButton draftId={draft.id} set={set} dirty={dirty} />}
               {set && <SharePanel set={set} name={template.name} />}
               <SendToReview draftId={draft.id} dirty={dirty} />
             </>

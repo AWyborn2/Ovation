@@ -206,6 +206,14 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
      "Change look" drops the map (the layouts belonged to the old look). Undo covers both.
    - Set templates in the library never hold it, and the template format is unchanged.
    - Built before S8, because "Edit this slide" (S8) saves into the same field.
+8. **Edit this slide (S8)** opens the slide in the full card editor and saves it back as that slide's own layout
+   (the S9 field), so the rest of the set is unchanged. No child draft is made, so nothing extra lands in the
+   Queue.
+   - It is offered for a team, fixture or result slide (a card drawn by its card type's own page). A cover,
+     sponsors or junior day page is a single page already, so it stays edited in the set editor.
+   - The slide's data is shown as it is; the card editor's content panels (which change a card's data) are
+     left out for a slide. Download is there, with the junior photo rule.
+   - Unsaved set changes must be saved first.
 
 ### Not in this release
 

@@ -12,6 +12,7 @@ import {
   isRepeatSlot,
   isSetDocument,
   kindPages,
+  MAX_SET_PAGES,
   primaryPage,
   repeatSource,
   setPageLabel,
@@ -381,4 +382,37 @@ export function applyLayoutToAll(
     Object.entries(next.setDesign!.arrangement?.pageFor ?? {}).filter(([, id]) => !same(id)),
   );
   return withPageFor(next, pageFor);
+}
+
+/**
+ * A slide's design edited in the card editor (studio-create S8), written back
+ * into the set: onto its own layout when no other slide shares it, else onto
+ * a new layout for that slide alone, so the rest of the set is unchanged.
+ * `drawnBy` is the page drawing the slide now; `null` when the set is full.
+ */
+export function withSlideDesign(
+  set: SetDocument,
+  key: string,
+  drawnBy: string,
+  body: { layers: FreeLayer[]; background?: string },
+  name: string,
+): SetDocument | null {
+  const doc = openSetTemplate(set).doc;
+  const pageFor = doc.setDesign?.arrangement?.pageFor ?? {};
+  const alone =
+    pageFor[key] === drawnBy &&
+    Object.entries(pageFor).every(([k, id]) => k === key || id !== drawnBy);
+  let next = doc;
+  let id = drawnBy;
+  if (!alone) {
+    if (doc.setDesign!.pages.length >= MAX_SET_PAGES) return null;
+    const r = newSlideLayout(doc, key, drawnBy, name);
+    next = r.doc;
+    id = r.id;
+  }
+  const pages = {
+    ...(next.pages as Record<string, PageBody | undefined>),
+    [id]: { layers: body.layers, ...(body.background ? { background: body.background } : {}) },
+  };
+  return storedSetDocument({ ...next, pages: pages as TemplateDoc["pages"] });
 }
