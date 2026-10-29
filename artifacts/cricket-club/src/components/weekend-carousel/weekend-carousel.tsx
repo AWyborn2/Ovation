@@ -722,7 +722,7 @@ export default WeekendCarousel;
  * This carousel's content (ADR-010): starts from the club's settings; a preset
  * or a switch here changes this carousel only and is saved with it.
  */
-function ContentOverridePanel({ s }: { s: WeekendCarouselState }) {
+export function ContentOverridePanel({ s }: { s: WeekendCarouselState }) {
   const override = s.contentOverride;
   const changed = !!override.preset || Object.keys(override.fields ?? {}).length > 0;
   const toggle = (key: string, on: boolean) => {

@@ -46,6 +46,7 @@ import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { setDraftSlides } from "@/lib/set-draft";
 import { useNewStudio } from "@/lib/entitlements";
 import { SharePanel } from "@/components/studio-editor/export/share-panel";
+import { SendToReview } from "@/components/studio-editor/send-to-review";
 import type { CardSize } from "@/lib/share-card";
 import {
   TEMPLATE_EDITOR_MIN_WIDTH,
@@ -186,8 +187,13 @@ function SetDraftEditor({
         template={template}
         viewport={viewport}
         host={host}
-        actions={({ set }) =>
-          newStudio && set ? <SharePanel set={set} name={template.name} /> : null
+        actions={({ set, dirty }) =>
+          newStudio ? (
+            <>
+              {set && <SharePanel set={set} name={template.name} />}
+              <SendToReview draftId={draft.id} dirty={dirty} />
+            </>
+          ) : null
         }
         draftMode={
           pages
