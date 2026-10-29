@@ -27,9 +27,11 @@ import {
   useGetSocialRoundResultsPrefill,
   getGetSocialRoundResultsPrefillQueryKey,
   useGetMilestonesBoard,
+  useListSocialPrefillMoments,
   useListPremierships,
   type MatchSummary as MatchSummaryDto,
   type MilestoneItem,
+  type SocialPrefillMoment,
   type Premiership,
   type Fixture,
 } from "@workspace/api-client-react";
@@ -59,6 +61,9 @@ import {
   roundResultsToResultsState,
   roundResultsToTeamOfWeekState,
   milestoneItemToState,
+  MOMENT_KINDS,
+  momentLabel,
+  momentToBigMomentState,
   premiershipToState,
   premiershipSeasonYear,
 } from "./prefill";
@@ -114,6 +119,14 @@ export function PrefillPanel({
   onPlayer?: (player: { id: number; givenName: string; surname: string }) => void;
 }) {
   const source = DESCRIPTORS[kind].prefill;
+  if (source === "moment")
+    // A recent century / five-for the engine found, or any match by hand.
+    return (
+      <>
+        <MomentPrefillPanel kind={kind} onApply={onApply} onPlayer={onPlayer} />
+        <MatchPrefillPanel kind={kind} onApply={onApply} />
+      </>
+    );
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
   if (source === "round") return <RoundPrefillPanel onApply={onApply} />;
@@ -643,6 +656,72 @@ function MilestonePrefillPanel({
           onApply(milestoneItemToState(selected));
           // The milestone's player becomes the card's player (their sponsors).
           onPlayer?.(splitPlayerName(selected.playerId, selected.playerName));
+        }}
+        disabled={!selected}
+      />
+    </PrefillCard>
+  );
+}
+
+/**
+ * A recent century or five-for the achievements engine found (Ash, 28 Oct
+ * 2026), like the milestone prefill: one pick fills the card with the engine's
+ * figures and match, and makes its player the card's player (their sponsors).
+ */
+function MomentPrefillPanel({
+  kind,
+  onApply,
+  onPlayer,
+}: {
+  kind: CardKind;
+  onApply: Apply;
+  onPlayer?: (player: { id: number; givenName: string; surname: string }) => void;
+}) {
+  const q = useListSocialPrefillMoments();
+  const takes = MOMENT_KINDS[kind] ?? [];
+  const items = useMemo(
+    () => ((q.data ?? []) as SocialPrefillMoment[]).filter((m) => takes.includes(m.kind)),
+    [q.data, takes],
+  );
+  const [id, setId] = useState<string>("");
+  const selected = items.find((m) => String(m.id) === id) ?? null;
+  const [noun, plural] =
+    kind === "century"
+      ? ["century", "centuries"]
+      : kind === "fiveFor"
+        ? ["five-wicket haul", "five-wicket hauls"]
+        : ["big moment", "centuries or five-fors"];
+
+  return (
+    <PrefillCard
+      title={`Prefill from a recent ${noun}`}
+      hint="Picks one the club's stats found in the last few months; the figures stay editable."
+    >
+      <SelectField label="Recent moment" value={id} disabled={items.length === 0} onChange={setId}>
+        <option value="">
+          {q.isLoading
+            ? "Loading recent moments…"
+            : items.length === 0
+              ? `No recent ${plural} found`
+              : "Select one…"}
+        </option>
+        {items.map((m) => (
+          <option key={m.id} value={String(m.id)}>
+            {momentLabel(m)}
+          </option>
+        ))}
+      </SelectField>
+      <ApplyButton
+        onClick={() => {
+          if (!selected) return;
+          onApply(
+            kind === "bigMoment"
+              ? momentToBigMomentState(selected)
+              : // The engine's own card, the photo choice kept.
+                builderCard(kind, selected.input as Record<string, unknown>, ["photoUrl"]),
+          );
+          if (selected.playerId != null)
+            onPlayer?.(splitPlayerName(selected.playerId, selected.playerName));
         }}
         disabled={!selected}
       />
