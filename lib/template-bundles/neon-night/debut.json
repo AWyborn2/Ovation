@@ -1,6 +1,6 @@
 {
   "name": "Neon Night debut",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1792,7 +1792,7 @@
               "fontSize": 2.8,
               "fontWeight": 800,
               "letterSpacing": 0.04,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -1813,21 +1813,21 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 54.08,
+                "x": 56.24,
                 "y": 90.12,
-                "w": 41.12,
+                "w": 37.76,
                 "h": 3.33
               },
               "portrait": {
-                "x": 54.08,
+                "x": 56.24,
                 "y": 92.1,
-                "w": 41.12,
+                "w": 37.76,
                 "h": 2.67
               },
               "story": {
-                "x": 54.08,
+                "x": 56.24,
                 "y": 94.44,
-                "w": 41.12,
+                "w": 37.76,
                 "h": 1.88
               }
             },

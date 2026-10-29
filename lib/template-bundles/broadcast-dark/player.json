@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark player",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -100,21 +100,21 @@
             "id": "card-l3",
             "geometry": {
               "square": {
-                "x": 38,
+                "x": 56.24,
                 "y": 0,
-                "w": 62,
+                "w": 43.76,
                 "h": 100
               },
               "portrait": {
-                "x": 38,
+                "x": 56.24,
                 "y": 0,
-                "w": 62,
+                "w": 43.76,
                 "h": 100
               },
               "story": {
-                "x": 38,
+                "x": 56.24,
                 "y": 0,
-                "w": 62,
+                "w": 43.76,
                 "h": 100
               },
               "landscape": {
@@ -2498,21 +2498,21 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 54.08,
+                "x": 72.32,
                 "y": 90.12,
-                "w": 41.12,
+                "w": 22.88,
                 "h": 3.33
               },
               "portrait": {
-                "x": 54.08,
+                "x": 72.32,
                 "y": 92.1,
-                "w": 41.12,
+                "w": 22.88,
                 "h": 2.67
               },
               "story": {
-                "x": 54.08,
+                "x": 72.32,
                 "y": 94.44,
-                "w": 41.12,
+                "w": 22.88,
                 "h": 1.88
               }
             },
