@@ -9,6 +9,7 @@ import {
   presetFields,
   readCardContent,
   resolveVisibleFields,
+  splitSponsorsContent,
 } from "./index";
 import { readQueuedCarousel } from "../queued-carousel";
 
@@ -245,5 +246,63 @@ describe("saved sponsors content (P6)", () => {
     const last = read!.slides[2].input.carouselPage as Record<string, unknown>;
     expect(last.majorCount).toBe(1);
     expect(last.hasCoverPhoto).toBe(true);
+  });
+});
+
+describe("splitSponsorsContent (sponsors over more than one slide)", () => {
+  const many = (n: number, majors = 0) =>
+    matchDaySponsorsContent({
+      ...bookend,
+      sponsors: Array.from({ length: n }, (_, i) => ({
+        name: `S${i + 1}`,
+        logoUrl: `https://s/${i + 1}.png`,
+        // Majors listed last, to show they are moved to the front.
+        tier: i >= n - majors ? "major" : "standard",
+      })),
+      nextHomeGame: nextHome,
+      socials: ["@ourclub"],
+    });
+  const tiers = withFields("sponsors.tiers");
+  const names = (pages: ReturnType<typeof splitSponsorsContent>) =>
+    pages.map((p) => p.sponsors.map((s) => s.name));
+
+  it("keeps one page while the sponsors fit", () => {
+    const one = many(12);
+    expect(splitSponsorsContent(one, tiers)).toEqual([one]);
+  });
+
+  it("shares the sponsors evenly, not a full page and a remainder", () => {
+    expect(splitSponsorsContent(many(20), tiers).map((p) => p.sponsors.length)).toEqual([10, 10]);
+    expect(splitSponsorsContent(many(13), tiers).map((p) => p.sponsors.length)).toEqual([7, 6]);
+    // Ash's example: 12 at 8 a page is 6 and 6.
+    expect(splitSponsorsContent(many(12), tiers, 8).map((p) => p.sponsors.length)).toEqual([6, 6]);
+  });
+
+  it("puts the major sponsors first while tiers are on, and each page re-projects to itself", () => {
+    const pages = splitSponsorsContent(many(20, 3), tiers);
+    expect(names(pages)[0]!.slice(0, 3)).toEqual(["S18", "S19", "S20"]);
+    for (const p of pages) {
+      const input = contentInput(p, tiers).carouselPage as { sponsors: Array<{ name: string }> };
+      expect(input.sponsors.map((s) => s.name)).toEqual(p.sponsors.map((s) => s.name));
+    }
+  });
+
+  it("closes the last page with the next home game and socials, and drops hidden team sponsors", () => {
+    const pages = splitSponsorsContent(many(20), tiers);
+    expect(pages[0]!.nextHomeGame).toBeNull();
+    expect(pages[0]!.socials).toEqual([]);
+    expect(pages[1]!.nextHomeGame).not.toBeNull();
+    expect(pages[1]!.socials).toEqual(["@ourclub"]);
+    expect(pages.every((p) => p.thankYou === SPONSORS_THANK_YOU)).toBe(true);
+    const withTeams = matchDaySponsorsContent({
+      ...bookend,
+      sponsors: Array.from({ length: 14 }, (_, i) => ({
+        name: `S${i}`,
+        logoUrl: "https://s/x.png",
+        grades: i < 4 ? ["A Grade"] : [],
+      })),
+    });
+    // Team sponsors off: 10 shown, one page.
+    expect(splitSponsorsContent(withTeams, tiers)).toHaveLength(1);
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3966,880 +3966,122 @@
             "sig": "text:19k4lji08z3bwz"
           },
           {
-            "id": "sponsors-tile0",
-            "kind": "shape",
+            "id": "sponsors-tiles",
+            "kind": "rows",
+            "name": "Sponsor logos",
+            "geometry": {
+              "square": {
+                "x": 14.2,
+                "y": 40.34,
+                "w": 71.66,
+                "h": 23.27
+              },
+              "portrait": {
+                "x": 6.73,
+                "y": 42.56,
+                "w": 86.6,
+                "h": 26.83
+              },
+              "story": {
+                "x": 6.9,
+                "y": 35.9,
+                "w": 86.26,
+                "h": 24.93
+              },
+              "landscape": {
+                "x": 28.11,
+                "y": 28.99,
+                "w": 66.05,
+                "h": 42.99
+              }
+            },
+            "rows": {
+              "repeat": "sponsors",
+              "layout": "tiles",
+              "rowHeight": 14,
+              "gap": 1.6,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 5.96,
+                  "w": 88.09,
+                  "y": 11.92,
+                  "h": 76.16,
+                  "show": "logo"
+                }
+              ]
+            },
             "showWhen": {
-              "field": "weekendSponsor0"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 25.84,
-                "y": 42.08,
-                "w": 15.11,
-                "h": 7.55
-              },
-              "portrait": {
-                "x": 11.06,
-                "y": 43.63,
-                "w": 24.96,
-                "h": 9.98
-              },
-              "story": {
-                "x": 8.79,
-                "y": 36.16,
-                "w": 26.47,
-                "h": 7.45
-              },
-              "landscape": {
-                "x": 53.22,
-                "y": 29,
-                "w": 13.12,
-                "h": 12.5
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
+              "field": "nextHomeMatch"
+            }
           },
           {
-            "id": "sponsors-logo0",
-            "kind": "image",
-            "content": "{{weekendSponsor0}}",
+            "id": "sponsors-tiles-tall",
+            "kind": "rows",
+            "name": "Sponsor logos",
             "geometry": {
               "square": {
-                "x": 26.74,
-                "y": 42.98,
-                "w": 13.31,
-                "h": 5.75
+                "x": 14.2,
+                "y": 40.34,
+                "w": 71.66,
+                "h": 40.77
               },
               "portrait": {
-                "x": 11.96,
-                "y": 44.35,
-                "w": 23.16,
-                "h": 8.54
+                "x": 6.73,
+                "y": 42.56,
+                "w": 86.6,
+                "h": 41.55
               },
               "story": {
-                "x": 9.69,
-                "y": 36.67,
-                "w": 24.67,
-                "h": 6.44
+                "x": 6.9,
+                "y": 35.9,
+                "w": 86.26,
+                "h": 35.87
               },
               "landscape": {
-                "x": 53.69,
-                "y": 29.9,
-                "w": 12.18,
-                "h": 10.7
+                "x": 28.11,
+                "y": 28.99,
+                "w": 66.05,
+                "h": 42.99
               }
             },
-            "sig": "image:0zqxx400q132jl"
-          },
-          {
-            "id": "sponsors-tile1",
-            "kind": "shape",
+            "rows": {
+              "repeat": "sponsors",
+              "layout": "tiles",
+              "rowHeight": 14,
+              "gap": 1.6,
+              "cells": [
+                {
+                  "field": "logo",
+                  "x": 0,
+                  "w": 100,
+                  "show": "backdrop",
+                  "style": {
+                    "background": "#FFFFFF"
+                  }
+                },
+                {
+                  "field": "logo",
+                  "x": 5.96,
+                  "w": 88.09,
+                  "y": 11.92,
+                  "h": 76.16,
+                  "show": "logo"
+                }
+              ]
+            },
             "showWhen": {
-              "field": "weekendSponsor1"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 42.45,
-                "y": 42.08,
-                "w": 15.11,
-                "h": 7.55
-              },
-              "portrait": {
-                "x": 37.52,
-                "y": 43.63,
-                "w": 24.96,
-                "h": 9.98
-              },
-              "story": {
-                "x": 36.76,
-                "y": 36.16,
-                "w": 26.47,
-                "h": 7.45
-              },
-              "landscape": {
-                "x": 67.13,
-                "y": 29,
-                "w": 13.12,
-                "h": 12.5
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo1",
-            "kind": "image",
-            "content": "{{weekendSponsor1}}",
-            "geometry": {
-              "square": {
-                "x": 43.35,
-                "y": 42.98,
-                "w": 13.31,
-                "h": 5.75
-              },
-              "portrait": {
-                "x": 38.42,
-                "y": 44.35,
-                "w": 23.16,
-                "h": 8.54
-              },
-              "story": {
-                "x": 37.66,
-                "y": 36.67,
-                "w": 24.67,
-                "h": 6.44
-              },
-              "landscape": {
-                "x": 67.6,
-                "y": 29.9,
-                "w": 12.18,
-                "h": 10.7
-              }
-            },
-            "sig": "image:1vu1qnp012pmng"
-          },
-          {
-            "id": "sponsors-tile2",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor2"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 59.05,
-                "y": 42.08,
-                "w": 15.11,
-                "h": 7.55
-              },
-              "portrait": {
-                "x": 63.98,
-                "y": 43.63,
-                "w": 24.96,
-                "h": 9.98
-              },
-              "story": {
-                "x": 64.74,
-                "y": 36.16,
-                "w": 26.47,
-                "h": 7.45
-              },
-              "landscape": {
-                "x": 81.04,
-                "y": 29,
-                "w": 13.12,
-                "h": 12.5
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo2",
-            "kind": "image",
-            "content": "{{weekendSponsor2}}",
-            "geometry": {
-              "square": {
-                "x": 59.95,
-                "y": 42.98,
-                "w": 13.31,
-                "h": 5.75
-              },
-              "portrait": {
-                "x": 64.88,
-                "y": 44.35,
-                "w": 23.16,
-                "h": 8.54
-              },
-              "story": {
-                "x": 65.64,
-                "y": 36.67,
-                "w": 24.67,
-                "h": 6.44
-              },
-              "landscape": {
-                "x": 81.51,
-                "y": 29.9,
-                "w": 12.18,
-                "h": 10.7
-              }
-            },
-            "sig": "image:1wsi8g21vnn8tn"
-          },
-          {
-            "id": "sponsors-tile3",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor3"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 23.39,
-                "y": 51.14,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 8.45,
-                "y": 54.81,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 23.19,
-                "y": 44.45,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 60.6,
-                "y": 43,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo3",
-            "kind": "image",
-            "content": "{{weekendSponsor3}}",
-            "geometry": {
-              "square": {
-                "x": 24.29,
-                "y": 52.04,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 9.35,
-                "y": 55.53,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 24.09,
-                "y": 44.96,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 61.07,
-                "y": 43.9,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:0akto9b0rl0wcu"
-          },
-          {
-            "id": "sponsors-tile4",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor4"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 34.34,
-                "y": 51.14,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 25.37,
-                "y": 54.81,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 41.56,
-                "y": 44.45,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 69.59,
-                "y": 43,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo4",
-            "kind": "image",
-            "content": "{{weekendSponsor4}}",
-            "geometry": {
-              "square": {
-                "x": 35.24,
-                "y": 52.04,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 26.27,
-                "y": 55.53,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 42.46,
-                "y": 44.96,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 70.06,
-                "y": 43.9,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:14uui7o1umevm5"
-          },
-          {
-            "id": "sponsors-tile5",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor5"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 45.28,
-                "y": 51.14,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 42.29,
-                "y": 54.81,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 59.94,
-                "y": 44.45,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 78.57,
-                "y": 43,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo5",
-            "kind": "image",
-            "content": "{{weekendSponsor5}}",
-            "geometry": {
-              "square": {
-                "x": 46.18,
-                "y": 52.04,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 43.19,
-                "y": 55.53,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 60.84,
-                "y": 44.96,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 79.04,
-                "y": 43.9,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:0di367d03yf1bs"
-          },
-          {
-            "id": "sponsors-tile6",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor6"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 56.22,
-                "y": 51.14,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 59.21,
-                "y": 54.81,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 23.19,
-                "y": 50.04,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 60.6,
-                "y": 52.3,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo6",
-            "kind": "image",
-            "content": "{{weekendSponsor6}}",
-            "geometry": {
-              "square": {
-                "x": 57.12,
-                "y": 52.04,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 60.11,
-                "y": 55.53,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 24.09,
-                "y": 50.55,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 61.07,
-                "y": 53.2,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:1cuunh20f05puv"
-          },
-          {
-            "id": "sponsors-tile7",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor7"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 67.16,
-                "y": 51.14,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 76.13,
-                "y": 54.81,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 41.56,
-                "y": 50.04,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 69.59,
-                "y": 52.3,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo7",
-            "kind": "image",
-            "content": "{{weekendSponsor7}}",
-            "geometry": {
-              "square": {
-                "x": 68.06,
-                "y": 52.04,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 77.03,
-                "y": 55.53,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 42.46,
-                "y": 50.55,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 70.06,
-                "y": 53.2,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:0qusmc31wv3y4a"
-          },
-          {
-            "id": "sponsors-tile8",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor8"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 28.86,
-                "y": 57.36,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 16.91,
-                "y": 62.18,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 59.94,
-                "y": 50.04,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 78.57,
-                "y": 52.3,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo8",
-            "kind": "image",
-            "content": "{{weekendSponsor8}}",
-            "geometry": {
-              "square": {
-                "x": 29.76,
-                "y": 58.26,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 17.81,
-                "y": 62.9,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 60.84,
-                "y": 50.55,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 79.04,
-                "y": 53.2,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:08qvf8o0jk34vt"
-          },
-          {
-            "id": "sponsors-tile9",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor9"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 39.81,
-                "y": 57.36,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 33.83,
-                "y": 62.18,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 23.19,
-                "y": 55.63,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 60.6,
-                "y": 61.61,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo9",
-            "kind": "image",
-            "content": "{{weekendSponsor9}}",
-            "geometry": {
-              "square": {
-                "x": 40.71,
-                "y": 58.26,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 34.73,
-                "y": 62.9,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 24.09,
-                "y": 56.14,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 61.07,
-                "y": 62.51,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:0nf0zr11ppxg5g"
-          },
-          {
-            "id": "sponsors-tile10",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor10"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 50.75,
-                "y": 57.36,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 50.75,
-                "y": 62.18,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 41.56,
-                "y": 55.63,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 69.59,
-                "y": 61.61,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo10",
-            "kind": "image",
-            "content": "{{weekendSponsor10}}",
-            "geometry": {
-              "square": {
-                "x": 51.65,
-                "y": 58.26,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 51.65,
-                "y": 62.9,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 42.46,
-                "y": 56.14,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 70.06,
-                "y": 62.51,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:1dynmkf0f03svs"
-          },
-          {
-            "id": "sponsors-tile11",
-            "kind": "shape",
-            "showWhen": {
-              "field": "weekendSponsor11"
-            },
-            "style": {
-              "fill": "#FFFFFF",
-              "border": {
-                "width": 0.09,
-                "color": "#DADDE0"
-              }
-            },
-            "geometry": {
-              "square": {
-                "x": 61.69,
-                "y": 57.36,
-                "w": 9.44,
-                "h": 4.72
-              },
-              "portrait": {
-                "x": 67.67,
-                "y": 62.18,
-                "w": 15.42,
-                "h": 6.17
-              },
-              "story": {
-                "x": 59.94,
-                "y": 55.63,
-                "w": 16.87,
-                "h": 4.75
-              },
-              "landscape": {
-                "x": 78.57,
-                "y": 61.61,
-                "w": 8.2,
-                "h": 7.81
-              }
-            },
-            "sig": "shape:04tpays0pcc0nn"
-          },
-          {
-            "id": "sponsors-logo11",
-            "kind": "image",
-            "content": "{{weekendSponsor11}}",
-            "geometry": {
-              "square": {
-                "x": 62.59,
-                "y": 58.26,
-                "w": 7.64,
-                "h": 2.92
-              },
-              "portrait": {
-                "x": 68.57,
-                "y": 62.9,
-                "w": 13.62,
-                "h": 4.73
-              },
-              "story": {
-                "x": 60.84,
-                "y": 56.14,
-                "w": 15.07,
-                "h": 3.74
-              },
-              "landscape": {
-                "x": 79.04,
-                "y": 62.51,
-                "w": 7.25,
-                "h": 6.01
-              }
-            },
-            "sig": "image:0g4u6b606mzl71"
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "shape",
@@ -4867,7 +4109,41 @@
                 "h": 3.47
               }
             },
-            "sig": "shape:09zngj91fufb3u"
+            "sig": "shape:09zngj91fufb3u",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "border": {
+                "width": 0.19,
+                "color": "var(--gold)"
+              },
+              "radius": 1069.2
+            },
+            "id": "sponsors-l19-tall",
+            "sizes": ["square", "portrait"],
+            "geometry": {
+              "square": {
+                "x": 19.94,
+                "y": 82.71,
+                "w": 60.11,
+                "h": 4.11
+              },
+              "portrait": {
+                "x": 18.13,
+                "y": 85.71,
+                "w": 63.75,
+                "h": 3.47
+              }
+            },
+            "sig": "shape:09zngj91fufb3u",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "shape",
@@ -4889,7 +4165,35 @@
                 "h": 2.72
               }
             },
-            "sig": "shape:1f1xya916xif8u"
+            "sig": "shape:1f1xya916xif8u",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "var(--gold)",
+              "border": {
+                "width": 0.28,
+                "color": "var(--gold)"
+              },
+              "radius": 1069.2
+            },
+            "id": "sponsors-l20-tall",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 15.7,
+                "y": 73.37,
+                "w": 68.59,
+                "h": 2.72
+              }
+            },
+            "sig": "shape:1f1xya916xif8u",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "shape",
@@ -4939,7 +4243,41 @@
                 "h": 2.5
               }
             },
-            "sig": "text:0pyy9gu19xpmal"
+            "sig": "text:0pyy9gu19xpmal",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.3,
+              "fontWeight": 800,
+              "align": "center",
+              "lineHeight": 1.15
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l22-tall",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 21.09,
+                "y": 83.44,
+                "w": 57.83,
+                "h": 2.5
+              }
+            },
+            "sig": "text:0pyy9gu19xpmal",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -4967,7 +4305,41 @@
                 "h": 2.15
               }
             },
-            "sig": "text:00d2zal1amxyj0"
+            "sig": "text:00d2zal1amxyj0",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.44,
+              "fontWeight": 800,
+              "align": "center",
+              "lineHeight": 1.15
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l23-tall",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 19.33,
+                "y": 86.32,
+                "w": 61.34,
+                "h": 2.15
+              }
+            },
+            "sig": "text:00d2zal1amxyj0",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -4995,7 +4367,41 @@
                 "h": 1.61
               }
             },
-            "sig": "text:00mguvp04meb5k"
+            "sig": "text:00mguvp04meb5k",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "text",
+            "content": "{{sponsorCta}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Archivo',sans-serif",
+              "fontSize": 2.62,
+              "fontWeight": 800,
+              "align": "center",
+              "lineHeight": 1.15
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "sponsors-l24-tall",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 17.07,
+                "y": 73.88,
+                "w": 65.86,
+                "h": 1.61
+              }
+            },
+            "sig": "text:00mguvp04meb5k",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -5056,7 +4462,10 @@
                 "h": 2.59
               }
             },
-            "sig": "text:1qajdvj1ibu9mi"
+            "sig": "text:1qajdvj1ibu9mi",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -5089,7 +4498,10 @@
                 "h": 2.22
               }
             },
-            "sig": "text:1hfxmb80hf50p3"
+            "sig": "text:1hfxmb80hf50p3",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -5122,7 +4534,10 @@
                 "h": 1.67
               }
             },
-            "sig": "text:08lf48a0gtwsah"
+            "sig": "text:08lf48a0gtwsah",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",
@@ -5155,7 +4570,10 @@
                 "h": 3.33
               }
             },
-            "sig": "text:014o4w20e8co0t"
+            "sig": "text:014o4w20e8co0t",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
           },
           {
             "kind": "text",

@@ -15,6 +15,7 @@ import {
   type CardNames,
 } from "../card-names";
 import { isJuniorGradeLabel } from "../junior-grade";
+import { SPONSOR_TILES_PER_PAGE } from "../kind-templates/tile-grid";
 import type {
   ContentLadder,
   ContentLastMeeting,
@@ -254,6 +255,41 @@ export function matchDaySponsorsContent(opts: MatchDaySponsorsOptions): MatchDay
     nextHomeGame: opts.nextHomeGame ? nextHomeGameContent(opts.nextHomeGame) : null,
     socials: socials.slice(0, MAX_SOCIALS),
   };
+}
+
+/**
+ * The sponsors page as the carousel's slides (Halls Head, Oct 2026): one
+ * page while the sponsors it shows fit (`SPONSOR_TILES_PER_PAGE`), else as
+ * few pages as hold them, shared evenly (20 is 10 and 10), the major
+ * sponsors first. Each page keeps the thank-you; the next home game and the
+ * socials close the last. The sponsors shown are the ones the page input
+ * would show (`contentInput`): team sponsors only while their field is on,
+ * majors first while tiers are on, so each page re-projects to itself.
+ */
+export function splitSponsorsContent(
+  content: MatchDaySponsorsContent,
+  visible: ReadonlySet<string>,
+  perPage = SPONSOR_TILES_PER_PAGE,
+): MatchDaySponsorsContent[] {
+  const shown = content.sponsors.filter(
+    (s) => visible.has("sponsors.teamSponsors") || !s.teamSponsor,
+  );
+  const ordered = visible.has("sponsors.tiers")
+    ? [...shown.filter((s) => s.tier === "major"), ...shown.filter((s) => s.tier !== "major")]
+    : shown;
+  const per = Math.max(1, Math.floor(perPage));
+  if (ordered.length <= per) return [content];
+  const pages = Math.ceil(ordered.length / per);
+  const size = Math.ceil(ordered.length / pages);
+  return Array.from({ length: pages }, (_, i) => {
+    const last = i === pages - 1;
+    return {
+      ...content,
+      sponsors: ordered.slice(i * size, (i + 1) * size),
+      nextHomeGame: last ? content.nextHomeGame : null,
+      socials: last ? content.socials : [],
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

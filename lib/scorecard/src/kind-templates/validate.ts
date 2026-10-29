@@ -18,7 +18,7 @@
  * messages go back to the model, so they name the page and layer), and by the
  * starter and bundle contract tests.
  */
-import { TEMPLATE_SIZE_ORDER } from "./document";
+import { LOGO_ROW_FIELDS, TEMPLATE_SIZE_ORDER } from "./document";
 import { MAX_ELEMENT_LAYERS } from "./elements";
 import { kindFields, TEMPLATE_CARD_KINDS } from "./fields";
 import {
@@ -580,6 +580,12 @@ function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): voi
     else if (v.flow !== "down" && v.flow !== "across")
       errors.push(`${where}.flow must be down or across.`);
   }
+  if (v.layout !== undefined) {
+    if (!scope.v2) errors.push(`${where}.layout is a format v2 option.`);
+    else if (v.layout !== "tiles") errors.push(`${where}.layout must be tiles.`);
+    else if (v.repeat !== "sponsors")
+      errors.push(`${where}.layout tiles is for the sponsors list.`);
+  }
   if (v.pick !== undefined) checkPick(errors, `${where}.pick`, v.pick, v.repeat as string, scope);
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
     errors.push(`${where}.cells must be a list of at most ${MAX_CELLS} cells.`);
@@ -596,8 +602,16 @@ function checkRows(errors: Errors, where: string, v: unknown, scope: Scope): voi
       numberIn(errors, `${at}.w`, cell.w, 0, 100);
       if (cell.y !== undefined) numberIn(errors, `${at}.y`, cell.y, 0, 100);
       if (cell.h !== undefined) numberIn(errors, `${at}.h`, cell.h, 0, 100);
-      if (cell.show !== undefined && !["text", "image", "backdrop"].includes(cell.show as string))
-        errors.push(`${at}.show must be text, image or backdrop.`);
+      if (cell.show === "logo") {
+        // Format v2: a crest or sponsor logo the row holds, drawn whole.
+        if (!scope.v2) errors.push(`${at}.show logo is a format v2 option.`);
+        else if (!LOGO_ROW_FIELDS.includes(cell.field as string))
+          errors.push(`${at}.show logo is for a crest or logo field.`);
+      } else if (
+        cell.show !== undefined &&
+        !["text", "image", "backdrop"].includes(cell.show as string)
+      )
+        errors.push(`${at}.show must be text, image, backdrop or logo.`);
       checkStyle(errors, `${at}.style`, cell.style, scope.v2);
     });
   }
@@ -865,11 +879,18 @@ function checkLayerV2(
     errors.push(`${where}.sig must be a design signature (kind:hash).`);
   if (layer.showWhen !== undefined) {
     const s = layer.showWhen;
-    if (!isObject(s)) errors.push(`${where}.showWhen must be { field, photo, sponsors, junior }.`);
+    if (!isObject(s))
+      errors.push(`${where}.showWhen must be { field, noField, photo, sponsors, junior }.`);
     else {
-      knownKeys(errors, `${where}.showWhen`, s, new Set(["field", "photo", "sponsors", "junior"]));
-      if (s.field !== undefined && (typeof s.field !== "string" || !scope.tokens.has(s.field)))
-        errors.push(`${where}.showWhen.field isn't a field this page has.`);
+      knownKeys(
+        errors,
+        `${where}.showWhen`,
+        s,
+        new Set(["field", "noField", "photo", "sponsors", "junior"]),
+      );
+      for (const k of ["field", "noField"])
+        if (s[k] !== undefined && (typeof s[k] !== "string" || !scope.tokens.has(s[k] as string)))
+          errors.push(`${where}.showWhen.${k} isn't a field this page has.`);
       for (const k of ["photo", "sponsors", "junior"]) flag(errors, `${where}.showWhen.${k}`, s[k]);
     }
   }
