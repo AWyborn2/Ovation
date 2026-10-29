@@ -8346,6 +8346,9 @@ export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItem
 export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsMax = 14;
 
+export const getSocialSettingsResponseSettingsSponsorsPerSlideMin = 3;
+export const getSocialSettingsResponseSettingsSponsorsPerSlideMax = 16;
+
 
 
 export const GetSocialSettingsResponse = zod.object({
@@ -8577,7 +8580,8 @@ export const GetSocialSettingsResponse = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
+  "sponsorsPerSlide": zod.number().min(getSocialSettingsResponseSettingsSponsorsPerSlideMin).max(getSocialSettingsResponseSettingsSponsorsPerSlideMax).optional().describe('The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -8707,6 +8711,9 @@ export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemTimeRegEx
 export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsMax = 14;
 
 export const updateSocialSettingsBodyLivestreamUrlMax = 500;
+
+export const updateSocialSettingsBodySponsorsPerSlideMin = 3;
+export const updateSocialSettingsBodySponsorsPerSlideMax = 16;
 
 
 
@@ -8929,7 +8936,8 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
   "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.'),
+  "sponsorsPerSlide": zod.number().min(updateSocialSettingsBodySponsorsPerSlideMin).max(updateSocialSettingsBodySponsorsPerSlideMax).optional().describe('The club\'s sponsors per slide, 3 to 16.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -9010,6 +9018,9 @@ export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMa
 
 export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
 export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsMax = 14;
+
+export const updateSocialSettingsResponseSponsorsPerSlideMin = 3;
+export const updateSocialSettingsResponseSponsorsPerSlideMax = 16;
 
 
 
@@ -9241,7 +9252,8 @@ export const UpdateSocialSettingsResponse = zod.object({
 }).optional().describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on. The junior same-day switch is read from matchDay for every set.'),
   "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
-  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.'),
+  "sponsorsPerSlide": zod.number().min(updateSocialSettingsResponseSponsorsPerSlideMin).max(updateSocialSettingsResponseSponsorsPerSlideMax).optional().describe('The most sponsors one match day sponsors slide holds; past it the Weekend Carousel shares them evenly over more slides. A set can change it for itself. Default 12.')
 })
 
 

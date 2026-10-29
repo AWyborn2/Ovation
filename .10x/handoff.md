@@ -1,10 +1,29 @@
 # Handoff
 
+**From:** Principal Architect / Engineering Manager
+**To:** SDE (this session, slice by slice)
+**Feature:** studio-create-consolidation
+
+## Context
+
+- Scope: `decisions/product-manager/studio-create-consolidation.md` (Approved scope, plus the two P0 additions of
+  29 Oct: opens straight in the editor; page strip, grid and Share / Download).
+- Design: `decisions/architect/studio-create-consolidation.md`.
+- Plan: `decisions/engineering-manager/studio-create-consolidation.md`. P0 slices S1 to S7 go to `main` in
+  order, one PR each. Then Ash reviews on dev with the switch on for Halls Head. P1 is S8 to S12.
+- S1 adds migration 0076 (`tenants.new_studio_enabled`). Ash runs its SQL in Production before republishing.
+- Every new surface mounts only when the switch is on. The editors' internals, the template format and the
+  library are unchanged.
+
+## Handoff History
+
+### Previous (Product Manager to Principal Architect, studio-create-consolidation)
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** studio-create-consolidation
 
-## Context
+#### Context
 
 - Scope: `.10x/decisions/product-manager/studio-create-consolidation.md`, approved by Ash on 29 Oct 2026. Use
   its "Approved scope" section: constraints, rollout, P0, P1 and what's out.
@@ -24,8 +43,6 @@
   - where the per-club switch lives (a tenant column or settings JSON; a migration if a column);
   - how junior kinds plug into one Create flow without blending data;
   - whether the set editor already supports a per-slide layout and opening one slide in the card editor.
-
-## Handoff History
 
 ### Previous (Principal Architect / Engineering Manager to SDE, template library release 2)
 
