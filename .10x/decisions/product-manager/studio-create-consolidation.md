@@ -215,6 +215,12 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
      left out for a slide. Download is there, with the junior photo rule.
    - Unsaved set changes must be saved first.
 
+9. **Settings as cards (S10).** New Studio's Settings is a grid of cards: Posting plan, Auto-post, Sponsors, What
+   cards show, Facebook and Instagram, Figma, Captions, Email lists, Juniors, plus Looks, sizes and sound and
+   Fixtures so nothing from the old Cards and Settings pages is lost. Each card opens the existing page or cards
+   unchanged (`?card=`). Juniors links to Junior matches (which teams auto-post) and Junior photos; it shows only
+   for clubs with juniors. The old pages keep their URLs.
+
 ### Not in this release
 
 - Option B's "This week" board.
