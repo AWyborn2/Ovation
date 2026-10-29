@@ -298,6 +298,51 @@ describe("tags", () => {
       expect(res.body.playerIds).toEqual([bad]);
     }
   });
+
+  it("a wrong or stale tag can always be removed, and focus still saves around it", async () => {
+    const path = await upload("untag.jpg", await jpeg(300, 200));
+    const ingest = await api("post", "/club-photos/ingest").send({ objectPaths: [path] });
+    const photoId = ingest.body.results[0].photo.id as number;
+    await api("post", "/club-photos/tags")
+      .send({ photoIds: [photoId], addPlayerIds: playerIds })
+      .expect(200);
+    // A tag that no longer passes the senior check (a fill-in, or a player
+    // whose link changed) sits on the photo beside a good one.
+    const STALE = 90002;
+    const box = { x: 0.1, y: 0.1, w: 0.4, h: 0.6 };
+    await db
+      .insert(clubPhotoPlayersTable)
+      .values({ tenantId, photoId, playerId: STALE, area: box });
+
+    // The focus editor re-sends every marked player: the stale one is kept,
+    // not refused, and its area can be cleared.
+    const focus = await api("put", `/club-photos/${photoId}/focus`).send({
+      focusBox: box,
+      playerAreas: [
+        { playerId: STALE, box },
+        { playerId: playerIds[0], box },
+      ],
+    });
+    expect(focus.status).toBe(200);
+    const clearStale = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: STALE, box: null }],
+    });
+    expect(clearStale.status).toBe(200);
+
+    // Removing the stale tag and a wrongly tagged senior both work.
+    const res = await api("post", "/club-photos/tags").send({
+      photoIds: [photoId],
+      removePlayerIds: [STALE, playerIds[1]],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body[0].playerIds).toEqual([playerIds[0]]);
+
+    // Adding a non-senior player is still refused.
+    const add = await api("put", `/club-photos/${photoId}/focus`).send({
+      playerAreas: [{ playerId: 90003, box }],
+    });
+    expect(add.status).toBe(422);
+  });
 });
 
 describe("tenant isolation", () => {
