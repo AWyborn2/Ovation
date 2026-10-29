@@ -12908,6 +12908,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/RoundResults"
 
+  /social-prefill/moments:
+    get:
+      operationId: listSocialPrefillMoments
+      tags: [socialCards]
+      summary: >-
+        Recent centuries and five-wicket hauls the achievements engine found,
+        for Create a Card's prefill (newest first). Admin + socialStudio
+        entitlement.
+      description: >-
+        Each is the card the engine drafted for that performance (whatever
+        its queue status), so a card made here carries the same figures and
+        match. Senior only; the last 120 days, at most 60.
+      responses:
+        "200":
+          description: The moments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialPrefillMoment"
+
   /social-prefill/match-summary/{matchId}:
     get:
       operationId: getSocialMatchSummaryPrefill
@@ -20887,6 +20909,36 @@ components:
           $ref: "#/components/schemas/CardContentKindSettings"
         teamList:
           $ref: "#/components/schemas/CardContentKindSettings"
+
+    SocialPrefillMoment:
+      type: object
+      description: "A century or five-wicket haul the achievements engine drafted, as Create a Card's prefill."
+      required: [id, kind, playerId, playerName, grade, round, opponent, seenAt, input]
+      properties:
+        id:
+          type: integer
+          description: The engine's draft id.
+        kind:
+          type: string
+          enum: [century, fiveFor]
+        playerId:
+          type: ["integer", "null"]
+          description: The player's id, when the club has them on its books.
+        playerName:
+          type: string
+        grade:
+          type: ["string", "null"]
+        round:
+          type: ["integer", "null"]
+        opponent:
+          type: ["string", "null"]
+        seenAt:
+          type: string
+          format: date-time
+        input:
+          type: object
+          additionalProperties: true
+          description: The card input the engine drafted (figures and match).
 
     SocialCardPrefill:
       type: object

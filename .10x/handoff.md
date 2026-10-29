@@ -1,5 +1,34 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** studio-create-consolidation
+
+## Context
+
+- Scope: `.10x/decisions/product-manager/studio-create-consolidation.md`, approved by Ash on 29 Oct 2026. Use
+  its "Approved scope" section: constraints, rollout, P0, P1 and what's out.
+- Prototype (every Option A screen, clickable): https://claude.ai/artifact/Y6FvEh49DAB7bDa5ny62YN
+- Hard constraints:
+  - the editor is unchanged, and so are the template format and library;
+  - no data migration of drafts, templates or sets; old URLs redirect;
+  - juniors isolation and the photo consent rule hold.
+- Rollout: a per-club "New Studio (preview)" switch set from the platform admin console. Old and new Studio run
+  side by side. Review on dev, then a test tenant, then Halls Head, then the other clubs.
+- Already built, so reuse it rather than rebuilding:
+  - the carousel set editor (`admin-set-draft-editor`): reorder, add, delete slides; switch look; change size;
+  - Create a card's fixture prefill for a senior Team List (`useGetSocialTeamListPrefill`);
+  - the junior card builders under `/api/juniors`;
+  - the Dismiss/Delete design tiles (#595).
+- Questions for the design:
+  - where the per-club switch lives (a tenant column or settings JSON; a migration if a column);
+  - how junior kinds plug into one Create flow without blending data;
+  - whether the set editor already supports a per-slide layout and opening one slide in the card editor.
+
+## Handoff History
+
+### Previous (Principal Architect / Engineering Manager to SDE, template library release 2)
+
 **From:** Principal Architect / Engineering Manager
 **To:** SDE (one session per slice)
 **Feature:** social-template-library, release 2
@@ -13,8 +42,6 @@
   pasted token; check the designer's first-try fit rate before Generate goes live.
 - Start with R2-A (migration, OpenAPI, shared `publishableDocument`). Then R2-B, R2-D and R2-E in
   parallel; R2-C after R2-B. Each slice is a PR to `main`.
-
-## Handoff History
 
 ### Previous (Product Manager to Principal Architect, photo-focus-areas)
 

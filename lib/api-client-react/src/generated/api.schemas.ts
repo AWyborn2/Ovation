@@ -6041,6 +6041,43 @@ export interface SocialSettings {
   sponsorsBackgroundPhotoId?: number | null;
 }
 
+export type SocialPrefillMomentKind = typeof SocialPrefillMomentKind[keyof typeof SocialPrefillMomentKind];
+
+
+export const SocialPrefillMomentKind = {
+  century: 'century',
+  fiveFor: 'fiveFor',
+} as const;
+
+/**
+ * The card input the engine drafted (figures and match).
+ */
+export type SocialPrefillMomentInput = { [key: string]: unknown };
+
+/**
+ * A century or five-wicket haul the achievements engine drafted, as Create a Card's prefill.
+ */
+export interface SocialPrefillMoment {
+  /** The engine's draft id. */
+  id: number;
+  kind: SocialPrefillMomentKind;
+  /**
+     * The player's id, when the club has them on its books.
+     * @nullable
+     */
+  playerId: number | null;
+  playerName: string;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  round: number | null;
+  /** @nullable */
+  opponent: string | null;
+  seenAt: string;
+  /** The card input the engine drafted (figures and match). */
+  input: SocialPrefillMomentInput;
+}
+
 export type SocialCardPrefillInput = { [key: string]: unknown };
 
 /**

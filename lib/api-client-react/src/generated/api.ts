@@ -469,6 +469,7 @@ import type {
   SocialCardPrefill,
   SocialDraft,
   SocialDraftRevision,
+  SocialPrefillMoment,
   SocialPublication,
   SocialSettings,
   SocialSettingsBundle,
@@ -40113,6 +40114,84 @@ export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListSocialPrefillMomentsUrl = () => {
+
+
+
+
+  return `/api/social-prefill/moments`
+}
+
+/**
+ * Each is the card the engine drafted for that performance (whatever its queue status), so a card made here carries the same figures and match. Senior only; the last 120 days, at most 60.
+ * @summary Recent centuries and five-wicket hauls the achievements engine found, for Create a Card's prefill (newest first). Admin + socialStudio entitlement.
+ */
+export const listSocialPrefillMoments = async ( options?: RequestInit): Promise<SocialPrefillMoment[]> => {
+
+  return customFetch<SocialPrefillMoment[]>(getListSocialPrefillMomentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSocialPrefillMomentsQueryKey = () => {
+    return [
+    `/api/social-prefill/moments`
+    ] as const;
+    }
+
+
+export const getListSocialPrefillMomentsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialPrefillMoments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialPrefillMoments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSocialPrefillMomentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialPrefillMoments>>> = ({ signal }) => listSocialPrefillMoments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSocialPrefillMoments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSocialPrefillMomentsQueryResult = NonNullable<Awaited<ReturnType<typeof listSocialPrefillMoments>>>
+export type ListSocialPrefillMomentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recent centuries and five-wicket hauls the achievements engine found, for Create a Card's prefill (newest first). Admin + socialStudio entitlement.
+ */
+
+export function useListSocialPrefillMoments<TData = Awaited<ReturnType<typeof listSocialPrefillMoments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialPrefillMoments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSocialPrefillMomentsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

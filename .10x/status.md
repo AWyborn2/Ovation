@@ -26,6 +26,8 @@
 - iPhone/iPad Save to Photos device test (open since 23 Oct).
 - Decide #290 (lift the data-licensing hold; draft since 5 Oct) and #265 (Halls Head pre-cut-over fixes; draft since 1 Oct, likely stale).
 
+**Approved (29 Oct 2026), next the architect:** studio-create-consolidation. Option A gives one Create flow for every card and carousel set, senior and junior. The editor is unchanged. It ships behind a per-club "New Studio (preview)" switch and is reviewed on dev, then a test tenant, then Halls Head (decisions/product-manager/studio-create-consolidation.md).
+
 **Not started (follow-ups):** Figma file for the century-card spec (R2-E); browser check of the junior photo library admin page; review of the crosswalk seed in `central-projector.sql` (21 Oct note).
 
 **Earlier features:** selection-side-size, selection-hub-redesign (#407, #410), match-day-carousel-content (P0–P9), email-distribution-lists, studio-editor-multiselect (#416), social-template-library release 1 (#411, #511), kiosk redesign, junior-card-photos and the junior photo library are on `main` (their migrations 0045–0069 are present). Not re-checked slice by slice on 28 Oct: selection-hub-decoupling PR1–PR3, social-photo-tag-selection U2–U3 and admin-menu-consolidation PR 2 (0047 is on `main`).
