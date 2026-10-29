@@ -9,6 +9,8 @@
  * dependencies.
  */
 
+import { SPONSOR_TILES_PER_PAGE } from "./tile-grid";
+
 /** Card sizes in pixels, matching the web renderer's `SIZES`. */
 export const TEMPLATE_SIZES = {
   square: { w: 1080, h: 1080 },
@@ -101,6 +103,14 @@ export type RowsSpec = {
    * grid of tiles reads (Team of the Week).
    */
   flow?: "down" | "across";
+  /**
+   * Format v2, the sponsors list only: `tiles` draws the rows as logo tiles
+   * that fill the layer's box (`tile-grid.ts`): `major` rows larger, in their
+   * own lines above, every line centred. `rowHeight` is then the tallest a
+   * standard tile may be, `gap` the space between tiles; `columns`, `flow`
+   * and `columnGap` don't apply. It holds `SPONSOR_TILES_PER_PAGE` rows.
+   */
+  layout?: "tiles";
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
   variants?: Record<string, Partial<Record<string, TemplateTextStyle>>>;
   /**
@@ -228,6 +238,7 @@ export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): numb
   const rows = layer.rows;
   const box = layer.geometry[size];
   if (!rows || !box || !layerOnSize(layer, size) || rows.rowHeight <= 0) return 0;
+  if (rows.layout === "tiles") return SPONSOR_TILES_PER_PAGE;
   const dims = TEMPLATE_SIZES[size];
   const boxPx = (box.h / 100) * dims.h;
   const rowPx = (rows.rowHeight / 100) * dims.w;

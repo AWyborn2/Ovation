@@ -81,7 +81,7 @@ Kinds: ${list(LAYER_KINDS_V2)}.
 - vector: svg holds SVG markup (at most ${MAX_SVG_BYTES / 1024} KB) using only ${list(SVG_ELEMENTS)}. Presentation attributes only: no style, class, href, scripts, event attributes, text, entities or url() to anything but #ids in the same SVG. fill and stroke may be colour tokens.
 - group: holds layers in children. With stack { direction ${list(STACK_DIRECTIONS)}, gap (percent of the artboard width, ${range(r.stackGap)}), align ${list(STACK_ALIGNS)}, justify ${list(STACK_JUSTIFIES)} } the children flow inside the group's box: only their w and h count, and a hidden, condition-false or empty child takes no space, so a block closes up when data is missing. Without stack each child sits at its own box. A layer only draws on the sizes its groups are on. Groups nest at most ${MAX_STACK_DEPTH} deep (a group on the page is depth 1).
 
-showWhen: { field } draws the layer only when that field of the page has a value; { photo: true | false } only with or without the card's photo (photo: false is the no-photo artwork); { sponsors: true | false }; { junior: true | false }. Every condition given must hold.
+showWhen: { field } draws the layer only when that field of the page has a value; { noField } only when it has none; { photo: true | false } only with or without the card's photo (photo: false is the no-photo artwork); { sponsors: true | false }; { junior: true | false }. Every condition given must hold.
 motion: { in: { preset ${list(MOTION_IN_PRESETS)}, delayMs ${range(r.motionDelayMs)}, durationMs ${range(r.motionDurationMs)}, easing ${list(MOTION_EASINGS)} }, loop: { preset ${list(MOTION_LOOP_PRESETS)}, periodMs ${range(r.loopPeriodMs)}, delayMs } }. pulse is the LIVE dot's beat; shine sweeps light across foil.
 
 ## Style

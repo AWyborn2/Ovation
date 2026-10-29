@@ -1133,3 +1133,53 @@ describe("automatic Match Day photos (ADR-010 P4)", () => {
     ]);
   });
 });
+
+describe("sponsors over more than one slide (Oct 2026)", () => {
+  const one = [fixture(1, { grade: "A Grade" })];
+  const selected = () =>
+    createTeamSlides(
+      one,
+      [],
+      Object.fromEntries(
+        one.map((f) => [
+          f.id,
+          slideContentFor("teamList", f, {
+            kind: "teamList",
+            grade: "A Grade",
+            gradeRound: "",
+            competitionLine: "",
+            venueDateTime: "",
+            players: [],
+          }),
+        ]),
+      ),
+    );
+  const withSponsors = (n: number) =>
+    ({
+      ...bundle,
+      activeSponsors: Array.from({ length: n }, (_, i) => ({
+        name: `Sponsor ${i + 1}`,
+        logoUrl: `/sponsor-${i + 1}.png`,
+        cardKinds: ["matchDay"],
+      })),
+    }) as unknown as SocialSettingsBundle;
+  const sponsorSlides = (n: number) =>
+    buildWeekendSlides(selected(), [], withSponsors(n), "Teams", "2026-10-09", "2026-10-11").filter(
+      (s) => s.id.startsWith("sponsors"),
+    );
+  const count = (s: { input: unknown }) =>
+    (s.input as { carouselPage: { sponsors: unknown[] } }).carouselPage.sponsors.length;
+
+  it("keeps twelve sponsors on one closing slide", () => {
+    const slides = sponsorSlides(12);
+    expect(slides.map((s) => [s.id, s.label, count(s)])).toEqual([["sponsors", "Sponsors", 12]]);
+  });
+
+  it("shares twenty sponsors evenly over two closing slides", () => {
+    const slides = sponsorSlides(20);
+    expect(slides.map((s) => [s.id, s.label, count(s)])).toEqual([
+      ["sponsors", "Sponsors (1 of 2)", 10],
+      ["sponsors-2", "Sponsors (2 of 2)", 10],
+    ]);
+  });
+});

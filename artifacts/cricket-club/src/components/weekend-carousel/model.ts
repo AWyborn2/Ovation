@@ -16,6 +16,7 @@ import {
   dayHeading,
   matchDayDayContent,
   matchDaySponsorsContent,
+  splitSponsorsContent,
   matchDayTitleContent,
   resolveVisibleFields,
   resultDayContent,
@@ -472,24 +473,31 @@ export function buildWeekendSlides(
       }) as unknown as ShareCardInput,
     };
   };
-  const bookend = (page: "title" | "sponsors"): WeekendSlide =>
+  // The sponsors page, on as many slides as its sponsors need (12 a slide).
+  const sponsorsPages = splitSponsorsContent(
+    matchDaySponsorsContent({
+      ...bookendOpts,
+      sponsors: activeSponsors.map((s) => ({
+        name: s.name,
+        logoUrl: s.logoUrl,
+        tier: s.tier,
+        teamSponsor: isTeamSponsor(s),
+      })),
+      nextHomeGame: sponsorsPage?.nextHomeGame ?? null,
+      socials: sponsorsPage?.socials ?? [],
+    }),
+    visible,
+  );
+  const bookend = (page: "title" | "sponsors", index = 0): WeekendSlide =>
     contentSlide({
-      id: page,
-      label: page === "title" ? "Title page" : "Sponsors",
-      content:
+      id: page === "sponsors" && index > 0 ? `sponsors-${index + 1}` : page,
+      label:
         page === "title"
-          ? matchDayTitleContent(bookendOpts)
-          : matchDaySponsorsContent({
-              ...bookendOpts,
-              sponsors: activeSponsors.map((s) => ({
-                name: s.name,
-                logoUrl: s.logoUrl,
-                tier: s.tier,
-                teamSponsor: isTeamSponsor(s),
-              })),
-              nextHomeGame: sponsorsPage?.nextHomeGame ?? null,
-              socials: sponsorsPage?.socials ?? [],
-            }),
+          ? "Title page"
+          : sponsorsPages.length > 1
+            ? `Sponsors (${index + 1} of ${sponsorsPages.length})`
+            : "Sponsors",
+      content: page === "title" ? matchDayTitleContent(bookendOpts) : sponsorsPages[index]!,
       photoId: page === "title" ? (coverPhoto?.id ?? null) : background ? background.id : null,
       data: buildPackData({
         ...base,
@@ -510,7 +518,7 @@ export function buildWeekendSlides(
       warnings:
         page === "title" && invalidCover
           ? [COVER_PHOTO_UNAVAILABLE]
-          : page === "sponsors"
+          : page === "sponsors" && index === 0
             ? sponsorsPageWarnings(
                 pageSponsors.length,
                 show("sponsors.teamSponsors"),
@@ -617,7 +625,7 @@ export function buildWeekendSlides(
     dayOf: (t) => t.content.day ?? localDay(new Date(t.fixture.startAt), timeZone),
     consolidateByDay: grouping?.consolidateByDay ?? false,
     capacity: grouping?.capacity ?? 1,
-    reserved: 2,
+    reserved: 1 + sponsorsPages.length,
   });
   const titleSlide = bookend("title");
   return [
@@ -625,7 +633,7 @@ export function buildWeekendSlides(
     ...plan.groups.map((g) =>
       g.role === "day" && g.day ? daySlide(g.day, g.items) : teamSlide(g.items[0]),
     ),
-    bookend("sponsors"),
+    ...sponsorsPages.map((_, i) => bookend("sponsors", i)),
   ];
 }
 

@@ -65,6 +65,7 @@ export function layerShows(layer: TemplateLayerV2, ctx: LayoutContext): boolean 
   const when = layer.showWhen;
   if (!when || typeof when !== "object") return true;
   if (typeof when.field === "string" && !ctx.has(when.field)) return false;
+  if (typeof when.noField === "string" && ctx.has(when.noField)) return false;
   if (typeof when.photo === "boolean" && when.photo !== ctx.hasPhoto) return false;
   if (typeof when.sponsors === "boolean" && when.sponsors !== ctx.hasSponsors) return false;
   if (typeof when.junior === "boolean" && when.junior !== ctx.junior) return false;

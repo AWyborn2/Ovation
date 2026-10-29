@@ -23,6 +23,7 @@ import {
   photoLayerKey,
   primaryPage,
   rowsColumns,
+  tileGrid,
   type DerivedPalette,
   type GroupLayerV2,
   type LayerPhotos,
@@ -448,7 +449,7 @@ function textCss(
 }
 
 /** A `rows` layer: one positioned row per data row, cells placed across it. */
-function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
+function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): string | null {
   const spec = layer.rows;
   if (!spec) return null;
   const own = (o: object | undefined) =>
@@ -473,6 +474,22 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const perColumn = Math.ceil(rows.length / columns);
   const colGap = columns > 1 ? Math.min(50, Math.max(0, num(spec.columnGap, 4))) : 0;
   const colW = (100 - colGap * (columns - 1)) / columns;
+  // Format v2's sponsor tiles: each row a logo tile, sized to fill the box
+  // (`tile-grid.ts`), the `major` rows larger and first.
+  const frame = ctx.framePx;
+  const art = SIZES[size].w;
+  const tiles =
+    ctx.formatVersion === 2 && spec.layout === "tiles" && frame && frame.w > 0 && frame.h > 0
+      ? tileGrid({
+          count: rows.length,
+          majors: variants.filter((v) => v === "major").length,
+          width: frame.w,
+          height: frame.h,
+          gap: (gap / 100) * art,
+          maxTileHeight: (rowHeight / 100) * art,
+        })
+      : null;
+  const pctOf = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
@@ -530,6 +547,9 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       const words = ctx.formatVersion === 2 ? ` ${FIT_WORDS_ATTR}="1"` : "";
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}"${words} style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
+    const tile = tiles?.[i];
+    if (tile && frame)
+      return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:${pctOf(tile.x, frame.w)};top:${pctOf(tile.y, frame.h)};width:${pctOf(tile.w, frame.w)};height:${pctOf(tile.h, frame.h)}">${cells.join("")}</div>`;
     // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
     const acrossFirst = spec.flow === "across";
     const col = acrossFirst ? i % columns : Math.floor(i / perColumn);
@@ -664,7 +684,7 @@ function layerInner(
     case "photo":
       return renderPhoto(layer, size, ctx);
     case "rows":
-      return renderRows(layer, ctx);
+      return renderRows(layer, ctx, size);
     case "shape": {
       // A v2 shape paints its fill (a colour or gradient) in place of v1's background,
       // and nothing when it sets none (a frame line is a border on no fill); a v1
@@ -835,9 +855,11 @@ export function renderFreeLayers(
       inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
     } else {
       const layerCtx = styled ? v2Ctx : drawCtx;
-      // A photo frame's own size, so a focus box crops to its shape.
+      // A photo frame's and a tiled list's own size, so a focus box crops to
+      // its shape and tiles fill the box.
       const photoCtx =
-        layer.kind === "photo" && (ctx.photoFocus || ctx.layerPhotos)
+        (layer.kind === "photo" && (ctx.photoFocus || ctx.layerPhotos)) ||
+        (layer.kind === "rows" && (layer as unknown as FreeLayer).rows?.layout === "tiles")
           ? {
               ...layerCtx,
               framePx: {

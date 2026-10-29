@@ -691,3 +691,43 @@ describe("page colours", () => {
     }
   });
 });
+
+describe("sponsor tiles, noField and logo cells (Oct 2026)", () => {
+  const tiles = (rows: Record<string, unknown>, over: Record<string, unknown> = {}) =>
+    layer("t", {
+      kind: "rows",
+      content: undefined,
+      rows: {
+        repeat: "sponsors",
+        rowHeight: 14,
+        layout: "tiles",
+        cells: [{ field: "logo", x: 0, w: 100, show: "logo" }],
+        ...rows,
+      },
+      ...over,
+    });
+
+  it("accepts a tiled sponsors grid shown only without a next home game", () => {
+    expect(
+      templateDocumentErrors(
+        doc({ sponsors: [tiles({}, { showWhen: { noField: "nextHomeMatch" } })] }),
+        "matchDay",
+      ),
+    ).toEqual([]);
+  });
+
+  it("refuses tiles for any other list, an unknown layout and a logo cell on a text field", () => {
+    const errors = (rows: Record<string, unknown>) =>
+      templateDocumentErrors(doc({ sponsors: [tiles(rows)] }), "matchDay").join(" ");
+    expect(errors({ layout: "grid" })).toMatch(/layout must be tiles/);
+    expect(errors({ cells: [{ field: "name", x: 0, w: 100, show: "logo" }] })).toMatch(
+      /show logo is for a crest or logo field/,
+    );
+    expect(
+      templateDocumentErrors(
+        doc({ sponsors: [layer("x", { showWhen: { noField: "nope" } })] }),
+        "matchDay",
+      ).join(" "),
+    ).toMatch(/showWhen.noField isn't a field/);
+  });
+});

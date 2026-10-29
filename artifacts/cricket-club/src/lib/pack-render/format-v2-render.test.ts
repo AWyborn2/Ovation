@@ -480,3 +480,62 @@ describe("photo layer sources", () => {
     expect(html).not.toContain("crowd.jpg");
   });
 });
+
+describe("sponsor tiles (rows layout tiles, Oct 2026)", () => {
+  const tiles = {
+    id: "tiles",
+    kind: "rows",
+    geometry: { square: { x: 10, y: 30, w: 80, h: 40 } },
+    rows: {
+      repeat: "sponsors",
+      layout: "tiles",
+      rowHeight: 14,
+      gap: 1.6,
+      cells: [
+        { field: "logo", x: 0, w: 100, show: "backdrop", style: { background: "#111111" } },
+        { field: "logo", x: 8, w: 84, y: 10, h: 80, show: "logo" },
+      ],
+    },
+  } as unknown as TemplateLayerV2;
+  const draw = (n: number, majors: number) =>
+    renderFreeLayers(
+      { formatVersion: 2, pages: { sponsors: { layers: [tiles] } } } as CardAdjustments,
+      "square",
+      {},
+      {},
+      {
+        kind: "matchDay",
+        page: "sponsors",
+        rows: {
+          sponsors: Array.from({ length: n }, (_, i) => ({ name: `S${i}`, logo: `/l/${i}.png` })),
+        },
+        rowVariants: {
+          sponsors: Array.from({ length: n }, (_, i) => (i < majors ? "major" : undefined)),
+        },
+      },
+    );
+  const boxes = (html: string) =>
+    [
+      ...html.matchAll(
+        /data-row-index="\d+"[^>]*style="position:absolute;left:([\d.]+)%;top:([\d.]+)%;width:([\d.]+)%;height:([\d.]+)%/g,
+      ),
+    ].map((m) => m.slice(1).map(Number));
+
+  it("draws each sponsor as a whole-logo tile placed in the box, majors larger", () => {
+    const html = draw(12, 3);
+    const placed = boxes(html);
+    expect(placed).toHaveLength(12);
+    for (const [x, y, w, h] of placed) {
+      expect(x! + w!).toBeLessThanOrEqual(100.01);
+      expect(y! + h!).toBeLessThanOrEqual(100.01);
+    }
+    expect(placed[0]![3]).toBeGreaterThan(placed[11]![3]!);
+    expect(html).toContain("object-fit:contain");
+  });
+
+  it("one sponsor is centred, not stretched across the box", () => {
+    const [[x, , w]] = boxes(draw(1, 0)) as number[][];
+    expect(x! + w! / 2).toBeCloseTo(50, 1);
+    expect(w).toBeLessThan(60);
+  });
+});
