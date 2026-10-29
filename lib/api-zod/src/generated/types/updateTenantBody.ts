@@ -8,7 +8,7 @@
 import type { UpdateTenantBodyPlan } from './updateTenantBodyPlan';
 
 /**
- * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch, junior sync settings and/or New Studio preview switch. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -23,4 +23,6 @@ export interface UpdateTenantBody {
      * @nullable
      */
   playhqJuniorOrgId?: string | null;
+  /** The club's "New Studio (preview)" switch. Off: today's Social Studio, unchanged. On: the new menu, Create flow and editor panels. */
+  newStudioEnabled?: boolean;
 }

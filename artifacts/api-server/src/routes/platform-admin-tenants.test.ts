@@ -201,6 +201,39 @@ describe("platform-admin tenant management", () => {
     }
   });
 
+  it("sets the New Studio preview switch, and /tenant-plan reports it to the club", async () => {
+    const plan = () =>
+      request(app)
+        .get("/api/tenant-plan")
+        .set("x-tenant-id", String(throwawayTenantId))
+        .expect(200);
+    expect((await plan()).body.newStudio).toBe(false);
+
+    const on = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ newStudioEnabled: true })
+      .expect(200);
+    expect(on.body.newStudioEnabled).toBe(true);
+    // The config cache is dropped on write, so the club sees it at once.
+    expect((await plan()).body.newStudio).toBe(true);
+
+    await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ newStudioEnabled: false })
+      .expect(200);
+    expect((await plan()).body.newStudio).toBe(false);
+  });
+
+  it("refuses the New Studio switch to a club-admin session", async () => {
+    await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", clubAdminCookie)
+      .send({ newStudioEnabled: true })
+      .expect(401);
+  });
+
   it("refuses the junior sync fields to a club-admin session", async () => {
     await request(app)
       .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)

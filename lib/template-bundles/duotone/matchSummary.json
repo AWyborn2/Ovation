@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchSummary",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -307,7 +307,7 @@
             "kind": "text",
             "content": "{{resultWord}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 6.51,
               "fontWeight": 900,
@@ -352,7 +352,7 @@
             "kind": "text",
             "content": "{{resultWord}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 6.5,
               "fontWeight": 900,
@@ -391,7 +391,7 @@
             "kind": "text",
             "content": "{{resultWord}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 3.03,
               "fontWeight": 900,
@@ -571,7 +571,7 @@
             "kind": "text",
             "content": "{{matchTitle}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.3,
               "fontWeight": 800,
@@ -600,7 +600,7 @@
             "kind": "text",
             "content": "{{matchTitle}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.44,
               "fontWeight": 800,
@@ -624,7 +624,7 @@
             "kind": "text",
             "content": "{{matchTitle}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.62,
               "fontWeight": 800,
@@ -648,7 +648,7 @@
             "kind": "text",
             "content": "{{matchTitle}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 1.57,
               "fontWeight": 800,
@@ -2310,7 +2310,7 @@
             "kind": "text",
             "content": "{{dayHeading}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 6.72,
               "fontWeight": 900,
@@ -2361,7 +2361,7 @@
             "kind": "text",
             "content": "{{dayHeading}}",
             "style": {
-              "color": "var(--accent-ink)",
+              "color": "#FFFFFF",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.45,
               "fontWeight": 900,

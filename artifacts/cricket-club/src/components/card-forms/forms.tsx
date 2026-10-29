@@ -6,6 +6,7 @@
  * single `CardFormState`, so prefill and hand editing share one path (R14).
  */
 
+import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,12 +26,15 @@ export function CardFormRouter({
   state,
   setState,
   onPlayer,
+  photoExtra,
 }: {
   kind: CardKind;
   state: CardFormState;
   setState: SetState;
   /** The player linked with "Link a player", so the card carries their sponsors. */
   onPlayer?: (p: SelectedPlayer | null) => void;
+  /** Shown under the Photo field (the card's player's tagged photos). */
+  photoExtra?: ReactNode;
 }) {
   if (kind === "matchSummary") {
     return <MatchSummaryForm state={state} setState={setState} />;
@@ -42,6 +46,7 @@ export function CardFormRouter({
       state={state}
       setState={setState}
       onPlayer={onPlayer}
+      photoExtra={photoExtra}
     />
   );
 }

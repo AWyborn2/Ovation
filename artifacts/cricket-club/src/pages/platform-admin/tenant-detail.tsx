@@ -185,8 +185,52 @@ export default function TenantDetail() {
           enabled={tenant.juniorSyncEnabled ?? false}
           juniorOrgId={tenant.playhqJuniorOrgId ?? null}
         />
+        <NewStudioCard tenantId={id} enabled={tenant.newStudioEnabled ?? false} />
       </div>
     </div>
+  );
+}
+
+/**
+ * The "New Studio (preview)" switch (studio-create-consolidation). Off: the club sees
+ * today's Social Studio unchanged. On: the new menu, Create flow and editor panels.
+ * Turning it off again is the way back; no data changes either way.
+ */
+function NewStudioCard({ tenantId, enabled }: { tenantId: number; enabled: boolean }) {
+  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const update = useUpdateAdminTenant({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
+        qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
+      },
+      onError: () => setError("Couldn't change the New Studio setting."),
+    },
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>New Studio (preview)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          When on, this club&rsquo;s Social Studio shows the new menu and Create flow. When off, it
+          shows today&rsquo;s Studio. Drafts, templates and carousel sets are the same either way.
+        </p>
+        <div className="flex items-center gap-3">
+          <Switch
+            id="new-studio"
+            checked={enabled}
+            disabled={update.isPending}
+            onCheckedChange={(v) => update.mutate({ id: tenantId, data: { newStudioEnabled: v } })}
+          />
+          <Label htmlFor="new-studio">New Studio {enabled ? "on" : "off"}</Label>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
