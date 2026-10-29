@@ -80,6 +80,8 @@ function stubLibrary(photos: unknown[] = LIBRARY) {
       else if (url.includes("/club-photos/ingest"))
         payload = { results: [{ objectPath: "/objects/uploads/a", ok: true }] };
       else if (url.includes("/club-photos") && method === "GET") payload = photos;
+      else if (url.includes("/players") && method === "GET")
+        payload = { players: [{ id: 41, givenName: "Wrong", surname: "Player" }], total: 1 };
       else if (url.includes("/grades") && method === "GET")
         payload = [{ grade: "B Grade" }, { grade: "A Grade" }, { grade: "Under 15" }];
       return new Response(JSON.stringify(payload), {
@@ -366,6 +368,29 @@ describe("selection inside a folder", () => {
       const tag = requests.find((r) => r.method === "POST" && r.url.includes("/club-photos/tags"));
       expect(tag?.body).toEqual({ photoIds: [1], season: 2025 });
     });
+  });
+
+  it("shows the players tagged on the selected photos, and × removes one, keeping the selection", async () => {
+    const requests = stubLibrary([
+      { ...photo(1, "A Grade", ["batting"]), playerIds: [41, 90002] },
+      photo(2, "A Grade", ["batting"]),
+    ]);
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?grade=A%20Grade&type=batting");
+    fireEvent.click(await screen.findByRole("button", { name: "Photo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Photo 2" }));
+    const tagged = await screen.findByRole("list", { name: "Tagged players" });
+    // A tag with no name (a stale or fill-in tag) still shows, by number.
+    await within(tagged).findByText("Wrong Player");
+    expect(within(tagged).getByText("Player #90002")).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Wrong Player from the selected photos" }),
+    );
+    await waitFor(() => {
+      const tag = requests.find((r) => r.method === "POST" && r.url.includes("/club-photos/tags"));
+      expect(tag?.body).toEqual({ photoIds: [1, 2], removePlayerIds: [41] });
+    });
+    expect(screen.getByText("2 selected")).toBeTruthy();
   });
 
   it("tags a match format on the selected photos, and can clear it", async () => {

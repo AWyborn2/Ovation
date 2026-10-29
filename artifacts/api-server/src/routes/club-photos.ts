@@ -435,7 +435,27 @@ router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promis
     return;
   }
   const tagging = areas.filter((a) => a.box).map((a) => a.playerId);
-  const rejected = await nonSeniorPlayerIds(tenantId, tagging);
+  // Only players newly tagged by an area are checked: a player already on the
+  // photo keeps their tag (and can be moved or cleared) even if they no longer
+  // pass the senior check, so a stale tag never blocks saving the focus.
+  const alreadyTagged = new Set(
+    tagging.length === 0
+      ? []
+      : (
+          await db
+            .select({ id: clubPhotoPlayersTable.playerId })
+            .from(clubPhotoPlayersTable)
+            .where(
+              and(
+                eq(clubPhotoPlayersTable.tenantId, tenantId),
+                eq(clubPhotoPlayersTable.photoId, photoId),
+                inArray(clubPhotoPlayersTable.playerId, tagging),
+              ),
+            )
+        ).map((r) => r.id),
+  );
+  const newlyTagged = tagging.filter((id) => !alreadyTagged.has(id));
+  const rejected = await nonSeniorPlayerIds(tenantId, newlyTagged);
   if (rejected.length > 0) {
     res.status(422).json({ error: "Only senior players can be tagged.", playerIds: rejected });
     return;
@@ -493,7 +513,7 @@ router.put("/club-photos/:photoId/focus", requireAdmin, async (req, res): Promis
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.id, photoId)));
   // A newly tagged player can fill drafts that had no photo.
-  if (tagging.length > 0) await fillMissingDraftPhotos(tenantId);
+  if (newlyTagged.length > 0) await fillMissingDraftPhotos(tenantId);
   const [photo] = await presentPhotos(tenantId, rows);
   res.json(photo);
 });
