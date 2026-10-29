@@ -18,7 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryError } from "@/components/data-states";
 import { useWeekendCarousel } from "@/components/weekend-carousel";
-import { RangeAndFixtures } from "@/components/weekend-carousel/weekend-carousel";
+import {
+  ContentOverridePanel,
+  RangeAndFixtures,
+} from "@/components/weekend-carousel/weekend-carousel";
+import { SponsorsPerSlideControl } from "@/components/social-studio/sponsors-per-slide";
 import { CarouselTemplatePicker } from "@/components/weekend-carousel/template-choice";
 import type { CarouselAudience } from "@/components/weekend-carousel/model";
 import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
@@ -161,6 +165,33 @@ export function CarouselFlow({
         ))}
       </div>
       <CarouselTemplatePicker s={s} />
+      {setType === "matchDay" && <ContentOverridePanel s={s} />}
+      {s.pageSponsorCount > 0 && (
+        <SponsorsPerSlideControl
+          id="create-sponsors-per-slide"
+          value={s.sponsorsPerSlide}
+          sponsorCount={s.pageSponsorCount}
+          disabled={busy}
+          onChange={(n) => s.setSponsorsPerSlide(n)}
+          hint={
+            s.sponsorsPerSlideChanged ? (
+              <>
+                For this carousel only; your club&rsquo;s default is {s.clubSponsorsPerSlide}.{" "}
+                <button
+                  type="button"
+                  className="underline"
+                  disabled={busy}
+                  onClick={() => s.setSponsorsPerSlide(null)}
+                >
+                  Use the default
+                </button>
+              </>
+            ) : (
+              <>Your club&rsquo;s default. Changing it here changes this carousel only.</>
+            )
+          }
+        />
+      )}
       <p className="text-sm text-muted-foreground">
         {s.selected.length} {s.selected.length === 1 ? "slide" : "slides"} for the games picked,
         plus a cover and your sponsors. The look applies to every slide.

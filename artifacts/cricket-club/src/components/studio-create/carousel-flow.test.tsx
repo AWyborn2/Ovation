@@ -45,6 +45,7 @@ vi.mock("@/components/weekend-carousel", () => ({
 }));
 vi.mock("@/components/weekend-carousel/weekend-carousel", () => ({
   RangeAndFixtures: () => <p>games in range</p>,
+  ContentOverridePanel: () => <p>what these cards show</p>,
 }));
 vi.mock("@/components/weekend-carousel/template-choice", () => ({
   CarouselTemplatePicker: () => <p>looks</p>,
