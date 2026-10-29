@@ -152,6 +152,7 @@ import {
   type EditorSlide,
   type EditorTemplateDoc,
 } from "@/components/studio-editor/set-doc";
+import type { SetShareContext } from "@/components/studio-editor/export/share-panel";
 import { removeLinked, sharedLinks, syncLinks } from "@/components/studio-editor/links";
 import {
   cellAt,
@@ -521,6 +522,8 @@ export type EditorActionsContext = {
   dirty: boolean;
   /** Show `page` and select `layerId` on it, entering its group if it sits in one. */
   selectLayer: (page: string, layerId: string) => void;
+  /** A set draft's slides as they draw now (read only), for Share → Download. */
+  set?: SetShareContext;
 };
 
 export function TemplateEditorV2<T extends EditorTemplate>({
@@ -1054,7 +1057,22 @@ export function TemplateEditorV2<T extends EditorTemplate>({
         actions={
           <>
             {slidesMode?.actions}
-            {typeof actions === "function" ? actions({ dirty, selectLayer }) : actions}
+            {typeof actions === "function"
+              ? actions({
+                  dirty,
+                  selectLayer,
+                  ...(slidesMode
+                    ? {
+                        set: {
+                          slides: realSlides,
+                          current: slide?.key ?? null,
+                          size: format,
+                          documentFor: (x: EditorSlide) => pageRenderDocument(full, x.page),
+                        },
+                      }
+                    : {}),
+                })
+              : actions}
             {draftMode?.actions?.({
               document: (full.setDesign
                 ? storedSetDocument(full)

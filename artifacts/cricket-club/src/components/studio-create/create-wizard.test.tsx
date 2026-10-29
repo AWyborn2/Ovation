@@ -124,6 +124,8 @@ describe("Create wizard", () => {
     const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create");
 
     fireEvent.click(await screen.findByRole("button", { name: "Team List" }));
+    await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=2"));
+    fireEvent.click(screen.getByRole("button", { name: /One team/ }));
     await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=3"));
 
     // Each senior team, badged by where its names came from; the junior grade is left out.
@@ -165,6 +167,7 @@ describe("Create wizard", () => {
     const { url } = renderWithHistory(<CreateWizard />, "/admin/social/create");
     fireEvent.click(await screen.findByRole("button", { name: "Juniors" }));
     fireEvent.click(await screen.findByRole("button", { name: "Junior Team List" }));
+    fireEvent.click(await screen.findByRole("button", { name: /One team/ }));
     await waitFor(() =>
       expect(url()).toBe("/admin/social/create?team=junior&kind=teamList&step=3"),
     );

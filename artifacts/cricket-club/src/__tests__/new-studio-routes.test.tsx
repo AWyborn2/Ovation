@@ -26,6 +26,8 @@ const ENTITLEMENTS = {
 };
 const plan = (newStudio: boolean) => ({
   "/api/auth/me": ADMIN,
+  // Today's Create a card reads the settings bundle (sponsors, theme) when it mounts.
+  "/api/social-settings": { settings: {}, activeSponsors: [], captionTemplates: [] },
   "/api/tenant-plan": { plan: "club", entitlements: ENTITLEMENTS, newStudio },
 });
 
@@ -88,6 +90,14 @@ describe("New Studio switch", () => {
     renderWithHistory(<AdminSocialGroup />, "/admin/social/create");
     await screen.findByRole("heading", { name: "Social Media Studio" });
     expect(screen.queryByRole("heading", { name: "What are you making?" })).toBeNull();
+  });
+
+  it("opens the new Home when on", async () => {
+    installApiMock(plan(true));
+    renderWithHistory(<AdminSocialGroup />, "/admin/social");
+    expect(
+      await screen.findByRole("heading", { name: "Needs you" }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 
   it("does not redirect with the switch off", async () => {

@@ -179,6 +179,23 @@ All of this ships behind the same per-club switch.
 - **The old export-only carousel sets are not started new.** Existing ones still open and export from Your
   designs.
 
+### Build decisions taken while Ash was away (29 Oct 2026, for his return checklist)
+
+Each is the safer, reversible choice. Changing any of them is a small follow-up.
+
+1. **Send to review** in the editors opens the draft in the Queue (`?draft=<id>`) to approve or schedule there.
+   It never approves or posts by itself, and unsaved changes must be saved first.
+2. **Single card, sponsors:** no new per-card on/off flag. A card's sponsors are its design's sponsor layer,
+   shown or hidden in the editor like any layer. Posting still follows the club's sponsor setting.
+3. **Single card, "What these cards show":** stays the club's setting per card type (Settings → Cards). A
+   carousel gets its own Minimal / Standard / Full in Create's look step, as the Weekend Carousel has.
+4. **Sponsors per slide** (#611) is chosen in Create's look step for a carousel, for that carousel only. It
+   isn't changed inside the set editor after the set is built, because that would rebuild the sponsor slides.
+   It sits in the format step rather than the editor's Set panel.
+5. **Share / Download for a single card** is the editor's existing Download menu (PNG, JPG, PDF and clips). The
+   new Share panel (All / This page / Custom, numbered zip) is for carousel sets.
+6. **Old export-only carousel sets** (Ash, 29 Oct): not started from Create; they still open from Your designs.
+
 ### Not in this release
 
 - Option B's "This week" board.

@@ -1,0 +1,792 @@
+<title>New Studio Test</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap"
+/>
+<style>
+  /* Layout: a scorebook — sticky tally bar, one column of numbered innings (sections), each test a ruled row with a tick box. */
+  :root {
+    --bg: #f6f7f3;
+    --surface: #ffffff;
+    --fg: #1d2420;
+    --muted: #5c6862;
+    --rule: #dde2dc;
+    --accent: #1f6b4a;
+    --accent-soft: #e3efe8;
+    --done: #66716b;
+    --warn: #9a5b00;
+    --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    --body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614;
+      --surface: #1a201d;
+      --fg: #e6ebe7;
+      --muted: #9aa69f;
+      --rule: #2c3530;
+      --accent: #5cc493;
+      --accent-soft: #1f3329;
+      --done: #939e98;
+      --warn: #e3a54a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121614;
+    --surface: #1a201d;
+    --fg: #e6ebe7;
+    --muted: #9aa69f;
+    --rule: #2c3530;
+    --accent: #5cc493;
+    --accent-soft: #1f3329;
+    --done: #939e98;
+    --warn: #e3a54a;
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.5 var(--body);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 10;
+    background: var(--surface);
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  header.top {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  header.top .wrap {
+    padding-block: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: center;
+  }
+  .brand {
+    font: 700 22px/1 var(--display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0;
+    flex: 1 1 auto;
+  }
+  .brand small {
+    display: block;
+    font: 600 12px/1.3 var(--body);
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .tally {
+    font: 500 14px var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tally b {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .bar {
+    flex-basis: 100%;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width 0.25s;
+  }
+  .tools {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  button.chip {
+    font: 600 13px var(--body);
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--fg);
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  button.chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button:focus-visible,
+  input:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .intro {
+    padding-block: 20px 4px;
+    color: var(--muted);
+  }
+  .intro p {
+    margin: 0 0 8px;
+    max-width: 65ch;
+  }
+  .callout {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 10px 14px;
+    border-radius: 4px;
+    color: var(--fg);
+  }
+
+  section.area {
+    padding-block: 20px 4px;
+  }
+  section.area > h2 {
+    font: 700 26px/1.1 var(--display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    text-wrap: balance;
+  }
+  section.area > h2 .count {
+    font: 500 13px var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  section.area > .where {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  details.test {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  details.test summary {
+    list-style: none;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  details.test summary::-webkit-details-marker {
+    display: none;
+  }
+  .tick {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent);
+    margin: 0;
+    cursor: pointer;
+  }
+  .tname {
+    min-width: 0;
+    font-weight: 600;
+  }
+  .tname .ref {
+    font: 500 12px var(--mono);
+    color: var(--muted);
+    margin-left: 6px;
+  }
+  .chev {
+    color: var(--muted);
+    transition: transform 0.2s;
+    font-size: 12px;
+  }
+  details[open] .chev {
+    transform: rotate(90deg);
+  }
+  details.test.done .tname {
+    color: var(--done);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .body {
+    padding: 0 14px 14px 48px;
+    min-width: 0;
+  }
+  .body ol {
+    margin: 0;
+    padding-left: 20px;
+    display: grid;
+    gap: 6px;
+  }
+  .body li.expect {
+    list-style: none;
+    margin-left: -20px;
+    padding-left: 20px;
+    position: relative;
+    color: var(--accent);
+  }
+  .body li.expect::before {
+    content: "✓";
+    position: absolute;
+    left: 2px;
+    font-weight: 700;
+  }
+  .body code {
+    font: 500 13px var(--mono);
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 3px;
+    overflow-wrap: anywhere;
+  }
+  .note {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    font: 14px var(--body);
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 8px;
+    resize: vertical;
+    min-height: 40px;
+  }
+  .note::placeholder {
+    color: var(--muted);
+  }
+  body.hide-done details.test.done {
+    display: none;
+  }
+
+  footer {
+    padding-block: 28px 40px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer h2 {
+    font: 700 20px var(--display);
+    text-transform: uppercase;
+    color: var(--fg);
+    margin: 0 0 6px;
+  }
+  footer p {
+    margin: 0 0 8px;
+    max-width: 65ch;
+  }
+  @media (max-width: 480px) {
+    .body {
+      padding-left: 14px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+  [hidden] {
+    display: none !important;
+  }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <h1 class="brand">
+      New Studio (preview)<small>studio-create-consolidation · dev review · Thu 29 Oct 2026</small>
+    </h1>
+    <span class="tally" id="tally"><b>0</b> / 0 done</span>
+    <div class="tools">
+      <button class="chip" id="hideDone" aria-pressed="false" type="button">Hide done</button>
+      <button class="chip" id="expandAll" type="button">Expand all</button>
+      <button class="chip" id="copyNotes" type="button">Copy my notes</button>
+    </div>
+    <textarea
+      id="notesOut"
+      class="note"
+      rows="8"
+      readonly
+      hidden
+      aria-label="Your notes as text"
+    ></textarea>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <p>
+      Test on the dev app (Replit "OVATION APP") once the Replit agent confirms it has pulled main
+      with every studio-create slice (S1 #609 to S7). The New Studio switch is on for
+      <strong>Halls Head on dev only</strong>. Every club in Production has it off and sees
+      today&rsquo;s Studio.
+    </p>
+    <p class="callout">
+      Ticks and notes are saved in this browser only. They won&rsquo;t show on another device.
+    </p>
+  </div>
+  <div id="areas"></div>
+</main>
+
+<footer class="wrap">
+  <h2>Before republishing to production</h2>
+  <p>
+    Run migration <code>0076_new_studio_preview</code> in Replit&rsquo;s Production SQL runner first
+    (safe to re-run):
+    <code
+      >ALTER TABLE "tenants" ADD COLUMN IF NOT EXISTS "new_studio_enabled" boolean DEFAULT false NOT
+      NULL;</code
+    >
+    No other slice adds a migration. The switch stays off for every club until you turn it on in the
+    platform console.
+  </p>
+</footer>
+
+<script>
+  const AREAS = [
+    {
+      title: "The switch and the menu",
+      where: "Platform console → a club; Admin → Social Media Studio",
+      tests: [
+        {
+          id: "sw-console",
+          name: "Turn the preview on and off",
+          ref: "#609",
+          steps: [
+            "Platform console → Halls Head. Find the “New Studio (preview)” card.",
+            ["It is on for Halls Head on dev."],
+            "Turn it off, then open Admin → Social Media Studio in another tab and reload.",
+            ["Today’s Studio and menu: Home, Templates, Create a card, Carousel sets …"],
+            "Turn it back on and reload.",
+            ["The menu is Home, Create, Queue, Your designs, Templates, Photos, Settings."],
+          ],
+        },
+        {
+          id: "sw-redirects",
+          name: "Old addresses go to their new place",
+          ref: "#609 #613",
+          steps: [
+            "With the switch on, open /admin/social/library and /admin/social/junior-library.",
+            ["Both land on Photos (Senior photos, then Junior photos)."],
+            "Open /admin/social/juniors.",
+            ["It lands on Create with Juniors on."],
+            "Open /admin/social/sets.",
+            ["It lands on Your designs, filtered to carousel sets."],
+          ],
+        },
+        {
+          id: "sw-settings",
+          name: "Settings still reaches the moved pages",
+          ref: "#609",
+          steps: [
+            "Settings.",
+            ["Links to Posting plan, Cards, Email lists and Fixtures sit above today’s settings."],
+          ],
+        },
+        {
+          id: "sw-devtenant",
+          name: "The dev tenant switcher",
+          ref: "",
+          steps: [
+            "On the .replit.dev preview, open /dev-tenants.html and pick another club (switch off).",
+            ["That club sees today’s Studio. Switch back to Halls Head: the new Studio returns."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Create: single cards",
+      where: "Social Media Studio → Create",
+      tests: [
+        {
+          id: "cr-teamlist",
+          name: "One team’s Team List, straight into the editor",
+          ref: "#612",
+          steps: [
+            "Create → Team List → One team.",
+            [
+              "Each upcoming senior fixture is listed with a badge: Selection Hub, PlayHQ, Draft or Fill in by hand.",
+              "No junior grades are listed here.",
+            ],
+            "Pick a fixture, then a size and a look.",
+            ["The editor opens straight on the filled card (no form or preview page in between)."],
+          ],
+        },
+        {
+          id: "cr-other",
+          name: "Other kinds fill from your data",
+          ref: "#612",
+          steps: [
+            "Create → Milestone (or Century, Match Summary). Use the prefill panel to pick one, then a look.",
+            ["The editor opens on that card."],
+            "Create → any kind → Start blank.",
+            ["The editor opens on the kind’s sample to edit."],
+          ],
+        },
+        {
+          id: "cr-blank",
+          name: "Blank design",
+          ref: "#612",
+          steps: ["Create → Blank design → Story.", ["A white Story page opens in the editor."]],
+        },
+        {
+          id: "cr-url",
+          name: "Back and refresh keep your place",
+          ref: "#612",
+          steps: [
+            "Go two steps into Create, then press the browser’s Back, and refresh the page.",
+            ["You land on the step you expect, with your choices kept."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Create: juniors",
+      where: "Create → Juniors",
+      tests: [
+        {
+          id: "jr-teamlist",
+          name: "A junior team’s list",
+          ref: "#613",
+          steps: [
+            "Create → Juniors → Junior Team List → One team.",
+            ["Only junior fixtures are listed, each badged like the seniors."],
+            "Pick a team with a private child in it, then a look.",
+            [
+              "The editor opens with the junior names; the private child shows as “Private Player”.",
+              "There is no photo unless the club has a consented photo of a listed child.",
+            ],
+          ],
+        },
+        {
+          id: "jr-match",
+          name: "Junior match and milestone",
+          ref: "#613",
+          steps: [
+            "Create → Juniors → Junior Match Summary: pick a match → Use this match → a look.",
+            ["The editor opens on the junior match card."],
+            "Create → Juniors → Junior Milestone: pick one → a look.",
+            ["The editor opens on the junior milestone card."],
+          ],
+        },
+        {
+          id: "jr-queue",
+          name: "Junior cards wait for review",
+          ref: "#613",
+          steps: [
+            "Open the Queue and find a junior card you just made.",
+            ["It has the Junior badge and waits for review. It does not post on its own."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Create: carousels",
+      where: "Create → Team List / Match Day / Results / Match Summary",
+      tests: [
+        {
+          id: "cs-round",
+          name: "The whole round’s team lists",
+          ref: "#614",
+          steps: [
+            "Create → Team List → Whole round (carousel). Check the dates and the teams ticked → Next.",
+            "Pick a size and a look → Open in editor.",
+            [
+              "The set editor opens with a cover, a slide per team and your sponsors.",
+              "The set is in the Queue, waiting for review.",
+            ],
+          ],
+        },
+        {
+          id: "cs-junior",
+          name: "Junior Match Day",
+          ref: "#614",
+          steps: [
+            "Create → Juniors → Junior Match Day (no one-or-many step).",
+            ["Only junior games are listed."],
+            "Next → a look → Open in editor.",
+            ["The set editor opens. No junior slide shows a child’s photo."],
+          ],
+        },
+        {
+          id: "cs-content",
+          name: "What these cards show, and sponsors per slide",
+          ref: "S6",
+          steps: [
+            "Create → Match Day → Carousel set → Next. On the look step, open “What these cards show” and pick Minimal; change Sponsors per slide.",
+            "Open in editor.",
+            ["The slides show less, and the sponsor slides split by the number you picked."],
+          ],
+        },
+        {
+          id: "cs-blank",
+          name: "Pick by hand",
+          ref: "#614",
+          steps: [
+            "Create → Match Day → Carousel set → “Pick by hand: a blank carousel”.",
+            ["The set editor opens with three blank pages to design."],
+          ],
+        },
+        {
+          id: "cs-small",
+          name: "Too few games",
+          ref: "#614",
+          steps: [
+            "Untick all but one game when nothing else would make three slides, then Open in editor.",
+            ["A message says a carousel needs at least 3 slides; nothing is queued."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "The editors",
+      where: "Set editor and card editor, from Create or Your designs",
+      tests: [
+        {
+          id: "ed-strip",
+          name: "Every slide at once",
+          ref: "S5",
+          steps: [
+            "In a carousel set, look at the strip under the canvas.",
+            ["Numbered thumbnails, and “N / M” for the slide on show."],
+            "Click the grid button beside it.",
+            ["Every slide shows large. Move one later, delete one, then pick one to edit."],
+          ],
+        },
+        {
+          id: "ed-share",
+          name: "Share → Download",
+          ref: "S5",
+          steps: [
+            "In a carousel set: Share. Check the size shown (e.g. 1080 × 1350).",
+            "All, PNG → Download.",
+            ["One zip named after the set, files numbered in order (e.g. match-day-r5-01.png)."],
+            "This page, JPG → Download.",
+            ["One image of the slide on show."],
+            ["The set is still waiting for review: downloading posts nothing."],
+          ],
+        },
+        {
+          id: "ed-review",
+          name: "Send to review",
+          ref: "S6",
+          steps: [
+            "Make a change in either editor.",
+            ["Send to review is greyed out until you save."],
+            "Save, then Send to review.",
+            ["The Queue opens with that draft’s drawer open, ready to approve or schedule."],
+          ],
+        },
+        {
+          id: "ed-same",
+          name: "The editor still works as before",
+          ref: "",
+          steps: [
+            "Use the editor’s usual tools on a card from Create: photo placement and swap, text, elements, size, undo.",
+            ["Everything behaves as it did before."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Home, Queue, Your designs, Photos",
+      where: "Social Media Studio",
+      tests: [
+        {
+          id: "hm-home",
+          name: "Home",
+          ref: "S7",
+          steps: [
+            "Home.",
+            [
+              "“Needs you” counts senior and junior cards waiting for review, and scheduled ones.",
+              "“Make something” chips open Create at the right step.",
+              "“Continue designing” lists recent drafts, sets and templates.",
+            ],
+          ],
+        },
+        {
+          id: "hm-queue",
+          name: "Queue: Seniors / Juniors",
+          ref: "S7",
+          steps: [
+            "Queue → Teams → Juniors.",
+            [
+              "Only junior cards. Seniors shows the rest (sponsor and announcement cards count as senior).",
+            ],
+          ],
+        },
+        {
+          id: "hm-designs",
+          name: "Your designs",
+          ref: "#609",
+          steps: [
+            "Your designs. Filter by type; dismiss a draft and delete a template you don’t need.",
+            ["Both work as before (#595)."],
+          ],
+        },
+        {
+          id: "hm-photos",
+          name: "Photos",
+          ref: "#609",
+          steps: [
+            "Photos → Junior photos.",
+            ["The junior library, with its consent rules, as before."],
+          ],
+        },
+      ],
+    },
+  ];
+
+  const KEY = "ovation-test-2026-10-29-new-studio";
+  let state = {};
+  try {
+    state = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+  } catch (e) {
+    state = {};
+  }
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  const esc = (s) =>
+    s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const fmt = (s) =>
+    esc(s).replace(/(\{\{[^}]*\}?\}?|FIGMA_[A-Z_]+|playerSponsor\w+)/g, "<code>$1</code>");
+
+  const root = document.getElementById("areas");
+  AREAS.forEach((area) => {
+    const sec = document.createElement("section");
+    sec.className = "area";
+    sec.innerHTML = `<h2>${esc(area.title)} <span class="count" data-count></span></h2><p class="where">${esc(area.where)}</p>`;
+    area.tests.forEach((t) => {
+      const s = state[t.id] || {};
+      const d = document.createElement("details");
+      d.className = "test" + (s.done ? " done" : "");
+      d.dataset.id = t.id;
+      const items = t.steps
+        .map((st) =>
+          Array.isArray(st)
+            ? st.map((e) => `<li class="expect">${fmt(e)}</li>`).join("")
+            : `<li>${fmt(st)}</li>`,
+        )
+        .join("");
+      d.innerHTML = `<summary><input type="checkbox" class="tick" id="tick-${t.id}" aria-label="Done: ${esc(t.name)}" ${s.done ? "checked" : ""}>
+      <span class="tname">${esc(t.name)}<span class="ref">${esc(t.ref)}</span></span><span class="chev" aria-hidden="true">▶</span></summary>
+      <div class="body"><ol>${items}</ol>
+      <textarea class="note" id="note-${t.id}" rows="1" placeholder="Notes, e.g. what broke">${esc(s.note || "")}</textarea></div>`;
+      const box = d.querySelector(".tick");
+      box.addEventListener("click", (ev) => ev.stopPropagation());
+      box.addEventListener("change", () => {
+        state[t.id] = { ...(state[t.id] || {}), done: box.checked };
+        d.classList.toggle("done", box.checked);
+        if (box.checked) d.open = false;
+        save();
+        tally();
+      });
+      d.querySelector(".note").addEventListener("input", (ev) => {
+        state[t.id] = { ...(state[t.id] || {}), note: ev.target.value };
+        save();
+      });
+      sec.appendChild(d);
+    });
+    root.appendChild(sec);
+  });
+
+  function tally() {
+    let all = 0,
+      done = 0;
+    document.querySelectorAll("section.area").forEach((sec) => {
+      const tests = sec.querySelectorAll("details.test");
+      const d = sec.querySelectorAll("details.test.done").length;
+      sec.querySelector("[data-count]").textContent = `${d}/${tests.length}`;
+      all += tests.length;
+      done += d;
+    });
+    document.getElementById("tally").innerHTML = `<b>${done}</b> / ${all} done`;
+    document.getElementById("barFill").style.width = all ? (100 * done) / all + "%" : "0";
+  }
+  tally();
+
+  const hideBtn = document.getElementById("hideDone");
+  function setHide(on) {
+    document.body.classList.toggle("hide-done", on);
+    hideBtn.setAttribute("aria-pressed", String(on));
+  }
+  setHide(!!state.__hide);
+  hideBtn.addEventListener("click", () => {
+    state.__hide = !document.body.classList.contains("hide-done");
+    setHide(state.__hide);
+    save();
+  });
+
+  const expBtn = document.getElementById("expandAll");
+  expBtn.addEventListener("click", () => {
+    const open = expBtn.textContent === "Expand all";
+    document.querySelectorAll("details.test").forEach((d) => {
+      if (!d.classList.contains("done")) d.open = open;
+    });
+    expBtn.textContent = open ? "Collapse all" : "Expand all";
+  });
+
+  const copyBtn = document.getElementById("copyNotes");
+  const notesOut = document.getElementById("notesOut");
+  copyBtn.addEventListener("click", () => {
+    const lines = [];
+    AREAS.forEach((area) => {
+      area.tests.forEach((t) => {
+        const s = state[t.id] || {};
+        const note = (s.note || "").trim();
+        if (!s.done && !note) return;
+        lines.push(
+          `${area.title} / ${t.name} (${t.ref}): ${s.done ? "done" : "not done"}${note ? " | " + note : ""}`,
+        );
+      });
+    });
+    const text = lines.length ? lines.join("\n") : "No ticks or notes yet.";
+    notesOut.value = text;
+    const showText = () => {
+      notesOut.hidden = false;
+      notesOut.focus();
+      notesOut.select();
+      copyBtn.textContent = "Select and copy below";
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "Copied";
+        setTimeout(() => (copyBtn.textContent = "Copy my notes"), 2000);
+      }, showText);
+    } else {
+      showText();
+    }
+  });
+</script>

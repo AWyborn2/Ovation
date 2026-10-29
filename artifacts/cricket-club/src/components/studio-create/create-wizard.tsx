@@ -33,8 +33,10 @@ import { splitPostedKinds } from "@/lib/studio-home";
 import { SIZES, type CardKind, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import {
+  CAROUSEL_SET_OF,
   SENIOR_KINDS,
   STEP_LABELS,
+  carouselOnly,
   kindsFor,
   createSearch,
   nextStep,
@@ -44,6 +46,7 @@ import {
   type CreateState,
   type CreateTeam,
 } from "./model";
+import { CarouselFlow } from "./carousel-flow";
 import { JuniorTeamPicker } from "./junior-team-picker";
 import { TeamPicker } from "./team-picker";
 
@@ -121,7 +124,8 @@ export function CreateWizard() {
       sz,
     );
 
-  const steps = stepsFor(s.kind);
+  const steps = stepsFor(s.kind, s.team);
+  const carousel = s.mode === "many" && kind !== null && (s.step === 3 || s.step === 4);
 
   return (
     <div className="space-y-6">
@@ -176,13 +180,34 @@ export function CreateWizard() {
           picked={s.kind}
           onPick={(k) => {
             setFilled(null);
-            const next = { ...s, kind: k, mode: "one" as const };
-            go({ kind: k, mode: "one", step: nextStep(next) });
+            const mode = carouselOnly(s.team, k) ? ("many" as const) : ("one" as const);
+            go({ kind: k, mode, step: nextStep({ ...s, kind: k, mode }) });
           }}
         />
       )}
 
-      {s.step === 3 && kind && card && (
+      {s.step === 2 && kind && (
+        <ModeStep
+          kind={kind}
+          mode={s.mode}
+          onPick={(mode) => {
+            setFilled(null);
+            go({ mode, step: 3 });
+          }}
+        />
+      )}
+
+      {carousel && (
+        <CarouselFlow
+          key={`${s.team}-${kind}`}
+          setType={CAROUSEL_SET_OF[kind]!}
+          audience={junior ? "junior" : "senior"}
+          step={s.step as 3 | 4}
+          onNext={() => go({ step: 4 })}
+        />
+      )}
+
+      {!carousel && s.step === 3 && kind && card && (
         <section aria-labelledby="fill-heading" className="space-y-4">
           <h3 id="fill-heading" className="text-lg font-semibold">
             {kind === "teamList" ? "Which team?" : "Fill it from"}
@@ -204,7 +229,7 @@ export function CreateWizard() {
         </section>
       )}
 
-      {s.step === 4 && (
+      {!carousel && s.step === 4 && (
         <section aria-labelledby="look-heading" className="space-y-4">
           <h3 id="look-heading" className="text-lg font-semibold">
             {s.kind === "blank" ? "Pick a size" : "Pick a look and size"}
@@ -293,7 +318,60 @@ function JuniorSource({
   return <JuniorMilestones onOpen={(i) => onFill(asInput(i))} />;
 }
 
+/** Step 2: one card or a carousel (for a Team List, one team or the whole round). */
+function ModeStep({
+  kind,
+  mode,
+  onPick,
+}: {
+  kind: CardKind;
+  mode: CreateState["mode"];
+  onPick: (mode: CreateState["mode"]) => void;
+}) {
+  const team = kind === "teamList";
+  const options = [
+    {
+      mode: "one" as const,
+      label: team ? "One team" : "Single card",
+      hint: team ? "One team's list, from its fixture" : "One card at your chosen size",
+    },
+    {
+      mode: "many" as const,
+      label: team ? "Whole round (carousel)" : "Carousel set",
+      hint: team
+        ? "Every team playing, a slide each, with a cover and your sponsors"
+        : "A cover, a slide for each game, then your sponsors",
+    },
+  ];
+  return (
+    <section aria-labelledby="mode-heading" className="space-y-4">
+      <h3 id="mode-heading" className="text-lg font-semibold">
+        {kindLabel(kind)}: one card or a carousel?
+      </h3>
+      <ul className="grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {options.map((o) => (
+          <li key={o.mode}>
+            <button
+              type="button"
+              aria-pressed={mode === o.mode}
+              onClick={() => onPick(o.mode)}
+              className={cn(
+                "flex h-full w-full flex-col items-start gap-1 rounded-xl border bg-card p-5 text-left hover:border-primary",
+                mode === o.mode ? "border-primary ring-1 ring-primary" : "border-border",
+              )}
+            >
+              <span className="text-base font-semibold">{o.label}</span>
+              <span className="text-sm text-muted-foreground">{o.hint}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 const JUNIOR_LABELS: Partial<Record<CardKind, string>> = {
+  matchDay: "Junior Match Day",
   teamList: "Junior Team List",
   matchSummary: "Junior Match Summary",
   milestone: "Junior Milestone",

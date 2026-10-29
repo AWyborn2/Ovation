@@ -19,6 +19,8 @@ import { StatusPill } from "@/components/admin-ui";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { DraftSetDialog } from "@/components/studio-editor/draft-set-dialog";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
+import { SendToReview } from "@/components/studio-editor/send-to-review";
+import { useNewStudio } from "@/lib/entitlements";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -50,6 +52,8 @@ export function DraftDesignEditor({
   const brand = useBrand();
   const [, navigate] = useLocation();
   const [making, setMaking] = useState(false);
+  // New Studio (preview): Send to review beside Download.
+  const newStudio = useNewStudio();
   // The design as it stood when "Make a carousel set" was pressed.
   const [setFrom, setSetFrom] = useState<Record<string, unknown> | null>(null);
   const viewport = useViewport();
@@ -159,6 +163,9 @@ export function DraftDesignEditor({
         host={host}
         draftMode={draftMode}
         initialFormat={initialFormat}
+        actions={
+          newStudio ? ({ dirty }) => <SendToReview draftId={draft.id} dirty={dirty} /> : undefined
+        }
       />
       {setFrom && (
         <DraftSetDialog
