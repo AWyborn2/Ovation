@@ -29,6 +29,7 @@ import type {
   Fixture,
   MilestoneItem,
   Premiership,
+  SocialPrefillMoment,
   TeamList as TeamListDto,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
@@ -525,5 +526,58 @@ export function premiershipToState(p: Premiership): CardFormState {
     competition: p.competition,
     result: p.result ?? "",
     mom: p.mom ?? "",
+  };
+}
+
+// --------------------------------------------------------------------------
+// Moments (a century or five-for the achievements engine found)
+// --------------------------------------------------------------------------
+
+/** The card kinds a recent century / five-for can prefill, and which moments each takes. */
+export const MOMENT_KINDS: Readonly<Record<string, readonly SocialPrefillMoment["kind"][]>> = {
+  century: ["century"],
+  fiveFor: ["fiveFor"],
+  bigMoment: ["century", "fiveFor"],
+};
+
+const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
+const text = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+
+/** "Zachary Dreckow — 104* (98) · A Grade Rd 4 vs Mandurah", for the picker. */
+export function momentLabel(m: SocialPrefillMoment): string {
+  const i = m.input as Record<string, unknown>;
+  const feat =
+    m.kind === "century"
+      ? `${num(i.runs) ?? "100+"}${i.notOut ? "*" : ""}${num(i.balls) ? ` (${num(i.balls)})` : ""}`
+      : (text(i.figures) ?? `${num(i.wickets) ?? 5} wickets`);
+  const where = [m.grade, m.round != null ? `Rd ${m.round}` : null].filter(Boolean).join(" ");
+  return `${m.playerName} — ${feat}${where ? ` · ${where}` : ""}${m.opponent ? ` vs ${m.opponent}` : ""}`;
+}
+
+/**
+ * A moment as a Big Moment card: the label, the player, the figures and the
+ * match the engine found. Everything stays editable.
+ */
+export function momentToBigMomentState(m: SocialPrefillMoment): CardFormState {
+  const i = m.input as Record<string, unknown>;
+  const century = m.kind === "century";
+  const overs = text(i.overs);
+  return {
+    momentLabel: century ? "CENTURY" : "FIVE-WICKET HAUL",
+    playerName: m.playerName,
+    runs: century ? num(i.runs) : null,
+    balls: century ? num(i.balls) : null,
+    boundaryDetail: null,
+    oppositionName: m.opponent,
+    inningsLabel:
+      [m.grade, m.round != null ? `Round ${m.round}` : null].filter(Boolean).join(" · ") || null,
+    liveScore: null,
+    oversChaseLine: null,
+    equation: century
+      ? i.notOut
+        ? "Not out"
+        : null
+      : `${text(i.figures) ?? `${num(i.wickets) ?? 5} wickets`}${overs ? ` off ${overs} overs` : ""}`,
+    match: i.match ?? null,
   };
 }
