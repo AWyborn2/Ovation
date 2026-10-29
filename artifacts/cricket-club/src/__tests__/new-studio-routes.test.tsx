@@ -90,6 +90,14 @@ describe("New Studio switch", () => {
     expect(screen.queryByRole("heading", { name: "What are you making?" })).toBeNull();
   });
 
+  it("opens the new Home when on", async () => {
+    installApiMock(plan(true));
+    renderWithHistory(<AdminSocialGroup />, "/admin/social");
+    expect(
+      await screen.findByRole("heading", { name: "Needs you" }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+  });
+
   it("does not redirect with the switch off", async () => {
     installApiMock(plan(false));
     const { url } = renderWithHistory(<AdminSocialGroup />, "/admin/social/library");
