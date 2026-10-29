@@ -25,6 +25,8 @@ import {
 } from "@/components/studio-home/create-picker";
 import { useLibraryPreviewData } from "@/components/template-library/previews";
 import { useBrand } from "@/lib/brand-context";
+import { useEntitlements } from "@/lib/entitlements";
+import { FromJuniorMatch, JuniorMilestones } from "@/components/junior-social/pickers";
 import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
 import { splitPostedKinds } from "@/lib/studio-home";
@@ -33,13 +35,16 @@ import { cn } from "@/lib/utils";
 import {
   SENIOR_KINDS,
   STEP_LABELS,
+  kindsFor,
   createSearch,
   nextStep,
   parseCreateState,
   prevStep,
   stepsFor,
   type CreateState,
+  type CreateTeam,
 } from "./model";
+import { JuniorTeamPicker } from "./junior-team-picker";
 import { TeamPicker } from "./team-picker";
 
 const CREATE_PATH = "/admin/social/create";
@@ -66,7 +71,9 @@ export function CreateWizard() {
   const [, navigate] = useLocation();
   const brand = useBrand();
   const preview = useLibraryPreviewData();
-  const s = parseCreateState(search, SENIOR_KINDS);
+  const juniorsOn = useEntitlements().juniors;
+  const s = parseCreateState(search, juniorsOn);
+  const junior = s.team === "junior";
   const go = (patch: Partial<CreateState>) => {
     const qs = createSearch({ ...s, ...patch });
     navigate(qs ? `${CREATE_PATH}?${qs}` : CREATE_PATH);
@@ -88,8 +95,8 @@ export function CreateWizard() {
     [kind, filled, brand],
   );
   const input = useMemo<ShareCardInput | null>(
-    () => (card ? buildCardInput(card.kind, card.state, false) : null),
-    [card],
+    () => (card ? buildCardInput(card.kind, card.state, junior) : null),
+    [card, junior],
   );
 
   const fill = (state: CardFormState, playerId: number | null = card?.playerId ?? null) => {
@@ -160,6 +167,12 @@ export function CreateWizard() {
 
       {s.step === 1 && (
         <KindStep
+          team={s.team}
+          juniorsOn={juniorsOn}
+          onTeam={(team) => {
+            setFilled(null);
+            go({ team, kind: null, mode: "one", step: 1 });
+          }}
           picked={s.kind}
           onPick={(k) => {
             setFilled(null);
@@ -174,7 +187,9 @@ export function CreateWizard() {
           <h3 id="fill-heading" className="text-lg font-semibold">
             {kind === "teamList" ? "Which team?" : "Fill it from"}
           </h3>
-          {kind === "teamList" ? (
+          {junior ? (
+            <JuniorSource kind={kind} onFill={(i) => fill(fromServer(kind, card.state, i))} />
+          ) : kind === "teamList" ? (
             <TeamPicker onPick={(i) => fill(fromServer(kind, seedState(kind, brand), i))} />
           ) : (
             <PrefillPanel
@@ -260,11 +275,44 @@ export function CreateWizard() {
   );
 }
 
-/** Step 1: the kinds the club posts first, the rest under More, then Blank design. */
+/**
+ * Step 3 for a junior card: the junior picker for its kind. Junior data only, from
+ * the `/juniors` routes.
+ */
+function JuniorSource({
+  kind,
+  onFill,
+}: {
+  kind: CardKind;
+  onFill: (input: Record<string, unknown>) => void;
+}) {
+  const asInput = (i: ShareCardInput) => i as unknown as Record<string, unknown>;
+  if (kind === "teamList") return <JuniorTeamPicker onPick={onFill} />;
+  if (kind === "matchSummary")
+    return <FromJuniorMatch actionLabel="Use this match" onOpen={(i) => onFill(asInput(i))} />;
+  return <JuniorMilestones onOpen={(i) => onFill(asInput(i))} />;
+}
+
+const JUNIOR_LABELS: Partial<Record<CardKind, string>> = {
+  teamList: "Junior Team List",
+  matchSummary: "Junior Match Summary",
+  milestone: "Junior Milestone",
+};
+
+/**
+ * Step 1: Seniors or Juniors, then the kinds. Seniors see the kinds the club posts
+ * first, the rest under More, then Blank design; Juniors see the junior kinds.
+ */
 function KindStep({
+  team,
+  juniorsOn,
+  onTeam,
   picked,
   onPick,
 }: {
+  team: CreateTeam;
+  juniorsOn: boolean;
+  onTeam: (team: CreateTeam) => void;
   picked: CreateState["kind"];
   onPick: (kind: CardKind | "blank") => void;
 }) {
@@ -274,8 +322,9 @@ function KindStep({
     bundle?.settings.postingPlan,
     !!bundle?.settings.postingPlanSaved,
   );
-  const first = posted.filter((k) => SENIOR_KINDS.includes(k));
-  const rest = SENIOR_KINDS.filter((k) => !first.includes(k));
+  const junior = team === "junior";
+  const first = junior ? kindsFor("junior") : posted.filter((k) => SENIOR_KINDS.includes(k));
+  const rest = junior ? [] : SENIOR_KINDS.filter((k) => !first.includes(k));
   const [more, setMore] = useState(rest.includes(picked as CardKind));
 
   const tile = (k: CardKind | "blank") => (
@@ -290,20 +339,55 @@ function KindStep({
         )}
       >
         {k === "blank" && <Plus className="h-4 w-4 text-primary-text" aria-hidden />}
-        {k === "blank" ? "Blank design" : kindLabel(k)}
+        {k === "blank"
+          ? "Blank design"
+          : junior
+            ? (JUNIOR_LABELS[k] ?? kindLabel(k))
+            : kindLabel(k)}
       </button>
     </li>
   );
 
   return (
     <section aria-labelledby="what-heading" className="space-y-4">
-      <h3 id="what-heading" className="text-lg font-semibold">
-        What are you making?
-      </h3>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 id="what-heading" className="text-lg font-semibold">
+          What are you making?
+        </h3>
+        {juniorsOn && (
+          <div
+            role="group"
+            aria-label="Teams"
+            className="flex rounded-full border border-border bg-card p-1"
+          >
+            {(["senior", "junior"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={team === t}
+                onClick={() => onTeam(t)}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-sm font-semibold",
+                  team === t ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                )}
+              >
+                {t === "senior" ? "Seniors" : "Juniors"}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {first.map(tile)}
-        {tile("blank")}
+        {!junior && tile("blank")}
       </ul>
+      <p className="text-sm text-muted-foreground">
+        {junior
+          ? "Junior cards use junior data only, and never show a child's photo without consent."
+          : juniorsOn
+            ? "Switch to Juniors for junior team lists, matches and milestones."
+            : null}
+      </p>
       {rest.length > 0 && (
         <div className="space-y-3">
           <Button variant="ghost" size="sm" aria-expanded={more} onClick={() => setMore((v) => !v)}>

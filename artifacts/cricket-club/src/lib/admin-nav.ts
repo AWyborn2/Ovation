@@ -76,7 +76,11 @@ export const NEW_STUDIO_TABS: AdminNavTab[] = [
   studioTab("cards", "Cards", "/admin/social/cards", { hidden: true }),
   studioTab("fixtures", "Fixtures", "/admin/social/fixtures", { hidden: true }),
   studioTab("email-lists", "Email lists", "/admin/social/email-lists", { hidden: true }),
-  studioTab("juniors", "Junior cards", "/admin/social/juniors", { hidden: true }),
+  // Junior cards are made in Create, with Juniors on.
+  studioTab("juniors", "Junior cards", "/admin/social/juniors", {
+    hidden: true,
+    redirect: "/admin/social/create?team=junior",
+  }),
   // Old export-only carousel sets open from Your designs (`?open=<id>`); the list moved there.
   studioTab("sets", "Carousel sets", "/admin/social/sets", {
     hidden: true,

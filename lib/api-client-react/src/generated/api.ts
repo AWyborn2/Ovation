@@ -288,6 +288,7 @@ import type {
   JuniorShirtNumberWriteResult,
   JuniorSocialMilestone,
   JuniorStatCorrection,
+  JuniorTeamListPrefill,
   KindTemplateConflict,
   KioskTokenInput,
   KioskTokenResponse,
@@ -30901,6 +30902,84 @@ export function useGetJuniorFixture<TData = Awaited<ReturnType<typeof getJuniorF
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetJuniorFixtureQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorTeamListPrefillUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/fixtures/${id}/social-prefill`
+}
+
+/**
+ * The card the junior team-list sweep would draft for this fixture, from its saved team list (published or not): names in the club's public junior naming style, withheld players as "Private Player", no photo. The photo is picked server-side when the draft is made (fail-closed consent). Reads junior tables only. 404 when the fixture is another club's.
+ * @summary A junior fixture's Team List card for New Studio's Create (admin only)
+ */
+export const getJuniorTeamListPrefill = async (id: number, options?: RequestInit): Promise<JuniorTeamListPrefill> => {
+
+  return customFetch<JuniorTeamListPrefill>(getGetJuniorTeamListPrefillUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorTeamListPrefillQueryKey = (id: number,) => {
+    return [
+    `/api/juniors/fixtures/${id}/social-prefill`
+    ] as const;
+    }
+
+
+export const getGetJuniorTeamListPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorTeamListPrefill>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorTeamListPrefillQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorTeamListPrefill>>> = ({ signal }) => getJuniorTeamListPrefill(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorTeamListPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorTeamListPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorTeamListPrefill>>>
+export type GetJuniorTeamListPrefillQueryError = ErrorType<void>
+
+
+/**
+ * @summary A junior fixture's Team List card for New Studio's Create (admin only)
+ */
+
+export function useGetJuniorTeamListPrefill<TData = Awaited<ReturnType<typeof getJuniorTeamListPrefill>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorTeamListPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorTeamListPrefillQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

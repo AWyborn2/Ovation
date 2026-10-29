@@ -58,7 +58,7 @@ describe("New Studio (preview) menu", () => {
 
   it("keeps the moved pages routable, and lights their own tab in the breadcrumb", () => {
     const tabs = groupTabs(social, { newStudio: true });
-    for (const path of ["/admin/social/plan", "/admin/social/cards", "/admin/social/juniors"]) {
+    for (const path of ["/admin/social/plan", "/admin/social/cards", "/admin/social/fixtures"]) {
       expect(activeTab(path, { ...social, tabs })?.path).toBe(path);
     }
     expect(adminBreadcrumb("/admin/social/designs", { newStudio: true })).toEqual([
@@ -72,6 +72,7 @@ describe("New Studio (preview) menu", () => {
     const byValue = (v: string) =>
       groupTabs(social, { newStudio: true }).find((t) => t.value === v)!;
     expect(byValue("library").redirect).toBe("/admin/social/photos");
+    expect(byValue("juniors").redirect).toBe("/admin/social/create?team=junior");
     expect(byValue("junior-library").redirect).toBe("/admin/social/photos?tab=junior");
     expect(byValue("sets")).toMatchObject({
       redirect: "/admin/social/designs?type=set",
