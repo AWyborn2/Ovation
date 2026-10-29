@@ -19,7 +19,6 @@ import {
   PlayerPhotoStrip,
   PrefillPanel,
   buildCardInput,
-  initialCardState,
   JUNIOR_CAPABLE,
   type CardFormState,
 } from "@/components/card-forms";
@@ -42,18 +41,11 @@ import {
   buildPackData,
   tenantHashtag,
   cardSponsorData,
-  shortClubName,
 } from "@/lib/pack-card-data";
 import { PLAYER_SPONSOR_KINDS } from "@/lib/share-card/sponsor-limit";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
-import { DEFAULT_BRAND, type ClubBrand } from "@workspace/scorecard";
-import {
-  SIZES,
-  cardBaseFilename,
-  type CardKind,
-  type CardSize,
-  type MatchSummaryTeam,
-} from "@/lib/share-card";
+import { seedState } from "@/components/card-forms/seed";
+import { SIZES, cardBaseFilename, type CardKind, type CardSize } from "@/lib/share-card";
 import { saveFile } from "@/lib/save-files";
 
 const selectClass =
@@ -64,29 +56,6 @@ const SIZE_OPTIONS: { value: CardSize; label: string }[] = [
   { value: "portrait", label: "Feed portrait" },
   { value: "story", label: "Story / TikTok" },
 ];
-
-/** A short club label without a trailing "Cricket Club" suffix. */
-/** The current tenant's brand as the Match Summary club-team default. */
-function teamFromBrand(brand: ClubBrand): MatchSummaryTeam {
-  const accent = brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#94A3B8";
-  return {
-    name: shortClubName(brand.name ?? DEFAULT_BRAND.name),
-    shortName: brand.shortName ?? null,
-    primaryColor: brand.backgroundColour ?? DEFAULT_BRAND.backgroundColour ?? "#334155",
-    secondaryColor: accent,
-    textColor: accent,
-    logoUrl: brand.logoUrl ?? null,
-  };
-}
-
-/** Seed a kind's editable state as the tenant: club-name tokens in the sample
- * become the tenant's short name, and Match Summary's club side carries the
- * full brand (colours + logo). */
-function seedState(kind: CardKind, brand: ClubBrand): CardFormState {
-  const state = initialCardState(kind, shortClubName(brand.name ?? DEFAULT_BRAND.name));
-  if (kind === "matchSummary") state.club = teamFromBrand(brand);
-  return state;
-}
 
 export default function AdminSocialCreate() {
   const brand = useBrand();
