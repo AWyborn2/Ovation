@@ -102,7 +102,18 @@ export type SetPage = {
  * keys of slides deleted from it. A slide in neither (a team named after the
  * set was edited) keeps its natural place. Set templates don't hold one.
  */
-export type SetArrangement = { order: string[]; removed: string[] };
+export type SetArrangement = {
+  order: string[];
+  removed: string[];
+  /**
+   * A slide's own layout (studio-create S9): slide key → the id of a design
+   * page that draws that slide instead of its slot's page. A page named here
+   * is a layout page: it draws only the slides mapped to it. Optional; a set
+   * without it draws as before, and clearing it puts every slide back on its
+   * slot's page.
+   */
+  pageFor?: Record<string, string>;
+};
 
 /** A set document: its pages in slide order. */
 export type SetDocument = {
@@ -115,6 +126,29 @@ export type SetDocument = {
   sponsorLock?: boolean;
   arrangement?: SetArrangement;
 };
+
+/** The pages a set's arrangement uses as one slide's own layout (`SetArrangement.pageFor`). */
+export function layoutPageIds(doc: Pick<SetDocument, "arrangement">): Set<string> {
+  return new Set(Object.values(doc.arrangement?.pageFor ?? {}));
+}
+
+/**
+ * The page that draws a slide: its own layout when the arrangement names one
+ * the set holds, drawing the same kind page (so the slide's input fits it),
+ * else the page it would draw by its slot.
+ */
+export function slideLayoutPage(
+  doc: Pick<SetDocument, "arrangement" | "pages">,
+  key: string,
+  page: SetPage,
+): SetPage {
+  const id = doc.arrangement?.pageFor?.[key];
+  if (!id || id === page.id) return page;
+  const own = doc.pages.find((p) => p.id === id);
+  return own && own.slot === "page" && own.kind === page.kind && own.page === page.page
+    ? own
+    : page;
+}
 
 /** The most pages a set may hold: a Meta carousel posts at most 10 slides, with room to spare. */
 export const MAX_SET_PAGES = 20;

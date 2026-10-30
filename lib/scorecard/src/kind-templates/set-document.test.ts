@@ -149,6 +149,19 @@ describe("set validation", () => {
     const doc = { ...base(), arrangement: { order: ["cover", "fixture:1"], removed: [] } };
     expect(errors(doc)).toEqual([]);
     expect(errors({ ...base(), arrangement: { order: [1] } }).join(" ")).toMatch(/slide keys/);
+    // A slide's own layout (S9): slide key → a page id.
+    expect(
+      errors({
+        ...base(),
+        arrangement: { order: [], removed: [], pageFor: { "fixture:1": "p-2" } },
+      }),
+    ).toEqual([]);
+    expect(
+      errors({
+        ...base(),
+        arrangement: { order: [], removed: [], pageFor: { "fixture:1": 3 } },
+      }).join(" "),
+    ).toMatch(/slide layouts/);
   });
 
   it("refuses a set that says it is another type", () => {

@@ -56,9 +56,13 @@ function fileType(file: File): string {
 export function UploadsPanel({
   size,
   onAdd,
+  wide = false,
 }: {
   size: CardSize;
-  onAdd: (layer: FreeLayer) => void;
+  /** Put the upload on the card; without it (Studio → Photos → Uploads) tiles only manage. */
+  onAdd?: (layer: FreeLayer) => void;
+  /** More tiles to a row, for a full page rather than the editor's rail. */
+  wide?: boolean;
 }) {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
@@ -244,12 +248,15 @@ export function UploadsPanel({
           {query ? "No uploads match that name." : "Nothing uploaded yet."}
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2" aria-label="Uploads">
+        <ul
+          className={cn("grid grid-cols-2 gap-2", wide && "sm:grid-cols-4 lg:grid-cols-6")}
+          aria-label="Uploads"
+        >
           {uploads.map((u) => (
             <UploadTile
               key={u.id}
               upload={u}
-              onAdd={() => onAdd(uploadLayer(u, size))}
+              onAdd={onAdd ? () => onAdd(uploadLayer(u, size)) : undefined}
               onChanged={refresh}
               selecting={selecting}
               selected={picked.has(u.id)}
@@ -271,7 +278,7 @@ function UploadTile({
   onToggle,
 }: {
   upload: ClubUpload;
-  onAdd: () => void;
+  onAdd?: () => void;
   onChanged: () => void;
   selecting: boolean;
   selected: boolean;
@@ -312,7 +319,7 @@ function UploadTile({
           />
           <img src={src} alt="" className="mx-auto aspect-[4/3] w-full object-contain" />
         </label>
-      ) : (
+      ) : onAdd ? (
         <button
           type="button"
           className="block w-full bg-[repeating-conic-gradient(var(--ed-line)_0_25%,transparent_0_50%)] bg-[length:14px_14px] p-2"
@@ -321,6 +328,10 @@ function UploadTile({
         >
           <img src={src} alt="" className="mx-auto aspect-[4/3] w-full object-contain" />
         </button>
+      ) : (
+        <div className="block w-full bg-[repeating-conic-gradient(var(--ed-line)_0_25%,transparent_0_50%)] bg-[length:14px_14px] p-2">
+          <img src={src} alt={upload.name} className="mx-auto aspect-[4/3] w-full object-contain" />
+        </div>
       )}
       <div className="flex items-center gap-1 p-1.5">
         {editing ? (

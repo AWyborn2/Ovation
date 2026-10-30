@@ -59,6 +59,7 @@ const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
 const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
 const AdminTemplateEditor = lazy(() => import("@/pages/admin-template-editor"));
 const AdminSetDraftEditor = lazy(() => import("@/pages/admin-set-draft-editor"));
+const AdminSetSlideEditor = lazy(() => import("@/pages/admin-set-slide-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -406,6 +407,12 @@ export function Router() {
         <Route path="/admin/social/template/:id">
           <AdminShell bare>
             <AdminTemplateEditor />
+          </AdminShell>
+        </Route>
+        {/* One slide of a set draft in the card editor (New Studio, S8). */}
+        <Route path="/admin/social/set/:id/slide">
+          <AdminShell bare>
+            <AdminSetSlideEditor />
           </AdminShell>
         </Route>
         {/* A carousel set draft in the same editor, slide by slide with its real data. */}

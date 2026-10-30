@@ -344,7 +344,8 @@
   <div class="intro">
     <p>
       Test on the dev app (Replit "OVATION APP") once the Replit agent confirms it has pulled main
-      with every studio-create slice (S1 #609 to S7). The New Studio switch is on for
+      with every studio-create slice (S1 #609 to S7 #618, then S8 to S11, #619 to #622). The New
+      Studio switch is on for
       <strong>Halls Head on dev only</strong>. Every club in Production has it off and sees
       today&rsquo;s Studio.
     </p>
@@ -364,8 +365,8 @@
       >ALTER TABLE "tenants" ADD COLUMN IF NOT EXISTS "new_studio_enabled" boolean DEFAULT false NOT
       NULL;</code
     >
-    No other slice adds a migration. The switch stays off for every club until you turn it on in the
-    platform console.
+    No other slice adds a migration (S8 to S11 have none). The switch stays off for every club until
+    you turn it on in the platform console.
   </p>
 </footer>
 
@@ -659,6 +660,92 @@
           steps: [
             "Photos → Junior photos.",
             ["The junior library, with its consent rules, as before."],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Carousel sets: one slide at a time (P1)",
+      where: "Your designs → a carousel set → the set editor",
+      tests: [
+        {
+          id: "p1-layout",
+          name: "A slide’s own layout",
+          ref: "S9 #619",
+          steps: [
+            "Open a Team List whole round (or any set with team, fixture or result slides). Click the B Grade slide, then Layout.",
+            ["It says the slide shares its layout with the other team slides."],
+            "New layout for this slide, then move or recolour something on the canvas.",
+            [
+              "Only B Grade changes; the other team slides stay as they were.",
+              "Its strip tile no longer says it repeats for each item.",
+            ],
+            "Layout → Shared puts it back. Or Apply to every slide.",
+            [
+              "Shared: B Grade looks like the others again.",
+              "Apply to every slide: every team slide takes B Grade’s layout. Undo reverts either.",
+            ],
+            "Save, then open the set in the Queue.",
+            ["The Queue preview matches the editor."],
+          ],
+        },
+        {
+          id: "p1-edit-slide",
+          name: "Edit this slide",
+          ref: "S8 #620",
+          steps: [
+            "In the set editor, click a team, fixture or result slide.",
+            ["“Edit this slide” is in the top bar. On the cover or sponsors slide it isn’t."],
+            "Make an unsaved change.",
+            ["Edit this slide greys out until you save."],
+            "Save, then Edit this slide.",
+            [
+              "The card editor opens on that slide (“B Grade: one slide”), with its real names and Download.",
+            ],
+            "Change something, Save, then go back to the set.",
+            [
+              "That slide shows the change; every other slide is as it was.",
+              "Its Layout panel says it has its own layout. Nothing new appears in the Queue.",
+            ],
+          ],
+        },
+      ],
+    },
+    {
+      title: "Settings and Photos (P1)",
+      where: "Social Media Studio → Settings; Photos",
+      tests: [
+        {
+          id: "p1-settings",
+          name: "Settings as cards",
+          ref: "S10 #621",
+          steps: [
+            "Settings.",
+            [
+              "A grid of cards: Posting plan, Auto-post, Sponsors, What cards show, Facebook and Instagram, Figma, Captions, Email lists, Juniors, Looks, sizes and sound, Fixtures.",
+            ],
+            "Open a few cards (Captions, Auto-post, Sponsors), then All settings.",
+            [
+              "Each shows the same settings as before, and saves as before.",
+              "All settings goes back to the grid.",
+            ],
+            "Open Juniors.",
+            ["Links to Junior matches (which junior teams auto-post) and Junior photos."],
+          ],
+        },
+        {
+          id: "p1-photos",
+          name: "Photos: Uploads and Collections",
+          ref: "S11 #622",
+          steps: [
+            "Photos → Uploads.",
+            [
+              "The club’s logos and artwork. Upload, search, rename and delete work as in the editor’s Uploads.",
+            ],
+            "Photos → Collections, then open a collection.",
+            ["It opens in Senior photos, with that collection’s photos to add or remove."],
+            "Photos → Junior photos.",
+            ["Unchanged, with its consent rules."],
           ],
         },
       ],

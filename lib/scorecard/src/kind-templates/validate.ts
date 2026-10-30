@@ -1139,7 +1139,22 @@ export function setDocumentErrors(doc: unknown, type: SetType): string[] {
       v.every((k) => typeof k === "string" && SLIDE_KEY.test(k));
     if (!isObject(a) || !keys(a.order) || !keys(a.removed))
       errors.push("The set's slide order must list slide keys.");
-    else knownKeys(errors, "The slide order", a, new Set(["order", "removed"]));
+    else {
+      knownKeys(errors, "The slide order", a, new Set(["order", "removed", "pageFor"]));
+      // A slide's own layout (S9): slide key → a page id.
+      if (
+        a.pageFor !== undefined &&
+        !(
+          isObject(a.pageFor) &&
+          Object.keys(a.pageFor).length <= 200 &&
+          Object.entries(a.pageFor).every(
+            ([k, v]) =>
+              SLIDE_KEY.test(k) && typeof v === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(v),
+          )
+        )
+      )
+        errors.push("The set's slide layouts must name a page for each slide.");
+    }
   }
   if (!Array.isArray(doc.pages) || doc.pages.length === 0)
     return [...errors, "A set needs at least one page."];

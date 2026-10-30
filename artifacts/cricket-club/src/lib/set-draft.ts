@@ -15,7 +15,9 @@ import {
   arrangeSlides,
   expandSetSlides,
   isSetDocument,
+  layoutPageIds,
   mapCarouselSlides,
+  primaryPage,
   setPageRenderDocument,
   slideInputFor,
   type SetDocument,
@@ -94,6 +96,8 @@ export function setDraftSlides(
       ...(s.role !== "cover" && typeof grade === "string" && grade ? { label: grade } : {}),
     };
   });
+  // A slide drawn by its own layout (S9) is still a data slide, not a design page.
+  const layouts = layoutPageIds(doc);
   return expandSetSlides(doc, items, { sponsors: sponsorRows(brand), junior }).map((s) => {
     const slideJunior = junior || s.input.junior === true;
     return {
@@ -107,7 +111,7 @@ export function setDraftSlides(
       junior: slideJunior,
       sponsorsOn: true,
       ...(s.item ? { item: s.item } : {}),
-      design: s.page.slot === "page",
+      design: s.page.slot === "page" && !layouts.has(s.page.id),
     };
   });
 }
@@ -137,9 +141,11 @@ function carouselSlides(
       design: stored.pageId !== undefined && stored.content === undefined,
     };
   });
-  // A design page just added: a slide drawn with the set's brand.
+  // A design page just added: a slide drawn with the set's brand. A slide's
+  // own layout (S9) draws only the slides mapped to it.
+  const layouts = layoutPageIds(doc);
   for (const page of doc.pages) {
-    if (page.slot !== "page" || drawn.has(page.id)) continue;
+    if (page.slot !== "page" || drawn.has(page.id) || layouts.has(page.id)) continue;
     const coverData = cover ? carouselSlideData(carousel, { ...cover, pageId: "x", data: {} }) : {};
     out.push({
       key: `page:${page.id}`,
@@ -165,3 +171,19 @@ export const slideDocument = (doc: SetDocument, slide: Pick<SetDraftSlide, "page
 /** A draft's set design, if it holds one. */
 export const draftSetDocument = (adjustments: unknown): SetDocument | null =>
   isSetDocument(adjustments) ? adjustments : null;
+
+/**
+ * Whether the card editor can open a slide on its own (studio-create S8): a
+ * data slide drawn by its kind's own card page (a team, fixture or result).
+ * A cover, sponsors or day page is edited in the set editor.
+ */
+export function canEditSlideAlone(slide: {
+  design: boolean;
+  page: Pick<SetPage, "kind" | "page">;
+}): boolean {
+  return !slide.design && slide.page.page === primaryPage(slide.page.kind);
+}
+
+/** Where "Edit this slide" opens slide `key` of set draft `id`. */
+export const slideEditorHref = (id: number, key: string) =>
+  `/admin/social/set/${id}/slide?key=${encodeURIComponent(key)}`;

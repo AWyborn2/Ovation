@@ -3,7 +3,8 @@
  * draft editor plan, stage 2: a card made into a free set of pages).
  */
 import { describe, expect, it } from "vitest";
-import { draftSetType } from "./set-design";
+import type { SetDocument } from "@workspace/scorecard/kind-templates";
+import { arrangeCarouselSlides, draftSetType } from "./set-design";
 
 const freeSet = {
   formatVersion: 2,
@@ -27,5 +28,37 @@ describe("draftSetType", () => {
     expect(
       draftSetType({ cardInput: { kind: "player" }, adjustments: { formatVersion: 2, pages: {} } }),
     ).toBeNull();
+  });
+});
+
+describe("arrangeCarouselSlides", () => {
+  const doc = (pageFor?: Record<string, string>): SetDocument =>
+    ({
+      formatVersion: 2,
+      set: "teamLists",
+      pages: [
+        { id: "team", role: "repeat", slot: "team", kind: "teamList", page: "team", layers: [] },
+        { id: "team-b", role: "fixed", slot: "page", kind: "teamList", page: "team", layers: [] },
+      ],
+      arrangement: { order: [], removed: [], ...(pageFor ? { pageFor } : {}) },
+    }) as unknown as SetDocument;
+  const stored = [
+    { id: "t1", input: { kind: "teamList" } },
+    { id: "t2", input: { kind: "teamList" } },
+  ];
+
+  it("adds a slide for a design page no slide draws", () => {
+    expect(arrangeCarouselSlides(stored, doc()).map((s) => s.id)).toEqual([
+      "t1",
+      "t2",
+      "page:team-b",
+    ]);
+  });
+
+  it("adds none for a page that is one slide's own layout (studio-create S9)", () => {
+    expect(arrangeCarouselSlides(stored, doc({ t2: "team-b" })).map((s) => s.id)).toEqual([
+      "t1",
+      "t2",
+    ]);
   });
 });

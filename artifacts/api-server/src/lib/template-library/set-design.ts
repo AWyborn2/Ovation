@@ -32,6 +32,7 @@ import {
 } from "@workspace/db";
 import {
   arrangeSlides,
+  layoutPageIds,
   assembleSetDocument,
   isSetDocument,
   lookForPack,
@@ -245,8 +246,10 @@ export function arrangeCarouselSlides(
   const drawn = new Set(
     kept.map((s) => s.pageId).filter((x): x is string => typeof x === "string"),
   );
+  // A slide's own layout (studio-create S9) draws only the slides mapped to it.
+  const layouts = layoutPageIds(doc);
   const design = doc.pages
-    .filter((p) => p.slot === "page" && !drawn.has(p.id))
+    .filter((p) => p.slot === "page" && !drawn.has(p.id) && !layouts.has(p.id))
     .map((p) => ({
       id: `page:${p.id}`,
       key: `page:${p.id}`,

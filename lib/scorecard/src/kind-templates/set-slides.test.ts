@@ -219,6 +219,55 @@ describe("a queued carousel drawn with a set", () => {
   });
 });
 
+describe("a slide's own layout (studio-create S9)", () => {
+  const layout = page({ id: "team-b", slot: "page", kind: "teamList", page: "team" });
+  const withLayout = (pageFor: Record<string, string>): SetDocument => ({
+    ...TEAM_SET,
+    pages: [...TEAM_SET.pages, layout],
+    arrangement: { order: [], removed: [], pageFor },
+  });
+
+  it("draws only the mapped slide with its layout page, which adds no slide of its own", () => {
+    const slides = expandSetSlides(
+      withLayout({ "detail:senior:B Grade": "team-b" }),
+      itemsOf(round),
+    );
+    expect(slides.map((s) => [s.key, s.page.id])).toEqual([
+      ["page:cover", "cover"],
+      ["detail:senior:A Grade", "team"],
+      ["detail:senior:B Grade", "team-b"],
+      ["detail:senior:C Grade", "team"],
+      ["page:sponsors", "sponsors"],
+    ]);
+    // The slide shows the same team: only the page drawing it changed.
+    expect(slides[2]!.input).toMatchObject({ kind: "teamList", grade: "B Grade" });
+  });
+
+  it("is ignored for a missing page or one drawing another kind page", () => {
+    const missing = expandSetSlides(
+      withLayout({ "detail:senior:B Grade": "gone" }),
+      itemsOf(round),
+    );
+    expect(missing.find((s) => s.key === "detail:senior:B Grade")!.page.id).toBe("team");
+    const other = expandSetSlides(
+      withLayout({ "detail:senior:B Grade": "sponsors" }),
+      itemsOf(round),
+    );
+    expect(other.find((s) => s.key === "detail:senior:B Grade")!.page.id).toBe("team");
+  });
+
+  it("draws a queued carousel's slide with its layout page", () => {
+    const r = mapCarouselSlides(withLayout({ t2: "team-b" }), [
+      { id: "t1", input: { kind: "teamList", grade: "A Grade" } },
+      { id: "t2", input: { kind: "teamList", grade: "B Grade" } },
+    ]);
+    expect(r.slides.map((s) => [s.key, s.page.id])).toEqual([
+      ["t1", "team"],
+      ["t2", "team-b"],
+    ]);
+  });
+});
+
 describe("arranging slides", () => {
   const s = (key: string) => ({ key });
   it("is unchanged without an arrangement", () => {
