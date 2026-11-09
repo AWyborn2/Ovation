@@ -13,27 +13,27 @@ catalog:
   "@replit/vite-plugin-cartographer": ^0.6.1
   "@replit/vite-plugin-dev-banner": ^0.1.1
   "@replit/vite-plugin-runtime-error-modal": ^0.0.6
-  "@tailwindcss/vite": ^4.3.3
-  "@tanstack/react-query": ^5.104.5
+  "@tailwindcss/vite": ^4.3.5
+  "@tanstack/react-query": ^5.107.1
   "@types/node": ^25.3.3
   "@types/pg": ^8.23.1
   "@types/react": ~19.1.10
   "@types/react-dom": ~19.1.7
-  "@vitejs/plugin-react": ^6.1.1
+  "@vitejs/plugin-react": ^6.2.1
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
   drizzle-kit: ^0.31.11
   drizzle-orm: 0.45.4
   drizzle-zod: ^0.8.3
-  lucide-react: ^1.61.0
+  lucide-react: ^1.70.0
   orval: ^8.9.1
   pg: ^8.23.1
   react: 19.1.0
   react-dom: 19.1.0
   tailwind-merge: ^3.7.0
-  tailwindcss: ^4.3.3
+  tailwindcss: ^4.3.5
   tsx: ^4.23.15
-  vite: ^8.3.5
+  vite: ^8.3.6
   wouter: ^3.13.0
   zod: 3.25.76
 
