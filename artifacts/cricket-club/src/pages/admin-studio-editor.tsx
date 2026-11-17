@@ -145,6 +145,7 @@ import {
   draftStatus,
   isJuniorDraft,
 } from "@/components/social-queue/draft-meta";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
 
 /** Below this width the editor shows the card with a larger-screen notice. */
@@ -188,7 +189,13 @@ export default function AdminStudioEditor() {
       retry: false,
     },
   });
-  const draft = draftQ.data ?? null;
+  // A junior card draws (and downloads) only the photos it may show (ADR-007);
+  // the editor opens once the club's photos say which those are.
+  const guard = useJuniorPhotoGuard();
+  const draft = useMemo(
+    () => (draftQ.data ? guard.safeDraft(draftQ.data) : null),
+    [draftQ.data, guard],
+  );
 
   if (draftQ.isError && (draftQ.error as { status?: number } | null)?.status !== 404) {
     return (
@@ -197,7 +204,7 @@ export default function AdminStudioEditor() {
       </div>
     );
   }
-  if (draftQ.isLoading) {
+  if (draftQ.isLoading || !guard.ready) {
     return (
       <div className="studio-editor grid min-h-screen place-items-center">
         <LoadingState label="Opening the editor…" />
@@ -239,7 +246,8 @@ function EditorApp({ draftId }: { draftId: number }) {
   const draftQ = useGetSocialDraft(draftId, {
     query: { queryKey: getGetSocialDraftQueryKey(draftId) },
   });
-  const draft = draftQ.data!;
+  const guard = useJuniorPhotoGuard();
+  const draft = useMemo(() => guard.safeDraft(draftQ.data!), [draftQ.data, guard]);
   const input = draftInput(draft)!;
 
   const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });

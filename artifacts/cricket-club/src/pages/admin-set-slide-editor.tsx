@@ -33,6 +33,7 @@ import { LoadingState, QueryError } from "@/components/data-states";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import { downloadSafeInput } from "@/components/studio-editor/export/share-download";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { withSlideDesign } from "@/components/studio-editor/set-doc";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { canEditSlideAlone, setDraftSlides } from "@/lib/set-draft";
@@ -59,6 +60,21 @@ export default function AdminSetSlideEditor() {
   const designQ = useGetDraftSetDesign(id, {
     query: { queryKey: getGetDraftSetDesignQueryKey(id), enabled, retry: false },
   });
+  // A junior set's slide draws (and downloads) only the photos it may show (ADR-007).
+  const guard = useJuniorPhotoGuard();
+  const safe = useMemo(
+    () =>
+      draftQ.data && designQ.data
+        ? {
+            draft: guard.safeDraft(draftQ.data),
+            design: {
+              ...designQ.data,
+              document: guard.safeDesign(draftQ.data, designQ.data.document),
+            },
+          }
+        : null,
+    [draftQ.data, designQ.data, guard],
+  );
   const back = `/admin/social/set/${id}`;
   const centred = (node: React.ReactNode) => (
     <div className="studio-editor grid min-h-screen place-items-center p-6 text-center">{node}</div>
@@ -76,7 +92,7 @@ export default function AdminSetSlideEditor() {
       </p>,
     );
   }
-  if (planQ.isLoading || draftQ.isLoading || designQ.isLoading)
+  if (planQ.isLoading || draftQ.isLoading || designQ.isLoading || !guard.ready)
     return centred(<LoadingState label="Opening the slide…" />);
   // The card editor for one slide is part of the New Studio preview only.
   if (!planQ.data?.newStudio)
@@ -98,8 +114,8 @@ export default function AdminSetSlideEditor() {
   if (!isSetDocument(designQ.data.document)) return centred(<p>This set can&apos;t be edited.</p>);
   return (
     <SlideEditor
-      draft={draftQ.data}
-      design={designQ.data}
+      draft={safe?.draft ?? draftQ.data}
+      design={safe?.design ?? designQ.data}
       slideKey={key}
       back={back}
       backLink={backLink}

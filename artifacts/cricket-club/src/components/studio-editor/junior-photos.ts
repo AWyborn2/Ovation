@@ -12,7 +12,17 @@
  * The server enforces the same rule on save and on post; this only keeps the
  * editor honest about it.
  */
-import type { ClubPhoto } from "@workspace/api-client-react";
+import { useMemo } from "react";
+import {
+  getListClubPhotosQueryKey,
+  useListClubPhotos,
+  type ClubPhoto,
+} from "@workspace/api-client-react";
+import {
+  juniorSafeDesignWith,
+  photoKey,
+  type JuniorPhotoRule,
+} from "@workspace/scorecard/junior-design-photos";
 import { eligibleJuniorStockPhotos } from "@/components/weekend-carousel/model";
 
 export type PhotoRule = "senior" | "juniorCard" | "juniorSetPage";
@@ -51,3 +61,44 @@ export const PHOTO_RULE_NOTE: Record<PhotoRule, string> = {
 /** The photos a junior page may be given: the club's approved junior stock. */
 export const juniorStockOnly = (photos: ClubPhoto[]): ClubPhoto[] =>
   eligibleJuniorStockPhotos(photos);
+
+/** A draft as the guard reads it. */
+type GuardDraft = {
+  sourceMatchIsJunior?: boolean | null;
+  cardInput: unknown;
+  photoUrl?: string | null;
+  adjustments?: unknown;
+};
+
+/**
+ * Draw a junior card or junior set only with photos it may show (ADR-007):
+ * a club library photo held in its design (a template's image layer, an image
+ * override, a page background) is dropped unless it is approved junior stock;
+ * the same rule the server applies on save and on post
+ * (`@workspace/scorecard/junior-design-photos`). Fails closed: until the
+ * club's photos have loaded (or if they can't), no library photo is drawn.
+ * `ready` says the list is in, for an editor that opens a design once.
+ */
+export function useJuniorPhotoGuard() {
+  const photosQ = useListClubPhotos(undefined, {
+    query: { queryKey: getListClubPhotosQueryKey(), staleTime: 60_000 },
+  });
+  const photos = Array.isArray(photosQ.data) ? photosQ.data : [];
+  const rule = useMemo<JuniorPhotoRule>(() => {
+    const keys = (p: ClubPhoto) => [photoKey(p.url), photoKey(p.thumbUrl)];
+    return {
+      approved: new Set(juniorStockOnly(photos).flatMap(keys)),
+      library: new Set(photos.flatMap(keys)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `photos` follows the query's data
+  }, [photosQ.data]);
+  return useMemo(() => {
+    const safeDesign = <D>(draft: GuardDraft, design: D): D =>
+      juniorSafeDesignWith(draft, design, rule).design as D;
+    const safeDraft = <T extends GuardDraft>(draft: T): T => {
+      const safe = juniorSafeDesignWith(draft, draft.adjustments, rule);
+      return safe.removed ? { ...draft, adjustments: safe.design } : draft;
+    };
+    return { ready: photosQ.isSuccess || photosQ.isError, safeDesign, safeDraft };
+  }, [rule, photosQ.isSuccess, photosQ.isError]);
+}

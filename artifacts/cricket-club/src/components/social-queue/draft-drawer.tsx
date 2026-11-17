@@ -30,6 +30,7 @@ import { PhotoSwapGrid } from "./photo-swap-grid";
 import { SetDraftPreview } from "./set-draft-preview";
 import { draftSetDocument, setDraftLayout } from "@/lib/set-draft";
 import { useConfirm } from "@/components/confirm-dialog";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -61,6 +62,8 @@ export function DraftDrawer({
   const qc = useQueryClient();
   const confirm = useConfirm();
   const [current, setCurrent] = useState<SocialDraft | null>(draft);
+  // A junior card or set draws (and downloads) only the photos it may show (ADR-007).
+  const guard = useJuniorPhotoGuard();
   const [caption, setCaption] = useState(draft?.caption ?? "");
   const [picking, setPicking] = useState(false);
 
@@ -85,7 +88,7 @@ export function DraftDrawer({
     qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
     qc.invalidateQueries({ queryKey: getListSocialDraftRevisionsQueryKey(id) });
     if (next) {
-      setCurrent(next);
+      setCurrent(guard.safeDraft(next));
       setCaption(next.caption ?? "");
     }
   };

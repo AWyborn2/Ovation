@@ -64,6 +64,7 @@ import {
 } from "@/components/social-queue/draft-meta";
 import type { ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 
 /**
  * The Studio queue (Social Studio U8): drafts by state, filtered by family and
@@ -192,7 +193,12 @@ export default function AdminSocialQueue() {
     },
   });
 
-  const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
+  // A junior card or set draws (and downloads) only the photos it may show (ADR-007).
+  const guard = useJuniorPhotoGuard();
+  const drafts = useMemo(
+    () => ((draftsQ.data ?? []) as SocialDraft[]).map(guard.safeDraft),
+    [draftsQ.data, guard],
+  );
   const openedLink = useRef<number | null>(null);
   const requestedDraft = Number(new URLSearchParams(search).get("draft"));
   useEffect(() => {
