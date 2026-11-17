@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clampSponsorsPerSlide } from "@workspace/scorecard/kind-templates";
+import { sponsorOnClubPage } from "@workspace/scorecard/card-content";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetWeekendCarouselSources,
@@ -131,9 +132,18 @@ export function useWeekendCarousel(
   );
   const clubSponsorsPerSlide = clampSponsorsPerSlide(bundle?.settings.sponsorsPerSlide);
   const sponsorsPerSlide = perSlideOverride ?? clubSponsorsPerSlide;
-  // The sponsors the sponsors page shows (team sponsors only while their field is on).
+  // The sponsors the sponsors page shows: other team sponsors only while their
+  // field is on; the presenting and major sponsors always.
   const pageSponsorCount = (bundle?.settings.sponsorsEnabled ? bundle.activeSponsors : []).filter(
-    (sp) => visibleFields.has("sponsors.teamSponsors") || !(sp.grades ?? []).some((g) => g.trim()),
+    (sp) =>
+      sponsorOnClubPage(
+        {
+          teamSponsor: (sp.grades ?? []).some((g) => g.trim()),
+          tier: sp.tier,
+          presenting: sp.isPresenting,
+        },
+        visibleFields.has("sponsors.teamSponsors"),
+      ),
   ).length;
   // Results, match summary and team list slides (P7) show their own kind's fields.
   const setKind = setType === "matchDay" ? null : setType;

@@ -26,6 +26,7 @@ import {
   type MatchDayFixtureContent,
   type ResultContent,
   type TeamListContent,
+  sponsorOnClubPage,
 } from "@workspace/scorecard/card-content";
 
 // Same club-time standard as the fixture and availability engines. Tenants do
@@ -439,8 +440,12 @@ export function buildWeekendSlides(
     (s.grades ?? []).some((g) => gradeMatchKey(g));
   // The sponsors page holds every sponsor; team sponsors print only when
   // `sponsors.teamSponsors` is on (P6), so count what the page will show.
-  const pageSponsors = activeSponsors.filter(
-    (s) => show("sponsors.teamSponsors") || !isTeamSponsor(s),
+  // The presenting and major sponsors always show (Ash, 17 Nov 2026).
+  const pageSponsors = activeSponsors.filter((s) =>
+    sponsorOnClubPage(
+      { teamSponsor: isTeamSponsor(s), tier: s.tier, presenting: s.isPresenting },
+      show("sponsors.teamSponsors"),
+    ),
   );
   // A set with no senior game is junior: its cover and sponsors page show only
   // the club's approved junior stock images, never a library photo (ADR-007).
@@ -497,6 +502,7 @@ export function buildWeekendSlides(
         logoUrl: s.logoUrl,
         tier: s.tier,
         teamSponsor: isTeamSponsor(s),
+        presenting: s.isPresenting,
       })),
       nextHomeGame: sponsorsPage?.nextHomeGame ?? null,
       socials: sponsorsPage?.socials ?? [],

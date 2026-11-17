@@ -70,7 +70,8 @@ function sponsorsPage(v: Record<string, unknown>): boolean {
         str(s.name) &&
         str(s.logoUrl) &&
         optional(s.tier, (t) => t === "major" || t === "standard") &&
-        optional(s.teamSponsor, (t) => typeof t === "boolean"),
+        optional(s.teamSponsor, (t) => typeof t === "boolean") &&
+        optional(s.presenting, (t) => typeof t === "boolean"),
     ) &&
     optional(v.thankYou, str) &&
     optional(v.cta, str) &&

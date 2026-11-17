@@ -8,6 +8,7 @@
 import { dayFixtureRows } from "./day";
 import { resultDaySlideInput, resultSlideInput } from "./result";
 import { teamListSlideInput } from "./team-list";
+import { sponsorOnClubPage } from "./match-day";
 import type { CardContent, MatchDayFixtureContent, MatchDaySponsorsContent } from "./types";
 
 export interface ContentInputOptions {
@@ -83,7 +84,9 @@ function sponsorsPage(
   c: MatchDaySponsorsContent,
   visible: ReadonlySet<string>,
 ): Record<string, unknown> {
-  const shown = c.sponsors.filter((s) => visible.has("sponsors.teamSponsors") || !s.teamSponsor);
+  const shown = c.sponsors.filter((s) =>
+    sponsorOnClubPage(s, visible.has("sponsors.teamSponsors")),
+  );
   const majors = visible.has("sponsors.tiers") ? shown.filter((s) => s.tier === "major") : [];
   const ordered = majors.length ? [...majors, ...shown.filter((s) => s.tier !== "major")] : shown;
   // The thank-you names the sponsors, so the no-sponsor page keeps its club thank-you.
