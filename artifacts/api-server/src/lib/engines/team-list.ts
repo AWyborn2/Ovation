@@ -35,6 +35,8 @@ export const TEAM_LIST_LEAD_MS = 7 * 24 * 60 * 60 * 1000;
 export type TeamListResult = { drafted: number; refreshed: number; skipped: number };
 
 function surnameOf(displayName: string): string {
+  // A withheld player prints whole ("PRIVATE PLAYER"), never just "PLAYER".
+  if (displayName.trim().toLowerCase() === "private player") return "PRIVATE PLAYER";
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
   return (parts[parts.length - 1] ?? "").toUpperCase();
 }
