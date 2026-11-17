@@ -154,6 +154,10 @@
         localStorage.removeItem(KEY);
         render();
       }
+      function viewPlatform() {
+        localStorage.setItem(KEY, "platform");
+        location.href = "/platform-admin";
+      }
       function viewTenant(id) {
         localStorage.setItem(KEY, String(id));
         location.href = "/";
@@ -190,7 +194,10 @@
       function render() {
         const cur = current();
         const c = document.getElementById("current");
-        if (cur) {
+        if (cur === "platform") {
+          c.innerHTML =
+            "Active override: <b>Platform</b> (no club) — <a href='/platform-admin'>open the platform console →</a>";
+        } else if (cur) {
           const t = TENANTS.find((x) => String(x.id) === String(cur));
           c.innerHTML =
             "Active override: <b>" +
@@ -230,6 +237,17 @@
             ")'>Pin only</button>" +
             "</div>";
           list.appendChild(li);
+        }
+        // Dev previews only: clear the club so the platform console (platform
+        // mode) opens. The API honours it on `.replit.dev` hosts alone.
+        if (location.hostname.endsWith(".replit.dev")) {
+          const platLi = document.createElement("li");
+          if (cur === "platform") platLi.className = "active";
+          platLi.innerHTML =
+            "<div class='meta'><span class='name'>Platform</span>" +
+            "<span class='slug'>no club: the platform console and landing</span></div>" +
+            "<div class='actions'><button class='view' onclick='viewPlatform()'>Open console</button></div>";
+          list.appendChild(platLi);
         }
         const clearLi = document.createElement("li");
         clearLi.innerHTML =
