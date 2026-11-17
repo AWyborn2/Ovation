@@ -1,0 +1,283 @@
+{
+  "kind": "matchDay",
+  "headline": "Team lists carousel",
+  "roundLabel": "2026-11-13 – 2026-11-22",
+  "weekendCarousel": {
+    "size": "square",
+    "slides": [
+      {
+        "id": "title",
+        "data": {
+          "hashtag": "#UpTheHeaders",
+          "photoPlacement": "contained",
+          "presentingSponsorName": "4 Life physiotherapy"
+        },
+        "label": "Title page",
+        "junior": false,
+        "content": {
+          "kind": "matchDay",
+          "page": "title",
+          "heading": "Team lists",
+          "dateRange": "FRI 13 NOV – SUN 22 NOV",
+          "roundLabel": "MIXED ROUNDS",
+          "fixtureCount": 9
+        },
+        "photoId": null,
+        "warnings": [
+          "This carousel has 11 slides. Facebook and Instagram take at most 10, so it can be downloaded but not published there. Select fewer fixtures or matches."
+        ],
+        "sponsorsOn": true,
+        "visibleFields": [
+          "title.heading",
+          "title.dates",
+          "title.round",
+          "title.coverPhoto",
+          "title.presentingSponsor",
+          "fixture.grade",
+          "fixture.opposition",
+          "fixture.homeAway",
+          "fixture.date",
+          "fixture.startTime",
+          "fixture.venue",
+          "fixture.round",
+          "fixture.oppositionCrest",
+          "fixture.teamSponsor",
+          "fixture.photo",
+          "sponsors.logos"
+        ]
+      },
+      {
+        "id": "fixture-244",
+        "data": {
+          "hashtag": "#UpTheHeaders",
+          "photoPlacement": "contained",
+          "presentingSponsorName": "4 Life physiotherapy"
+        },
+        "label": "A Grade v Waroona Cricket Club",
+        "junior": false,
+        "content": {
+          "day": "2026-11-14",
+          "date": "SAT 14 NOV",
+          "kind": "teamList",
+          "page": "team",
+          "grade": "A Grade",
+          "venue": "Waroona Recreation Complex",
+          "junior": false,
+          "source": {
+            "date": "SAT 14 NOV",
+            "kind": "teamList",
+            "grade": "A Grade",
+            "venue": "Waroona Recreation Complex",
+            "players": [
+              { "order": 1, "surname": "PLAYER1", "shirtNumber": "6", "firstInitial": "A" },
+              { "order": 2, "surname": "PLAYER2", "shirtNumber": "2", "firstInitial": "A" },
+              { "order": 3, "surname": "PLAYER3", "shirtNumber": "5", "firstInitial": "A" },
+              { "order": 4, "surname": "PLAYER4", "shirtNumber": "85", "firstInitial": "A" },
+              { "order": 5, "surname": "PLAYER5", "shirtNumber": "77", "firstInitial": "A" },
+              { "order": 6, "surname": "PLAYER6", "shirtNumber": "10", "firstInitial": "A" },
+              {
+                "role": "WK",
+                "order": 7,
+                "surname": "PLAYER7",
+                "shirtNumber": "19",
+                "firstInitial": "A"
+              },
+              { "order": 8, "surname": "PLAYER8", "shirtNumber": "23", "firstInitial": "A" },
+              {
+                "role": "C",
+                "order": 9,
+                "surname": "PLAYER9",
+                "shirtNumber": "7",
+                "firstInitial": "A"
+              },
+              { "order": 10, "surname": "PLAYER10", "shirtNumber": "27", "firstInitial": "A" },
+              { "order": 11, "surname": "PLAYER11", "shirtNumber": "9", "firstInitial": "A" },
+              { "order": 12, "surname": "PLAYER12", "shirtNumber": "4", "firstInitial": "A" }
+            ],
+            "homeAway": "AWAY",
+            "opponent": "Waroona Cricket Club",
+            "numbering": "shirt",
+            "startTime": "12:15 PM",
+            "gradeRound": "A GRADE — ROUND 6",
+            "roundLabel": "ROUND 6",
+            "venueDateTime": "Waroona Recreation Complex • SAT 14 NOV • 12:15 PM",
+            "competitionLine": "A Grade",
+            "opponentLogoUrl": "https://res.cloudinary.com/playhq/image/upload/h_256,w_256/v1/production/ca/beff7c93-60a7-4364-8a4f-dd450a99a3c7/1689172392105/logo.jpg?_a=BAMAMifg0"
+          },
+          "homeAway": "AWAY",
+          "fixtureId": 244,
+          "startTime": "12:15 PM",
+          "opposition": {
+            "name": "Waroona",
+            "rawName": "Waroona Cricket Club",
+            "crestUrl": "https://res.cloudinary.com/playhq/image/upload/h_256,w_256/v1/production/ca/beff7c93-60a7-4364-8a4f-dd450a99a3c7/1689172392105/logo.jpg?_a=BAMAMifg0",
+            "monogram": "WA"
+          },
+          "roundLabel": "ROUND 6",
+          "juniorTeamName": null
+        },
+        "photoId": null,
+        "warnings": [],
+        "sponsorsOn": true,
+        "visibleFields": [
+          "team.grade",
+          "team.players",
+          "team.match",
+          "team.round",
+          "team.oppositionCrest",
+          "team.shirtNumbers",
+          "team.debuts",
+          "team.photo",
+          "team.teamSponsor"
+        ]
+      },
+      {
+        "id": "sponsors",
+        "data": { "hashtag": "#UpTheHeaders", "photoPlacement": "contained" },
+        "label": "Sponsors",
+        "junior": false,
+        "content": {
+          "cta": "SUPPORT THE BUSINESSES THAT SUPPORT US",
+          "kind": "matchDay",
+          "page": "sponsors",
+          "heading": "Team lists",
+          "socials": [],
+          "sponsors": [
+            {
+              "name": "McDonalds Halls Head",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/ac9b047f-94bb-4d6e-89c0-662c4f66b088",
+              "teamSponsor": false
+            },
+            {
+              "name": "Boundary Island",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/eb740088-4e6b-4506-9611-67ae0d65b7c9",
+              "teamSponsor": false
+            },
+            {
+              "name": "Thorny Devil Brewrey",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/09d5c521-c541-4cdb-9130-d6c97ffecea7",
+              "teamSponsor": false
+            },
+            {
+              "name": "Wedgetail Brewing",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/862c2cd5-1fed-4c12-8d4c-889a7ee2c8ca",
+              "teamSponsor": false
+            },
+            {
+              "name": "Readyforce Personnel",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/f39eb2e4-f12b-465f-91a6-93bf8816b302",
+              "teamSponsor": false
+            },
+            {
+              "name": "Buswest",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/99e15d84-2029-4542-b273-6b76060becd0",
+              "teamSponsor": false
+            },
+            {
+              "name": "Grant Matthews Agencies",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/4ff90561-216f-4f62-8bee-3b1fef5c0070",
+              "teamSponsor": false
+            },
+            {
+              "name": "No Idea Solutions",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/aab87785-ad21-4384-a728-2465244967ab",
+              "teamSponsor": false
+            },
+            {
+              "name": "Noise Pilot",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/6cce966d-7d46-4e9b-8fb9-d895f0bc1132",
+              "teamSponsor": false
+            },
+            {
+              "name": "Kingsbury Cricket Australia",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/8574022e-4409-4c49-b02c-1ca93ae03df0",
+              "teamSponsor": false
+            },
+            {
+              "name": "Lisa Munday MLA",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/ec30d643-00a4-4912-a4f5-59e2a9cf3739",
+              "teamSponsor": false
+            },
+            {
+              "name": "4 Life physiotherapy",
+              "tier": "major",
+              "logoUrl": "/api/storage/objects/uploads/41633290-8bb6-46b2-98b0-3b6d6c487256",
+              "teamSponsor": true
+            },
+            {
+              "name": "Community Bank Halls Head",
+              "tier": "major",
+              "logoUrl": "/api/storage/objects/uploads/d132ada6-7b85-4c13-b825-ff2e93ea5003",
+              "teamSponsor": true
+            },
+            {
+              "name": "Peel Fencing",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/0ebeb89f-8e79-49b3-945d-8f1d137242c4",
+              "teamSponsor": true
+            },
+            {
+              "name": "All Out Auto",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/663eaa94-cf33-4f52-85e8-50242698058a",
+              "teamSponsor": true
+            },
+            {
+              "name": "Gilbert and Sons",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/2bf75f78-b003-4247-b69f-72d1ba3b544d",
+              "teamSponsor": true
+            },
+            {
+              "name": "Perfect Pizza",
+              "tier": "standard",
+              "logoUrl": "/api/storage/objects/uploads/ee0ada34-8c08-423e-a1da-32c995cc4c4b",
+              "teamSponsor": true
+            }
+          ],
+          "thankYou": "THANK YOU TO OUR SPONSORS",
+          "dateRange": "FRI 13 NOV – SUN 22 NOV",
+          "roundLabel": "MIXED ROUNDS",
+          "fixtureCount": 9,
+          "nextHomeGame": null
+        },
+        "photoId": null,
+        "warnings": [],
+        "sponsorsOn": false,
+        "visibleFields": [
+          "title.heading",
+          "title.dates",
+          "title.round",
+          "title.coverPhoto",
+          "title.presentingSponsor",
+          "fixture.grade",
+          "fixture.opposition",
+          "fixture.homeAway",
+          "fixture.date",
+          "fixture.startTime",
+          "fixture.venue",
+          "fixture.round",
+          "fixture.oppositionCrest",
+          "fixture.teamSponsor",
+          "fixture.photo",
+          "sponsors.logos"
+        ]
+      }
+    ],
+    "setType": "teamList",
+    "version": 3,
+    "templateRef": { "version": 4, "libraryTemplateId": 66 },
+    "submissionId": "155e2fbe-997d-4d94-83d7-417e93c97136"
+  }
+}

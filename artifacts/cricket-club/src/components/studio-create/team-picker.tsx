@@ -3,23 +3,22 @@
  * S2): every upcoming senior fixture, each badged with where its names come
  * from (Selection Hub, PlayHQ, Draft, or Fill in by hand). Picking one fills
  * the card from the server's content builder, as Create a card's fixture
- * prefill does (fill-in players excluded).
+ * prefill does (fill-in players excluded). The badges come from one read of
+ * every upcoming fixture's saved list, so a fixture weeks ahead is badged too.
  */
 import { useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
-  getFixtureTeamList,
-  getGetFixtureTeamListQueryKey,
   getSocialTeamListPrefill,
   useListFixtures,
+  useListFixtureTeamListSources,
   type Fixture,
 } from "@workspace/api-client-react";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
 import { LoadingState } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { fmtFixtureWhen } from "./format";
-import { TEAM_SOURCE_LABELS, teamSourceOf, type TeamSource } from "./model";
+import { TEAM_SOURCE_LABELS, teamSourceOf, teamSourcesById, type TeamSource } from "./model";
 import { OptionRow } from "./option-row";
 
 export function TeamPicker({
@@ -38,12 +37,8 @@ export function TeamPicker({
         .sort((a, b) => a.startAt.localeCompare(b.startAt)),
     [fixturesQ.data],
   );
-  const listsQ = useQueries({
-    queries: fixtures.map((f) => ({
-      queryKey: getGetFixtureTeamListQueryKey(f.id),
-      queryFn: () => getFixtureTeamList(f.id),
-    })),
-  });
+  const sourcesQ = useListFixtureTeamListSources();
+  const sources = useMemo(() => teamSourcesById(sourcesQ.data), [sourcesQ.data]);
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,10 +68,10 @@ export function TeamPicker({
   return (
     <div className="space-y-2">
       <ul className="flex max-w-3xl flex-col gap-2">
-        {fixtures.map((f, i) => {
-          const q = listsQ[i];
-          const source: TeamSource | null = q?.isSuccess ? teamSourceOf(q.data ?? null) : null;
-          const players = q?.data?.players.length ?? 0;
+        {fixtures.map((f) => {
+          const list = sources?.get(f.id);
+          const source: TeamSource | null = sources ? teamSourceOf(list) : null;
+          const players = source && source !== "none" ? (list?.playerCount ?? 0) : 0;
           return (
             <OptionRow
               key={f.id}

@@ -9884,6 +9884,19 @@ export const CreateFixtureBody = zod.object({
 
 
 /**
+ * One summary per upcoming fixture of the club that has a saved team list (published or not), for New Studio's Create "Which team?" badges. A fixture with no row has no saved list. `playerCount` leaves fill-in players out. Read in one call, so every fixture in the list gets its badge however far ahead it is.
+ * @summary Where each upcoming fixture's saved team list came from (admin only)
+ */
+export const ListFixtureTeamListSourcesResponseItem = zod.object({
+  "fixtureId": zod.number(),
+  "source": zod.string().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\"'),
+  "isPublished": zod.boolean(),
+  "playerCount": zod.number().describe('Players on the saved list (fill-ins left out)')
+})
+export const ListFixtureTeamListSourcesResponse = zod.array(ListFixtureTeamListSourcesResponseItem)
+
+
+/**
  * @summary Update a fixture
  */
 export const UpdateFixtureParams = zod.object({
@@ -16095,6 +16108,19 @@ export const ListJuniorFixturesResponseItem = zod.object({
   "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
 })
 export const ListJuniorFixturesResponse = zod.array(ListJuniorFixturesResponseItem)
+
+
+/**
+ * One summary per upcoming junior fixture (the same window as listJuniorFixtures) that has a saved junior team list, published or not, for New Studio's Create "Which team?" badges. `fixtureId` is the junior fixture id. Junior tables only. Empty when the club's junior sync is switched off.
+ * @summary Where each upcoming junior fixture's saved team list came from (admin only)
+ */
+export const ListJuniorFixtureTeamListSourcesResponseItem = zod.object({
+  "fixtureId": zod.number(),
+  "source": zod.string().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\"'),
+  "isPublished": zod.boolean(),
+  "playerCount": zod.number().describe('Players on the saved list (fill-ins left out)')
+})
+export const ListJuniorFixtureTeamListSourcesResponse = zod.array(ListJuniorFixtureTeamListSourcesResponseItem)
 
 
 /**

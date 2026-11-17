@@ -39,13 +39,20 @@ const FIXTURES = [
     roundLabel: "Round 5",
   },
 ];
-const list = (fixtureId: number, source: string, isPublished: boolean) => ({
-  id: fixtureId,
+// A fixture weeks ahead (after the summer break) is badged from the same one read.
+const LATER = {
+  id: 14,
+  grade: "A Grade",
+  opponentName: "Pinjarra",
+  startAt: "2027-01-09T02:00:00Z",
+  isHome: true,
+  roundLabel: "Round 9",
+};
+const source = (fixtureId: number, src: string, isPublished: boolean, playerCount = 11) => ({
   fixtureId,
-  players: [{ name: "A Player" }],
+  source: src,
   isPublished,
-  source,
-  createdAt: "2026-10-29T00:00:00Z",
+  playerCount,
 });
 
 type Call = { url: string; method: string; body: unknown };
@@ -54,8 +61,8 @@ function stubApi() {
   const calls: Call[] = [];
   const routes: Array<[string, unknown]> = [
     [
-      "/juniors/fixtures/31/team-list",
-      { teamList: { players: [{ name: "x" }], isPublished: true, source: "selection" } },
+      "/juniors/fixtures/team-list-sources",
+      [source(31, "selection", true, 9), source(32, "playhq", true, 8)],
     ],
     [
       "/juniors/fixtures/31/social-prefill",
@@ -68,11 +75,29 @@ function stubApi() {
     ],
     [
       "/juniors/fixtures",
-      [{ id: 31, ageGroup: "Year 6", teamName: "Hawks", opponentName: "Eagles", startAt: null }],
+      [
+        { id: 31, ageGroup: "Year 6", teamName: "Hawks", opponentName: "Eagles", startAt: null },
+        // 12:30pm in Perth is 04:30 UTC.
+        {
+          id: 32,
+          ageGroup: "Year 4",
+          teamName: "Hawks",
+          opponentName: "Falcons",
+          startAt: "2026-12-05T04:30:00Z",
+        },
+        {
+          id: 33,
+          ageGroup: "Year 8",
+          teamName: "Hawks",
+          opponentName: "Kites",
+          startAt: "2027-02-06T01:00:00Z",
+        },
+      ],
     ],
-    ["/fixtures/11/team-list", list(11, "selection", true)],
-    ["/fixtures/12/team-list", list(12, "playhq", true)],
-    ["/fixtures/13/team-list", null],
+    [
+      "/fixtures/team-list-sources",
+      [source(11, "selection", true), source(12, "playhq", true), source(14, "admin", false, 4)],
+    ],
     [
       "/social-prefill/team-list/11",
       {
@@ -80,7 +105,7 @@ function stubApi() {
         warnings: [],
       },
     ],
-    ["/fixtures", FIXTURES],
+    ["/fixtures", [...FIXTURES, LATER]],
     ["/club-templates", { templates: [] }],
     ["/template-library/preview-input", { input: { kind: "teamList" } }],
     [
@@ -135,6 +160,12 @@ describe("Create wizard", () => {
       "PlayHQ",
     );
     expect(screen.queryByRole("button", { name: /Under 13/ })).toBeNull();
+    // Times are Perth time (04:30 UTC is 12:30pm), whatever the browser's zone.
+    expect(a).toHaveTextContent("Sat, 31 Oct, 12:30pm · 11 players");
+    // Weeks ahead still gets its badge, and a fixture with no saved list is "Fill in by hand".
+    expect(screen.getByRole("button", { name: /A Grade v Pinjarra/ })).toHaveTextContent("Draft");
+    // The badges come from one read, not a team list request per fixture.
+    expect(calls.filter((c) => /\/fixtures\/\d+\/team-list/.test(c.url))).toHaveLength(0);
 
     fireEvent.click(a);
     await waitFor(() => expect(url()).toBe("/admin/social/create?kind=teamList&step=4"));
@@ -173,6 +204,12 @@ describe("Create wizard", () => {
     );
     const team = await screen.findByRole("button", { name: /Year 6 Hawks vs Eagles/ });
     await waitFor(() => expect(team).toHaveTextContent("Selection Hub"));
+    const later = screen.getByRole("button", { name: /Year 4 Hawks vs Falcons/ });
+    expect(later).toHaveTextContent("PlayHQ");
+    expect(later).toHaveTextContent("Sat, 5 Dec, 12:30pm · 8 players");
+    expect(screen.getByRole("button", { name: /Year 8 Hawks vs Kites/ })).toHaveTextContent(
+      "Fill in by hand",
+    );
     fireEvent.click(team);
     await waitFor(() =>
       expect(url()).toBe("/admin/social/create?team=junior&kind=teamList&step=4"),

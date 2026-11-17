@@ -168,6 +168,56 @@ router.delete(
   },
 );
 
+/**
+ * Players a saved list puts on the card: fill-ins (playerId >= FILL_IN_THRESHOLD)
+ * never count, as they never appear on a published team list.
+ */
+export function teamListPlayerCount(players: readonly TeamListPlayer[]): number {
+  return players.filter((p) => p.playerId == null || p.playerId < FILL_IN_THRESHOLD).length;
+}
+
+/**
+ * New Studio's Create "Which team?" badges: every upcoming fixture's saved list in
+ * one read (admin only: it shows unpublished drafts). One call rather than a team
+ * list request per fixture, so a whole season of fixtures is badged at once. A
+ * short look-back keeps a match starting while the picker loads in the answer.
+ */
+const TEAM_LIST_SOURCES_LOOKBACK_MS = 12 * 60 * 60 * 1000;
+
+router.get("/fixtures/team-list-sources", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const rows = await db
+    .select({
+      fixtureId: teamListsTable.fixtureId,
+      source: teamListsTable.source,
+      isPublished: teamListsTable.isPublished,
+      players: teamListsTable.players,
+    })
+    .from(teamListsTable)
+    .innerJoin(
+      fixturesTable,
+      and(
+        eq(fixturesTable.id, teamListsTable.fixtureId),
+        eq(fixturesTable.tenantId, teamListsTable.tenantId),
+      ),
+    )
+    .where(
+      and(
+        eq(teamListsTable.tenantId, tenantId),
+        gte(fixturesTable.startAt, new Date(Date.now() - TEAM_LIST_SOURCES_LOOKBACK_MS)),
+      ),
+    )
+    .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
+  res.json(
+    rows.map((r) => ({
+      fixtureId: r.fixtureId,
+      source: r.source,
+      isPublished: r.isPublished,
+      playerCount: teamListPlayerCount(r.players),
+    })),
+  );
+});
+
 router.get("/fixtures/:id/team-list", async (req, res): Promise<void> => {
   const params = GetFixtureTeamListParams.safeParse(req.params);
   if (!params.success) {

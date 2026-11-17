@@ -5,13 +5,11 @@
  * the junior team-list builder (a private child is "Private Player", and there is no
  * photo until the server picks an allowed one for the draft).
  */
-import { useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
-  getGetJuniorFixtureTeamListQueryKey,
-  getJuniorFixtureTeamList,
   getJuniorTeamListPrefill,
+  useListJuniorFixtureTeamListSources,
   useListJuniorFixtures,
   type JuniorFixture,
 } from "@workspace/api-client-react";
@@ -19,18 +17,16 @@ import { LoadingState } from "@/components/data-states";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { juniorFixtureTitle } from "@/lib/junior-fixtures";
 import { fmtFixtureWhen } from "./format";
-import { TEAM_SOURCE_LABELS, teamSourceOf, type TeamSource } from "./model";
+import { TEAM_SOURCE_LABELS, teamSourceOf, teamSourcesById, type TeamSource } from "./model";
 import { OptionRow } from "./option-row";
 
 export function JuniorTeamPicker({ onPick }: { onPick: (input: Record<string, unknown>) => void }) {
   const fixturesQ = useListJuniorFixtures();
   const fixtures = (fixturesQ.data ?? []) as JuniorFixture[];
-  const listsQ = useQueries({
-    queries: fixtures.map((f) => ({
-      queryKey: getGetJuniorFixtureTeamListQueryKey(f.id),
-      queryFn: () => getJuniorFixtureTeamList(f.id),
-    })),
-  });
+  // One read of every upcoming junior fixture's saved list (junior tables only), not
+  // an editor view per fixture, so every fixture in the list gets its badge.
+  const sourcesQ = useListJuniorFixtureTeamListSources();
+  const sources = useMemo(() => teamSourcesById(sourcesQ.data), [sourcesQ.data]);
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,17 +55,16 @@ export function JuniorTeamPicker({ onPick }: { onPick: (input: Record<string, un
   return (
     <div className="space-y-2">
       <ul className="flex max-w-3xl flex-col gap-2">
-        {fixtures.map((f, i) => {
-          const q = listsQ[i];
-          const list = q?.data?.teamList ?? null;
-          const source: TeamSource | null = q?.isSuccess ? teamSourceOf(list) : null;
+        {fixtures.map((f) => {
+          const list = sources?.get(f.id);
+          const source: TeamSource | null = sources ? teamSourceOf(list) : null;
           return (
             <OptionRow
               key={f.id}
               label={[f.ageGroup, juniorFixtureTitle(f)].filter(Boolean).join(" ")}
               detail={[
                 f.startAt ? fmtFixtureWhen(f.startAt) : null,
-                source === "none" ? "No list yet" : list ? `${list.players.length} players` : null,
+                source === "none" ? "No list yet" : list ? `${list.playerCount} players` : null,
               ]
                 .filter(Boolean)
                 .join(" · ")}
