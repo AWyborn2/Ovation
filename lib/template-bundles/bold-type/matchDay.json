@@ -1,6 +1,6 @@
 {
   "name": "Bold Type matchDay",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -2962,11 +2962,14 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:0gytoi914j0ch2"
+            "sig": "shape:0gytoi914j0ch2",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--gold)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -2974,7 +2977,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l14",
@@ -2984,27 +2987,35 @@
               "square": {
                 "x": 75.6,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.6,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.3
               },
               "story": {
                 "x": 75.6,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 1.61
               }
             },
-            "sig": "text:0uguiud1hd0wjm"
+            "sig": "text:1x4p5nq1jiaiub",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--gold)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3012,7 +3023,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l15",
@@ -3022,11 +3033,19 @@
               "landscape": {
                 "x": 87.19,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.61,
                 "h": 2.86
               }
             },
-            "sig": "text:0fbrymq0a6903f"
+            "sig": "text:0gz7g9z1g7d1bs",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -3407,7 +3426,10 @@
                         "h": 3.36
                       }
                     },
-                    "sig": "shape:0v5sn890r8rvja"
+                    "sig": "shape:0v5sn890r8rvja",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "shape",
@@ -3432,7 +3454,10 @@
                         "h": 2.52
                       }
                     },
-                    "sig": "shape:173nw470xtwmxy"
+                    "sig": "shape:173nw470xtwmxy",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "shape",
@@ -3451,7 +3476,10 @@
                         "h": 3.36
                       }
                     },
-                    "sig": "shape:18ymlk21se3s11"
+                    "sig": "shape:18ymlk21se3s11",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "text",
@@ -3476,7 +3504,10 @@
                         "h": 2.13
                       }
                     },
-                    "sig": "text:1fnom290ukttoe"
+                    "sig": "text:1fnom290ukttoe",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "text",
@@ -3507,7 +3538,10 @@
                         "h": 1.56
                       }
                     },
-                    "sig": "text:0es17cg0ioxvyb"
+                    "sig": "text:0es17cg0ioxvyb",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "text",
@@ -3532,7 +3566,10 @@
                         "h": 2.06
                       }
                     },
-                    "sig": "text:0ohz1f01q0kfh5"
+                    "sig": "text:0ohz1f01q0kfh5",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   }
                 ],
                 "sig": "group:0m55fs0144826n"
@@ -6620,11 +6657,14 @@
                 "h": 4.4
               }
             },
-            "sig": "shape:0gytoi914j0ch2"
+            "sig": "shape:0gytoi914j0ch2",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--gold)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6632,7 +6672,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l14",
@@ -6642,27 +6682,35 @@
               "square": {
                 "x": 75.6,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.6,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.3
               },
               "story": {
                 "x": 75.6,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 1.61
               }
             },
-            "sig": "text:0uguiud1hd0wjm"
+            "sig": "text:1x4p5nq1jiaiub",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--gold)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6670,7 +6718,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l15",
@@ -6680,11 +6728,19 @@
               "landscape": {
                 "x": 87.19,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.61,
                 "h": 2.86
               }
             },
-            "sig": "text:0fbrymq0a6903f"
+            "sig": "text:0gz7g9z1g7d1bs",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

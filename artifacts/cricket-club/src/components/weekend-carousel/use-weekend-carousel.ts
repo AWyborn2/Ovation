@@ -49,6 +49,7 @@ import {
   readCardContentSettings,
   readContentOverride,
   resolveVisibleFields,
+  shortDateRange,
   type ContentOverride,
 } from "@workspace/scorecard/card-content";
 
@@ -513,7 +514,8 @@ export function useWeekendCarousel(
           cardInput: {
             kind: "matchDay",
             headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
-            roundLabel: `${generated!.from} – ${generated!.to}`,
+            // The set's name in the queue and the set editor: "13–22 Nov".
+            roundLabel: shortDateRange(generated!.from, generated!.to),
             // Version 3 (ADR-011): drawn with a template, never a pack; the server
             // assembles and stores the document. Slides keep their content snapshot.
             weekendCarousel: {

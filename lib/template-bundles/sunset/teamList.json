@@ -1,6 +1,6 @@
 {
   "name": "Sunset teamList",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -304,19 +304,19 @@
               "square": {
                 "x": 17.5,
                 "y": 7.01,
-                "w": 7.89,
+                "w": 58.57,
                 "h": 4.81
               },
               "portrait": {
                 "x": 17.5,
                 "y": 5.61,
-                "w": 7.89,
+                "w": 58.57,
                 "h": 3.85
               },
               "story": {
                 "x": 17.5,
                 "y": 3.95,
-                "w": 7.89,
+                "w": 58.57,
                 "h": 2.71
               }
             },
@@ -386,19 +386,19 @@
               "square": {
                 "x": 17.5,
                 "y": 12.13,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.94
               },
               "portrait": {
                 "x": 17.5,
                 "y": 9.7,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.56
               },
               "story": {
                 "x": 17.5,
                 "y": 6.82,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.09
               }
             },
@@ -567,7 +567,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -588,25 +588,25 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 27.39,
+                "x": 50,
                 "y": 12.66,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.76
               },
               "portrait": {
-                "x": 27.39,
+                "x": 50,
                 "y": 10.13,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.41
               },
               "story": {
-                "x": 27.39,
+                "x": 50,
                 "y": 7.12,
-                "w": 68.61,
+                "w": 44,
                 "h": 0.99
               }
             },
-            "sig": "text:1fydl2e0eh0egd"
+            "sig": "text:0du1bkz16mejbm"
           },
           {
             "kind": "text",
@@ -618,7 +618,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -639,13 +639,13 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 61.88,
+                "x": 60.83,
                 "y": 12.59,
                 "w": 36.02,
                 "h": 1.75
               }
             },
-            "sig": "text:1wg573a1nn9c4z"
+            "sig": "text:0uqcomx1x71plm"
           },
           {
             "kind": "shape",

@@ -78,6 +78,24 @@ export function teamListContent(
   };
 }
 
+const words = (s: string) =>
+  s
+    .toUpperCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+
+/**
+ * The competition line a team list prints beside its grade and round: "" when
+ * it only says the grade again. Every built list sets it to the grade, so
+ * "{{gradeRound}} · {{competitionLine}}" printed "B GRADE — ROUND 7 · B GRADE";
+ * a line that adds something ("One Day") is kept as it is.
+ */
+export function distinctCompetitionLine(gradeRound: string, competitionLine: string): string {
+  const line = words(competitionLine);
+  if (!line) return "";
+  return ` ${words(gradeRound)} `.includes(` ${line} `) ? "" : competitionLine;
+}
+
 /** The optional team list fields a single card's input carries (photo and sponsor are the renderer's). */
 const TEAM_LIST_INPUT_FIELDS = [
   "team.round",

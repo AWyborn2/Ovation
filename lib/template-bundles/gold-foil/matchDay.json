@@ -1,6 +1,6 @@
 {
   "name": "Gold Foil matchDay",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3212,7 +3212,10 @@
                 "h": 2.68
               }
             },
-            "sig": "shape:00l70sc0po4efj"
+            "sig": "shape:00l70sc0po4efj",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "shape",
@@ -3234,11 +3237,14 @@
                 "h": 4.72
               }
             },
-            "sig": "shape:0ww2yye0xn543x"
+            "sig": "shape:0ww2yye0xn543x",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3246,7 +3252,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l15",
@@ -3256,27 +3262,35 @@
               "square": {
                 "x": 75.41,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.41,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 2.3
               },
               "story": {
                 "x": 75.41,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 1.61
               }
             },
-            "sig": "text:0xx6o0t1fxzoyu"
+            "sig": "text:15ex5ze1a9hxcb",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3284,7 +3298,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l16",
@@ -3294,11 +3308,19 @@
               "landscape": {
                 "x": 87.11,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.6,
                 "h": 2.86
               }
             },
-            "sig": "text:02axjui0j6oj53"
+            "sig": "text:06hnsfn03ptg5s",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -3632,7 +3654,10 @@
                 "h": 3.36
               }
             },
-            "sig": "shape:0cefj181rcuxcl"
+            "sig": "shape:0cefj181rcuxcl",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -3678,7 +3703,10 @@
                 "h": 2.52
               }
             },
-            "sig": "shape:1b1u6mo00zkwgz"
+            "sig": "shape:1b1u6mo00zkwgz",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -3718,7 +3746,10 @@
                 "h": 3.36
               }
             },
-            "sig": "shape:12xx9eb01muqym"
+            "sig": "shape:12xx9eb01muqym",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3743,7 +3774,10 @@
                 "h": 2.13
               }
             },
-            "sig": "text:020d3hw1r7ak2f"
+            "sig": "text:020d3hw1r7ak2f",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3774,7 +3808,10 @@
                 "h": 1.56
               }
             },
-            "sig": "text:0v1ap291socv06"
+            "sig": "text:0v1ap291socv06",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3799,7 +3836,10 @@
                 "h": 2.06
               }
             },
-            "sig": "text:0e8xx2r1sjpaou"
+            "sig": "text:0e8xx2r1sjpaou",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -6924,7 +6964,10 @@
                 "h": 2.68
               }
             },
-            "sig": "shape:00l70sc0po4efj"
+            "sig": "shape:00l70sc0po4efj",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "shape",
@@ -6946,11 +6989,14 @@
                 "h": 4.72
               }
             },
-            "sig": "shape:0ww2yye0xn543x"
+            "sig": "shape:0ww2yye0xn543x",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6958,7 +7004,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l15",
@@ -6968,27 +7014,35 @@
               "square": {
                 "x": 75.41,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.41,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 2.3
               },
               "story": {
                 "x": 75.41,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.41,
                 "h": 1.61
               }
             },
-            "sig": "text:0xx6o0t1fxzoyu"
+            "sig": "text:15ex5ze1a9hxcb",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "#DF5888",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6996,7 +7050,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l16",
@@ -7006,11 +7060,19 @@
               "landscape": {
                 "x": 87.11,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.6,
                 "h": 2.86
               }
             },
-            "sig": "text:02axjui0j6oj53"
+            "sig": "text:06hnsfn03ptg5s",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

@@ -1,6 +1,6 @@
 {
   "name": "Bold Type teamList",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -379,19 +379,19 @@
               "square": {
                 "x": 17.5,
                 "y": 7.01,
-                "w": 7.89,
+                "w": 58.76,
                 "h": 4.81
               },
               "portrait": {
                 "x": 17.5,
                 "y": 5.61,
-                "w": 7.89,
+                "w": 58.76,
                 "h": 3.85
               },
               "story": {
                 "x": 17.5,
                 "y": 3.95,
-                "w": 7.89,
+                "w": 58.76,
                 "h": 2.71
               }
             },
@@ -454,19 +454,19 @@
               "square": {
                 "x": 17.5,
                 "y": 12.13,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.94
               },
               "portrait": {
                 "x": 17.5,
                 "y": 9.7,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.56
               },
               "story": {
                 "x": 17.5,
                 "y": 6.82,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.09
               }
             },
@@ -612,7 +612,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -633,25 +633,25 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 27.39,
+                "x": 50,
                 "y": 12.56,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.76
               },
               "portrait": {
-                "x": 27.39,
+                "x": 50,
                 "y": 10.05,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.41
               },
               "story": {
-                "x": 27.39,
+                "x": 50,
                 "y": 7.07,
-                "w": 68.61,
+                "w": 44,
                 "h": 0.99
               }
             },
-            "sig": "text:06w9nwt1ncb69e"
+            "sig": "text:0assp7o09puvk9"
           },
           {
             "kind": "text",
@@ -663,7 +663,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -684,13 +684,13 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 61.88,
+                "x": 60.83,
                 "y": 12.43,
                 "w": 36.02,
                 "h": 1.75
               }
             },
-            "sig": "text:1dd9ihf1bhqsqi"
+            "sig": "text:1f48q8s0diagyf"
           },
           {
             "kind": "text",

@@ -1,6 +1,6 @@
 {
   "name": "Neon Night teamList",
-  "version": 3,
+  "version": 4,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -480,19 +480,19 @@
               "square": {
                 "x": 17.5,
                 "y": 7.01,
-                "w": 7.89,
+                "w": 58.39,
                 "h": 4.81
               },
               "portrait": {
                 "x": 17.5,
                 "y": 5.61,
-                "w": 7.89,
+                "w": 58.39,
                 "h": 3.85
               },
               "story": {
                 "x": 17.5,
                 "y": 3.95,
-                "w": 7.89,
+                "w": 58.39,
                 "h": 2.71
               }
             },
@@ -562,19 +562,19 @@
               "square": {
                 "x": 17.5,
                 "y": 12.13,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.94
               },
               "portrait": {
                 "x": 17.5,
                 "y": 9.7,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.56
               },
               "story": {
                 "x": 17.5,
                 "y": 6.82,
-                "w": 7.89,
+                "w": 30.5,
                 "h": 1.09
               }
             },
@@ -759,7 +759,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -780,25 +780,25 @@
             "sizes": ["square", "portrait", "story"],
             "geometry": {
               "square": {
-                "x": 27.39,
+                "x": 50,
                 "y": 12.75,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.76
               },
               "portrait": {
-                "x": 27.39,
+                "x": 50,
                 "y": 10.2,
-                "w": 68.61,
+                "w": 44,
                 "h": 1.41
               },
               "story": {
-                "x": 27.39,
+                "x": 50,
                 "y": 7.17,
-                "w": 68.61,
+                "w": 44,
                 "h": 0.99
               }
             },
-            "sig": "text:1eqr8ww1bjjazj"
+            "sig": "text:073cgi905wxqms"
           },
           {
             "kind": "text",
@@ -810,7 +810,7 @@
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
-              "align": "left",
+              "align": "right",
               "lineHeight": 1,
               "textShadow": [
                 {
@@ -831,13 +831,13 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 61.88,
+                "x": 60.83,
                 "y": 12.59,
                 "w": 36.02,
                 "h": 1.75
               }
             },
-            "sig": "text:1cvtt1c0tu4725"
+            "sig": "text:04ea94v10iqyoc"
           },
           {
             "kind": "text",

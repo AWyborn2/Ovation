@@ -23,6 +23,7 @@ import {
   photoLayerKey,
   primaryPage,
   rowsColumns,
+  textTokens,
   tileGrid,
   type DerivedPalette,
   type GroupLayerV2,
@@ -39,6 +40,7 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { SIZES } from "../share-card/types";
+import { distinctCompetitionLine } from "@workspace/scorecard/card-content";
 import { focusTransform, type PhotoFocus } from "@workspace/scorecard/photo-focus";
 import { escapeHtml } from "./html-utils";
 import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
@@ -399,6 +401,56 @@ export function substituteTokens(text: string, values: Record<string, string>): 
   return text.replace(TOKEN, (_all, key: string) => values[key] ?? "");
 }
 
+/** A separator between the parts of a line ("A GRADE · ROUND 7", "B GRADE — ROUND 7"). */
+const SEP = String.raw`\s*[·•|—–]\s*`;
+const EMPTY = "\uE000";
+const BETWEEN_EMPTY = new RegExp(`(${SEP})${EMPTY}+${SEP}`, "g");
+const LEADING_EMPTY = new RegExp(`^\\s*${EMPTY}+${SEP}`);
+const TRAILING_EMPTY = new RegExp(`${SEP}${EMPTY}+\\s*$`);
+
+/**
+ * A token a line leaves out when another token on the same line already says
+ * it: every built team list sets its competition line to the grade, so
+ * "{{gradeRound}} · {{competitionLine}}" printed "B GRADE — ROUND 7 · B GRADE".
+ * On a line of its own the token prints as it is.
+ */
+const SAID_BY: Readonly<Record<string, string>> = { competitionLine: "gradeRound" };
+
+/** Whether `key`'s value only repeats what another token on `text` prints. */
+function repeatsLine(text: string, key: string, values: Record<string, string>): boolean {
+  const other = SAID_BY[key];
+  if (!other || !textTokens(text).includes(other)) return false;
+  const said = values[other] ?? "";
+  return !!said && distinctCompetitionLine(said, values[key] ?? "") === "";
+}
+
+/**
+ * A text layer's line with its tokens filled. A token that only repeats
+ * another on the line (`SAID_BY`) is left out with one separator beside it:
+ * "{{gradeRound}} · {{competitionLine}}" is "B GRADE — ROUND 7", never
+ * "B GRADE — ROUND 7 · B GRADE" or "B GRADE — ROUND 7 · ". Only the
+ * template's own separators are touched, never the card's values, and a line
+ * without such a repeat comes out exactly as `substituteTokens` makes it.
+ */
+export function substituteTextTokens(text: string, values: Record<string, string>): string {
+  const filled: string[] = [];
+  let line = text.replace(TOKEN, (_all, key: string) => {
+    const value = values[key] ?? "";
+    if (!value) return "";
+    if (repeatsLine(text, key, values)) return EMPTY;
+    filled.push(value);
+    return `\uE001${filled.length - 1}\uE001`;
+  });
+  if (line.includes(EMPTY)) {
+    line = line
+      .replace(BETWEEN_EMPTY, "$1")
+      .replace(LEADING_EMPTY, "")
+      .replace(TRAILING_EMPTY, "")
+      .replaceAll(EMPTY, "");
+  }
+  return line.replace(/\uE001(\d+)\uE001/g, (_all, i: string) => filled[Number(i)] ?? "");
+}
+
 /** A fittable element's designed size in cqw, for `FIT_ATTR`. */
 const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
 
@@ -664,7 +716,7 @@ function layerInner(
       const text = layer.bind
         ? (values[layer.bind] ?? "")
         : tokens
-          ? substituteTokens(layer.content ?? "", values)
+          ? substituteTextTokens(layer.content ?? "", values)
           : (layer.content ?? "");
       // A box made only of live fields that are all empty isn't drawn (KTD15).
       if (tokens && text.trim() === "") return null;

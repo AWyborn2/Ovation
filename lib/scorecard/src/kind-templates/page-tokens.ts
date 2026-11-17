@@ -487,6 +487,7 @@ const MATCH_DAY_TITLE: Omit<PageTokenCatalogue, "kind" | "page"> = {
   fields: [
     { key: "weekendTitle", label: "Title", content: "title.heading" },
     { key: "dateRange", label: "Dates", content: "title.dates" },
+    { key: "dateShort", label: "Dates, short (13–22 Nov)", content: "title.dates" },
     { key: "roundLabel", label: "Round", content: "title.round" },
     { key: "fixtureCount", label: "Number of games" },
     { key: "livestream", label: "Livestream link", content: "title.livestream" },
@@ -531,6 +532,7 @@ const MATCH_DAY_SPONSORS: Omit<PageTokenCatalogue, "kind" | "page"> = {
   fields: [
     { key: "weekendTitle", label: "Title" },
     { key: "dateRange", label: "Dates" },
+    { key: "dateShort", label: "Dates, short (13–22 Nov)" },
     { key: "fixtureCount", label: "Number of games" },
     { key: "sponsorThanks", label: "Thank-you line", content: "sponsors.thankYou" },
     { key: "sponsorCta", label: "Thank-you call to action", content: "sponsors.thankYou" },
