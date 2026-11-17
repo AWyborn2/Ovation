@@ -101,6 +101,9 @@ export type CoverPhoto = { photoId: number | null; transform: PhotoTransform };
 export const COVER_PHOTO_UNAVAILABLE =
   "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before sending to review.";
 
+export const COVER_PHOTO_JUNIOR_STOCK =
+  "A junior set's cover shows only the club's approved junior stock images. Choose a junior stock image or remove the photo.";
+
 export function eligibleCoverPhotos(photos: ClubPhoto[]): ClubPhoto[] {
   const stock = new Set(eligibleJuniorStockPhotos(photos).map((p) => p.id));
   return [
@@ -439,7 +442,16 @@ export function buildWeekendSlides(
   const pageSponsors = activeSponsors.filter(
     (s) => show("sponsors.teamSponsors") || !isTeamSponsor(s),
   );
-  const background = show("sponsors.background") ? (sponsorsPage?.backgroundPhoto ?? null) : null;
+  // A set with no senior game is junior: its cover and sponsors page show only
+  // the club's approved junior stock images, never a library photo (ADR-007).
+  const juniorOnly = teams.every(teamIsJunior);
+  const sponsorsBackground = sponsorsPage?.backgroundPhoto ?? null;
+  const background =
+    show("sponsors.background") &&
+    sponsorsBackground &&
+    (!juniorOnly || eligibleJuniorStockPhotos([sponsorsBackground as ClubPhoto]).length)
+      ? sponsorsBackground
+      : null;
   const bookendOpts = {
     heading: title,
     from,
@@ -450,9 +462,10 @@ export function buildWeekendSlides(
     // The title page's livestream link (P5); shown when "title.livestream" is on.
     livestreamUrl: bundle.settings.livestreamUrl ?? null,
   };
+  const coverPool = juniorOnly ? eligibleJuniorStockPhotos : eligibleCoverPhotos;
   const coverPhoto =
     cover && show("title.coverPhoto")
-      ? eligibleCoverPhotos(cover.photos).find((p) => p.id === cover.selection.photoId)
+      ? coverPool(cover.photos).find((p) => p.id === cover.selection.photoId)
       : undefined;
   const invalidCover = show("title.coverPhoto") && cover?.selection.photoId != null && !coverPhoto;
   // The fields a content kind's slides show: Match Day's, or the set kind's own.
@@ -520,7 +533,12 @@ export function buildWeekendSlides(
       sponsorsOn: page === "title" && !!presenting,
       warnings:
         page === "title" && invalidCover
-          ? [COVER_PHOTO_UNAVAILABLE]
+          ? [
+              juniorOnly &&
+              eligibleCoverPhotos(cover!.photos).some((p) => p.id === cover!.selection.photoId)
+                ? COVER_PHOTO_JUNIOR_STOCK
+                : COVER_PHOTO_UNAVAILABLE,
+            ]
           : page === "sponsors" && index === 0
             ? sponsorsPageWarnings(
                 pageSponsors.length,

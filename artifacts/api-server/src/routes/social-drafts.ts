@@ -1,5 +1,8 @@
 import { Router, type IRouter } from "express";
-import { validJuniorStockSelection } from "../lib/junior-stock-photos";
+import {
+  stripUnapprovedJuniorSetPhotos,
+  validJuniorStockSelection,
+} from "../lib/junior-stock-photos";
 import {
   readQueuedCarousel,
   carouselPackId,
@@ -565,6 +568,10 @@ router.post(
         });
         return;
       }
+      // A junior set's cover and sponsors page: approved junior stock only (fails closed).
+      const removed = await stripUnapprovedJuniorSetPhotos(tenantId, cardInput, carousel);
+      if (removed)
+        req.log.info({ tenantId, removed }, "junior set: removed photos that aren't junior stock");
       if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {
         res
           .status(400)

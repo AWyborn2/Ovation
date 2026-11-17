@@ -176,10 +176,16 @@ export function useWeekendCarousel(
     [sources],
   );
   const juniorStockPhotos = eligibleJuniorStockPhotos(photos);
+  // A junior carousel's cover is the club's approved junior stock only (ADR-007).
   const coverPhotos = useMemo(
     () =>
-      eligibleCoverPhotos([...(sources?.coverPhotos ?? []), ...(sources?.juniorStockPhotos ?? [])]),
-    [sources],
+      audience === "junior"
+        ? eligibleJuniorStockPhotos((sources?.juniorStockPhotos ?? []) as ClubPhoto[])
+        : eligibleCoverPhotos([
+            ...(sources?.coverPhotos ?? []),
+            ...(sources?.juniorStockPhotos ?? []),
+          ]),
+    [sources, audience],
   );
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
