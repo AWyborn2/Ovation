@@ -242,6 +242,11 @@ paths:
       operationId: updatePlayer
       tags: [players]
       summary: Update a player
+      description: >-
+        Admin only. For a club that reads its stats from the central database only
+        the name can change: it is stored as the club's own rename of the player
+        (the central name is cleared back when the name is set to it again), and
+        any other field is refused with 400.
       parameters:
         - name: id
           in: path
@@ -261,6 +266,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Player"
+        "400":
+          description: Invalid body, a blank name, or a field a central club can't change
         "404":
           description: Not found
     delete:

@@ -31,6 +31,12 @@ type Guarded = {
   method: "post" | "patch" | "delete";
   path: () => string;
   body?: Record<string, unknown>;
+  /**
+   * A central club's admin reaches this route's club-rename path instead (it
+   * writes the club's own player_curation, never the native tables): another
+   * club's native player id is not in its crosswalk, so the answer is 404.
+   */
+  centralStatus?: number;
 };
 
 describe("native stats write fence", () => {
@@ -90,6 +96,7 @@ describe("native stats write fence", () => {
       method: "patch",
       path: () => `/api/players/${hhPlayerId}`,
       body: { surname: `Hijacked${STAMP}` },
+      centralStatus: 404,
     },
     { name: "player delete", method: "delete", path: () => `/api/players/${hhPlayerId}` },
     {
@@ -265,8 +272,8 @@ describe("native stats write fence", () => {
     const before = await snapshot();
     for (const g of guarded()) {
       const res = await send(g, centralTenantId, t2Cookie);
-      expect(res.status, g.name).toBe(409);
-      expect(res.body.error, g.name).toMatch(/native stats/i);
+      expect(res.status, g.name).toBe(g.centralStatus ?? 409);
+      if (g.centralStatus === undefined) expect(res.body.error, g.name).toMatch(/native stats/i);
     }
     expect(await snapshot()).toEqual(before);
   });
