@@ -1,3 +1,4 @@
+import { juniorSafeCarousel } from "./junior-stock-photos";
 import {
   landscapeSummary,
   planCardSet,
@@ -134,9 +135,12 @@ export async function renderDraftSlides(
 ): Promise<RenderedSlide[]> {
   const tenantId = draft.tenantId;
   const input = (draft.cardInput ?? {}) as Record<string, unknown>;
-  const carousel = readQueuedCarousel(input);
-  if ("weekendCarousel" in input && !carousel)
+  const read = readQueuedCarousel(input);
+  if ("weekendCarousel" in input && !read)
     throw new Error("Invalid saved carousel; cannot render its slides.");
+  // A junior set posts no cover or sponsors photo that isn't approved junior
+  // stock, whenever the draft was made (fails closed, ADR-007).
+  const carousel = read ? await juniorSafeCarousel(tenantId, input, read) : null;
   if (carousel) {
     const rendered: RenderedSlide[] = [];
     // Drawn with a set design (carousel set editor plan): each slide by its page.

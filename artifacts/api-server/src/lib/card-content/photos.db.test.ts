@@ -33,6 +33,8 @@ import {
 import app from "../../app";
 import { encodeSession, SESSION_COOKIE } from "../auth";
 import { objectUrl } from "../photo-store";
+import { juniorSafeCarousel, stripUnapprovedJuniorSetPhotos } from "../junior-stock-photos";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import {
   buildMatchDayPhotos,
   createPhotoPicker,
@@ -475,5 +477,120 @@ describe("photo usage is written when a draft is posted", () => {
       })
       .returning();
     expect(await recordPhotoUsage(headshot)).toBe(0);
+  });
+});
+
+describe("a junior set's cover and sponsors page (ADR-007, fails closed)", () => {
+  const opts = {
+    heading: "Juniors this week",
+    from: "2026-10-09",
+    to: "2026-10-11",
+    roundLabels: ["1"],
+    fixtureCount: 1,
+  };
+  const fields = [...presetFields("matchDay", "standard")];
+  const slide = (id: string, content: unknown, photo: ClubPhotoRow | null, junior = false) => ({
+    id,
+    label: id,
+    content,
+    visibleFields: fields,
+    photoId: photo?.id ?? null,
+    data: photo ? { photoUrl: objectUrl(photo.objectPath) } : {},
+    junior,
+    sponsorsOn: false,
+    warnings: [],
+  });
+  const game = (grade: string, junior: boolean) =>
+    slide(
+      `fixture-${grade}`,
+      matchDayFixtureContent(
+        {
+          id: junior ? 2 : 1,
+          grade,
+          roundLabel: "1",
+          opponentName: "Visitors",
+          opponentLogoUrl: null,
+          venue: "Oval",
+          startAt: new Date("2026-10-10T02:00:00Z"),
+          isHome: true,
+        },
+        { junior },
+      ),
+      null,
+      junior,
+    );
+  const input = (cover: ClubPhotoRow, background: ClubPhotoRow | null, junior = true) => ({
+    kind: "matchDay",
+    weekendCarousel: {
+      version: 2,
+      packId: "club-kit-v1",
+      setType: "matchDay",
+      submissionId: randomUUID(),
+      size: "square",
+      slides: [
+        slide("title", matchDayTitleContent(opts), cover),
+        junior ? game("Year 4 Gold", true) : game("A Grade", false),
+        slide("sponsors", matchDaySponsorsContent({ ...opts, sponsors: [] }), background),
+      ],
+    },
+  });
+  const slides = (cardInput: Record<string, unknown>) =>
+    (cardInput.weekendCarousel as { slides: Array<{ id: string; data: object; photoId: unknown }> })
+      .slides;
+
+  it("removes a club-wide library photo from a junior set's cover and sponsors page", async () => {
+    const cardInput = input(ph.c1, ph.c2);
+    const carousel = readQueuedCarousel(cardInput)!;
+    expect(await stripUnapprovedJuniorSetPhotos(club, cardInput, carousel)).toBe(2);
+    const [cover, , sponsors] = slides(cardInput);
+    expect(cover).toMatchObject({ data: {}, photoId: null });
+    expect(sponsors).toMatchObject({ data: {}, photoId: null });
+  });
+
+  it("keeps the club's approved junior stock image on a junior set's cover", async () => {
+    const cardInput = input(ph.s1, null);
+    const carousel = readQueuedCarousel(cardInput)!;
+    expect(await stripUnapprovedJuniorSetPhotos(club, cardInput, carousel)).toBe(0);
+    expect(slides(cardInput)[0]).toMatchObject({
+      data: { photoUrl: objectUrl(ph.s1.objectPath) },
+      photoId: ph.s1.id,
+    });
+  });
+
+  it("refuses a stock image's id with another photo's URL, and another club's stock", async () => {
+    const forged = input(ph.s1, null);
+    (slides(forged)[0]!.data as { photoUrl: string }).photoUrl = objectUrl(ph.c1.objectPath);
+    expect(await stripUnapprovedJuniorSetPhotos(club, forged, readQueuedCarousel(forged)!)).toBe(1);
+    const elsewhere = input(ph.s1, null);
+    expect(
+      await stripUnapprovedJuniorSetPhotos(other, elsewhere, readQueuedCarousel(elsewhere)!),
+    ).toBe(1);
+  });
+
+  it("leaves a senior set's cover alone", async () => {
+    const cardInput = input(ph.c1, null, false);
+    expect(
+      await stripUnapprovedJuniorSetPhotos(club, cardInput, readQueuedCarousel(cardInput)!),
+    ).toBe(0);
+  });
+
+  it("posts an existing junior set without the photo, leaving the saved draft as it was", async () => {
+    const cardInput = input(ph.c1, null);
+    const safe = await juniorSafeCarousel(club, cardInput, readQueuedCarousel(cardInput)!);
+    expect(safe.slides[0]!.data.photoUrl).toBeUndefined();
+    expect(slides(cardInput)[0]!.data).toEqual({ photoUrl: objectUrl(ph.c1.objectPath) });
+  });
+
+  it("is applied when Create or the Weekend Carousel saves a junior set", async () => {
+    const res = await request(app)
+      .post("/api/social-drafts")
+      .set("x-tenant-id", String(club))
+      .set("Cookie", cookie)
+      .send({ caption: "Juniors this week", cardInput: input(ph.c1, null) });
+    expect(res.status).toBe(201);
+    expect(res.body.cardInput.weekendCarousel.slides[0]).toMatchObject({
+      data: {},
+      photoId: null,
+    });
   });
 });
