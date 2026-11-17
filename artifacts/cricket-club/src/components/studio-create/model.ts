@@ -6,7 +6,7 @@
  */
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import type { CardKind } from "@/lib/share-card";
-import type { TeamList } from "@workspace/api-client-react";
+import type { TeamListSourceSummary } from "@workspace/api-client-react";
 import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import { primaryPage } from "@workspace/scorecard/kind-templates";
 
@@ -136,13 +136,28 @@ export const TEAM_SOURCE_LABELS: Record<TeamSource, string> = {
 /**
  * A fixture's saved team list as a badge. The badge says where the names came
  * from; it never changes which list is used (the prefill reads the saved list,
- * as Create a card does).
+ * as Create a card does). A saved list with no players has no names to fill
+ * from, so it is "Fill in by hand" like no list at all.
  */
-export function teamSourceOf(list: Pick<TeamList, "isPublished" | "source"> | null): TeamSource {
-  if (!list) return "none";
+export function teamSourceOf(
+  list: Pick<TeamListSourceSummary, "isPublished" | "source" | "playerCount"> | null | undefined,
+): TeamSource {
+  if (!list || list.playerCount <= 0) return "none";
   if (list.source === "playhq") return "playhq";
   if (!list.isPublished) return "draft";
   return "selection";
+}
+
+/**
+ * The badge sources by fixture id, from one team-list-sources read (senior or
+ * junior). Null while that read hasn't answered, so no badge is shown rather
+ * than a wrong "Fill in by hand".
+ */
+export function teamSourcesById(
+  rows: readonly TeamListSourceSummary[] | undefined,
+): Map<number, TeamListSourceSummary> | null {
+  if (!rows) return null;
+  return new Map(rows.map((r) => [r.fixtureId, r]));
 }
 
 /**

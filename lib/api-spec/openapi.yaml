@@ -5868,6 +5868,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/Fixture"
 
+  /fixtures/team-list-sources:
+    get:
+      operationId: listFixtureTeamListSources
+      tags: [fixtures]
+      summary: Where each upcoming fixture's saved team list came from (admin only)
+      description: >-
+        One summary per upcoming fixture of the club that has a saved team list
+        (published or not), for New Studio's Create "Which team?" badges. A
+        fixture with no row has no saved list. `playerCount` leaves fill-in
+        players out. Read in one call, so every fixture in the list gets its
+        badge however far ahead it is.
+      responses:
+        "200":
+          description: Team list summaries, one per fixture with a saved list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamListSourceSummary"
   /fixtures/{id}:
     patch:
       operationId: updateFixture
@@ -9671,6 +9691,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/JuniorFixture"
+
+  /juniors/fixtures/team-list-sources:
+    get:
+      operationId: listJuniorFixtureTeamListSources
+      tags: [juniors]
+      summary: Where each upcoming junior fixture's saved team list came from (admin only)
+      description: >-
+        One summary per upcoming junior fixture (the same window as
+        listJuniorFixtures) that has a saved junior team list, published or
+        not, for New Studio's Create "Which team?" badges. `fixtureId` is the
+        junior fixture id. Junior tables only. Empty when the club's junior
+        sync is switched off.
+      responses:
+        "200":
+          description: Junior team list summaries, one per junior fixture with a saved list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamListSourceSummary"
 
   /juniors/fixtures/{id}:
     get:
@@ -27982,6 +28023,19 @@ components:
           description: >-
             The 12th player of a side of 12. Never set above 12, where every
             player is numbered 1–N. Absent reads as false.
+
+    TeamListSourceSummary:
+      type: object
+      required: [fixtureId, source, isPublished, playerCount]
+      properties:
+        fixtureId: { type: integer }
+        source:
+          type: string
+          description: 'Who wrote the list: "admin", "playhq" or "selection"'
+        isPublished: { type: boolean }
+        playerCount:
+          type: integer
+          description: Players on the saved list (fill-ins left out)
 
     TeamList:
       type: object

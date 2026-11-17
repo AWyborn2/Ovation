@@ -1,8 +1,9 @@
 import type { JuniorFixture } from "@workspace/api-client-react";
+import { CLUB_TIME_ZONE } from "@workspace/scorecard/card-content";
 
 /** Display helpers for junior fixtures (junior PlayHQ sync plan U6). */
 
-/** "Sat 8 Nov, 8:30 am" in the viewer's locale; null when unscheduled. */
+/** "Sat 8 Nov, 8:30 am" in club (Perth) time, whatever the browser's zone; null when unscheduled. */
 export function fmtJuniorStart(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -13,6 +14,7 @@ export function fmtJuniorStart(iso: string | null | undefined): string | null {
     month: "short",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: CLUB_TIME_ZONE,
   });
 }
 

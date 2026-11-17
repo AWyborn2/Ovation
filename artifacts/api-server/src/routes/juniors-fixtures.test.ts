@@ -188,6 +188,65 @@ describe("junior fixtures and team lists", () => {
     expect(res.body.map((f: { id: number }) => f.id)).toEqual([fxA6]);
   });
 
+  it("badges every upcoming junior fixture from one admin read of the junior lists", async () => {
+    // Weeks ahead (after the summer break) and a played game with a list.
+    const [later] = await db
+      .insert(juniorFixturesTable)
+      .values({
+        tenantId: tenantA,
+        playhqMatchId: `jfx-later-${STAMP}`,
+        seasonStartYear: SEASON,
+        ageGroup: "Year 8",
+        grade: "Year 8 Gold",
+        teamName: "Hawks",
+        opponentName: "Kites",
+        startAt: at(24 * 60),
+        isHome: true,
+        status: "UPCOMING",
+      })
+      .returning({ id: juniorFixturesTable.id });
+    await db.insert(juniorTeamListsTable).values([
+      {
+        tenantId: tenantA,
+        juniorFixtureId: later.id,
+        players: [{ order: 1, participantId: A_KIT }],
+        isPublished: false,
+        source: "admin",
+      },
+      {
+        tenantId: tenantA,
+        juniorFixtureId: fxAPast,
+        players: [{ order: 1, participantId: A_KIT }],
+        isPublished: true,
+        source: "admin",
+      },
+      {
+        tenantId: tenantB,
+        juniorFixtureId: fxB,
+        players: [{ order: 1, participantId: B_ONLY }],
+        isPublished: true,
+        source: "admin",
+      },
+    ]);
+
+    // Admin only: it shows unpublished drafts.
+    expect((await asA(request(app).get("/api/juniors/fixtures/team-list-sources"))).status).toBe(
+      401,
+    );
+    const res = await asAdminA(request(app).get("/api/juniors/fixtures/team-list-sources")).expect(
+      200,
+    );
+    expect(res.body).toEqual([
+      { fixtureId: fxA6, source: "playhq", isPublished: true, playerCount: 2 },
+      { fixtureId: later.id, source: "admin", isPublished: false, playerCount: 1 },
+    ]);
+    // Another club's list stays its own.
+    const resB = await asAdminB(request(app).get("/api/juniors/fixtures/team-list-sources")).expect(
+      200,
+    );
+    expect(resB.body.map((r: { fixtureId: number }) => r.fixtureId)).toEqual([fxB]);
+  });
+
   it("a club with junior sync off gets nothing publicly", async () => {
     expect((await asOff(request(app).get("/api/juniors/fixtures")).expect(200)).body).toEqual([]);
     await asOff(request(app).get(`/api/juniors/fixtures/${fxOff}`)).expect(404);
