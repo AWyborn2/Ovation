@@ -42,6 +42,18 @@ import {
 
 const STUDIO = "/admin/social";
 
+/**
+ * A blank design: a white page on the blank base, started from no template (Create's
+ * or Studio home's Blank design). A design made from a template names it.
+ */
+export function isBlankDesignDraft(
+  draft: Pick<SocialDraft, "packId" | "templateRef" | "templateVersion">,
+): boolean {
+  return (
+    draft.packId === BLANK_PACK_ID && draft.templateRef == null && draft.templateVersion == null
+  );
+}
+
 export function DraftDesignEditor({
   draft,
   onReload,
@@ -119,6 +131,7 @@ export function DraftDesignEditor({
   const draftMode: EditorDraftMode = {
     input: input as unknown as Record<string, unknown>,
     data,
+    blank: isBlankDesignDraft(draft),
     panels,
     actions: ({ document, size, input: shown, data: shownData }) => (
       <>
