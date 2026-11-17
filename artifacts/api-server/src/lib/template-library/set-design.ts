@@ -35,6 +35,7 @@ import {
   carouselSlideSlot,
   isRepeatSlot,
   layoutPageIds,
+  withoutStrandedLayouts,
   assembleSetDocument,
   isSetDocument,
   lookForPack,
@@ -244,12 +245,17 @@ export function arrangeCarouselSlides(
 ): Array<Record<string, unknown>> {
   const allJunior = stored.length > 0 && stored.every((s) => s.junior === true);
   const pageIds = new Set(doc.pages.map((p) => p.id));
-  const kept = stored.filter((s) => typeof s.pageId !== "string" || pageIds.has(s.pageId));
+  // A slide's own layout (studio-create S9) draws only the slides mapped to it.
+  const layouts = layoutPageIds(doc);
+  const kept = stored.filter(
+    (s) =>
+      (typeof s.pageId !== "string" || pageIds.has(s.pageId)) &&
+      // A slide made for a layout page (saved before the 17 Nov 2026 fix) goes.
+      !(typeof s.pageId === "string" && s.id === `page:${s.pageId}` && layouts.has(s.pageId)),
+  );
   const drawn = new Set(
     kept.map((s) => s.pageId).filter((x): x is string => typeof x === "string"),
   );
-  // A slide's own layout (studio-create S9) draws only the slides mapped to it.
-  const layouts = layoutPageIds(doc);
   const design = doc.pages
     .filter((p) => p.slot === "page" && !drawn.has(p.id) && !layouts.has(p.id))
     .map((p) => ({
@@ -287,9 +293,15 @@ export function carouselSetDesign(
   const pageFor = Object.fromEntries(
     Object.entries(arrangement?.pageFor ?? {}).filter(([k, id]) => ids.has(k) && pages.has(id)),
   );
+  // A layout page whose slide is gone goes with it: it draws only its slide,
+  // so kept it would turn into a blank extra slide (draft 962).
+  const used = new Set(Object.values(pageFor));
+  const layouts = layoutPageIds(doc);
+  const kept = design.pages.filter((p) => !layouts.has(p.id) || used.has(p.id));
+  const shed = kept.length > 0 && kept.length < design.pages.length ? { pages: kept } : {};
   return Object.keys(pageFor).length
-    ? { ...design, arrangement: { order: [], removed: [], pageFor } }
-    : design;
+    ? { ...design, ...shed, arrangement: { order: [], removed: [], pageFor } }
+    : { ...design, ...shed };
 }
 
 /** Save a draft's set design (and, for a queued carousel, its slides and size). */
@@ -347,7 +359,8 @@ export async function saveDraftSetDesign(
     // each slide's own layout (studio-create S8/S9), which only it can hold.
     patch.adjustments = carouselSetDesign(doc, slides);
   } else {
-    patch.adjustments = doc;
+    // A layout page no slide maps to (saved before the 17 Nov 2026 fix) goes.
+    patch.adjustments = withoutStrandedLayouts(doc);
   }
   return db.transaction(async (tx) => {
     await recordDraftRevision(draft, "edit", tx);

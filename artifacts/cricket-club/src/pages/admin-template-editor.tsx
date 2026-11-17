@@ -138,6 +138,7 @@ import {
   addRepeatPage,
   addSetPage,
   deleteSetPage,
+  deleteSlide,
   duplicateSetPage,
   editorPageList,
   firstPageId,
@@ -148,6 +149,7 @@ import {
   storedSetDocument,
   SET_SLOT_LABELS,
   withArrangement,
+  withSlideOrder,
   type EditorPage,
   type EditorSlide,
   type EditorTemplateDoc,
@@ -1666,8 +1668,8 @@ export function TemplateEditorV2<T extends EditorTemplate>({
             setHistory((h) => {
               const keys = realSlides.map((r) => r.key).filter((k) => k !== key);
               keys.splice(to, 0, key);
-              const removed = h.present.setDesign?.arrangement?.removed ?? [];
-              return commit(h, withArrangement(h.present, { order: keys, removed }));
+              // Only the order changes: each slide keeps its own layout (S9).
+              return commit(h, withSlideOrder(h.present, keys));
             })
           }
           {...(slide?.design
@@ -1684,14 +1686,9 @@ export function TemplateEditorV2<T extends EditorTemplate>({
           onDelete={(key) => {
             const x = realSlides.find((r) => r.key === key);
             if (!x) return;
-            setHistory((h) => {
-              const arr = h.present.setDesign?.arrangement ?? { order: [], removed: [] };
-              const order = arr.order.filter((k) => k !== key);
-              // A design page goes with its slide; a data slide is left out of the post.
-              return x.design
-                ? commit(h, withArrangement(deleteSetPage(h.present, x.page.id), { ...arr, order }))
-                : commit(h, withArrangement(h.present, { order, removed: [...arr.removed, key] }));
-            });
+            // A design page goes with its page; a data slide is left out of the
+            // post with its own layout (S9), and the other slides keep theirs.
+            setHistory((h) => commit(h, deleteSlide(h.present, x)));
             setSlideKey(null);
             enterScope(null);
           }}

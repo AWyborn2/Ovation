@@ -28,6 +28,7 @@ import {
   isSetDocument,
   setTemplateKind,
   SET_TYPE_LABELS,
+  withoutStrandedLayouts,
   type SetDocument,
 } from "@workspace/scorecard/kind-templates";
 import { LoadingState, QueryError } from "@/components/data-states";
@@ -168,7 +169,9 @@ function SetDraftEditor({
       // A set queued before Nov 2026 named its range raw ("2026-11-13 – 2026-11-22").
       name: `${label}: ${typeof round === "string" && round ? readableDateRange(round) : ownHeading(draft)}`,
       version: 1,
-      document: design.document,
+      // A layout page no slide maps to (saved before the 17 Nov 2026 fix) is
+      // left out, so the next save drops it.
+      document: withoutStrandedLayouts(design.document as unknown as SetDocument),
       fitStatus: "pass",
     }),
     [draft, design, label, round],
