@@ -39,7 +39,35 @@ import {
   type TemplateSize,
   type WorstCaseCard,
 } from "@workspace/scorecard/kind-templates";
+import { ROWS_SQUEEZE_ATTR } from "./adjustments";
 import { fitLayersInDom } from "./layer-fit";
+
+/**
+ * The smallest a list may draw to show every row: a side of 14 on a box
+ * designed for 12 (two columns of 7 on 6) draws at 86%, one for 10 at 71%.
+ */
+export const MIN_ROWS_SQUEEZE = 0.7;
+
+/**
+ * The side sizes a Team List is drawn with beyond its box's capacity (ADR-009:
+ * up to 14, every player shown): a carousel slide draws a team whole, so a
+ * side over capacity must still fit, smaller, with nobody dropped.
+ */
+export const TEAM_SIDE_SIZES = [12, 13, 14] as const;
+
+/**
+ * A worst-case Team List side (`worstCaseCard` with `players` rows) with a
+ * captain or keeper mark on every named player ("J. SURNAME (WK)"), the
+ * longest name line a list prints. A withheld "Private Player" never has one.
+ */
+export function withTeamMarks(card: WorstCaseCard): WorstCaseCard {
+  const input = card.input as { players?: Array<Record<string, unknown>> };
+  if (!Array.isArray(input.players)) return card;
+  const players = input.players.map((p, i) =>
+    p.firstInitial && !p.role ? { ...p, role: i % 2 === 0 ? "WK" : "C" } : p,
+  );
+  return { ...card, input: { ...card.input, players } as WorstCaseCard["input"] };
+}
 
 /** What a mount hands back: the element the card was drawn in, and fonts that failed. */
 export interface FitMountResult {
@@ -116,6 +144,18 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
     )
       issues.push({ ...at, reason: "off-artboard", layerId });
     if (layer.kind === "rows") {
+      // A list drawn smaller to show every row (a side over the box's capacity)
+      // must stay readable.
+      const squeeze = Number(
+        el.querySelector(`[${ROWS_SQUEEZE_ATTR}]`)?.getAttribute(ROWS_SQUEEZE_ATTR) ?? 1,
+      );
+      if (squeeze < MIN_ROWS_SQUEEZE)
+        issues.push({
+          ...at,
+          reason: "rows-squeezed",
+          layerId,
+          detail: `rows drawn at ${Math.round(squeeze * 100)}% to fit; at least ${Math.round(MIN_ROWS_SQUEEZE * 100)}%`,
+        });
       for (const row of Array.from(el.querySelectorAll<HTMLElement>("[data-row-index]"))) {
         const r = row.getBoundingClientRect();
         if (r.height > 0 && (r.bottom > box.bottom + 1 || r.right > box.right + 1)) {
@@ -186,11 +226,28 @@ export async function runTemplateFit(
   const doc = normaliseDocument(document, kind);
   const variants = fitMatrix(doc, kind);
   const issues = checkFitRules(doc, kind, variants);
-  for (const [i, v] of variants.entries()) {
-    const label = fitVariantLabel(v);
-    const at = { variant: label, page: v.page, size: v.size };
+  // Each variant with its lists at capacity, then (a Team List's team page, at
+  // its full preset) with every side of up to 14 its box can't hold as designed.
+  const passes = variants.flatMap((v) => {
     const rows = pageRepeatCapacities(doc, v.page, v.size);
-    const card = worstCaseCard(kind, v, { rows });
+    const capacity = rows.players;
+    const sides =
+      capacity !== undefined &&
+      v.contentKind === "teamList" &&
+      v.page === "team" &&
+      (v.preset ?? "full") === "full"
+        ? TEAM_SIDE_SIZES.filter((n) => n > capacity)
+        : [];
+    return [
+      { v, rows, side: null as number | null },
+      ...sides.map((n) => ({ v, rows: { ...rows, players: n }, side: n as number | null })),
+    ];
+  });
+  for (const [i, { v, rows, side }] of passes.entries()) {
+    const label = side === null ? fitVariantLabel(v) : `${fitVariantLabel(v)}.side${side}`;
+    const at = { variant: label, page: v.page, size: v.size };
+    const worst = worstCaseCard(kind, v, { rows });
+    const card = side === null ? worst : withTeamMarks(worst);
     const { root, fontFailures } = await mount(card, v, document);
     for (const family of fontFailures) issues.push({ ...at, reason: "font", detail: family });
     for (const w of fitLayersInDom(root, v.size))
@@ -212,9 +269,9 @@ export async function runTemplateFit(
         visible: card.visible ? new Set(card.visible) : null,
       }),
     );
-    opts.onVariant?.(i + 1, variants.length);
+    opts.onVariant?.(i + 1, passes.length);
   }
-  return fitReport(kind, variants.length, issues, { fonts: opts.fonts ?? "unknown" });
+  return fitReport(kind, passes.length, issues, { fonts: opts.fonts ?? "unknown" });
 }
 
 /**

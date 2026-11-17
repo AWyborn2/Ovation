@@ -1,6 +1,6 @@
 {
   "name": "Duotone teamList",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -950,14 +950,14 @@
             "kind": "rows",
             "rows": {
               "repeat": "players",
-              "rowHeight": 10.62,
+              "rowHeight": 6.4,
               "cells": [
                 {
                   "field": "number",
                   "x": 0,
                   "w": 100,
-                  "y": 99.13,
-                  "h": 0.87,
+                  "y": 98.42,
+                  "h": 1.58,
                   "show": "backdrop",
                   "style": {
                     "background": "#DADDE0"
@@ -966,9 +966,9 @@
                 {
                   "field": "number",
                   "x": 0,
-                  "w": 13.93,
-                  "y": 5.17,
-                  "h": 36.71,
+                  "w": 14.8,
+                  "y": 9.88,
+                  "h": 78.65,
                   "style": {
                     "fontSize": 2.6,
                     "color": "var(--gold)",
@@ -979,10 +979,10 @@
                 },
                 {
                   "field": "listName",
-                  "x": 13.93,
-                  "w": 86.07,
-                  "y": 9.53,
-                  "h": 84.41,
+                  "x": 14.8,
+                  "w": 85.2,
+                  "y": 17.79,
+                  "h": 60.3,
                   "style": {
                     "fontSize": 2.6,
                     "color": "var(--ink)",
@@ -995,8 +995,8 @@
                   "field": "os",
                   "x": 90.29,
                   "w": 9.71,
-                  "y": 23.52,
-                  "h": 59.8,
+                  "y": 20.96,
+                  "h": 61.49,
                   "style": {
                     "fontSize": 2.03,
                     "color": "#5B656E",
@@ -1177,14 +1177,14 @@
             "kind": "rows",
             "rows": {
               "repeat": "players",
-              "rowHeight": 7.29,
+              "rowHeight": 4.4,
               "cells": [
                 {
                   "field": "number",
                   "x": 0,
                   "w": 100,
-                  "y": 98.86,
-                  "h": 1.14,
+                  "y": 98.42,
+                  "h": 1.58,
                   "show": "backdrop",
                   "style": {
                     "background": "#DADDE0"
@@ -1193,9 +1193,9 @@
                 {
                   "field": "number",
                   "x": 0,
-                  "w": 16.24,
-                  "y": 5.18,
-                  "h": 36.49,
+                  "w": 14.8,
+                  "y": 9.88,
+                  "h": 78.65,
                   "style": {
                     "fontSize": 1.77,
                     "color": "var(--gold)",
@@ -1206,10 +1206,10 @@
                 },
                 {
                   "field": "listName",
-                  "x": 16.24,
-                  "w": 83.76,
-                  "y": 9.75,
-                  "h": 83.92,
+                  "x": 14.8,
+                  "w": 85.2,
+                  "y": 17.79,
+                  "h": 60.3,
                   "style": {
                     "fontSize": 1.77,
                     "color": "var(--ink)",
@@ -1220,10 +1220,10 @@
                 },
                 {
                   "field": "os",
-                  "x": 88.67,
-                  "w": 11.33,
-                  "y": 22.69,
-                  "h": 59.38,
+                  "x": 90.29,
+                  "w": 9.71,
+                  "y": 20.96,
+                  "h": 61.49,
                   "style": {
                     "fontSize": 1.39,
                     "color": "#5B656E",

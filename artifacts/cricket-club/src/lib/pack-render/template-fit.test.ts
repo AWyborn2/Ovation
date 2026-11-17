@@ -325,3 +325,104 @@ describe("checkFitInDom", () => {
     ]);
   });
 });
+
+// ── A Team List side over the box's capacity (P0-B, Nov 2026) ───────────────
+
+describe("Team List sides of 12 to 14", () => {
+  // Two columns of 5 rows: a box for 10, as Bold Type's portrait list was.
+  const box = { x: 6, y: 30, w: 50, h: 33.29 };
+  const teamDoc = () =>
+    doc({
+      team: {
+        layers: [
+          text("grade", "{{gradeHeading}}"),
+          {
+            id: "list",
+            kind: "rows",
+            sizes: ["portrait"],
+            geometry: { portrait: box },
+            rows: {
+              repeat: "players",
+              rowHeight: 7.78,
+              columns: 2,
+              columnGap: 4,
+              cells: [{ field: "listName", x: 0, w: 100, style: { fontSize: 2 } }],
+            },
+          } as unknown as TemplateLayerV2,
+        ],
+      },
+    });
+  const draw = (n: number) => {
+    const root = window.document.createElement("div");
+    root.innerHTML = renderPackCard(
+      {
+        kind: "teamList",
+        grade: "A Grade",
+        players: Array.from({ length: n }, (_, i) => ({
+          order: i + 1,
+          surname: `PLAYER${i + 1}`,
+          firstInitial: "J",
+          ...(i === 0 ? { role: "C" } : {}),
+        })),
+      } as unknown as ShareCardInput,
+      "portrait",
+      false,
+      resolveCardTokens({
+        theme: null,
+        junior: false,
+        data: {} as PackCardData,
+        packId: BLANK_PACK_ID,
+      }),
+      false,
+      {} as PackCardData,
+      BLANK_PACK_ID,
+      teamDoc() as unknown as CardAdjustments,
+      { page: "team" },
+    );
+    return root;
+  };
+
+  it("draws extra side passes of 12, 13 and 14, every named player marked (C) or (WK)", async () => {
+    const { mount, cards } = mountRecorder();
+    await runTemplateFit(teamDoc(), "teamList", mount);
+    type Player = { firstInitial?: string; role?: string };
+    const lists = cards.map((c) => (c.input as { players?: Player[] }).players ?? []);
+    // The side passes: every named player marked; the capacity passes leave most unmarked.
+    const marked = lists.filter(
+      (p) => p.length > 0 && p.every((x) => !x.firstInitial || Boolean(x.role)),
+    );
+    // Once at the full preset (no photo variants here) and once as a junior side.
+    expect(marked.map((p) => p.length).sort()).toEqual([12, 12, 13, 13, 14, 14]);
+    expect(lists.filter((p) => p.length === 10).length).toBeGreaterThan(0);
+  });
+
+  it("draws every player of a side of 14 in a box for 10, smaller, none left out", () => {
+    const root = draw(14);
+    expect(root.querySelectorAll("[data-row-index]")).toHaveLength(14);
+    expect(root.innerHTML).toContain("J. PLAYER14");
+    // 7 rows a column where 5 fit: 449 px of box for 588 px of rows.
+    const squeeze = Number(
+      root.querySelector("[data-rows-squeeze]")?.getAttribute("data-rows-squeeze"),
+    );
+    expect(squeeze).toBeCloseTo(449.4 / 588.1, 2);
+  });
+
+  it("draws a side that fits its box as designed", () => {
+    expect(draw(10).querySelector("[data-rows-squeeze]")).toBeNull();
+  });
+
+  it("flags a list squeezed below 70% to fit", () => {
+    const root = window.document.createElement("div");
+    root.innerHTML = `<div data-layer-id="list"><div data-rows-squeeze="0.52"></div></div>`;
+    expect(
+      checkFitInDom(root, {
+        doc: teamDoc(),
+        kind: "teamList",
+        page: "team",
+        size: "portrait",
+        variant: "team.portrait.full.side14",
+        visible: null,
+      }),
+    ).toEqual([expect.objectContaining({ reason: "rows-squeezed", layerId: "list" })]);
+  });
+});

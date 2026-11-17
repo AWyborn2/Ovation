@@ -1,6 +1,6 @@
 {
   "name": "Bold Type teamList",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -177,9 +177,9 @@
               },
               "story": {
                 "x": 37.28,
-                "y": 45,
+                "y": 59,
                 "w": 68.72,
-                "h": 58.38
+                "h": 44.38
               },
               "landscape": {
                 "x": 51.15,
@@ -315,9 +315,9 @@
             "geometry": {
               "story": {
                 "x": 37.28,
-                "y": 45,
+                "y": 59,
                 "w": 62.72,
-                "h": 55
+                "h": 41
               }
             },
             "sig": "photo:19lxj2r0hrvlii"
@@ -1134,14 +1134,14 @@
               "portrait": {
                 "x": 6,
                 "y": 38.28,
-                "w": 51.04,
-                "h": 33.29
+                "w": 47.5,
+                "h": 43.6
               },
               "story": {
                 "x": 6,
                 "y": 26.92,
                 "w": 51.04,
-                "h": 23.41
+                "h": 30.7
               }
             },
             "sig": "rows:1dmxzgy1d4rws3"
