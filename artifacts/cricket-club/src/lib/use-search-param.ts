@@ -4,12 +4,16 @@ import { useLocation, useSearch } from "wouter";
 /**
  * A string state value mirrored in the URL query (`?name=value`), so filters and
  * tabs survive reloads and are shareable. Setting the default value removes the
- * param. History is replaced, not pushed, so filtering doesn't flood Back.
+ * param. History is replaced, not pushed, so filtering doesn't flood Back;
+ * `push` adds an entry instead, for a value that is a place Back should step
+ * out of (a settings card, a view).
  */
 export function useSearchParamState(
   name: string,
   defaultValue: string,
+  opts: { push?: boolean } = {},
 ): [string, (next: string) => void] {
+  const replace = !opts.push;
   const search = useSearch();
   const [location, navigate] = useLocation();
   const value = new URLSearchParams(search).get(name) ?? defaultValue;
@@ -20,9 +24,9 @@ export function useSearchParamState(
       if (next === defaultValue || next === "") params.delete(name);
       else params.set(name, next);
       const qs = params.toString();
-      navigate(qs ? `${location}?${qs}` : location, { replace: true });
+      navigate(qs ? `${location}?${qs}` : location, { replace });
     },
-    [search, location, navigate, name, defaultValue],
+    [search, location, navigate, name, defaultValue, replace],
   );
 
   return [value, setValue];
