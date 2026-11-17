@@ -547,6 +547,13 @@
       "when": 1793251151902,
       "tag": "0077_sponsors_per_slide",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1794910113528,
+      "tag": "0078_caption_seed_nickname",
+      "breakpoints": true
     }
   ]
 }
