@@ -1,4 +1,8 @@
-import { useGetPlatformAdminMe, getGetPlatformAdminMeQueryKey, getGetCurrentAdminQueryKey } from "@workspace/api-client-react";
+import {
+  useGetPlatformAdminMe,
+  getGetPlatformAdminMeQueryKey,
+  getGetCurrentAdminQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -20,10 +24,11 @@ export function usePlatformAdmin() {
 
 export function useInvalidatePlatformAdmin() {
   const qc = useQueryClient();
-  return () => Promise.all([
-    qc.invalidateQueries({ queryKey: getGetPlatformAdminMeQueryKey() }),
-    ...(import.meta.env.DEV
-      ? [qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() })]
-      : []),
-  ]);
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: getGetPlatformAdminMeQueryKey() }),
+      ...(import.meta.env.DEV
+        ? [qc.invalidateQueries({ queryKey: getGetCurrentAdminQueryKey() })]
+        : []),
+    ]);
 }

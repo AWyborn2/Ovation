@@ -242,17 +242,25 @@ export async function ensureSeedPlatformAdmin(): Promise<void> {
     const password = env.PLATFORM_ADMIN_PASSWORD();
     if (!email || !password) return;
     const admin = await getPlatformAdminByEmail(email);
-    if (admin && await verifyPassword(password, admin.passwordHash)) return;
+    if (admin && (await verifyPassword(password, admin.passwordHash))) return;
     const passwordHash = await hashPassword(password);
     if (admin) {
-      await db.update(platformAdminsTable).set({
-        passwordHash,
-        sessionEpoch: admin.sessionEpoch + 1,
-      }).where(eq(platformAdminsTable.id, admin.id));
+      await db
+        .update(platformAdminsTable)
+        .set({
+          passwordHash,
+          sessionEpoch: admin.sessionEpoch + 1,
+        })
+        .where(eq(platformAdminsTable.id, admin.id));
     } else {
-      await db.insert(platformAdminsTable).values({
-        email, displayName: "Platform Admin", passwordHash,
-      }).onConflictDoNothing();
+      await db
+        .insert(platformAdminsTable)
+        .values({
+          email,
+          displayName: "Platform Admin",
+          passwordHash,
+        })
+        .onConflictDoNothing();
     }
     return;
   }

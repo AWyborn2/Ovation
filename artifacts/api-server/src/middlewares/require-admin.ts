@@ -22,7 +22,7 @@ export type RequestWithAdmin = Request & { admin?: AdminRow };
 export async function resolveAdmin(req: Request): Promise<AdminRow | null> {
   if (env.devPlatformAdminOnly()) {
     const platformAdmin = await resolvePlatformAdmin(req);
-    if (!platformAdmin || await isTenantSuspended(getTenantId(req))) return null;
+    if (!platformAdmin || (await isTenantSuspended(getTenantId(req)))) return null;
     return devPlatformClubActor(platformAdmin, getTenantId(req));
   }
   const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
