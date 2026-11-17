@@ -10,6 +10,7 @@ import { installApiMock } from "@/test/mock-api";
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 const ADMIN = { id: 1, username: "ash", displayName: "Ash Admin" };
@@ -23,6 +24,8 @@ const ALL_ON = {
 
 describe("Admin shell (Broadcast U14)", () => {
   it("unauthenticated /admin shows the centred sign-in card", async () => {
+    // A published site: development shows the platform sign-in instead.
+    vi.stubEnv("DEV", false);
     installApiMock({ "/api/auth/me": null });
     renderAt(
       <AdminShell>

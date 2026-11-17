@@ -22,7 +22,11 @@ describe("club admin login entry point", () => {
 
   it("shows only platform sign-in in development", () => {
     vi.stubEnv("DEV", true);
-    render(<AdminShell><div>Private club tools</div></AdminShell>);
+    render(
+      <AdminShell>
+        <div>Private club tools</div>
+      </AdminShell>,
+    );
     expect(screen.getByText("Platform login gate")).toBeInTheDocument();
     expect(screen.queryByText("Club login gate")).not.toBeInTheDocument();
     expect(screen.queryByText("Private club tools")).not.toBeInTheDocument();
@@ -30,7 +34,11 @@ describe("club admin login entry point", () => {
 
   it("retains club sign-in for production builds", () => {
     vi.stubEnv("DEV", false);
-    render(<AdminShell><div>Private club tools</div></AdminShell>);
+    render(
+      <AdminShell>
+        <div>Private club tools</div>
+      </AdminShell>,
+    );
     expect(screen.getByText("Club login gate")).toBeInTheDocument();
     expect(screen.queryByText("Platform login gate")).not.toBeInTheDocument();
   });

@@ -13,21 +13,24 @@ export async function devPlatformClubActor(
 ): Promise<AdminRow> {
   if (!env.devPlatformAdminOnly()) throw new Error("Development admin access is disabled");
   const username = `__dev_platform_${platformAdmin.id}`;
-  const [existing] = await db.select().from(adminsTable).where(and(
-    eq(adminsTable.tenantId, tenantId),
-    eq(adminsTable.username, username),
-  ));
+  const [existing] = await db
+    .select()
+    .from(adminsTable)
+    .where(and(eq(adminsTable.tenantId, tenantId), eq(adminsTable.username, username)));
   if (existing) return existing;
-  await db.insert(adminsTable).values({
-    tenantId,
-    username,
-    displayName: `Platform Admin (development)`,
-    passwordHash: "!platform-session-only",
-  }).onConflictDoNothing();
-  const [actor] = await db.select().from(adminsTable).where(and(
-    eq(adminsTable.tenantId, tenantId),
-    eq(adminsTable.username, username),
-  ));
+  await db
+    .insert(adminsTable)
+    .values({
+      tenantId,
+      username,
+      displayName: `Platform Admin (development)`,
+      passwordHash: "!platform-session-only",
+    })
+    .onConflictDoNothing();
+  const [actor] = await db
+    .select()
+    .from(adminsTable)
+    .where(and(eq(adminsTable.tenantId, tenantId), eq(adminsTable.username, username)));
   if (!actor) throw new Error("Could not resolve development platform admin actor");
   return actor;
 }
