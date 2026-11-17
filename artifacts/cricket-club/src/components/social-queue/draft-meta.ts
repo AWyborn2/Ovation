@@ -2,6 +2,10 @@ import type { SocialDraft, SocialPublication } from "@workspace/api-client-react
 import type { StatusTone } from "@/components/admin-ui";
 import type { ShareCardInput } from "@/lib/share-card";
 import { readableDateRange } from "@workspace/scorecard/card-content";
+import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
+import { isDocumentV2 } from "@workspace/scorecard/kind-templates";
+import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { BLANK_PACK_ID } from "@/lib/pack-render";
 
 export type DraftStatus = "awaiting_review" | "ready" | "posted" | "dismissed";
 
@@ -54,8 +58,60 @@ export function isJuniorDraft(d: SocialDraft): boolean {
   return d.sourceMatchIsJunior || !!input?.junior;
 }
 
+/** The card kind a carousel set of `setType` is made of (a Team List set's slides are Team Lists). */
+const SET_CARD_KIND: Record<CarouselSetType, string> = {
+  matchDay: "matchDay",
+  teamList: "teamList",
+  results: "resultsSummary",
+  matchSummary: "matchSummary",
+};
+
+/**
+ * The kind a draft is, for its label: a carousel's own set type (its payload
+ * always says Match Day), else its card's kind.
+ */
+export function draftKind(d: Pick<SocialDraft, "cardInput" | "family">): string {
+  const input = d.cardInput as { weekendCarousel?: { setType?: unknown } | null } | null;
+  if (input?.weekendCarousel && typeof input.weekendCarousel === "object") {
+    const type = input.weekendCarousel.setType;
+    return Object.hasOwn(SET_CARD_KIND, String(type))
+      ? SET_CARD_KIND[type as CarouselSetType]
+      : "matchDay";
+  }
+  return String((d.cardInput as { kind?: unknown } | null)?.kind ?? d.family ?? "card");
+}
+
+const kindName = (kind: string) => CARD_KIND_OPTIONS.find((o) => o.value === kind)?.label ?? "Card";
+
+/** A draft's day, as "17 Nov" (club time). */
+export function draftDay(d: Pick<SocialDraft, "createdAt">): string {
+  const at = new Date(d.createdAt);
+  return Number.isNaN(at.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("en-AU", {
+        day: "numeric",
+        month: "short",
+        timeZone: "Australia/Perth",
+      }).format(at);
+}
+
+/** A blank design started from Create or Studio home: a white page, no template, no pack. */
+export function isBlankDesign(
+  d: Pick<SocialDraft, "packId" | "templateRef" | "templateVersion" | "cardInput" | "adjustments">,
+): boolean {
+  return (
+    d.packId === BLANK_PACK_ID &&
+    d.templateRef == null &&
+    d.templateVersion == null &&
+    draftInput(d as SocialDraft)?.kind === "announcement" &&
+    isDocumentV2(d.adjustments)
+  );
+}
+
 /** The row title: the match-up for a result, otherwise the player or headline. */
 export function draftHeading(d: SocialDraft): string {
+  // Its sample headline isn't a name the admin gave it.
+  if (isBlankDesign(d)) return "Blank design";
   const input = draftInput(d);
   if (input?.kind === "matchSummary") return `${input.club.name} vs ${input.opposition.name}`;
   const loose = input as { playerName?: string; headline?: string; oppositionName?: string } | null;
@@ -63,8 +119,27 @@ export function draftHeading(d: SocialDraft): string {
     loose?.playerName ??
     loose?.headline ??
     (loose?.oppositionName ? `vs ${loose.oppositionName}` : null) ??
-    d.engine
+    draftFallbackTitle(d)
   );
+}
+
+/**
+ * A readable title for a draft with no player, headline or match of its own:
+ * "<Card kind>: <match or day>", e.g. "Team List: A Grade v Pinjarra" or
+ * "Announcement: 17 Nov". Never the engine's code name ("adhoc").
+ */
+export function draftFallbackTitle(d: SocialDraft): string {
+  const input = (draftInput(d) ?? {}) as {
+    grade?: unknown;
+    gradeRound?: unknown;
+    opponent?: unknown;
+    opposition?: unknown;
+  };
+  const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const grade = text(input.grade) ?? text(input.gradeRound);
+  const opponent = text(input.opponent) ?? text(input.opposition);
+  const match = grade && opponent ? `${grade} v ${opponent}` : (grade ?? opponent);
+  return `${kindName(draftKind(d))}: ${match ?? draftDay(d)}`;
 }
 
 /** The row's second line: result, tier, category or grade. */
