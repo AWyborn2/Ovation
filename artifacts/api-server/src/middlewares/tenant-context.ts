@@ -273,6 +273,11 @@ export function classifyNonTenantHost(req: Request): HostMode {
   // client can render any tenant's public data by header. It is therefore
   // opt-in there (`TENANT_HEADER_ON_PUBLISHED_HOST=1`) and always on for
   // `.replit.dev` previews.
+  // Dev only: the switcher's "Platform" choice (`x-tenant-id: platform`) clears
+  // the club so testers reach the platform console on a `.replit.dev` preview.
+  // Honoured on preview hosts alone; anywhere else the value is ignored.
+  if (isPreviewHost(host) && req.header("x-tenant-id")?.trim().toLowerCase() === "platform")
+    return { mode: "platform" };
   const headerTenant = parseTenantId(req.header("x-tenant-id"));
   const switcherAllowed =
     isPreviewHost(host) || (isPublishedReplitHost(host) && env.tenantHeaderOnPublishedHost());

@@ -27,7 +27,7 @@ import {
 const STAMP = Date.now();
 const CENTRAL_CLUB_ID = 4242;
 
-function fakeReq(opts: { tenantId?: number; host?: string }): Request {
+function fakeReq(opts: { tenantId?: number | string; host?: string }): Request {
   return {
     header: (name: string) =>
       name.toLowerCase() === "x-tenant-id" && opts.tenantId != null
@@ -219,5 +219,32 @@ describe("per-tenant routing: data source + central club + subdomain", () => {
     expect(classifyNonTenantHost(fakeReq({ host: "localhost" }))).toEqual({
       mode: "fallback",
     });
+  });
+
+  // Dev retest (17 Nov 2026): the switcher's "Platform" choice reaches the
+  // platform console on a dev preview, and nowhere else.
+  it("honours the dev switcher's Platform choice on a .replit.dev preview only", () => {
+    expect(
+      classifyNonTenantHost(fakeReq({ host: "abc.picard.replit.dev", tenantId: "platform" })),
+    ).toEqual({ mode: "platform" });
+    expect(classifyNonTenantHost(fakeReq({ host: "abc.picard.replit.dev" }))).toEqual({
+      mode: "fallback",
+    });
+    // A published deployment, localhost and a public host ignore it.
+    expect(
+      classifyNonTenantHost(fakeReq({ host: "ovationcc.replit.app", tenantId: "platform" })),
+    ).toEqual({ mode: "platform" });
+    expect(classifyNonTenantHost(fakeReq({ host: "localhost", tenantId: "platform" }))).toEqual({
+      mode: "fallback",
+    });
+    expect(
+      classifyNonTenantHost(fakeReq({ host: "club.example.com", tenantId: "platform" })),
+    ).toEqual({ mode: "platform" });
+  });
+
+  it("a real tenant host ignores the Platform choice", async () => {
+    expect(
+      await resolveHostMode(fakeReq({ host: `${centralSlug}.ovation.app`, tenantId: "platform" })),
+    ).toEqual({ mode: "tenant", tenantId: centralTenantId });
   });
 });

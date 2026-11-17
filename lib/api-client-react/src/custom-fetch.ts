@@ -91,12 +91,21 @@ function isDevHost(): boolean {
   );
 }
 
-/** The dev tenant override id, or null when unset / not on a dev host. */
+/**
+ * The switcher's "Platform" choice: no club, so a tester reaches the platform
+ * console. Sent only from a `.replit.dev` preview, the one host the API
+ * honours it on.
+ */
+export const DEV_PLATFORM_OVERRIDE = "platform";
+
+/** The dev tenant override id (or "platform"), or null when unset / not on a dev host. */
 function getDevTenantOverride(): string | null {
   if (!isDevHost()) return null;
   try {
     const raw = window.localStorage.getItem(DEV_TENANT_STORAGE_KEY);
     if (!raw) return null;
+    if (raw === DEV_PLATFORM_OVERRIDE)
+      return window.location.hostname.toLowerCase().endsWith(".replit.dev") ? raw : null;
     const n = Number(raw);
     return Number.isInteger(n) && n > 0 ? String(n) : null;
   } catch {
