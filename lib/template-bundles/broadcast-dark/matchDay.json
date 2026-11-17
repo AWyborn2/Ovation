@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark matchDay",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3839,7 +3839,10 @@
               }
             },
             "sig": "shape:1ylxks013d5njn",
-            "link": "title-l12"
+            "link": "title-l12",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "shape",
@@ -3858,11 +3861,14 @@
               }
             },
             "sig": "shape:0d1afa60t1lqvh",
-            "link": "title-l12"
+            "link": "title-l12",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3870,7 +3876,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l16",
@@ -3879,28 +3885,36 @@
               "square": {
                 "x": 75.6,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.6,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.3
               },
               "story": {
                 "x": 75.6,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 1.61
               }
             },
-            "sig": "text:1al02z402s0zeb",
-            "link": "title-l14"
+            "sig": "text:0arwmtr050qmu2",
+            "link": "title-l14",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3908,7 +3922,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l17",
@@ -3917,12 +3931,20 @@
               "landscape": {
                 "x": 87.19,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.61,
                 "h": 2.86
               }
             },
-            "sig": "text:1qnzoxd1l124i0",
-            "link": "title-l14"
+            "sig": "text:1wr36240jeixz7",
+            "link": "title-l14",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
@@ -4220,7 +4242,10 @@
               }
             },
             "sig": "shape:15nzts40l0i3hz",
-            "link": "title-l25"
+            "link": "title-l25",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -4245,7 +4270,10 @@
               }
             },
             "sig": "shape:1pui53s1pz01wh",
-            "link": "title-l25"
+            "link": "title-l25",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -4264,7 +4292,10 @@
               }
             },
             "sig": "shape:0bsv7kr1k2xlo8",
-            "link": "title-l25"
+            "link": "title-l25",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -4289,7 +4320,10 @@
               }
             },
             "sig": "text:020d3hw1r7ak2f",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -4320,7 +4354,10 @@
               }
             },
             "sig": "text:0v1ap291socv06",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -4345,7 +4382,10 @@
               }
             },
             "sig": "text:0e8xx2r1sjpaou",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -7276,7 +7316,10 @@
               }
             },
             "sig": "shape:1ylxks013d5njn",
-            "link": "sponsors-l12"
+            "link": "sponsors-l12",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "shape",
@@ -7295,11 +7338,14 @@
               }
             },
             "sig": "shape:0d1afa60t1lqvh",
-            "link": "sponsors-l12"
+            "link": "sponsors-l12",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -7307,7 +7353,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l16",
@@ -7316,28 +7362,36 @@
               "square": {
                 "x": 75.6,
                 "y": 9.27,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.87
               },
               "portrait": {
                 "x": 75.6,
                 "y": 7.42,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 2.3
               },
               "story": {
                 "x": 75.6,
                 "y": 5.22,
-                "w": 17.4,
+                "w": 16.4,
                 "h": 1.61
               }
             },
-            "sig": "text:1al02z402s0zeb",
-            "link": "sponsors-l14"
+            "sig": "text:0arwmtr050qmu2",
+            "link": "sponsors-l14",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -7345,7 +7399,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l17",
@@ -7354,12 +7408,20 @@
               "landscape": {
                 "x": 87.19,
                 "y": 9.23,
-                "w": 9.61,
+                "w": 8.61,
                 "h": 2.86
               }
             },
-            "sig": "text:1qnzoxd1l124i0",
-            "link": "sponsors-l14"
+            "sig": "text:1wr36240jeixz7",
+            "link": "sponsors-l14",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",

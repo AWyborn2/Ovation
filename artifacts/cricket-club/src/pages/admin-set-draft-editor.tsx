@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { SetPageThumb, useLibraryPreviewData } from "@/components/template-library/previews";
 import { draftHeading } from "@/components/social-queue/draft-meta";
+import { readableDateRange } from "@workspace/scorecard/card-content";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
 import { setDraftSlides } from "@/lib/set-draft";
@@ -150,7 +151,8 @@ function SetDraftEditor({
     () => ({
       id: draft.id,
       kind: setTemplateKind(design.setType),
-      name: `${label}: ${typeof round === "string" && round ? round : draftHeading(draft)}`,
+      // A set queued before Nov 2026 named its range raw ("2026-11-13 – 2026-11-22").
+      name: `${label}: ${typeof round === "string" && round ? readableDateRange(round) : draftHeading(draft)}`,
       version: 1,
       document: design.document,
       fitStatus: "pass",

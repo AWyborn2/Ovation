@@ -1,6 +1,7 @@
 import type { SocialDraft, SocialPublication } from "@workspace/api-client-react";
 import type { StatusTone } from "@/components/admin-ui";
 import type { ShareCardInput } from "@/lib/share-card";
+import { readableDateRange } from "@workspace/scorecard/card-content";
 
 export type DraftStatus = "awaiting_review" | "ready" | "posted" | "dismissed";
 
@@ -76,7 +77,8 @@ export function draftSubline(d: SocialDraft): string {
     grade?: string;
     roundLabel?: string;
   } | null;
-  return loose?.tierLabel ?? loose?.category ?? loose?.grade ?? loose?.roundLabel ?? d.appPath;
+  const round = loose?.roundLabel != null ? readableDateRange(loose.roundLabel) : undefined;
+  return loose?.tierLabel ?? loose?.category ?? loose?.grade ?? round ?? d.appPath;
 }
 
 export function draftGrade(d: SocialDraft): string | null {

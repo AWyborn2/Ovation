@@ -71,7 +71,7 @@ export function carouselSlideSlot(input: Input): SetSlot {
 /** The set type's title for a cover adapted from a list card. */
 const COVER_TITLE: Record<string, string> = {
   teamListRound: "Team lists",
-  roundFixtures: "This weekend",
+  roundFixtures: "Fixtures",
   resultsSummary: "Results",
   weekendWrap: "Results",
 };
@@ -144,7 +144,7 @@ export function slideInputFor(
       date: listDate(input),
       carouselPage: {
         page: "title",
-        title: COVER_TITLE[from] ?? "This weekend",
+        title: COVER_TITLE[from] ?? "Match day",
         fixtureCount: ctx.items?.length ?? 0,
         sponsors: [],
       },

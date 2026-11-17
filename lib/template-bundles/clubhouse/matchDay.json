@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse match day",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1965,7 +1965,10 @@
                 "h": 3.47
               }
             },
-            "sig": "shape:09zngj91fufb3u"
+            "sig": "shape:09zngj91fufb3u",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -1987,7 +1990,10 @@
                 "h": 2.72
               }
             },
-            "sig": "shape:1f1xya916xif8u"
+            "sig": "shape:1f1xya916xif8u",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -2009,7 +2015,10 @@
                 "h": 5.51
               }
             },
-            "sig": "shape:096ogzj1u57r6e"
+            "sig": "shape:096ogzj1u57r6e",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -2032,7 +2041,10 @@
                 "h": 2.5
               }
             },
-            "sig": "text:0d61zwn0crqq0w"
+            "sig": "text:0d61zwn0crqq0w",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -2055,7 +2067,10 @@
                 "h": 2.15
               }
             },
-            "sig": "text:1gmbzae1glgf33"
+            "sig": "text:1gmbzae1glgf33",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -2078,7 +2093,10 @@
                 "h": 1.61
               }
             },
-            "sig": "text:0vr1rvm01q8s73"
+            "sig": "text:0vr1rvm01q8s73",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -2101,7 +2119,10 @@
                 "h": 3.33
               }
             },
-            "sig": "text:1pw08kz1woyita"
+            "sig": "text:1pw08kz1woyita",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",

@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3314,7 +3314,10 @@
               }
             },
             "sig": "shape:09zngj91fufb3u",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -3337,7 +3340,10 @@
               }
             },
             "sig": "shape:1f1xya916xif8u",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "shape",
@@ -3360,7 +3366,10 @@
               }
             },
             "sig": "shape:096ogzj1u57r6e",
-            "link": "title-l28"
+            "link": "title-l28",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3384,7 +3393,10 @@
               }
             },
             "sig": "text:0d61zwn0crqq0w",
-            "link": "title-l31"
+            "link": "title-l31",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3408,7 +3420,10 @@
               }
             },
             "sig": "text:1gmbzae1glgf33",
-            "link": "title-l31"
+            "link": "title-l31",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3432,7 +3447,10 @@
               }
             },
             "sig": "text:0vr1rvm01q8s73",
-            "link": "title-l31"
+            "link": "title-l31",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
@@ -3456,7 +3474,10 @@
               }
             },
             "sig": "text:1pw08kz1woyita",
-            "link": "title-l31"
+            "link": "title-l31",
+            "showWhen": {
+              "field": "livestream"
+            }
           },
           {
             "kind": "text",
