@@ -40,7 +40,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SetPageThumb, useLibraryPreviewData } from "@/components/template-library/previews";
-import { draftDay, draftFallbackTitle, draftHeading } from "@/components/social-queue/draft-meta";
+import {
+  draftDay,
+  draftFallbackTitle,
+  draftHeading,
+  editorStatusLabel,
+} from "@/components/social-queue/draft-meta";
 
 /** A set's own name (its player or headline), else the day it was made: "17 Nov". */
 const ownHeading = (draft: SocialDraft) => {
@@ -199,7 +204,11 @@ function SetDraftEditor({
     status: () => (
       <span className="rounded-full bg-[var(--ed-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-ink2)]">
         {design.layout === "carousel" ? "Queued set" : pages ? "Pages" : "Round set"} ·{" "}
-        {current.status === "ready" ? "Ready" : "To review"}
+        {current.status === "ready"
+          ? "Ready"
+          : editorStatusLabel(current, newStudio) === "Draft, not yet reviewed"
+            ? "Draft, not yet reviewed"
+            : "To review"}
       </span>
     ),
   };

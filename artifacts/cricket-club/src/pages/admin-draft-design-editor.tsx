@@ -22,10 +22,10 @@ import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import { SendToReview } from "@/components/studio-editor/send-to-review";
 import { useNewStudio } from "@/lib/entitlements";
 import {
-  STATUS_LABEL,
   STATUS_TONE,
   draftHeading,
   draftStatus,
+  editorStatusLabel,
 } from "@/components/social-queue/draft-meta";
 import { useBrand } from "@/lib/brand-context";
 import { withRootLayersOnPage } from "@/lib/draft-design";
@@ -125,7 +125,9 @@ export function DraftDesignEditor({
         ? { ...template, document: withRootLayersOnPage(next.adjustments, input.kind) }
         : undefined;
     },
-    status: () => <StatusPill tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</StatusPill>,
+    status: () => (
+      <StatusPill tone={STATUS_TONE[status]}>{editorStatusLabel(draft, newStudio)}</StatusPill>
+    ),
   };
 
   const draftMode: EditorDraftMode = {

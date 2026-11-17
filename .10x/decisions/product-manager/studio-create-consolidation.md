@@ -226,6 +226,15 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
     opens it in Senior photos, where its photos are added and removed, rather than a second copy of that screen.
     Junior photos are unchanged and keep their consent rule; collections are senior photos only.
 
+### Decisions from the dev retest (Ash, 17 Nov 2026)
+
+11. **"Draft, not yet reviewed" label.** In the editors (the card editor for a design and the set editor), a
+    design made by hand (Create, a single card or a carousel) that is still awaiting review is labelled
+    "Draft, not yet reviewed" instead of "Awaiting review", so a design just made doesn't read as already sent.
+    - A label only: the draft's status, the review step, the queue and auto-post are unchanged.
+    - Drafts the sweep makes keep "Awaiting review". The queue keeps its own tabs and labels.
+    - Shown only with the New Studio switch on.
+
 ### Not in this release
 
 - Option B's "This week" board.
