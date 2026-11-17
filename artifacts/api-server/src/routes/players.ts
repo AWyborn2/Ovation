@@ -41,7 +41,8 @@ import {
   reassignMergedNativePlayer,
 } from "../lib/curated-player-detach";
 import { recomputeAggregates } from "../lib/recompute";
-import { dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
+import { assertNativeStatsWriteTenant, dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
+import { renameCentralPlayer } from "../lib/central-player-rename";
 import { getTenantId } from "../middlewares/tenant-context";
 import { taggedPlayerPhotoUrl, withLibraryPhotos } from "../lib/club-photo-library";
 import { splitCentralName, getPlayerOrderCol, centralPlayerGroupFor } from "../lib/player-helpers";
@@ -119,10 +120,10 @@ router.get("/players", async (req, res): Promise<void> => {
       .map((c) => {
         // A missing central display name → a truly blank name (NOT the GUID), so
         // the directory shows "Unknown" and the blank-name sink can sink it.
+        // The club's own rename (player_curation) wins over the central name.
+        const shown = identity.nameFor(c.participantId, c.displayName);
         const name =
-          c.displayName && c.displayName.trim()
-            ? splitCentralName(c.displayName)
-            : { givenName: "", surname: "" };
+          shown && shown.trim() ? splitCentralName(shown) : { givenName: "", surname: "" };
         return {
           id: intByGuid.get(c.participantId)!,
           surname: name.surname,
@@ -478,10 +479,9 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    const name =
-      detail.displayName && detail.displayName.trim()
-        ? splitCentralName(detail.displayName)
-        : { givenName: "", surname: "" };
+    // The club's own rename (player_curation) wins over the central name.
+    const shown = identity.nameFor(keeper, detail.displayName);
+    const name = shown && shown.trim() ? splitCentralName(shown) : { givenName: "", surname: "" };
     res.json({
       id: playerId,
       surname: name.surname,
@@ -885,7 +885,7 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
   );
 });
 
-router.patch("/players/:id", ...nativeAdmin, async (req, res): Promise<void> => {
+router.patch("/players/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = UpdatePlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -896,6 +896,24 @@ router.patch("/players/:id", ...nativeAdmin, async (req, res): Promise<void> => 
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // A club that reads central stats can still fix a player's name: it is stored
+  // as the club's own rename (player_curation), never in the shared database or
+  // the native tables. Every other field belongs to the native register.
+  const source = await dataSource(req);
+  if (source.kind === "central") {
+    const result = await renameCentralPlayer(getTenantId(req), params.data.id, parsed.data);
+    if (result.status === "not_found") {
+      res.status(404).json({ error: "Player not found" });
+      return;
+    }
+    if (result.status === "refused") {
+      res.status(400).json({ error: result.message });
+      return;
+    }
+    res.json(result.player);
+    return;
+  }
+  await assertNativeStatsWriteTenant(getTenantId(req));
   const [player] = await db
     .update(playersTable)
     .set(parsed.data)
