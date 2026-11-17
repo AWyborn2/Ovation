@@ -96,16 +96,18 @@ describe("matchDaySponsorsContent (P6)", () => {
 });
 
 describe("sponsors page input (P6)", () => {
-  it("Standard is the page as it was: club sponsors only, flat, no extra blocks", () => {
+  it("Standard is the page as it was: club sponsors and the majors, flat, no extra blocks", () => {
     for (const preset of ["minimal", "standard"] as const) {
       expect(page(presetFields("matchDay", preset), true)).toEqual({
         page: "sponsors",
         title: "Round 5",
         fixtureCount: 2,
+        // Team T backs A Grade but is a major sponsor, so it always shows (Ash, 17 Nov 2026).
         sponsors: [
           { name: "Club A", logoUrl: "https://s/a.png" },
           { name: "Major M", logoUrl: "https://s/m.png" },
           { name: "Club B", logoUrl: "https://s/b.png" },
+          { name: "Team T", logoUrl: "https://s/t.png" },
         ],
       });
     }
@@ -127,8 +129,8 @@ describe("sponsors page input (P6)", () => {
       "Club B",
     ]);
     expect(p.majorCount).toBe(2);
-    // A hidden team sponsor is not counted as a major one.
-    expect(page(withFields("sponsors.tiers")).majorCount).toBe(1);
+    // A major team sponsor shows with "Team sponsors too" off, and counts as a major.
+    expect(page(withFields("sponsors.tiers")).majorCount).toBe(2);
   });
 
   it("tiers with no major sponsor stay a flat grid", () => {
@@ -244,7 +246,7 @@ describe("saved sponsors content (P6)", () => {
       },
     });
     const last = read!.slides[2].input.carouselPage as Record<string, unknown>;
-    expect(last.majorCount).toBe(1);
+    expect(last.majorCount).toBe(2);
     expect(last.hasCoverPhoto).toBe(true);
   });
 });
@@ -304,5 +306,67 @@ describe("splitSponsorsContent (sponsors over more than one slide)", () => {
     });
     // Team sponsors off: 10 shown, one page.
     expect(splitSponsorsContent(withTeams, tiers)).toHaveLength(1);
+  });
+});
+
+// Ash's decision (17 Nov 2026, dev retest test 25): on the club sponsors page the
+// presenting and major sponsors always show, even when tagged to a grade with
+// "Team sponsors too" off; standard grade-tagged sponsors keep following it.
+describe("the club sponsors page and grade-tagged sponsors", () => {
+  const tagged = matchDaySponsorsContent({
+    ...bookend,
+    sponsors: [
+      { name: "Club A", logoUrl: "https://s/a.png" },
+      { name: "Major G", logoUrl: "https://s/mg.png", tier: "major", grades: ["B Grade"] },
+      {
+        name: "Presenting G",
+        logoUrl: "https://s/pg.png",
+        tier: "standard",
+        grades: ["A Grade"],
+        presenting: true,
+      },
+      { name: "Standard G", logoUrl: "https://s/sg.png", tier: "standard", grades: ["C Grade"] },
+    ],
+  });
+  const shown = (visible: ReadonlySet<string>) =>
+    (
+      (contentInput(tagged, visible).carouselPage as { sponsors: { name: string }[] }).sponsors ??
+      []
+    ).map((s) => s.name);
+
+  it("shows a grade-tagged major sponsor with Team sponsors too off", () => {
+    expect(shown(withFields())).toContain("Major G");
+  });
+
+  it("shows a grade-tagged presenting sponsor with Team sponsors too off", () => {
+    expect(shown(withFields())).toContain("Presenting G");
+  });
+
+  it("hides a grade-tagged standard sponsor with the setting off, and shows it with it on", () => {
+    expect(shown(withFields())).not.toContain("Standard G");
+    expect(shown(withFields("sponsors.teamSponsors"))).toContain("Standard G");
+  });
+
+  it("keeps the presenting sponsor through saving", () => {
+    expect(tagged.sponsors.find((s) => s.name === "Presenting G")).toMatchObject({
+      presenting: true,
+      teamSponsor: true,
+    });
+  });
+
+  it("splits over slides with the majors first and every always-shown sponsor kept", () => {
+    const more = {
+      ...tagged,
+      sponsors: [
+        ...tagged.sponsors,
+        ...["Club B", "Club C"].map((name) => ({ name, logoUrl: "https://s/x.png" })),
+      ],
+    };
+    // Five on the page at 3 a slide: 3 and 2, Major G first; Standard G stays hidden.
+    const pages = splitSponsorsContent(more, withFields("sponsors.tiers"), 3);
+    expect(pages.map((p) => p.sponsors.map((s) => s.name))).toEqual([
+      ["Major G", "Club A", "Presenting G"],
+      ["Club B", "Club C"],
+    ]);
   });
 });

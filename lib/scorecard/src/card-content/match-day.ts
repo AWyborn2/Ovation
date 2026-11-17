@@ -271,6 +271,21 @@ export interface MatchDaySponsorLike {
   grades?: readonly string[] | null;
   /** The caller's own team-sponsor test, when it has one (it wins over `grades`). */
   teamSponsor?: boolean;
+  /** The club's presenting sponsor. */
+  presenting?: boolean;
+}
+
+/**
+ * Whether the club sponsors page shows a sponsor (Ash, 17 Nov 2026): the
+ * presenting and major sponsors always, even when tagged to a grade; any
+ * other sponsor tagged to a grade only while "Team sponsors too"
+ * (`sponsors.teamSponsors`) is on.
+ */
+export function sponsorOnClubPage(
+  s: { teamSponsor?: boolean; tier?: string | null; presenting?: boolean },
+  teamSponsorsOn: boolean,
+): boolean {
+  return teamSponsorsOn || !s.teamSponsor || s.tier === "major" || s.presenting === true;
 }
 
 export interface MatchDaySponsorsOptions extends MatchDayBookendOptions {
@@ -308,6 +323,7 @@ export function matchDaySponsorsContent(opts: MatchDaySponsorsOptions): MatchDay
     logoUrl: s.logoUrl,
     tier: s.tier === "major" ? ("major" as const) : ("standard" as const),
     teamSponsor: isTeam(s),
+    ...(s.presenting ? { presenting: true } : {}),
   });
   const socials = [...new Set((opts.socials ?? []).map((s) => s.trim()).filter(Boolean))];
   // The livestream link belongs to the title page.
@@ -340,8 +356,8 @@ export function splitSponsorsContent(
   visible: ReadonlySet<string>,
   perPage?: number,
 ): MatchDaySponsorsContent[] {
-  const shown = content.sponsors.filter(
-    (s) => visible.has("sponsors.teamSponsors") || !s.teamSponsor,
+  const shown = content.sponsors.filter((s) =>
+    sponsorOnClubPage(s, visible.has("sponsors.teamSponsors")),
   );
   const ordered = visible.has("sponsors.tiers")
     ? [...shown.filter((s) => s.tier === "major"), ...shown.filter((s) => s.tier !== "major")]

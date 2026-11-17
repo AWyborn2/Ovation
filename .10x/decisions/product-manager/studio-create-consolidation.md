@@ -235,6 +235,17 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
     - Drafts the sweep makes keep "Awaiting review". The queue keeps its own tabs and labels.
     - Shown only with the New Studio switch on.
 
+12. **Sponsors page and grade-tagged sponsors** (Ash, 17 Nov 2026, dev retest test 25, option (a)). On the club
+    sponsors page or slide, the presenting and major sponsors always show, even when they are tagged to a grade
+    and "Team sponsors too" is off. Standard-tier grade-tagged sponsors keep following "Team sponsors too", as
+    before.
+    - Every look and the old Weekend Carousel follow it: it lives in the shared sponsors-page code
+      (`sponsorOnClubPage`).
+    - The sponsors-per-slide even split (#611) counts and splits what the page shows, majors first.
+    - A carousel built before this change shows its grade-tagged majors at once; a grade-tagged presenting
+      sponsor that isn't also a major shows once the set is made again (older sets don't record which sponsor
+      was presenting).
+
 ### Not in this release
 
 - Option B's "This week" board.

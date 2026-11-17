@@ -605,10 +605,30 @@ describe("weekend sponsor placements", () => {
       expect(page).not.toHaveProperty("majorCount");
       expect(page).not.toHaveProperty("nextHome");
       expect(page).not.toHaveProperty("hasCoverPhoto");
-      expect((page.sponsors as unknown[]).length).toBe(9);
+      // The club's 9, plus "A sponsor": tagged to A Grade but a major, so it
+      // always shows (Ash, 17 Nov 2026); the standard team sponsors stay off.
+      expect((page.sponsors as { name: string }[]).map((x) => x.name)).toContain("A sponsor");
+      expect((page.sponsors as unknown[]).length).toBe(10);
       expect(slide.photoId).toBeNull();
       expect(slide.data.photoUrl ?? null).toBeNull();
       expect(slide.warnings).toEqual([]);
+    });
+
+    it("shows a grade-tagged presenting sponsor; a standard team sponsor waits for its field", () => {
+      const b = {
+        ...tiered,
+        activeSponsors: tiered.activeSponsors.map((sp, i) =>
+          i === 0 ? { ...sp, grades: ["A Grade"], tier: "standard" } : sp,
+        ),
+      } as unknown as SocialSettingsBundle;
+      const names = (visible: ReadonlySet<string>) =>
+        (
+          (closing(visible, b).input as { carouselPage: { sponsors: { name: string }[] } })
+            .carouselPage.sponsors ?? []
+        ).map((x) => x.name);
+      expect(names(presetFields("matchDay", "standard"))).toContain("Headline");
+      expect(names(presetFields("matchDay", "standard"))).not.toContain("B sponsor");
+      expect(names(presetFields("matchDay", "full"))).toContain("B sponsor");
     });
 
     it("Full adds team sponsors, the tiered grid, the blocks and the background", () => {

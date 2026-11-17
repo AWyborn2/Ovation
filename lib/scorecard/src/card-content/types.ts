@@ -79,6 +79,8 @@ export interface ContentSponsor {
   tier?: "major" | "standard";
   /** Assigned to a team: shown only when `sponsors.teamSponsors` is on. Absent = false. */
   teamSponsor?: boolean;
+  /** The club's presenting sponsor: always on the page, team sponsor or not. Absent = false. */
+  presenting?: boolean;
 }
 
 /** The club's next home game, as the sponsors page prints it. */
