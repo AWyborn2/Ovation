@@ -896,6 +896,21 @@ describe("strict photos and full ordered sets", () => {
       expect(missing[0].warnings[0]).toContain("no longer available");
     },
   );
+  it("covers a junior-only set with approved junior stock only, never a club-wide photo (ADR-007)", () => {
+    const junior = fixture(2, { grade: "Year 4 Gold" });
+    const teams = createTeamSlides([junior], [], md([junior], true));
+    const clubWide = photo(10, { grade: null, season: 2026, photoTypes: ["team"] });
+    const stock = photo(11, { grade: null, juniorStock: true });
+    const build = (photoId: number) =>
+      buildWeekendSlides(teams, [], bundle, "Juniors", "2026-10-09", "2026-10-11", undefined, {
+        selection: { photoId, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } },
+        photos: [clubWide, stock],
+      });
+    const library = build(clubWide.id);
+    expect(library[0].data.photoUrl).toBeUndefined();
+    expect(library[0].warnings[0]).toContain("junior stock");
+    expect(build(stock.id)[0].data.photoUrl).toBe(stock.url);
+  });
   it("allows action tags only, exact grade only; multi-tag matches; no junior photos", () => {
     const photos = [
       photo(1),
