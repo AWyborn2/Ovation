@@ -40,7 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SetPageThumb, useLibraryPreviewData } from "@/components/template-library/previews";
-import { draftHeading } from "@/components/social-queue/draft-meta";
+import { draftHeading, editorStatusLabel } from "@/components/social-queue/draft-meta";
 import { readableDateRange } from "@workspace/scorecard/card-content";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
@@ -190,7 +190,11 @@ function SetDraftEditor({
     status: () => (
       <span className="rounded-full bg-[var(--ed-card)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ed-ink2)]">
         {design.layout === "carousel" ? "Queued set" : pages ? "Pages" : "Round set"} ·{" "}
-        {current.status === "ready" ? "Ready" : "To review"}
+        {current.status === "ready"
+          ? "Ready"
+          : editorStatusLabel(current, newStudio) === "Draft, not yet reviewed"
+            ? "Draft, not yet reviewed"
+            : "To review"}
       </span>
     ),
   };

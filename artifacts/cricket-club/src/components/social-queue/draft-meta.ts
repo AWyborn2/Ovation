@@ -41,6 +41,25 @@ const ENGINE_LABEL: Record<string, string> = {
   ondemand: "Made by hand",
 };
 
+/** The engines of a draft made by hand (Create, a single card or a carousel), not by a sweep. */
+const HAND_MADE = new Set(["adhoc", "ondemand"]);
+
+/**
+ * The status the editors show (New Studio, Ash, Nov 2026): a hand-made
+ * design still awaiting review reads "Draft, not yet reviewed", so a design
+ * just made doesn't look as if it was already sent. A label only: the status,
+ * review and auto-post are unchanged.
+ */
+export function editorStatusLabel(
+  d: Pick<SocialDraft, "status" | "engine">,
+  newStudio: boolean,
+): string {
+  const status = draftStatus(d as SocialDraft);
+  return newStudio && status === "awaiting_review" && HAND_MADE.has(d.engine)
+    ? "Draft, not yet reviewed"
+    : STATUS_LABEL[status];
+}
+
 export function draftStatus(d: SocialDraft): DraftStatus {
   return (d.status as DraftStatus) ?? "awaiting_review";
 }
