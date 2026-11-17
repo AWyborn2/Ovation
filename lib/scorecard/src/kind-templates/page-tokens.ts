@@ -403,6 +403,10 @@ const dedupe = <T extends { key: string }>(list: T[]): T[] =>
 
 /** Fields a list row gets beyond what the packs print: each row's crests and initials. */
 const EXTRA_ROW_FIELDS: Record<string, Record<string, PageToken[]>> = {
+  // The name line every template library Team List prints: "J. YOUNG (WK)".
+  teamList: {
+    players: [{ key: "listName", label: "Initial + surname + role" }],
+  },
   roundFixtures: {
     fixtures: [
       { key: "monogram", label: "Opposition monogram" },
@@ -422,6 +426,7 @@ const EXTRA_ROW_FIELDS: Record<string, Record<string, PageToken[]>> = {
 const PLAYER_ROW_CONTENT: Record<string, string> = {
   number: "team.players",
   broadcastName: "team.players",
+  listName: "team.players",
   surname: "team.players",
   role: "team.players",
   os: "team.players",
@@ -470,7 +475,7 @@ function singlePage(kind: string, page: PageKey, cat: KindFieldCatalogue): PageT
         variants: [...r.variants],
         fields:
           kind === "teamList" && r.key === "players"
-            ? withContent(r.fields, PLAYER_ROW_CONTENT)
+            ? withContent([...r.fields, ...(extraRows[r.key] ?? [])], PLAYER_ROW_CONTENT)
             : [...r.fields, ...(extraRows[r.key] ?? [])].map((f) => ({ ...f })),
         ...(kind === "teamList" && r.key === "players" ? { content: "team.players" } : {}),
       })),

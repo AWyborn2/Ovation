@@ -572,7 +572,7 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
       expect(
         junior.players.every(
           (p: { surname: string; shirtNumber?: string }) =>
-            p.surname === "PLAYER" && !p.shirtNumber,
+            p.surname === "PRIVATE PLAYER" && !p.shirtNumber,
         ),
       ).toBe(true);
     } finally {

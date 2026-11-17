@@ -1,6 +1,6 @@
 {
   "name": "Gold Foil teamList",
-  "version": 4,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1028,7 +1028,7 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 13.33,
                   "w": 86.67,
                   "y": 30.1,
@@ -1038,20 +1038,6 @@
                     "color": "#F6EBD0",
                     "fontFamily": "'IBM Plex Sans',sans-serif",
                     "fontWeight": 600,
-                    "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 54.37,
-                  "w": 45.63,
-                  "y": 23.09,
-                  "h": 37.43,
-                  "style": {
-                    "fontSize": 1.58,
-                    "color": "#DF5888",
-                    "fontFamily": "'Barlow Condensed',sans-serif",
-                    "fontWeight": 700,
                     "align": "left"
                   }
                 },
@@ -1119,7 +1105,7 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 13.33,
                   "w": 86.67,
                   "y": 30.68,
@@ -1130,20 +1116,6 @@
                     "fontFamily": "'IBM Plex Sans',sans-serif",
                     "fontWeight": 600,
                     "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 90.46,
-                  "w": 9.28,
-                  "y": 30.48,
-                  "h": 48.62,
-                  "style": {
-                    "fontSize": 2.11,
-                    "color": "#DF5888",
-                    "fontFamily": "'Barlow Condensed',sans-serif",
-                    "fontWeight": 700,
-                    "align": "right"
                   }
                 },
                 {
@@ -1216,7 +1188,7 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 13.32,
                   "w": 86.68,
                   "y": 31.49,
@@ -1226,20 +1198,6 @@
                     "color": "#F6EBD0",
                     "fontFamily": "'IBM Plex Sans',sans-serif",
                     "fontWeight": 600,
-                    "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 54.54,
-                  "w": 45.46,
-                  "y": 23.36,
-                  "h": 36.49,
-                  "style": {
-                    "fontSize": 0.83,
-                    "color": "#DF5888",
-                    "fontFamily": "'Barlow Condensed',sans-serif",
-                    "fontWeight": 700,
                     "align": "left"
                   }
                 },
@@ -1356,19 +1314,19 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 90.77,
+                "y": 90.83,
                 "w": 15.04,
                 "h": 1.94
               },
               "portrait": {
                 "x": 6,
-                "y": 92.61,
+                "y": 92.66,
                 "w": 15.04,
                 "h": 1.56
               },
               "story": {
                 "x": 6,
-                "y": 94.81,
+                "y": 94.02,
                 "w": 15.04,
                 "h": 1.09
               }
@@ -1396,7 +1354,7 @@
             "geometry": {
               "landscape": {
                 "x": 3.15,
-                "y": 90.67,
+                "y": 90.77,
                 "w": 8.37,
                 "h": 2.06
               }
@@ -1419,21 +1377,21 @@
             "geometry": {
               "square": {
                 "x": 21.44,
-                "y": 89.6,
-                "w": 10,
-                "h": 4.4
+                "y": 87.84,
+                "w": 18.0,
+                "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
-                "y": 91.68,
-                "w": 10,
-                "h": 3.52
+                "y": 90.27,
+                "w": 18.0,
+                "h": 6.34
               },
               "story": {
                 "x": 21.44,
-                "y": 94.15,
-                "w": 10,
-                "h": 2.48
+                "y": 92.34,
+                "w": 18.0,
+                "h": 4.46
               }
             },
             "sig": "shape:0940kyt12rml8w"
@@ -1454,9 +1412,9 @@
             "geometry": {
               "landscape": {
                 "x": 11.26,
-                "y": 89.6,
-                "w": 5.25,
-                "h": 4.4
+                "y": 87.84,
+                "w": 9.45,
+                "h": 7.92
               }
             },
             "sig": "shape:1uyff631md2upq"
@@ -1473,21 +1431,21 @@
             "geometry": {
               "square": {
                 "x": 21.44,
-                "y": 89.6,
-                "w": 10,
-                "h": 4.4
+                "y": 87.84,
+                "w": 18.0,
+                "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
-                "y": 91.68,
-                "w": 10,
-                "h": 3.52
+                "y": 90.27,
+                "w": 18.0,
+                "h": 6.34
               },
               "story": {
                 "x": 21.44,
-                "y": 94.15,
-                "w": 10,
-                "h": 2.48
+                "y": 92.34,
+                "w": 18.0,
+                "h": 4.46
               }
             },
             "sig": "image:047j3h50otvmqq"
@@ -1504,9 +1462,9 @@
             "geometry": {
               "landscape": {
                 "x": 11.26,
-                "y": 89.6,
-                "w": 5.25,
-                "h": 4.4
+                "y": 87.84,
+                "w": 9.45,
+                "h": 7.92
               }
             },
             "sig": "image:18qemif1fyp00c"
@@ -1534,19 +1492,19 @@
             "geometry": {
               "square": {
                 "x": 54.08,
-                "y": 90.12,
+                "y": 90.13,
                 "w": 41.12,
                 "h": 3.33
               },
               "portrait": {
                 "x": 54.08,
-                "y": 92.1,
+                "y": 92.11,
                 "w": 41.12,
                 "h": 2.67
               },
               "story": {
                 "x": 54.08,
-                "y": 94.44,
+                "y": 93.63,
                 "w": 41.12,
                 "h": 1.88
               }
@@ -1576,7 +1534,7 @@
             "geometry": {
               "landscape": {
                 "x": 75.89,
-                "y": 89.92,
+                "y": 90.05,
                 "w": 21.96,
                 "h": 3.49
               }
