@@ -20,6 +20,7 @@ import {
   useDeleteClubPhotoCollection,
   useAddClubPhotoCollectionPhotos,
   useRemoveClubPhotoCollectionPhotos,
+  type ClubPhoto,
   type ClubPhotoCollection,
 } from "@workspace/api-client-react";
 import { Images, Plus } from "lucide-react";
@@ -288,10 +289,33 @@ export function AddToCollection({
       onError: () => setError("Those photos couldn't be added."),
     },
   });
+  const qc = useQueryClient();
   const removeM = useRemoveClubPhotoCollectionPhotos({
     mutation: {
+      // The photos leave the collection on screen at once: the server re-picks
+      // the photos of drafts that use the collection before it answers.
+      onMutate: async ({ id, data }) => {
+        const key = getListClubPhotosQueryKey();
+        await qc.cancelQueries({ queryKey: key });
+        const before = qc.getQueryData<ClubPhoto[]>(key);
+        const out = new Set(data.photoIds);
+        if (before)
+          qc.setQueryData<ClubPhoto[]>(
+            key,
+            before.map((p) =>
+              out.has(p.id)
+                ? { ...p, collectionIds: (p.collectionIds ?? []).filter((c) => c !== id) }
+                : p,
+            ),
+          );
+        return { before };
+      },
       onSuccess: done,
-      onError: () => setError("Those photos couldn't be taken out."),
+      onError: (_err, _vars, ctx) => {
+        if (ctx?.before) qc.setQueryData(getListClubPhotosQueryKey(), ctx.before);
+        refresh();
+        setError("Those photos couldn't be taken out.");
+      },
     },
   });
   const others = collections.filter((c) => c.id !== openCollection?.id);
