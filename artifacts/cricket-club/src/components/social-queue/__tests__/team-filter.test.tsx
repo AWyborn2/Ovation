@@ -181,4 +181,18 @@ describe("Queue team filter", () => {
     expect(await screen.findAllByText(/adhoc ·/)).toHaveLength(2);
     expect(screen.queryByLabelText("Teams")).toBeNull();
   });
+
+  // Dev retest (17 Nov 2026): "List view looks the same as Week view". List is
+  // the day-by-day list (one block a day, posts in time order, "Move to…");
+  // Week is the 7-day time grid with drag and drop.
+  it("draws List as a list of days, and Week as the time grid", async () => {
+    stubApi(true, true);
+    render("/admin/social/queue?view=week");
+    const views = await screen.findByRole("group", { name: "Queue view" });
+    await screen.findAllByText("A GRADE card");
+    expect(screen.queryByRole("list", { name: "Posts by day" })).toBeNull();
+    fireEvent.click(within(views).getByRole("button", { name: "List" }));
+    const days = await screen.findByRole("list", { name: "Posts by day" });
+    expect(within(days).getAllByRole("heading", { level: 3 })).toHaveLength(7);
+  });
 });
