@@ -8,7 +8,7 @@ import { useState } from "react";
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithHistory } from "@/test/render";
 
-let behaviour: { slides: number } = { slides: 4 };
+let behaviour: { slides: number; ticked?: number } = { slides: 4 };
 const seen: Array<{ setType: string; audience: string }> = [];
 
 function fakeState() {
@@ -19,7 +19,7 @@ function fakeState() {
     loading: false,
     retry: () => {},
     rangeValid: true,
-    selected: [{ id: 1 }, { id: 2 }],
+    selected: Array.from({ length: behaviour.ticked ?? 2 }, (_, i) => ({ id: i + 1 })),
     size: "square",
     setSize: () => {},
     picked: { ref: { libraryTemplateId: 1, version: 1 } },
@@ -108,5 +108,30 @@ describe("Create's carousel flow", () => {
     expect(screen.getByText("games in range")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(onNext).toHaveBeenCalled();
+  });
+
+  // Dev retest (17 Nov 2026): a junior whole round said "60 of 60 selected ·
+  // maximum 18" and Next did nothing, with no reason given.
+  it("says why Next waits when more teams are ticked than a carousel holds", () => {
+    behaviour = { slides: 4, ticked: 60 };
+    const onNext = vi.fn();
+    renderWithHistory(
+      <CarouselFlow setType="teamList" audience="junior" step={3} onNext={onNext} />,
+      "/admin/social/create",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A carousel holds up to 18 teams, plus its cover and sponsors. 60 are ticked: untick 42 or more",
+    );
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+  });
+
+  it("goes on at the maximum", () => {
+    behaviour = { slides: 4, ticked: 18 };
+    renderWithHistory(
+      <CarouselFlow setType="teamList" audience="junior" step={3} onNext={() => {}} />,
+      "/admin/social/create",
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 });

@@ -51,7 +51,11 @@ import { JuniorStockPicker } from "./junior-stock-picker";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
 import { CarouselTemplatePicker } from "./template-choice";
-import { useWeekendCarousel, type WeekendCarouselState } from "./use-weekend-carousel";
+import {
+  MAX_CAROUSEL_GAMES,
+  useWeekendCarousel,
+  type WeekendCarouselState,
+} from "./use-weekend-carousel";
 
 const SIZE_KEYS = Object.keys(SIZES) as CardSize[];
 
@@ -269,7 +273,7 @@ export function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="font-serif text-sm font-bold uppercase tracking-wide">
               {s.setType === "matchDay" ? "Fixtures" : s.setTypeLabel} · {s.selected.length} of{" "}
-              {s.orderedPicks.length} selected · maximum 18
+              {s.orderedPicks.length} selected · maximum {MAX_CAROUSEL_GAMES}
             </span>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" disabled={lock} onClick={() => s.setAll(true)}>
@@ -374,7 +378,7 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
     s.error ||
     !s.rangeValid ||
     s.selected.length === 0 ||
-    s.selected.length > 18;
+    s.selected.length > MAX_CAROUSEL_GAMES;
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-3">
       <Button onClick={s.generate} disabled={disabled} data-testid="button-generate-weekend">
@@ -390,10 +394,10 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
           {s.generationError}
         </p>
       )}
-      {s.selected.length > 18 ? (
+      {s.selected.length > MAX_CAROUSEL_GAMES ? (
         <p role="alert" className="text-sm text-destructive">
-          Select at most 18 teams or matches ({s.selected.length} selected). The cover and sponsor
-          page bring the limit to 20 slides.
+          Select at most {MAX_CAROUSEL_GAMES} teams or matches ({s.selected.length} selected). The
+          cover and sponsor page bring the limit to 20 slides.
         </p>
       ) : s.stale ? (
         <p className="text-sm text-destructive" role="status" data-testid="text-weekend-stale">

@@ -55,6 +55,12 @@ import {
 
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
+/**
+ * The most teams or matches one carousel holds: with its cover and sponsors
+ * page, 20 slides (a set's page limit; Meta posts at most 10 per post).
+ */
+export const MAX_CAROUSEL_GAMES = 18;
+
 type Pick = { id: number; included: boolean };
 type Generated = {
   key: string;
@@ -284,7 +290,7 @@ export function useWeekendCarousel(
       generatingRef.current ||
       !rangeValid ||
       selected.length === 0 ||
-      selected.length > 18
+      selected.length > MAX_CAROUSEL_GAMES
     )
       return;
     generatingRef.current = true;
