@@ -16,6 +16,7 @@ import {
   type PhotoSourcePlayerPick,
 } from "@workspace/scorecard/kind-templates";
 import { field, label, NumberField } from "./design-controls";
+import { isJuniorRule, PHOTO_RULE_NOTE, type PhotoRule } from "./junior-photos";
 
 const PICK_LABEL: Record<PhotoSourcePlayerPick, string> = {
   random: "A selected player (changes per card)",
@@ -33,10 +34,17 @@ const fromOf = (source: PhotoLayerSource | undefined): From => source?.kind ?? "
 export function PhotoSourcePicker({
   source,
   onChange,
+  rule = "senior",
 }: {
   source: PhotoLayerSource | undefined;
   onChange: (next: PhotoLayerSource | undefined) => void;
+  /**
+   * A junior card or set's page: only the card's photo applies there (the
+   * server never resolves a team list player or a collection for juniors).
+   */
+  rule?: PhotoRule;
 }) {
+  const junior = isJuniorRule(rule);
   const collectionsQ = useListClubPhotoCollections({
     query: { queryKey: getListClubPhotoCollectionsQueryKey(), staleTime: 60_000 },
   });
@@ -64,9 +72,14 @@ export function PhotoSourcePicker({
           onChange={(e) => choose(e.target.value as From)}
         >
           <option value="card">The card&apos;s photo</option>
-          <option value="player">A player from the team list</option>
-          <option value="collection" disabled={collections.length === 0 && from !== "collection"}>
-            A random photo from a collection
+          <option value="player" disabled={junior && from !== "player"}>
+            A player from the team list{junior ? " (not on junior cards)" : ""}
+          </option>
+          <option
+            value="collection"
+            disabled={(junior || collections.length === 0) && from !== "collection"}
+          >
+            A random photo from a collection{junior ? " (not on junior cards)" : ""}
           </option>
         </select>
       </label>
@@ -126,7 +139,13 @@ export function PhotoSourcePicker({
         </label>
       )}
 
-      <p className="text-[11px] text-[var(--ed-ink2)]">
+      {junior && (
+        <p className="text-[11px] text-[var(--ed-ink2)]">
+          {source ? "On this card the layer shows the card's photo instead. " : ""}
+          {PHOTO_RULE_NOTE[rule]}
+        </p>
+      )}
+      <p className={junior ? "hidden" : "text-[11px] text-[var(--ed-ink2)]"}>
         {source?.kind === "player"
           ? "Team List cards: the player's tagged library photo, cropped to them, then their headshot."
           : source?.kind === "collection"
@@ -142,7 +161,7 @@ export function PhotoSourcePicker({
             .{" "}
           </>
         )}
-        Junior cards never show a photo.
+        Junior cards never take a team list player or a collection photo.
       </p>
     </div>
   );

@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import {
+  isJuniorDesignDraft,
+  juniorSafeDesign,
   stripUnapprovedJuniorSetPhotos,
   validJuniorStockSelection,
 } from "../lib/junior-stock-photos";
@@ -668,6 +670,14 @@ router.post(
       }
       throw err;
     }
+    // A junior card's or set's design keeps no club library photo but approved
+    // junior stock, whichever template or layout it starts from (fails closed).
+    const juniorRow = { sourceMatchIsJunior: junior, cardInput, photoUrl: juniorPhoto?.url };
+    if (templated) {
+      const safe = await juniorSafeDesign(tenantId, juniorRow, templated.adjustments);
+      templated = { ...templated, adjustments: safe.design as typeof templated.adjustments };
+    }
+    adjustments = (await juniorSafeDesign(tenantId, juniorRow, adjustments)).design;
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
@@ -865,6 +875,15 @@ router.patch(
       return;
     }
     const { caption, photoUrl, photoPlayerId } = parsed.data;
+    // A junior card's photo is the server's to pick (ADR-007): the admin can
+    // clear it, never put a club library photo on it (fails closed).
+    if (photoUrl != null && photoUrl !== draft.photoUrl && isJuniorDesignDraft(draft)) {
+      res.status(400).json({
+        error:
+          "A junior card shows only a photo the club has cleared for it. Remove the photo instead.",
+      });
+      return;
+    }
     // The design is stored exactly as sent. The generated schema lists only the
     // first editor's keys, and parsing drops every other one, which wiped a
     // templated draft's pages (format v2) on save. Validation above still
@@ -893,8 +912,15 @@ router.patch(
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
     }
     if (adjustments !== undefined) {
-      // Editor overlay (U15): stored as-is; the web renderer applies it.
-      patch.adjustments = adjustments;
+      // Editor overlay (U15): stored as-is; the web renderer applies it. A
+      // junior design keeps no club library photo but approved junior stock.
+      const safe = await juniorSafeDesign(tenantId, draft, adjustments);
+      if (safe.removed)
+        req.log.info(
+          { tenantId, removed: safe.removed },
+          "junior design: removed photos that aren't junior stock",
+        );
+      patch.adjustments = safe.design as typeof adjustments;
       if (draft.templateVersion !== null) {
         // A templated draft's design edit: `editedAt` stays the caption
         // marker, and the new layout owes a check (KTD10).
@@ -967,8 +993,15 @@ router.put(
       return;
     }
     try {
+      // A junior set's pages keep no club library photo but approved junior stock.
+      const safe = await juniorSafeDesign(tenantId, draft, parsed.data.document);
+      if (safe.removed)
+        req.log.info(
+          { tenantId, removed: safe.removed },
+          "junior set: removed design photos that aren't junior stock",
+        );
       const updated = await saveDraftSetDesign(tenantId, draft, {
-        document: parsed.data.document,
+        document: safe.design as typeof parsed.data.document,
         templateRef: parsed.data.templateRef ?? undefined,
         size: parsed.data.size,
       });

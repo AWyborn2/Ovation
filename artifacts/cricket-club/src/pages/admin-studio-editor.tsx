@@ -143,6 +143,7 @@ import {
   draftHeading,
   draftInput,
   draftStatus,
+  isJuniorDraft,
 } from "@/components/social-queue/draft-meta";
 import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
 
@@ -597,6 +598,8 @@ function EditorApp({ draftId }: { draftId: number }) {
             {panel === "photos" && (
               <PhotosPanel
                 size={format}
+                // A junior card takes approved junior stock only (ADR-007).
+                rule={slideJunior || isJuniorDraft(draft) ? "juniorCard" : "senior"}
                 onAdd={addFreeLayer}
                 onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
               />

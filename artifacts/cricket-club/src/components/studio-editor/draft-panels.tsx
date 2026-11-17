@@ -30,7 +30,7 @@ import {
   matchDayFixtureId,
 } from "@/components/studio-editor/content-panels";
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
-import { draftInput } from "@/components/social-queue/draft-meta";
+import { draftInput, isJuniorDraft } from "@/components/social-queue/draft-meta";
 import { pageForInput, pageTokens } from "@workspace/scorecard/kind-templates";
 import { useBrand } from "@/lib/brand-context";
 import {
@@ -139,6 +139,8 @@ export function useDraftContent(draft: SocialDraft): DraftContent {
       render: ({ size, add }) => (
         <PhotosPanel
           size={size}
+          // A junior card takes approved junior stock only (ADR-007).
+          rule={isJuniorDraft(draft) ? "juniorCard" : "senior"}
           onAdd={(l) => add([l])}
           // The card's own photo is the draft's: every photo layer shows it.
           onSetPhoto={async (url) => {

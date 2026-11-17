@@ -20,6 +20,7 @@ import {
   rowsLayer,
   templateFields,
 } from "./template-ops";
+import { PHOTO_RULE_NOTE, type PhotoRule } from "./junior-photos";
 
 const row =
   "flex w-full items-center justify-between gap-2 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-3 py-2 text-left text-sm hover:border-[var(--ed-accent)]";
@@ -111,6 +112,7 @@ export function FieldsPanel({
   textSelected,
   onInsert,
   onAdd,
+  photoRule = "senior",
 }: {
   kind: string;
   /** The page on show; its own catalogue when it has one. */
@@ -122,6 +124,8 @@ export function FieldsPanel({
   textSelected: boolean;
   onInsert: (key: string) => void;
   onAdd: (layer: FreeLayer) => void;
+  /** What the page on show may show as its photo (a junior card or set's rule). */
+  photoRule?: PhotoRule;
 }) {
   const [query, setQuery] = useState("");
   // The performance list being set up before it's added (D4), if any.
@@ -229,9 +233,7 @@ export function FieldsPanel({
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-[var(--ed-ink2)]">
-          Junior cards never show the photo, whatever the template holds.
-        </p>
+        <p className="mt-2 text-xs text-[var(--ed-ink2)]">{PHOTO_RULE_NOTE[photoRule]}</p>
       </section>
       {cat.repeats.length > 0 && (
         <section>

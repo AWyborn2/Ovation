@@ -39,6 +39,7 @@ import { ClipEditor } from "./clip-editor";
 import { btn, ColourField, field, label, NumberField, Section } from "./design-controls";
 import { GradientEditor } from "./gradient-editor";
 import { PhotoSourcePicker } from "./photo-source-picker";
+import type { PhotoRule } from "./junior-photos";
 import { ShadowListEditor } from "./shadow-editor";
 import { DEFAULT_GRADIENT, isGradient } from "./gradient-ops";
 import { depthOf, type EditorLayer } from "./template-doc";
@@ -92,6 +93,8 @@ export type LayerDesignPanelProps = {
   onUnstack: () => void;
   /** Play the card's motion in the canvas preview. */
   onPlay: () => void;
+  /** What the page on show may show as its photo (a junior card or set's rule). */
+  photoRule?: PhotoRule;
 };
 
 export function LayerDesignPanel({
@@ -103,6 +106,7 @@ export function LayerDesignPanel({
   onMoveChild,
   onUnstack,
   onPlay,
+  photoRule,
 }: LayerDesignPanelProps) {
   const style = (layer.style ?? {}) as TemplateStyleV2;
   const setStyle = (patch: Partial<TemplateStyleV2>, done?: boolean) =>
@@ -262,7 +266,11 @@ export function LayerDesignPanel({
 
       {layer.kind === "photo" && (
         <Section title="Photo source">
-          <PhotoSourcePicker source={layer.source} onChange={(source) => onPatch({ source })} />
+          <PhotoSourcePicker
+            source={layer.source}
+            rule={photoRule}
+            onChange={(source) => onPatch({ source })}
+          />
         </Section>
       )}
 

@@ -1,4 +1,4 @@
-import { juniorSafeCarousel } from "./junior-stock-photos";
+import { juniorSafeCarousel, juniorSafeDesign } from "./junior-stock-photos";
 import {
   landscapeSummary,
   planCardSet,
@@ -128,12 +128,18 @@ export async function enabledSizes(tenantId: number): Promise<CardSize[]> {
 }
 
 export async function renderDraftSlides(
-  draft: SocialDraftRow,
+  saved: SocialDraftRow,
   sizes: CardSize[],
   harnessOrigin: string | null,
   log: Logger,
 ): Promise<RenderedSlide[]> {
-  const tenantId = draft.tenantId;
+  const tenantId = saved.tenantId;
+  // A junior card or set posts no club library photo in its design that isn't
+  // approved junior stock, whenever the draft was made (fails closed, ADR-007).
+  const safe = await juniorSafeDesign(tenantId, saved, saved.adjustments);
+  const draft: SocialDraftRow = safe.removed
+    ? { ...saved, adjustments: safe.design as SocialDraftRow["adjustments"] }
+    : saved;
   const input = (draft.cardInput ?? {}) as Record<string, unknown>;
   const read = readQueuedCarousel(input);
   if ("weekendCarousel" in input && !read)
