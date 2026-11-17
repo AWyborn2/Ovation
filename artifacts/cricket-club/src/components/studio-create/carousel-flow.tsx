@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryError } from "@/components/data-states";
 import { useWeekendCarousel } from "@/components/weekend-carousel";
+import { MAX_CAROUSEL_GAMES } from "@/components/weekend-carousel/use-weekend-carousel";
 import {
   ContentOverridePanel,
   RangeAndFixtures,
@@ -38,6 +39,15 @@ export const CAROUSEL_SIZES: { value: CardSize; label: string }[] = [
 ];
 
 type Phase = "idle" | "building" | "queueing";
+
+/** Why Next waits when more games are ticked than one carousel holds. */
+export function tooMany(setType: CarouselSetType, ticked: number): string {
+  const noun = setType === "teamList" ? "teams" : "games";
+  return (
+    `A carousel holds up to ${MAX_CAROUSEL_GAMES} ${noun}, plus its cover and sponsors. ` +
+    `${ticked} are ticked: untick ${ticked - MAX_CAROUSEL_GAMES} or more, or narrow the dates, to go on.`
+  );
+}
 
 export function CarouselFlow({
   setType,
@@ -123,9 +133,16 @@ export function CarouselFlow({
           </p>
         )}
         <RangeAndFixtures s={s} />
+        {s.selected.length > MAX_CAROUSEL_GAMES && (
+          <p role="alert" className="text-sm text-destructive">
+            {tooMany(setType, s.selected.length)}
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            disabled={!s.rangeValid || s.selected.length === 0 || s.selected.length > 18}
+            disabled={
+              !s.rangeValid || s.selected.length === 0 || s.selected.length > MAX_CAROUSEL_GAMES
+            }
             onClick={onNext}
           >
             Next
