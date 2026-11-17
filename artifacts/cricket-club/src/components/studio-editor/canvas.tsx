@@ -196,13 +196,23 @@ export function EditorCanvas({
   useLayoutEffect(() => {
     const board = boardRef.current;
     if (!fitting || !board) return;
-    const run = () => layoutRef.current?.(fitLayersInDom(board, size));
-    run();
     // The card can commit its markup after this effect (and replaces it on
     // every change), which would wipe the fit: re-fit whenever its content
-    // changes. The fit itself only touches attributes, so it can't retrigger.
-    const observer = new MutationObserver(run);
-    observer.observe(board, { childList: true, subtree: true, characterData: true });
+    // changes. The fit itself rewrites text (a list cell cut to "…"), so the
+    // observer is off while it runs: its own changes must never retrigger it,
+    // or it loops without end and the tab freezes.
+    const options: MutationObserverInit = { childList: true, subtree: true, characterData: true };
+    const observer = new MutationObserver(() => run());
+    function run() {
+      observer.disconnect();
+      try {
+        layoutRef.current?.(fitLayersInDom(board!, size));
+      } finally {
+        observer.takeRecords();
+        observer.observe(board!, options);
+      }
+    }
+    run();
     return () => observer.disconnect();
   }, [fitting, docJson, inputJson, size, width, junior, data]);
 
