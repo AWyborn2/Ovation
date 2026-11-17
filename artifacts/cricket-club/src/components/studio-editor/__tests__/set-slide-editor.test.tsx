@@ -66,7 +66,7 @@ const DRAFT = {
 
 type Req = { method: string; url: string; body: unknown };
 
-function stub(newStudio: boolean) {
+function stub(newStudio: boolean, doc: unknown = DOC, draft: unknown = DRAFT) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   const requests: Req[] = [];
   vi.stubGlobal(
@@ -80,17 +80,17 @@ function stub(newStudio: boolean) {
       if (/social-drafts\/42\/set-design$/.test(url))
         payload =
           method === "PUT"
-            ? { ...DRAFT, adjustments: (body as { document: unknown }).document }
+            ? { ...(draft as object), adjustments: (body as { document: unknown }).document }
             : {
                 draftId: 42,
                 setType: "teamLists",
                 layout: "list",
-                document: DOC,
+                document: doc,
                 templateRef: DRAFT.templateRef,
                 size: null,
                 stored: true,
               };
-      else if (/social-drafts\/42$/.test(url)) payload = DRAFT;
+      else if (/social-drafts\/42$/.test(url)) payload = draft;
       else if (/tenant-plan/.test(url))
         payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
       else if (/social-settings/.test(url))
@@ -151,6 +151,38 @@ describe("Edit this slide (studio-create S8)", () => {
     expect(own.layers.length).toBeGreaterThan(1);
     // The page every other team slide shares is as it was.
     expect(saved.pages.find((p) => p.id === "team")!.layers).toEqual(DOC.pages[1]!.layers);
+  });
+
+  it("shows the whole team on the one slide, as the set draws it", async () => {
+    // A team page whose list holds two rows: a lone card would spill onto more slides.
+    const rows = {
+      id: "rows",
+      kind: "rows",
+      geometry: { square: { x: 0, y: 20, w: 100, h: 50 } },
+      rows: { repeat: "players", rowHeight: 20, cells: [{ field: "surname", x: 0, w: 100 }] },
+    };
+    const doc = {
+      ...DOC,
+      pages: DOC.pages.map((p) => (p.id === "team" ? { ...p, layers: [...p.layers, rows] } : p)),
+    };
+    const players = Array.from({ length: 12 }, (_, i) => ({ surname: `P${i + 1}`, order: i + 1 }));
+    const draft = {
+      ...DRAFT,
+      adjustments: doc,
+      cardInput: {
+        ...DRAFT.cardInput,
+        teams: DRAFT.cardInput.teams.map((t) => ({ ...t, players })),
+      },
+    };
+    stub(true, doc, draft);
+    renderAt(
+      <Route path="/admin/social/set/:id/slide">
+        <AdminSetSlideEditor />
+      </Route>,
+      `/admin/social/set/42/slide?key=${encodeURIComponent(KEY)}`,
+    );
+    expect(await screen.findByText("B Grade: one slide")).toBeTruthy();
+    expect(screen.queryByText(/Showing slide 1 of/)).toBeNull();
   });
 
   it("isn't open with the New Studio switch off", async () => {

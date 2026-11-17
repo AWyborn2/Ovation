@@ -229,6 +229,8 @@ function SlideEditor({
       draftMode={{
         input: slide.input as unknown as Record<string, unknown>,
         data: slide.data,
+        // The set draws the slide whole; so does its editor.
+        wholeSlide: true,
         actions: ({ document, size: shownSize, input, data }) => (
           <DownloadMenu
             card={{

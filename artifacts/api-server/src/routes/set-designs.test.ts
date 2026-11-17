@@ -21,6 +21,7 @@ import {
 } from "@workspace/db";
 import {
   assembleSetDocument,
+  mapCarouselSlides,
   setTemplateKind,
   type DataSetType,
   type SetDocument,
@@ -234,6 +235,49 @@ describe("a queued carousel's set design", () => {
     const again = await api("get", `/social-drafts/${id}/set-design`);
     expect(again.body.stored).toBe(true);
     expect(again.body.size).toBe("portrait");
+  });
+
+  it("keeps slide 2's own layout from Edit this slide: no slide added (studio-create S8)", async () => {
+    const id = await queuedCarousel();
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const fixture = doc.pages.find((p) => p.id === "fixture")!;
+    // What the slide editor saves: a copy of the fixture page, moved, mapped to slide 2.
+    const edited: SetDocument = {
+      ...doc,
+      pages: [
+        ...doc.pages,
+        {
+          ...fixture,
+          id: "own",
+          role: "fixed",
+          slot: "page",
+          name: "A Grade layout",
+          layers: [shape("moved")],
+        },
+      ],
+      arrangement: { order: [], removed: [], pageFor: { "fx-1": "own" } },
+    };
+    const res = await api("put", `/social-drafts/${id}/set-design`).send({ document: edited });
+    expect(res.status).toBe(200);
+    expect(res.body.adjustments.arrangement).toEqual({
+      order: [],
+      removed: [],
+      pageFor: { "fx-1": "own" },
+    });
+    // Reopened, the set still has its four slides, and slide 2 draws with its own layout.
+    const again = await api("get", `/social-drafts/${id}/set-design`);
+    const stored = again.body.document as SetDocument;
+    const carousel = readQueuedCarousel(res.body.cardInput)!;
+    const drawn = mapCarouselSlides(stored, carousel.slides).slides;
+    expect(drawn.map((s) => s.key)).toEqual(["title", "fx-1", "fx-2", "sponsors"]);
+    expect(drawn[1]!.page.id).toBe("own");
+    expect(drawn[1]!.page.layers).toEqual([shape("moved")]);
+    expect(drawn[2]!.page.id).toBe("fixture");
+    // Saving again (the set editor's next save) keeps it.
+    const resaved = await api("put", `/social-drafts/${id}/set-design`).send({ document: stored });
+    expect(resaved.body.cardInput.weekendCarousel.slides).toHaveLength(4);
+    expect(resaved.body.adjustments.arrangement.pageFor).toEqual({ "fx-1": "own" });
   });
 
   it("switches to another look's set template, keeping the data", async () => {
