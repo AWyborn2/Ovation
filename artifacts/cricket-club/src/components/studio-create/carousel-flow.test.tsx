@@ -45,7 +45,8 @@ vi.mock("@/components/weekend-carousel", () => ({
 }));
 vi.mock("@/components/weekend-carousel/weekend-carousel", () => ({
   RangeAndFixtures: () => <p>games in range</p>,
-  ContentOverridePanel: () => <p>what these cards show</p>,
+  ContentOverridePanel: () => <p>match day: what these cards show</p>,
+  SetKindContentPanel: () => <p>this set: what these cards show</p>,
 }));
 vi.mock("@/components/weekend-carousel/template-choice", () => ({
   CarouselTemplatePicker: () => <p>looks</p>,
@@ -79,6 +80,23 @@ describe("Create's carousel flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open in editor" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/at least 3 slides/);
     expect(url()).toBe("/admin/social/create");
+  });
+
+  it("offers What these cards show on every carousel's look step", () => {
+    for (const setType of ["teamList", "results", "matchSummary"] as const) {
+      renderWithHistory(
+        <CarouselFlow setType={setType} audience="senior" step={4} onNext={() => {}} />,
+        "/admin/social/create",
+      );
+      expect(screen.getByText("this set: what these cards show")).toBeInTheDocument();
+      expect(screen.queryByText("match day: what these cards show")).toBeNull();
+      cleanup();
+    }
+    renderWithHistory(
+      <CarouselFlow setType="matchDay" audience="senior" step={4} onNext={() => {}} />,
+      "/admin/social/create",
+    );
+    expect(screen.getByText("match day: what these cards show")).toBeInTheDocument();
   });
 
   it("picks the games on step 3, then moves on", () => {

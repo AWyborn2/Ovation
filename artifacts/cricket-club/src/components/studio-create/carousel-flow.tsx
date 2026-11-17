@@ -21,6 +21,7 @@ import { useWeekendCarousel } from "@/components/weekend-carousel";
 import {
   ContentOverridePanel,
   RangeAndFixtures,
+  SetKindContentPanel,
 } from "@/components/weekend-carousel/weekend-carousel";
 import { SponsorsPerSlideControl } from "@/components/social-studio/sponsors-per-slide";
 import { CarouselTemplatePicker } from "@/components/weekend-carousel/template-choice";
@@ -165,7 +166,8 @@ export function CarouselFlow({
         ))}
       </div>
       <CarouselTemplatePicker s={s} />
-      {setType === "matchDay" && <ContentOverridePanel s={s} />}
+      {/* What these cards show: this carousel's own Minimal / Standard / Full. */}
+      {setType === "matchDay" ? <ContentOverridePanel s={s} /> : <SetKindContentPanel s={s} />}
       {s.pageSponsorCount > 0 && (
         <SponsorsPerSlideControl
           id="create-sponsors-per-slide"

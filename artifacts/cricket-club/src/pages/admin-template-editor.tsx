@@ -495,6 +495,11 @@ export type EditorDraftMode = {
   /** The draft's card input and club data, drawn in place of the latest card or a sample. */
   input: Record<string, unknown>;
   data: PackCardData;
+  /**
+   * A blank design (a white page started from Create): it has no key field to keep,
+   * so the editor doesn't note one missing.
+   */
+  blank?: boolean;
   /** Rail panels after the editor's own; each adds layers to the page on show. */
   panels?: Array<
     RailItem & {
@@ -998,7 +1003,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   ];
   const layerName = (lid: string | undefined) =>
     (lid ? findLayer(pageFull, lid)?.layer.name : undefined) ?? "a text box";
-  const keyField = keyFieldOf(pageKind);
+  const keyField = draftMode?.blank ? null : keyFieldOf(pageKind);
   const listPhotoField = (kindFields(pageKind)?.repeats ?? []).some((r) =>
     r.fields.some((f) => isImageRowField(f.key)),
   );

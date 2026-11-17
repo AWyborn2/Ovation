@@ -3,7 +3,7 @@
  * the kind first), or start blank. Either makes an ad-hoc draft (awaiting
  * review, never auto-posted) and opens it in the Studio editor at that size.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   getGetClubTemplateQueryKey,
@@ -32,6 +32,7 @@ import { BLANK_PACK_ID } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
 import { SIZES, type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
+import { juniorSampleCardInput } from "@/lib/sample-card-inputs";
 import {
   TemplateThumb,
   usePreviewInput,
@@ -78,6 +79,7 @@ function ClubTemplateOption({
   preview,
   disabled,
   onPick,
+  junior,
 }: {
   id: number;
   name: string;
@@ -88,6 +90,7 @@ function ClubTemplateOption({
   preview: LibraryPreview;
   disabled: boolean;
   onPick: () => void;
+  junior: boolean;
 }) {
   const q = useGetClubTemplate(id, {
     query: { queryKey: getGetClubTemplateQueryKey(id), staleTime: 60_000 },
@@ -108,6 +111,7 @@ function ClubTemplateOption({
             input={input}
             data={preview.dataFor(kind)}
             size={size}
+            junior={junior}
           />
         ) : (
           <div
@@ -129,6 +133,7 @@ export function TemplateStep({
   start,
   busy,
   input: filled,
+  junior = false,
 }: {
   kind: string;
   size: CardSize;
@@ -137,8 +142,18 @@ export function TemplateStep({
   busy: boolean;
   /** The card already filled in (New Studio's Create); the kind's sample otherwise. */
   input?: ShareCardInput;
+  /**
+   * A junior card (New Studio's Create, Juniors): the looks draw as junior cards with
+   * junior sample names and no photo, never the club's latest senior card or photo.
+   */
+  junior?: boolean;
 }) {
-  const sample = usePreviewInput(kind, preview.clubName);
+  const senior = usePreviewInput(kind, preview.clubName);
+  const sample = useMemo(
+    () =>
+      junior ? juniorSampleCardInput(kind as ShareCardInput["kind"], preview.clubName) : senior,
+    [junior, kind, preview.clubName, senior],
+  );
   const input = filled ?? sample;
   const clubParams = { kind };
   const clubQ = useListClubTemplates(clubParams, {
@@ -190,6 +205,7 @@ export function TemplateStep({
                     input={input}
                     preview={preview}
                     disabled={busy}
+                    junior={junior}
                     onPick={() =>
                       start({ cardInput, templateRef: { copyId: t.id, version: t.version } })
                     }
@@ -222,6 +238,7 @@ export function TemplateStep({
                         input={input}
                         data={preview.dataFor(kind)}
                         size={size}
+                        junior={junior}
                       />
                       <p className="mt-2 truncate text-sm font-medium">{t.name}</p>
                       {t.look && (

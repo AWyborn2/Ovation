@@ -77,6 +77,25 @@ export function useLibraryPreviewData(): LibraryPreview {
   return { dataFor, clubName };
 }
 
+/**
+ * What a junior card's thumbnail draws with (juniors isolation): the club's payload
+ * with no photo (no hero, library or layer photo), and the card without the consent
+ * marker, so the renderer withholds every photo. A thumbnail never shows a child's
+ * photo, or a senior one.
+ */
+export function juniorThumbView(
+  input: ShareCardInput,
+  data: PackCardData,
+): { input: ShareCardInput; data: PackCardData } {
+  const { juniorPhotoAllowed: _consent, ...rest } = input as ShareCardInput & {
+    juniorPhotoAllowed?: boolean;
+  };
+  return {
+    input: rest as ShareCardInput,
+    data: { ...data, photoUrl: null, photoFocus: null, layerPhotos: null },
+  };
+}
+
 /** The card a kind's thumbnails draw: the club's latest senior card, else its sample. */
 export function usePreviewInput(kind: string, clubName: string | undefined): ShareCardInput {
   const params = { kind };
@@ -150,6 +169,7 @@ export function TemplateThumb({
   data,
   size = "square",
   page,
+  junior = false,
 }: {
   document: unknown;
   kind: string;
@@ -157,10 +177,16 @@ export function TemplateThumb({
   data: PackCardData;
   size?: CardSize;
   page?: PageKey;
+  /** A junior card's look: drawn as a junior card, with no photo (`juniorThumbView`). */
+  junior?: boolean;
 }) {
+  const shown = useMemo(
+    () => (junior ? juniorThumbView(input, data) : { input, data }),
+    [junior, input, data],
+  );
   const view = useMemo(
-    () => pageView(document, kind, input, page ?? primaryPage(kind)),
-    [document, kind, input, page],
+    () => pageView(document, kind, shown.input, page ?? primaryPage(kind)),
+    [document, kind, shown.input, page],
   );
   return (
     <WhenVisible aspect={`${SIZES[size].w} / ${SIZES[size].h}`}>
@@ -168,8 +194,8 @@ export function TemplateThumb({
         input={view.input}
         size={size}
         sponsorsOn
-        junior={false}
-        data={data}
+        junior={junior}
+        data={shown.data}
         packId={BLANK_PACK_ID}
         adjustments={view.document as CardAdjustments}
       />
