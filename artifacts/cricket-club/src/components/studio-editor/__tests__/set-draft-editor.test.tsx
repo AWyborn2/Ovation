@@ -158,7 +158,7 @@ describe("a slide's own layout (studio-create S9, New Studio)", () => {
     const strip = await screen.findByRole("navigation", { name: "Slides" });
     fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
-    expect(screen.getByText(/shares its layout with 1 other slide/)).toBeTruthy();
+    expect(screen.getByText(/shares the set's layout with 1 other slide/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "New layout for this slide" }));
     // The canvas now edits this slide's own layout.
     fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
@@ -180,5 +180,44 @@ describe("a slide's own layout (studio-create S9, New Studio)", () => {
     const own = saved.pages.find((p) => p.slot === "page")!;
     expect(saved.arrangement.pageFor).toEqual({ "detail:senior:B Grade": own.id });
     expect(saved.pages.map((p) => p.slot)).toEqual(["cover", "team", "sponsors", "page"]);
+  });
+
+  it("keeps each slide's own layout through reorder and delete (dev retest, draft 962)", async () => {
+    const requests = open({ newStudio: true });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    const tiles = () =>
+      within(strip)
+        .getAllByRole("button", { name: /^\d\. / })
+        .map((b) => b.getAttribute("aria-label"));
+    for (const grade of ["A Grade", "B Grade"]) {
+      fireEvent.click(within(strip).getByRole("button", { name: new RegExp(`^\\d\\. ${grade}`) }));
+      fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
+      fireEvent.click(screen.getByRole("button", { name: "New layout for this slide" }));
+    }
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. B Grade/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Move B Grade earlier" }));
+    fireEvent.click(within(strip).getByRole("button", { name: /^3\. A Grade/ }));
+    fireEvent.click(within(strip).getByRole("button", { name: "Delete A Grade" }));
+    // No layout page shows as a slide of its own.
+    expect(tiles()).toEqual(["1. Cover", "2. B Grade", "3. Sponsors"]);
+    fireEvent.click(within(strip).getByRole("button", { name: /^2\. B Grade/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Layout" }));
+    expect(screen.getByText(/has its own layout/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const saved = (
+      requests.find((r) => r.method === "PUT")!.body as {
+        document: {
+          pages: Array<{ id: string; slot: string }>;
+          arrangement: { pageFor: unknown; removed: string[] };
+        };
+      }
+    ).document;
+    // A Grade's layout went with its slide; B Grade's stays its own.
+    expect(saved.pages.map((p) => p.slot)).toEqual(["cover", "team", "sponsors", "page"]);
+    const own = saved.pages.find((p) => p.slot === "page")!;
+    expect(saved.arrangement.pageFor).toEqual({ "detail:senior:B Grade": own.id });
+    expect(saved.arrangement.removed).toEqual(["detail:senior:A Grade"]);
   });
 });

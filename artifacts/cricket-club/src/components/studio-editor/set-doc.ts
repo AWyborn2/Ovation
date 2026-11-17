@@ -12,6 +12,8 @@ import {
   isRepeatSlot,
   isSetDocument,
   kindPages,
+  layoutPageIds,
+  withoutStrandedLayouts,
   MAX_SET_PAGES,
   primaryPage,
   repeatSource,
@@ -300,9 +302,15 @@ export type EditorSlide = {
 
 type PageBody = { layers: FreeLayer[]; background?: string };
 
-/** The pages that are one slide's own layout (`arrangement.pageFor`). */
+/**
+ * The pages that are one slide's own layout (`arrangement.pageFor`), and any
+ * a slide let go of before the 17 Nov 2026 fix (`strandedLayoutPageIds`).
+ */
 export const layoutPages = (doc: EditorTemplateDoc): Set<string> =>
-  new Set(Object.values(doc.setDesign?.arrangement?.pageFor ?? {}));
+  layoutPageIds({
+    ...(doc.setDesign?.arrangement ? { arrangement: doc.setDesign.arrangement } : {}),
+    pages: doc.setDesign?.pages ?? [],
+  });
 
 /**
  * The set with `pageFor` replaced, and every layout page no slide maps to any
@@ -317,6 +325,40 @@ function withPageFor(doc: EditorTemplateDoc, pageFor: Record<string, string>): E
   const arr = next.setDesign!.arrangement ?? { order: [], removed: [] };
   const { pageFor: _old, ...rest } = arr;
   return withArrangement(next, Object.keys(pageFor).length ? { ...rest, pageFor } : rest);
+}
+
+const NO_ARRANGEMENT = { order: [] as string[], removed: [] as string[] };
+
+/**
+ * The set draft with its slides in `keys` order. Only the order changes: each
+ * slide keeps its own layout (`pageFor`) and every deletion stands.
+ */
+export function withSlideOrder(doc: EditorTemplateDoc, keys: readonly string[]): EditorTemplateDoc {
+  const arr = doc.setDesign?.arrangement ?? NO_ARRANGEMENT;
+  return withArrangement(doc, { ...arr, order: [...keys] });
+}
+
+/**
+ * The set draft without slide `key`. A design page goes with its page. A data
+ * slide is left out of the post, and its own layout goes with it (a layout
+ * page draws only its slide); the other slides keep theirs.
+ */
+export function deleteSlide(
+  doc: EditorTemplateDoc,
+  slide: { key: string; design: boolean; page: { id: string } },
+): EditorTemplateDoc {
+  if (slide.design) {
+    const next = deleteSetPage(doc, slide.page.id);
+    const arr = next.setDesign?.arrangement ?? NO_ARRANGEMENT;
+    return withArrangement(next, { ...arr, order: arr.order.filter((k) => k !== slide.key) });
+  }
+  const next = withSlideLayout(doc, slide.key, null);
+  const arr = next.setDesign?.arrangement ?? NO_ARRANGEMENT;
+  return withArrangement(next, {
+    ...arr,
+    order: arr.order.filter((k) => k !== slide.key),
+    removed: arr.removed.includes(slide.key) ? arr.removed : [...arr.removed, slide.key],
+  });
 }
 
 /** Draw slide `key` with `pageId` (a layout page), or with its slot's page again (`null`). */
@@ -397,7 +439,9 @@ export function withSlideDesign(
   body: { layers: FreeLayer[]; background?: string },
   name: string,
 ): SetDocument | null {
-  const doc = openSetTemplate(set).doc;
+  // A layout page no slide maps to any more is shed on the way (see
+  // `strandedLayoutPageIds`).
+  const doc = openSetTemplate(withoutStrandedLayouts(set)).doc;
   const pageFor = doc.setDesign?.arrangement?.pageFor ?? {};
   const alone =
     pageFor[key] === drawnBy &&

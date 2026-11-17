@@ -127,9 +127,55 @@ export type SetDocument = {
   arrangement?: SetArrangement;
 };
 
-/** The pages a set's arrangement uses as one slide's own layout (`SetArrangement.pageFor`). */
-export function layoutPageIds(doc: Pick<SetDocument, "arrangement">): Set<string> {
-  return new Set(Object.values(doc.arrangement?.pageFor ?? {}));
+/** A set's pages and arrangement, as `layoutPageIds` reads them (layers not needed). */
+type LayoutView = {
+  arrangement?: SetArrangement;
+  pages?: ReadonlyArray<Pick<SetPage, "id" | "name" | "role" | "slot" | "kind" | "page">>;
+};
+
+/**
+ * Layout pages a slide let go of without the page going too (studio-create
+ * S9, fixed 17 Nov 2026). Before the fix, deleting or moving a slide in the
+ * set editor dropped `pageFor`, so each layout page was left as a design page
+ * and drew as a blank extra slide ("A Grade v Waroona … layout"). Such a page
+ * is a fixed design page no slide maps to, named as a slide's layout ("…
+ * layout", the name "New layout for this slide" and "Edit this slide" give
+ * it), drawing the same kind page as one of the set's repeating slots. A page
+ * the admin added (Blank page, a copy) is named otherwise and stays a slide.
+ */
+export function strandedLayoutPageIds(doc: LayoutView): Set<string> {
+  const mapped = new Set(Object.values(doc.arrangement?.pageFor ?? {}));
+  const pages = doc.pages ?? [];
+  const out = new Set<string>();
+  for (const p of pages) {
+    if (p.slot !== "page" || p.role !== "fixed" || mapped.has(p.id)) continue;
+    if (!/\slayout$/i.test(p.name?.trim() ?? "")) continue;
+    if (pages.some((r) => isRepeatSlot(r.slot) && r.kind === p.kind && r.page === p.page))
+      out.add(p.id);
+  }
+  return out;
+}
+
+/**
+ * The pages a set uses as one slide's own layout (`SetArrangement.pageFor`),
+ * and any layout page a slide let go of (`strandedLayoutPageIds`). A layout
+ * page is never drawn, counted or posted as a slide of its own.
+ */
+export function layoutPageIds(doc: LayoutView): Set<string> {
+  return new Set([...Object.values(doc.arrangement?.pageFor ?? {}), ...strandedLayoutPageIds(doc)]);
+}
+
+/**
+ * The set without the layout pages no slide maps to any more: what opening
+ * and saving a set does, so a set saved with such pages (draft 962) sheds
+ * them. A set without any is returned as it is.
+ */
+export function withoutStrandedLayouts<D extends Pick<SetDocument, "arrangement" | "pages">>(
+  doc: D,
+): D {
+  const stranded = strandedLayoutPageIds(doc);
+  if (stranded.size === 0 || stranded.size >= doc.pages.length) return doc;
+  return { ...doc, pages: doc.pages.filter((p) => !stranded.has(p.id)) };
 }
 
 /**
