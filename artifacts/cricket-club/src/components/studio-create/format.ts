@@ -1,3 +1,5 @@
+import { CLUB_TIME_ZONE } from "@workspace/scorecard/card-content";
+
 /** A fixture's start as "Sat 1 Nov, 12:30pm", in Perth time like the rest of the admin. */
 export function fmtFixtureWhen(iso: string): string {
   const d = new Date(iso);
@@ -6,13 +8,13 @@ export function fmtFixtureWhen(iso: string): string {
     weekday: "short",
     day: "numeric",
     month: "short",
-    timeZone: "Australia/Perth",
+    timeZone: CLUB_TIME_ZONE,
   }).format(d);
   const time = new Intl.DateTimeFormat("en-AU", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZone: "Australia/Perth",
+    timeZone: CLUB_TIME_ZONE,
   })
     .format(d)
     .replace(/\s/g, "")

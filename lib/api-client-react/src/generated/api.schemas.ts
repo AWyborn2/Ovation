@@ -11616,6 +11616,15 @@ export interface TeamListPlayer {
   twelfth?: boolean;
 }
 
+export interface TeamListSourceSummary {
+  fixtureId: number;
+  /** Who wrote the list: "admin", "playhq" or "selection" */
+  source: string;
+  isPublished: boolean;
+  /** Players on the saved list (fill-ins left out) */
+  playerCount: number;
+}
+
 export interface TeamList {
   id: number;
   fixtureId: number;

@@ -210,6 +210,47 @@ router.get("/juniors/fixtures", async (req, res): Promise<void> => {
   res.json(rows.map((r) => serializeJuniorFixture(r, withList.has(r.id))));
 });
 
+// New Studio's Create "Which team?" badges (admin only: it shows unpublished drafts):
+// every upcoming junior fixture's saved list in one read, the same window as the list
+// above, rather than a full editor view per fixture. Junior tables only.
+router.get("/juniors/fixtures/team-list-sources", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  if (!(await juniorSyncOn(tenantId))) {
+    res.json([]);
+    return;
+  }
+  const rows = await db
+    .select({
+      fixtureId: juniorTeamListsTable.juniorFixtureId,
+      source: juniorTeamListsTable.source,
+      isPublished: juniorTeamListsTable.isPublished,
+      players: juniorTeamListsTable.players,
+    })
+    .from(juniorTeamListsTable)
+    .innerJoin(
+      juniorFixturesTable,
+      and(
+        eq(juniorFixturesTable.id, juniorTeamListsTable.juniorFixtureId),
+        eq(juniorFixturesTable.tenantId, juniorTeamListsTable.tenantId),
+      ),
+    )
+    .where(
+      and(
+        eq(juniorTeamListsTable.tenantId, tenantId),
+        gte(juniorFixturesTable.startAt, juniorFixtureListFrom(new Date())),
+      ),
+    )
+    .orderBy(asc(juniorFixturesTable.startAt), asc(juniorFixturesTable.id));
+  res.json(
+    rows.map((r) => ({
+      fixtureId: r.fixtureId,
+      source: r.source,
+      isPublished: r.isPublished,
+      playerCount: r.players.length,
+    })),
+  );
+});
+
 router.get("/juniors/fixtures/:id", async (req, res): Promise<void> => {
   const params = GetJuniorFixtureParams.safeParse(req.params);
   if (!params.success) {

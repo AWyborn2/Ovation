@@ -305,6 +305,87 @@ describe("fixtures + team lists", () => {
       .expect(404);
   });
 
+  it("lists every upcoming fixture's saved list source in one admin read, however far ahead", async () => {
+    const day = 24 * 3600 * 1000;
+    const at = (days: number) => new Date(Date.now() + days * day);
+    const fx = await db
+      .insert(fixturesTable)
+      .values([
+        { tenantId: tenantAId, grade: "A Grade", opponentName: "Soon", startAt: at(4) },
+        // Weeks ahead, past the summer break: still listed.
+        { tenantId: tenantAId, grade: "A Grade", opponentName: "Later", startAt: at(60) },
+        { tenantId: tenantAId, grade: "B Grade", opponentName: "No list", startAt: at(60) },
+        { tenantId: tenantAId, grade: "A Grade", opponentName: "Played", startAt: at(-3) },
+        { tenantId: tenantBId, grade: "A Grade", opponentName: "Other club", startAt: at(4) },
+      ])
+      .returning({ id: fixturesTable.id });
+    const [soon, later, noList, played, other] = fx.map((f) => f.id);
+    await db.insert(teamListsTable).values([
+      {
+        tenantId: tenantAId,
+        fixtureId: soon,
+        source: "playhq",
+        isPublished: true,
+        // A fill-in never counts.
+        players: [
+          { order: 1, playerId: 5, displayName: "A" },
+          { order: 2, displayName: "B" },
+          { order: 3, playerId: 90001, displayName: "Fill" },
+        ],
+      },
+      {
+        tenantId: tenantAId,
+        fixtureId: later,
+        source: "admin",
+        isPublished: false,
+        players: [{ order: 1, displayName: "C" }],
+      },
+      {
+        tenantId: tenantAId,
+        fixtureId: played,
+        source: "selection",
+        isPublished: true,
+        players: [{ order: 1, displayName: "D" }],
+      },
+      {
+        tenantId: tenantBId,
+        fixtureId: other,
+        source: "selection",
+        isPublished: true,
+        players: [{ order: 1, displayName: "E" }],
+      },
+    ]);
+
+    // Admin only: it shows unpublished drafts.
+    const anon = await request(app)
+      .get("/api/fixtures/team-list-sources")
+      .set("x-tenant-id", String(tenantAId));
+    expect(anon.status).toBe(401);
+
+    const res = await request(app)
+      .get("/api/fixtures/team-list-sources")
+      .set("x-tenant-id", String(tenantAId))
+      .set("Cookie", cookieA)
+      .expect(200);
+    const byId = new Map((res.body as Array<{ fixtureId: number }>).map((r) => [r.fixtureId, r]));
+    expect(byId.get(soon)).toEqual({
+      fixtureId: soon,
+      source: "playhq",
+      isPublished: true,
+      playerCount: 2,
+    });
+    expect(byId.get(later)).toEqual({
+      fixtureId: later,
+      source: "admin",
+      isPublished: false,
+      playerCount: 1,
+    });
+    // No saved list, a played fixture and another club's list are never in it.
+    expect(byId.has(noList)).toBe(false);
+    expect(byId.has(played)).toBe(false);
+    expect(byId.has(other)).toBe(false);
+  });
+
   it("persists seasonStartDate via the social-settings PATCH (and clears with null)", async () => {
     const when = "2026-10-10T00:00:00.000Z";
     const patched = await request(app)
