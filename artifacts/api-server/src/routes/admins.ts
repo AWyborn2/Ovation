@@ -124,9 +124,12 @@ router.post("/auth/logout-all", requireAdmin, async (req, res): Promise<void> =>
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
-    await db.update(platformAdminsTable).set({
-      sessionEpoch: sql`${platformAdminsTable.sessionEpoch} + 1`,
-    }).where(eq(platformAdminsTable.id, platformAdmin.id));
+    await db
+      .update(platformAdminsTable)
+      .set({
+        sessionEpoch: sql`${platformAdminsTable.sessionEpoch} + 1`,
+      })
+      .where(eq(platformAdminsTable.id, platformAdmin.id));
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.clearCookie(PLATFORM_SESSION_COOKIE, { path: "/" });
     res.sendStatus(204);
