@@ -10,6 +10,7 @@
  * already-fetched DTOs here, which keeps these testable in isolation.
  */
 
+import { CLUB_TIME_ZONE } from "@workspace/scorecard/card-content";
 import type { CardKind } from "@/lib/share-card";
 import type {
   LadderRow,
@@ -64,16 +65,26 @@ function formatFixtureDate(iso: string | null | undefined): string {
   const d = parseDate(iso);
   if (!d) return "";
   return d
-    .toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })
+    .toLocaleDateString("en-AU", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      timeZone: CLUB_TIME_ZONE,
+    })
     .toUpperCase();
 }
 
-/** "12:00 PM". */
+/** "12:00 PM", in club (Perth) time like the server-built cards, whatever the browser's zone. */
 function formatFixtureTime(iso: string | null | undefined): string {
   const d = parseDate(iso);
   if (!d) return "";
   return d
-    .toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true })
+    .toLocaleTimeString("en-AU", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: CLUB_TIME_ZONE,
+    })
     .toUpperCase();
 }
 
@@ -252,7 +263,12 @@ function formatRoundDate(iso: string | null | undefined): string {
   const d = parseDate(iso);
   if (!d) return "";
   return d
-    .toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })
+    .toLocaleDateString("en-AU", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+      timeZone: CLUB_TIME_ZONE,
+    })
     .replace(",", "")
     .toUpperCase();
 }

@@ -499,6 +499,7 @@ import type {
   TagJuniorLibraryPhotosRequest,
   TakeTemplateUpdateRequest,
   TeamList,
+  TeamListSourceSummary,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
   TeamOfDecadeBoardUpdate,
@@ -18963,6 +18964,84 @@ export const useCreateFixture = <TError = ErrorType<unknown>,
       return useMutation(getCreateFixtureMutationOptions(options));
     }
 
+export const getListFixtureTeamListSourcesUrl = () => {
+
+
+
+
+  return `/api/fixtures/team-list-sources`
+}
+
+/**
+ * One summary per upcoming fixture of the club that has a saved team list (published or not), for New Studio's Create "Which team?" badges. A fixture with no row has no saved list. `playerCount` leaves fill-in players out. Read in one call, so every fixture in the list gets its badge however far ahead it is.
+ * @summary Where each upcoming fixture's saved team list came from (admin only)
+ */
+export const listFixtureTeamListSources = async ( options?: RequestInit): Promise<TeamListSourceSummary[]> => {
+
+  return customFetch<TeamListSourceSummary[]>(getListFixtureTeamListSourcesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFixtureTeamListSourcesQueryKey = () => {
+    return [
+    `/api/fixtures/team-list-sources`
+    ] as const;
+    }
+
+
+export const getListFixtureTeamListSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listFixtureTeamListSources>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtureTeamListSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFixtureTeamListSourcesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFixtureTeamListSources>>> = ({ signal }) => listFixtureTeamListSources({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFixtureTeamListSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFixtureTeamListSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listFixtureTeamListSources>>>
+export type ListFixtureTeamListSourcesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Where each upcoming fixture's saved team list came from (admin only)
+ */
+
+export function useListFixtureTeamListSources<TData = Awaited<ReturnType<typeof listFixtureTeamListSources>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFixtureTeamListSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFixtureTeamListSourcesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getUpdateFixtureUrl = (id: number,) => {
 
 
@@ -30825,6 +30904,84 @@ export function useListJuniorFixtures<TData = Awaited<ReturnType<typeof listJuni
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListJuniorFixturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListJuniorFixtureTeamListSourcesUrl = () => {
+
+
+
+
+  return `/api/juniors/fixtures/team-list-sources`
+}
+
+/**
+ * One summary per upcoming junior fixture (the same window as listJuniorFixtures) that has a saved junior team list, published or not, for New Studio's Create "Which team?" badges. `fixtureId` is the junior fixture id. Junior tables only. Empty when the club's junior sync is switched off.
+ * @summary Where each upcoming junior fixture's saved team list came from (admin only)
+ */
+export const listJuniorFixtureTeamListSources = async ( options?: RequestInit): Promise<TeamListSourceSummary[]> => {
+
+  return customFetch<TeamListSourceSummary[]>(getListJuniorFixtureTeamListSourcesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorFixtureTeamListSourcesQueryKey = () => {
+    return [
+    `/api/juniors/fixtures/team-list-sources`
+    ] as const;
+    }
+
+
+export const getListJuniorFixtureTeamListSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorFixtureTeamListSourcesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>> = ({ signal }) => listJuniorFixtureTeamListSources({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorFixtureTeamListSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>>
+export type ListJuniorFixtureTeamListSourcesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Where each upcoming junior fixture's saved team list came from (admin only)
+ */
+
+export function useListJuniorFixtureTeamListSources<TData = Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtureTeamListSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorFixtureTeamListSourcesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

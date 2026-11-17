@@ -7,6 +7,7 @@ import {
   blankCarouselDocument,
   prevStep,
   teamSourceOf,
+  teamSourcesById,
 } from "./model";
 
 describe("Create wizard model", () => {
@@ -64,10 +65,27 @@ describe("Create wizard model", () => {
 
   it("badges a team by where its names came from", () => {
     expect(teamSourceOf(null)).toBe("none");
-    expect(teamSourceOf({ isPublished: true, source: "playhq" })).toBe("playhq");
-    expect(teamSourceOf({ isPublished: false, source: "admin" })).toBe("draft");
-    expect(teamSourceOf({ isPublished: true, source: "selection" })).toBe("selection");
-    expect(teamSourceOf({ isPublished: true, source: "admin" })).toBe("selection");
+    expect(teamSourceOf(undefined)).toBe("none");
+    expect(teamSourceOf({ isPublished: true, source: "playhq", playerCount: 11 })).toBe("playhq");
+    expect(teamSourceOf({ isPublished: false, source: "admin", playerCount: 11 })).toBe("draft");
+    expect(teamSourceOf({ isPublished: true, source: "selection", playerCount: 11 })).toBe(
+      "selection",
+    );
+    expect(teamSourceOf({ isPublished: true, source: "admin", playerCount: 11 })).toBe("selection");
+    // A saved list with no names has nothing to fill from.
+    expect(teamSourceOf({ isPublished: true, source: "admin", playerCount: 0 })).toBe("none");
+  });
+
+  it("maps the one team-list-sources read by fixture id, and waits for it", () => {
+    expect(teamSourcesById(undefined)).toBeNull();
+    const byId = teamSourcesById([
+      { fixtureId: 7, source: "playhq", isPublished: true, playerCount: 12 },
+      { fixtureId: 9, source: "admin", isPublished: false, playerCount: 3 },
+    ])!;
+    expect(teamSourceOf(byId.get(7))).toBe("playhq");
+    expect(teamSourceOf(byId.get(9))).toBe("draft");
+    // A fixture the read doesn't name has no saved list, however far ahead.
+    expect(teamSourceOf(byId.get(500))).toBe("none");
   });
 
   it("starts a hand-picked carousel as three blank pages with no data", () => {
