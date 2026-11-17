@@ -32,6 +32,8 @@ import {
 } from "@workspace/db";
 import {
   arrangeSlides,
+  carouselSlideSlot,
+  isRepeatSlot,
   layoutPageIds,
   assembleSetDocument,
   isSetDocument,
@@ -265,6 +267,11 @@ export function arrangeCarouselSlides(
   return arrangeSlides(withKeys, doc.arrangement).map(({ key: _key, ...s }) => s);
 }
 
+/** A carousel slide that holds a game (a fixture, team, result or junior day), not a cover, sponsors or design page. */
+export function isGameSlide(s: { id: string; input: Record<string, unknown> }): boolean {
+  return !s.id.startsWith("page:") && isRepeatSlot(carouselSlideSlot(s.input));
+}
+
 /**
  * A queued carousel's stored design: its pages, and of its arrangement only
  * `pageFor` (a slide's own layout), kept for slides and pages the set still
@@ -328,6 +335,13 @@ export async function saveDraftSetDesign(
     if (ref) wc.templateRef = ref;
     const read = readQueuedCarousel(input);
     if (!read) throw invalid("Those slides can't be saved as a set.");
+    // A carousel is its games: with every game slide deleted, only the cover
+    // and sponsors pages would post.
+    const before = readQueuedCarousel(draft.cardInput);
+    if (before?.slides.some(isGameSlide) && !read.slides.some(isGameSlide))
+      throw invalid(
+        "A carousel needs at least one game slide. Put a game back (Undo), or dismiss the set from the queue.",
+      );
     patch.cardInput = input;
     // The payload holds the slide order now; the design keeps its pages and
     // each slide's own layout (studio-create S8/S9), which only it can hold.
