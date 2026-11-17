@@ -289,7 +289,11 @@ export function mapCarouselSlides(
   const undrawn: string[] = [];
   const counts = new Map<string, number>();
   const cover = slides.find((s) => carouselSlideSlot(s.input) === "cover") ?? slides[0];
+  const layouts = layoutPageIds(doc);
   for (const s of slides) {
+    // A slide made for a layout page (saved before the 17 Nov 2026 fix, when a
+    // let-go layout drew as a design page) is no slide: the page is a layout.
+    if (s.pageId && s.id === `page:${s.pageId}` && layouts.has(s.pageId)) continue;
     const slot = carouselSlideSlot(s.input);
     const page =
       (s.pageId ? doc.pages.find((p) => p.id === s.pageId) : undefined) ?? pageForSlot(doc, slot);

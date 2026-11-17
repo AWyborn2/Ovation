@@ -52,7 +52,11 @@ export function SlideLayoutPanel({
       (layouts.has(p.id) && p.kind === naturalMeta.kind && p.page === naturalMeta.page),
   );
   const own = slide.page.id !== natural;
-  const sharers = set.slides.filter((s) => (naturalPageId(s.key) ?? s.page.id) === natural).length;
+  // The other slides drawn by the same page as this one, as they draw now: a
+  // slide with a layout of its own isn't sharing the set's.
+  const others = set.slides.filter(
+    (s) => s.key !== slide.key && s.page.id === slide.page.id,
+  ).length;
   const full = pages.length >= MAX_SET_PAGES;
 
   // Each choice puts the slide on the canvas to edit, so the panel closes.
@@ -74,11 +78,7 @@ export function SlideLayoutPanel({
       <PopoverContent align="end" className="studio-editor w-80 space-y-3">
         <div>
           <p className="text-sm font-semibold">Layout for {slide.label}</p>
-          <p className="text-xs text-[var(--ed-ink2)]">
-            {own
-              ? "This slide has its own layout: edits on the canvas change this slide only."
-              : `This slide shares its layout with ${sharers - 1} other ${sharers - 1 === 1 ? "slide" : "slides"}: edits change them all.`}
-          </p>
+          <p className="text-xs text-[var(--ed-ink2)]">{layoutNote(own, others)}</p>
         </div>
         <ul className="grid grid-cols-3 gap-2">
           {options.map((p) => {
@@ -152,4 +152,16 @@ export function SlideLayoutPanel({
       </PopoverContent>
     </Popover>
   );
+}
+
+/** What the panel says about the layout a slide draws with now. */
+export function layoutNote(own: boolean, others: number): string {
+  const n = `${others} other ${others === 1 ? "slide" : "slides"}`;
+  if (own)
+    return others === 0
+      ? "This slide has its own layout: edits on the canvas change this slide only."
+      : `This slide's layout is shared with ${n}: edits on the canvas change them all.`;
+  return others === 0
+    ? "This slide uses the set's layout."
+    : `This slide shares the set's layout with ${n}: edits change them all.`;
 }
