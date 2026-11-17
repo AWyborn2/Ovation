@@ -131,6 +131,28 @@ export default function AdminSocialQueue() {
   const teamFilter = newStudio && juniorsOn;
   const [teamParam, setTeam] = useSearchParamState("team", "all");
   const team = teamFilter && (teamParam === "senior" || teamParam === "junior") ? teamParam : "all";
+  const teamKeeps = useMemo(
+    () =>
+      team === "all" ? undefined : (d: SocialDraft) => isJuniorDraft(d) === (team === "junior"),
+    [team],
+  );
+  const teamSelect = (
+    <>
+      <Label htmlFor="team-filter" className="text-sm">
+        Teams
+      </Label>
+      <select
+        id="team-filter"
+        value={team}
+        onChange={(e) => setTeam(e.target.value)}
+        className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+      >
+        <option value="all">All teams</option>
+        <option value="senior">Seniors</option>
+        <option value="junior">Juniors</option>
+      </select>
+    </>
+  );
   // Card kind templates (KTD10): drafts whose layout needs a look.
   const [needsLook, setNeedsLook] = useState(false);
   const [open, setOpen] = useState<SocialDraft | null>(null);
@@ -141,7 +163,9 @@ export default function AdminSocialQueue() {
   const schedule = bundle?.settings.postingSchedule ?? null;
   const calendarOn = !!schedule?.enabled;
   const wide = useMediaQuery("(min-width: 768px)");
-  const [chosenView, setChosenView] = useState<QueueView | null>(null);
+  // The chosen view is kept in the URL (`?view=`), so a reload keeps it.
+  const [viewParam, setChosenView] = useSearchParamState("view", "");
+  const chosenView = (["week", "list", "table"] as const).find((v) => v === viewParam) ?? null;
   const view: QueueView = calendarOn ? (chosenView ?? (wide ? "week" : "list")) : "table";
   const [scheduleOpen, setScheduleOpen] = useState(false);
   // Only to say how many cards a switch-on would place.
@@ -382,7 +406,15 @@ export default function AdminSocialQueue() {
       )}
 
       {view !== "table" ? (
-        <SocialCalendarView view={view} schedule={schedule} onOpenDraft={setOpen} />
+        <>
+          {teamFilter && <div className="flex flex-wrap items-center gap-3">{teamSelect}</div>}
+          <SocialCalendarView
+            view={view}
+            schedule={schedule}
+            onOpenDraft={setOpen}
+            filter={teamKeeps}
+          />
+        </>
       ) : (
         <>
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Draft state">
@@ -438,23 +470,7 @@ export default function AdminSocialQueue() {
                 </option>
               ))}
             </select>
-            {teamFilter && (
-              <>
-                <Label htmlFor="team-filter" className="text-sm">
-                  Teams
-                </Label>
-                <select
-                  id="team-filter"
-                  value={team}
-                  onChange={(e) => setTeam(e.target.value)}
-                  className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
-                >
-                  <option value="all">All teams</option>
-                  <option value="senior">Seniors</option>
-                  <option value="junior">Juniors</option>
-                </select>
-              </>
-            )}
+            {teamFilter && teamSelect}
             {(lookCount > 0 || needsLook) && (
               <button
                 type="button"

@@ -40,7 +40,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SetPageThumb, useLibraryPreviewData } from "@/components/template-library/previews";
-import { draftHeading, editorStatusLabel } from "@/components/social-queue/draft-meta";
+import {
+  draftDay,
+  draftFallbackTitle,
+  draftHeading,
+  editorStatusLabel,
+} from "@/components/social-queue/draft-meta";
+
+/** A set's own name (its player or headline), else the day it was made: "17 Nov". */
+const ownHeading = (draft: SocialDraft) => {
+  const heading = draftHeading(draft);
+  return heading === draftFallbackTitle(draft) || heading === "Blank design"
+    ? draftDay(draft)
+    : heading;
+};
 import { readableDateRange } from "@workspace/scorecard/card-content";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
@@ -145,14 +158,15 @@ function SetDraftEditor({
   const newStudio = useNewStudio();
   // The design as last saved here: a look switch keeps its slide order.
   const saved = useRef(design.document as unknown as SetDocument);
-  const label = SET_TYPE_LABELS[design.setType];
+  // A free set (Pick by hand) is a carousel the admin fills: named for its day.
+  const label = design.setType === "free" ? "Carousel" : SET_TYPE_LABELS[design.setType];
   const round = (draft.cardInput as { roundLabel?: unknown } | null)?.roundLabel;
   const template: EditorTemplate = useMemo(
     () => ({
       id: draft.id,
       kind: setTemplateKind(design.setType),
       // A set queued before Nov 2026 named its range raw ("2026-11-13 – 2026-11-22").
-      name: `${label}: ${typeof round === "string" && round ? readableDateRange(round) : draftHeading(draft)}`,
+      name: `${label}: ${typeof round === "string" && round ? readableDateRange(round) : ownHeading(draft)}`,
       version: 1,
       document: design.document,
       fitStatus: "pass",

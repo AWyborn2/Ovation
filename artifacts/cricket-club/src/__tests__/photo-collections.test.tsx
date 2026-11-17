@@ -44,8 +44,13 @@ const collection = (id: number, name: string, photoCount: number) => ({
 
 type Req = { method: string; url: string; body: unknown };
 
-function stubApi(collections = [collection(5, "Matchday crowd", 1), collection(6, "Sponsors", 0)]) {
+function stubApi(
+  collections = [collection(5, "Matchday crowd", 1), collection(6, "Sponsors", 0)],
+  /** Holds the remove request's answer until it resolves. */
+  hold?: Promise<void>,
+) {
   const requests: Req[] = [];
+  let removed: number[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -59,10 +64,14 @@ function stubApi(collections = [collection(5, "Matchday crowd", 1), collection(6
       else if (method === "POST" && /\/club-photo-collections$/.test(url)) {
         status = 201;
         payload = collection(7, (body as { name: string }).name, 0);
-      } else if (method === "POST" && url.includes("/club-photo-collections/"))
+      } else if (method === "POST" && url.includes("/club-photo-collections/")) {
+        if (url.endsWith("/photos/remove")) {
+          if (hold) await hold;
+          removed = (body as { photoIds: number[] }).photoIds;
+        }
         payload = collections[0];
-      else if (method === "GET" && url.includes("/club-photos"))
-        payload = [photo(1, [5]), photo(2), photo(3)];
+      } else if (method === "GET" && url.includes("/club-photos"))
+        payload = [photo(1, removed.includes(1) ? [] : [5]), photo(2), photo(3)];
       return new Response(JSON.stringify(payload), {
         status,
         headers: { "content-type": "application/json" },
@@ -128,6 +137,19 @@ describe("photo collections in the library", () => {
         requests.find((r) => r.url.includes("/club-photo-collections/5/photos/remove"))?.body,
       ).toEqual({ photoIds: [1] }),
     );
+    // It leaves the collection on screen straight away, without a reload.
+    expect(await screen.findByText("No photos in this collection")).toBeTruthy();
+  });
+
+  it("takes the photo off screen before the server answers", async () => {
+    let answer = () => {};
+    stubApi(undefined, new Promise<void>((r) => (answer = r)));
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?collection=5");
+    const grid = await screen.findByRole("list", { name: "Library photos" });
+    fireEvent.click(within(grid).getByRole("button", { name: "Photo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Take out of Matchday crowd" }));
+    expect(await screen.findByText("No photos in this collection")).toBeTruthy();
+    answer();
   });
 });
 

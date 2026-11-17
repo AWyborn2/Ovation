@@ -44,6 +44,8 @@ type Props = {
   view: "week" | "list";
   schedule: PostingSchedule | null;
   onOpenDraft: (draft: SocialDraft) => void;
+  /** Only the cards whose draft this keeps (the queue's Teams filter); absent, every card. */
+  filter?: (draft: SocialDraft) => boolean;
 };
 
 /**
@@ -52,7 +54,7 @@ type Props = {
  * back with the server's reason if the move is refused or someone else moved
  * it first. Every move is announced to screen readers.
  */
-export function SocialCalendarView({ view, schedule, onOpenDraft }: Props) {
+export function SocialCalendarView({ view, schedule, onOpenDraft, filter }: Props) {
   const qc = useQueryClient();
   const today = clubDay(new Date());
   const [monday, setMonday] = useState(() => mondayOf(today));
@@ -60,7 +62,18 @@ export function SocialCalendarView({ view, schedule, onOpenDraft }: Props) {
   const params = { from: days[0], to: days[6] };
   const key = getGetSocialCalendarQueryKey(params);
   const q = useGetSocialCalendar(params, { query: { queryKey: key } });
-  const cal = q.data as SocialCalendar | undefined;
+  const all = q.data as SocialCalendar | undefined;
+  const cal = useMemo(
+    () =>
+      all && filter
+        ? {
+            ...all,
+            cards: all.cards.filter((c) => filter(c.draft)),
+            unscheduled: all.unscheduled.filter((c) => filter(c.draft)),
+          }
+        : all,
+    [all, filter],
+  );
 
   const [moving, setMoving] = useState<SocialCalendarCard | null>(null);
   const [pending, setPending] = useState(false);

@@ -4,6 +4,7 @@
  * Pure, so the ordering and the posting-plan split are tested on their own.
  */
 import { setDraftLayout } from "@/lib/set-draft";
+import { draftKind } from "@/components/social-queue/draft-meta";
 import type {
   CardSet,
   ClubTemplateSummary,
@@ -85,9 +86,6 @@ export type RecentDesign =
       editedAt: string;
       href: string;
     };
-
-const draftKind = (d: SocialDraft): string =>
-  String((d.cardInput as { kind?: unknown } | null)?.kind ?? d.family ?? "card");
 
 /** A draft's last change: a hand edit, else the design edit, else when it was made. */
 const draftEditedAt = (d: SocialDraft): string => d.editedAt ?? d.designEditedAt ?? d.createdAt;
