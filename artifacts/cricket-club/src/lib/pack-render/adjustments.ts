@@ -576,7 +576,7 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" /></div>`;
       }
       if (cell.show === "backdrop") {
-        const bg = cssValue(style.background);
+        const bg = logoPlate(spec, cell.field, cssValue(style.background));
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
       }
       if (cell.show === "image") {
@@ -613,6 +613,20 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
     return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;${across};top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
   });
   return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
+}
+
+/**
+ * A sponsor logo's tile backing (dev retest, 17 Nov 2026). The looks back each
+ * sponsor tile with `--accent-ink`, the ink for type on the accent: near-black
+ * for a light accent (Halls Head's gold), so a dark logo (Noise Pilot) all but
+ * vanished on a dark look. Logos are made for a light ground, so a logo tile on
+ * that token takes a light plate instead; a colour a design picked itself
+ * (white, or a club's own) is kept.
+ */
+export const SPONSOR_LOGO_PLATE = "#FFFFFF";
+function logoPlate(spec: RowsSpec, field: string, bg: string | undefined): string | undefined {
+  if (spec.layout !== "tiles" || !LOGO_ROW_FIELDS.includes(field) || !bg) return bg;
+  return /var\(--accent-ink\b/.test(bg) ? SPONSOR_LOGO_PLATE : bg;
 }
 
 /** The card's sliders as a layer's photo adjust (percent focal point); null while untouched. */

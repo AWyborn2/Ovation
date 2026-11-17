@@ -533,6 +533,43 @@ describe("sponsor tiles (rows layout tiles, Oct 2026)", () => {
     expect(html).toContain("object-fit:contain");
   });
 
+  // Dev retest (17 Nov 2026, set 969): a dark logo on a dark look all but vanished.
+  it("backs a logo tile on the accent ink with a light plate, keeping a chosen colour", () => {
+    const on = (background: string) =>
+      renderFreeLayers(
+        {
+          formatVersion: 2,
+          pages: {
+            sponsors: {
+              layers: [
+                {
+                  ...tiles,
+                  rows: {
+                    ...(tiles as unknown as { rows: object }).rows,
+                    cells: [
+                      { field: "logo", x: 0, w: 100, show: "backdrop", style: { background } },
+                      { field: "logo", x: 8, w: 84, y: 10, h: 80, show: "logo" },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        } as unknown as CardAdjustments,
+        "square",
+        {},
+        {},
+        {
+          kind: "matchDay",
+          page: "sponsors",
+          rows: { sponsors: [{ name: "Noise Pilot", logo: "/l/noise.png" }] },
+        },
+      );
+    expect(on("var(--accent-ink)")).toContain("background:#FFFFFF");
+    expect(on("var(--accent-ink)")).not.toContain("background:var(--accent-ink)");
+    expect(on("#123456")).toContain("background:#123456");
+  });
+
   it("one sponsor is centred, not stretched across the box", () => {
     const [[x, , w]] = boxes(draw(1, 0)) as number[][];
     expect(x! + w! / 2).toBeCloseTo(50, 1);
