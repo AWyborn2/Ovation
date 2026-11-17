@@ -15,7 +15,7 @@ import {
 import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PrefillPanel, buildCardInput, type CardFormState } from "@/components/card-forms";
-import { seedState } from "@/components/card-forms/seed";
+import { juniorSeedState, seedState } from "@/components/card-forms/seed";
 import {
   BLANK_DESIGN_KIND,
   CREATE_SIZES,
@@ -53,7 +53,14 @@ import { TeamPicker } from "./team-picker";
 const CREATE_PATH = "/admin/social/create";
 
 /** The card being made: its filled-in state and the player it is about. */
-type Filled = { kind: CardKind; state: CardFormState; playerId: number | null; filled: boolean };
+type Filled = {
+  kind: CardKind;
+  /** Whether it was filled as a junior card: a senior fill never carries over to juniors. */
+  junior: boolean;
+  state: CardFormState;
+  playerId: number | null;
+  filled: boolean;
+};
 
 /** A kind's state as the server built it: sample keys it lacks are cleared. */
 function fromServer(kind: CardKind, seed: CardFormState, input: Record<string, unknown>) {
@@ -91,11 +98,18 @@ export function CreateWizard() {
   const card = useMemo<Filled | null>(
     () =>
       kind
-        ? filled?.kind === kind
+        ? filled?.kind === kind && filled.junior === junior
           ? filled
-          : { kind, state: seedState(kind, brand), playerId: null, filled: false }
+          : {
+              kind,
+              junior,
+              // A junior card starts from junior sample names, never the senior sample's.
+              state: junior ? juniorSeedState(kind, brand) : seedState(kind, brand),
+              playerId: null,
+              filled: false,
+            }
         : null,
-    [kind, filled, brand],
+    [kind, filled, brand, junior],
   );
   const input = useMemo<ShareCardInput | null>(
     () => (card ? buildCardInput(card.kind, card.state, junior) : null),
@@ -104,7 +118,7 @@ export function CreateWizard() {
 
   const fill = (state: CardFormState, playerId: number | null = card?.playerId ?? null) => {
     if (!kind) return;
-    setFilled({ kind, state, playerId, filled: true });
+    setFilled({ kind, junior, state, playerId, filled: true });
     go({ step: nextStep(s) });
   };
 
@@ -271,6 +285,7 @@ export function CreateWizard() {
                 size={size}
                 preview={preview}
                 input={input}
+                junior={junior}
                 busy={design.busy}
                 start={(body) =>
                   design.start(

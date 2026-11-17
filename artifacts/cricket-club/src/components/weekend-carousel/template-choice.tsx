@@ -11,6 +11,7 @@ import {
 import { carouselTemplateKind, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import { TemplatePicker, type PickedTemplate } from "@/components/template-library/template-picker";
 import { previewSample } from "@/lib/kind-templates/samples";
+import { juniorSampleCardInput } from "@/lib/sample-card-inputs";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import type { WeekendSlide } from "./model";
@@ -79,8 +80,19 @@ export function CarouselTemplatePicker({ s }: { s: WeekendCarouselState }) {
   const slide = s.slides.find(
     (sl) => pageForInput(sl.input as Parameters<typeof pageForInput>[0]) === main,
   );
-  const input = (slide?.input as ShareCardInput | undefined) ?? previewSample(kind, clubName);
+  // A junior set's tiles: junior sample names and no photo, never a senior sample's.
+  const junior = s.audience === "junior";
+  const input =
+    (slide?.input as ShareCardInput | undefined) ??
+    (junior ? juniorSampleCardInput(kind, clubName) : previewSample(kind, clubName));
   return (
-    <TemplatePicker kind={kind} value={s.picked} onChange={s.setPicked} input={input} data={data} />
+    <TemplatePicker
+      kind={kind}
+      value={s.picked}
+      onChange={s.setPicked}
+      input={input}
+      data={data}
+      junior={junior}
+    />
   );
 }

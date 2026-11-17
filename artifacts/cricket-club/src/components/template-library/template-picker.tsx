@@ -69,6 +69,7 @@ function CopyTile({
   input,
   data,
   preselect,
+  junior,
 }: {
   copy: ClubTemplateSummary;
   value: PickedTemplate | null;
@@ -76,6 +77,7 @@ function CopyTile({
   input: ShareCardInput;
   data: PackCardData;
   preselect: boolean;
+  junior: boolean;
 }) {
   const q = useGetClubTemplate(copy.id, {
     query: { queryKey: getGetClubTemplateQueryKey(copy.id), staleTime: 60_000 },
@@ -95,7 +97,13 @@ function CopyTile({
       onSelect={pick}
     >
       {q.data ? (
-        <TemplateThumb document={q.data.document} kind={copy.kind} input={input} data={data} />
+        <TemplateThumb
+          document={q.data.document}
+          kind={copy.kind}
+          input={input}
+          data={data}
+          junior={junior}
+        />
       ) : (
         <div className="aspect-square rounded-md bg-muted" />
       )}
@@ -109,6 +117,7 @@ export function TemplatePicker({
   onChange,
   input,
   data,
+  junior = false,
 }: {
   kind: string;
   value: PickedTemplate | null;
@@ -116,6 +125,8 @@ export function TemplatePicker({
   /** The card the tiles draw (the post being made). */
   input: ShareCardInput;
   data: PackCardData;
+  /** Junior tiles: drawn as junior cards with no photo (juniors isolation). */
+  junior?: boolean;
 }) {
   const templateKind = templateKindFor(kind);
   const copiesParams = { kind: templateKind };
@@ -143,6 +154,7 @@ export function TemplatePicker({
             input={input}
             data={data}
             preselect={c.isDefault && !hasValue}
+            junior={junior}
           />
         ))}
         {library.map((t) => {
@@ -155,7 +167,13 @@ export function TemplatePicker({
               selected={sameRef(value?.ref, ref)}
               onSelect={() => onChange({ ref, document: t.document, name: t.name })}
             >
-              <TemplateThumb document={t.document} kind={t.kind} input={input} data={data} />
+              <TemplateThumb
+                document={t.document}
+                kind={t.kind}
+                input={input}
+                data={data}
+                junior={junior}
+              />
             </Tile>
           );
         })}

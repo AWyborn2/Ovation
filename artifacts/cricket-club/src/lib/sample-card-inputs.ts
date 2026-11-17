@@ -459,3 +459,115 @@ export function sampleCardInput(
   if (!clubName?.trim()) return sample;
   return replaceClubTokens(sample, clubName.trim());
 }
+
+/** Sample junior names: plainly stand-ins, never a real child (or a senior). */
+const JUNIOR_SURNAMES = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"].map(
+  (l) => `JUNIOR ${l}`,
+);
+
+/**
+ * Junior stand-ins for the kinds a junior card is made from (New Studio's Create):
+ * junior grades and plainly sample junior names, and no photo anywhere. Junior
+ * previews draw these, never the senior samples (whose names read as senior players).
+ */
+const JUNIOR_SAMPLES: Partial<{
+  [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: K }>;
+}> = {
+  teamList: {
+    kind: "teamList",
+    gradeRound: "UNDER 13 — ROUND 4",
+    competitionLine: "Under 13 • Junior",
+    venueDateTime: "Sample Oval • Sat 14 Dec • 8:30 AM",
+    roundLabel: "ROUND 4",
+    opponent: "Sample Rivals",
+    venue: "Sample Oval",
+    date: "SAT 14 DEC",
+    startTime: "8:30 AM",
+    players: JUNIOR_SURNAMES.map((surname, i) => ({
+      order: i + 1,
+      surname,
+      ...(i === 0 ? { role: "C" } : {}),
+    })),
+  },
+  matchDay: {
+    kind: "matchDay",
+    roundLabel: "ROUND 4",
+    oppositionName: "Sample Rivals",
+    homeAway: "HOME",
+    venue: "Sample Oval",
+    date: "SAT 14 DEC",
+    startTime: "8:30 AM",
+    noteTitle: "UNDER 13",
+    noteBody: "Come down and cheer on our juniors.",
+  },
+  matchSummary: {
+    ...SAMPLES.matchSummary,
+    matchTitle: "Under 13 • Round 4",
+    matchType: "Junior",
+    date: "Sat 14 Dec 2024",
+    result: "Sample Club won by 4 wickets",
+    innings: [
+      {
+        teamKey: "opposition",
+        inningsNum: 1,
+        totalRuns: "98",
+        wickets: "8",
+        overs: "25",
+        topBatters: [
+          { name: "Junior K", runs: 21, balls: 30 },
+          { name: "Junior J", runs: 14, balls: 22 },
+        ],
+        topBowlers: [{ name: "Junior A", wickets: 2, runs: 11, overs: "4" }],
+      },
+      {
+        teamKey: "club",
+        inningsNum: 2,
+        totalRuns: "99",
+        wickets: "6",
+        overs: "22.4",
+        topBatters: [
+          { name: "Junior B", runs: 26, balls: 31, notOut: true },
+          { name: "Junior C", runs: 18, balls: 25 },
+        ],
+        topBowlers: [{ name: "Junior H", wickets: 2, runs: 9, overs: "4" }],
+      },
+    ],
+  },
+  milestone: {
+    kind: "milestone",
+    playerName: "Junior A",
+    tierLabel: "Milestone",
+    tierIndex: 1,
+    milestoneLabel: "Junior Runs",
+    currentValue: 100,
+    threshold: 100,
+    headline: "100 JUNIOR RUNS",
+  },
+};
+
+/**
+ * A junior card's sample: the junior stand-in for `kind` (see `JUNIOR_SAMPLES`),
+ * speaking as the club when a name is given. A kind without one gets the general
+ * sample. Every photo is cleared either way.
+ */
+export function juniorSampleCardInput(
+  kind: ShareCardInput["kind"],
+  clubName?: string | null,
+): ShareCardInput {
+  const sample = (JUNIOR_SAMPLES[kind] ?? SAMPLES[kind]) as ShareCardInput;
+  const named = clubName?.trim() ? replaceClubTokens(sample, clubName.trim()) : sample;
+  return withoutPhotos(named);
+}
+
+/** A deep copy with every photo URL cleared (a junior preview shows none). */
+function withoutPhotos<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(withoutPhotos) as unknown as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = /photo(url)?$/i.test(k) && typeof v === "string" ? null : withoutPhotos(v);
+    }
+    return out as T;
+  }
+  return value;
+}
