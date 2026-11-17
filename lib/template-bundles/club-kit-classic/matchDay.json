@@ -1,6 +1,6 @@
 {
   "name": "Club Kit match day",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -2544,7 +2544,10 @@
                         "h": 5.09
                       }
                     },
-                    "sig": "shape:09ysusg0sm0keb"
+                    "sig": "shape:09ysusg0sm0keb",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "text",
@@ -2580,7 +2583,10 @@
                         "h": 1.77
                       }
                     },
-                    "sig": "text:00ec1041w21e0p"
+                    "sig": "text:00ec1041w21e0p",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   },
                   {
                     "kind": "text",
@@ -2604,7 +2610,10 @@
                         "h": 3.02
                       }
                     },
-                    "sig": "text:1gd0nlr1bwj798"
+                    "sig": "text:1gd0nlr1bwj798",
+                    "showWhen": {
+                      "field": "livestream"
+                    }
                   }
                 ],
                 "sig": "group:0jddbuz0khgwga"
@@ -3622,11 +3631,14 @@
                 "h": 4.5
               }
             },
-            "sig": "shape:09ysusg0sm0keb"
+            "sig": "shape:09ysusg0sm0keb",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3634,7 +3646,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l44",
@@ -3643,27 +3655,35 @@
               "square": {
                 "x": 74.71,
                 "y": 9.47,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 2.96
               },
               "portrait": {
                 "x": 74.71,
                 "y": 7.58,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 2.37
               },
               "story": {
                 "x": 74.71,
                 "y": 5.33,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 1.67
               }
             },
-            "sig": "text:1s4z193157dhmk"
+            "sig": "text:1xssr7s0hwiqs9",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -3671,7 +3691,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "title-l45",
@@ -3680,11 +3700,19 @@
               "landscape": {
                 "x": 86.72,
                 "y": 9.43,
-                "w": 9.97,
+                "w": 8.98,
                 "h": 3.02
               }
             },
-            "sig": "text:08g58al0yuy1fw"
+            "sig": "text:0z0eglk1c5nqkb",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           }
         ]
       },
@@ -6712,11 +6740,14 @@
                 "h": 4.5
               }
             },
-            "sig": "shape:09ysusg0sm0keb"
+            "sig": "shape:09ysusg0sm0keb",
+            "showWhen": {
+              "field": "dateShort"
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6724,7 +6755,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l54",
@@ -6733,27 +6764,35 @@
               "square": {
                 "x": 74.71,
                 "y": 9.47,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 2.96
               },
               "portrait": {
                 "x": 74.71,
                 "y": 7.58,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 2.37
               },
               "story": {
                 "x": 74.71,
                 "y": 5.33,
-                "w": 18.09,
+                "w": 17.1,
                 "h": 1.67
               }
             },
-            "sig": "text:1s4z193157dhmk"
+            "sig": "text:1xssr7s0hwiqs9",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           },
           {
             "kind": "text",
-            "content": "THIS WEEKEND",
+            "content": "{{dateShort}}",
             "style": {
               "color": "var(--accent-ink)",
               "fontFamily": "'Barlow Condensed',sans-serif",
@@ -6761,7 +6800,7 @@
               "fontWeight": 800,
               "letterSpacing": 0.12,
               "uppercase": true,
-              "align": "left",
+              "align": "center",
               "lineHeight": 1
             },
             "id": "sponsors-l55",
@@ -6770,11 +6809,19 @@
               "landscape": {
                 "x": 86.72,
                 "y": 9.43,
-                "w": 9.97,
+                "w": 8.98,
                 "h": 3.02
               }
             },
-            "sig": "text:08g58al0yuy1fw"
+            "sig": "text:0z0eglk1c5nqkb",
+            "showWhen": {
+              "field": "dateShort"
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            }
           }
         ]
       }

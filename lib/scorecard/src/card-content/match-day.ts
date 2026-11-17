@@ -65,6 +65,74 @@ export function dateRangeLabel(from: string, to: string, timeZone = CLUB_TIME_ZO
   return `${day(from)} – ${day(to)}`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+type DayOfMonth = { day: number; month: number; year?: number };
+
+/** Two days as a short span: "13 Nov", "13–22 Nov", "28 Nov – 2 Dec", years only when they differ. */
+function daySpan(a: DayOfMonth, b: DayOfMonth): string {
+  const years = a.year !== undefined && b.year !== undefined && a.year !== b.year;
+  const one = (d: DayOfMonth) => `${d.day} ${MONTHS[d.month]}${years ? ` ${d.year}` : ""}`;
+  if (!years && a.month === b.month) return a.day === b.day ? one(b) : `${a.day}–${one(b)}`;
+  return `${one(a)} – ${one(b)}`;
+}
+
+/**
+ * A YYYY-MM-DD range as the app writes dates: "13–22 Nov", "28 Nov – 2 Dec",
+ * "28 Dec 2026 – 3 Jan 2027". It says nothing about whether the range is past
+ * or to come, so a set built for one weekend reads right whenever it is seen.
+ * A range it can't read comes back as it was given.
+ */
+export function shortDateRange(from: string, to: string): string {
+  const parse = (s: string): DayOfMonth | null => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+    if (!m) return null;
+    const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31
+      ? { year, month: month - 1, day }
+      : null;
+  };
+  const a = parse(from);
+  const b = parse(to || from);
+  if (!a || !b) return [from, to].filter(Boolean).join(" – ");
+  return a.year! > b.year! ||
+    (a.year === b.year && (a.month > b.month || (a.month === b.month && a.day > b.day)))
+    ? daySpan(b, a)
+    : daySpan(a, b);
+}
+
+/** A stored set title written from its raw range ("2026-11-13 – 2026-11-22") as `shortDateRange`; other text as it is. */
+export function readableDateRange(text: string): string {
+  const m = /^\s*(\d{4}-\d{2}-\d{2})\s*[–—-]\s*(\d{4}-\d{2}-\d{2})\s*$/.exec(text);
+  return m ? shortDateRange(m[1]!, m[2]!) : text;
+}
+
+/**
+ * A card's printed dates ("SAT 13 NOV – SUN 22 NOV", "SAT 31 – SUN 1 JAN",
+ * "SAT 8 NOV") as a short span ("13–22 Nov"), for a cover's date chip; "" when
+ * the text holds no date, so the chip drops rather than print something else.
+ */
+export function shortDateSpanFromLabel(label: string | null | undefined): string {
+  const parts = (label ?? "")
+    .split(/\s[–—-]\s|–/)
+    .map((part) => {
+      const m = /(\d{1,2})(?:\s+([A-Za-z]{3}))?/.exec(part);
+      if (!m) return null;
+      const month = m[2] ? MONTHS.findIndex((x) => x.toLowerCase() === m[2]!.toLowerCase()) : -1;
+      return { day: Number(m[1]), month };
+    })
+    .filter((p): p is { day: number; month: number } => p !== null && p.day >= 1 && p.day <= 31);
+  if (parts.length === 0 || parts.length > 2) return "";
+  const last = parts[parts.length - 1]!;
+  if (last.month < 0) return "";
+  const first = parts[0]!;
+  // "SAT 31 – SUN 1 JAN": a first day without its month is in the last day's
+  // month, or the month before when it comes later in the month.
+  const firstMonth =
+    first.month >= 0 ? first.month : first.day > last.day ? (last.month + 11) % 12 : last.month;
+  return daySpan({ day: first.day, month: firstMonth }, last);
+}
+
 /** "5" / "R5" / "round 5" → "ROUND 5"; anything else upper-cased as it is. */
 export function normaliseRoundLabel(raw: string | null | undefined): string {
   const text = (raw ?? "").trim().replace(/\s+/g, " ");
@@ -179,7 +247,7 @@ export interface MatchDayBookendOptions {
   livestreamUrl?: string | null;
 }
 
-const heading = (h: string) => h.trim() || "This weekend";
+const heading = (h: string) => h.trim() || "Match day";
 
 export function matchDayTitleContent(opts: MatchDayBookendOptions): MatchDayTitleContent {
   const livestream = livestreamContent(opts.livestreamUrl);

@@ -272,8 +272,9 @@ function contentFor(
       );
     const bookend = {
       heading: "Round fifteen — every team, every ground, all weekend long",
-      from: DAY,
-      to: "2026-10-11",
+      // Across a month end, so the short date chip is at its longest ("31 Oct – 15 Nov").
+      from: "2026-10-31",
+      to: "2026-11-15",
       roundLabels: [ROUND],
       fixtureCount: 99,
       livestreamUrl: WORST.livestream,

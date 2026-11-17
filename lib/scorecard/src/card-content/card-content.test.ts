@@ -296,7 +296,7 @@ describe("bookends", () => {
     expect(matchDayTitleContent(opts)).toEqual({
       kind: "matchDay",
       page: "title",
-      heading: "This weekend",
+      heading: "Match day",
       dateRange: "FRI 11 OCT – SUN 13 OCT",
       roundLabel: "ROUND 5",
       fixtureCount: 3,

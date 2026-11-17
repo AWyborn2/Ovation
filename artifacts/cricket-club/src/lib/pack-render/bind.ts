@@ -22,7 +22,7 @@ import {
   teamMonogram,
   type CardNames,
 } from "@workspace/scorecard/card-names";
-import { summaryResultWord } from "@workspace/scorecard/card-content";
+import { shortDateSpanFromLabel, summaryResultWord } from "@workspace/scorecard/card-content";
 import { milestoneCardHeading } from "@workspace/scorecard";
 import {
   MATCH_CONTEXT_KINDS,
@@ -292,6 +292,10 @@ export function bindInput(
         });
         // The page's dates, by the name templates use (format v2 `dateRange`).
         set(values, "dateRange", input.date);
+        // The same dates short ("13–22 Nov") for a cover's date chip: they read
+        // right whether the round is still to come or already played. Always
+        // bound, so a page without dates drops the chip, never shows a sample.
+        values["dateShort"] = shortDateSpanFromLabel(input.date);
         // The sponsors as a repeat for template rows layers (format v2); the
         // first `majorCount` are the larger tier.
         const majors = input.carouselPage.majorCount ?? 0;
