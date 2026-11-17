@@ -193,6 +193,7 @@ export const GetPlayerResponse = zod.object({
 
 
 /**
+ * Admin only. For a club that reads its stats from the central database only the name can change: it is stored as the club's own rename of the player (the central name is cleared back when the name is set to it again), and any other field is refused with 400.
  * @summary Update a player
  */
 export const UpdatePlayerParams = zod.object({
