@@ -133,10 +133,14 @@ export function useWeekendCarousel(
   const kindContent = setKind
     ? readCardContentSettings(bundle?.settings.cardContent)[setKind]
     : null;
+  // This carousel's own Minimal / Standard / Full for a results, match summary or team
+  // list set (New Studio's look step); empty follows the club's setting for the kind.
+  // The slides carry the fields they show, so nothing else stores it.
+  const [kindOverride, setKindOverride] = useState<ContentOverride>({});
   const kindVisible = useMemo(
-    () => (setKind ? resolveVisibleFields(setKind, kindContent) : undefined),
+    () => (setKind ? resolveVisibleFields(setKind, kindContent, kindOverride) : undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setKind, JSON.stringify(kindContent)],
+    [setKind, JSON.stringify(kindContent), kindOverride],
   );
   // The optional data fields shown (P5): the server loads only these.
   const dataFields =
@@ -198,7 +202,10 @@ export function useWeekendCarousel(
           WEEKEND_PACK_ID,
           setType,
           size,
-          kindContent?.preset ?? contentOverride.preset ?? clubContent.preset,
+          kindOverride.preset ??
+            kindContent?.preset ??
+            contentOverride.preset ??
+            clubContent.preset,
         ),
     }),
     [
@@ -206,6 +213,7 @@ export function useWeekendCarousel(
       clubContent.juniorConsolidateByDay,
       clubContent.preset,
       kindContent?.preset,
+      kindOverride.preset,
       dayRowsCapacity,
       size,
       contentOverride,
@@ -565,6 +573,7 @@ export function useWeekendCarousel(
       setCaptionEdit(null);
       // A carousel's content override belongs to the Match Day set it was made on.
       setContentOverride({});
+      setKindOverride({});
       setCoverSwapped(false);
       setGenerated(null);
       setGenerationError(null);
@@ -601,6 +610,12 @@ export function useWeekendCarousel(
     contentOverride,
     setContentOverride: (value: ContentOverride) => !busy && setContentOverride(value),
     visibleFields,
+    /** A results, match summary or team list set: its kind, the club's choice and this set's. */
+    contentKind: setKind,
+    kindClubContent: kindContent,
+    kindOverride,
+    setKindOverride: (value: ContentOverride) => !busy && setKindOverride(value),
+    kindVisibleFields: kindVisible,
     timeZone,
     from,
     to,

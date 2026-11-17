@@ -32,6 +32,8 @@ import { SponsorsPerSlideControl } from "@/components/social-studio/sponsors-per
 import {
   CONTENT_PRESET_LABELS,
   resolveVisibleFields,
+  type ContentKind,
+  type ContentKindSettings,
   type ContentOverride,
   type ContentPreset,
 } from "@workspace/scorecard/card-content";
@@ -723,13 +725,62 @@ export default WeekendCarousel;
  * or a switch here changes this carousel only and is saved with it.
  */
 export function ContentOverridePanel({ s }: { s: WeekendCarouselState }) {
-  const override = s.contentOverride;
+  return (
+    <ContentOverrideDetails
+      kind="matchDay"
+      club={s.clubContent}
+      override={s.contentOverride}
+      onChange={s.setContentOverride}
+      visible={s.visibleFields}
+      disabled={s.busy}
+      idPrefix="weekend-content"
+    />
+  );
+}
+
+/**
+ * A results, match summary or team list carousel's own "What these cards show"
+ * (New Studio's look step): Minimal / Standard / Full, or the club's setting for the
+ * kind. It changes this carousel's slides only; each slide keeps the fields it shows.
+ */
+export function SetKindContentPanel({ s }: { s: WeekendCarouselState }) {
+  if (!s.contentKind || !s.kindClubContent || !s.kindVisibleFields) return null;
+  return (
+    <ContentOverrideDetails
+      kind={s.contentKind}
+      club={s.kindClubContent}
+      override={s.kindOverride}
+      onChange={s.setKindOverride}
+      visible={s.kindVisibleFields}
+      disabled={s.busy}
+      idPrefix="set-content"
+    />
+  );
+}
+
+function ContentOverrideDetails({
+  kind,
+  club,
+  override,
+  onChange,
+  visible,
+  disabled,
+  idPrefix,
+}: {
+  kind: ContentKind;
+  club: ContentKindSettings;
+  override: ContentOverride;
+  onChange: (value: ContentOverride) => void;
+  visible: ReadonlySet<string>;
+  disabled: boolean;
+  idPrefix: string;
+}) {
   const changed = !!override.preset || Object.keys(override.fields ?? {}).length > 0;
   const toggle = (key: string, on: boolean) => {
     // A switch matching what this carousel would show anyway is no change.
     const base = resolveVisibleFields(
-      "matchDay",
-      s.clubContent,
+      kind,
+      club,
       override.preset ? { preset: override.preset } : null,
     );
     const fields = { ...(override.fields ?? {}) };
@@ -739,40 +790,35 @@ export function ContentOverridePanel({ s }: { s: WeekendCarouselState }) {
       ...(override.preset ? { preset: override.preset } : {}),
       ...(Object.keys(fields).length ? { fields } : {}),
     };
-    s.setContentOverride(next);
+    onChange(next);
   };
+  const clubLabel = `Club setting (${CONTENT_PRESET_LABELS[club.preset]})`;
   return (
-    <details className="rounded-md border p-3" open={changed} data-testid="weekend-content-panel">
+    <details className="rounded-md border p-3" open={changed} data-testid={`${idPrefix}-panel`}>
       <summary className="cursor-pointer text-base">
         What these cards show
         <span className="ml-2 text-sm text-muted-foreground">
-          {changed
-            ? "Changed for this carousel"
-            : `Club setting (${CONTENT_PRESET_LABELS[s.clubContent.preset]})`}
+          {changed ? "Changed for this carousel" : clubLabel}
         </span>
       </summary>
       <div className="mt-3 space-y-3">
         <ContentFieldPicker
-          kind="matchDay"
+          kind={kind}
           preset={override.preset ?? null}
-          visible={s.visibleFields}
-          idPrefix="weekend-content"
-          disabled={s.busy}
-          presetOptions={{
-            clubLabel: `Club setting (${CONTENT_PRESET_LABELS[s.clubContent.preset]})`,
-          }}
-          onPreset={(preset: ContentPreset | null) =>
-            s.setContentOverride(preset ? { preset } : {})
-          }
+          visible={visible}
+          idPrefix={idPrefix}
+          disabled={disabled}
+          presetOptions={{ clubLabel }}
+          onPreset={(preset: ContentPreset | null) => onChange(preset ? { preset } : {})}
           onToggle={toggle}
         />
         {changed && (
           <Button
             size="sm"
             variant="outline"
-            disabled={s.busy}
-            onClick={() => s.setContentOverride({})}
-            data-testid="weekend-content-reset"
+            disabled={disabled}
+            onClick={() => onChange({})}
+            data-testid={`${idPrefix}-reset`}
           >
             Use the club setting
           </Button>
