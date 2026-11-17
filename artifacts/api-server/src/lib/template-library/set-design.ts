@@ -265,6 +265,26 @@ export function arrangeCarouselSlides(
   return arrangeSlides(withKeys, doc.arrangement).map(({ key: _key, ...s }) => s);
 }
 
+/**
+ * A queued carousel's stored design: its pages, and of its arrangement only
+ * `pageFor` (a slide's own layout), kept for slides and pages the set still
+ * holds. The slide order and deletions live in the payload's slides.
+ */
+export function carouselSetDesign(
+  doc: SetDocument,
+  slides: ReadonlyArray<Record<string, unknown>>,
+): SetDocument {
+  const { arrangement, ...design } = doc;
+  const ids = new Set(slides.map((s) => String(s.id)));
+  const pages = new Set(doc.pages.map((p) => p.id));
+  const pageFor = Object.fromEntries(
+    Object.entries(arrangement?.pageFor ?? {}).filter(([k, id]) => ids.has(k) && pages.has(id)),
+  );
+  return Object.keys(pageFor).length
+    ? { ...design, arrangement: { order: [], removed: [], pageFor } }
+    : design;
+}
+
 /** Save a draft's set design (and, for a queued carousel, its slides and size). */
 export async function saveDraftSetDesign(
   tenantId: number,
@@ -309,9 +329,9 @@ export async function saveDraftSetDesign(
     const read = readQueuedCarousel(input);
     if (!read) throw invalid("Those slides can't be saved as a set.");
     patch.cardInput = input;
-    // The payload holds the slide order now; the design keeps its pages.
-    const { arrangement: _order, ...design } = doc;
-    patch.adjustments = design;
+    // The payload holds the slide order now; the design keeps its pages and
+    // each slide's own layout (studio-create S8/S9), which only it can hold.
+    patch.adjustments = carouselSetDesign(doc, slides);
   } else {
     patch.adjustments = doc;
   }

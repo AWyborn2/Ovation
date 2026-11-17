@@ -500,6 +500,11 @@ export type EditorDraftMode = {
    * so the editor doesn't note one missing.
    */
   blank?: boolean;
+  /**
+   * One slide of a carousel set (studio-create S8): drawn whole, as the set
+   * draws it, so its rows never spill onto extra slides here.
+   */
+  wholeSlide?: boolean;
   /** Rail panels after the editor's own; each adds layers to the page on show. */
   panels?: Array<
     RailItem & {
@@ -670,11 +675,13 @@ export function TemplateEditorV2<T extends EditorTemplate>({
     ? stressSample(cardKind, clubName)
     : (draftMode?.input ?? latest ?? previewSample(cardKind, clubName));
   // Lists spill onto extra slides by capacity; the editor shows the first.
-  const plan = planTemplateSlides(
-    sourceInput as unknown as Record<string, unknown>,
-    pageFull as LayerDocument,
-    format,
-  );
+  const plan = draftMode?.wholeSlide
+    ? { slides: [{ key: "single", input: sourceInput, page: 1, of: 1 }], warning: undefined }
+    : planTemplateSlides(
+        sourceInput as unknown as Record<string, unknown>,
+        pageFull as LayerDocument,
+        format,
+      );
   // A draft draws its own content as it stands: no sample item, no preset.
   const input =
     draftMode && !stress
