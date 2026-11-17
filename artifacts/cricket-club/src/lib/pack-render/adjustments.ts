@@ -542,6 +542,13 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
         })
       : null;
   const pctOf = (v: number, of: number) => `${((v / of) * 100).toFixed(3)}%`;
+  // A v2 Team List with more players than its box holds (a side of 13 or 14,
+  // or a team on a carousel slide, which is drawn whole) draws every row
+  // smaller rather than hide anyone: the rows, their gaps and their text scale
+  // down together until the longest column fits the box (ADR-009: compress,
+  // never drop). Other lists split onto slides by their capacity instead.
+  const squeeze =
+    tiles || spec.repeat !== "players" ? 1 : rowsSqueeze(ctx, perColumn, rowHeight, gap, art);
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
@@ -605,14 +612,46 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
     // `across` fills each line left to right (a grid of tiles); `down` fills a column first.
     const acrossFirst = spec.flow === "across";
     const col = acrossFirst ? i % columns : Math.floor(i / perColumn);
-    const top = (acrossFirst ? Math.floor(i / columns) : i % perColumn) * (rowHeight + gap);
+    const top =
+      (acrossFirst ? Math.floor(i / columns) : i % perColumn) * (rowHeight + gap) * squeeze;
+    // A squeezed row is laid out at its designed size and drawn scaled, so its
+    // cells and text keep their proportions (and the fit step measures them as
+    // designed); its width is widened by the same factor to fill its column.
     const across =
       columns > 1
-        ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${colW.toFixed(3)}%`
-        : "left:0;right:0";
-    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;${across};top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
+        ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${(colW / squeeze).toFixed(3)}%`
+        : squeeze < 1
+          ? `left:0;width:${(100 / squeeze).toFixed(3)}%`
+          : "left:0;right:0";
+    const scaled =
+      squeeze < 1 ? `;transform:scale(${squeeze.toFixed(4)});transform-origin:0 0` : "";
+    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;${across};top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw${scaled}">${cells.join("")}</div>`;
   });
-  return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
+  const marked = squeeze < 1 ? ` ${ROWS_SQUEEZE_ATTR}="${squeeze.toFixed(4)}"` : "";
+  return `<div${marked} style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
+}
+
+/** Set on a list drawn smaller to fit every row: the scale, below 1. */
+export const ROWS_SQUEEZE_ATTR = "data-rows-squeeze";
+
+/**
+ * The scale a v2 list's rows draw at so its longest column (`perColumn` rows)
+ * fits its box: 1 when they fit as designed, or for a list whose box isn't
+ * known. Lengths are in card-width percent (`cqw`), the box in card pixels.
+ */
+function rowsSqueeze(
+  ctx: FreeLayerContext,
+  perColumn: number,
+  rowHeight: number,
+  gap: number,
+  artWidth: number,
+): number {
+  const frame = ctx.framePx;
+  if (ctx.formatVersion !== 2 || !frame || !(frame.h > 0) || perColumn < 1 || rowHeight <= 0)
+    return 1;
+  const needed = ((perColumn * rowHeight + (perColumn - 1) * gap) / 100) * artWidth;
+  // Half a pixel of slack: a list exactly at capacity draws as designed.
+  return needed <= frame.h + 0.5 ? 1 : frame.h / needed;
 }
 
 /** The card's sliders as a layer's photo adjust (percent focal point); null while untouched. */
@@ -907,11 +946,10 @@ export function renderFreeLayers(
       inner = renderVector(layer as VectorLayerV2, { tokens: ctx.tokens });
     } else {
       const layerCtx = styled ? v2Ctx : drawCtx;
-      // A photo frame's and a tiled list's own size, so a focus box crops to
-      // its shape and tiles fill the box.
+      // A photo frame's and a list's own size, so a focus box crops to its
+      // shape, tiles fill the box and a long list draws every row in it.
       const photoCtx =
-        (layer.kind === "photo" && (ctx.photoFocus || ctx.layerPhotos)) ||
-        (layer.kind === "rows" && (layer as unknown as FreeLayer).rows?.layout === "tiles")
+        (layer.kind === "photo" && (ctx.photoFocus || ctx.layerPhotos)) || layer.kind === "rows"
           ? {
               ...layerCtx,
               framePx: {

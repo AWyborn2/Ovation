@@ -23,7 +23,7 @@ import { templateKindFor } from "./pages";
 import type { LayoutWarningReason } from "./warnings";
 
 /** Bump when the renderer changes how a template draws, so stored reports show their age. */
-export const TEMPLATE_FIT_VERSION = "2026-10-22.1";
+export const TEMPLATE_FIT_VERSION = "2026-11-17.1";
 
 /** Why a variant fails the fit check: a layout warning, or a fit rule. */
 export type FitIssueReason =
@@ -34,8 +34,10 @@ export type FitIssueReason =
   | "hidden-shown"
   /** A list holds no rows on this size. */
   | "rows-capacity"
-  /** A list's rows run outside its box at capacity. */
+  /** A list's rows run outside its box (a row cut off or dropped). */
   | "rows-overflow"
+  /** A list over its box's capacity (a Team List side of 13 or 14) draws too small to read. */
+  | "rows-squeezed"
   /** Something that shows data sits outside the artboard. */
   | "off-artboard"
   /** An image from somewhere a template may not load from. */

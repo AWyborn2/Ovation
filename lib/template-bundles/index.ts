@@ -269,7 +269,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "player", hash: "e9436f93a6f27e6a935522cc01eb9c43f8a4b7502f38f6439b419675997820ef", file: look0_12 },
       { kind: "premiership", hash: "502f282af18e2ea201cd1773b47b992e2b0809da882bd5951b8899fc3882c83c", file: look0_13 },
       { kind: "record", hash: "2fb26814ee503491b044e4161116a86ab78ce25265678b99f82c56685d612c2d", file: look0_14 },
-      { kind: "teamList", hash: "b10f455be96e9aca4ee3bea5e0dc512a23b68c9a3fd1539b780f99e9922ae4fb", file: look0_15 },
+      { kind: "teamList", hash: "ac778d78fe2da565906ba788996fda05b8b35e53e928fef65091ed3931cad732", file: look0_15 },
       { kind: "weekendWrap", hash: "4d625b3d9da0ea6b01784afb9152357038c1a6b3b345336b20671109d29dc53c", file: look0_16 },
     ],
   },
@@ -425,7 +425,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
     templates: [
       { kind: "matchDay", hash: "64dc4d02deda38a209b07d56f5473e8e06382084a0f182e39ffd8e3cb787b857", file: look6_0 },
       { kind: "matchSummary", hash: "e2a487ef2185bb6608a06ab157560382846f35ad8e2c218787d699a3c34833be", file: look6_1 },
-      { kind: "teamList", hash: "2ff3f6909b06b1de3d039c1968facbe12238002efbe86eff78f58c14bbab8a10", file: look6_2 },
+      { kind: "teamList", hash: "d3cd52e58372dcbf42aa9dd4387474a8b9afc9dbe967a18ccad0aaea9c781563", file: look6_2 },
     ],
   },
   {
