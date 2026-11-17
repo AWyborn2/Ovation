@@ -66,7 +66,8 @@ type SettingsCardDef = {
  */
 export default function AdminSocialSettingsHub() {
   const entitlements = useEntitlements();
-  const [open, setOpen] = useSearchParamState("card", "");
+  // Each card is a place: Back steps from a card to the grid, not out of Settings.
+  const [open, setOpen] = useSearchParamState("card", "", { push: true });
   const cards = SETTINGS_CARDS.filter((c) => !c.juniors || entitlements.juniors);
   const card = cards.find((c) => c.id === open);
 

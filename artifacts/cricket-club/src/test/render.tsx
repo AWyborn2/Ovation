@@ -35,7 +35,9 @@ export function renderWithHistory(ui: ReactNode, path = "/") {
     </QueryClientProvider>,
   );
   const url = () => loc.history!.at(-1)!;
-  return { ...utils, url };
+  /** Every location visited, oldest first (a replaced entry is overwritten). */
+  const visited = () => [...loc.history!];
+  return { ...utils, url, visited };
 }
 
 export function renderAt(ui: ReactNode, path = "/") {

@@ -54,6 +54,15 @@ describe("Settings as cards", () => {
     expect(await screen.findByRole("list", { name: "Settings" })).toBeInTheDocument();
   });
 
+  it("adds a history entry per card, so Back steps from the card to the grid", async () => {
+    installApiMock(plan(true));
+    const { url, visited } = renderWithHistory(<AdminSocialGroup />, "/admin/social/settings");
+    await screen.findByRole("list", { name: "Settings" }, { timeout: 5000 });
+    fireEvent.click(screen.getByRole("button", { name: /^Captions/ }));
+    await waitFor(() => expect(url()).toBe("/admin/social/settings?card=captions"));
+    expect(visited()).toEqual(["/admin/social/settings", "/admin/social/settings?card=captions"]);
+  });
+
   it("leaves out the Juniors card for a club without juniors", async () => {
     installApiMock(plan(true, false));
     renderWithHistory(<AdminSocialGroup />, "/admin/social/settings");
