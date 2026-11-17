@@ -1,6 +1,6 @@
 {
   "name": "Clubhouse team list",
-  "version": 2,
+  "version": 3,
   "listed": false,
   "document": {
     "formatVersion": 2,
@@ -704,9 +704,9 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 22,
-                  "w": 64,
+                  "w": 78,
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 800,
@@ -714,19 +714,6 @@
                     "align": "left",
                     "fontSize": 2.4,
                     "uppercase": true,
-                    "background": "#FFFFFF"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 86,
-                  "w": 14,
-                  "style": {
-                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                    "fontWeight": 800,
-                    "color": "var(--ck-stage,#16206B)",
-                    "align": "center",
-                    "fontSize": 2,
                     "background": "#FFFFFF"
                   }
                 }
@@ -768,9 +755,9 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 22,
-                  "w": 64,
+                  "w": 78,
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 800,
@@ -778,19 +765,6 @@
                     "align": "left",
                     "fontSize": 2.88,
                     "uppercase": true,
-                    "background": "#FFFFFF"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 86,
-                  "w": 14,
-                  "style": {
-                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                    "fontWeight": 800,
-                    "color": "var(--ck-stage,#16206B)",
-                    "align": "center",
-                    "fontSize": 2.4,
                     "background": "#FFFFFF"
                   }
                 }
@@ -832,9 +806,9 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 22,
-                  "w": 64,
+                  "w": 78,
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 800,
@@ -842,19 +816,6 @@
                     "align": "left",
                     "fontSize": 3.6,
                     "uppercase": true,
-                    "background": "#FFFFFF"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 86,
-                  "w": 14,
-                  "style": {
-                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                    "fontWeight": 800,
-                    "color": "var(--ck-stage,#16206B)",
-                    "align": "center",
-                    "fontSize": 3,
                     "background": "#FFFFFF"
                   }
                 }
@@ -896,9 +857,9 @@
                   }
                 },
                 {
-                  "field": "surname",
+                  "field": "listName",
                   "x": 22,
-                  "w": 64,
+                  "w": 78,
                   "style": {
                     "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
                     "fontWeight": 800,
@@ -906,19 +867,6 @@
                     "align": "left",
                     "fontSize": 1.64,
                     "uppercase": true,
-                    "background": "#FFFFFF"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 86,
-                  "w": 14,
-                  "style": {
-                    "fontFamily": "'Barlow Condensed','Arial Narrow',sans-serif",
-                    "fontWeight": 800,
-                    "color": "var(--ck-stage,#16206B)",
-                    "align": "center",
-                    "fontSize": 1.36,
                     "background": "#FFFFFF"
                   }
                 }

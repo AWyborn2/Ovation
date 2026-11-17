@@ -394,6 +394,8 @@ export function bindInput(
           number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
           broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
+          // The name line the template library's team lists print: "J. YOUNG (WK)".
+          listName: teamListName(p.firstInitial, p.surname, p.role),
           role: p.role ?? "",
           debut: p.debut ? "DEBUT" : "",
           // The snapshot's overseas mark: a neutral "OS", never a country.
@@ -722,6 +724,23 @@ export function broadcastPlayerName(
 ): string {
   const initial = firstInitial?.trim() ?? "";
   return /^\p{L}$/u.test(initial) ? `${initial}. ${surname}` : surname;
+}
+
+/**
+ * A team list row's name line: the initial and surname with the captain /
+ * keeper mark after it ("J. YOUNG", "M. HEAD (WK)", "P. HEAD (C)"). A
+ * withheld "Private Player" never carries a role: a captain's mark beside a
+ * private junior could still point at the child.
+ */
+export function teamListName(
+  firstInitial: string | null | undefined,
+  surname: string | null | undefined,
+  role: string | null | undefined,
+): string {
+  const name = broadcastPlayerName(firstInitial, surname ?? "");
+  const mark = (role ?? "").trim().toUpperCase();
+  if (!mark || /^private player$/i.test((surname ?? "").trim())) return name;
+  return `${name} (${mark})`;
 }
 
 /**

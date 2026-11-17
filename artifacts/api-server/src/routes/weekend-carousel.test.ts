@@ -284,7 +284,7 @@ describe("weekend carousel protected sources", () => {
     ]);
     expect(res.body.content[expected[2]]).toMatchObject({
       junior: true,
-      source: { junior: true, players: [{ surname: "PLAYER" }] },
+      source: { junior: true, players: [{ surname: "PRIVATE PLAYER" }] },
     });
     expect(JSON.stringify(res.body)).not.toMatch(/Private Junior|Unpublished Person|Other Tenant/);
     expect(res.body.warnings.join(" ")).toContain("no published team list");

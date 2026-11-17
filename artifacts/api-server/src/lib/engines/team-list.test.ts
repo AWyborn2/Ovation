@@ -141,7 +141,7 @@ describe("teamListToCardInput with season shirt numbers", () => {
       { order: 1, surname: "SMITH", firstInitial: "É" },
       { order: 2, surname: "KNIGHT", firstInitial: "A" },
       { order: 3, surname: "JONES" },
-      { order: 4, surname: "PLAYER" },
+      { order: 4, surname: "PRIVATE PLAYER" },
     ]);
   });
 });

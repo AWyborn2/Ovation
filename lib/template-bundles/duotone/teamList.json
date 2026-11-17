@@ -1,6 +1,6 @@
 {
   "name": "Duotone teamList",
-  "version": 4,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -978,7 +978,7 @@
                   }
                 },
                 {
-                  "field": "broadcastName",
+                  "field": "listName",
                   "x": 13.93,
                   "w": 86.07,
                   "y": 9.53,
@@ -989,20 +989,6 @@
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 87.34,
-                  "w": 12.66,
-                  "y": 15.7,
-                  "h": 39.88,
-                  "style": {
-                    "fontSize": 2.03,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 800,
-                    "align": "right"
                   }
                 },
                 {
@@ -1069,7 +1055,7 @@
                   }
                 },
                 {
-                  "field": "broadcastName",
+                  "field": "listName",
                   "x": 7.13,
                   "w": 92.87,
                   "y": 17.79,
@@ -1080,20 +1066,6 @@
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 92.85,
-                  "w": 7.16,
-                  "y": 20.96,
-                  "h": 61.49,
-                  "style": {
-                    "fontSize": 2.4,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 800,
-                    "align": "right"
                   }
                 },
                 {
@@ -1158,7 +1130,7 @@
                   }
                 },
                 {
-                  "field": "broadcastName",
+                  "field": "listName",
                   "x": 7.75,
                   "w": 92.25,
                   "y": 18.76,
@@ -1169,20 +1141,6 @@
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 92.25,
-                  "w": 7.75,
-                  "y": 23.16,
-                  "h": 61.24,
-                  "style": {
-                    "fontSize": 2.58,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 800,
-                    "align": "right"
                   }
                 },
                 {
@@ -1247,7 +1205,7 @@
                   }
                 },
                 {
-                  "field": "broadcastName",
+                  "field": "listName",
                   "x": 16.24,
                   "w": 83.76,
                   "y": 9.75,
@@ -1258,20 +1216,6 @@
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
-                  }
-                },
-                {
-                  "field": "role",
-                  "x": 85.23,
-                  "w": 14.77,
-                  "y": 15.12,
-                  "h": 39.57,
-                  "style": {
-                    "fontSize": 1.39,
-                    "color": "var(--gold)",
-                    "fontFamily": "'Archivo',sans-serif",
-                    "fontWeight": 800,
-                    "align": "right"
                   }
                 },
                 {
@@ -1325,7 +1269,7 @@
             "geometry": {
               "square": {
                 "x": 8.2,
-                "y": 88.47,
+                "y": 88.49,
                 "w": 13.13,
                 "h": 2.22
               }
@@ -1352,7 +1296,7 @@
             "geometry": {
               "portrait": {
                 "x": 8.45,
-                "y": 90.6,
+                "y": 91.85,
                 "w": 13.86,
                 "h": 1.85
               }
@@ -1379,7 +1323,7 @@
             "geometry": {
               "story": {
                 "x": 8.79,
-                "y": 84.5,
+                "y": 85.87,
                 "w": 14.83,
                 "h": 1.41
               }
@@ -1406,7 +1350,7 @@
             "geometry": {
               "landscape": {
                 "x": 45.29,
-                "y": 85.21,
+                "y": 85.33,
                 "w": 9.27,
                 "h": 2.7
               }
@@ -1421,27 +1365,27 @@
             "geometry": {
               "square": {
                 "x": 21.93,
-                "y": 86.8,
-                "w": 13,
-                "h": 5.6
+                "y": 84.56,
+                "w": 23.4,
+                "h": 10.08
               },
               "portrait": {
-                "x": 23,
-                "y": 89.2,
-                "w": 13.78,
-                "h": 4.75
+                "x": 23.0,
+                "y": 88.75,
+                "w": 24.8,
+                "h": 8.05
               },
               "story": {
                 "x": 24.43,
-                "y": 83.46,
-                "w": 14.82,
-                "h": 3.59
+                "y": 83.34,
+                "w": 26.68,
+                "h": 6.46
               },
               "landscape": {
                 "x": 54.65,
-                "y": 83.04,
-                "w": 8.87,
-                "h": 7.28
+                "y": 80.13,
+                "w": 15.97,
+                "h": 13.1
               }
             },
             "sig": "image:16m2gfo0dd71nj"
