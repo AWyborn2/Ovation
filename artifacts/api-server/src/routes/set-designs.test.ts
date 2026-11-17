@@ -280,6 +280,23 @@ describe("a queued carousel's set design", () => {
     expect(resaved.body.adjustments.arrangement.pageFor).toEqual({ "fx-1": "own" });
   });
 
+  it("refuses a carousel with every game deleted: only a cover and sponsors (S4)", async () => {
+    const id = await queuedCarousel();
+    const { body } = await api("get", `/social-drafts/${id}/set-design`);
+    const doc = body.document as SetDocument;
+    const res = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: { ...doc, arrangement: { order: [], removed: ["fx-1", "fx-2"] } },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain("at least one game slide");
+    // One game left is fine.
+    const ok = await api("put", `/social-drafts/${id}/set-design`).send({
+      document: { ...doc, arrangement: { order: [], removed: ["fx-2"] } },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.cardInput.weekendCarousel.slides).toHaveLength(3);
+  });
+
   it("switches to another look's set template, keeping the data", async () => {
     const id = await queuedCarousel();
     const other = setOf("matchDay", "l1");
