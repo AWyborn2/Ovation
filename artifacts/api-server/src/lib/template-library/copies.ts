@@ -25,6 +25,7 @@ import {
   isDocumentV2,
   SET_KIND_PREFIX,
   setTypeOfKind,
+  templateDisplayName,
   templateDocumentErrors,
 } from "@workspace/scorecard/kind-templates";
 import {
@@ -132,7 +133,8 @@ function present(
   const view: ClubTemplateView = {
     id: row.id,
     kind,
-    name: row.name,
+    // A name made from the kind's key before retest 4 reads with its label.
+    name: templateDisplayName(row.name, kind),
     version: row.version,
     isDefault: row.isKindDefault,
     basedOn: origin

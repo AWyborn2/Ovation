@@ -7,6 +7,7 @@ export * from "./fit-matrix";
 export * from "./fit-rules";
 export * from "./format";
 export * from "./format-guide";
+export * from "./kind-labels";
 export * from "./looks";
 export * from "./normalise";
 export * from "./pages";
