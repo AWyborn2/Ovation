@@ -48,7 +48,7 @@ import { escapeHtml } from "./html-utils";
 import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import {
-  emptySponsorFrames,
+  emptySlotFrames,
   groupDepthAllowed,
   layerShows,
   renderGroup,
@@ -552,6 +552,23 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
   // never drop). Other lists split onto slides by their capacity instead.
   const squeeze =
     tiles || !rowsShrinkToFit(spec) ? 1 : rowsSqueeze(ctx, perColumn, rowHeight, gap, art);
+  // The logo fields a row draws as an image (a crest, a sponsor logo), and
+  // whether a row has one to draw: by the same rules the image cells below
+  // follow. (A player photo's backdrop stays: it is the no-photo panel.)
+  const imageFields = new Set(
+    spec.cells
+      .filter((c) => (c.show === "image" || c.show === "logo") && LOGO_ROW_FIELDS.includes(c.field))
+      .map((c) => c.field),
+  );
+  const photosWithheld = ctx.junior === true && !ctx.juniorPhotoAllowed;
+  const rowImageDrawn = (row: Record<string, string>, field: string) =>
+    !!(row[field] ?? "").trim() &&
+    spec.cells.some(
+      (c) =>
+        c.field === field &&
+        ((c.show === "logo" && LOGO_ROW_FIELDS.includes(field)) ||
+          (c.show === "image" && !photosWithheld)),
+    );
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
@@ -586,6 +603,16 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext, size: CardSize): st
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" /></div>`;
       }
       if (cell.show === "backdrop") {
+        // An empty slot draws nothing (dev retest 5): a backdrop behind a
+        // row's crest, logo or photo goes with it when the row has none to
+        // draw (a junior opposition with no crest), unless a stand-in drawn
+        // in its place (a monogram) sits on it.
+        if (imageFields.has(cell.field) && !rowImageDrawn(row, cell.field)) {
+          const standIn = spec.cells.some(
+            (c) => c.fallbackFor === cell.field && (row[c.field] ?? "").trim(),
+          );
+          if (!standIn) return "";
+        }
         const bg = logoPlate(spec, cell.field, cssValue(style.background));
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
       }
@@ -930,12 +957,19 @@ export function renderFreeLayers(
   /**
    * The layers of one sibling list that are drawn on their own merits: drawn
    * by v2's styles (a v2 document, or a library element's group in a v1
-   * draft), the tile frames of a sponsor strip's empty slots go with their
-   * slots (dev retest 4). A plain v1 document draws as it always has.
+   * draft), the frames and plates of empty logo, crest and sponsor slots go
+   * with their slots (an empty slot draws nothing, dev retests 4 and 5). A
+   * plain v1 document draws as it always has.
    */
+  const dropCtx = { kind, page, has, hasLayerPhoto };
+  const shown = (layer: TemplateLayerV2) =>
+    !!boxOn(layer) && layerShows(layer, layout) && !layerDropped(layer, dropCtx);
+  // A slot is filled when it is drawn with its image.
+  const slotFilled = (token: string, slot: TemplateLayerV2) =>
+    has(token) && layerShows(slot, layout);
   const ownLayers = (siblings: readonly TemplateLayerV2[], styled = v2): TemplateLayerV2[] => {
     if (!styled) return [...siblings];
-    const frames = emptySponsorFrames(siblings, boxOn, has, layerTokens);
+    const frames = emptySlotFrames(siblings, boxOn, slotFilled, layerTokens, { drawn: shown });
     return frames.size ? siblings.filter((layer) => !frames.has(layer)) : [...siblings];
   };
 

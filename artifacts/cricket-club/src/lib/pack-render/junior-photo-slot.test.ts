@@ -113,6 +113,24 @@ describe("Junior cards: no bare photo slot", () => {
     expect(bundles.flatMap((b) => bareSlots(b.name, b.kind, b.doc))).toEqual([]);
   });
 
+  it("a Team List shows the no-photo design where the senior card's photo goes, not a gap", () => {
+    // Retest 5 (Ash): Bold Type's junior Team List closed up its photo slot
+    // (its frame goes with the photo) and drew nothing where the senior card
+    // shows the photo; every Team List draws its look's crest panel there.
+    const missing: string[] = [];
+    for (const b of bundles.filter((x) => x.kind === "teamList"))
+      for (const size of SIZE_KEYS) {
+        const layers = flattenLayers(b.doc.pages.team?.layers ?? []);
+        const slot = layers.some((l) => l.kind === "photo" && on(l, size));
+        const designed = layers.some(
+          (l) =>
+            on(l, size) && (l.showWhen?.photo === false || crestWatermark(l)) && l.kind !== "text",
+        );
+        if (slot && !designed) missing.push(`${b.name} ${size}`);
+      }
+    expect(missing).toEqual([]);
+  });
+
   it("would catch Broadcast Dark's Team List as it was (no no-photo design)", () => {
     const team = bundles.find((b) => b.name === "broadcast-dark/teamList")!;
     const was = structuredClone(team.doc);

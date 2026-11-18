@@ -89,17 +89,129 @@ function encloses(outer: LayerBox, inner: LayerBox, tol = 1.5): boolean {
   return ox - tol <= ix && oy - tol <= iy && ox + ow + tol >= ix + iw && oy + oh + tol >= iy + ih;
 }
 
+/** An image layer bound to one image: its content is just `{{token}}`. */
+const IMAGE_SLOT = /^\{\{\s*([\w.]+)\s*\}\}$/;
+/** A logo or crest token: `sponsor2`, `weekendSponsor0`, `clubLogo`, `opposition.logo`, `day3.crest`. */
+const LOGO_TOKEN = /^(?:(?:weekend)?[Ss]ponsor\d+|[\w.]*(?:[Ll]ogo|[Cc]rest))$/;
+
 /**
- * The tile frames of a sponsor strip's empty slots (dev retest 4, set 968):
- * a strip lays out a box (a panel, a border, a backing tile) behind each
- * `{{sponsorN}}` logo, conditioned only on the card having sponsors. With one
- * sponsor, the other slots' logos drop, but their boxes drew as empty tiles.
+ * The logo a layer is a slot for, if it is one: an image layer whose content
+ * is one logo or crest `{{token}}` (a sponsor logo, a club or opposition
+ * crest, a player sponsor's logo). A photo or artwork isn't one (the card's
+ * photo, the ground photo, a sponsor's artwork): with none, a card draws the
+ * look's no-photo design in its frame (a panel, a faint crest), not nothing.
+ */
+export function imageSlotToken(layer: TemplateLayerV2): string | null {
+  if (layer.kind !== "image") return null;
+  const token = IMAGE_SLOT.exec(String(layer.content ?? "").trim())?.[1];
+  return token && LOGO_TOKEN.test(token) ? token : null;
+}
+
+/** The area two boxes share, in square percent of the artboard. */
+export function overlapArea(a: LayerBox, b: LayerBox): number {
+  const w = Math.min(num(a.x) + num(a.w), num(b.x) + num(b.w)) - Math.max(num(a.x), num(b.x));
+  const h = Math.min(num(a.y) + num(a.h), num(b.y) + num(b.h)) - Math.max(num(a.y), num(b.y));
+  return w > 0 && h > 0 ? w * h : 0;
+}
+
+const areaOf = (b: LayerBox) => Math.max(0, num(b.w)) * Math.max(0, num(b.h));
+
+/** A layer designed for an empty slot (a no-photo panel, a stand-in): never a frame to drop. */
+const designedFallback = (layer: TemplateLayerV2) =>
+  layer.showWhen?.photo === false || typeof layer.showWhen?.noField === "string";
+
+/** Below this opacity a frame is a faint tint, not a box. */
+const FAINT = 0.15;
+
+/** Layers that put something in a box: type, an image, a photo, a list, a group. */
+const CONTENT_KINDS = new Set(["text", "image", "photo", "rows", "group"]);
+
+export interface EmptySlotOptions {
+  /** Which layers are slots, and for what: every image slot by default (`imageSlotToken`). */
+  slotToken?: (layer: TemplateLayerV2) => string | null;
+  /**
+   * Whether a sibling is drawn on this card. Default: it binds no token, or
+   * the card has one it binds. A frame something drawn sits in keeps it.
+   */
+  drawn?: (layer: TemplateLayerV2) => boolean;
+}
+
+/**
+ * The frames and plates of empty image slots (dev retests 4 and 5): an empty
+ * slot draws nothing. A design lays out a box (a panel, a border, a backing
+ * plate) round or under a logo or crest, conditioned at most on the card
+ * having sponsors. When the slot's image is missing (one sponsor of three, a
+ * junior opposition with no crest), the image dropped but its box drew as an
+ * empty dark square.
  *
  * A frame here is a layer among `siblings` that binds no token (a shape, a
- * vector, a plain text panel), whose box on this size encloses exactly one
- * sponsor slot's logo and no other, and is no more than four times its area.
- * It goes with its slot: when the slot has no logo, the frame isn't drawn.
- * A strip-wide band behind every slot encloses more than one, so it stays.
+ * vector, a plain text panel) and holds exactly one slot on this size: its
+ * box encloses the slot's and is no more than four times its area, or most of
+ * it (60%) lies on the slot (a plate under a logo drawn larger than it). When
+ * that slot is empty the frame isn't drawn, unless something drawn sits in it
+ * (a stand-in monogram, a no-photo crest panel, a label): it then frames that.
+ * A strip-wide band behind every slot holds more than one, so it stays; a
+ * layer designed for the empty slot (`showWhen` photo false, or `noField`) is
+ * never a frame.
+ */
+export function emptySlotFrames(
+  siblings: readonly TemplateLayerV2[],
+  boxOf: (layer: TemplateLayerV2) => LayerBox | null,
+  has: (token: string, slot: TemplateLayerV2) => boolean,
+  tokensOf: (layer: TemplateLayerV2) => readonly string[],
+  opts: EmptySlotOptions = {},
+): Set<TemplateLayerV2> {
+  const slotToken = opts.slotToken ?? imageSlotToken;
+  const drawn =
+    opts.drawn ??
+    ((layer: TemplateLayerV2) => {
+      const tokens = tokensOf(layer);
+      return tokens.length === 0 || tokens.some((t) => has(t, layer));
+    });
+  const slots = siblings
+    .map((layer) => ({ layer, token: slotToken(layer), box: boxOf(layer) }))
+    .filter(
+      (s): s is { layer: TemplateLayerV2; token: string; box: LayerBox } =>
+        !!s.token && !!s.box && areaOf(s.box) > 0,
+    );
+  const frames = new Set<TemplateLayerV2>();
+  if (!slots.some((s) => !has(s.token, s.layer))) return frames;
+  const slotLayers = new Set(slots.map((s) => s.layer));
+  for (const layer of siblings) {
+    if (layer.kind !== "text" && CONTENT_KINDS.has(layer.kind)) continue;
+    if (tokensOf(layer).length > 0 || designedFallback(layer)) continue;
+    // A near-invisible tint (a 6% plate) reads as no box: it stays, and holds its stack place.
+    if (num(layer.style?.opacity, 1) < FAINT) continue;
+    const box = boxOf(layer);
+    if (!box) continue;
+    const area = areaOf(box);
+    if (area <= 0) continue;
+    // Round the slot (no more than four times its area) or under it (most of
+    // the frame on it, the slot no more than four times the frame's area: a
+    // tile on a full-card photo isn't that photo's frame).
+    const held = slots.filter(
+      (s) =>
+        (encloses(box, s.box) && area <= 4 * areaOf(s.box)) ||
+        (overlapArea(box, s.box) >= 0.6 * area && areaOf(s.box) <= 4 * area),
+    );
+    if (held.length !== 1) continue;
+    const slot = held[0]!;
+    if (has(slot.token, slot.layer)) continue;
+    const filled = siblings.some((other) => {
+      if (other === layer || slotLayers.has(other)) return false;
+      if (!CONTENT_KINDS.has(other.kind) && !designedFallback(other)) return false;
+      const b = boxOf(other);
+      if (!b || areaOf(b) <= 0 || overlapArea(box, b) < 0.5 * areaOf(b)) return false;
+      return drawn(other);
+    });
+    if (!filled) frames.add(layer);
+  }
+  return frames;
+}
+
+/**
+ * The tile frames of a sponsor strip's empty slots (dev retest 4, set 968):
+ * `emptySlotFrames` with the `{{sponsorN}}` logos for its slots.
  */
 export function emptySponsorFrames(
   siblings: readonly TemplateLayerV2[],
@@ -107,27 +219,9 @@ export function emptySponsorFrames(
   has: (token: string) => boolean,
   tokensOf: (layer: TemplateLayerV2) => readonly string[],
 ): Set<TemplateLayerV2> {
-  const slots = siblings
-    .map((layer) => ({ layer, token: sponsorSlotToken(layer), box: boxOf(layer) }))
-    .filter(
-      (s): s is { layer: TemplateLayerV2; token: string; box: LayerBox } => !!s.token && !!s.box,
-    );
-  const frames = new Set<TemplateLayerV2>();
-  if (!slots.some((s) => !has(s.token))) return frames;
-  for (const layer of siblings) {
-    if (layer.kind === "group" || layer.kind === "image" || layer.kind === "photo") continue;
-    if (layer.kind === "rows" || tokensOf(layer).length > 0) continue;
-    const box = boxOf(layer);
-    if (!box) continue;
-    const inside = slots.filter((s) => encloses(box, s.box));
-    if (inside.length !== 1) continue;
-    const slot = inside[0]!;
-    if (has(slot.token)) continue;
-    const area = num(box.w) * num(box.h);
-    const slotArea = num(slot.box.w) * num(slot.box.h);
-    if (slotArea > 0 && area <= 4 * slotArea) frames.add(layer);
-  }
-  return frames;
+  return emptySlotFrames(siblings, boxOf, (t) => has(t), tokensOf, {
+    slotToken: sponsorSlotToken,
+  });
 }
 
 const num = (v: unknown, fallback = 0): number => {
