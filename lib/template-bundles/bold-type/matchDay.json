@@ -1,6 +1,6 @@
 {
   "name": "Bold Type matchDay",
-  "version": 8,
+  "version": 9,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -7253,7 +7253,7 @@
                 "x": 22.28,
                 "y": 32.07,
                 "w": 55.45,
-                "h": 28.55
+                "h": 18.9
               },
               "portrait": {
                 "x": 13.04,
@@ -7271,7 +7271,7 @@
                 "x": 36.69,
                 "y": 38.68,
                 "w": 26.62,
-                "h": 17.17
+                "h": 12.2
               }
             },
             "rows": {

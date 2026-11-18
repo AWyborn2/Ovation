@@ -1,6 +1,6 @@
 {
   "name": "Club Kit teamOfWeek",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1059,7 +1059,7 @@
             "kind": "rows",
             "rows": {
               "repeat": "players",
-              "rowHeight": 26.1,
+              "rowHeight": 22.7,
               "gap": 0.8,
               "cells": [
                 {
@@ -1162,7 +1162,7 @@
                 "x": 6,
                 "y": 19.69,
                 "w": 45.76,
-                "h": 79.91
+                "h": 69.75
               }
             },
             "sig": "rows:0v6kby00yismij",
