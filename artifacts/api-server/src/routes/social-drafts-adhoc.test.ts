@@ -156,6 +156,57 @@ describe("POST /social-drafts (ad-hoc)", () => {
     expect(edited.body.cardInput).toEqual(body.cardInput);
   });
 
+  it("marks a set made from junior data as junior, and a senior set as senior (retest 3, #7)", async () => {
+    const set = (junior: boolean) => ({
+      packId: "club-kit-v1",
+      caption: "MATCH DAY",
+      cardInput: {
+        kind: "matchDay",
+        weekendCarousel: {
+          version: 1,
+          packId: "club-kit-v1",
+          submissionId: randomUUID(),
+          size: "square",
+          slides: ["title", "fixture-1", "fixture-2", "sponsors"].map((id) => {
+            const page = id === "title" || id === "sponsors";
+            const isJunior = junior && !page;
+            return {
+              id,
+              label: id,
+              junior: isJunior,
+              sponsorsOn: false,
+              warnings: [],
+              input: {
+                kind: "matchDay",
+                ...(isJunior ? { junior: true } : {}),
+                ...(page
+                  ? { carouselPage: { page: id, sponsors: [] } }
+                  : { grade: "Year 9", oppositionName: "Visitors" }),
+              },
+              data: {},
+            };
+          }),
+        },
+      },
+    });
+    const junior = await as(0).post("/social-drafts", set(true));
+    expect(junior.status).toBe(201);
+    expect(junior.body.sourceMatchIsJunior).toBe(true);
+    const senior = await as(0).post("/social-drafts", set(false));
+    expect(senior.status).toBe(201);
+    expect(senior.body.sourceMatchIsJunior).toBe(false);
+  });
+
+  it("marks a blank set started from Juniors as junior (retest 3, #7)", async () => {
+    const created = await as(0).post("/social-drafts", {
+      cardInput: { kind: "announcement", junior: true },
+      packId: "blank",
+      adjustments: { formatVersion: 2, pages: { card: { layers: [] } } },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.sourceMatchIsJunior).toBe(true);
+  });
+
   it("keeps a blank design's pages and page colour on create", async () => {
     const adjustments = {
       formatVersion: 2,
