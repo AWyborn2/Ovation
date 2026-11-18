@@ -33,7 +33,13 @@ import {
 import app from "../../app";
 import { encodeSession, SESSION_COOKIE } from "../auth";
 import { objectUrl } from "../photo-store";
-import { juniorSafeCarousel, stripUnapprovedJuniorSetPhotos } from "../junior-stock-photos";
+import {
+  isJuniorDesignDraft,
+  juniorSafeCarousel,
+  juniorSafeDesign,
+  stripUnapprovedJuniorSetPhotos,
+  withoutPhotos,
+} from "../junior-stock-photos";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import {
   buildMatchDayPhotos,
@@ -592,5 +598,150 @@ describe("a junior set's cover and sponsors page (ADR-007, fails closed)", () =>
       data: {},
       photoId: null,
     });
+  });
+});
+
+describe("photos inside a junior card's or set's design (fails closed)", () => {
+  const url = (row: ClubPhotoRow) => objectUrl(row.objectPath);
+  const upload = "/api/storage/objects/uploads/club-logo";
+  const image = (id: string, content: string) => ({ id, kind: "image", content });
+  const design = (...layers: unknown[]) => ({
+    formatVersion: 2,
+    pages: { title: { layers: [{ id: "p", kind: "photo" }, ...layers] } },
+  });
+  const junior = { sourceMatchIsJunior: true, cardInput: { kind: "matchDay", junior: true } };
+  const ids = (d: unknown) =>
+    (d as { pages: { title: { layers: Array<{ id: string }> } } }).pages.title.layers.map(
+      (l) => l.id,
+    );
+
+  it("withoutPhotos drops an image layer or field naming a bad photo, nothing else", () => {
+    const { value, removed } = withoutPhotos(
+      { layers: [image("a", "bad"), image("b", "ok")], images: { photo: "bad", logo: "ok" } },
+      (u) => u === "bad",
+    );
+    expect(removed).toBe(2);
+    expect(value).toEqual({ layers: [image("b", "ok")], images: { logo: "ok" } });
+  });
+
+  it("removes a club library photo from a junior card, keeping junior stock and uploads", async () => {
+    const safe = await juniorSafeDesign(
+      club,
+      junior,
+      design(image("lib", url(ph.c1)), image("stock", url(ph.s1)), image("logo", upload)),
+    );
+    expect(safe.removed).toBe(1);
+    expect(ids(safe.design)).toEqual(["p", "stock", "logo"]);
+  });
+
+  it("removes a graded, tagged or another club's photo, and a thumbnail, from a junior set", async () => {
+    const opts = {
+      heading: "Juniors this week",
+      from: "2026-10-09",
+      to: "2026-10-11",
+      roundLabels: ["1"],
+      fixtureCount: 1,
+    };
+    const visibleFields = [...presetFields("matchDay", "standard")];
+    const slide = (id: string, content: unknown, junior: boolean) => ({
+      id,
+      label: id,
+      content,
+      visibleFields,
+      photoId: null,
+      data: {},
+      junior,
+      sponsorsOn: false,
+      warnings: [],
+    });
+    const fixture = matchDayFixtureContent(
+      {
+        id: 2,
+        grade: "Year 4 Gold",
+        roundLabel: "1",
+        opponentName: "Visitors",
+        opponentLogoUrl: null,
+        venue: "Oval",
+        startAt: new Date("2026-10-10T02:00:00Z"),
+        isHome: true,
+      },
+      { junior: true },
+    );
+    const carousel = {
+      kind: "matchDay",
+      weekendCarousel: {
+        version: 2,
+        packId: "club-kit-v1",
+        setType: "matchDay",
+        submissionId: randomUUID(),
+        size: "square",
+        slides: [
+          slide("title", matchDayTitleContent(opts), false),
+          slide("fixture-u9", fixture, true),
+          slide("sponsors", matchDaySponsorsContent({ ...opts, sponsors: [] }), false),
+        ],
+      },
+    };
+    const set = { sourceMatchIsJunior: false, cardInput: carousel };
+    expect(isJuniorDesignDraft(set)).toBe(true);
+    const safe = await juniorSafeDesign(
+      club,
+      set,
+      design(
+        image("graded", url(ph.u13)),
+        image("other", url(ph.oCover)),
+        image("thumb", objectUrl(ph.c2.thumbPath)),
+        image("stock", url(ph.s2)),
+      ),
+    );
+    expect(ids(safe.design)).toEqual(["p", "stock"]);
+    // Another club's approved stock isn't this club's.
+    const elsewhere = await juniorSafeDesign(other, set, design(image("stock", url(ph.s1))));
+    expect(ids(elsewhere.design)).toEqual(["p"]);
+  });
+
+  it("keeps a junior player's photo only when it is the card's own cleared photo", async () => {
+    const child = design(image("child", objectUrl("/objects/j1")));
+    expect(ids((await juniorSafeDesign(club, junior, child)).design)).toEqual(["p"]);
+    const cleared = {
+      sourceMatchIsJunior: true,
+      cardInput: { kind: "teamList", junior: true, juniorPhotoAllowed: true },
+      photoUrl: objectUrl("/objects/j1"),
+    };
+    expect(ids((await juniorSafeDesign(club, cleared, child)).design)).toEqual(["p", "child"]);
+  });
+
+  it("leaves a senior design alone", async () => {
+    const senior = { sourceMatchIsJunior: false, cardInput: { kind: "matchDay" } };
+    const d = design(image("lib", url(ph.c1)));
+    expect(await juniorSafeDesign(club, senior, d)).toEqual({ design: d, removed: 0 });
+  });
+
+  it("is applied when a junior draft's design is saved, and refuses a library card photo", async () => {
+    const [row] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId: club,
+        engine: "adhoc",
+        status: "awaiting_review",
+        cardInput: { kind: "matchDay", junior: true },
+        sourceMatchIsJunior: true,
+      })
+      .returning();
+    const patch = (body: object) =>
+      request(app)
+        .patch(`/api/social-drafts/${row!.id}`)
+        .set("x-tenant-id", String(club))
+        .set("Cookie", cookie)
+        .send(body);
+    const photo = await patch({ photoUrl: url(ph.c1) });
+    expect(photo.status).toBe(400);
+    const saved = await patch({
+      adjustments: design(image("lib", url(ph.c1)), image("stock", url(ph.s1))),
+    });
+    expect(saved.status).toBe(200);
+    expect(ids(saved.body.adjustments)).toEqual(["p", "stock"]);
+    // Clearing the photo is always allowed.
+    expect((await patch({ photoUrl: null })).status).toBe(200);
   });
 });

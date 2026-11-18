@@ -25,6 +25,7 @@ import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 import { newId } from "./document";
 import { chartFromInput, liveField, playerBlock } from "./content";
+import { isJuniorRule, juniorStockOnly, type PhotoRule } from "./junior-photos";
 
 const section =
   "mb-2 mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--ed-ink2)]";
@@ -45,20 +46,28 @@ const box = (size: CardSize, x: number, y: number, w: number, h: number, now = D
   editedAt: { [size]: now },
 });
 
-/** Club photo library (senior-only): season, grade and player chips; add or set as the photo. */
+/**
+ * Club photo library: season, grade and player chips; add or set as the photo.
+ * On a junior card or set (`rule`) it offers only the club's approved junior
+ * stock images, to add; a junior card's own photo is the server's to pick.
+ */
 export function PhotosPanel({
   size,
   onAdd,
   onSetPhoto,
+  rule = "senior",
 }: {
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
   onSetPhoto: (url: string) => void;
+  rule?: PhotoRule;
 }) {
   const photosQ = useListClubPhotos(undefined, {
     query: { queryKey: getListClubPhotosQueryKey() },
   });
-  const photos = photosQ.data ?? [];
+  const junior = isJuniorRule(rule);
+  const all = photosQ.data ?? [];
+  const photos = junior ? juniorStockOnly(all) : all;
   // Background removal is offered only when the API has a provider key; the
   // probe 404s otherwise and the action stays hidden.
   const removalQ = useGetBackgroundRemovalStatus({
@@ -77,6 +86,11 @@ export function PhotosPanel({
 
   return (
     <div>
+      {junior && (
+        <p className="mt-3 text-xs text-[var(--ed-ink2)]">
+          Junior cards and sets: only the club&apos;s approved junior stock images.
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap gap-1.5">
         <button type="button" className={chip(season == null)} onClick={() => setSeason(null)}>
           All seasons
@@ -105,7 +119,9 @@ export function PhotosPanel({
         <p className="mt-4 text-sm text-[var(--ed-ink2)]">Loading the photo library…</p>
       ) : shown.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--ed-ink2)]">
-          No photos here yet. Add some in Uploads.
+          {junior
+            ? "No approved junior stock images yet. Mark some as junior stock in Photos."
+            : "No photos here yet. Add some in Uploads."}
         </p>
       ) : (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -115,7 +131,7 @@ export function PhotosPanel({
               photo={p}
               size={size}
               onAdd={onAdd}
-              onSetPhoto={onSetPhoto}
+              onSetPhoto={junior ? undefined : onSetPhoto}
               canRemoveBackground={canRemoveBackground}
             />
           ))}
@@ -135,7 +151,8 @@ function LibraryTile({
   photo: ClubPhoto;
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
-  onSetPhoto: (url: string) => void;
+  /** Absent on a junior page: its photo is the server's to pick. */
+  onSetPhoto?: (url: string) => void;
   canRemoveBackground: boolean;
 }) {
   const qc = useQueryClient();
@@ -179,14 +196,16 @@ function LibraryTile({
         </button>
       )}
       <div className="flex gap-1 p-1.5">
-        <button
-          type="button"
-          className="flex-1 rounded-md bg-[var(--ed-accent)] px-1 py-1 text-[11px] font-bold text-[var(--ed-on-accent)]"
-          onClick={() => onSetPhoto(photo.url)}
-          aria-label={`Set library photo ${photo.id} as the card photo`}
-        >
-          Set as photo
-        </button>
+        {onSetPhoto && (
+          <button
+            type="button"
+            className="flex-1 rounded-md bg-[var(--ed-accent)] px-1 py-1 text-[11px] font-bold text-[var(--ed-on-accent)]"
+            onClick={() => onSetPhoto(photo.url)}
+            aria-label={`Set library photo ${photo.id} as the card photo`}
+          >
+            Set as photo
+          </button>
+        )}
         <button
           type="button"
           className="rounded-md border border-[var(--ed-line)] px-2 py-1 text-[11px] font-semibold"

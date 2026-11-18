@@ -1,7 +1,14 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
-import { db, clubPhotosTable } from "@workspace/db";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { db, clubPhotosTable, juniorPhotosTable } from "@workspace/db";
 import { carouselSlideSlot, isRepeatSlot } from "@workspace/scorecard/kind-templates";
 import { readQueuedCarousel, type QueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import {
+  isJuniorDesign,
+  juniorSafeDesignWith,
+  photoKey,
+  photoStrings,
+  withoutPhotos,
+} from "@workspace/scorecard/junior-design-photos";
 import { presentPhotos } from "./club-photo-library";
 
 /** Client permission markers alone never authorise a junior image. */
@@ -102,4 +109,51 @@ export async function juniorSafeCarousel(
   return (await stripUnapprovedJuniorSetPhotos(tenantId, copy, carousel))
     ? (readQueuedCarousel(copy) ?? carousel)
     : carousel;
+}
+
+// ── Photos inside a junior design (studio retest, 17 Nov 2026) ──────────────
+
+export { isJuniorDesign as isJuniorDesignDraft, withoutPhotos };
+
+/**
+ * A junior design as it may be saved or posted (fails closed): the shared
+ * rule (`@workspace/scorecard/junior-design-photos`), with the photo tables
+ * telling which of the design's images are library photos (any club's, by
+ * full or thumbnail path) and which are this club's approved junior stock.
+ * A senior design is returned as it is.
+ */
+export async function juniorSafeDesign(
+  tenantId: number,
+  draft: { sourceMatchIsJunior: boolean; cardInput: unknown; photoUrl?: string | null },
+  design: unknown,
+): Promise<{ design: unknown; removed: number }> {
+  if (design == null || !isJuniorDesign(draft)) return { design, removed: 0 };
+  const found = photoStrings(design);
+  if (!found.size) return { design, removed: 0 };
+  const keys = [...new Set([...found].map(photoKey))];
+  const rows = await db
+    .select()
+    .from(clubPhotosTable)
+    .where(or(inArray(clubPhotosTable.objectPath, keys), inArray(clubPhotosTable.thumbPath, keys)));
+  const juniorRows = await db
+    .select({ objectPath: juniorPhotosTable.objectPath, thumbPath: juniorPhotosTable.thumbPath })
+    .from(juniorPhotosTable)
+    .where(
+      or(inArray(juniorPhotosTable.objectPath, keys), inArray(juniorPhotosTable.thumbPath, keys)),
+    );
+  const stock = await presentPhotos(
+    tenantId,
+    rows.filter((r) => r.tenantId === tenantId && r.juniorStock && r.grade === null),
+  );
+  return juniorSafeDesignWith(draft, design, {
+    approved: new Set(
+      stock
+        .filter((p) => !p.playerIds.length)
+        .flatMap((p) => [photoKey(p.url), photoKey(p.thumbUrl)]),
+    ),
+    library: new Set(rows.flatMap((r) => [r.objectPath, r.thumbPath])),
+    juniorPlayers: new Set(
+      juniorRows.flatMap((r) => [r.objectPath, r.thumbPath].filter((p): p is string => !!p)),
+    ),
+  });
 }

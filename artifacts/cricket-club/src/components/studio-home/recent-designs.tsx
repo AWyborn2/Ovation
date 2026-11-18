@@ -24,6 +24,7 @@ import {
   type SocialDraft,
 } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
@@ -78,7 +79,10 @@ export function useRecentDesigns(limit?: number) {
 const typeLabel = (d: RecentDesign) =>
   d.type === "draft" ? "Draft" : d.type === "template" ? "Template" : "Carousel set";
 
-function DraftThumb({ draft, preview }: { draft: SocialDraft; preview: LibraryPreview }) {
+function DraftThumb({ draft: saved, preview }: { draft: SocialDraft; preview: LibraryPreview }) {
+  // A junior card or set draws only the photos it may show (ADR-007).
+  const guard = useJuniorPhotoGuard();
+  const draft = useMemo(() => guard.safeDraft(saved), [guard, saved]);
   const input = draft.cardInput as ShareCardInput;
   const kind = String(input?.kind ?? "announcement");
   // A set with its own design: its first slide, on its page.

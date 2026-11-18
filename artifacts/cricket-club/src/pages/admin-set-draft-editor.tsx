@@ -58,6 +58,7 @@ const ownHeading = (draft: SocialDraft) => {
 import { readableDateRange } from "@workspace/scorecard/card-content";
 import { useKindTemplateData } from "@/lib/kind-templates/use-template-data";
 import { useDraftContent } from "@/components/studio-editor/draft-panels";
+import { useJuniorPhotoGuard } from "@/components/studio-editor/junior-photos";
 import { setDraftSlides } from "@/lib/set-draft";
 import { useNewStudio } from "@/lib/entitlements";
 import { SharePanel } from "@/components/studio-editor/export/share-panel";
@@ -93,6 +94,22 @@ export default function AdminSetDraftEditor() {
   const designQ = useGetDraftSetDesign(id, {
     query: { queryKey: getGetDraftSetDesignQueryKey(id), enabled, retry: false },
   });
+  // A junior set draws (and downloads) only the photos it may show (ADR-007);
+  // the editor opens once the club's photos say which those are.
+  const guard = useJuniorPhotoGuard();
+  const safe = useMemo(
+    () =>
+      draftQ.data && designQ.data
+        ? {
+            draft: guard.safeDraft(draftQ.data),
+            design: {
+              ...designQ.data,
+              document: guard.safeDesign(draftQ.data, designQ.data.document),
+            },
+          }
+        : null,
+    [draftQ.data, designQ.data, guard],
+  );
   const centred = (node: React.ReactNode) => (
     <div className="studio-editor grid min-h-screen place-items-center p-6 text-center">{node}</div>
   );
@@ -104,7 +121,7 @@ export default function AdminSetDraftEditor() {
       </p>,
     );
   }
-  if (draftQ.isLoading || designQ.isLoading)
+  if (draftQ.isLoading || designQ.isLoading || !guard.ready)
     return centred(<LoadingState label="Opening the set…" />);
   if (draftQ.isError || designQ.isError || !draftQ.data || !designQ.data) {
     const why = errorOf(designQ.error);
@@ -124,8 +141,8 @@ export default function AdminSetDraftEditor() {
     <SetDraftEditor
       // A switched look is a new design: the editor opens it afresh.
       key={JSON.stringify(designQ.data.templateRef) + String(designQ.dataUpdatedAt)}
-      draft={draftQ.data}
-      design={designQ.data}
+      draft={safe?.draft ?? draftQ.data}
+      design={safe?.design ?? designQ.data}
       viewport={viewport}
       onReload={async () => {
         await Promise.all([draftQ.refetch(), designQ.refetch()]);

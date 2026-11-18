@@ -59,6 +59,7 @@ import { elementSaveContext } from "@/components/studio-editor/element-save";
 import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { FieldsPanel } from "@/components/studio-editor/fields-panel";
+import { photoRuleFor } from "@/components/studio-editor/junior-photos";
 import { RowsPanel } from "@/components/studio-editor/rows-panel";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
@@ -603,6 +604,13 @@ export function TemplateEditorV2<T extends EditorTemplate>({
   );
   const [slideKey, setSlideKey] = useState<string | null>(null);
   const slide = realSlides.find((x) => x.key === slideKey) ?? realSlides[0] ?? null;
+  // What the page on show may show as its photo: a junior card or set takes
+  // only what the club has cleared (ADR-007), so the panels offer only that.
+  const photoRule = photoRuleFor({
+    slide,
+    slides: realSlides,
+    input: draftMode?.input as { junior?: unknown } | undefined,
+  });
   const cur: EditorPage =
     (slide ? pageList.find((p) => p.id === slide.page.id) : undefined) ??
     pageList.find((p) => p.id === pageId) ??
@@ -1167,6 +1175,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                 size={format}
                 values={values}
                 textSelected={single?.kind === "text"}
+                photoRule={photoRule}
                 onInsert={(key) =>
                   single &&
                   edit(
@@ -1192,6 +1201,7 @@ export function TemplateEditorV2<T extends EditorTemplate>({
                   layer={focus}
                   kind={pageKind}
                   page={page}
+                  photoRule={photoRule}
                   onPatch={(patch, done) => {
                     // A drag in the panel (the clip pad) is one change, like a canvas drag.
                     const next = updateDeep(doc, focus.id, patch);

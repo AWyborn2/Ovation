@@ -179,8 +179,10 @@ export const draftSetDocument = (adjustments: unknown): SetDocument | null =>
  */
 export function canEditSlideAlone(slide: {
   design: boolean;
-  page: Pick<SetPage, "kind" | "page">;
+  page: Pick<SetPage, "kind" | "page"> & { slot?: SetPage["slot"] };
 }): boolean {
+  // A list set's cover is drawn by its kind's own page too, but it is a cover.
+  if (slide.page.slot === "cover" || slide.page.slot === "sponsors") return false;
   return !slide.design && slide.page.page === primaryPage(slide.page.kind);
 }
 
