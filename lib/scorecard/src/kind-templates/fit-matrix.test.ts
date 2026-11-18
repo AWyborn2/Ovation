@@ -33,11 +33,32 @@ const doc = (pages: TemplateDocumentV2["pages"]): TemplateDocumentV2 => ({
 describe("fitMatrix (T2.1)", () => {
   it("a single-card kind: sizes × photo where a layer uses the photo", () => {
     const d = doc({ card: page(text("{{playerName}}"), photo()) });
-    const variants = fitMatrix(d, "milestone");
+    const variants = fitMatrix(d, "record");
     expect(variants).toHaveLength(4 * 2);
     expect(variants.every((v) => v.preset === undefined && !v.junior)).toBe(true);
     // Without a photo layer there is no photo dimension.
-    expect(fitMatrix(doc({ card: page(text("{{playerName}}")) }), "milestone")).toHaveLength(4);
+    expect(fitMatrix(doc({ card: page(text("{{playerName}}")) }), "record")).toHaveLength(4);
+  });
+
+  it("a kind a junior card can be: junior passes with no photo and with approved stock", () => {
+    const d = doc({ card: page(text("{{playerName}}"), photo()) });
+    for (const kind of ["milestone", "century", "fiveFor", "bigMoment"]) {
+      const variants = fitMatrix(d, kind);
+      expect(variants).toHaveLength(4 * 2 + 4 * 2);
+      const junior = variants.filter((v) => v.junior);
+      expect(junior.map((v) => v.photo).sort()).toEqual([
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+      ]);
+    }
+    // Without a photo layer, one junior pass per size.
+    expect(fitMatrix(doc({ card: page(text("{{playerName}}")) }), "century")).toHaveLength(4 + 4);
   });
 
   it("covers only the sizes a page has layers on, and skips hidden layers", () => {
@@ -45,7 +66,7 @@ describe("fitMatrix (T2.1)", () => {
     const hidden = text("{{headline}}", { hidden: true });
     const d = doc({ card: page(squareOnly, hidden) });
     expect(pageSizes(d, "card")).toEqual(["square"]);
-    expect(fitMatrix(d, "milestone")).toHaveLength(1);
+    expect(fitMatrix(d, "record")).toHaveLength(1);
   });
 
   it("Match Day: four pages, presets, photo and sponsors branches, and a junior pass", () => {
@@ -57,20 +78,25 @@ describe("fitMatrix (T2.1)", () => {
     });
     const variants = fitMatrix(d, "matchDay");
     const count = (p: string) => variants.filter((v) => v.page === p).length;
-    expect(count("fixture")).toBe(4 * 3 * 2 * 2 + 4);
-    expect(count("title")).toBe(4 * 3 * 2);
+    // A junior fixture, cover and sponsors page: with no photo and with approved stock.
+    expect(count("fixture")).toBe(4 * 3 * 2 * 2 + 4 * 2);
+    expect(count("title")).toBe(4 * 3 * 2 + 4 * 2);
     expect(count("day")).toBe(4 * 3);
-    expect(count("sponsors")).toBe(4 * 3 * 2);
+    expect(count("sponsors")).toBe(4 * 3 * 2 + 4);
     expect(variants.filter((v) => v.page === "day").every((v) => v.junior)).toBe(true);
     const junior = variants.filter((v) => v.page === "fixture" && v.junior);
-    expect(junior.every((v) => v.preset === "full" && v.photo === false)).toBe(true);
+    expect(junior.every((v) => v.preset === "full")).toBe(true);
+    expect(junior.filter((v) => v.photo === false)).toHaveLength(4);
+    expect(junior.filter((v) => v.photo === true)).toHaveLength(4);
   });
 
   it("Match Summary is checked as the Results set too", () => {
     const d = doc({ result: page(text("{{result}}"), photo()), day: page(text("{{dayHeading}}")) });
     const variants = fitMatrix(d, "matchSummary");
-    expect(variants.filter((v) => v.contentKind === "results")).toHaveLength(4 * 3 * 2 + 4 + 4 * 3);
-    expect(variants).toHaveLength(2 * (4 * 3 * 2 + 4 + 4 * 3));
+    expect(variants.filter((v) => v.contentKind === "results")).toHaveLength(
+      4 * 3 * 2 + 4 * 2 + 4 * 3,
+    );
+    expect(variants).toHaveLength(2 * (4 * 3 * 2 + 4 * 2 + 4 * 3));
   });
 
   it("leaves out pages the template doesn't have", () => {
@@ -96,5 +122,6 @@ describe("fitMatrix (T2.1)", () => {
     const labels = fitMatrix(d, "matchDay").map(fitVariantLabel);
     expect(new Set(labels).size).toBe(labels.length);
     expect(labels).toContain("fixture.story.full.no-photo.sponsors-max.junior");
+    expect(labels).toContain("fixture.story.full.photo.sponsors-max.junior");
   });
 });

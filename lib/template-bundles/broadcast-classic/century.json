@@ -1,6 +1,6 @@
 {
   "name": "Broadcast century",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -73,6 +73,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "photo-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "portrait": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "story": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              },
+              "landscape": {
+                "x": 38,
+                "y": 0,
+                "w": 62,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "photo-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 49.78,
+                "y": 30.78,
+                "w": 38.44,
+                "h": 38.44
+              },
+              "portrait": {
+                "x": 49.78,
+                "y": 34.62,
+                "w": 38.44,
+                "h": 30.75
+              },
+              "story": {
+                "x": 49.78,
+                "y": 39.19,
+                "w": 38.44,
+                "h": 21.62
+              },
+              "landscape": {
+                "x": 51.56,
+                "y": 19,
+                "w": 34.88,
+                "h": 62
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "id": "photo-fade-side",
@@ -962,7 +1064,7 @@
             "id": "match-1",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "{{grade}} \u00b7 vs {{opponent}} \u00b7 RD {{round}}",
+            "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 1.8,
@@ -999,7 +1101,7 @@
             "id": "match-2",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "{{grade}} \u00b7 vs {{opponent}} \u00b7 RD {{round}}",
+            "content": "{{grade}} · vs {{opponent}} · RD {{round}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 0.94,

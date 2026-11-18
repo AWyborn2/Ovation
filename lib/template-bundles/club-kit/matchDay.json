@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchDay",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -643,6 +643,94 @@
             "link": "fixture-l20"
           },
           {
+            "kind": "shape",
+            "id": "fixture-l20-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              },
+              "landscape": {
+                "x": 54,
+                "y": 0,
+                "w": 46,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [24, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "fixture-l20-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["square", "landscape"],
+            "geometry": {
+              "square": {
+                "x": 62.74,
+                "y": 35.74,
+                "w": 28.52,
+                "h": 28.52
+              },
+              "landscape": {
+                "x": 62.74,
+                "y": 24.65,
+                "w": 28.52,
+                "h": 50.7
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "clip": {
@@ -668,6 +756,82 @@
             "link": "fixture-l20"
           },
           {
+            "kind": "shape",
+            "id": "fixture-l21-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 24
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 63.33],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "fixture-l21-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 40.7,
+                "y": 4.56,
+                "w": 18.6,
+                "h": 14.88
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "clip": {
@@ -691,6 +855,82 @@
             },
             "sig": "photo:1vf10xz086a8lg",
             "link": "fixture-l20"
+          },
+          {
+            "kind": "shape",
+            "id": "fixture-l22-nophoto-panel",
+            "name": "No-photo brand panel",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 46
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [0, 0],
+                  [100, 0],
+                  [100, 86.55],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "fixture-l22-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 24.65,
+                "y": 8.74,
+                "w": 50.7,
+                "h": 28.52
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",
@@ -1677,7 +1917,10 @@
               }
             },
             "sig": "text:0exyf4z10gilbw",
-            "link": "fixture-l48"
+            "link": "fixture-l48",
+            "showWhen": {
+              "field": "ladder.club"
+            }
           },
           {
             "kind": "text",
@@ -1702,7 +1945,10 @@
               }
             },
             "sig": "text:00d6bi80emmnx5",
-            "link": "fixture-l48"
+            "link": "fixture-l48",
+            "showWhen": {
+              "field": "ladder.club"
+            }
           },
           {
             "kind": "text",
@@ -1877,7 +2123,10 @@
                       }
                     },
                     "sig": "text:17g6qfh1czoq1q",
-                    "link": "fixture-l52"
+                    "link": "fixture-l52",
+                    "showWhen": {
+                      "field": "lastMeeting"
+                    }
                   },
                   {
                     "kind": "text",
@@ -1902,7 +2151,10 @@
                       }
                     },
                     "sig": "text:0gntro209v4t1f",
-                    "link": "fixture-l52"
+                    "link": "fixture-l52",
+                    "showWhen": {
+                      "field": "lastMeeting"
+                    }
                   },
                   {
                     "kind": "shape",
@@ -1936,7 +2188,10 @@
                         "h": 1.2
                       }
                     },
-                    "sig": "shape:09ysusg0sm0keb"
+                    "sig": "shape:09ysusg0sm0keb",
+                    "showWhen": {
+                      "field": "milestoneWatch"
+                    }
                   }
                 ],
                 "sig": "group:007j6bt1f1y9bs"

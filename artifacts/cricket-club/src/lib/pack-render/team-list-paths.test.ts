@@ -141,3 +141,24 @@ describe("team list names on every drawing path", () => {
     }
   }
 });
+
+describe("junior team list headings (round 3 retest)", () => {
+  const junior = {
+    kind: "teamList",
+    junior: true,
+    grade: "Year 9 Boys South West",
+    gradeHeading: "Year 9 GOLD",
+    gradeRound: "YEAR 9 BOYS SOUTH WEST",
+    competitionLine: "Year 9 Boys South West",
+    venueDateTime: "Peelwood Reserve • SUN 15 NOV • 8:00 AM",
+    players: [{ order: 1, surname: "FOX", firstInitial: "D", shirtNumber: "3" }],
+  };
+  for (const look of LOOKS)
+    for (const size of ["square", "portrait", "story", "landscape"] as CardSize[])
+      it(`${look} ${size}: the grade and competition, never the team name or club`, () => {
+        const body = text(junior, bundle(look), size).toUpperCase();
+        expect(body).toMatch(/YEAR 9 GOLD|YEAR 9 BOYS SOUTH WEST/);
+        expect(body).not.toContain("HALLS HEAD YEAR 9");
+        expect(body).not.toContain("YEAR 9 — HALLS HEAD");
+      });
+});

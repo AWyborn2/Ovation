@@ -47,11 +47,26 @@ function teamListBundles(): Array<{ name: string; doc: TemplateDocumentV2 }> {
   return out;
 }
 
-/** A layer drawn on `size` with the photo and sponsors on. */
-function drawn(l: TemplateLayerV2, size: CardSize): Box | null {
+/**
+ * A layer drawn on `size` with the sponsors on, on a senior or a junior card,
+ * with the photo (a junior's is approved junior stock) or without it.
+ */
+type Card = { junior: boolean; photo: boolean };
+const SENIOR: Card = { junior: false, photo: true };
+/** The cards a list is drawn on: senior and junior, with and without the photo. */
+const CARDS: Card[] = [
+  SENIOR,
+  { junior: false, photo: false },
+  { junior: true, photo: true },
+  { junior: true, photo: false },
+];
+
+function drawn(l: TemplateLayerV2, size: CardSize, card: Card = SENIOR): Box | null {
   if (l.hidden || (l.sizes && !l.sizes.includes(size))) return null;
-  if (l.showWhen?.photo === false || l.showWhen?.sponsors === false) return null;
-  if (l.showWhen?.junior === true) return null;
+  if (l.showWhen?.sponsors === false) return null;
+  if (typeof l.showWhen?.photo === "boolean" && l.showWhen.photo !== card.photo) return null;
+  if (typeof l.showWhen?.junior === "boolean" && l.showWhen.junior !== card.junior) return null;
+  if (!card.photo && l.kind === "photo") return null;
   return (l.geometry as Partial<Record<CardSize, Box>>)[size] ?? null;
 }
 
@@ -98,19 +113,23 @@ const holds = (outer: Rect, inner: Rect) =>
   outer.bottom >= inner.bottom - 1;
 
 /** What a side of 14 runs into on a bundle's pages, as readable lines. */
-function overlaps(name: string, doc: TemplateDocumentV2): string[] {
+function overlaps(name: string, doc: TemplateDocumentV2, card: Card = SENIOR): string[] {
   const out: string[] = [];
+  const at =
+    card === SENIOR
+      ? ""
+      : ` (${card.junior ? "junior" : "senior"}, ${card.photo ? "photo" : "no photo"})`;
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     const layers = flattenLayers(p?.layers ?? []);
     for (const [li, list] of layers.entries()) {
       if (list.kind !== "rows" || list.rows?.repeat !== "players") continue;
       for (const size of SIZE_KEYS) {
-        const box = drawn(list, size);
+        const box = drawn(list, size, card);
         if (!box) continue;
         const rows = rowsExtent(list, box, size);
         const short = Math.min(SIZES[size].w, SIZES[size].h);
         for (const [oi, other] of layers.entries()) {
-          const ob = oi === li ? null : drawn(other, size);
+          const ob = oi === li ? null : drawn(other, size, card);
           if (!ob || (ob.w >= 90 && ob.h >= 90)) continue;
           const opacity = (other.style as { opacity?: unknown } | undefined)?.opacity;
           if (typeof opacity === "number" && opacity <= 0.3) continue;
@@ -124,7 +143,10 @@ function overlaps(name: string, doc: TemplateDocumentV2): string[] {
             layers
               .slice(oi + 1, li)
               .some(
-                (s) => paintsOver(s) && drawn(s, size) && holds(px(drawn(s, size)!, size), rows),
+                (s) =>
+                  paintsOver(s) &&
+                  drawn(s, size, card) &&
+                  holds(px(drawn(s, size, card)!, size), rows),
               )
           )
             continue;
@@ -136,7 +158,7 @@ function overlaps(name: string, doc: TemplateDocumentV2): string[] {
             bottom: rows.bottom + pad,
           };
           if (rectMeetsPolygon(grown, area(other, px(ob, size))))
-            out.push(`${name} ${page} ${size}: ${list.id} into ${other.id}`);
+            out.push(`${name} ${page} ${size}${at}: ${list.id} into ${other.id}`);
         }
       }
     }
@@ -163,6 +185,22 @@ describe("Team List rows clear of the photo", () => {
         ).listed !== false,
     );
     expect(listed.flatMap((b) => overlaps(b.name, b.doc))).toEqual([]);
+  });
+
+  it("holds a junior side to the same rule, with approved stock and with no photo", () => {
+    // A junior Team List draws the senior layout (Ash, retest 3): the same
+    // list, clear of the same photo slot, logos and data text.
+    const listed = bundles.filter(
+      (b) =>
+        (
+          JSON.parse(readFileSync(path.join(BUNDLES, `${b.name}.json`), "utf8")) as {
+            listed?: boolean;
+          }
+        ).listed !== false,
+    );
+    expect(
+      CARDS.slice(1).flatMap((card) => listed.flatMap((b) => overlaps(b.name, b.doc, card))),
+    ).toEqual([]);
   });
 
   it("would catch Bold Type's story list as it was (26 px above the photo)", () => {
@@ -242,5 +280,54 @@ describe("Team List round label and grade heading", () => {
         const [gradeTop] = lineExtent(grade, g, size);
         const { w, h } = SIZES[size];
         expect(gradeTop - roundBottom).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
+      });
+});
+
+/**
+ * Round 3 retest (junior headings): the venue · date · time line sits clear
+ * under the grade heading at every size, as drawn. On set 973 the line ran
+ * through the heading.
+ */
+function headingVenuePairs(doc: TemplateDocumentV2) {
+  const layers = flattenLayers(doc.pages.team?.layers ?? []);
+  const on = (token: string, size: CardSize) =>
+    layers.find(
+      (l) =>
+        l.kind === "text" &&
+        String(l.content ?? "").includes(token) &&
+        !l.hidden &&
+        (!l.sizes || l.sizes.includes(size)) &&
+        (l.geometry as Partial<Record<CardSize, Box>>)[size],
+    );
+  return SIZE_KEYS.flatMap((size) => {
+    const grade = on("{{gradeHeading}}", size);
+    const venue = on("{{venueDateTime}}", size);
+    return grade && venue ? [{ size, grade, venue }] : [];
+  });
+}
+
+describe("Team List grade heading and venue line", () => {
+  const box = (l: TemplateLayerV2, size: CardSize) => (l.geometry as Record<string, Box>)[size]!;
+
+  it("Broadcast Dark has both at every size", () => {
+    const doc = teamListBundles().find((b) => b.name === "broadcast-dark/teamList")!.doc;
+    expect(headingVenuePairs(doc).map((p) => p.size)).toEqual(SIZE_KEYS);
+  });
+
+  for (const { name, doc } of teamListBundles())
+    for (const { size, grade, venue } of headingVenuePairs(doc))
+      it(`${name} ${size}: the venue line sits clear of the heading`, () => {
+        const g = box(grade, size);
+        const v = box(venue, size);
+        // Only a venue line under the heading, sharing its width, is checked
+        // (some looks set it above or beside the heading).
+        if (v.y < g.y || v.x >= g.x + g.w || g.x >= v.x + v.w) return;
+        const [, headingBottom] = lineExtent(grade, g, size);
+        const [venueTop] = lineExtent(venue, v, size);
+        const { w, h } = SIZES[size];
+        expect(
+          venueTop - headingBottom,
+          `${venue.id} starts ${Math.round(venueTop - headingBottom)} px after ${grade.id} ends`,
+        ).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
       });
 });

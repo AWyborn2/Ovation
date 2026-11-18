@@ -1,6 +1,6 @@
 {
   "name": "Sunset century",
-  "version": 4,
+  "version": 5,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -105,6 +105,108 @@
               }
             },
             "sig": "photo:1a367n51xv5k6w"
+          },
+          {
+            "kind": "shape",
+            "id": "card-l3-nophoto-panel",
+            "name": "No-photo brand panel",
+            "geometry": {
+              "square": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "portrait": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "story": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              },
+              "landscape": {
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "card-l3-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "geometry": {
+              "square": {
+                "x": 41.1,
+                "y": -36.1,
+                "w": 95,
+                "h": 95
+              },
+              "portrait": {
+                "x": 41.1,
+                "y": -28.88,
+                "w": 95,
+                "h": 76
+              },
+              "story": {
+                "x": 41.1,
+                "y": -20.31,
+                "w": 95,
+                "h": 53.44
+              },
+              "landscape": {
+                "x": 66.87,
+                "y": -36.1,
+                "w": 53.44,
+                "h": 95
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.05
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "shape",
@@ -1173,7 +1275,10 @@
                 "h": 3.27
               }
             },
-            "sig": "shape:0ekz2r20fil929"
+            "sig": "shape:0ekz2r20fil929",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1202,7 +1307,10 @@
                 "h": 2.17
               }
             },
-            "sig": "shape:0drl08w1oowllj"
+            "sig": "shape:0drl08w1oowllj",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1225,7 +1333,10 @@
                 "h": 5.6
               }
             },
-            "sig": "shape:1egyj0q1pvehu7"
+            "sig": "shape:1egyj0q1pvehu7",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "text",

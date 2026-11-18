@@ -7,6 +7,8 @@ import {
   type JuniorFixtureRow,
 } from "@workspace/db";
 import { clubTimeToUtc } from "./round-schedules";
+import { clubNameVariants, loadJuniorHeadings } from "./junior-headings";
+import { getTenantBrand } from "./tenant-brand";
 import { isJuniorSyncOn } from "./junior-sync";
 import { resolveUnlinkedJuniorOpponent } from "./junior-helpers";
 import { overlayNativeOpponents } from "./club-brand";
@@ -90,6 +92,12 @@ export async function juniorCarouselContent(
           )
       : [];
 
+  // Match Day slides print the junior grade like Team Lists do: "YEAR 9" (or
+  // "YEAR 9 GOLD" with two teams that round), never the club's name.
+  const brand = await getTenantBrand(tenantId);
+  const headings = await loadJuniorHeadings(tenantId, eligible, {
+    clubNames: clubNameVariants(brand.name, brand.shortName),
+  });
   const sides: Array<JuniorTeamListSide & { id: number }> = [];
   for (const row of eligible) {
     const teamGrade = juniorTeamGrade(row);
@@ -129,7 +137,10 @@ export async function juniorCarouselContent(
       awayTeamName: null,
     };
     if (type === "matchDay")
-      junior.set(fixture.id, { gradeLabel: teamGrade, juniorTeamName: row.teamName ?? null });
+      junior.set(fixture.id, {
+        gradeLabel: headings.get(row.id)?.heading ?? teamGrade,
+        juniorTeamName: row.teamName ?? null,
+      });
     else sides.push({ id: fixture.id, fixture: row, players: list!.players });
     fixtures.push(fixture);
   }

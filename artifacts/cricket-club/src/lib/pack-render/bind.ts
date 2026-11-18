@@ -370,7 +370,9 @@ export function bindInput(
       break;
     }
     case "teamList": {
-      values["gradeHeading"] = comp(input.grade).toUpperCase() || "TEAM LIST";
+      // A junior list names its heading apart from its grade ("YEAR 9 GOLD"); the
+      // grade stays the competition, which picks the team's own sponsor.
+      values["gradeHeading"] = comp(input.gradeHeading || input.grade).toUpperCase() || "TEAM LIST";
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);

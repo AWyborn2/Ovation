@@ -666,16 +666,21 @@ export function worstCaseCard(
           { name: `${WORST.sponsor} 2`, logoUrl: image("playerSponsor2Logo") },
         ]
       : [],
-    photoUrl: photo && !variant.junior ? image("photo") : null,
+    // A junior card's photo is only ever the club's approved junior stock,
+    // cleared by the server (`juniorPhotoAllowed`): a junior variant with a
+    // photo draws it as that.
+    photoUrl: photo && (!variant.junior || variant.photo === true) ? image("photo") : null,
   };
+  const juniorStock = variant.junior && variant.photo === true;
 
   if (!isContent)
     return {
       kind,
       page: variant.page,
       input: {
-        ...cardInput(kind, rows, image, photo),
+        ...cardInput(kind, rows, image, photo && (!variant.junior || juniorStock)),
         ...(variant.junior ? { junior: true } : {}),
+        ...(juniorStock ? { juniorPhotoAllowed: true } : {}),
       },
       data,
       visible: null,
@@ -697,6 +702,7 @@ export function worstCaseCard(
       ...input,
       // One match a slide: a fixture, result or team list is a carousel slide.
       ...(["fixture", "result", "team"].includes(variant.page) ? { carouselContent: true } : {}),
+      ...(juniorStock ? { juniorPhotoAllowed: true } : {}),
     },
     data,
     visible: [...visible],

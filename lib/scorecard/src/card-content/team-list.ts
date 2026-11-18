@@ -44,6 +44,8 @@ export interface TeamListContentOptions {
   juniorTeamName?: string | null;
   /** The label the card prints for the grade ("Under 13 — Blue"); default the fixture's grade. */
   gradeLabel?: string;
+  /** A junior side's small line, the competition ("YEAR 9 BOYS SOUTH WEST"). */
+  gradeLine?: string;
   timeZone?: string;
 }
 
@@ -67,6 +69,7 @@ export function teamListContent(
     junior: opts.junior === true || source.junior === true || isJuniorGradeLabel(gradeRaw),
     juniorTeamName: opts.juniorTeamName ?? null,
     grade: resolveCardCompetition(names, gradeRaw) || gradeRaw,
+    ...(opts.gradeLine ? { gradeLine: opts.gradeLine } : {}),
     roundLabel: normaliseRoundLabel(fixture.roundLabel),
     opposition: {
       name,
@@ -137,9 +140,12 @@ function teamListProjection(
   const { numbering: _numbering, opponentLogoUrl: _logo, ...rest } = c.source;
   return {
     ...rest,
-    gradeRound: [c.grade.toUpperCase(), round].filter(Boolean).join(" — "),
-    competitionLine: c.grade,
+    // A junior list's small line is its competition, never the heading again
+    // (round 3 retest: "YEAR 9 — HALLS HEAD YEAR 9" twice).
+    gradeRound: [(c.gradeLine ?? c.grade).toUpperCase(), round].filter(Boolean).join(" — "),
+    competitionLine: c.gradeLine ?? c.grade,
     grade: c.grade,
+    ...(c.gradeLine ? { gradeHeading: c.grade } : {}),
     roundLabel: round,
     opponent: c.opposition.name,
     ...(crest ? { opponentLogoUrl: crest } : {}),
