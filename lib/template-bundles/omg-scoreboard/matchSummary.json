@@ -1,6 +1,6 @@
 {
   "name": "Digital Scoreboard Match Summary",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -834,7 +834,7 @@
                 {
                   "field": "initialDotName",
                   "x": 0,
-                  "w": 69.38,
+                  "w": 66.38,
                   "y": 10.81,
                   "h": 86.49,
                   "style": {
@@ -856,8 +856,8 @@
                 },
                 {
                   "field": "runs",
-                  "x": 69.38,
-                  "w": 9.77,
+                  "x": 66.38,
+                  "w": 12.77,
                   "y": 0,
                   "h": 100,
                   "style": {
@@ -930,7 +930,7 @@
                 {
                   "field": "initialDotName",
                   "x": 0,
-                  "w": 69.38,
+                  "w": 66.38,
                   "y": 10.83,
                   "h": 86.49,
                   "style": {
@@ -952,8 +952,8 @@
                 },
                 {
                   "field": "runs",
-                  "x": 69.38,
-                  "w": 9.77,
+                  "x": 66.38,
+                  "w": 12.77,
                   "y": 0,
                   "h": 100,
                   "style": {

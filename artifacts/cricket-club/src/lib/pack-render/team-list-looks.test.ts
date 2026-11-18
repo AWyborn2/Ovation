@@ -20,6 +20,7 @@ import {
   pageRepeatCapacities,
   rowsColumns,
   tileGrid,
+  MAX_SPONSORS_PER_SLIDE,
   type PageKey,
   type RowsLayerV2,
   type TemplateDocumentV2,
@@ -405,7 +406,8 @@ describe("Team List shirt number and name on one line", () => {
 // ── Broadcast Dark landscape names readable (round 4 retest) ────────────────
 
 describe("Broadcast Dark landscape Team List names", () => {
-  it("draws a side of 14 at 13 px or more (was about 8 px, squeezed)", () => {
+  /** The name size a side of `players` draws at on the landscape card, in px. */
+  function namePx(players: number): { px: number; squeeze: number } {
     const doc = teamListBundles().find((b) => b.name === "broadcast-dark/teamList")!.doc;
     const { w: W, h: H } = SIZES.landscape;
     const list = flattenLayers(doc.pages.team!.layers).find(
@@ -413,15 +415,25 @@ describe("Broadcast Dark landscape Team List names", () => {
     )!;
     const box = drawn(list, "landscape")!;
     const spec = list.rows;
-    const perColumn = Math.ceil(SIDE / rowsColumns(spec));
+    const perColumn = Math.ceil(players / rowsColumns(spec));
     // The renderer's squeeze: a side over the box's capacity draws smaller.
     const needed =
       ((perColumn * Number(spec.rowHeight ?? 7) + (perColumn - 1) * Number(spec.gap ?? 0)) / 100) *
       W;
     const squeeze = Math.min(1, ((box.h / 100) * H + 0.5) / needed);
     const name = spec.cells.find((c) => c.field === "listName" && !c.show)!;
-    const px = (Number(name.style?.fontSize ?? 5) / 100) * W * squeeze;
-    expect(px).toBeGreaterThanOrEqual(13);
+    return { px: (Number(name.style?.fontSize ?? 5) / 100) * W * squeeze, squeeze };
+  }
+
+  it("draws a side of 12 at full size, names 18 px or more (round 5: about 13 px)", () => {
+    expect(namePx(12).squeeze).toBe(1);
+    expect(namePx(11).squeeze).toBe(1);
+    expect(namePx(12).px).toBeGreaterThanOrEqual(18);
+  });
+
+  it("shrinks only a longer side, a side of 14 still 16 px or more (was about 8 px)", () => {
+    expect(namePx(SIDE).squeeze).toBeLessThan(1);
+    expect(namePx(SIDE).px).toBeGreaterThanOrEqual(16);
   });
 });
 
@@ -575,6 +587,243 @@ describe("List rows clear of the photo, data and each other on every list kind",
       }
     expect(overlaps("club-kit/teamOfWeek", was, SENIOR, true)).toEqual(
       expect.arrayContaining(["club-kit/teamOfWeek card square: card-l33 into card-l42"]),
+    );
+  });
+});
+
+// ── Sponsor tiles inside their sheet (round 5 retest) ───────────────────────
+
+/** The sponsor counts a sponsors page is held to: 7, 8 and the most a slide holds. */
+const SPONSOR_COUNTS = [7, 8, MAX_SPONSORS_PER_SLIDE];
+
+/**
+ * The optional fields a sponsors page draws with or without: its layers'
+ * `showWhen.field` / `noField` (the next home game, the call to action).
+ */
+type Fields = Record<string, boolean>;
+
+/** Every on/off combination of the fields a page's layers are conditioned on. */
+function fieldStates(layers: TemplateLayerV2[]): Fields[] {
+  const keys = [
+    ...new Set(layers.flatMap((l) => [l.showWhen?.field, l.showWhen?.noField]).filter(Boolean)),
+  ] as string[];
+  return keys.reduce<Fields[]>(
+    (states, key) =>
+      states.flatMap((s) => [
+        { ...s, [key]: true },
+        { ...s, [key]: false },
+      ]),
+    [{}],
+  );
+}
+
+/** A layer drawn on `size` for `card` with these fields set or empty. */
+function drawnWith(l: TemplateLayerV2, size: CardSize, card: Card, fields: Fields): Box | null {
+  const { field, noField } = l.showWhen ?? {};
+  if (field && fields[field] === false) return null;
+  if (noField && fields[noField] === true) return null;
+  return drawn(l, size, card);
+}
+
+/** Where `count` tiles draw in a tile list's box, in card pixels. */
+function tilesExtent(l: RowsLayerV2, box: Box, size: CardSize, count: number): Rect | null {
+  const r = px(box, size);
+  const art = SIZES[size].w;
+  const tiles = tileGrid({
+    count,
+    majors: 0,
+    width: r.right - r.left,
+    height: r.bottom - r.top,
+    gap: (Number(l.rows.gap ?? 0) / 100) * art,
+    maxTileHeight: (Number(l.rows.rowHeight ?? 7) / 100) * art,
+  });
+  if (tiles.length === 0) return null;
+  return {
+    left: r.left + Math.min(...tiles.map((t) => t.x)),
+    top: r.top + Math.min(...tiles.map((t) => t.y)),
+    right: r.left + Math.max(...tiles.map((t) => t.x + t.w)),
+    bottom: r.top + Math.max(...tiles.map((t) => t.y + t.h)),
+  };
+}
+
+/**
+ * Sponsor tiles that run out of the sheet they sit on (Ash's round 5 retest:
+ * with 7 sponsors and no next home game, Duotone's and Clubhouse's bottom row
+ * of tiles hung below the sheet). A tile list's sheet is the last panel of one
+ * solid colour (not the card's background, not a gradient scrim) drawn before
+ * it under its top row; every tile, at every count in {@link SPONSOR_COUNTS},
+ * must lie inside it. A list drawn straight on the card's ground has no sheet
+ * to keep inside.
+ */
+function tilesOutsideSheet(name: string, doc: TemplateDocumentV2): string[] {
+  const out: string[] = [];
+  for (const [page, p] of Object.entries(doc.pages ?? {})) {
+    const layers = flattenLayers(p?.layers ?? []);
+    for (const fields of fieldStates(layers))
+      for (const card of CARDS)
+        for (const size of SIZE_KEYS)
+          for (const [li, list] of layers.entries()) {
+            if (list.kind !== "rows" || list.rows.layout !== "tiles") continue;
+            const box = drawnWith(list, size, card, fields);
+            if (!box) continue;
+            for (const count of SPONSOR_COUNTS) {
+              const tiles = tilesExtent(list, box, size, count);
+              if (!tiles) continue;
+              const top: Pt = [(tiles.left + tiles.right) / 2, tiles.top + 1];
+              const sheet = layers
+                .slice(0, li)
+                .map((l) => ({ l, b: drawnWith(l, size, card, fields) }))
+                .filter(
+                  ({ l, b }) =>
+                    b && solidPanel(l) && !(b.w >= 90 && b.h >= 90) && holdsPoint(px(b, size), top),
+                )
+                .pop();
+              if (!sheet) continue;
+              if (!holds(px(sheet.b!, size), tiles)) {
+                const state = Object.entries(fields)
+                  .map(([k, on]) => `${on ? "" : "no "}${k}`)
+                  .join(", ");
+                const at =
+                  `${card.junior ? "junior" : "senior"}, ${card.photo ? "photo" : "no photo"}` +
+                  (state ? `, ${state}` : "");
+                out.push(
+                  `${name} ${page} ${size} (${at}): ${count} sponsors' tiles run out of ${sheet.l.id}`,
+                );
+              }
+            }
+          }
+  }
+  return [...new Set(out)];
+}
+
+/** A panel of one solid colour (a sheet a list sits on), not a gradient scrim. */
+const solidPanel = (l: TemplateLayerV2) =>
+  paintsOver(l) && typeof (l.style as { fill?: unknown } | undefined)?.fill === "string";
+
+const holdsPoint = (r: Rect, [x, y]: Pt) =>
+  r.left <= x && x <= r.right && r.top <= y && y <= r.bottom;
+
+describe("Sponsor tiles inside their sheet with 7, 8 and the most sponsors", () => {
+  const pages = bundlesMatching(/^matchDay\.json$/).filter((b) => b.listed && b.doc.pages.sponsors);
+
+  it("reads every look's sponsors page", () => {
+    expect(pages.map((b) => b.name)).toEqual(
+      expect.arrayContaining(["duotone/matchDay", "clubhouse/matchDay", "bold-type/matchDay"]),
+    );
+  });
+
+  for (const { name, doc } of pages)
+    it(`${name}: every sponsor tile stays on its sheet at every size, game or no game`, () => {
+      expect(tilesOutsideSheet(name, doc)).toEqual([]);
+    });
+
+  it("would catch Duotone's sponsors page as it was (one sheet, the no-game grid below it)", () => {
+    const duo = pages.find((b) => b.name === "duotone/matchDay")!;
+    const was = structuredClone(duo.doc);
+    const layers = was.pages.sponsors!.layers;
+    // Round 4's page: one sheet whatever the grid, sized for the game's grid.
+    was.pages.sponsors!.layers = layers.filter((l) => l.id !== "sponsors-l9-tall");
+    for (const l of was.pages.sponsors!.layers) if (l.id === "sponsors-l9") delete l.showWhen;
+    expect(tilesOutsideSheet("duotone/matchDay", was)).toEqual(
+      expect.arrayContaining([
+        "duotone/matchDay sponsors portrait (senior, photo, no nextHomeMatch): 7 sponsors' tiles run out of sponsors-l9",
+      ]),
+    );
+  });
+});
+
+// ── Club Kit Team of the Week: title clear of the header (round 5 retest) ───
+
+/** How tall a line's letters stand, capitals to descenders, as a share of its font size. */
+const GLYPH_HEIGHT = 0.8;
+
+/**
+ * Where a layer's ink is, in card pixels: an image's box; a text layer's
+ * letters, centred in its box (text is centred vertically), as many lines as
+ * the box holds when it may wrap (no one-line fit), else one, spilling past
+ * the box when a line is taller than it.
+ */
+function textExtent(l: TemplateLayerV2, b: Box, size: CardSize): Rect {
+  const r = px(b, size);
+  if (l.kind !== "text") return r;
+  const st = (l.style ?? {}) as TextStyle;
+  const font = (Number(st.fontSize ?? 5) / 100) * SIZES[size].w;
+  const line = font * Number(st.lineHeight ?? 1.05);
+  const oneLine = (l as { fit?: { maxLines?: number } }).fit?.maxLines === 1;
+  const lines = oneLine ? 1 : Math.max(1, Math.floor((r.bottom - r.top + 0.5) / line));
+  const ink = (lines - 1) * line + GLYPH_HEIGHT * font;
+  const mid = (r.top + r.bottom) / 2;
+  return { ...r, top: mid - ink / 2, bottom: mid + ink / 2 };
+}
+
+const meets = (a: Rect, b: Rect) =>
+  Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+  Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+
+/** The club header and the date a Team of the Week title must keep clear of. */
+const TITLE_CLEAR_OF = ["clubLogo", "clubName", "clubTagline", "dateLabel"];
+
+/**
+ * Where a Team of the Week's title runs into its club header (crest, name,
+ * tagline) or its date (Ash's round 5 retest: Club Kit's square title sat on
+ * the club name, under the date). A faint watermark crest doesn't count.
+ */
+function titleOverlaps(name: string, doc: TemplateDocumentV2): string[] {
+  const out: string[] = [];
+  for (const [page, p] of Object.entries(doc.pages ?? {})) {
+    const layers = flattenLayers(p?.layers ?? []);
+    for (const size of SIZE_KEYS)
+      for (const title of layers) {
+        const tb = drawn(title, size);
+        if (!tb || title.kind !== "text" || !String(title.content ?? "").includes("{{title}}"))
+          continue;
+        for (const other of layers) {
+          const ob = other === title ? null : drawn(other, size);
+          if (!ob || !layerTokens(other).some((t) => TITLE_CLEAR_OF.includes(t))) continue;
+          const opacity = (other.style as { opacity?: unknown } | undefined)?.opacity;
+          if (typeof opacity === "number" && opacity <= 0.3) continue;
+          if (meets(textExtent(title, tb, size), textExtent(other, ob, size)))
+            out.push(`${name} ${page} ${size}: ${title.id} runs into ${other.id}`);
+        }
+      }
+  }
+  return out;
+}
+
+describe("Team of the Week title clear of the club header and date", () => {
+  const bundles = bundlesMatching(/^teamOfWeek\.json$/).filter((b) => b.listed);
+
+  it("reads every listed Team of the Week", () => {
+    expect(bundles.map((b) => b.name)).toEqual(
+      expect.arrayContaining([
+        "broadcast-classic/teamOfWeek",
+        "club-kit/teamOfWeek",
+        "clubhouse/teamOfWeek",
+      ]),
+    );
+  });
+
+  for (const { name, doc } of bundles)
+    it(`${name}: the title keeps clear of the crest, club name, tagline and date at every size`, () => {
+      expect(titleOverlaps(name, doc)).toEqual([]);
+    });
+
+  it("would catch Club Kit's square title as it was (over the club name)", () => {
+    const totw = bundles.find((b) => b.name === "club-kit/teamOfWeek")!;
+    const was = structuredClone(totw.doc);
+    for (const l of flattenLayers(was.pages.card!.layers)) {
+      const g = l.geometry as Record<string, Box>;
+      if (l.id === "card-l28") g.square!.y = 3.71;
+      if (l.id === "card-l30" && l.kind === "text") {
+        g.square = { x: 6, y: 6.12, w: 45.85, h: 12.74 };
+        (l.style as { fontSize?: number }).fontSize = 6;
+      }
+    }
+    expect(titleOverlaps("club-kit/teamOfWeek", was)).toEqual(
+      expect.arrayContaining([
+        "club-kit/teamOfWeek card square: card-l30 runs into card-l50",
+        "club-kit/teamOfWeek card square: card-l30 runs into card-l51",
+      ]),
     );
   });
 });

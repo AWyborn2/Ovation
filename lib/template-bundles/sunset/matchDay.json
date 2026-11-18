@@ -1,6 +1,6 @@
 {
   "name": "Sunset matchDay",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3238,7 +3238,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -3281,7 +3281,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -3376,7 +3376,7 @@
             "kind": "text",
             "content": "{{dateShort}}",
             "style": {
-              "color": "#FFF4EA",
+              "color": "#10151B",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 800,
@@ -3422,7 +3422,7 @@
             "kind": "text",
             "content": "{{dateShort}}",
             "style": {
-              "color": "#FFF4EA",
+              "color": "#10151B",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 1.26,
               "fontWeight": 800,
@@ -3534,7 +3534,7 @@
             "kind": "text",
             "content": "The round",
             "style": {
-              "color": "#E77FA4",
+              "color": "color-mix(in srgb, #E77FA4 50%, #FFFFFF)",
               "fontFamily": "'Kaushan Script',sans-serif",
               "fontSize": 3.46,
               "fontWeight": 400,
@@ -3566,7 +3566,7 @@
             "kind": "text",
             "content": "The round",
             "style": {
-              "color": "#E77FA4",
+              "color": "color-mix(in srgb, #E77FA4 50%, #FFFFFF)",
               "fontFamily": "'Kaushan Script',sans-serif",
               "fontSize": 4.18,
               "fontWeight": 400,
@@ -3604,7 +3604,7 @@
             "kind": "text",
             "content": "The round",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'Kaushan Script',sans-serif",
               "fontSize": 1.81,
               "fontWeight": 400,
@@ -3636,7 +3636,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.4,
               "fontWeight": 600,
@@ -3667,7 +3667,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.7,
               "fontWeight": 600,
@@ -3704,7 +3704,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.74,
               "fontWeight": 600,
@@ -3855,7 +3855,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "color-mix(in srgb, #E77FA4 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 4.24,
               "fontWeight": 800,
@@ -3886,7 +3886,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "color-mix(in srgb, #E77FA4 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 5.13,
               "fontWeight": 800,
@@ -3923,7 +3923,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "color-mix(in srgb, #E77FA4 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.22,
               "fontWeight": 800,
@@ -4209,7 +4209,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EAE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.4,
               "fontWeight": 600,
@@ -4235,7 +4235,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EAE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.7,
               "fontWeight": 600,
@@ -4267,7 +4267,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EAE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.74,
               "fontWeight": 600,
@@ -4353,7 +4353,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EAE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -4393,7 +4393,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#FFF4EAC7",
+              "color": "#FFF4EAE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -4745,7 +4745,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.8,
               "fontWeight": 800,
@@ -4795,7 +4795,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "#E77FA4",
+              "color": "#FFF4EA",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 1.47,
               "fontWeight": 800,
