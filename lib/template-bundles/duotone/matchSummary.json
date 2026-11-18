@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchSummary",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1712,41 +1712,6 @@
             },
             "sig": "text:03ckntm1gxar2d",
             "link": "result-l52"
-          },
-          {
-            "kind": "image",
-            "content": "{{clubLogo}}",
-            "showWhen": {
-              "photo": false
-            },
-            "id": "result-l56",
-            "geometry": {
-              "square": {
-                "x": 8.2,
-                "y": 87.4,
-                "w": 4.4,
-                "h": 4.4
-              },
-              "portrait": {
-                "x": 8.45,
-                "y": 89.51,
-                "w": 4.66,
-                "h": 3.73
-              },
-              "story": {
-                "x": 8.79,
-                "y": 76.23,
-                "w": 5.02,
-                "h": 2.82
-              },
-              "landscape": {
-                "x": 50.97,
-                "y": 83.82,
-                "w": 3,
-                "h": 5.72
-              }
-            },
-            "sig": "image:194ijcq0drv4o1"
           },
           {
             "kind": "image",

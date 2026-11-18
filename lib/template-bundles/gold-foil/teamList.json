@@ -1,6 +1,6 @@
 {
   "name": "Gold Foil teamList",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1119,7 +1119,7 @@
                   "field": "number",
                   "x": 0,
                   "w": 13.33,
-                  "y": 14.77,
+                  "y": 20.54,
                   "h": 68.57,
                   "style": {
                     "fontSize": 2.24,
@@ -1196,7 +1196,7 @@
                   "field": "number",
                   "x": 0,
                   "w": 13.33,
-                  "y": 14.86,
+                  "y": 21.12,
                   "h": 68.87,
                   "style": {
                     "fontSize": 2.99,
@@ -1279,7 +1279,7 @@
                   "field": "number",
                   "x": 0,
                   "w": 13.32,
-                  "y": 14.56,
+                  "y": 22.11,
                   "h": 67.68,
                   "style": {
                     "fontSize": 1.18,

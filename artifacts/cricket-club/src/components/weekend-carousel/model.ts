@@ -100,6 +100,8 @@ export function teamIsJunior(team: Pick<TeamSlide, "fixture" | "content">): bool
   return isJuniorGradeLabel(team.fixture.grade);
 }
 export type CoverPhoto = { photoId: number | null; transform: PhotoTransform };
+/** The most team sponsors a junior day slide's strip carries (the designs' three logo slots). */
+export const DAY_SLIDE_SPONSORS = 3;
 export const COVER_PHOTO_UNAVAILABLE =
   "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before sending to review.";
 
@@ -561,6 +563,13 @@ export function buildWeekendSlides(
               )
             : [],
     });
+  // The sponsors assigned to a grade, in sponsor order (a team's own sponsor).
+  const gradeSponsors = (grade: string) => {
+    const key = gradeMatchKey(grade);
+    return key
+      ? activeSponsors.filter((s) => (s.grades ?? []).some((g) => gradeMatchKey(g) === key))
+      : [];
+  };
   const teamSlide = (team: TeamSlide & { content: SlideContent }): WeekendSlide => {
     const { fixture: f, content, photoId, transform } = team;
     const junior = teamIsJunior(team);
@@ -574,12 +583,7 @@ export function buildWeekendSlides(
       ? eligibleCarouselPhotos(photos, f.grade, junior).find((p) => p.id === photoId)
       : undefined;
     const warnings: string[] = [];
-    const gradeKey = gradeMatchKey(f.grade);
-    const assigned = sponsorOn
-      ? activeSponsors.filter(
-          (s) => gradeKey && (s.grades ?? []).some((g) => gradeMatchKey(g) === gradeKey),
-        )
-      : [];
+    const assigned = sponsorOn ? gradeSponsors(f.grade) : [];
     const teamSponsor = assigned[0];
     if (sponsorOn && bundle.settings.sponsorsEnabled && !teamSponsor)
       warnings.push("No sponsor is assigned to this team. Assign one in sponsor settings.");
@@ -624,9 +628,21 @@ export function buildWeekendSlides(
         : {}),
     });
   };
-  // A junior day slide (P3): the day's games as compact rows. No photo and no
-  // team sponsor (a slide covers several teams); every row is junior.
+  // A junior day slide (P3): the day's games as compact rows. No photo; every
+  // row is junior. Its "Supported by" strip carries each of its teams' own
+  // sponsor, as a senior slide carries its team's (junior/senior consistency,
+  // round 4 retest): club sponsor logos only, no child's data, so nothing
+  // keeps them off a junior slide. Player sponsors never reach a team slide.
   const daySlide = (day: string, group: Array<TeamSlide & { content: SlideContent }>) => {
+    const first = group[0]!.content;
+    const sponsorOn = fieldsFor(first).has(`${slidePrefix(first)}.teamSponsor`);
+    const daySponsors = sponsorOn
+      ? [
+          ...new Set(
+            group.map((t) => gradeSponsors(t.fixture.grade)[0]).filter((s) => s !== undefined),
+          ),
+        ].slice(0, DAY_SLIDE_SPONSORS)
+      : [];
     const warnings = group.flatMap(({ fixture: f, content }) => {
       const venue = content.kind === "matchDay" ? content.venue : (f.venue?.trim() ?? "");
       const opponent =
@@ -641,9 +657,13 @@ export function buildWeekendSlides(
     const slide = {
       id: `day-${day}-${group[0].fixture.id}`,
       label: `Juniors · ${dayHeading(day, timeZone)} (${group.length} games)`,
-      data: buildPackData(base),
+      data: buildPackData({
+        ...base,
+        sponsors: daySponsors.map(sponsorData),
+        presentingSponsorName: daySponsors[0]?.name,
+      }),
       junior: true,
-      sponsorsOn: false,
+      sponsorsOn: daySponsors.length > 0,
       warnings,
       fixtureIds: group.map((t) => t.fixture.id),
     };

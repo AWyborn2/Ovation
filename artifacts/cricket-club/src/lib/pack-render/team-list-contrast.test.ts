@@ -23,7 +23,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   flattenLayers,
+  pageForInput,
   rowsColumns,
+  slideInputFor,
   type PageKey,
   type TemplateDocumentV2,
   type TemplateLayerV2,
@@ -306,10 +308,14 @@ function coversPoint(l: TemplateLayerV2, b: Box, x: number, y: number): boolean 
   return inside;
 }
 
+/** What's behind a point when it is a logo (a crest or sponsor image), not one colour. */
+const ON_LOGO = "logo";
+
 /**
  * The colour behind a point (card %): the card's ground (`--ink`), then every
- * layer drawn before `upTo` that paints there. Null where the photo or a logo
- * shows through (a scrim over it doesn't make one colour; a solid panel does).
+ * layer drawn before `upTo` that paints there. Null where the photo shows
+ * through (a scrim over it doesn't make one colour; a solid panel does), and
+ * `ON_LOGO` where a logo does (a faint watermark, 30% or less, is ground).
  */
 function backgroundAt(
   layers: TemplateLayerV2[],
@@ -319,9 +325,10 @@ function backgroundAt(
   junior: boolean,
   [x, y]: Pt,
   vars: Map<string, string>,
-): Rgba | null {
+): Rgba | null | typeof ON_LOGO {
   const { w: W, h: H } = SIZES[size];
   let bg: Rgba | null = parseColour(resolveVars("var(--ink)", vars));
+  let logo = false;
   for (const l of layers.slice(0, upTo)) {
     const b = drawnBox(l, size, photo, junior);
     if (!b || !coversPoint(l, b, x, y)) continue;
@@ -329,6 +336,7 @@ function backgroundAt(
     const opacity = typeof style.opacity === "number" ? style.opacity : 1;
     if (l.kind === "photo" || (l.kind === "image" && opacity > 0.3)) {
       bg = null;
+      logo = l.kind === "image";
       continue;
     }
     const fill = l.kind === "shape" ? style.fill : l.kind === "text" ? style.background : null;
@@ -346,9 +354,12 @@ function backgroundAt(
           );
     if (!colour) continue;
     if (bg) bg = over(colour, bg, opacity);
-    else if (colour[3] * opacity >= 0.99) bg = over(colour, colour);
+    else if (colour[3] * opacity >= 0.99) {
+      bg = over(colour, colour);
+      logo = false;
+    }
   }
-  return bg;
+  return bg ?? (logo ? ON_LOGO : null);
 }
 
 /** The name cells a Team List prints. */
@@ -548,8 +559,19 @@ function lowContrast(
               const large = s.px >= 24 || (s.px >= 18.66 && (s.style.fontWeight ?? 400) >= 700);
               const floor = large ? AA_LARGE : AA;
               for (const pt of s.points) {
-                let bg = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
-                if (!bg) continue; // on the photo or a logo
+                const behind = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
+                // The Duotone sweep: no line of text is drawn over a logo (round 4
+                // retest: the Team lists cover's title ran over a second crest, dark
+                // on dark, and went unmeasured because a logo has no one colour).
+                if (behind === ON_LOGO && opts.every) {
+                  out.push(
+                    `${name} ${page} ${s.label} (${junior ? "junior, " : ""}` +
+                      `${photo ? "photo" : "no photo"}): drawn over a logo`,
+                  );
+                  break;
+                }
+                if (!behind || behind === ON_LOGO) continue; // on the photo or a logo
+                let bg: Rgba = behind;
                 for (const fill of s.under ?? []) {
                   const c = parseColour(resolveVars(fill, vars));
                   if (c) bg = over(c, bg);
@@ -630,5 +652,37 @@ describe("Duotone text contrast on every kind", () => {
     expect(found.some((f) => f.includes('"{{opposition.name}}" (default brand, photo)'))).toBe(
       true,
     );
+  });
+
+  it("covers the Team lists cover: a list set's cover is Match Day's title page", () => {
+    // A Team lists carousel's cover is the Match Day bundle's `title` page with
+    // the set's title ("Team lists", set-slides.ts), so the sweep above holds it.
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    expect(Object.keys(md.doc.pages)).toContain("title");
+    const cover = slideInputFor(
+      { kind: "matchDay", page: "title", slot: "cover" },
+      { kind: "teamListRound", date: "Sat 14 Nov", roundLabel: "ROUND 6" },
+    );
+    expect(pageForInput(cover as { kind: string })).toBe("title");
+    expect(cover).toMatchObject({ carouselPage: { page: "title", title: "Team lists" } });
+  });
+
+  it("would catch the Team lists cover as it was (its title over a second club crest)", () => {
+    const md = bundles.find((b) => b.kind === "matchDay")!;
+    const was = structuredClone(md.doc);
+    const title = was.pages.title!;
+    const crest = flattenLayers(title.layers).find(
+      (l) => l.kind === "image" && l.content === "{{clubLogo}}",
+    )!;
+    // The stray no-photo crest (title-l13): 6.5% lower than the real one, over the title.
+    const stray = structuredClone(crest);
+    stray.id = "title-l13";
+    stray.showWhen = { photo: false };
+    for (const g of Object.values(stray.geometry as Record<string, Box>)) g.y += 6.51;
+    title.layers.splice(title.layers.indexOf(crest), 0, stray);
+    const found = lowContrast("duotone/matchDay", was, { kind: "matchDay", every: true });
+    expect(
+      found.some((f) => f.includes('square title-l24 "{{weekendTitle}}" (no photo): drawn over')),
+    ).toBe(true);
   });
 });
