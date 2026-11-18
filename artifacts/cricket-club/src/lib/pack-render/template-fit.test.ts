@@ -441,3 +441,135 @@ describe("Team List sides of 12 to 14", () => {
     expect(squeezeAt(fits + 2)).toBeLessThan(MIN_ROWS_SQUEEZE);
   });
 });
+
+// ── Team List rows clear of the photo (Ash's round 3 retest, Nov 2026) ──────
+
+describe("Team List rows clear of the photo and foreground", () => {
+  const rect = ([left, top, width, height]: number[]) =>
+    ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+    }) as DOMRect;
+  /** A 1080 square card: a two-row list and the given layers, boxes set by hand. */
+  function card(others: Array<[string, number[]]>, rows: number[][]) {
+    const root = window.document.createElement("div");
+    const html = [
+      ...others.map(([id]) => `<div data-layer-id="${id}"></div>`),
+      `<div data-layer-id="list">${rows.map((_, i) => `<div data-row-index="${i}"></div>`).join("")}</div>`,
+    ].join("");
+    root.innerHTML = `<div class="pack-card-root">${html}</div>`;
+    root.querySelector<HTMLElement>(".pack-card-root")!.getBoundingClientRect = () =>
+      rect([0, 0, 1080, 1080]);
+    for (const [id, box] of others)
+      root.querySelector<HTMLElement>(`[data-layer-id="${id}"]`)!.getBoundingClientRect = () =>
+        rect(box);
+    root.querySelector<HTMLElement>('[data-layer-id="list"]')!.getBoundingClientRect = () =>
+      rect([60, 300, 500, 600]);
+    rows.forEach((box, i) => {
+      root.querySelector<HTMLElement>(`[data-row-index="${i}"]`)!.getBoundingClientRect = () =>
+        rect(box);
+    });
+    return root;
+  }
+  const list = {
+    id: "list",
+    kind: "rows",
+    geometry: at(5, 28, 46, 56),
+    rows: { repeat: "players", rowHeight: 5, cells: [] },
+  } as unknown as TemplateLayerV2;
+  const check = (root: HTMLElement, layers: TemplateLayerV2[]) =>
+    checkFitInDom(root, {
+      doc: doc({ team: { layers: [...layers, list] } }),
+      kind: "teamList",
+      page: "team",
+      size: "square",
+      variant: "team.square.full.side14",
+      visible: null,
+    }).filter((i) => i.reason === "rows-overlap");
+  const photo = (style?: object) =>
+    ({ id: "pic", kind: "photo", geometry: at(50, 60, 50, 40), style }) as TemplateLayerV2;
+  // Two rows; the second ends at y 640, 20 px above a photo starting at 660.
+  const rows = [
+    [60, 560, 500, 40],
+    [60, 600, 500, 40],
+  ];
+
+  it("flags a row that ends within the clearance above the photo", () => {
+    const issues = check(card([["pic", [500, 660, 580, 420]]], rows), [photo()]);
+    expect(issues).toEqual([
+      expect.objectContaining({ reason: "rows-overlap", layerId: "list", row: 1 }),
+    ]);
+    expect(issues[0]!.detail).toContain("32 px of the photo");
+  });
+
+  it("passes a list that ends well clear of the photo", () => {
+    expect(check(card([["pic", [500, 700, 580, 380]]], rows), [photo()])).toEqual([]);
+  });
+
+  it("reads the photo's clip polygon, not just its box", () => {
+    // The box starts under the rows, but its slanted edge is 150 px to their right at the top.
+    const slanted = photo({
+      clip: {
+        polygon: [
+          [40, 0],
+          [100, 0],
+          [100, 100],
+          [0, 100],
+        ],
+      },
+    });
+    expect(check(card([["pic", [500, 660, 580, 420]]], rows), [slanted])).toEqual([]);
+    const rowsLow = [...rows, [60, 900, 500, 40]];
+    expect(check(card([["pic", [500, 660, 580, 420]]], rowsLow), [slanted])).toEqual([
+      expect.objectContaining({ reason: "rows-overlap", row: 2 }),
+    ]);
+  });
+
+  it("flags rows that run into a logo or data text, but not a background, watermark or decoration", () => {
+    const layers = [
+      { id: "bg", kind: "photo", geometry: at(0, 0, 100, 100) },
+      {
+        id: "crest",
+        kind: "image",
+        content: "{{clubLogo}}",
+        style: { opacity: 0.1 },
+        geometry: at(0, 0, 50, 50),
+      },
+      { id: "xi", kind: "text", content: "XI", geometry: at(0, 50, 50, 50) },
+      { id: "sponsor", kind: "image", content: "{{sponsor1}}", geometry: at(40, 55, 20, 10) },
+    ] as unknown as TemplateLayerV2[];
+    const issues = check(
+      card(
+        [
+          ["bg", [0, 0, 1080, 1080]],
+          ["crest", [0, 400, 600, 600]],
+          ["xi", [0, 500, 600, 500]],
+          ["sponsor", [400, 620, 200, 100]],
+        ],
+        rows,
+      ),
+      layers,
+    );
+    expect(issues.map((i) => i.detail)).toEqual(["row 2 runs into sponsor"]);
+  });
+
+  it("lets a list sit over a photo that a panel or scrim drawn between them covers", () => {
+    const panel = {
+      id: "panel",
+      kind: "shape",
+      style: { fill: "#FFFFFF" },
+      geometry: at(4, 40, 92, 56),
+    } as unknown as TemplateLayerV2;
+    const pic: [string, number[]] = ["pic", [0, 0, 700, 1080]];
+    const under: [string, number[]] = ["panel", [40, 430, 1000, 600]];
+    expect(check(card([pic, under], rows), [photo(), panel])).toEqual([]);
+    // The same panel drawn under the photo hides nothing.
+    expect(check(card([under, pic], rows), [panel, photo()])).toHaveLength(1);
+  });
+});

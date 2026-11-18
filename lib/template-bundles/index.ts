@@ -269,7 +269,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "player", hash: "e9436f93a6f27e6a935522cc01eb9c43f8a4b7502f38f6439b419675997820ef", file: look0_12 },
       { kind: "premiership", hash: "502f282af18e2ea201cd1773b47b992e2b0809da882bd5951b8899fc3882c83c", file: look0_13 },
       { kind: "record", hash: "2fb26814ee503491b044e4161116a86ab78ce25265678b99f82c56685d612c2d", file: look0_14 },
-      { kind: "teamList", hash: "ac778d78fe2da565906ba788996fda05b8b35e53e928fef65091ed3931cad732", file: look0_15 },
+      { kind: "teamList", hash: "f3d653808c7fadd2f98d812e517108bf7d77349e4d08d65ffba709f355945433", file: look0_15 },
       { kind: "weekendWrap", hash: "4d625b3d9da0ea6b01784afb9152357038c1a6b3b345336b20671109d29dc53c", file: look0_16 },
     ],
   },
@@ -323,7 +323,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
       { kind: "player", hash: "842c85f22a01084c5cdce528b01856d2f258e14671f487dae4c61d8614afb4c5", file: look2_12 },
       { kind: "premiership", hash: "00ff79eaeaa02e40ad22ff7215478a476e4e5d04a48be8db8236d504de160afe", file: look2_13 },
       { kind: "record", hash: "ad971a06c789abb447d2a9d84821449f09551ce7d3a9ca93d38fd1c1a3b009b0", file: look2_14 },
-      { kind: "teamList", hash: "b16c0f5357221c91eaab2c0fcd399f5ee9002806be03a94bf8e2bf66415d7051", file: look2_15 },
+      { kind: "teamList", hash: "08c9fdd313edafefdf4c87dfc22f048ef3d9ee87173322cbf3c49220e6b75191", file: look2_15 },
       { kind: "weekendWrap", hash: "eb4784d94c29a59be87874d43a05148534baae15feaf1ef799ed390434aebd9f", file: look2_16 },
     ],
   },
@@ -425,7 +425,7 @@ export const TEMPLATE_BUNDLES: TemplateBundle[] = [
     templates: [
       { kind: "matchDay", hash: "64dc4d02deda38a209b07d56f5473e8e06382084a0f182e39ffd8e3cb787b857", file: look6_0 },
       { kind: "matchSummary", hash: "e2a487ef2185bb6608a06ab157560382846f35ad8e2c218787d699a3c34833be", file: look6_1 },
-      { kind: "teamList", hash: "d3cd52e58372dcbf42aa9dd4387474a8b9afc9dbe967a18ccad0aaea9c781563", file: look6_2 },
+      { kind: "teamList", hash: "43d1b533b5f652977a32df3a2f2e3259980f304c6d34cb6d6fd474848b8f0cd3", file: look6_2 },
     ],
   },
   {

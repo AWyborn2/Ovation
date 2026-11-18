@@ -1,6 +1,6 @@
 {
   "name": "Duotone teamList",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -681,7 +681,7 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
+              "fill": "#FFFFFF",
               "radius": 59.4,
               "boxShadow": [
                 {
@@ -720,7 +720,7 @@
           {
             "kind": "shape",
             "style": {
-              "fill": "var(--accent-ink)",
+              "fill": "#FFFFFF",
               "radius": 31.5,
               "boxShadow": [
                 {
@@ -748,7 +748,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "var(--ink)",
+              "color": "var(--dt-ink)",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 700,
@@ -772,7 +772,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "var(--ink)",
+              "color": "var(--dt-ink)",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.54,
               "fontWeight": 700,
@@ -796,7 +796,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "var(--ink)",
+              "color": "var(--dt-ink)",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 2.74,
               "fontWeight": 700,
@@ -820,7 +820,7 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "var(--ink)",
+              "color": "var(--dt-ink)",
               "fontFamily": "'Archivo',sans-serif",
               "fontSize": 1.64,
               "fontWeight": 700,
@@ -971,7 +971,7 @@
                   "h": 78.65,
                   "style": {
                     "fontSize": 2.6,
-                    "color": "var(--gold)",
+                    "color": "var(--dt-p-on-light)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 900,
                     "align": "left"
@@ -985,7 +985,7 @@
                   "h": 60.3,
                   "style": {
                     "fontSize": 2.6,
-                    "color": "var(--ink)",
+                    "color": "var(--dt-ink)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
@@ -1048,7 +1048,7 @@
                   "h": 78.65,
                   "style": {
                     "fontSize": 3.07,
-                    "color": "var(--gold)",
+                    "color": "var(--dt-p-on-light)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 900,
                     "align": "left"
@@ -1062,7 +1062,7 @@
                   "h": 60.3,
                   "style": {
                     "fontSize": 3.07,
-                    "color": "var(--ink)",
+                    "color": "var(--dt-ink)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
@@ -1123,7 +1123,7 @@
                   "h": 78.61,
                   "style": {
                     "fontSize": 3.31,
-                    "color": "var(--gold)",
+                    "color": "var(--dt-p-on-light)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 900,
                     "align": "left"
@@ -1137,7 +1137,7 @@
                   "h": 60.26,
                   "style": {
                     "fontSize": 3.31,
-                    "color": "var(--ink)",
+                    "color": "var(--dt-ink)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"
@@ -1198,7 +1198,7 @@
                   "h": 78.65,
                   "style": {
                     "fontSize": 1.77,
-                    "color": "var(--gold)",
+                    "color": "var(--dt-p-on-light)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 900,
                     "align": "left"
@@ -1212,7 +1212,7 @@
                   "h": 60.3,
                   "style": {
                     "fontSize": 1.77,
-                    "color": "var(--ink)",
+                    "color": "var(--dt-ink)",
                     "fontFamily": "'Archivo',sans-serif",
                     "fontWeight": 700,
                     "align": "left"

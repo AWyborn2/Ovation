@@ -1,6 +1,6 @@
 {
   "name": "Bold Type teamList",
-  "version": 8,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -177,9 +177,9 @@
               },
               "story": {
                 "x": 37.28,
-                "y": 59,
+                "y": 61,
                 "w": 68.72,
-                "h": 44.38
+                "h": 42.38
               },
               "landscape": {
                 "x": 51.15,
@@ -304,8 +304,8 @@
                 "polygon": [
                   [19.72, 0],
                   [109.57, 0],
-                  [109.57, 106.13],
-                  [0, 106.13]
+                  [109.57, 108.67],
+                  [0, 108.67]
                 ]
               }
             },
@@ -315,9 +315,9 @@
             "geometry": {
               "story": {
                 "x": 37.28,
-                "y": 59,
+                "y": 61,
                 "w": 62.72,
-                "h": 41
+                "h": 39
               }
             },
             "sig": "photo:19lxj2r0hrvlii"
@@ -606,22 +606,14 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "#FFFFFFB3",
+              "color": "var(--accent-ink)",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.4,
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
               "align": "right",
-              "lineHeight": 1,
-              "textShadow": [
-                {
-                  "x": 0,
-                  "y": 0.2,
-                  "blur": 0.8,
-                  "color": "#000000D9"
-                }
-              ]
+              "lineHeight": 1
             },
             "fit": {
               "minScale": 0.6,
@@ -657,22 +649,14 @@
             "kind": "text",
             "content": "{{gradeRound}}",
             "style": {
-              "color": "#FFFFFFB3",
+              "color": "var(--accent-ink)",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.74,
               "fontWeight": 500,
               "letterSpacing": 0.18,
               "uppercase": true,
               "align": "right",
-              "lineHeight": 1,
-              "textShadow": [
-                {
-                  "x": 0,
-                  "y": 0.11,
-                  "blur": 0.42,
-                  "color": "#000000D9"
-                }
-              ]
+              "lineHeight": 1
             },
             "fit": {
               "minScale": 0.6,
@@ -1057,7 +1041,7 @@
               "square": {
                 "x": 6,
                 "y": 47.3,
-                "w": 51.04,
+                "w": 49,
                 "h": 30.42
               }
             },
