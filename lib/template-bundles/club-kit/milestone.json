@@ -1529,7 +1529,10 @@
               }
             },
             "sig": "shape:1qsc7r51y116xk",
-            "link": "card-l39"
+            "link": "card-l39",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1552,7 +1555,10 @@
               }
             },
             "sig": "shape:06rc6mp0pnarc2",
-            "link": "card-l39"
+            "link": "card-l39",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "text",

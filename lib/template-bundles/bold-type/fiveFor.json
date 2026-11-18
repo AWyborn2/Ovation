@@ -1,6 +1,6 @@
 {
   "name": "Bold Type fiveFor",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1107,7 +1107,10 @@
                 "h": 3.9
               }
             },
-            "sig": "shape:068hcgg14sirpr"
+            "sig": "shape:068hcgg14sirpr",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1136,7 +1139,10 @@
                 "h": 3
               }
             },
-            "sig": "shape:1u2nsn11cyj42e"
+            "sig": "shape:1u2nsn11cyj42e",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1159,7 +1165,10 @@
                 "h": 5.6
               }
             },
-            "sig": "shape:0f8zk851tpx3p2"
+            "sig": "shape:0f8zk851tpx3p2",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "text",

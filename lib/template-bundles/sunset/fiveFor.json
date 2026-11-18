@@ -1365,7 +1365,10 @@
                 "h": 3.27
               }
             },
-            "sig": "shape:0ekz2r20fil929"
+            "sig": "shape:0ekz2r20fil929",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1394,7 +1397,10 @@
                 "h": 2.17
               }
             },
-            "sig": "shape:0drl08w1oowllj"
+            "sig": "shape:0drl08w1oowllj",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1417,7 +1423,10 @@
                 "h": 5.6
               }
             },
-            "sig": "shape:1egyj0q1pvehu7"
+            "sig": "shape:1egyj0q1pvehu7",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "text",

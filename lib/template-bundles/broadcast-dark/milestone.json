@@ -1077,7 +1077,10 @@
               }
             },
             "sig": "shape:1th3pdv1fi8jek",
-            "link": "card-l26"
+            "link": "card-l26",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1106,7 +1109,10 @@
               }
             },
             "sig": "shape:16y8mj610cmak1",
-            "link": "card-l26"
+            "link": "card-l26",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "shape",
@@ -1129,7 +1135,10 @@
               }
             },
             "sig": "shape:0hw2ci21518d0h",
-            "link": "card-l26"
+            "link": "card-l26",
+            "showWhen": {
+              "field": "shirtNumber"
+            }
           },
           {
             "kind": "text",
