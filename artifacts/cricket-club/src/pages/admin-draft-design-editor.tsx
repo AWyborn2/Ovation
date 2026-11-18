@@ -28,7 +28,7 @@ import {
   editorStatusLabel,
 } from "@/components/social-queue/draft-meta";
 import { useBrand } from "@/lib/brand-context";
-import { withRootLayersOnPage } from "@/lib/draft-design";
+import { draftEditorDocument } from "@/lib/draft-design";
 import { BLANK_PACK_ID, type CardAdjustments } from "@/lib/pack-render";
 import { SIZES, cardBaseFilename, type CardSize } from "@/lib/share-card";
 import {
@@ -84,7 +84,7 @@ export function DraftDesignEditor({
       kind: input.kind,
       name: draftHeading(draft),
       version: 1,
-      document: withRootLayersOnPage(draft.adjustments, input.kind),
+      document: draftEditorDocument(draft.adjustments, input),
       fitStatus: "pass",
     }),
     // Opened once per draft: the editor keeps its own history from here.
@@ -122,7 +122,7 @@ export function DraftDesignEditor({
     reload: async () => {
       const next = await onReload();
       return next
-        ? { ...template, document: withRootLayersOnPage(next.adjustments, input.kind) }
+        ? { ...template, document: draftEditorDocument(next.adjustments, input) }
         : undefined;
     },
     status: () => (
