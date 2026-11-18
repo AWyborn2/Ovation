@@ -1,6 +1,6 @@
 {
   "name": "Duotone matchDay",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -5281,7 +5281,52 @@
               }
             },
             "sig": "shape:0opoupm06a0pzr",
-            "link": "sponsors-l9"
+            "link": "sponsors-l9",
+            "showWhen": {
+              "field": "nextHomeMatch"
+            }
+          },
+          {
+            "kind": "shape",
+            "style": {
+              "fill": "#FFFFFF",
+              "radius": 59.4,
+              "boxShadow": [
+                {
+                  "x": 0,
+                  "y": 1.2,
+                  "blur": 4,
+                  "color": "#00000047"
+                }
+              ]
+            },
+            "id": "sponsors-l9-tall",
+            "sizes": ["square", "portrait", "story"],
+            "geometry": {
+              "square": {
+                "x": 4,
+                "y": 32.37,
+                "w": 92,
+                "h": 56.23
+              },
+              "portrait": {
+                "x": 4,
+                "y": 35.53,
+                "w": 92,
+                "h": 55.07
+              },
+              "story": {
+                "x": 4,
+                "y": 30.17,
+                "w": 92,
+                "h": 47.13
+              }
+            },
+            "sig": "shape:0opoupm06a0pzr",
+            "link": "sponsors-l9",
+            "showWhen": {
+              "noField": "nextHomeMatch"
+            }
           },
           {
             "kind": "shape",
@@ -5545,145 +5590,6 @@
             }
           },
           {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--gold)",
-              "border": {
-                "width": 0.19,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
-            },
-            "id": "sponsors-l19",
-            "sizes": ["square", "portrait"],
-            "geometry": {
-              "square": {
-                "x": 19.94,
-                "y": 64.48,
-                "w": 60.11,
-                "h": 4.11
-              },
-              "portrait": {
-                "x": 18.13,
-                "y": 70.38,
-                "w": 63.75,
-                "h": 3.47
-              }
-            },
-            "sig": "shape:09zngj91fufb3u",
-            "link": "sponsors-l19",
-            "showWhen": {
-              "field": "nextHomeMatch"
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--gold)",
-              "border": {
-                "width": 0.19,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
-            },
-            "id": "sponsors-l19-tall",
-            "sizes": ["square", "portrait"],
-            "geometry": {
-              "square": {
-                "x": 19.94,
-                "y": 82.71,
-                "w": 60.11,
-                "h": 4.11
-              },
-              "portrait": {
-                "x": 18.13,
-                "y": 85.71,
-                "w": 63.75,
-                "h": 3.47
-              }
-            },
-            "sig": "shape:09zngj91fufb3u",
-            "link": "sponsors-l19-tall",
-            "showWhen": {
-              "noField": "nextHomeMatch"
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--gold)",
-              "border": {
-                "width": 0.28,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
-            },
-            "id": "sponsors-l20",
-            "sizes": ["story"],
-            "geometry": {
-              "story": {
-                "x": 15.7,
-                "y": 61.92,
-                "w": 68.59,
-                "h": 2.72
-              }
-            },
-            "sig": "shape:1f1xya916xif8u",
-            "link": "sponsors-l19",
-            "showWhen": {
-              "field": "nextHomeMatch"
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--gold)",
-              "border": {
-                "width": 0.28,
-                "color": "var(--gold)"
-              },
-              "radius": 1069.2
-            },
-            "id": "sponsors-l20-tall",
-            "sizes": ["story"],
-            "geometry": {
-              "story": {
-                "x": 15.7,
-                "y": 73.37,
-                "w": 68.59,
-                "h": 2.72
-              }
-            },
-            "sig": "shape:1f1xya916xif8u",
-            "link": "sponsors-l19-tall",
-            "showWhen": {
-              "noField": "nextHomeMatch"
-            }
-          },
-          {
-            "kind": "shape",
-            "style": {
-              "fill": "var(--gold)",
-              "border": {
-                "width": 0.17,
-                "color": "var(--gold)"
-              },
-              "radius": 623.7
-            },
-            "id": "sponsors-l21",
-            "sizes": ["landscape"],
-            "geometry": {
-              "landscape": {
-                "x": 53.14,
-                "y": 72.54,
-                "w": 41.09,
-                "h": 5.51
-              }
-            },
-            "sig": "shape:096ogzj1u57r6e",
-            "link": "sponsors-l19"
-          },
-          {
             "kind": "text",
             "content": "{{sponsorCta}}",
             "style": {
@@ -5692,7 +5598,9 @@
               "fontSize": 2.3,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5703,10 +5611,10 @@
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 21.09,
-                "y": 65.21,
-                "w": 57.83,
-                "h": 2.5
+                "x": 19.94,
+                "y": 64.48,
+                "w": 60.11,
+                "h": 4.11
               }
             },
             "sig": "text:0pyy9gu19xpmal",
@@ -5724,7 +5632,9 @@
               "fontSize": 2.3,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5735,10 +5645,10 @@
             "sizes": ["square"],
             "geometry": {
               "square": {
-                "x": 21.09,
-                "y": 83.44,
-                "w": 57.83,
-                "h": 2.5
+                "x": 19.94,
+                "y": 82.71,
+                "w": 60.11,
+                "h": 4.11
               }
             },
             "sig": "text:0pyy9gu19xpmal",
@@ -5756,7 +5666,9 @@
               "fontSize": 2.44,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5767,10 +5679,10 @@
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
-                "x": 19.33,
-                "y": 70.99,
-                "w": 61.34,
-                "h": 2.15
+                "x": 18.13,
+                "y": 70.38,
+                "w": 63.75,
+                "h": 3.47
               }
             },
             "sig": "text:00d2zal1amxyj0",
@@ -5788,7 +5700,9 @@
               "fontSize": 2.44,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5799,10 +5713,10 @@
             "sizes": ["portrait"],
             "geometry": {
               "portrait": {
-                "x": 19.33,
-                "y": 86.32,
-                "w": 61.34,
-                "h": 2.15
+                "x": 18.13,
+                "y": 85.71,
+                "w": 63.75,
+                "h": 3.47
               }
             },
             "sig": "text:00d2zal1amxyj0",
@@ -5820,7 +5734,9 @@
               "fontSize": 2.62,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5831,10 +5747,10 @@
             "sizes": ["story"],
             "geometry": {
               "story": {
-                "x": 17.07,
-                "y": 62.43,
-                "w": 65.86,
-                "h": 1.61
+                "x": 15.7,
+                "y": 61.92,
+                "w": 68.59,
+                "h": 2.72
               }
             },
             "sig": "text:00mguvp04meb5k",
@@ -5852,7 +5768,9 @@
               "fontSize": 2.62,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 1069.2
             },
             "fit": {
               "minScale": 0.6,
@@ -5863,10 +5781,10 @@
             "sizes": ["story"],
             "geometry": {
               "story": {
-                "x": 17.07,
-                "y": 73.88,
-                "w": 65.86,
-                "h": 1.61
+                "x": 15.7,
+                "y": 73.37,
+                "w": 68.59,
+                "h": 2.72
               }
             },
             "sig": "text:00mguvp04meb5k",
@@ -5884,7 +5802,9 @@
               "fontSize": 1.57,
               "fontWeight": 800,
               "align": "center",
-              "lineHeight": 1.15
+              "lineHeight": 1.15,
+              "background": "var(--gold)",
+              "radius": 623.7
             },
             "fit": {
               "minScale": 0.6,
@@ -5895,10 +5815,10 @@
             "sizes": ["landscape"],
             "geometry": {
               "landscape": {
-                "x": 53.96,
-                "y": 73.58,
-                "w": 39.45,
-                "h": 3.33
+                "x": 53.14,
+                "y": 72.54,
+                "w": 41.09,
+                "h": 5.51
               }
             },
             "sig": "text:1b03hbw1rjakep",

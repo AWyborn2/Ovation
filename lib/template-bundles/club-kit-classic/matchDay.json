@@ -1,6 +1,6 @@
 {
   "name": "Club Kit match day",
-  "version": 8,
+  "version": 9,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -2653,7 +2653,7 @@
                     "kind": "text",
                     "content": "{{livestream}}",
                     "style": {
-                      "color": "var(--ck-chalk2)",
+                      "color": "var(--ck-chalk)",
                       "fontFamily": "'IBM Plex Sans',sans-serif",
                       "fontSize": 2.2,
                       "fontWeight": 500,
@@ -2693,7 +2693,7 @@
                     "kind": "text",
                     "content": "{{livestream}}",
                     "style": {
-                      "color": "var(--ck-chalk2)",
+                      "color": "var(--ck-chalk)",
                       "fontFamily": "'IBM Plex Sans',sans-serif",
                       "fontSize": 1.16,
                       "fontWeight": 500,
@@ -2975,7 +2975,7 @@
                     "kind": "text",
                     "content": "PRESENTED BY",
                     "style": {
-                      "color": "var(--ck-chalk2)",
+                      "color": "var(--ck-chalk)",
                       "fontFamily": "'IBM Plex Mono',monospace",
                       "fontSize": 1.7,
                       "fontWeight": 500,
@@ -3014,7 +3014,7 @@
                     "kind": "text",
                     "content": "PRESENTED BY",
                     "style": {
-                      "color": "var(--ck-chalk2)",
+                      "color": "var(--ck-chalk)",
                       "fontFamily": "'IBM Plex Mono',monospace",
                       "fontSize": 0.89,
                       "fontWeight": 500,

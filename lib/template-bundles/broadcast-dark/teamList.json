@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark teamList",
-  "version": 10,
+  "version": 11,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1261,8 +1261,8 @@
             "kind": "rows",
             "rows": {
               "repeat": "players",
-              "rowHeight": 1.94,
-              "gap": 0.17,
+              "rowHeight": 2.37,
+              "gap": 0.08,
               "cells": [
                 {
                   "field": "number",
@@ -1282,7 +1282,7 @@
                   "y": 10,
                   "h": 80,
                   "style": {
-                    "fontSize": 1.16,
+                    "fontSize": 1.65,
                     "color": "var(--gold)",
                     "fontFamily": "'Barlow Condensed',sans-serif",
                     "fontWeight": 800,
@@ -1293,10 +1293,10 @@
                   "field": "listName",
                   "x": 7.2,
                   "w": 92.8,
-                  "y": 15,
-                  "h": 70,
+                  "y": 11,
+                  "h": 78,
                   "style": {
-                    "fontSize": 1.12,
+                    "fontSize": 1.6,
                     "color": "#F5F2E8",
                     "fontFamily": "'IBM Plex Sans',sans-serif",
                     "fontWeight": 600,
