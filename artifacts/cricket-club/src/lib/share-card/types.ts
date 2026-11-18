@@ -377,6 +377,8 @@ export type ShareCardInput =
       junior?: boolean;
       /** The grade the XI is for (picks the team's own sponsor). */
       grade?: string;
+      /** The big heading when it isn't the grade: a junior side's "YEAR 9 GOLD". */
+      gradeHeading?: string;
       /** A named design for the card ("starting-xi"); absent = the pack's usual one. */
       design?: TeamListDesign;
     } & TeamListMatchParts &

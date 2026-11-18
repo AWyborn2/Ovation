@@ -49,6 +49,8 @@ import {
   type TeamListShirtNumbers,
 } from "../engines/team-list";
 import { juniorCardNamer, juniorTeamListToCardInput } from "../engines/junior-team-list";
+import { clubNameVariants, loadJuniorHeadings } from "../junior-headings";
+import { getTenantBrand } from "../tenant-brand";
 import { contentNames } from "./match-day";
 
 /** A fixture and its saved list. */
@@ -198,13 +200,23 @@ export async function buildJuniorTeamListContent(
     ));
   const nameOf = juniorCardNamer(naming);
   const numbersFor = opts.numbersFor ?? juniorShirtNumberReader(tenantId);
+  // The heading is the grade ("YEAR 9", or "YEAR 9 GOLD" when the club has two
+  // teams in it that round); the small line is the competition. Never the club.
+  const brand = await getTenantBrand(tenantId);
+  const headings = await loadJuniorHeadings(
+    tenantId,
+    sides.map((s) => s.fixture),
+    { clubNames: clubNameVariants(brand.name, brand.shortName), names },
+  );
   const out: TeamListContent[] = [];
   for (const { fixture, players } of sides) {
+    const heading = headings.get(fixture.id)!;
     const source = juniorTeamListToCardInput(
       fixture,
       [...players],
       nameOf,
       await numbersFor(fixture.seasonStartYear),
+      heading,
     ) as TeamListSource;
     out.push(
       teamListContent(
@@ -222,7 +234,8 @@ export async function buildJuniorTeamListContent(
           names,
           junior: true,
           juniorTeamName: fixture.teamName ?? null,
-          gradeLabel: juniorTeamGrade(fixture),
+          gradeLabel: heading.heading,
+          gradeLine: heading.eyebrow,
         },
       ),
     );

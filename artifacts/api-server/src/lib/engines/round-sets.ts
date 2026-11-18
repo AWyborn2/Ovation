@@ -682,6 +682,14 @@ async function juniorRoundResults(
   const brand = await getTenantBrand(tenantId);
   const naming = await loadJuniorNaming(tenantId);
   const seen = new Set<string>();
+  // A result row names the grade like the Team List heading: "YEAR 9", or
+  // "YEAR 9 GOLD" when two of the club's teams in that grade played.
+  const { juniorHeading, clubNameVariants } = await import("../junior-headings");
+  const clubNames = clubNameVariants(brand.name, brand.shortName);
+  const gradeKey = (m: { ageGroup?: string | null; grade?: string | null }) =>
+    (m.ageGroup || m.grade || "").trim().toUpperCase();
+  const teamsIn = (key: string) =>
+    new Set(allowed.filter((x) => gradeKey(x) === key).map((x) => (x.teamName ?? "").trim())).size;
   for (const m of allowed.sort(
     (a, b) => (a.matchDate ?? "").localeCompare(b.matchDate ?? "") || a.id - b.id,
   )) {
@@ -693,7 +701,10 @@ async function juniorRoundResults(
     );
     const resultText = m.hhResult ?? "";
     out.cover.push({
-      gradeLabel: [m.ageGroup ?? m.grade ?? "", m.teamName ?? ""].filter(Boolean).join(" · "),
+      gradeLabel: juniorHeading(
+        { ageGroup: m.ageGroup ?? null, grade: m.grade ?? null, teamName: m.teamName ?? null },
+        { clubNames, teamsInGrade: teamsIn(gradeKey(m)) },
+      ).heading,
       resultLine: (input as { result?: string }).result ?? resultText,
       performers: "",
       outcome: /\bwon\b/i.test(resultText) ? "won" : /\blost\b/i.test(resultText) ? "lost" : "draw",

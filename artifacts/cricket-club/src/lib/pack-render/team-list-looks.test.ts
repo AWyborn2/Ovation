@@ -244,3 +244,52 @@ describe("Team List round label and grade heading", () => {
         expect(gradeTop - roundBottom).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
       });
 });
+
+/**
+ * Round 3 retest (junior headings): the venue · date · time line sits clear
+ * under the grade heading at every size, as drawn. On set 973 the line ran
+ * through the heading.
+ */
+function headingVenuePairs(doc: TemplateDocumentV2) {
+  const layers = flattenLayers(doc.pages.team?.layers ?? []);
+  const on = (token: string, size: CardSize) =>
+    layers.find(
+      (l) =>
+        l.kind === "text" &&
+        String(l.content ?? "").includes(token) &&
+        !l.hidden &&
+        (!l.sizes || l.sizes.includes(size)) &&
+        (l.geometry as Partial<Record<CardSize, Box>>)[size],
+    );
+  return SIZE_KEYS.flatMap((size) => {
+    const grade = on("{{gradeHeading}}", size);
+    const venue = on("{{venueDateTime}}", size);
+    return grade && venue ? [{ size, grade, venue }] : [];
+  });
+}
+
+describe("Team List grade heading and venue line", () => {
+  const box = (l: TemplateLayerV2, size: CardSize) => (l.geometry as Record<string, Box>)[size]!;
+
+  it("Broadcast Dark has both at every size", () => {
+    const doc = teamListBundles().find((b) => b.name === "broadcast-dark/teamList")!.doc;
+    expect(headingVenuePairs(doc).map((p) => p.size)).toEqual(SIZE_KEYS);
+  });
+
+  for (const { name, doc } of teamListBundles())
+    for (const { size, grade, venue } of headingVenuePairs(doc))
+      it(`${name} ${size}: the venue line sits clear of the heading`, () => {
+        const g = box(grade, size);
+        const v = box(venue, size);
+        // Only a venue line under the heading, sharing its width, is checked
+        // (some looks set it above or beside the heading).
+        if (v.y < g.y || v.x >= g.x + g.w || g.x >= v.x + v.w) return;
+        const [, headingBottom] = lineExtent(grade, g, size);
+        const [venueTop] = lineExtent(venue, v, size);
+        const { w, h } = SIZES[size];
+        expect(
+          venueTop - headingBottom,
+          `${venue.id} starts ${Math.round(venueTop - headingBottom)} px after ${grade.id} ends`,
+        ).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
+      });
+});

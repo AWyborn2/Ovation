@@ -1,6 +1,6 @@
 {
   "name": "Club Kit team list",
-  "version": 3,
+  "version": 4,
   "listed": false,
   "document": {
     "formatVersion": 2,
@@ -1292,7 +1292,7 @@
             "id": "eyebrow-1",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "{{gradeRound}} · {{competitionLine}}",
+            "content": "{{gradeRound}} \u00b7 {{competitionLine}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 1.8,
@@ -1329,7 +1329,7 @@
             "id": "eyebrow-2",
             "kind": "text",
             "name": "Eyebrow",
-            "content": "{{gradeRound}} · {{competitionLine}}",
+            "content": "{{gradeRound}} \u00b7 {{competitionLine}}",
             "style": {
               "fontFamily": "'IBM Plex Mono',ui-monospace,Menlo,monospace",
               "fontSize": 0.94,
@@ -1446,19 +1446,19 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 38.1,
+                "y": 39.29,
                 "w": 44,
                 "h": 6
               },
               "portrait": {
                 "x": 6,
-                "y": 43.5,
+                "y": 44.64,
                 "w": 88,
                 "h": 4.8
               },
               "story": {
                 "x": 6,
-                "y": 58.56,
+                "y": 59.36,
                 "w": 88,
                 "h": 3.37
               }
@@ -1481,7 +1481,7 @@
             "geometry": {
               "landscape": {
                 "x": 3.15,
-                "y": 36.9,
+                "y": 38.19,
                 "w": 48.3,
                 "h": 6
               }
