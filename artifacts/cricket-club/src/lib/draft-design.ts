@@ -1,5 +1,7 @@
 /** A draft's own design (full draft editor plan). */
 import { primaryPage } from "@workspace/scorecard/kind-templates";
+import { withInningsWording } from "@/lib/pack-render/bind";
+import type { ShareCardInput } from "@/lib/share-card";
 
 /**
  * The draft's design, with any layers the previous draft editor put at the root
@@ -19,4 +21,14 @@ export function withRootLayersOnPage(adjustments: unknown, kind: string): unknow
     ...rest,
     pages: { ...doc.pages, [key]: { ...page, layers: [...(page.layers ?? []), ...layers] } },
   };
+}
+
+/**
+ * The design the card editor opens (round 3 retest follow-up): the draft's own
+ * design, in its innings' wording. A century design prints "CENTURY" as fixed
+ * text, and previews and posts swap it for "FIFTY" on a 50 to 99 innings; the
+ * editor opens it the same way, so the canvas matches them and a save keeps it.
+ */
+export function draftEditorDocument(adjustments: unknown, input: ShareCardInput): unknown {
+  return withInningsWording(withRootLayersOnPage(adjustments, input.kind), input);
 }

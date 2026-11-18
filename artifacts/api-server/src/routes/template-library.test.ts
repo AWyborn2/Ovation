@@ -256,6 +256,28 @@ describe("club templates", () => {
     expect(bad.status).toBe(400);
   });
 
+  it("takes a big template body past 100 KB, and still refuses one over the cap (413)", async () => {
+    const created = await me().post("/club-templates", {
+      libraryTemplateId: libIds[`${LOOK}/matchDay`],
+    });
+    const id = created.body.id;
+    // A rename carrying 500 KB of padding: read in full (not a 413), then answered on its merits.
+    const padded = await me().put(`/club-templates/${id}`, {
+      baseVersion: 1,
+      name: "Big",
+      padding: "x".repeat(500 * 1024),
+    });
+    expect(padded.status).not.toBe(413);
+    const over = await me().put(`/club-templates/${id}`, {
+      baseVersion: 1,
+      name: "Too big",
+      padding: "x".repeat(4 * 1024 * 1024),
+    });
+    expect(over.status).toBe(413);
+    // Leave no unedited copy behind for the look adoption tests.
+    expect((await me().del(`/club-templates/${id}`)).status).toBeLessThan(300);
+  });
+
   it("saves a format v2 document, and refuses one the v2 rules don't allow (T3.6, L1-B)", async () => {
     const created = await me().post("/club-templates", {
       libraryTemplateId: libIds[`${LOOK}/matchDay`],

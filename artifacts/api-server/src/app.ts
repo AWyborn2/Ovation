@@ -119,6 +119,14 @@ socialDraftBodies.patch("/:id", tenantContext, requireAdmin, socialDraftJson);
 const setDesignJson = express.json({ limit: MAX_SET_DOCUMENT_BYTES + 512 * 1024 });
 socialDraftBodies.put("/:id/set-design", tenantContext, requireAdmin, setDesignJson);
 app.use("/api/social-drafts", socialDraftBodies);
+// A club's own template copy is a whole template document (a set template is a
+// set document, up to MAX_SET_DOCUMENT_BYTES): saving or creating one takes the
+// set editor's limit, signed in first (round 3 retest follow-up). Other template
+// routes keep the global 100kb ceiling.
+const clubTemplateBodies = express.Router();
+clubTemplateBodies.post("/", tenantContext, requireAdmin, setDesignJson);
+clubTemplateBodies.put("/:id", tenantContext, requireAdmin, setDesignJson);
+app.use("/api/club-templates", clubTemplateBodies);
 
 // Explicit body ceilings, pinned at body-parser's own default rather than left
 // implicit. Bodies here are small JSON (settings patches, import reconcile

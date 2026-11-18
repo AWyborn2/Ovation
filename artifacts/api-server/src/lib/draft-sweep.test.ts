@@ -335,7 +335,9 @@ describe("central drafting sweep", () => {
     expect(c.matches.map((m) => m.gradeLabel)).toEqual([
       "A Grade",
       "B Grade",
-      "Year 9 · Sweep Hawks",
+      // The junior row names its grade like the Team List heading: one Year 9
+      // team, so no team suffix and never the club (round 3 retest).
+      "Year 9",
     ]);
     expect(c.results).toHaveLength(3);
     expect(c.junior).toBe(true);
@@ -354,7 +356,7 @@ describe("central drafting sweep", () => {
     expect(seniors.junior).toBeUndefined();
     const junior = all.find((d) => d.sourceKey?.endsWith(":junior"))!;
     const j = junior.cardInput as Wrap;
-    expect(j.matches.map((m) => m.gradeLabel)).toEqual(["Year 9 · Sweep Hawks"]);
+    expect(j.matches.map((m) => m.gradeLabel)).toEqual(["Year 9"]);
     expect(j.results).toHaveLength(1);
     expect(j.junior).toBe(true);
     expect(junior.sourceMatchIsJunior).toBe(true);
