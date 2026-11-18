@@ -17,6 +17,7 @@ import {
   addBlankPage,
   deleteSlide,
   layoutPages,
+  newSlideLayout,
   openSetTemplate,
   storedSetDocument,
   withSlideOrder,
@@ -182,5 +183,62 @@ describe("a set already holding let-go layout pages (as draft 962 was saved)", (
       "sponsors",
       "p3",
     ]);
+  });
+});
+
+describe("orphaned layouts in a set as the editor opens it (dev retest 3, draft 962)", () => {
+  // As draft 962 was saved: no pageFor, both layout pages left, a stored
+  // design slide for each after Sponsors.
+  const BROKEN = { ...SET, arrangement: { order: [], removed: [] } } as unknown as SetDocument;
+  const STORED_BROKEN: StoredSetSlide[] = [
+    ...STORED,
+    {
+      id: "page:a-layout",
+      pageId: "a-layout",
+      label: "A Grade v Waroona layout",
+      input: { kind: "teamList" },
+    },
+    {
+      id: "page:b-layout",
+      pageId: "b-layout",
+      label: "B Grade v Pinjarra layout",
+      input: { kind: "teamList" },
+    },
+  ];
+
+  it("opened (shed of its let-go layouts), draws no slide for them", () => {
+    // The editor opens the set without the pages; their stored slides used to
+    // fall back to the team page and draw as blank team slides.
+    const doc = opened(withoutStrandedLayouts(BROKEN));
+    expect(drawn(doc, STORED_BROKEN).map(([k]) => k)).toEqual([
+      "cover",
+      "a",
+      "b",
+      "c",
+      "d",
+      "sponsors",
+    ]);
+  });
+
+  it("a layout page only a deleted slide names is let go, with its map entry", () => {
+    const set = {
+      ...SET,
+      arrangement: { order: [], removed: ["a"], pageFor: { a: "a-layout", b: "b-layout" } },
+    } as unknown as SetDocument;
+    const shed = withoutStrandedLayouts(set);
+    expect(shed.pages.map((p) => p.id)).toEqual(["cover", "team", "sponsors", "b-layout"]);
+    expect(shed.arrangement).toEqual({ order: [], removed: ["a"], pageFor: { b: "b-layout" } });
+  });
+
+  it("a long slide name keeps its layout page known as a layout", () => {
+    const long = "A Grade v Waroona Cricket Club Sharks, Sat 15 Nov 2026, Halls Head Oval";
+    const r = newSlideLayout(opened(), "c", "team", `${long} layout`);
+    const set = storedSetDocument(r.doc);
+    const made = set.pages.find((p) => p.id === r.id)!;
+    expect(made.name!.length).toBeLessThanOrEqual(60);
+    expect(made.name).toMatch(/ layout$/);
+    // Let go (as before the fix), it is shed like any other.
+    const letGo = { ...set, arrangement: { order: [], removed: [] } } as SetDocument;
+    expect(withoutStrandedLayouts(letGo).pages.some((p) => p.id === r.id)).toBe(false);
   });
 });

@@ -236,6 +236,11 @@ export function addLayerToSizes<L extends TemplateLayerBase>(
 
 /** How many rows a rows layer holds on `size` (KTD13); 0 when it isn't on that size. */
 export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): number {
+  return rowsHeld(layer, size, 1);
+}
+
+/** Rows a layer holds on `size` with its rows drawn at `scale` of their designed size. */
+function rowsHeld(layer: TemplateLayerBase, size: TemplateSize, scale: number): number {
   const rows = layer.rows;
   const box = layer.geometry[size];
   if (!rows || !box || !layerOnSize(layer, size) || rows.rowHeight <= 0) return 0;
@@ -244,8 +249,37 @@ export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): numb
   const boxPx = (box.h / 100) * dims.h;
   const rowPx = (rows.rowHeight / 100) * dims.w;
   const gapPx = ((rows.gap ?? 0) / 100) * dims.w;
-  const perColumn = Math.max(0, Math.floor((boxPx + gapPx) / (rowPx + gapPx)));
+  // Shrunk, a tiny allowance, so a list exactly at the limit counts as fitting.
+  const slack = scale < 1 ? 1e-9 : 0;
+  const perColumn = Math.max(0, Math.floor((boxPx / scale + gapPx) / (rowPx + gapPx) + slack));
   return perColumn * rowsColumns(rows);
+}
+
+/**
+ * The smallest a list may draw to show every row (ADR-009: compress, never
+ * drop). The renderer draws a Team List smaller to fit its whole side, and the
+ * fit check fails a list drawn smaller than this.
+ */
+export const MIN_ROWS_SQUEEZE = 0.7;
+
+/**
+ * Whether a list draws its rows smaller, rather than drop any, when it has
+ * more than its box holds (#648): a Team List's players. Other lists split
+ * onto extra slides by their capacity instead.
+ */
+export function rowsShrinkToFit(rows: Pick<RowsSpec, "repeat" | "layout">): boolean {
+  return rows.layout !== "tiles" && rows.repeat === "players";
+}
+
+/**
+ * How many rows a rows layer shows on `size`: for a list that shrinks to fit
+ * (`rowsShrinkToFit`), as many as fit drawn down to `MIN_ROWS_SQUEEZE`, by the
+ * renderer's own maths; for any other list, `rowsCapacity`.
+ */
+export function rowsFitCapacity(layer: TemplateLayerBase, size: TemplateSize): number {
+  const full = rowsCapacity(layer, size);
+  if (!layer.rows || full === 0 || !rowsShrinkToFit(layer.rows)) return full;
+  return Math.max(full, rowsHeld(layer, size, MIN_ROWS_SQUEEZE));
 }
 
 /** How many columns a list flows down (1–6; anything else counts as 1). */

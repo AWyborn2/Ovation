@@ -3,7 +3,7 @@
  * draft editor plan, stage 2: a card made into a free set of pages).
  */
 import { describe, expect, it } from "vitest";
-import type { SetDocument } from "@workspace/scorecard/kind-templates";
+import { withoutStrandedLayouts, type SetDocument } from "@workspace/scorecard/kind-templates";
 import { arrangeCarouselSlides, carouselSetDesign, draftSetType } from "./set-design";
 
 const freeSet = {
@@ -106,6 +106,22 @@ describe("saving a carousel with slides' own layouts (dev retest, draft 962)", (
     const slides = arrangeCarouselSlides(withDesignSlides, broken);
     expect(slides.map((s) => s.id)).toEqual(["cover", "b", "c", "sponsors"]);
     expect(carouselSetDesign(broken, slides).pages.map((p) => p.id)).toEqual([
+      "cover",
+      "team",
+      "sponsors",
+    ]);
+  });
+  it("a set opened since and shed in the editor saves without the stale slides", () => {
+    // The editor opens the design without its let-go layout pages; the stored
+    // slides made for them still name them.
+    const shed = withoutStrandedLayouts(set({ order: [], removed: [] }));
+    const withDesignSlides = [
+      ...stored,
+      { id: "page:a-layout", pageId: "a-layout", input: { kind: "teamList" } },
+    ];
+    const slides = arrangeCarouselSlides(withDesignSlides, shed);
+    expect(slides.map((s) => s.id)).toEqual(["cover", "a", "b", "c", "sponsors"]);
+    expect(carouselSetDesign(shed, slides).pages.map((p) => p.id)).toEqual([
       "cover",
       "team",
       "sponsors",
