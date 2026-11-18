@@ -156,4 +156,20 @@ describe("UploadsPanel on a junior design (round 3 retest, #8)", () => {
     expect(screen.queryByText("Club logo")).toBeNull();
     expect(screen.getByText("Speech bubble")).toBeTruthy();
   });
+
+  it("names SVG as the only file type it takes (retest 4)", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <UploadsPanel size="square" onAdd={vi.fn()} vectorOnly />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText("SVG only")).toBeTruthy();
+    expect(screen.getByText("Upload SVG logos or graphics")).toBeTruthy();
+    expect(screen.queryByText(/PNG|JPEG|WebP|HEIC/)).toBeNull();
+  });
+
+  it("still lists every type on a senior design", () => {
+    setup();
+    expect(screen.getByText("PNG, JPEG, WebP, SVG or HEIC")).toBeTruthy();
+  });
 });

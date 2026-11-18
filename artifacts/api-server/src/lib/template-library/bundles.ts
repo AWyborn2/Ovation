@@ -27,6 +27,7 @@ import {
   setTemplateKind,
   setTypeOfKind,
   SET_TYPE_LABELS,
+  bundleTemplateName,
   templateDocumentErrors,
   type DataSetType,
 } from "@workspace/scorecard/kind-templates";
@@ -175,13 +176,16 @@ export async function syncBundles(
         summary.skipped.push({ slug, reason: problem });
         continue;
       }
+      // A bundle file names its kind by key ("Club Kit tradingCard"); the
+      // library shows the kind's label ("Club Kit Trading Card", retest 4).
+      const name = bundleTemplateName(t.file.name, bundle.look.name, t.kind);
       const [template] = await db
         .insert(libraryTemplatesTable)
         .values({
           slug,
           lookId: look.id,
           kind: t.kind,
-          name: t.file.name,
+          name,
           origin: "bundle",
           currentVersion: t.file.version,
           listed: t.file.listed,
@@ -192,7 +196,7 @@ export async function syncBundles(
           set: {
             lookId: look.id,
             kind: t.kind,
-            name: t.file.name,
+            name,
             currentVersion: t.file.version,
             // Ovation's own unlisting (console) wins over the bundle's flag.
             listed: sql`case when ${libraryTemplatesTable.unlistedBy} = 'ovation' then false else ${t.file.listed} end`,

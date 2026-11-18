@@ -184,8 +184,12 @@ export function UploadsPanel({
         ) : (
           <Upload className="h-6 w-6" aria-hidden />
         )}
-        <span className="font-semibold">Upload logos, artwork or SVGs</span>
-        <span className="text-xs text-[var(--ed-ink2)]">PNG, JPEG, WebP, SVG or HEIC</span>
+        <span className="font-semibold">
+          {vectorOnly ? "Upload SVG logos or graphics" : "Upload logos, artwork or SVGs"}
+        </span>
+        <span className="text-xs text-[var(--ed-ink2)]">
+          {vectorOnly ? "SVG only" : "PNG, JPEG, WebP, SVG or HEIC"}
+        </span>
         <input
           type="file"
           multiple

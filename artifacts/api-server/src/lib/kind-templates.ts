@@ -28,6 +28,7 @@ import {
 } from "@workspace/db";
 import {
   emptySizes,
+  fallbackTemplateName,
   isRetiredPack,
   isSetDocument,
   kindFields,
@@ -203,7 +204,8 @@ async function lazyDefaultSource(
     };
   }
   return {
-    name: `${kind} template`,
+    // The kind's readable name ("Trading Card template"), never its key (retest 4).
+    name: fallbackTemplateName(kind),
     document: structuredClone(starterBundleDocument(currentPackId, kind)),
     originTemplateId: null,
     originVersion: null,
