@@ -29,7 +29,7 @@ import {
 } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
-import { emptySponsorFrames, sponsorSlotToken } from "./layer-layout";
+import { emptySlotFrames, emptySponsorFrames, sponsorSlotToken } from "./layer-layout";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
@@ -227,5 +227,42 @@ describe("emptySponsorFrames", () => {
 
   it("drops nothing when every slot has a logo", () => {
     expect(emptySponsorFrames(layers, boxOf, () => true, layerTokens).size).toBe(0);
+  });
+});
+
+describe("emptySlotFrames (an empty slot draws nothing, retest 5)", () => {
+  const at = (x: number, y: number, w: number, h: number) => ({ square: { x, y, w, h } });
+  const layer = (id: string, kind: string, geometry: object, extra: object = {}) =>
+    ({ id, kind, geometry, ...extra }) as unknown as TemplateLayerV2;
+  const boxOf = (l: TemplateLayerV2) => (l.geometry as { square: Box }).square;
+  const ids = (s: Set<TemplateLayerV2>) => [...s].map((l) => l.id).sort();
+
+  it("drops a plate under a logo drawn larger than it (Bold Type's Team List sponsor)", () => {
+    const plate = layer("plate", "shape", at(21, 90, 10, 3.5));
+    const logo = layer("logo", "image", at(21, 88, 18, 7), { content: "{{sponsor1}}" });
+    expect(ids(emptySlotFrames([plate, logo], boxOf, () => false, layerTokens))).toEqual(["plate"]);
+    expect(emptySlotFrames([plate, logo], boxOf, () => true, layerTokens).size).toBe(0);
+  });
+
+  it("drops an opposition crest's backing square, keeps one a stand-in is drawn in", () => {
+    const plate = layer("plate", "shape", at(6, 34, 5, 5));
+    const crest = layer("crest", "image", at(6, 34, 5, 5), { content: "{{opposition.logo}}" });
+    const monogram = layer("mono", "text", at(6.5, 35, 4, 3), {
+      content: "{{opposition.monogram}}",
+    });
+    const has = (t: string) => t === "opposition.monogram";
+    expect(ids(emptySlotFrames([plate, crest], boxOf, has, layerTokens))).toEqual(["plate"]);
+    expect(emptySlotFrames([plate, crest, monogram], boxOf, has, layerTokens).size).toBe(0);
+  });
+
+  it("keeps a faint tint, a no-photo panel and a photo's or artwork's frame", () => {
+    const tint = layer("tint", "shape", at(6, 34, 5, 5), { style: { opacity: 0.06 } });
+    const crest = layer("crest", "image", at(6, 34, 5, 5), { content: "{{opposition.logo}}" });
+    const panel = layer("panel", "shape", at(54, 54, 46, 46), { showWhen: { photo: false } });
+    const frame = layer("frame", "shape", at(54, 54, 46, 46));
+    const photo = layer("photo", "photo", at(54, 54, 46, 46));
+    const ground = layer("ground", "image", at(54, 54, 46, 46), { content: "{{groundPhoto}}" });
+    const list = [tint, crest, panel, frame, photo, ground];
+    expect(emptySlotFrames(list, boxOf, () => false, layerTokens).size).toBe(0);
   });
 });

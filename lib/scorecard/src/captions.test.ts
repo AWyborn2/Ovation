@@ -106,6 +106,11 @@ const cases: Array<[string, CaptionCardInput & Record<string, unknown>, string]>
     "Ton Up|121|runs|Century|100|A Grade|Rivals CC|Round 6|||club.example/go/abc|club.example|#GoClub",
   ],
   [
+    "junior round that already says Round (retest 5: never 'Round Round 5')",
+    { kind: "century", playerName: "Young Gun", runs: 104, grade: "Under 15", round: "Round 5" },
+    "Young Gun|104|runs|Century|100|Under 15||Round 5|||club.example/go/abc|club.example|#GoClub",
+  ],
+  [
     "junior Big Moment fifty on the century kind (card 927)",
     { kind: "century", playerName: "Young Gun", runs: 52, grade: "Under 15", junior: true },
     "Young Gun|52|runs|Fifty|50|Under 15|||||club.example/go/abc|club.example|#GoClub",

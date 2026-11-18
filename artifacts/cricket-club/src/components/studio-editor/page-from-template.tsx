@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { FreeLayer } from "@/lib/pack-render";
 import { kindLabel } from "@/lib/social-studio";
+import { templatePageName } from "./set-doc";
 import { PAGE_LABEL } from "./template-doc";
 
 export type PickedPage = { kind: string; page: PageKey; name: string; layers: FreeLayer[] };
@@ -60,7 +61,7 @@ export function PageFromTemplateDialog({
     onPick({
       kind: t.kind,
       page: p,
-      name: `${t.name}${pages.length > 1 ? ` · ${PAGE_LABEL[p]}` : ""}`.slice(0, 60),
+      name: templatePageName(t.name, PAGE_LABEL[p], pages.length > 1),
       layers: layers as unknown as FreeLayer[],
     });
     onClose();

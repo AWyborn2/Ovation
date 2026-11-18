@@ -46,6 +46,7 @@ import { seasonLabel } from "@/lib/match-summary";
 import type { CardKind, ClubLeaderboardCategory } from "@/lib/share-card";
 import { initialCardState, type CardFormState } from "./logic";
 import { DESCRIPTORS } from "./descriptors";
+import { roundText } from "@/lib/utils";
 import {
   matchContextPatch,
   fixtureToMatchDayState,
@@ -183,7 +184,7 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
   });
 
   const matchLabel = (m: MatchSummaryDto) => {
-    const round = m.stage ?? (m.round != null ? `Round ${m.round}` : "Match");
+    const round = m.stage ?? roundText(m.round) ?? "Match";
     return `${round} — vs ${m.opponent ?? "Unknown"}${m.result ? ` (${m.result})` : ""}`;
   };
 
