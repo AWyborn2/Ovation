@@ -367,7 +367,13 @@ function backgroundAt(
       logo = l.kind === "image";
       continue;
     }
-    const fill = l.kind === "shape" ? style.fill : l.kind === "text" ? style.background : null;
+    // A shape paints its fill, else v1's background (`shapePaint`), as the Classic looks' bars do.
+    const fill =
+      l.kind === "shape"
+        ? (style.fill ?? style.background)
+        : l.kind === "text"
+          ? style.background
+          : null;
     if (!fill) continue;
     const colour =
       typeof fill === "string"
@@ -723,6 +729,30 @@ describe("Duotone text contrast on every kind", () => {
       found.some((f) => f.includes('square title-l24 "{{weekendTitle}}" (no photo): drawn over')),
     ).toBe(true);
   });
+});
+
+describe("Result side names contrast in every look", () => {
+  // Every look's Result names both sides beside their crests (an opponent is
+  // always named, crest or not): those names clear WCAG AA for any club
+  // colours, photo or none, senior or junior, at every size.
+  const bundles = listedBundles(/./, /^matchSummary\.json$/);
+  const SIDE_NAME = /\{\{(club|opposition)\.(name|barName)\}\}/;
+
+  it("reads every listed look's Match Summary", () => {
+    expect(bundles.length).toBeGreaterThanOrEqual(15);
+  });
+
+  for (const { name, kind, doc } of bundles)
+    it(`${name}: the Result's side names clear WCAG AA at every size`, () => {
+      const result = { ...doc, pages: { result: doc.pages.result! } } as TemplateDocumentV2;
+      const ids = flattenLayers(result.pages.result!.layers)
+        .filter((l) => l.kind === "text" && SIDE_NAME.test(String(l.content ?? "")))
+        .map((l) => l.id);
+      const low = lowContrast(name, result, { kind, every: true }).filter((f) =>
+        ids.some((id) => f.includes(` ${id} `)),
+      );
+      expect(low).toEqual([]);
+    });
 });
 
 // ── Cover and title text on every look (round 5 retest) ─────────────────────

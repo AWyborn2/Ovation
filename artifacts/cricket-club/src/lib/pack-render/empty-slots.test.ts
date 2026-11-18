@@ -115,20 +115,25 @@ function variants(doc: TemplateDocumentV2, kind: string, page: PageKey): Variant
   return out;
 }
 
-function render(kind: string, doc: unknown, v: Variant): string | null {
+function render(
+  kind: string,
+  doc: unknown,
+  v: Variant,
+  opts: { contentKind?: string; image?: (name: string) => string } = {},
+): string | null {
   let card;
   try {
     card = worstCaseCard(
       kind,
       {
         page: v.page,
-        contentKind: templateKindFor(kind),
+        contentKind: opts.contentKind ?? templateKindFor(kind),
         preset: "full",
         ...(v.photo === undefined ? {} : { photo: v.photo }),
         sponsors: v.sponsors === 0 ? "none" : "max",
         junior: v.junior,
       },
-      { image },
+      { image: opts.image ?? image },
     );
   } catch {
     return null; // A kind with no worst-case content (not a card kind).
@@ -359,6 +364,71 @@ export function sweepEmptySlots(list: Bundle[]): { failures: string[]; drawn: nu
   return { failures, drawn: count };
 }
 
+// ── A Result names the opposition ───────────────────────────────────────────
+
+/** Tokens that print the opposition's name: its name, bar name or short name. */
+const OPPOSITION_NAME = /\{\{\s*opposition\.(name|barName|short)\s*\}\}/;
+/** `innings1.team` and `innings2.team` print each side in batting order: both together name the opposition. */
+const INNINGS_TEAM = [
+  /\{\{\s*innings1\.(team|short)\s*\}\}/,
+  /\{\{\s*innings2\.(team|short)\s*\}\}/,
+];
+
+/** A text layer's tokens: its content, or the field it binds. */
+function textOf(l: TemplateLayerV2): string {
+  if (l.kind !== "text") return "";
+  const bind = (l as { bind?: string }).bind;
+  return `${String(l.content ?? "")}${bind ? ` {{${bind}}}` : ""}`;
+}
+
+/**
+ * Each Result variant whose drawn layers don't name the opposition: every
+ * look's Result page × size × senior and junior × the opposition's crest and
+ * none (a junior opposition often has none, or has it withheld) × Match
+ * Summary and Results content × photo and none. The crest never stands in for
+ * the name.
+ */
+export function resultsMissingOppositionName(list: Bundle[]): string[] {
+  const out: string[] = [];
+  for (const b of list) {
+    if (templateKindFor(b.kind) !== "matchSummary" || !b.doc.pages.result) continue;
+    const layers = siblingLists(b.doc.pages.result.layers ?? []).flat();
+    const photos = pageUsesPhoto(b.doc, "matchSummary", "result") ? [true, false] : [undefined];
+    for (const size of pageSizes(b.doc, "result") as CardSize[])
+      for (const junior of [false, true])
+        for (const crest of [true, false])
+          for (const contentKind of ["matchSummary", "results"])
+            for (const photo of photos) {
+              const v: Variant = { page: "result", size, junior, photo, sponsors: 3 };
+              const html = render(b.kind, b.raw, v, {
+                contentKind,
+                image: crest ? (name) => placeholderImage(name) : image,
+              });
+              if (html === null) continue;
+              const drawn = new Set(
+                [...html.matchAll(/data-layer-id="([^"]+)"/g)].map((m) => m[1]!),
+              );
+              const on = layers.filter((l) => drawn.has(l.id)).map(textOf);
+              const named =
+                on.some((t) => OPPOSITION_NAME.test(t)) ||
+                INNINGS_TEAM.every((re) => on.some((t) => re.test(t)));
+              if (!named)
+                out.push(
+                  [
+                    `${b.look}/${b.kind} result ${size}`,
+                    junior ? "junior" : "senior",
+                    crest ? "crest" : "no crest",
+                    contentKind,
+                    photo === undefined ? "" : photo ? "photo" : "no photo",
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                );
+            }
+  }
+  return out;
+}
+
 describe("An empty slot draws nothing", () => {
   const all = bundles();
 
@@ -381,21 +451,14 @@ describe("An empty slot draws nothing", () => {
     expect(folded).toEqual([]);
   }, 600_000);
 
-  it("Bold Type's Result names the opposition on every size, crest or not (set 980)", () => {
-    // Its crest stood in for the name: a junior opposition with no crest went unnamed.
-    const b = all.find((x) => x.look === "bold-type" && x.kind === "matchSummary")!;
-    for (const size of pageSizes(b.doc, "result") as CardSize[])
-      for (const junior of [false, true]) {
-        const v: Variant = { page: "result", size, junior, photo: undefined, sponsors: 3 };
-        const html = render("matchSummary", b.raw, v)!;
-        const drawn = new Set([...html.matchAll(/data-layer-id="([^"]+)"/g)].map((m) => m[1]!));
-        const named = (b.doc.pages.result?.layers ?? []).some(
-          (l) =>
-            l.kind === "text" &&
-            drawn.has(l.id) &&
-            String(l.content ?? "").includes("{{opposition.name}}"),
-        );
-        expect(named, `${size} ${junior ? "junior" : "senior"}`).toBe(true);
-      }
-  });
+  it("every look's Result names the opposition on every size, crest or not (set 980)", () => {
+    // A crest stood in for the name: a junior opposition with no crest went
+    // unnamed (Bold Type, then Gold Foil, Neon Night, Sunset, Broadcast Dark,
+    // Club Kit and Duotone's story). An opponent is always named.
+    const looks = new Set(
+      all.filter((b) => templateKindFor(b.kind) === "matchSummary").map((b) => b.look),
+    );
+    expect(looks.size).toBeGreaterThanOrEqual(15);
+    expect(resultsMissingOppositionName(all)).toEqual([]);
+  }, 300_000);
 });

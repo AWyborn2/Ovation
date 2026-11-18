@@ -1,6 +1,6 @@
 {
   "name": "Club Kit matchSummary",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1450,9 +1450,9 @@
             "geometry": {
               "square": {
                 "x": 19,
-                "y": 41.79,
+                "y": 43.4,
                 "w": 17.09,
-                "h": 7.22
+                "h": 6.6
               },
               "portrait": {
                 "x": 64.31,
@@ -1521,7 +1521,7 @@
             "geometry": {
               "square": {
                 "x": 36.69,
-                "y": 46.14,
+                "y": 47.13,
                 "w": 10.6,
                 "h": 2.13
               },
@@ -1570,6 +1570,126 @@
             },
             "sig": "text:0jfu8pv13xcbku",
             "link": "result-l40"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-square",
+            "link": "result-club-name",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 19,
+                "y": 40.35,
+                "w": 28.29,
+                "h": 2.9
+              }
+            },
+            "sig": "text:0r7aepu0y3878x"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-portrait",
+            "link": "result-club-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 20.8,
+                "y": 55.18,
+                "w": 42.5,
+                "h": 3.4
+              }
+            },
+            "sig": "text:12g97kb1ej3f5c"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-story",
+            "link": "result-club-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 20.8,
+                "y": 68.48,
+                "w": 42.5,
+                "h": 2.4
+              }
+            },
+            "sig": "text:12g97kb1ej3f5c"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "var(--accent-ink)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.6,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-landscape",
+            "link": "result-club-name",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 10.9,
+                "y": 44.82,
+                "w": 24.4,
+                "h": 3.8
+              }
+            },
+            "sig": "text:1hsssk10ojm7l6"
           },
           {
             "kind": "shape",
@@ -1760,9 +1880,9 @@
             "geometry": {
               "square": {
                 "x": 20.11,
-                "y": 54.39,
+                "y": 55.99,
                 "w": 18,
-                "h": 7.22
+                "h": 6.6
               },
               "portrait": {
                 "x": 63.4,
@@ -1831,7 +1951,7 @@
             "geometry": {
               "square": {
                 "x": 38.71,
-                "y": 58.74,
+                "y": 59.73,
                 "w": 10.6,
                 "h": 2.13
               },
@@ -1880,6 +2000,126 @@
             },
             "sig": "text:09xslq4162h3gn",
             "link": "result-l50"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ck-chalk2)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-square",
+            "link": "result-opp-name",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 20.11,
+                "y": 52.94,
+                "w": 28.6,
+                "h": 2.9
+              }
+            },
+            "sig": "text:1fgrmaj0nlcfje"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ck-chalk2)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-portrait",
+            "link": "result-opp-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 21.9,
+                "y": 66.37,
+                "w": 40.5,
+                "h": 3.4
+              }
+            },
+            "sig": "text:0psg8r60cukxf7"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ck-chalk2)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.2,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-story",
+            "link": "result-opp-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 21.9,
+                "y": 76.35,
+                "w": 40.5,
+                "h": 2.4
+              }
+            },
+            "sig": "text:0psg8r60cukxf7"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "var(--ck-chalk2)",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 1.6,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-landscape",
+            "link": "result-opp-name",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 11.5,
+                "y": 58.82,
+                "w": 23.3,
+                "h": 3.8
+              }
+            },
+            "sig": "text:1um2jnc0ruseex"
           },
           {
             "kind": "text",

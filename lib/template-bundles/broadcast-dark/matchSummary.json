@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark matchSummary",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -881,6 +881,37 @@
             "link": "result-l22"
           },
           {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.96,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-square",
+            "link": "result-opp-name",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 13.26,
+                "y": 32.51,
+                "w": 25.43,
+                "h": 3.7
+              }
+            },
+            "sig": "text:0wadx5a02efryx"
+          },
+          {
             "kind": "image",
             "content": "{{opposition.logo}}",
             "style": {
@@ -907,6 +938,68 @@
             "link": "result-l22"
           },
           {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-story",
+            "link": "result-opp-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 15.68,
+                "y": 55.51,
+                "w": 34.24,
+                "h": 2.77
+              }
+            },
+            "sig": "text:0qqn0010m1t19m"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-portrait",
+            "link": "result-opp-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 15.68,
+                "y": 36.72,
+                "w": 34.24,
+                "h": 3.94
+              }
+            },
+            "sig": "text:0qqn0010m1t19m"
+          },
+          {
             "kind": "image",
             "content": "{{opposition.logo}}",
             "style": {
@@ -925,6 +1018,37 @@
             },
             "sig": "image:0laa5yz0e6hsu4",
             "link": "result-l22"
+          },
+          {
+            "kind": "text",
+            "content": "{{opposition.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.08,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1,
+              "opacity": 0.74
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-opp-name-landscape",
+            "link": "result-opp-name",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 6.96,
+                "y": 32.49,
+                "w": 12.86,
+                "h": 3.69
+              }
+            },
+            "sig": "text:1e78pw406aniz3"
           },
           {
             "kind": "text",
@@ -1373,6 +1497,36 @@
             "link": "result-l38"
           },
           {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 3.96,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-square",
+            "link": "result-club-name",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 13.26,
+                "y": 52.97,
+                "w": 27.27,
+                "h": 3.7
+              }
+            },
+            "sig": "text:0sif4l0039ngbp"
+          },
+          {
             "kind": "image",
             "content": "{{club.logo}}",
             "style": {
@@ -1398,6 +1552,66 @@
             "link": "result-l38"
           },
           {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-story",
+            "link": "result-club-name",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 15.68,
+                "y": 70.85,
+                "w": 36.68,
+                "h": 2.77
+              }
+            },
+            "sig": "text:0rgz21p0486mvs"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 5.28,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-portrait",
+            "link": "result-club-name",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 15.68,
+                "y": 58.54,
+                "w": 36.68,
+                "h": 3.94
+              }
+            },
+            "sig": "text:0rgz21p0486mvs"
+          },
+          {
             "kind": "image",
             "content": "{{club.logo}}",
             "style": {
@@ -1415,6 +1629,36 @@
             },
             "sig": "image:0b2io731bee1j6",
             "link": "result-l38"
+          },
+          {
+            "kind": "text",
+            "content": "{{club.name}}",
+            "style": {
+              "color": "#F5F2E8",
+              "fontFamily": "'Barlow Condensed',sans-serif",
+              "fontSize": 2.08,
+              "fontWeight": 800,
+              "uppercase": true,
+              "align": "left",
+              "lineHeight": 1
+            },
+            "fit": {
+              "minScale": 0.6,
+              "maxLines": 1,
+              "ellipsis": true
+            },
+            "id": "result-club-name-landscape",
+            "link": "result-club-name",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 6.96,
+                "y": 52.93,
+                "w": 13.83,
+                "h": 3.69
+              }
+            },
+            "sig": "text:1t9q3760im9lhn"
           },
           {
             "kind": "text",
