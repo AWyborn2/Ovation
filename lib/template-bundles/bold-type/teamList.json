@@ -1,6 +1,6 @@
 {
   "name": "Bold Type teamList",
-  "version": 11,
+  "version": 12,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -224,6 +224,110 @@
             "sig": "photo:02es65207u5aez"
           },
           {
+            "kind": "shape",
+            "id": "team-l6-square-nophoto-panel",
+            "name": "No-photo panel",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 46,
+                "h": 32.01
+              }
+            },
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "team-l6-square-nophoto-glow",
+            "name": "No-photo brand glow",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 54,
+                "y": 54,
+                "w": 46,
+                "h": 32.01
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "team-l6-square-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["square"],
+            "geometry": {
+              "square": {
+                "x": 69.84,
+                "y": 60.08,
+                "w": 19.85,
+                "h": 19.85
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "filter": [
@@ -255,6 +359,110 @@
               }
             },
             "sig": "photo:1376k341crvmdh"
+          },
+          {
+            "kind": "shape",
+            "id": "team-l6-portrait-nophoto-panel",
+            "name": "No-photo panel",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 46,
+                "h": 28.51
+              }
+            },
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "team-l6-portrait-nophoto-glow",
+            "name": "No-photo brand glow",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 54,
+                "y": 60,
+                "w": 46,
+                "h": 28.51
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "team-l6-portrait-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["portrait"],
+            "geometry": {
+              "portrait": {
+                "x": 68.71,
+                "y": 65.41,
+                "w": 22.1,
+                "h": 17.68
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "photo",
@@ -290,6 +498,110 @@
             "sig": "photo:0z6mxht031ms20"
           },
           {
+            "kind": "shape",
+            "id": "team-l6-landscape-nophoto-panel",
+            "name": "No-photo panel",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 48.85,
+                "h": 31.94
+              }
+            },
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "team-l6-landscape-nophoto-glow",
+            "name": "No-photo brand glow",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 51.15,
+                "y": 54,
+                "w": 48.85,
+                "h": 31.94
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "team-l6-landscape-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["landscape"],
+            "geometry": {
+              "landscape": {
+                "x": 73.31,
+                "y": 60.07,
+                "w": 10.4,
+                "h": 19.8
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
             "kind": "photo",
             "style": {
               "filter": [
@@ -321,6 +633,110 @@
               }
             },
             "sig": "photo:19lxj2r0hrvlii"
+          },
+          {
+            "kind": "shape",
+            "id": "team-l7-story-nophoto-panel",
+            "name": "No-photo panel",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 37.28,
+                "y": 61,
+                "w": 62.72,
+                "h": 30.47
+              }
+            },
+            "style": {
+              "fill": "var(--ink)",
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "shape",
+            "id": "team-l7-story-nophoto-glow",
+            "name": "No-photo brand glow",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 37.28,
+                "y": 61,
+                "w": 62.72,
+                "h": 30.47
+              }
+            },
+            "style": {
+              "fill": {
+                "type": "radial",
+                "at": {
+                  "x": 100,
+                  "y": 0
+                },
+                "stops": [
+                  {
+                    "color": "var(--panel)",
+                    "at": 0
+                  },
+                  {
+                    "color": "#00000000",
+                    "at": 78
+                  }
+                ]
+              },
+              "opacity": 0.38,
+              "clip": {
+                "polygon": [
+                  [18, 0],
+                  [100, 0],
+                  [100, 100],
+                  [0, 100]
+                ]
+              }
+            },
+            "showWhen": {
+              "photo": false
+            }
+          },
+          {
+            "kind": "image",
+            "id": "team-l7-story-nophoto-crest",
+            "name": "No-photo crest",
+            "content": "{{clubLogo}}",
+            "sizes": ["story"],
+            "geometry": {
+              "story": {
+                "x": 55.61,
+                "y": 66.79,
+                "w": 33.58,
+                "h": 18.89
+              }
+            },
+            "style": {
+              "filter": [
+                {
+                  "preset": "grayscale",
+                  "amount": 1
+                },
+                {
+                  "preset": "brightness",
+                  "amount": 2.6
+                }
+              ],
+              "opacity": 0.1
+            },
+            "showWhen": {
+              "photo": false
+            }
           },
           {
             "kind": "image",
@@ -1350,21 +1766,21 @@
             "geometry": {
               "square": {
                 "x": 21.44,
-                "y": 89.6,
-                "w": 10,
-                "h": 4.4
+                "y": 87.84,
+                "w": 18,
+                "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
-                "y": 91.68,
-                "w": 10,
-                "h": 3.52
+                "y": 90.27,
+                "w": 18,
+                "h": 6.34
               },
               "story": {
                 "x": 21.44,
-                "y": 94.15,
-                "w": 10,
-                "h": 2.48
+                "y": 92.34,
+                "w": 18,
+                "h": 4.46
               }
             },
             "sig": "shape:1d6f0mr0bk87fm"
@@ -1382,9 +1798,9 @@
             "geometry": {
               "landscape": {
                 "x": 11.26,
-                "y": 89.6,
-                "w": 5.25,
-                "h": 4.4
+                "y": 87.84,
+                "w": 9.45,
+                "h": 7.92
               }
             },
             "sig": "shape:12uv3yl120cnik"
@@ -1402,19 +1818,19 @@
               "square": {
                 "x": 21.44,
                 "y": 87.84,
-                "w": 18.0,
+                "w": 18,
                 "h": 7.92
               },
               "portrait": {
                 "x": 21.44,
                 "y": 90.27,
-                "w": 18.0,
+                "w": 18,
                 "h": 6.34
               },
               "story": {
                 "x": 21.44,
                 "y": 92.34,
-                "w": 18.0,
+                "w": 18,
                 "h": 4.46
               }
             },
