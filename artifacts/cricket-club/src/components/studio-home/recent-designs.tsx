@@ -360,7 +360,7 @@ export function YourDesigns({
   );
   const [kind, setKind] = useState("");
   const kinds = [...new Set(recent.items.flatMap((d) => (d.type === "set" ? [] : [d.kind])))].sort(
-    (a, b) => kindLabel(a).localeCompare(kindLabel(b)),
+    (a, b) => templateKindLabel(a).localeCompare(templateKindLabel(b)),
   );
   const shown = recent.items.filter(
     (d) => (!type || d.type === type) && (!kind || (d.type !== "set" && d.kind === kind)),
@@ -407,7 +407,7 @@ export function YourDesigns({
             <option value="">Every card</option>
             {kinds.map((k) => (
               <option key={k} value={k}>
-                {kindLabel(k)}
+                {templateKindLabel(k)}
               </option>
             ))}
           </select>

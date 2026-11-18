@@ -23,7 +23,7 @@ import {
   type CardNames,
 } from "@workspace/scorecard/card-names";
 import { shortDateSpanFromLabel, summaryResultWord } from "@workspace/scorecard/card-content";
-import { milestoneCardHeading } from "@workspace/scorecard";
+import { centuryCardFeat, centuryCardText, milestoneCardHeading } from "@workspace/scorecard";
 import {
   MATCH_CONTEXT_KINDS,
   economyText,
@@ -778,6 +778,31 @@ function bindShirtNumber(input: ShareCardInput, values: Record<string, string>):
 /** A shirt number as card text: trimmed, or empty when there is none. */
 function shirtText(n: string | number | null | undefined): string {
   return n != null ? String(n).trim() : "";
+}
+
+/**
+ * A century card's design in the wording of its innings. The century kind also
+ * carries a junior Big Moment innings, which counts from 50 when the club set
+ * its junior runs bar to a half-century (R11), and the century designs print
+ * "CENTURY" as fixed text, not a field. So on a 50 to 99 innings every text
+ * layer's "CENTURY" reads "FIFTY" (card 927: a 52 read CENTURY). Any other
+ * card, or a century, is returned as it is.
+ */
+export function withInningsWording<T>(adjustments: T, input: ShareCardInput): T {
+  if (input.kind !== "century" || !adjustments) return adjustments;
+  const runs = input.runs;
+  if (centuryCardFeat(runs).word === "Century") return adjustments;
+  const walk = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(walk);
+    if (!value || typeof value !== "object") return value;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = walk(v);
+    const layer = value as { kind?: unknown; content?: unknown };
+    if (layer.kind === "text" && typeof layer.content === "string")
+      out.content = centuryCardText(layer.content, runs);
+    return out;
+  };
+  return walk(adjustments) as T;
 }
 
 /** Row-size multipliers for a set's density tiers (Club Kit rows read `--rs`). */
