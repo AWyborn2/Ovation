@@ -344,6 +344,87 @@ describe("Team List rows clear of the photo", () => {
   });
 });
 
+// ── Shirt number and name on one line (Bold Type story, round 4 retest) ─────
+
+/**
+ * How far apart (in % of the row's height) a row's shirt number and name may
+ * sit: cells centre their text vertically, so equal cell centres put the
+ * number and name on one line.
+ */
+const ROW_CENTRE_TOLERANCE = 1.5;
+
+/** The name cells a Team List row prints. */
+const ROW_NAME_FIELDS = ["listName", "surname", "name", "playerName", "broadcastName"];
+
+/** Every player list's number and name cell centres, per size it draws on. */
+function numberNameCentres(doc: TemplateDocumentV2) {
+  const out: Array<{ id: string; size: CardSize; number: number; name: number }> = [];
+  for (const p of Object.values(doc.pages))
+    for (const l of flattenLayers(p?.layers ?? [])) {
+      if (l.kind !== "rows" || l.rows.repeat !== "players") continue;
+      const centre = (c: { y?: number; h?: number }) => Number(c.y ?? 0) + Number(c.h ?? 100) / 2;
+      const text = l.rows.cells.filter((c) => !c.show);
+      const name = text.find((c) => ROW_NAME_FIELDS.includes(c.field));
+      if (!name) continue;
+      for (const num of text.filter((c) => c.field === "number"))
+        for (const size of SIZE_KEYS)
+          if (drawn(l, size)) out.push({ id: l.id, size, number: centre(num), name: centre(name) });
+    }
+  return out;
+}
+
+describe("Team List shirt number and name on one line", () => {
+  const listed = teamListBundles().filter((b) => b.listed);
+
+  it("Bold Type has a numbered list at every size", () => {
+    const doc = listed.find((b) => b.name === "bold-type/teamList")!.doc;
+    expect([...new Set(numberNameCentres(doc).map((c) => c.size))].sort()).toEqual(
+      [...SIZE_KEYS].sort(),
+    );
+  });
+
+  for (const { name, doc } of listed)
+    for (const c of numberNameCentres(doc))
+      it(`${name} ${c.size}: ${c.id}'s number and name share a row centre`, () => {
+        expect(
+          Math.abs(c.number - c.name),
+          `number centre ${c.number.toFixed(2)}% vs name ${c.name.toFixed(2)}% of the row`,
+        ).toBeLessThanOrEqual(ROW_CENTRE_TOLERANCE);
+      });
+
+  it("would catch Bold Type's story row as it was (the number 20% of a row above the name)", () => {
+    const doc = structuredClone(listed.find((b) => b.name === "bold-type/teamList")!.doc);
+    for (const l of flattenLayers(doc.pages.team!.layers))
+      if (l.kind === "rows" && l.sizes?.includes("story"))
+        for (const cell of l.rows.cells) if (cell.field === "number" && !cell.show) cell.y = 12.44;
+    const story = numberNameCentres(doc).find((c) => c.size === "story")!;
+    expect(Math.abs(story.number - story.name)).toBeGreaterThan(ROW_CENTRE_TOLERANCE);
+  });
+});
+
+// ── Broadcast Dark landscape names readable (round 4 retest) ────────────────
+
+describe("Broadcast Dark landscape Team List names", () => {
+  it("draws a side of 14 at 13 px or more (was about 8 px, squeezed)", () => {
+    const doc = teamListBundles().find((b) => b.name === "broadcast-dark/teamList")!.doc;
+    const { w: W, h: H } = SIZES.landscape;
+    const list = flattenLayers(doc.pages.team!.layers).find(
+      (l): l is RowsLayerV2 => l.kind === "rows" && !!drawn(l, "landscape"),
+    )!;
+    const box = drawn(list, "landscape")!;
+    const spec = list.rows;
+    const perColumn = Math.ceil(SIDE / rowsColumns(spec));
+    // The renderer's squeeze: a side over the box's capacity draws smaller.
+    const needed =
+      ((perColumn * Number(spec.rowHeight ?? 7) + (perColumn - 1) * Number(spec.gap ?? 0)) / 100) *
+      W;
+    const squeeze = Math.min(1, ((box.h / 100) * H + 0.5) / needed);
+    const name = spec.cells.find((c) => c.field === "listName" && !c.show)!;
+    const px = (Number(name.style?.fontSize ?? 5) / 100) * W * squeeze;
+    expect(px).toBeGreaterThanOrEqual(13);
+  });
+});
+
 // ── The round label above the grade heading (Broadcast Dark landscape) ──────
 
 /**
