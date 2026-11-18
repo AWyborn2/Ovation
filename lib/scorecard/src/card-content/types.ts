@@ -251,6 +251,12 @@ export interface TeamListContent {
   juniorTeamName: string | null;
   /** The competition label as the card prints it. */
   grade: string;
+  /**
+   * A junior side's small line (eyebrow), "YEAR 9 BOYS SOUTH WEST": the
+   * competition, where `grade` is the big heading ("YEAR 9 GOLD"). Absent on
+   * senior lists, whose small line is the grade and round.
+   */
+  gradeLine?: string;
   /** "ROUND 5", or "" when the fixture has none. */
   roundLabel: string;
   opposition: ContentTeam;

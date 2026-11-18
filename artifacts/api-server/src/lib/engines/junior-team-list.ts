@@ -1,3 +1,4 @@
+import { juniorHeading, type JuniorHeading } from "../junior-headings";
 import { and, eq, gt, inArray, lte, or } from "drizzle-orm";
 import {
   db,
@@ -87,6 +88,8 @@ export function juniorTeamListToCardInput(
   players: readonly JuniorTeamListPlayer[],
   nameOf: JuniorCardNamer,
   numbers?: TeamListShirtNumbers | null,
+  /** The heading and small line (`loadJuniorHeadings`); default the grade alone. */
+  heading: JuniorHeading = juniorHeading(fixture),
 ): Record<string, unknown> {
   const grade = fixture.grade ?? fixture.ageGroup ?? "";
   const startAt = fixture.startAt;
@@ -96,8 +99,11 @@ export function juniorTeamListToCardInput(
     kind: "teamList",
     // Junior content: the junior palette, never mixed with senior cards (R20).
     junior: true,
-    gradeRound: grade.toUpperCase(),
+    // Built like a senior list: the small line is the competition (and round),
+    // the big heading the grade ("YEAR 9", "YEAR 9 GOLD"), never the club.
+    gradeRound: heading.eyebrow,
     competitionLine: grade,
+    gradeHeading: heading.heading,
     venueDateTime: [fixture.venue ?? "", date, startTime].filter(Boolean).join(" • "),
     players: [...players]
       .sort((a, b) => a.order - b.order)

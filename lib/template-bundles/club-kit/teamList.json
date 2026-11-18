@@ -1,6 +1,6 @@
 {
   "name": "Club Kit teamList",
-  "version": 5,
+  "version": 6,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -892,7 +892,7 @@
           },
           {
             "kind": "text",
-            "content": "{{gradeRound}} · {{competitionLine}}",
+            "content": "{{gradeRound}} \u00b7 {{competitionLine}}",
             "style": {
               "color": "var(--ck-pt)",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -930,7 +930,7 @@
           },
           {
             "kind": "text",
-            "content": "{{gradeRound}} · {{competitionLine}}",
+            "content": "{{gradeRound}} \u00b7 {{competitionLine}}",
             "style": {
               "color": "var(--ck-pt)",
               "fontFamily": "'IBM Plex Mono',monospace",
@@ -1095,13 +1095,13 @@
             "geometry": {
               "portrait": {
                 "x": 6,
-                "y": 56.06,
+                "y": 56.23,
                 "w": 73.1,
                 "h": 2.3
               },
               "story": {
                 "x": 6,
-                "y": 69.1,
+                "y": 69.22,
                 "w": 73.1,
                 "h": 1.61
               }
@@ -1130,7 +1130,7 @@
             "geometry": {
               "landscape": {
                 "x": 3.15,
-                "y": 41.04,
+                "y": 41.6,
                 "w": 38.38,
                 "h": 2.86
               }
