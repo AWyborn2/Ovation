@@ -31,7 +31,7 @@ import {
   stageInk,
   tokensFromCardTheme,
 } from "./tokens";
-import { applyPackData, bindInput } from "./bind";
+import { applyPackData, bindInput, withInningsWording } from "./bind";
 import { cardMatchColours } from "./match-vars";
 import {
   applyFieldOverrides,
@@ -257,7 +257,7 @@ export function renderPackCard(
     const withData: BoundInput = { values: {}, images: { ...bound.images }, rows: {} };
     if (data) applyPackData(withData, data, input.kind);
     const layers = renderFreeLayers(
-      adj,
+      withInningsWording(adj, input),
       size,
       opts,
       withMonogram(packFieldValues(input, data, BLANK_PACK_ID)),

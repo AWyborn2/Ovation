@@ -8,6 +8,8 @@
  * The input is typed structurally (any object with a `kind`) because the
  * ShareCardInput union lives in the web app.
  */
+import { centuryCardFeat } from "./milestone-heading";
+
 export type Platform = "instagram" | "facebook" | "twitter";
 
 export const PLATFORM_LIMITS: Record<Platform, number> = {
@@ -116,17 +118,20 @@ const tokensFor = (input: CaptionCardInput): Record<string, string> | null => {
         "round.label": roundOf(f.round),
       };
     }
-    case "century":
+    case "century": {
+      // A junior Big Moment innings can count from 50: a 52 is a fifty.
+      const feat = centuryCardFeat(f.runs);
       return {
         "player.name": text(f.playerName),
         "stat.value": `${text(f.runs)}${f.notOut ? "*" : ""}`,
         "stat.label": "runs",
-        "stat.tier": "Century",
-        "stat.threshold": "100",
+        "stat.tier": feat.word,
+        "stat.threshold": String(feat.threshold),
         "grade.name": text(f.grade),
         "opponent.name": text(f.opponent),
         "round.label": roundOf(f.round),
       };
+    }
     case "fiveFor":
       return {
         "player.name": text(f.playerName),
