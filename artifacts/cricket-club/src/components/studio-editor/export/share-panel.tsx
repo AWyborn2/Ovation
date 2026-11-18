@@ -58,25 +58,34 @@ export function SharePanel({ set, name }: { set: SetShareContext; name: string }
     setError(null);
     setProgress({ done: 0, total: picked.length });
     try {
-      const files: File[] = [];
-      for (const [n, i] of picked.entries()) {
-        const slide = set.slides[i]!;
-        const blob = await renderDownload(
-          {
-            input: downloadSafeInput(slide.input),
-            size: set.size,
-            theme: null,
-            data: slide.data,
-            packId: BLANK_PACK_ID,
-            adjustments: set.documentFor(slide),
-            junior: slide.junior,
-          },
-          format,
-          1,
-        );
-        files.push(toFile(blob, slideFilename(name, i, format)));
-        setProgress({ done: n + 1, total: picked.length });
-      }
+      // Two slides at a time (the server keeps two warm render pages), files
+      // kept in slide order (round 3 retest, #9).
+      const files: File[] = new Array(picked.length);
+      let done = 0;
+      let next = 0;
+      const worker = async () => {
+        while (next < picked.length) {
+          const n = next++;
+          const i = picked[n]!;
+          const slide = set.slides[i]!;
+          const blob = await renderDownload(
+            {
+              input: downloadSafeInput(slide.input),
+              size: set.size,
+              theme: null,
+              data: slide.data,
+              packId: BLANK_PACK_ID,
+              adjustments: set.documentFor(slide),
+              junior: slide.junior,
+            },
+            format,
+            1,
+          );
+          files[n] = toFile(blob, slideFilename(name, i, format));
+          setProgress({ done: ++done, total: picked.length });
+        }
+      };
+      await Promise.all([worker(), worker()]);
       // One image, or a zip of them on a computer; the share sheet on a phone.
       await saveFiles(files, { zipName: zipFilename(name) });
     } catch (e) {
