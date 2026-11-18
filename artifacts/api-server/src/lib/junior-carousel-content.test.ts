@@ -237,14 +237,14 @@ describe("junior match-day and team-list carousel sources", () => {
     // Junior Match Day slides come from the content builder, like senior ones.
     expect(result.content).toEqual({});
     const id = juniorCarouselFixtureId(fixtureId);
-    expect(result.junior.get(id)).toEqual({ gradeLabel: "Year 5 — Gold", juniorTeamName: "Gold" });
+    expect(result.junior.get(id)).toEqual({ gradeLabel: "Year 5 Gold", juniorTeamName: "Gold" });
     const content = (await buildMatchDayContent(tenant, result.fixtures, result)).get(id)!;
     expect(content).toMatchObject({
       kind: "matchDay",
       page: "fixture",
       junior: true,
       juniorTeamName: "Gold",
-      grade: "Year 5 — Gold",
+      grade: "Year 5 Gold",
       opposition: { rawName: "Carousel Test Opponent" },
       venue: "Junior Oval",
     });
@@ -265,7 +265,7 @@ describe("junior match-day and team-list carousel sources", () => {
       kind: "teamList",
       page: "team",
       junior: true,
-      grade: "Year 5 — Gold",
+      grade: "Year 5 Gold",
       juniorTeamName: "Gold",
       source: {
         kind: "teamList",

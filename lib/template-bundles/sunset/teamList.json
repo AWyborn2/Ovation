@@ -1,6 +1,6 @@
 {
   "name": "Sunset teamList",
-  "version": 6,
+  "version": 7,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1069,7 +1069,7 @@
             "geometry": {
               "square": {
                 "x": 9.49,
-                "y": 45.31,
+                "y": 45.51,
                 "w": 61.57,
                 "h": 1.57
               }
@@ -1135,7 +1135,7 @@
             "geometry": {
               "landscape": {
                 "x": 5.02,
-                "y": 44.94,
+                "y": 45.29,
                 "w": 32.33,
                 "h": 1.59
               }
