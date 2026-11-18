@@ -2,7 +2,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import puppeteer, { type Browser, type BrowserContext, type Page } from "puppeteer-core";
 import type { LayoutWarning, TemplateFitReport } from "@workspace/scorecard/kind-templates";
 import { logger } from "./logger";
 import { env } from "../config";
@@ -369,22 +369,13 @@ export async function renderCardStill(
   out: { format?: StillFormat; scale?: number } = {},
 ): Promise<StillRenderResult> {
   const format: StillFormat = out.format ?? "png";
-  const browser = await getBrowser();
-  let page: Page | null = null;
+  const url = harnessUrl(harnessOrigin);
+  // A warm harness page (round 3 retest, #9): loading the web app for every
+  // still made each download slide take many seconds.
+  const lease = await acquireStillPage(url);
+  const page: Page = lease.page;
+  let reusable = false;
   try {
-    page = await browser.newPage();
-    page.on("pageerror", (err) =>
-      logger.warn({ err: String(err) }, "card-still harness page error"),
-    );
-
-    const url = harnessUrl(harnessOrigin);
-    await page.goto(url, { waitUntil: "load", timeout: 30_000 });
-    await page.waitForFunction(
-      () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
-      { timeout: 30_000 },
-    );
-    await assertHarnessContract(page, url);
-
     // Mount the pack card at native size in-page (preloads fonts), get its box.
     const meta = (await page.evaluate(
       async (payload) => (globalThis as HarnessGlobal).__cardRenderHarness!.renderStill(payload),
@@ -416,6 +407,7 @@ export async function renderCardStill(
           })
         : await el.screenshot(format === "jpg" ? { type: "jpeg", quality: 92 } : { type: "png" });
     const buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
+    reusable = true;
 
     return {
       buffer,
@@ -427,12 +419,78 @@ export async function renderCardStill(
     };
   } finally {
     try {
-      await page?.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
+      await page.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
     } catch {
       // page may already be gone
+      reusable = false;
     }
-    await page?.close().catch(() => {});
+    // A page that failed is never reused: the next still gets a fresh one.
+    await releaseStillPage(lease, reusable);
   }
+}
+
+// ── Warm still pages (round 3 retest, #9) ──────────────────────────────────
+// Each still used to open a tab and load the whole web app before drawing.
+// Idle harness pages are kept per harness URL and reused: the app, its fonts
+// and the club's images stay loaded. Each page has a browser context of its
+// own (a second tab in one context is hidden in headless Chrome and gets no
+// animation frames, which the harness waits on). A page is dropped after any
+// failure, and an idle one after STILL_PAGE_IDLE_MS, so a redeployed web app
+// is picked up (and its render contract checked again) within that time.
+
+type StillLease = { page: Page; context: BrowserContext; url: string; createdAt: number };
+const STILL_PAGE_IDLE_MS = 10 * 60 * 1000;
+const STILL_POOL_MAX = 2;
+const idleStillPages: StillLease[] = [];
+
+async function closeLease(lease: StillLease): Promise<void> {
+  await lease.context.close().catch(() => {});
+}
+
+async function acquireStillPage(url: string): Promise<StillLease> {
+  const now = Date.now();
+  for (let i = idleStillPages.length - 1; i >= 0; i--) {
+    const lease = idleStillPages[i]!;
+    const stale = now - lease.createdAt > STILL_PAGE_IDLE_MS || lease.page.isClosed();
+    if (stale) {
+      idleStillPages.splice(i, 1);
+      void closeLease(lease);
+    } else if (lease.url === url) {
+      idleStillPages.splice(i, 1);
+      return lease;
+    }
+  }
+  const browser = await getBrowser();
+  const context = await browser.createBrowserContext();
+  try {
+    const page = await context.newPage();
+    page.on("pageerror", (err) =>
+      logger.warn({ err: String(err) }, "card-still harness page error"),
+    );
+    await page.goto(url, { waitUntil: "load", timeout: 30_000 });
+    await page.waitForFunction(
+      () => Boolean((globalThis as HarnessGlobal).__cardRenderHarness?.ready),
+      { timeout: 30_000 },
+    );
+    await assertHarnessContract(page, url);
+    return { page, context, url, createdAt: Date.now() };
+  } catch (err) {
+    await context.close().catch(() => {});
+    throw err;
+  }
+}
+
+async function releaseStillPage(lease: StillLease, reusable: boolean): Promise<void> {
+  if (reusable && !lease.page.isClosed() && idleStillPages.length < STILL_POOL_MAX) {
+    idleStillPages.push(lease);
+    return;
+  }
+  await closeLease(lease);
+}
+
+/** Close every warm still page (tests, shutdown). */
+export async function closeStillPages(): Promise<void> {
+  await Promise.all(idleStillPages.splice(0).map(closeLease));
 }
 
 /**
@@ -508,6 +566,7 @@ export async function renderHtmlToPdf(html: string): Promise<Buffer> {
 
 // Best-effort shutdown (used in tests / graceful exit).
 export async function closeBrowser(): Promise<void> {
+  await closeStillPages();
   if (!browserPromise) return;
   try {
     const b = await browserPromise;

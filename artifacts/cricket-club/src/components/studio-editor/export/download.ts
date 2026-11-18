@@ -54,6 +54,9 @@ export function harnessOptions(card: CardRender) {
   return {
     size: card.size,
     sponsorsOn: true,
+    // Wait for every image, and fail rather than save a file with a blank
+    // logo or photo, as a post does (round 3 retest, #9).
+    strictImages: true,
     junior: card.junior ?? false,
     theme: card.theme,
     data: card.data,
