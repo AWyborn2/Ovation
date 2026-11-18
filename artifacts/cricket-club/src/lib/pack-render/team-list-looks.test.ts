@@ -2,7 +2,10 @@
  * Team List looks on every committed bundle, every size (Ash's round 3
  * retest, Nov 2026), read from the bundle files on disk:
  * - a side of 14 (the most a list draws, squeezed to fit its box when it holds
- *   fewer) keeps clear of the photo and the card's other foreground.
+ *   fewer) keeps clear of the photo and the card's other foreground;
+ * - every other list (Team of the Week, results, match summaries, fixtures,
+ *   ladders, leaders, sponsor tiles), filled to its box's capacity, keeps
+ *   clear of the same and of the page's other lists.
  *
  * The bundle fit check measures the same rule on the drawn card in Chrome
  * (`rows-overlap` in `template-fit.ts`); this is its geometry, so a bundle
@@ -14,13 +17,16 @@ import { describe, expect, it } from "vitest";
 import {
   flattenLayers,
   layerTokens,
+  pageRepeatCapacities,
   rowsColumns,
+  tileGrid,
+  type PageKey,
   type RowsLayerV2,
   type TemplateDocumentV2,
   type TemplateLayerV2,
 } from "@workspace/scorecard/kind-templates";
 import { SIZES, type CardSize } from "@/lib/share-card/types";
-import { ROWS_PHOTO_CLEARANCE, paintsOver, rectMeetsPolygon } from "./template-fit";
+import { ROWS_PHOTO_CLEARANCE, paintsOver, rectMeetsPolygon, veils } from "./template-fit";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 const SIDE = 14;
@@ -30,22 +36,43 @@ type Box = { x: number; y: number; w: number; h: number };
 type Rect = { left: number; top: number; right: number; bottom: number };
 type Pt = [number, number];
 
-/** Every committed Team List bundle (`teamList`, `teamListRound`): look, kind and document. */
-function teamListBundles(): Array<{ name: string; doc: TemplateDocumentV2 }> {
-  const out: Array<{ name: string; doc: TemplateDocumentV2 }> = [];
+/** Every committed bundle whose file matches: look, kind, document and whether it's listed. */
+function bundlesMatching(
+  files: RegExp,
+): Array<{ name: string; doc: TemplateDocumentV2; listed: boolean }> {
+  const out: Array<{ name: string; doc: TemplateDocumentV2; listed: boolean }> = [];
   for (const look of readdirSync(BUNDLES).sort()) {
     const dir = path.join(BUNDLES, look);
     if (!statSync(dir).isDirectory() || !existsSync(path.join(dir, "look.json"))) continue;
     for (const file of readdirSync(dir).sort()) {
-      if (!/^teamList\w*\.json$/.test(file)) continue;
-      const { document } = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
+      if (file === "look.json" || !files.test(file)) continue;
+      const { document, listed } = JSON.parse(readFileSync(path.join(dir, file), "utf8")) as {
         document: TemplateDocumentV2;
+        listed?: boolean;
       };
-      out.push({ name: `${look}/${file.replace(/\.json$/, "")}`, doc: document });
+      if (!document?.pages) continue;
+      out.push({
+        name: `${look}/${file.replace(/\.json$/, "")}`,
+        doc: document,
+        listed: listed !== false,
+      });
     }
   }
   return out;
 }
+
+/** Every committed Team List bundle (`teamList`, `teamListRound`). */
+const teamListBundles = () => bundlesMatching(/^teamList\w*\.json$/);
+
+/** Every listed bundle that draws a list (rows repeated from its data). */
+const listBundles = () =>
+  bundlesMatching(/\.json$/).filter(
+    (b) =>
+      b.listed &&
+      Object.values(b.doc.pages).some((p) =>
+        flattenLayers(p?.layers ?? []).some((l) => l.kind === "rows"),
+      ),
+  );
 
 /**
  * A layer drawn on `size` with the sponsors on, on a senior or a junior card,
@@ -80,10 +107,35 @@ const px = (b: Box, size: CardSize): Rect => {
   };
 };
 
-/** Where a side of 14 draws: the box's width, as tall as its longest column (at most the box). */
-function rowsExtent(l: RowsLayerV2, box: Box, size: CardSize): Rect {
+/**
+ * Where `count` rows draw (a side of 14 by default): the box's width, as tall
+ * as its longest column (at most the box).
+ */
+function rowsExtent(l: RowsLayerV2, box: Box, size: CardSize, count = SIDE): Rect {
   const spec = l.rows;
-  const perColumn = Math.ceil(SIDE / rowsColumns(spec));
+  if (spec.layout === "tiles") {
+    // A sponsor tile grid, centred in its box: as far as any count up to `count` reaches.
+    const r = px(box, size);
+    const art = SIZES[size].w;
+    const tiles = Array.from({ length: count }, (_, i) =>
+      tileGrid({
+        count: i + 1,
+        majors: 0,
+        width: r.right - r.left,
+        height: r.bottom - r.top,
+        gap: (Number(spec.gap ?? 0) / 100) * art,
+        maxTileHeight: (Number(spec.rowHeight ?? 7) / 100) * art,
+      }),
+    ).flat();
+    if (tiles.length === 0) return { ...r, bottom: r.top };
+    return {
+      left: r.left + Math.min(...tiles.map((t) => t.x)),
+      top: r.top + Math.min(...tiles.map((t) => t.y)),
+      right: r.left + Math.max(...tiles.map((t) => t.x + t.w)),
+      bottom: r.top + Math.max(...tiles.map((t) => t.y + t.h)),
+    };
+  }
+  const perColumn = Math.ceil(count / rowsColumns(spec));
   const rowHeight = Number(spec.rowHeight ?? 7);
   const gap = Number(spec.gap ?? 0);
   const { w, h } = SIZES[size];
@@ -112,9 +164,59 @@ const holds = (outer: Rect, inner: Rect) =>
   outer.right >= inner.right - 1 &&
   outer.bottom >= inner.bottom - 1;
 
-/** What a side of 14 runs into on a bundle's pages, as readable lines. */
-function overlaps(name: string, doc: TemplateDocumentV2, card: Card = SENIOR): string[] {
+/**
+ * How many rows a list draws at its worst: a Team List side of 14 (squeezed
+ * into its box), any other list filled to its box's capacity.
+ */
+function worstRows(
+  doc: TemplateDocumentV2,
+  page: string,
+  list: RowsLayerV2,
+  size: CardSize,
+  teamList: boolean,
+): number {
+  const repeat = list.rows?.repeat ?? "";
+  if (teamList && repeat === "players") return SIDE;
+  return pageRepeatCapacities(doc, page as PageKey, size)[repeat] ?? 0;
+}
+
+/**
+ * Fields bound from the same data as another, so empty whenever it is: the
+ * sponsors page's next home match and its date (`bind.ts`, `page.nextHome`).
+ */
+const EMPTY_WITH: Record<string, string> = { nextHomeWhen: "nextHomeMatch" };
+
+/**
+ * Two layers that never draw together: one needs a field the other needs
+ * empty, or one prints only the field the other is drawn without.
+ */
+function exclusive(a: TemplateLayerV2, b: TemplateLayerV2): boolean {
+  const [sa, sb] = [a.showWhen ?? {}, b.showWhen ?? {}];
+  if ((sa.field && sa.field === sb.noField) || (sb.field && sb.field === sa.noField)) return true;
+  const only = (l: TemplateLayerV2, field?: string) => {
+    const tokens = layerTokens(l);
+    return (
+      !!field && tokens.length > 0 && tokens.every((t) => t === field || EMPTY_WITH[t] === field)
+    );
+  };
+  return only(b, sa.noField) || only(a, sb.noField);
+}
+
+/**
+ * What a side of 14 runs into on a bundle's pages, as readable lines. With
+ * `every`, every list on the page (Team of the Week, results, match
+ * summaries, fixtures, ladders, leaders...) filled to its worst, and other
+ * lists drawn beside it count too: rows must not run into each other. (Layers
+ * of the same list, each drawing a part of every row, do share its rows.)
+ */
+function overlaps(
+  name: string,
+  doc: TemplateDocumentV2,
+  card: Card = SENIOR,
+  every = false,
+): string[] {
   const out: string[] = [];
+  const teamList = /\/teamList/.test(name);
   const at =
     card === SENIOR
       ? ""
@@ -122,31 +224,59 @@ function overlaps(name: string, doc: TemplateDocumentV2, card: Card = SENIOR): s
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
     const layers = flattenLayers(p?.layers ?? []);
     for (const [li, list] of layers.entries()) {
-      if (list.kind !== "rows" || list.rows?.repeat !== "players") continue;
+      if (list.kind !== "rows" || (!every && list.rows?.repeat !== "players")) continue;
       for (const size of SIZE_KEYS) {
         const box = drawn(list, size, card);
         if (!box) continue;
-        const rows = rowsExtent(list, box, size);
+        const count = worstRows(doc, page, list, size, teamList);
+        if (count < 1) continue;
+        const rows = rowsExtent(list, box, size, count);
         const short = Math.min(SIZES[size].w, SIZES[size].h);
         for (const [oi, other] of layers.entries()) {
-          const ob = oi === li ? null : drawn(other, size, card);
+          let ob = oi === li ? null : drawn(other, size, card);
           if (!ob || (ob.w >= 90 && ob.h >= 90)) continue;
+          if (every && exclusive(list, other)) continue;
           const opacity = (other.style as { opacity?: unknown } | undefined)?.opacity;
           if (typeof opacity === "number" && opacity <= 0.3) continue;
           const photo = other.kind === "photo";
           const data =
             layerTokens(other).length > 0 && (other.kind === "image" || other.kind === "text");
-          if (!photo && !data) continue;
-          // A panel or scrim drawn over the layer but under the list hides it there.
+          const list2 =
+            every && other.kind === "rows" && other.rows?.repeat !== list.rows?.repeat
+              ? other
+              : null;
+          if (!photo && !data && !list2) continue;
+          if (list2) {
+            // Another list: where its own worst rows draw.
+            const n = worstRows(doc, page, list2, size, teamList);
+            if (n < 1) continue;
+            const r = rowsExtent(list2, ob, size, n);
+            const { w, h } = SIZES[size];
+            ob = {
+              x: (r.left / w) * 100,
+              y: (r.top / h) * 100,
+              w: ((r.right - r.left) / w) * 100,
+              h: ((r.bottom - r.top) / h) * 100,
+            };
+          }
+          // A panel or scrim drawn over the layer but under the list hides it
+          // there: under the whole list, or (any list) wherever the two meet.
+          const o = px(ob, size);
+          const meet = {
+            left: Math.max(o.left, rows.left),
+            top: Math.max(o.top, rows.top),
+            right: Math.min(o.right, rows.right),
+            bottom: Math.min(o.bottom, rows.bottom),
+          };
           if (
             oi < li &&
             layers
               .slice(oi + 1, li)
               .some(
                 (s) =>
-                  paintsOver(s) &&
+                  (every ? veils(s) : paintsOver(s)) &&
                   drawn(s, size, card) &&
-                  holds(px(drawn(s, size, card)!, size), rows),
+                  holds(px(drawn(s, size, card)!, size), every ? meet : rows),
               )
           )
             continue;
@@ -330,4 +460,40 @@ describe("Team List grade heading and venue line", () => {
           `${venue.id} starts ${Math.round(venueTop - headingBottom)} px after ${grade.id} ends`,
         ).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
       });
+});
+
+// ── Every list kind, every look ──────────────────────────────────────────────
+
+describe("List rows clear of the photo, data and each other on every list kind", () => {
+  const bundles = listBundles();
+
+  it("reads every listed bundle with a list", () => {
+    const names = bundles.map((b) => b.name);
+    for (const n of [
+      "club-kit/teamOfWeek",
+      "club-kit/resultsSummary",
+      "duotone/matchSummary",
+      "omg-clean/matchSummary",
+      "bold-type/ladder",
+    ])
+      expect(names).toContain(n);
+  });
+
+  for (const { name, doc } of bundles)
+    it(`${name}: every list at its worst keeps clear at every size, senior and junior`, () => {
+      expect(CARDS.flatMap((card) => overlaps(name, doc, card, true))).toEqual([]);
+    });
+
+  it("would catch Club Kit's Team of the Week as it was (third row over the sponsor logos)", () => {
+    const totw = bundles.find((b) => b.name === "club-kit/teamOfWeek")!;
+    const was = structuredClone(totw.doc);
+    for (const l of flattenLayers(was.pages.card!.layers))
+      if (l.id === "card-l33" && l.kind === "rows") {
+        (l.geometry as Record<string, Box>).square!.h = 79.91;
+        l.rows.rowHeight = 26.1;
+      }
+    expect(overlaps("club-kit/teamOfWeek", was, SENIOR, true)).toEqual(
+      expect.arrayContaining(["club-kit/teamOfWeek card square: card-l33 into card-l42"]),
+    );
+  });
 });

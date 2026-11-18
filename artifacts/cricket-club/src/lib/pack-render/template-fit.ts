@@ -175,8 +175,10 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
     if (layer.kind === "vector" && el.querySelector(UNSAFE_VECTOR))
       issues.push({ ...at, reason: "vector-unsafe", layerId });
   }
-  // Team List kinds (`teamList`, `teamListRound`): their players list keeps clear of the photo.
-  if (/^teamList/.test(ctx.kind)) issues.push(...rowsOverlapIssues(root, art, layers, at));
+  // Every list keeps clear of the photo, the card's data and other lists: a
+  // Team List's players (`teamList`, `teamListRound`) as #660 set it, and
+  // since Ash's round 3 retest every other list kind too.
+  issues.push(...rowsOverlapIssues(root, art, layers, at, /^teamList/.test(ctx.kind)));
 
   for (const img of Array.from(root.querySelectorAll("img"))) {
     const src = img.getAttribute("src") ?? "";
@@ -273,6 +275,15 @@ export function paintsOver(layer: TemplateLayerV2): boolean {
   return !alpha || parseInt(alpha[1]!, 16) >= 0x80;
 }
 
+/** A shape that veils what's under it: a solid panel or scrim, or a CSS gradient background. */
+export function veils(layer: TemplateLayerV2): boolean {
+  return (
+    paintsOver(layer) ||
+    (layer.kind === "shape" &&
+      typeof (layer.style as { background?: unknown } | undefined)?.background === "string")
+  );
+}
+
 const contains = (outer: DOMRect, inner: Rect) =>
   outer.left <= inner.left + 1 &&
   outer.top <= inner.top + 1 &&
@@ -289,26 +300,36 @@ const contains = (outer: DOMRect, inner: Rect) =>
  * whole card, a faint watermark, decoration (shapes, data-free text) and a
  * layer hidden from the row by an opaque panel or scrim drawn between them
  * don't count.
+ *
+ * On a Team List that is its `players` list. On any other kind it is every
+ * list (Team of the Week, results, match summaries, fixtures, ladders, sponsor
+ * tiles...), and a row also mustn't run into another list's rows; layers of
+ * the same list (each drawing a part of every row) share them. There a scrim
+ * hides what's under it wherever the row meets it, a CSS gradient included
+ * (a ground photo faded into the stage).
  */
 function rowsOverlapIssues(
   root: HTMLElement,
   art: DOMRect,
   layers: Map<string, TemplateLayerV2>,
   at: { variant: string; page: PageKey; size: TemplateSize },
+  teamList: boolean,
 ): FitIssue[] {
   const drawn = Array.from(root.querySelectorAll<HTMLElement>("[data-layer-id]"))
     .map((el) => ({ el, layer: layers.get(el.getAttribute("data-layer-id") ?? "") }))
     .filter((d): d is { el: HTMLElement; layer: TemplateLayerV2 } => !!d.layer);
   const short = Math.min(art.width, art.height);
   const issues: FitIssue[] = [];
-  for (const [ri, list] of drawn.entries()) {
-    if (list.layer.kind !== "rows" || list.layer.rows?.repeat !== "players") continue;
-    const rows = Array.from(list.el.querySelectorAll<HTMLElement>("[data-row-index]"))
+  const rowBoxes = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll<HTMLElement>("[data-row-index]"))
       .map((row) => ({
         index: Number(row.getAttribute("data-row-index")),
         box: row.getBoundingClientRect(),
       }))
       .filter((r) => r.box.width > 0 && r.box.height > 0);
+  for (const [ri, list] of drawn.entries()) {
+    if (list.layer.kind !== "rows" || (teamList && list.layer.rows?.repeat !== "players")) continue;
+    const rows = rowBoxes(list.el);
     for (const [oi, other] of drawn.entries()) {
       if (oi === ri) continue;
       const { layer, el } = other;
@@ -316,33 +337,46 @@ function rowsOverlapIssues(
       if (typeof opacity === "number" && opacity <= WATERMARK_OPACITY) continue;
       const data = layerTokens(layer).length > 0;
       const photo = layer.kind === "photo";
-      if (!photo && !(data && (layer.kind === "image" || layer.kind === "text"))) continue;
+      // Another list (not a part of this one): its rows, not its box.
+      const otherList =
+        !teamList && layer.kind === "rows" && layer.rows?.repeat !== list.layer.rows?.repeat;
+      if (!photo && !otherList && !(data && (layer.kind === "image" || layer.kind === "text")))
+        continue;
       const box = el.getBoundingClientRect();
       if (!(box.width > 0 && box.height > 0)) continue;
       if (box.width >= art.width * FULL_BLEED && box.height >= art.height * FULL_BLEED) continue;
-      const area = paintedArea(layer, box);
+      const areas = otherList
+        ? rowBoxes(el).map((r) => paintedArea(layer, r.box))
+        : [paintedArea(layer, box)];
       const clearance = photo ? ROWS_PHOTO_CLEARANCE * short : 0;
       // Panels and scrims drawn over this layer but under the list.
       const between =
         oi < ri
           ? drawn
               .slice(oi + 1, ri)
-              .filter((d) => paintsOver(d.layer))
+              .filter((d) => (teamList ? paintsOver(d.layer) : veils(d.layer)))
               .map((d) => d.el.getBoundingClientRect())
           : [];
       const hit = rows.find((r) => {
-        if (between.some((p) => contains(p, r.box))) return false;
+        // Hidden under the whole row (a Team List), or wherever the row meets the layer.
+        const under = teamList
+          ? r.box
+          : {
+              left: Math.max(r.box.left, box.left),
+              top: Math.max(r.box.top, box.top),
+              right: Math.min(r.box.right, box.right),
+              bottom: Math.min(r.box.bottom, box.bottom),
+            };
+        if (between.some((p) => contains(p, under))) return false;
         // Shared edges (a list ending where a box starts) are within a pixel.
         const pad = clearance > 0 ? clearance : -1;
-        return rectMeetsPolygon(
-          {
-            left: r.box.left - pad,
-            top: r.box.top - pad,
-            right: r.box.right + pad,
-            bottom: r.box.bottom + pad,
-          },
-          area,
-        );
+        const grown = {
+          left: r.box.left - pad,
+          top: r.box.top - pad,
+          right: r.box.right + pad,
+          bottom: r.box.bottom + pad,
+        };
+        return areas.some((area) => rectMeetsPolygon(grown, area));
       });
       if (hit)
         issues.push({

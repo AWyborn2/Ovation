@@ -1,6 +1,6 @@
 {
   "name": "Broadcast team of week",
-  "version": 2,
+  "version": 3,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -732,7 +732,7 @@
             "name": "Players",
             "rows": {
               "repeat": "players",
-              "rowHeight": 28.8,
+              "rowHeight": 27.6,
               "gap": 1.68,
               "cells": [
                 {
@@ -805,7 +805,7 @@
                 "x": 6,
                 "y": 22.18,
                 "w": 88,
-                "h": 72.05
+                "h": 69.1
               }
             },
             "sizes": ["portrait"],
@@ -817,7 +817,7 @@
             "name": "Players",
             "rows": {
               "repeat": "players",
-              "rowHeight": 36,
+              "rowHeight": 34.1,
               "gap": 2.1,
               "cells": [
                 {
@@ -890,7 +890,7 @@
                 "x": 6,
                 "y": 13.41,
                 "w": 88,
-                "h": 84.71
+                "h": 80.4
               }
             },
             "sizes": ["story"],

@@ -572,4 +572,51 @@ describe("Team List rows clear of the photo and foreground", () => {
     // The same panel drawn under the photo hides nothing.
     expect(check(card([under, pic], rows), [panel, photo()])).toHaveLength(1);
   });
+
+  // Every other list kind (Ash's round 3 retest): Team of the Week, results...
+  const checkKind = (root: HTMLElement, layers: TemplateLayerV2[], kind: string) =>
+    checkFitInDom(root, {
+      doc: doc({ card: { layers: [...layers, list] } }),
+      kind,
+      page: "card",
+      size: "square",
+      variant: "card.square",
+      visible: null,
+    }).filter((i) => i.reason === "rows-overlap");
+
+  it("holds every list kind to the rule, not just a Team List", () => {
+    const footer = {
+      id: "hashtag",
+      kind: "text",
+      content: "{{clubHashtag}}",
+      geometry: at(55, 58, 40, 5),
+    } as unknown as TemplateLayerV2;
+    const issues = checkKind(
+      card([["hashtag", [500, 620, 400, 50]]], rows),
+      [footer],
+      "teamOfWeek",
+    );
+    expect(issues.map((i) => i.detail)).toEqual(["row 2 runs into hashtag"]);
+  });
+
+  it("lets a list sit on a ground photo faded by a CSS gradient scrim, on any list kind", () => {
+    const ground = {
+      id: "ground",
+      kind: "image",
+      content: "{{groundPhoto}}",
+      geometry: at(0, 0, 100, 62),
+    } as unknown as TemplateLayerV2;
+    const tint = {
+      id: "tint",
+      kind: "shape",
+      style: { background: "linear-gradient(180deg,#00000080 0%,#000000 100%)" },
+      geometry: at(0, 0, 100, 62),
+    } as unknown as TemplateLayerV2;
+    const boxes: Array<[string, number[]]> = [
+      ["ground", [0, 0, 1080, 670]],
+      ["tint", [0, 0, 1080, 670]],
+    ];
+    expect(checkKind(card(boxes, rows), [ground, tint], "ladder")).toEqual([]);
+    expect(checkKind(card([boxes[0]!], rows), [ground], "ladder")).toHaveLength(1);
+  });
 });
