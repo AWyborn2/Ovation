@@ -297,11 +297,13 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       addLabel: "Add player",
       columns: [
         { key: "order", label: "#", type: "number", width: "w-14" },
+        // The initial printed before the surname ("J. YOUNG").
+        { key: "firstInitial", label: "Initial", type: "text", width: "w-14" },
         { key: "surname", label: "Surname", type: "text" },
         { key: "role", label: "Role", type: "select", options: TEAM_ROLE, width: "w-32" },
         { key: "debut", label: "Debut", type: "switch", width: "w-14" },
       ],
-      newRow: () => ({ order: 0, surname: "", role: undefined }),
+      newRow: () => ({ order: 0, firstInitial: "", surname: "", role: undefined }),
     },
   },
 

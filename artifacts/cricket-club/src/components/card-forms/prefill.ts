@@ -49,9 +49,23 @@ export function seasonLabelFromYear(year: number): string {
 }
 
 /** The surname (last whitespace token) of a display name, upper-cased for the team-list style. */
+const isWithheld = (displayName: string) => /^private player$/i.test(displayName.trim());
+
 function surnameOf(displayName: string): string {
+  // A withheld player prints whole ("PRIVATE PLAYER"), never just "PLAYER".
+  if (isWithheld(displayName)) return "PRIVATE PLAYER";
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
   return (parts[parts.length - 1] ?? "").toUpperCase();
+}
+
+/**
+ * The first initial the team list prints before the surname ("J. YOUNG"), the
+ * server builder's rule: none for a one-word name or a withheld player.
+ */
+export function firstInitialOf(displayName: string): string | undefined {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2 || isWithheld(displayName)) return undefined;
+  return parts[0]!.match(/\p{L}/u)?.[0]?.toUpperCase();
 }
 
 function parseDate(iso: string | null | undefined): Date | null {
@@ -345,9 +359,11 @@ export function teamListPlayersToState(
     .filter((p) => p.playerId == null || p.playerId < 90000)
     .map((p) => {
       const debut = p.debut ?? (p.playerId != null && auto.has(p.playerId));
+      const firstInitial = firstInitialOf(p.displayName);
       return {
         order: p.order,
         surname: surnameOf(p.displayName),
+        ...(firstInitial ? { firstInitial } : {}),
         role: p.role,
         ...(debut ? { debut: true } : {}),
         // The published snapshot's overseas mark (ADR-009); a withheld player has none.
