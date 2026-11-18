@@ -72,6 +72,64 @@ export function layerShows(layer: TemplateLayerV2, ctx: LayoutContext): boolean 
   return true;
 }
 
+/** An image layer that is one sponsor-strip slot: its content is just `{{sponsor1..3}}`. */
+const SPONSOR_SLOT = /^\{\{\s*(sponsor[1-3])\s*\}\}$/;
+
+/** The sponsor slot an image layer draws, if it is one. */
+export function sponsorSlotToken(layer: TemplateLayerV2): string | null {
+  if (layer.kind !== "image") return null;
+  const m = SPONSOR_SLOT.exec(String(layer.content ?? "").trim());
+  return m ? m[1]! : null;
+}
+
+/** Whether box `outer` encloses `inner` (within `tol` percent of the artboard on each side). */
+function encloses(outer: LayerBox, inner: LayerBox, tol = 1.5): boolean {
+  const [ox, oy, ow, oh] = [num(outer.x), num(outer.y), num(outer.w), num(outer.h)];
+  const [ix, iy, iw, ih] = [num(inner.x), num(inner.y), num(inner.w), num(inner.h)];
+  return ox - tol <= ix && oy - tol <= iy && ox + ow + tol >= ix + iw && oy + oh + tol >= iy + ih;
+}
+
+/**
+ * The tile frames of a sponsor strip's empty slots (dev retest 4, set 968):
+ * a strip lays out a box (a panel, a border, a backing tile) behind each
+ * `{{sponsorN}}` logo, conditioned only on the card having sponsors. With one
+ * sponsor, the other slots' logos drop, but their boxes drew as empty tiles.
+ *
+ * A frame here is a layer among `siblings` that binds no token (a shape, a
+ * vector, a plain text panel), whose box on this size encloses exactly one
+ * sponsor slot's logo and no other, and is no more than four times its area.
+ * It goes with its slot: when the slot has no logo, the frame isn't drawn.
+ * A strip-wide band behind every slot encloses more than one, so it stays.
+ */
+export function emptySponsorFrames(
+  siblings: readonly TemplateLayerV2[],
+  boxOf: (layer: TemplateLayerV2) => LayerBox | null,
+  has: (token: string) => boolean,
+  tokensOf: (layer: TemplateLayerV2) => readonly string[],
+): Set<TemplateLayerV2> {
+  const slots = siblings
+    .map((layer) => ({ layer, token: sponsorSlotToken(layer), box: boxOf(layer) }))
+    .filter(
+      (s): s is { layer: TemplateLayerV2; token: string; box: LayerBox } => !!s.token && !!s.box,
+    );
+  const frames = new Set<TemplateLayerV2>();
+  if (!slots.some((s) => !has(s.token))) return frames;
+  for (const layer of siblings) {
+    if (layer.kind === "group" || layer.kind === "image" || layer.kind === "photo") continue;
+    if (layer.kind === "rows" || tokensOf(layer).length > 0) continue;
+    const box = boxOf(layer);
+    if (!box) continue;
+    const inside = slots.filter((s) => encloses(box, s.box));
+    if (inside.length !== 1) continue;
+    const slot = inside[0]!;
+    if (has(slot.token)) continue;
+    const area = num(box.w) * num(box.h);
+    const slotArea = num(slot.box.w) * num(slot.box.h);
+    if (slotArea > 0 && area <= 4 * slotArea) frames.add(layer);
+  }
+  return frames;
+}
+
 const num = (v: unknown, fallback = 0): number => {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : fallback;

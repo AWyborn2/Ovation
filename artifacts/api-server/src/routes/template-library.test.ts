@@ -527,3 +527,51 @@ describe("preview input (T3.10)", () => {
     expect(res.body.source).toBe("sample");
   });
 });
+
+describe("template names made from the kind key (retest 4)", () => {
+  it("shows a server-named 'tradingCard template' as 'Trading Card template'", async () => {
+    const [row] = await db
+      .insert(cardTemplatesTable)
+      .values({
+        tenantId,
+        name: "tradingCard template",
+        source: "kind",
+        baseKind: "tradingCard",
+        cardKinds: ["tradingCard"],
+        isKindDefault: true,
+        adjustments: placeholderDocument("tradingCard"),
+        version: 1,
+        updatedAt: new Date(),
+      })
+      .returning({ id: cardTemplatesTable.id });
+    const res = await me().get("/club-templates?kind=tradingCard");
+    expect(res.status).toBe(200);
+    const mine = (res.body.templates as { id: number; name: string }[]).find(
+      (t) => t.id === row!.id,
+    );
+    expect(mine?.name).toBe("Trading Card template");
+  });
+
+  it("lists a bundle's '<Look> <kind>' template under the kind's label", async () => {
+    const slug = `rt-${STAMP}-names`;
+    await syncBundles([
+      fixtureBundle(
+        slug,
+        [
+          fixtureTemplate("weekendWrap", { name: "Names Look weekendWrap" }),
+          fixtureTemplate("ladder", { name: "Our own ladder" }),
+        ],
+        "Names Look",
+      ),
+    ]);
+    const names = (
+      await db
+        .select({ name: libraryTemplatesTable.name })
+        .from(libraryTemplatesTable)
+        .where(like(libraryTemplatesTable.slug, `${slug}/%`))
+    )
+      .map((r) => r.name)
+      .sort();
+    expect(names).toEqual(["Names Look Weekend Wrap", "Our own ladder"]);
+  });
+});

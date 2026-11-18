@@ -288,12 +288,19 @@ export function DraftDrawer({
           </div>
         )}
 
+        {/* These keyed panels are siblings, so each key names its panel as well as
+            the draft. The carousel preview and the schedule panel once shared the
+            bare id, and React appended another "Slide 1 of N" block on every
+            re-render of the drawer (dev retest 4, set 968). */}
         {carousel && !setDesign && (
-          <CarouselPreview key={current.id} carousel={carousel} document={current.adjustments} />
+          <CarouselPreview
+            key={`carousel-${current.id}`}
+            carousel={carousel}
+            document={current.adjustments}
+          />
         )}
         {setDesign && (
           <SetDraftPreview
-            // Unique among the drawer's panels (they key by the draft id too).
             key={`set-${current.id}`}
             draft={current}
             document={setDesign}
@@ -306,7 +313,7 @@ export function DraftDrawer({
             cannot be previewed or exported.
           </p>
         )}
-        {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
+        {status !== "dismissed" && <SchedulePanel key={`schedule-${current.id}`} draft={current} />}
 
         {status !== "dismissed" && (
           <section className="space-y-2">

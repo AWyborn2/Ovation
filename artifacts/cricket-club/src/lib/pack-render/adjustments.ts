@@ -16,6 +16,7 @@ import {
   isBundledImage,
   isDocumentV2,
   layerDropped,
+  layerTokens,
   LOGO_ROW_FIELDS,
   pickRowIndexes,
   normaliseDocument,
@@ -47,6 +48,7 @@ import { escapeHtml } from "./html-utils";
 import { FIT_ATTR, FIT_TEXT_ATTR, FIT_WORDS_ATTR, textFitAttrs } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import {
+  emptySponsorFrames,
   groupDepthAllowed,
   layerShows,
   renderGroup,
@@ -920,6 +922,22 @@ export function renderFreeLayers(
     hasPhoto: has(PHOTO_TOKEN),
     hasSponsors: ["sponsor1", "sponsor2", "sponsor3", "sponsors"].some(has),
   };
+  // A layer's box on this size, when it's on this size at all.
+  const boxOn = (layer: TemplateLayerV2) =>
+    layer.hidden || (layer.sizes && !layer.sizes.includes(size))
+      ? null
+      : (resolveGeometry(layer.geometry, layer.editedAt, size)?.value ?? null);
+  /**
+   * The layers of one sibling list that are drawn on their own merits: drawn
+   * by v2's styles (a v2 document, or a library element's group in a v1
+   * draft), the tile frames of a sponsor strip's empty slots go with their
+   * slots (dev retest 4). A plain v1 document draws as it always has.
+   */
+  const ownLayers = (siblings: readonly TemplateLayerV2[], styled = v2): TemplateLayerV2[] => {
+    if (!styled) return [...siblings];
+    const frames = emptySponsorFrames(siblings, boxOn, has, layerTokens);
+    return frames.size ? siblings.filter((layer) => !frames.has(layer)) : [...siblings];
+  };
 
   /**
    * One layer, positioned on the artboard; null when it isn't drawn on this
@@ -948,7 +966,7 @@ export function renderFreeLayers(
     if (layer.kind === "group") {
       // Groups nest to MAX_STACK_DEPTH; a deeper one isn't drawn.
       if (!groupDepthAllowed(depth)) return null;
-      const children = (Array.isArray(layer.children) ? layer.children : [])
+      const children = ownLayers(Array.isArray(layer.children) ? layer.children : [], styled)
         .map((child) =>
           draw(child, depth + 1, styled, {
             w: (num(box.value.w) / 100) * parentPx.w,
@@ -1012,7 +1030,7 @@ export function renderFreeLayers(
     return { layer, box: box.value, attrs, style, inner, html };
   };
 
-  const parts = layers.map((layer) => draw(layer, 1)?.html ?? "");
+  const parts = ownLayers(layers).map((layer) => draw(layer, 1)?.html ?? "");
   const loops = v2 && hasLoops(flattenLayers(layers)) ? LOOP_KEYFRAMES : "";
   const style = opts.animate ? `<style>${MOTION_KEYFRAMES}${loops}</style>` : "";
   const defs = [...styleCtx.defs.values()].join("");
