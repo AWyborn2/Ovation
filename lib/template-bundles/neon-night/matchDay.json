@@ -1,6 +1,6 @@
 {
   "name": "Neon Night matchDay",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -3469,7 +3469,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -3512,7 +3512,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -3623,7 +3623,7 @@
             "kind": "text",
             "content": "{{dateShort}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.4,
               "fontWeight": 800,
@@ -3669,7 +3669,7 @@
             "kind": "text",
             "content": "{{dateShort}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 1.26,
               "fontWeight": 800,
@@ -3703,7 +3703,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.72,
               "fontWeight": 600,
@@ -3734,7 +3734,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 2.29,
               "fontWeight": 600,
@@ -3771,7 +3771,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.9,
               "fontWeight": 600,
@@ -3922,7 +3922,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#DF5888",
+              "color": "color-mix(in srgb, #DF5888 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 5.18,
               "fontWeight": 800,
@@ -3953,7 +3953,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#DF5888",
+              "color": "color-mix(in srgb, #DF5888 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 6.91,
               "fontWeight": 800,
@@ -3990,7 +3990,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "#DF5888",
+              "color": "color-mix(in srgb, #DF5888 50%, #FFFFFF)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.72,
               "fontWeight": 800,
@@ -4276,7 +4276,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.72,
               "fontWeight": 600,
@@ -4302,7 +4302,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 2.29,
               "fontWeight": 600,
@@ -4334,7 +4334,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.9,
               "fontWeight": 600,
@@ -4420,7 +4420,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -4460,7 +4460,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#EAFBFF9E",
+              "color": "#EAFBFFE6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -4812,7 +4812,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.8,
               "fontWeight": 800,
@@ -4862,7 +4862,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "#DF5888",
+              "color": "#EAFBFF",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 1.47,
               "fontWeight": 800,

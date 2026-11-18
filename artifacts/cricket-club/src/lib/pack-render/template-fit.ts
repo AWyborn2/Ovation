@@ -8,6 +8,7 @@
  *   - a font that didn't load;
  *   - a layer drawn although every field it shows is hidden;
  *   - list rows at capacity running outside their box;
+ *   - a list's text, as drawn, outside its cell or row;
  *   - a data-bearing layer outside the artboard;
  *   - an image from anywhere but https, an inline image or this site;
  *   - vector markup the sanitiser should have removed.
@@ -42,7 +43,7 @@ import {
 } from "@workspace/scorecard/kind-templates";
 import { MIN_ROWS_SQUEEZE } from "@workspace/scorecard/kind-templates";
 import { ROWS_SQUEEZE_ATTR } from "./adjustments";
-import { fitLayersInDom } from "./layer-fit";
+import { FIT_ATTR, drawnTextRect, fitLayersInDom } from "./layer-fit";
 
 /**
  * The smallest a list may draw to show every row: a side of 14 on a box
@@ -179,6 +180,9 @@ export function checkFitInDom(root: HTMLElement, ctx: FitDomContext): FitIssue[]
   // Team List's players (`teamList`, `teamListRound`) as #660 set it, and
   // since Ash's round 3 retest every other list kind too.
   issues.push(...rowsOverlapIssues(root, art, layers, at, /^teamList/.test(ctx.kind)));
+  // Every list's text stays inside its cell and its row (Ash's round 5 retest:
+  // Club Kit's Team of the Week stat values ran out of their tiles).
+  issues.push(...rowTextOutsideIssues(root, layers, at));
 
   for (const img of Array.from(root.querySelectorAll("img"))) {
     const src = img.getAttribute("src") ?? "";
@@ -388,6 +392,50 @@ function rowsOverlapIssues(
             ? `row ${hit.index + 1} within ${Math.round(clearance)} px of the photo (${layer.id})`
             : `row ${hit.index + 1} runs into ${layer.id}`,
         });
+    }
+  }
+  return issues;
+}
+
+/**
+ * A list's text running out of its cell or its row, across: a
+ * stat value cut at its cell's edges or spilling out of its tile. Measured on
+ * the drawn letters, so a centred value overflowing both edges counts in full.
+ */
+function rowTextOutsideIssues(
+  root: HTMLElement,
+  layers: Map<string, TemplateLayerV2>,
+  at: { variant: string; page: PageKey; size: TemplateSize },
+): FitIssue[] {
+  const issues: FitIssue[] = [];
+  // One issue per list: its first row with text outside.
+  lists: for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-layer-id]"))) {
+    const layerId = el.getAttribute("data-layer-id") ?? "";
+    if (layers.get(layerId)?.kind !== "rows") continue;
+    for (const row of Array.from(el.querySelectorAll<HTMLElement>("[data-row-index]"))) {
+      const box = row.getBoundingClientRect();
+      if (!(box.width > 0 && box.height > 0)) continue;
+      for (const cell of Array.from(
+        row.querySelectorAll<HTMLElement>(`[data-row-cell][${FIT_ATTR}]`),
+      )) {
+        const text = drawnTextRect(cell);
+        if (!text) continue;
+        const own = cell.getBoundingClientRect();
+        const across = text.left < own.left - 1 || text.right > own.right + 1;
+        // Across only: a line box can stand taller than a thin row while its
+        // letters sit inside it, and the fit step catches text too tall.
+        const out = text.left < box.left - 1 || text.right > box.right + 1;
+        if (!across && !out) continue;
+        issues.push({
+          ...at,
+          reason: "rows-text-outside",
+          layerId,
+          row: Number(row.getAttribute("data-row-index")),
+          field: cell.getAttribute("data-row-cell") ?? undefined,
+          detail: `"${(cell.textContent ?? "").slice(0, 40)}" drawn ${Math.round(text.width)} px wide in a ${Math.round(own.width)} px cell${out ? ", outside its row" : ""}`,
+        });
+        continue lists;
+      }
     }
   }
   return issues;

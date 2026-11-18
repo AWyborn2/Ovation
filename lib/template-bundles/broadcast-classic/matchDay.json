@@ -1,6 +1,6 @@
 {
   "name": "Broadcast match day",
-  "version": 9,
+  "version": 10,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -1533,7 +1533,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -1575,7 +1575,7 @@
             "kind": "text",
             "content": "{{clubTagline}}",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -1737,7 +1737,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "color-mix(in srgb, var(--dt-p-on-dark) 80%, #FFFFFF)",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.72,
               "fontWeight": 600,
@@ -1767,7 +1767,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "color-mix(in srgb, var(--dt-p-on-dark) 80%, #FFFFFF)",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 2.29,
               "fontWeight": 600,
@@ -1803,7 +1803,7 @@
             "kind": "text",
             "content": "{{dateRange}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "color-mix(in srgb, var(--dt-p-on-dark) 80%, #FFFFFF)",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.9,
               "fontWeight": 600,
@@ -1926,7 +1926,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "var(--dt-p-on-dark)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 5.18,
               "fontWeight": 800,
@@ -1951,7 +1951,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "var(--dt-p-on-dark)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 6.91,
               "fontWeight": 800,
@@ -1982,7 +1982,7 @@
             "kind": "text",
             "content": "{{roundLabel}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "var(--dt-p-on-dark)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.72,
               "fontWeight": 800,
@@ -2253,7 +2253,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.72,
               "fontWeight": 600,
@@ -2278,7 +2278,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 2.29,
               "fontWeight": 600,
@@ -2309,7 +2309,7 @@
             "kind": "text",
             "content": "SWIPE >>",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.9,
               "fontWeight": 600,
@@ -2369,7 +2369,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 1.5,
               "fontWeight": 500,
@@ -2408,7 +2408,7 @@
             "kind": "text",
             "content": "PROUDLY SUPPORTED BY",
             "style": {
-              "color": "#F2F5F8A3",
+              "color": "#F2F5F8E6",
               "fontFamily": "'IBM Plex Mono',monospace",
               "fontSize": 0.79,
               "fontWeight": 500,
@@ -2747,7 +2747,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "var(--dt-p-on-dark)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 2.8,
               "fontWeight": 800,
@@ -2788,7 +2788,7 @@
             "kind": "text",
             "content": "{{clubHashtag}}",
             "style": {
-              "color": "var(--gold)",
+              "color": "var(--dt-p-on-dark)",
               "fontFamily": "'Barlow Condensed',sans-serif",
               "fontSize": 1.47,
               "fontWeight": 800,
@@ -6244,6 +6244,7 @@
           }
         ]
       }
-    }
+    },
+    "palettes": ["duotone"]
   }
 }

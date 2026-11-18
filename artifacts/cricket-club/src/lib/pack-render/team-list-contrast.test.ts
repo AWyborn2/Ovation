@@ -23,6 +23,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   flattenLayers,
+  layerTokens,
   pageForInput,
   rowsColumns,
   slideInputFor,
@@ -51,6 +52,8 @@ type Rgba = [number, number, number, number];
 /** WCAG AA for body text, and its floor for large text. */
 const AA = 4.5;
 const AA_LARGE = 3;
+/** Text or a logo this faint (30% or less) is a watermark, not something to read. */
+const WATERMARK = 0.3;
 
 /** The club brands each card is drawn with. */
 const BRANDS: Record<string, PackCardData["brand"]> = {
@@ -308,6 +311,22 @@ function coversPoint(l: TemplateLayerV2, b: Box, x: number, y: number): boolean 
   return inside;
 }
 
+/**
+ * Fields bound from the same data as another, so empty whenever it is: the
+ * sponsors page's next home match and its date (`bind.ts`, `page.nextHome`).
+ */
+const SAME_DATA: Record<string, string> = { nextHomeWhen: "nextHomeMatch" };
+
+/**
+ * A text layer's conditions, with the field it prints when that is all it
+ * prints: a line of one field draws only when the field has a value.
+ */
+function drawnWhen(l: TemplateLayerV2): TemplateLayerV2["showWhen"] {
+  const fields = [...new Set(layerTokens(l).map((t) => SAME_DATA[t] ?? t))];
+  if (l.kind !== "text" || l.showWhen?.field || fields.length !== 1) return l.showWhen;
+  return { ...l.showWhen, field: fields[0] };
+}
+
 /** What's behind a point when it is a logo (a crest or sponsor image), not one colour. */
 const ON_LOGO = "logo";
 
@@ -325,6 +344,7 @@ function backgroundAt(
   junior: boolean,
   [x, y]: Pt,
   vars: Map<string, string>,
+  when: TemplateLayerV2["showWhen"] = undefined,
 ): Rgba | null | typeof ON_LOGO {
   const { w: W, h: H } = SIZES[size];
   let bg: Rgba | null = parseColour(resolveVars("var(--ink)", vars));
@@ -332,6 +352,14 @@ function backgroundAt(
   for (const l of layers.slice(0, upTo)) {
     const b = drawnBox(l, size, photo, junior);
     if (!b || !coversPoint(l, b, x, y)) continue;
+    // Never drawn with the text: it needs a field the text is drawn without, or
+    // the other way round (the sponsors page's sheet with and without a game).
+    const own = l.showWhen ?? {};
+    if (
+      (when?.field && own.noField === when.field) ||
+      (when?.noField && own.field === when.noField)
+    )
+      continue;
     const style = (l.style ?? {}) as { fill?: unknown; background?: unknown; opacity?: unknown };
     const opacity = typeof style.opacity === "number" ? style.opacity : 1;
     if (l.kind === "photo" || (l.kind === "image" && opacity > 0.3)) {
@@ -386,6 +414,8 @@ type Sample = {
   points: Pt[];
   /** A list cell's own row backgrounds (earlier cells' fills) under its glyphs. */
   under?: string[];
+  /** The text layer's own conditions (what it's drawn with and without). */
+  when?: TemplateLayerV2["showWhen"];
 };
 
 /** Where a line's glyphs start or centre, by its alignment, across `[x, x + w]`. */
@@ -418,6 +448,7 @@ function everyText(
         label: `${size} ${l.id} "${String(l.content).slice(0, 24)}"`,
         // Its own background (a chip) is behind its glyphs too.
         index: index + 1,
+        when: drawnWhen(l),
         style: st,
         opacity,
         px: ((st.fontSize ?? 5) / 100) * W,
@@ -455,6 +486,7 @@ function everyText(
         out.push({
           label: `${size} ${l.id} ${cell.field}`,
           index,
+          when: drawnWhen(l),
           style: st,
           opacity: opacity * Number(st.opacity ?? 1),
           px: ((st.fontSize ?? 5) / 100) * W,
@@ -485,6 +517,7 @@ function samples(
       out.push({
         label: `${size} ${l.id} grade line`,
         index,
+        when: drawnWhen(l),
         style: st,
         opacity,
         px: ((st.fontSize ?? 5) / 100) * W,
@@ -517,6 +550,7 @@ function samples(
         out.push({
           label: `${size} ${l.id} names`,
           index,
+          when: drawnWhen(l),
           style: st,
           opacity: opacity * Number(st.opacity ?? 1),
           px: ((st.fontSize ?? 5) / 100) * W * squeeze,
@@ -535,10 +569,11 @@ function samples(
 function lowContrast(
   name: string,
   doc: TemplateDocumentV2,
-  opts: { kind?: string; every?: boolean } = {},
+  opts: { kind?: string; every?: boolean; pages?: readonly string[] } = {},
 ): string[] {
   const out: string[] = [];
   for (const [page, p] of Object.entries(doc.pages ?? {})) {
+    if (opts.pages && !opts.pages.includes(page)) continue;
     const layers = flattenLayers(p?.layers ?? []);
     for (const size of SIZE_KEYS)
       for (const photo of [true, false])
@@ -556,10 +591,13 @@ function lowContrast(
                 out.push(`${name} ${page} ${s.label}: unreadable colour ${s.style.color}`);
                 continue;
               }
+              // A watermark word (Bold Type's outlined "WEEKEND": no fill, a faint
+              // stroke) is decoration, not a line to read, as a faint logo is.
+              if (fg[3] * s.opacity <= WATERMARK) continue;
               const large = s.px >= 24 || (s.px >= 18.66 && (s.style.fontWeight ?? 400) >= 700);
               const floor = large ? AA_LARGE : AA;
               for (const pt of s.points) {
-                const behind = backgroundAt(layers, s.index, size, photo, junior, pt, vars);
+                const behind = backgroundAt(layers, s.index, size, photo, junior, pt, vars, s.when);
                 // The Duotone sweep: no line of text is drawn over a logo (round 4
                 // retest: the Team lists cover's title ran over a second crest, dark
                 // on dark, and went unmeasured because a logo has no one colour).
@@ -683,6 +721,64 @@ describe("Duotone text contrast on every kind", () => {
     const found = lowContrast("duotone/matchDay", was, { kind: "matchDay", every: true });
     expect(
       found.some((f) => f.includes('square title-l24 "{{weekendTitle}}" (no photo): drawn over')),
+    ).toBe(true);
+  });
+});
+
+// ── Cover and title text on every look (round 5 retest) ─────────────────────
+
+/**
+ * Every listed bundle's `title` page (Ash's round 5 retest: the Clubhouse
+ * junior Match Day cover printed "Halls Head" and "Match day" dark on a dark
+ * panel). Match Day's title page is the cover of every carousel set
+ * (`set-document.ts`: each set's cover slot draws it, with the set's title).
+ */
+function coverPages(): Array<Bundle & { pages: string[] }> {
+  return listedBundles(/./, /\.json$/).flatMap((b) =>
+    b.doc.pages && "title" in b.doc.pages ? [{ ...b, pages: ["title"] }] : [],
+  );
+}
+
+describe("Cover and title text contrast on every look", () => {
+  const bundles = coverPages();
+
+  it("reads every look's Match Day title page", () => {
+    const names = bundles.map((b) => b.name);
+    for (const look of [
+      "bold-type",
+      "broadcast-classic",
+      "broadcast-dark",
+      "club-kit",
+      "club-kit-classic",
+      "clubhouse",
+      "duotone",
+      "gold-foil",
+      "neon-night",
+      "sunset",
+    ])
+      expect(names).toContain(`${look}/matchDay`);
+  });
+
+  for (const { name, kind, doc, pages } of bundles)
+    it(`${name} (${pages.join(", ")}): every line clears WCAG AA, senior and junior, photo or not, any club colours`, () => {
+      expect(lowContrast(name, doc, { kind, every: true, pages })).toEqual([]);
+    });
+
+  it("would catch Clubhouse's Match Day cover as it was (dark type on a dark panel)", () => {
+    const md = bundles.find((b) => b.name === "clubhouse/matchDay")!;
+    const was = structuredClone(md.doc);
+    for (const l of flattenLayers(was.pages.title!.layers)) {
+      const st = l.style as { fill?: unknown; color?: unknown } | undefined;
+      if (l.kind === "shape" && st?.fill === "#FFFFFF") st.fill = "var(--accent-ink)";
+      if (l.kind === "text" && st?.color === "var(--dt-ink)") st.color = "var(--ink)";
+    }
+    const found = lowContrast("clubhouse/matchDay", was, {
+      kind: "matchDay",
+      every: true,
+      pages: ["title"],
+    });
+    expect(
+      found.some((f) => f.includes('"{{weekendTitle}}" (default brand, junior, no photo)')),
     ).toBe(true);
   });
 });

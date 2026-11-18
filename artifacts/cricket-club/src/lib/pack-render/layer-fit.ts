@@ -178,6 +178,34 @@ export function fitRowCellTarget(
 const overflowsBox = (el: HTMLElement) =>
   el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1;
 
+/**
+ * Where a list cell's text is drawn, measured on its letters (a Range over its
+ * text), not its box: text wider than its cell is clipped at the cell's edges
+ * however its box measures. Null where the browser can't measure it (jsdom).
+ */
+export function drawnTextRect(cell: HTMLElement): DOMRect | null {
+  const doc = cell.ownerDocument;
+  if (!cell.textContent?.trim() || typeof doc.createRange !== "function") return null;
+  const range = doc.createRange();
+  range.selectNodeContents(cell);
+  if (typeof range.getBoundingClientRect !== "function") return null;
+  const r = range.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 ? r : null;
+}
+
+/**
+ * Whether a list cell's letters run past its edges. A centred cell's overflow
+ * splits between its two edges and the scroll width sees only one side, so a
+ * value a few pixels too wide passed as fitting and was cut at both edges
+ * (round 5 retest: Club Kit's Team of the Week stats).
+ */
+function textOverflowsAcross(el: HTMLElement): boolean {
+  const text = drawnTextRect(el);
+  if (!text) return false;
+  const box = el.getBoundingClientRect();
+  return text.left < box.left - 1 || text.right > box.right + 1;
+}
+
 /** How many lines a block of text takes, from its height and line height. */
 function lineCount(text: HTMLElement): number {
   const style = getComputedStyle(text);
@@ -234,7 +262,7 @@ function domRowCellTarget(el: HTMLElement, base: number): RowCellFitTarget {
       el.style.fontSize = `${(base * scale).toFixed(3)}cqw`;
       el.setAttribute(FIT_SCALE_ATTR, String(scale));
     },
-    overflows: () => overflowsBox(el),
+    overflows: () => overflowsBox(el) || textOverflowsAcross(el),
     truncate: (n) => {
       el.textContent = n === null ? full : truncateAtWord(words, n);
       if (n === null) el.removeAttribute("data-fit-ellipsis-used");
