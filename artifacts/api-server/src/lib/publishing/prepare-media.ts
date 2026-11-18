@@ -14,6 +14,11 @@ import {
   renderDraftSlides,
   stillRendererOverridden,
 } from "../draft-render";
+import {
+  isJuniorDraftRow,
+  loadWithheldJuniorNames,
+  redactJuniorText,
+} from "../junior-name-redaction";
 import { DestinationError, type Platform, type PostType, type PreparedPost } from "./destination";
 
 /**
@@ -74,6 +79,17 @@ export async function toJpeg(png: Buffer): Promise<Buffer> {
 }
 
 export async function captionFor(
+  draft: SocialDraftRow,
+  platform: Platform,
+  postType: PostType,
+): Promise<string | null> {
+  const caption = await draftCaption(draft, platform, postType);
+  if (caption == null || !isJuniorDraftRow(draft)) return caption;
+  // A junior made private since the caption was written is withheld (P0 2).
+  return redactJuniorText(caption, await loadWithheldJuniorNames(draft.tenantId));
+}
+
+async function draftCaption(
   draft: SocialDraftRow,
   platform: Platform,
   postType: PostType,
