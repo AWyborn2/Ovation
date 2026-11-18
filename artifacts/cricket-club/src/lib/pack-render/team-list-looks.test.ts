@@ -175,3 +175,72 @@ describe("Team List rows clear of the photo", () => {
     ]);
   });
 });
+
+// ── The round label above the grade heading (Broadcast Dark landscape) ──────
+
+/**
+ * The least space between the round label ("ROUND 6") and the grade heading
+ * under it ("A GRADE"): 0.75% of the card's shorter side (8 px on a 1080 card,
+ * about 5 px on a 630-high landscape one).
+ */
+const MIN_HEADING_GAP = 0.0075;
+
+type TextStyle = { fontSize?: number; lineHeight?: number };
+
+/**
+ * Where a one-line text box's line is drawn, top to bottom in card pixels:
+ * its box, or a line taller than its box, centred on it (text is centred
+ * vertically in its box and spills both ways).
+ */
+function lineExtent(l: TemplateLayerV2, b: Box, size: CardSize): [number, number] {
+  const { w: W, h: H } = SIZES[size];
+  const st = (l.style ?? {}) as TextStyle;
+  const line = (Number(st.fontSize ?? 5) / 100) * W * Number(st.lineHeight ?? 1.2);
+  const top = (b.y / 100) * H;
+  const height = (b.h / 100) * H;
+  const tall = Math.max(height, line);
+  const mid = top + height / 2;
+  return [mid - tall / 2, mid + tall / 2];
+}
+
+/** The round label and grade heading of a Team List page on each size, where it has both. */
+function headingPairs(doc: TemplateDocumentV2) {
+  const layers = flattenLayers(doc.pages.team?.layers ?? []);
+  const on = (token: string, size: CardSize) =>
+    layers.find(
+      (l) =>
+        l.kind === "text" &&
+        String(l.content ?? "").includes(token) &&
+        !l.hidden &&
+        (!l.sizes || l.sizes.includes(size)) &&
+        (l.geometry as Partial<Record<CardSize, Box>>)[size],
+    );
+  return SIZE_KEYS.flatMap((size) => {
+    const round = on("{{broadcastRoundLabel}}", size);
+    const grade = on("{{gradeHeading}}", size);
+    return round && grade ? [{ size, round, grade }] : [];
+  });
+}
+
+describe("Team List round label and grade heading", () => {
+  const box = (l: TemplateLayerV2, size: CardSize) => (l.geometry as Record<string, Box>)[size]!;
+
+  it("Broadcast Dark has both at every size", () => {
+    const doc = teamListBundles().find((b) => b.name === "broadcast-dark/teamList")!.doc;
+    expect(headingPairs(doc).map((p) => p.size)).toEqual(SIZE_KEYS);
+  });
+
+  for (const { name, doc } of teamListBundles())
+    for (const { size, round, grade } of headingPairs(doc))
+      it(`${name} ${size}: "ROUND 6" sits clear above "A GRADE"`, () => {
+        const r = box(round, size);
+        const g = box(grade, size);
+        // The boxes themselves don't overlap, and the round comes first.
+        expect(r.y + r.h, `${round.id} ends below ${grade.id} starts`).toBeLessThanOrEqual(g.y);
+        // Nor do the lines as drawn, with room between them.
+        const [, roundBottom] = lineExtent(round, r, size);
+        const [gradeTop] = lineExtent(grade, g, size);
+        const { w, h } = SIZES[size];
+        expect(gradeTop - roundBottom).toBeGreaterThanOrEqual(MIN_HEADING_GAP * Math.min(w, h));
+      });
+});

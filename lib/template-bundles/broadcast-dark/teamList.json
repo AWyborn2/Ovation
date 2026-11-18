@@ -1,6 +1,6 @@
 {
   "name": "Broadcast Dark teamList",
-  "version": 7,
+  "version": 8,
   "listed": true,
   "document": {
     "formatVersion": 2,
@@ -705,7 +705,7 @@
             "geometry": {
               "square": {
                 "x": 6,
-                "y": 18.5,
+                "y": 16.4,
                 "w": 12.26,
                 "h": 2.22
               }
@@ -744,13 +744,13 @@
             "geometry": {
               "portrait": {
                 "x": 6,
-                "y": 14.8,
+                "y": 13,
                 "w": 16.01,
                 "h": 2.37
               },
               "story": {
                 "x": 6,
-                "y": 10.41,
+                "y": 9.2,
                 "w": 16.01,
                 "h": 1.67
               }
@@ -789,7 +789,7 @@
             "geometry": {
               "landscape": {
                 "x": 3.15,
-                "y": 18.5,
+                "y": 17.2,
                 "w": 6.91,
                 "h": 2.22
               }
@@ -909,9 +909,9 @@
             "geometry": {
               "landscape": {
                 "x": 3.15,
-                "y": 20.17,
+                "y": 21.2,
                 "w": 35.66,
-                "h": 4.44
+                "h": 5.4
               }
             },
             "sig": "text:09gk4q80367zo3",
