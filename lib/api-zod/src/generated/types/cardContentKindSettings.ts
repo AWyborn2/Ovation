@@ -7,13 +7,15 @@
  */
 import type { CardContentKindSettingsFields } from './cardContentKindSettingsFields';
 import type { CardContentKindSettingsPreset } from './cardContentKindSettingsPreset';
+import type { TeamListPlayerOrder } from './teamListPlayerOrder';
 
 /**
- * What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.
+ * What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club's player order for senior and junior lists.
  */
 export interface CardContentKindSettings {
   preset: CardContentKindSettingsPreset;
   /** Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it. */
   fields: CardContentKindSettingsFields;
   juniorConsolidateByDay: boolean;
+  playerOrder?: TeamListPlayerOrder;
 }

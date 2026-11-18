@@ -1247,3 +1247,55 @@ describe("sponsors over more than one slide (Oct 2026)", () => {
     ]);
   });
 });
+
+describe("team list player order (build decision 16)", () => {
+  const f = fixture(1, { grade: "A Grade" });
+  const teams = () =>
+    createTeamSlides([f], [], {
+      [f.id]: slideContentFor("teamList", f, {
+        kind: "teamList",
+        grade: "A Grade",
+        gradeRound: "A GRADE",
+        competitionLine: "",
+        venueDateTime: "",
+        players: [
+          { order: 1, surname: "YOUNG", firstInitial: "J", role: "C" },
+          { order: 2, surname: "ADAMS", firstInitial: "S" },
+        ],
+      }),
+    });
+  const build = (order?: "selected" | "shirt" | "alpha") =>
+    buildWeekendSlides(
+      teams(),
+      [],
+      bundle,
+      "Teams",
+      "2026-10-09",
+      "2026-10-11",
+      undefined,
+      undefined,
+      undefined,
+      null,
+      undefined,
+      undefined,
+      undefined,
+      order,
+    )[1]!;
+  const surnames = (s: ReturnType<typeof build>) =>
+    (s.input as unknown as { players: Array<{ surname: string }> }).players.map((p) => p.surname);
+
+  it("freezes the carousel's order on each team slide, and saves it", () => {
+    const slide = build("alpha");
+    expect(slide.playerOrder).toBe("alpha");
+    expect(surnames(slide)).toEqual(["ADAMS", "YOUNG"]);
+    expect(queuedSlide(slide)).toMatchObject({ playerOrder: "alpha" });
+  });
+
+  it("As selected (the default) saves nothing extra and keeps the picked order", () => {
+    for (const slide of [build(), build("selected")]) {
+      expect(slide.playerOrder).toBeUndefined();
+      expect(surnames(slide)).toEqual(["YOUNG", "ADAMS"]);
+      expect(queuedSlide(slide)).not.toHaveProperty("playerOrder");
+    }
+  });
+});

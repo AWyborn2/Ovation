@@ -12,6 +12,7 @@ import {
   type ContentKind,
   type ContentPreset,
 } from "../kind-templates/fields";
+import { DEFAULT_TEAM_LIST_ORDER, isTeamListOrder, type TeamListOrder } from "./team-list-order";
 
 /** A club's content choices for one card kind. */
 export interface ContentKindSettings {
@@ -20,6 +21,11 @@ export interface ContentKindSettings {
   fields: Record<string, boolean>;
   /** Junior sets put the fixtures (or results) of one day on one slide (P3). */
   juniorConsolidateByDay: boolean;
+  /**
+   * Team List only (build decision 16): the club's player order for every Team
+   * List, senior and junior. Absent on the other kinds; As selected by default.
+   */
+  playerOrder?: TeamListOrder;
 }
 
 /** `social_settings.card_content`: per content kind. */
@@ -52,7 +58,14 @@ export const DEFAULT_CONTENT_KIND_SETTINGS: ContentKindSettings = {
 /** What a club that never chose gets: Standard, junior consolidation on. Matches migration 0052's default. */
 export function defaultCardContentSettings(): CardContentSettings {
   return Object.fromEntries(
-    CONTENT_KINDS.map((k) => [k, { ...DEFAULT_CONTENT_KIND_SETTINGS, fields: {} }]),
+    CONTENT_KINDS.map((k) => [
+      k,
+      {
+        ...DEFAULT_CONTENT_KIND_SETTINGS,
+        fields: {},
+        ...(k === "teamList" ? { playerOrder: DEFAULT_TEAM_LIST_ORDER } : {}),
+      },
+    ]),
   ) as CardContentSettings;
 }
 
@@ -86,6 +99,11 @@ export function readCardContentSettings(raw: unknown): CardContentSettings {
         typeof s.juniorConsolidateByDay === "boolean"
           ? s.juniorConsolidateByDay
           : DEFAULT_CONTENT_KIND_SETTINGS.juniorConsolidateByDay,
+      ...(kind === "teamList"
+        ? {
+            playerOrder: isTeamListOrder(s.playerOrder) ? s.playerOrder : DEFAULT_TEAM_LIST_ORDER,
+          }
+        : {}),
     };
   }
   return out;

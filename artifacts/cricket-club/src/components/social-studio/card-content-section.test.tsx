@@ -5,6 +5,8 @@ import { installApiMock } from "../../test/mock-api";
 import { CardContentSection, choose } from "./card-content-section";
 
 const STANDARD = { preset: "standard", fields: {}, juniorConsolidateByDay: true };
+/** Team List also carries the club's player order (build decision 16). */
+const TEAM_STANDARD = { ...STANDARD, playerOrder: "selected" };
 
 const BUNDLE = (cardContent?: unknown) => ({
   settings: { ...(cardContent ? { cardContent } : {}) },
@@ -83,7 +85,35 @@ describe("CardContentSection", () => {
         },
         results: STANDARD,
         matchSummary: STANDARD,
-        teamList: STANDARD,
+        teamList: TEAM_STANDARD,
+      },
+    });
+  });
+
+  it("sets the club's Team List player order, one for seniors and juniors (build decision 16)", async () => {
+    const writes = setup();
+    fireEvent.click(await screen.findByTestId("content-settings-kind-teamList"));
+    expect(screen.getByTestId("content-settings-player-order-selected")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByText(/A private junior player is always listed last/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("content-settings-player-order-shirt"));
+    expect(screen.getByTestId("content-settings-player-order-shirt")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    // Only Team List has the control.
+    fireEvent.click(screen.getByTestId("content-settings-kind-matchDay"));
+    expect(screen.queryByTestId("content-settings-player-order")).toBeNull();
+    fireEvent.click(screen.getByTestId("content-settings-save"));
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(writes[0]).toEqual({
+      cardContent: {
+        matchDay: STANDARD,
+        results: STANDARD,
+        matchSummary: STANDARD,
+        teamList: { ...TEAM_STANDARD, playerOrder: "shirt" },
       },
     });
   });
@@ -112,7 +142,7 @@ describe("CardContentSection", () => {
         matchDay: { preset: "full", fields: {}, juniorConsolidateByDay: true },
         results: { preset: "minimal", fields: {}, juniorConsolidateByDay: true },
         matchSummary: STANDARD,
-        teamList: { ...STANDARD, fields: { "team.shirtNumbers": false } },
+        teamList: { ...TEAM_STANDARD, fields: { "team.shirtNumbers": false } },
       },
     });
   });

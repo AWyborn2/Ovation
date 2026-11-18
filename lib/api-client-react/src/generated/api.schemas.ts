@@ -5951,18 +5951,31 @@ export const CardContentKindSettingsPreset = {
 } as const;
 
 /**
+ * How a Team List orders its players: as selected (the default), by shirt number (players with no number last, by surname), or alphabetically by surname then first initial. A withheld junior (Private Player) is always last.
+ */
+export type TeamListPlayerOrder = typeof TeamListPlayerOrder[keyof typeof TeamListPlayerOrder];
+
+
+export const TeamListPlayerOrder = {
+  selected: 'selected',
+  shirt: 'shirt',
+  alpha: 'alpha',
+} as const;
+
+/**
  * Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it.
  */
 export type CardContentKindSettingsFields = {[key: string]: boolean};
 
 /**
- * What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.
+ * What one content-built card kind shows (ADR-010): a preset, per-field choices on top, whether junior sets share a slide per day, and (Team List only) the club's player order for senior and junior lists.
  */
 export interface CardContentKindSettings {
   preset: CardContentKindSettingsPreset;
   /** Optional content field key (e.g. fixture.photo) to on/off; overrides the preset. Core fields ignore it. */
   fields: CardContentKindSettingsFields;
   juniorConsolidateByDay: boolean;
+  playerOrder?: TeamListPlayerOrder;
 }
 
 /**
@@ -9322,6 +9335,8 @@ export interface UpdateSocialDraftRequest {
   photoPlayerId?: number | null;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
+  /** A Team List card's own player order (build decision 16), stored on the draft's card input as playerOrderOverride; null follows the order the card was made with (the club's default). It never changes the club's default. Team List drafts only. */
+  playerOrder?: TeamListPlayerOrder | null;
 }
 
 /**

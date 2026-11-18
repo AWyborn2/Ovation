@@ -5,6 +5,7 @@ export * from "./match-day";
 export * from "./day";
 export * from "./result";
 export * from "./team-list";
+export * from "./team-list-order";
 export * from "./render-input";
 export * from "./validate";
 export {

@@ -8,6 +8,7 @@
 import { dayFixtureRows } from "./day";
 import { resultDaySlideInput, resultSlideInput } from "./result";
 import { teamListSlideInput } from "./team-list";
+import type { TeamListOrder } from "./team-list-order";
 import { sponsorOnClubPage } from "./match-day";
 import type { CardContent, MatchDayFixtureContent, MatchDaySponsorsContent } from "./types";
 
@@ -17,6 +18,8 @@ export interface ContentInputOptions {
    * `title.coverPhoto` is on) or the sponsors page's background (`sponsors.background`).
    */
   hasCoverPhoto?: boolean;
+  /** A team slide's player order (build decision 16); absent, As selected. */
+  playerOrder?: TeamListOrder;
 }
 
 /** The input for one slide's content, with only `visible` fields shown. */
@@ -26,7 +29,7 @@ export function contentInput(
   opts: ContentInputOptions = {},
 ): Record<string, unknown> {
   // Results, match summaries and team lists (P7) have their own projections.
-  if (content.kind === "teamList") return teamListSlideInput(content, visible);
+  if (content.kind === "teamList") return teamListSlideInput(content, visible, opts.playerOrder);
   if (content.kind !== "matchDay")
     return content.page === "day"
       ? resultDaySlideInput(content, visible)

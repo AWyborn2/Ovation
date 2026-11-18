@@ -1026,6 +1026,7 @@ export * from './takeTemplateUpdateRequest';
 export * from './tallyEntry';
 export * from './teamList';
 export * from './teamListPlayer';
+export * from './teamListPlayerOrder';
 export * from './teamListPlayerRole';
 export * from './teamListSourceSummary';
 export * from './teamOfDecadeBoard';

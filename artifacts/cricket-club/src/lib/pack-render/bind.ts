@@ -22,7 +22,11 @@ import {
   teamMonogram,
   type CardNames,
 } from "@workspace/scorecard/card-names";
-import { shortDateSpanFromLabel, summaryResultWord } from "@workspace/scorecard/card-content";
+import {
+  orderTeamListInputPlayers,
+  shortDateSpanFromLabel,
+  summaryResultWord,
+} from "@workspace/scorecard/card-content";
 import { centuryCardFeat, centuryCardText, milestoneCardHeading } from "@workspace/scorecard";
 import {
   MATCH_CONTEXT_KINDS,
@@ -385,15 +389,19 @@ export function bindInput(
       values["date"] = input.date ?? "";
       values["startTime"] = input.startTime ?? "";
       if (input.squadPhotoUrl) images["squadPhoto"] = input.squadPhotoUrl;
-      // Rows stay in batting order either way. With season shirt numbers on
+      // Rows in the card's player order (build decision 16): as selected,
+      // shirt number or alphabetical, a withheld junior ("Private Player")
+      // always last, so a name taken out late still never sits in its old
+      // place. Roles move with their player. With season shirt numbers on
       // (numbering "shirt") the number slot is the shirt number, bound
-      // EXPLICITLY — empty when unnumbered, never the batting order.
+      // EXPLICITLY: empty when unnumbered. Otherwise it counts the rows as
+      // drawn (1, 2, 3 …), so a reordered list never reads 4, 1, 9.
       // Every player is bound, up to a side of 14 (ADR-009): the designs
       // compress their rows above 12 rather than drop anyone.
       const shirt = input.numbering === "shirt";
-      rows["players"] = (input.players ?? []).map((p: TeamListPlayer) => ({
+      rows["players"] = orderTeamListInputPlayers(input).map((p: TeamListPlayer, i) => ({
         values: {
-          number: shirt ? shirtText(p.shirtNumber) : String(p.order),
+          number: shirt ? shirtText(p.shirtNumber) : String(i + 1),
           surname: p.surname,
           broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
           // The name line the template library's team lists print: "J. YOUNG (WK)".

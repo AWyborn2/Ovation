@@ -258,6 +258,31 @@ Each is the safer, reversible choice. Changing any of them is a small follow-up.
     one could be a photo of a child, which would get round the junior photo rule. The server enforces it:
     a junior design keeps no uploaded image at create, design save and post. Senior designs are unchanged.
     To allow a raster logo later, add a "logo, not a photo" mark on an upload and let marked uploads through.
+16. **Team List player order** (decided by Ash). Three orders: "As selected" (the default, today's order
+    from the Selection Hub, PlayHQ or the admin's list), "Shirt number" (lowest first; players with no
+    number go last, by surname then first initial) and "Alphabetical" (by surname, then first initial).
+    Nothing changes for a club until it chooses another order.
+    - Rules for every order: a withheld junior ("Private Player") is always last, so a row's position never
+      hints at who it is; a captain or keeper mark moves with its player; fill-ins stay out; shirt numbers
+      come from the club's existing registers (senior and junior).
+    - Club default: one order for senior and junior lists, in Settings → What cards show → Team List. It is
+      stored in the existing `social_settings.card_content` JSON (`teamList.playerOrder`), read through
+      `readCardContentSettings`, so there is no migration and no new column.
+    - A design's own order never changes the club default. Create's carousel look step (team list sets) has
+      its own choice, frozen on each team slide (`playerOrder`) as the slide's fields are. A single Team List
+      card has a Card panel in the editor; its choice is stored on the draft's card input
+      (`playerOrderOverride`, PATCH `playerOrder`, null to go back) and kept across data refreshes.
+    - Where it applies: the content projection (`teamListDraftInput`, `teamListSlideInput`) sorts the side
+      before any hidden field takes the shirt numbers off and stamps `playerOrder`, so the sweep's drafts,
+      Create a Card's prefill and carousel slides all follow it. The binder sorts again at draw time (editor,
+      previews, downloads and the post render), before shrink-to-fit, and puts a "Private Player" last even
+      when the name was withheld after the card was built. A card that hides its shirt numbers keeps the shirt
+      order it was built in. Team list carousel captions list players in the same order.
+    - Row numbers: with shirt numbers on, the number slot is the shirt number (unchanged). Otherwise it counts
+      the rows as drawn (1, 2, 3 ...), so an alphabetical list never reads 4, 1, 9, and a private junior moved
+      last does not keep its old number. Under "As selected" this is the batting order as before.
+    - Not covered: Team List cards typed by hand in the older card forms keep the order they were typed in
+      unless a design chooses another order; the older pack editor has no Card panel.
 
 ### Not in this release
 

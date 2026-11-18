@@ -2,6 +2,7 @@ import type { Fixture } from "@workspace/api-client-react";
 import { CLUB_TIME_ZONE } from "./model";
 import type { TeamSlide } from "./model";
 import { CAROUSEL_LABELS, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
+import { orderTeamListPlayers, type TeamListOrder } from "@workspace/scorecard/card-content";
 
 export function matchDayCaption(fixtures: Fixture[], title: string, hashtag?: string | null) {
   const when = new Intl.DateTimeFormat("en-AU", {
@@ -38,6 +39,8 @@ export function carouselCaption(
   teams: TeamSlide[],
   title: string,
   hashtag?: string | null,
+  /** Team lists: the slides' player order (build decision 16), so the caption reads the same. */
+  playerOrder?: TeamListOrder,
 ) {
   if (type === "matchDay")
     return matchDayCaption(
@@ -55,7 +58,9 @@ export function carouselCaption(
         return [
           heading,
           input.venueDateTime,
-          input.players.map((p) => `${p.surname}${p.role ? ` (${p.role})` : ""}`).join(", "),
+          orderTeamListPlayers(input.players, playerOrder)
+            .map((p) => `${p.surname}${p.role ? ` (${p.role})` : ""}`)
+            .join(", "),
         ].join("\n");
       if (input?.kind === "matchSummary")
         return [

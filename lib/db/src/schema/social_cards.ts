@@ -558,6 +558,11 @@ export type CardContentRow = Partial<
       preset?: string;
       fields?: Record<string, boolean>;
       juniorConsolidateByDay?: boolean;
+      /**
+       * Team List only (build decision 16): the club's player order, "selected"
+       * (the default), "shirt" or "alpha". Kept in this JSON, so no column.
+       */
+      playerOrder?: string;
     }
   >
 >;
