@@ -8,6 +8,12 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { Route } from "wouter";
 import AdminSetDraftEditor from "@/pages/admin-set-draft-editor";
 import { renderAt } from "@/test/render";
+import {
+  matchDayFixtureContent,
+  matchDaySponsorsContent,
+  matchDayTitleContent,
+  presetFields,
+} from "@workspace/scorecard/card-content";
 
 beforeAll(() => {
   if (!("PointerEvent" in window)) {
@@ -65,7 +71,23 @@ const DRAFT = {
 
 type Req = { method: string; url: string; body: unknown };
 
-function open({ newStudio = false }: { newStudio?: boolean } = {}) {
+function open({
+  newStudio = false,
+  draft = DRAFT as Record<string, unknown>,
+  design = {
+    draftId: 42,
+    setType: "teamLists",
+    layout: "list",
+    document: DOC as unknown,
+    templateRef: DRAFT.templateRef,
+    size: null as string | null,
+    stored: true,
+  },
+}: {
+  newStudio?: boolean;
+  draft?: Record<string, unknown>;
+  design?: Record<string, unknown>;
+} = {}) {
   Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   const requests: Req[] = [];
   vi.stubGlobal(
@@ -79,17 +101,9 @@ function open({ newStudio = false }: { newStudio?: boolean } = {}) {
       if (/social-drafts\/42\/set-design$/.test(url))
         payload =
           method === "PUT"
-            ? { ...DRAFT, adjustments: (body as { document: unknown }).document }
-            : {
-                draftId: 42,
-                setType: "teamLists",
-                layout: "list",
-                document: DOC,
-                templateRef: DRAFT.templateRef,
-                size: null,
-                stored: true,
-              };
-      else if (/social-drafts\/42$/.test(url)) payload = DRAFT;
+            ? { ...draft, adjustments: (body as { document: unknown }).document }
+            : design;
+      else if (/social-drafts\/42$/.test(url)) payload = draft;
       else if (/tenant-plan/.test(url))
         payload = { plan: "club", newStudio, entitlements: { socialStudio: true } };
       else if (/social-settings/.test(url))
@@ -219,5 +233,119 @@ describe("a slide's own layout (studio-create S9, New Studio)", () => {
     const own = saved.pages.find((p) => p.slot === "page")!;
     expect(saved.arrangement.pageFor).toEqual({ "detail:senior:B Grade": own.id });
     expect(saved.arrangement.removed).toEqual(["detail:senior:A Grade"]);
+  });
+});
+
+describe("a queued carousel holding orphaned slide layouts (dev retest 3, draft 962)", () => {
+  const bookend = {
+    heading: "This weekend",
+    from: "2026-10-09",
+    to: "2026-10-11",
+    roundLabels: ["3"],
+    fixtureCount: 1,
+  };
+  const slide = (id: string, label: string, content: unknown) => ({
+    id,
+    label,
+    content,
+    visibleFields: [...presetFields("matchDay", "standard")],
+    photoId: null,
+    data: {},
+    junior: false,
+    sponsorsOn: false,
+    warnings: [],
+  });
+  const fixture = matchDayFixtureContent({
+    id: 7,
+    grade: "A Grade",
+    roundLabel: "Round 3",
+    opponentName: "Waroona Cricket Club",
+    opponentLogoUrl: "https://crest",
+    venue: "Oval",
+    startAt: new Date("2026-10-10T02:00:00Z"),
+    isHome: true,
+  });
+  // A stored design slide for a layout page a slide let go of, after Sponsors.
+  const orphanSlide = (pageId: string, label: string) => ({
+    id: `page:${pageId}`,
+    label,
+    pageId,
+    input: { kind: "matchDay" },
+    data: {},
+    junior: false,
+    sponsorsOn: false,
+    warnings: [],
+  });
+  const named = (id: string, slot: string, p: string, name?: string) => ({
+    ...page(id, slot, "matchDay", p),
+    role: slot === "fixture" ? "repeat" : "fixed",
+    ...(name ? { name } : {}),
+  });
+  const SET = {
+    formatVersion: 2,
+    set: "matchDay",
+    pages: [
+      named("cover", "cover", "title"),
+      named("fixture", "fixture", "fixture"),
+      named("sponsors", "sponsors", "sponsors"),
+      named("a-layout", "page", "fixture", "A Grade v Waroona layout"),
+      named("b-layout", "page", "fixture", "B Grade v Pinjarra layout"),
+    ],
+  };
+  const CAROUSEL = {
+    ...DRAFT,
+    engine: "ondemand",
+    templateRef: { copyId: 12, version: 4 },
+    cardInput: {
+      kind: "matchDay",
+      weekendCarousel: {
+        version: 3,
+        templateRef: { copyId: 12, version: 4 },
+        setType: "matchDay",
+        submissionId: "12345678-1234-1234-1234-123456789abc",
+        size: "square",
+        slides: [
+          slide("title", "Title page", matchDayTitleContent(bookend)),
+          slide("fixture-7", "A Grade v Waroona", fixture),
+          slide("sponsors", "Sponsors", matchDaySponsorsContent({ ...bookend, sponsors: [] })),
+          orphanSlide("a-layout", "A Grade v Waroona layout"),
+          orphanSlide("b-layout", "B Grade v Pinjarra layout"),
+        ],
+      },
+    },
+    adjustments: SET,
+  };
+
+  it("opens without them, and saves the design without them", async () => {
+    const requests = open({
+      draft: CAROUSEL,
+      design: {
+        draftId: 42,
+        setType: "matchDay",
+        layout: "carousel",
+        document: SET,
+        templateRef: CAROUSEL.templateRef,
+        size: "square",
+        stored: true,
+      },
+    });
+    const strip = await screen.findByRole("navigation", { name: "Slides" });
+    const tiles = within(strip)
+      .getAllByRole("button", { name: /^\d\. / })
+      .map((b) => b.getAttribute("aria-label") ?? "");
+    expect(tiles).toHaveLength(3);
+    expect(tiles.some((t) => /layout/.test(t))).toBe(false);
+
+    // A small edit, so Save sends the design: move the fixture first.
+    fireEvent.click(within(strip).getByRole("button", { name: /^2\. / }));
+    fireEvent.click(within(strip).getByRole("button", { name: /^Move .* earlier$/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests.some((r) => r.method === "PUT")).toBe(true));
+    const saved = (
+      requests.find((r) => r.method === "PUT")!.body as {
+        document: { pages: Array<{ id: string }> };
+      }
+    ).document;
+    expect(saved.pages.map((p) => p.id)).toEqual(["cover", "fixture", "sponsors"]);
   });
 });

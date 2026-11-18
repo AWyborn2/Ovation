@@ -19,7 +19,17 @@ import {
   tenantsTable,
   type SocialDraftRow,
 } from "@workspace/db";
-import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
+import {
+  withoutStrandedLayouts,
+  type LayoutWarning,
+  type SetDocument,
+} from "@workspace/scorecard/kind-templates";
+import {
+  matchDayFixtureContent,
+  matchDaySponsorsContent,
+  matchDayTitleContent,
+  presetFields,
+} from "@workspace/scorecard/card-content";
 import { upsertDraftByKey } from "./draft-upsert";
 import {
   checkDraftLayout,
@@ -211,6 +221,99 @@ describe("templated rendering (T7.2, T7.3)", () => {
     expect(slides).toHaveLength(10);
     expect(slides[0].warnings).toEqual([expect.objectContaining({ reason: "slides" })]);
     expect(slides[1].warnings).toEqual([]);
+  });
+});
+
+describe("a carousel set holding orphaned slide layouts (dev retest 3, draft 962)", () => {
+  const bookend = {
+    heading: "This weekend",
+    from: "2026-10-09",
+    to: "2026-10-11",
+    roundLabels: ["3"],
+    fixtureCount: 1,
+  };
+  const slide = (id: string, content: unknown) => ({
+    id,
+    label: id,
+    content,
+    visibleFields: [...presetFields("matchDay", "standard")],
+    photoId: null,
+    data: {},
+    junior: false,
+    sponsorsOn: false,
+    warnings: [],
+  });
+  const fixture = matchDayFixtureContent({
+    id: 7,
+    grade: "A Grade",
+    roundLabel: "Round 3",
+    opponentName: "Mandurah Cricket Club",
+    opponentLogoUrl: "https://crest",
+    venue: "Oval",
+    startAt: new Date("2026-10-10T02:00:00Z"),
+    isHome: true,
+  });
+  // A stored design slide made for a let-go layout page, as draft 962 was saved.
+  const orphanSlide = (pageId: string, label: string) => ({
+    id: `page:${pageId}`,
+    label,
+    pageId,
+    input: { kind: "matchDay" },
+    data: {},
+    junior: false,
+    sponsorsOn: false,
+    warnings: [],
+  });
+  const page = (id: string, slot: string, p: string, name?: string) => ({
+    id,
+    role: slot === "fixture" ? "repeat" : "fixed",
+    slot,
+    kind: "matchDay",
+    page: p,
+    ...(name ? { name } : {}),
+    layers: [],
+  });
+  const SET = {
+    formatVersion: 2,
+    set: "matchDay",
+    pages: [
+      page("cover", "cover", "title"),
+      page("fixture", "fixture", "fixture"),
+      page("sponsors", "sponsors", "sponsors"),
+      page("a-layout", "page", "fixture", "A Grade v Mandurah layout"),
+    ],
+  } as unknown as SetDocument;
+  const cardInput = {
+    kind: "matchDay",
+    weekendCarousel: {
+      version: 3,
+      templateRef: { copyId: 12, version: 4 },
+      setType: "matchDay",
+      submissionId: "12345678-1234-1234-1234-123456789abc",
+      size: "square",
+      slides: [
+        slide("title", matchDayTitleContent(bookend)),
+        slide("fixture-7", fixture),
+        slide("sponsors", matchDaySponsorsContent({ ...bookend, sponsors: [] })),
+        orphanSlide("a-layout", "A Grade v Mandurah layout"),
+        // Its page was shed on an open since #645 and never saved.
+        orphanSlide("gone-layout", "B Grade v Pinjarra layout"),
+      ],
+    },
+  };
+
+  it("posts only the set's real slides, whether the design was saved since or not", async () => {
+    for (const adjustments of [SET, withoutStrandedLayouts(SET)]) {
+      renders.length = 0;
+      const d = await draft({ engine: "ondemand", cardInput, adjustments, packId: null });
+      const slides = await renderDraftSlides(d, ["square"], null, logger);
+      expect(slides.map((s) => [s.page, s.of])).toEqual([
+        [1, 3],
+        [2, 3],
+        [3, 3],
+      ]);
+      expect(renders).toHaveLength(3);
+    }
   });
 });
 

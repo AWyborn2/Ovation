@@ -374,6 +374,17 @@ export function withSlideLayout(
 }
 
 /**
+ * A layout page's name, at most 60 characters. A long slide name is cut
+ * before its " layout" ending, which marks the page as a slide's layout
+ * (`strandedLayoutPageIds`), so a let-go layout is still known as one.
+ */
+function layoutName(name: string): string {
+  if (name.length <= 60) return name;
+  const end = / layout$/i.exec(name);
+  return end ? `${name.slice(0, 60 - end[0].length).trimEnd()}${end[0]}` : name.slice(0, 60);
+}
+
+/**
  * A new layout for slide `key` alone: a copy of the page it draws with now
  * (`fromId`), as a design page of the same kind page, mapped to the slide.
  */
@@ -387,7 +398,7 @@ export function newSlideLayout(
   const body = (doc.pages as Record<string, PageBody | undefined>)[fromId];
   const r = addSetPage(
     doc,
-    { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: name.slice(0, 60) },
+    { role: "fixed", slot: "page", kind: from.kind, page: from.page, name: layoutName(name) },
     body?.layers ?? [],
   );
   const pages = { ...(r.doc.pages as Record<string, PageBody | undefined>) };
