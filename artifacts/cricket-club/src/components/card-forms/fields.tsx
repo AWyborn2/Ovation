@@ -245,23 +245,27 @@ function PlayerPickRow({
 /** Inline editor for a single repeat column. */
 function RepeatCell({
   col,
+  label,
   value,
   onChange,
 }: {
   col: RepeatColumn;
+  /** The cell's accessible name ("Surname, row 1"). */
+  label: string;
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
   if (col.type === "switch") {
     return (
       <div className={`flex items-center justify-center ${col.width ?? ""}`}>
-        <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />
+        <Switch aria-label={label} checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />
       </div>
     );
   }
   if (col.type === "select") {
     return (
       <select
+        aria-label={label}
         className={`${selectClass} ${col.width ?? ""}`}
         value={value == null ? "" : String(value)}
         onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value)}
@@ -277,6 +281,7 @@ function RepeatCell({
   if (col.type === "number") {
     return (
       <Input
+        aria-label={label}
         type="number"
         className={col.width ?? "w-16"}
         value={value == null ? "" : String(value)}
@@ -286,6 +291,7 @@ function RepeatCell({
   }
   return (
     <Input
+      aria-label={label}
       className={col.width ?? "flex-1"}
       value={value == null ? "" : String(value)}
       onChange={(e) => onChange(e.target.value)}
@@ -345,6 +351,7 @@ function RepeatEditor({
                 )}
                 <RepeatCell
                   col={col}
+                  label={`${col.label}, row ${idx + 1}`}
                   value={row[col.key]}
                   onChange={(v) => setCell(idx, col.key, v)}
                 />

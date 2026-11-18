@@ -27,6 +27,7 @@ import {
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { firstInitialOf, teamListPlayersToState } from "@/components/card-forms/prefill";
 import { DESCRIPTORS } from "@/components/card-forms/descriptors";
+import { tidyHandFilledState } from "@/components/card-forms/logic";
 
 const BUNDLES = path.resolve(__dirname, "../../../../../lib/template-bundles");
 const LOOKS = readdirSync(BUNDLES).filter((d) =>
@@ -136,6 +137,77 @@ describe("team list names on every drawing path", () => {
           expect(body).toContain("PRIVATE PLAYER");
           expect(body).not.toMatch(/\w\. PRIVATE PLAYER/);
           expect(body).not.toMatch(/PRIVATE PLAYER \(/);
+        });
+      }
+    }
+  }
+});
+
+// Round 4 retest, P3: a withheld row that arrives in title case ("Private Player",
+// as PlayHQ and the junior names write it), listed first, with an initial, a role
+// and an overseas mark, still draws like every other row: in capitals, bare, last.
+const titleCaseWithheld = {
+  ...META,
+  players: [
+    { order: 1, surname: "Private Player", firstInitial: "P", role: "VC", overseas: true },
+    { order: 2, surname: "YOUNG", firstInitial: "J", role: "C" },
+    { order: 3, surname: "HEAD", firstInitial: "M", role: "WK" },
+  ],
+};
+
+// "Fill in by hand" typed in lower case: tidied to the built lists' capitals.
+const handTyped = {
+  ...META,
+  ...tidyHandFilledState("teamList", {
+    players: [
+      { order: 1, firstInitial: "j", surname: "young", role: "C" },
+      { order: 2, firstInitial: "", surname: "private player", role: "VC" },
+      { order: 3, firstInitial: "m", surname: " head ", role: "WK" },
+      { order: 4, firstInitial: "", surname: "" },
+    ],
+  }),
+};
+
+describe("a withheld row follows the other rows' case (round 4 retest, P3)", () => {
+  it("the hand-fill tidy drops blank rows and puts the names in capitals", () => {
+    expect((handTyped as Record<string, unknown>).players).toEqual([
+      { order: 1, firstInitial: "J", surname: "YOUNG", role: "C" },
+      { order: 2, surname: "PRIVATE PLAYER" },
+      { order: 3, firstInitial: "M", surname: "HEAD", role: "WK" },
+    ]);
+  });
+
+  it("a list in mixed case keeps the withheld row in mixed case", () => {
+    const body = text(
+      {
+        ...META,
+        players: [
+          { order: 1, surname: "Young", firstInitial: "J" },
+          { order: 2, surname: "PRIVATE PLAYER" },
+        ],
+      },
+      bundle(LOOKS[0]!),
+      "square",
+    );
+    expect(body).toContain("Private Player");
+    expect(body).not.toContain("PRIVATE PLAYER");
+  });
+
+  for (const look of LOOKS) {
+    for (const [source, input] of [
+      ["title-case withheld", titleCaseWithheld],
+      ["hand-typed", handTyped],
+    ] as const) {
+      for (const size of ["square", "portrait", "story", "landscape"] as CardSize[]) {
+        it(`${look} ${size}: a ${source} list draws PRIVATE PLAYER in capitals, last`, () => {
+          const body = text(input, bundle(look), size);
+          expect(body).toContain("J. YOUNG (C)");
+          expect(body).toContain("M. HEAD (WK)");
+          expect(body).toContain("PRIVATE PLAYER");
+          expect(body).not.toContain("Private Player");
+          expect(body).not.toMatch(/\w\. PRIVATE PLAYER/);
+          expect(body).not.toMatch(/PRIVATE PLAYER \(/);
+          expect(body.lastIndexOf("PRIVATE PLAYER")).toBeGreaterThan(body.indexOf("M. HEAD"));
         });
       }
     }

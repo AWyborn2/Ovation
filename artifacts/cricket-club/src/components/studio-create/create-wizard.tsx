@@ -14,7 +14,16 @@ import {
 } from "@workspace/api-client-react";
 import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PrefillPanel, buildCardInput, type CardFormState } from "@/components/card-forms";
+import {
+  CardFormRouter,
+  DESCRIPTORS,
+  PrefillPanel,
+  blankTeamListRows,
+  buildCardInput,
+  handFillReady,
+  tidyHandFilledState,
+  type CardFormState,
+} from "@/components/card-forms";
 import { juniorSeedState, seedState } from "@/components/card-forms/seed";
 import {
   BLANK_DESIGN_KIND,
@@ -84,7 +93,10 @@ export function CreateWizard() {
   const juniorsOn = useEntitlements().juniors;
   const s = parseCreateState(search, juniorsOn);
   const junior = s.team === "junior";
+  // "Fill in by hand": the kind's form, open on step 3 before the Look step.
+  const [hand, setHand] = useState<{ kind: CardKind; state: CardFormState } | null>(null);
   const go = (patch: Partial<CreateState>) => {
+    setHand(null);
     const qs = createSearch({ ...s, ...patch });
     navigate(qs ? `${CREATE_PATH}?${qs}` : CREATE_PATH);
   };
@@ -94,6 +106,10 @@ export function CreateWizard() {
   const design = useStartDesign();
 
   const kind = s.kind && s.kind !== "blank" ? s.kind : null;
+  // Kinds with rows (players, matches, ladder rows …) are filled by hand in their
+  // form, every column shown. A junior card only ever takes a junior builder's
+  // names (juniors fail closed), so it has no hand form here.
+  const handKind = kind !== null && !junior && !!DESCRIPTORS[kind]?.repeat;
   // A refresh mid-way loses the filled card: start again from the kind's sample.
   const card = useMemo<Filled | null>(
     () =>
@@ -221,7 +237,36 @@ export function CreateWizard() {
         />
       )}
 
-      {!carousel && s.step === 3 && kind && card && (
+      {!carousel && s.step === 3 && kind && card && handKind && hand?.kind === kind && (
+        <section aria-labelledby="hand-heading" className="space-y-4">
+          <h3 id="hand-heading" className="text-lg font-semibold">
+            {kind === "teamList" ? "Fill in the team" : "Fill in by hand"}
+          </h3>
+          <CardFormRouter
+            kind={kind}
+            state={hand.state}
+            setState={(patch) => setHand({ kind, state: { ...hand.state, ...patch } })}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              disabled={!handFillReady(kind, hand.state)}
+              onClick={() => fill(tidyHandFilledState(kind, hand.state))}
+            >
+              Next: pick a look
+            </Button>
+            <Button variant="outline" onClick={() => setHand(null)}>
+              {kind === "teamList" ? "Pick another team" : "Back to Fill from"}
+            </Button>
+            {!handFillReady(kind, hand.state) && (
+              <p className="text-sm text-muted-foreground">
+                Type at least one player&rsquo;s name.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {!carousel && s.step === 3 && kind && card && !(handKind && hand?.kind === kind) && (
         <section aria-labelledby="fill-heading" className="space-y-4">
           <h3 id="fill-heading" className="text-lg font-semibold">
             {kind === "teamList" ? "Which team?" : "Fill it from"}
@@ -229,7 +274,15 @@ export function CreateWizard() {
           {junior ? (
             <JuniorSource kind={kind} onFill={(i) => fill(fromServer(kind, card.state, i))} />
           ) : kind === "teamList" ? (
-            <TeamPicker onPick={(i) => fill(fromServer(kind, seedState(kind, brand), i))} />
+            <TeamPicker
+              onPick={(i) => {
+                const state = fromServer(kind, seedState(kind, brand), i);
+                // A team with no saved list ("Fill in by hand"): its players are typed
+                // here, initial and all, before the look is picked.
+                if (Array.isArray(i.players) && i.players.length > 0) fill(state);
+                else setHand({ kind, state: { ...state, players: blankTeamListRows() } });
+              }}
+            />
           ) : (
             <PrefillPanel
               kind={kind}
@@ -237,8 +290,23 @@ export function CreateWizard() {
               onPlayer={(p) => setFilled({ ...card, playerId: p.id })}
             />
           )}
-          <Button variant="outline" onClick={() => fill(card.state)}>
-            {kind === "teamList" ? "Start blank: type the team in the editor" : "Start blank"}
+          <Button
+            variant="outline"
+            onClick={() =>
+              handKind
+                ? setHand({
+                    kind,
+                    // A Team List is typed from empty rows, never over the sample's
+                    // names (which have no initial to print).
+                    state:
+                      kind === "teamList"
+                        ? { ...card.state, players: blankTeamListRows() }
+                        : card.state,
+                  })
+                : fill(card.state)
+            }
+          >
+            {handKind ? "Fill in by hand" : "Start blank"}
           </Button>
         </section>
       )}

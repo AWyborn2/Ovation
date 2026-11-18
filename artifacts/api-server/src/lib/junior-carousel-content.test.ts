@@ -273,7 +273,8 @@ describe("junior match-day and team-list carousel sources", () => {
         numbering: "shirt",
         players: [
           { order: 1, surname: "ALICE P", role: "C", shirtNumber: "7" },
-          { order: 2, surname: "PRIVATE PLAYER", role: "WK" },
+          // A withheld player carries no role mark (round 4 retest, P3).
+          { order: 2, surname: "PRIVATE PLAYER" },
           { order: 3, surname: "PRIVATE PLAYER" },
           { order: 4, surname: "PRIVATE PLAYER" },
         ],
@@ -281,6 +282,7 @@ describe("junior match-day and team-list carousel sources", () => {
     });
     const players = (input as { source: { players: Record<string, unknown>[] } }).source.players;
     expect(players.slice(1).some((p) => "shirtNumber" in p)).toBe(false);
+    expect(players.slice(1).some((p) => "role" in p)).toBe(false);
     const serialized = JSON.stringify(input);
     for (const secret of [
       publicId,

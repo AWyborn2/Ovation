@@ -97,6 +97,25 @@ describe("withheld junior names", () => {
     );
   });
 
+  it("withholds in the field's case: capitals where the field is in capitals (round 4, P3)", () => {
+    const out = redactWithheldJuniorNames(
+      {
+        kind: "teamList",
+        junior: true,
+        listName: "C. BULLER",
+        headline: "COHEN",
+      },
+      W,
+      false,
+    );
+    expect(out.listName).toBe("PRIVATE PLAYER");
+    expect(out.headline).toBe("PRIVATE PLAYER");
+    // Mixed-case text keeps the mixed-case form.
+    expect(redactJuniorText("Big day for C. BULLER and Sam", W)).toBe(
+      "Big day for Private Player and Sam",
+    );
+  });
+
   it("returns the same value when no-one is withheld", () => {
     const none = withheldNames([]);
     const input = teamList(true);

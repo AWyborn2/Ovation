@@ -399,19 +399,29 @@ export function bindInput(
       // Every player is bound, up to a side of 14 (ADR-009): the designs
       // compress their rows above 12 rather than drop anyone.
       const shirt = input.numbering === "shirt";
-      rows["players"] = orderTeamListInputPlayers(input).map((p: TeamListPlayer, i) => ({
-        values: {
-          number: shirt ? shirtText(p.shirtNumber) : String(i + 1),
-          surname: p.surname,
-          broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
-          // The name line the template library's team lists print: "J. YOUNG (WK)".
-          listName: teamListName(p.firstInitial, p.surname, p.role),
-          role: p.role ?? "",
-          debut: p.debut ? "DEBUT" : "",
-          // The snapshot's overseas mark: a neutral "OS", never a country.
-          os: p.overseas ? "OS" : "",
-        },
-      }));
+      const ordered = orderTeamListInputPlayers(input);
+      // A withheld "Private Player" prints in the same case as the other rows
+      // (capitals where they are capitals), however it arrived, and never with
+      // an initial, a role mark or an overseas mark.
+      const capitals = teamListRowsInCapitals(ordered);
+      rows["players"] = ordered.map((p: TeamListPlayer, i) => {
+        const withheld = isWithheldSurname(p.surname);
+        const surname = withheld ? (capitals ? "PRIVATE PLAYER" : "Private Player") : p.surname;
+        const initial = withheld ? undefined : p.firstInitial;
+        return {
+          values: {
+            number: shirt ? shirtText(p.shirtNumber) : String(i + 1),
+            surname,
+            broadcastName: broadcastPlayerName(initial, surname),
+            // The name line the template library's team lists print: "J. YOUNG (WK)".
+            listName: teamListName(initial, surname, p.role),
+            role: withheld ? "" : (p.role ?? ""),
+            debut: p.debut ? "DEBUT" : "",
+            // The snapshot's overseas mark: a neutral "OS", never a country.
+            os: p.overseas && !withheld ? "OS" : "",
+          },
+        };
+      });
       break;
     }
     case "weekendWrap": {
@@ -747,10 +757,29 @@ export function teamListName(
   surname: string | null | undefined,
   role: string | null | undefined,
 ): string {
+  if (isWithheldSurname(surname)) return (surname ?? "").trim();
   const name = broadcastPlayerName(firstInitial, surname ?? "");
   const mark = (role ?? "").trim().toUpperCase();
-  if (!mark || /^private player$/i.test((surname ?? "").trim())) return name;
+  if (!mark) return name;
   return `${name} (${mark})`;
+}
+
+/** A withheld junior's team list row ("Private Player"), whatever its case. */
+export function isWithheldSurname(surname: string | null | undefined): boolean {
+  return /^private\s+player$/i.test((surname ?? "").trim());
+}
+
+/**
+ * Whether a team list's named rows are printed in capitals ("J. YOUNG"), as
+ * every builder prints them. A list with no named rows counts as capitals.
+ */
+export function teamListRowsInCapitals(
+  players: readonly { surname?: string | null }[] | null | undefined,
+): boolean {
+  return (players ?? [])
+    .map((p) => (p.surname ?? "").trim())
+    .filter((s) => s && /\p{L}/u.test(s) && !isWithheldSurname(s))
+    .every((s) => s === s.toUpperCase());
 }
 
 /**
